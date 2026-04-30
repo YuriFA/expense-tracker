@@ -1,11 +1,26 @@
-export type TransactionType = 'income' | 'expense'
+export type TransactionType = 'income' | 'expense' | 'transfer'
 
-export interface Transaction {
+type BaseTransaction = {
   id: string
   type: TransactionType
   amount: number
-  categoryId: string
-  date: string
-  note: string
+  description: string
+  occurredAt: string
   createdAt: string
+  updatedAt?: string
 }
+
+export type CashflowTransaction = BaseTransaction & {
+  type: 'income' | 'expense'
+  accountId: string
+  categoryId: string
+}
+
+export type TransferTransaction = BaseTransaction & {
+  type: 'transfer'
+  fromAccountId: string
+  toAccountId: string
+  categoryId?: never
+}
+
+export type Transaction = CashflowTransaction | TransferTransaction

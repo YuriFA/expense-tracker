@@ -1,9 +1,9 @@
-import type { TransactionType } from './transaction'
+export type CategoryType = 'income' | 'expense'
 
 export interface Category {
   id: string
   name: string
-  type: TransactionType
+  type: CategoryType
   icon: string
   color: string
 }
