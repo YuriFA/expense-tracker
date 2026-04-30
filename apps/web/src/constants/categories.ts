@@ -1,0 +1,28 @@
+import type { Category } from '@/types/category'
+
+export const CATEGORIES: Category[] = [
+  { id: '1', name: 'Food', type: 'expense', icon: '🍔', color: '#FF6347' },
+  { id: '2', name: 'Transport', type: 'expense', icon: '🚗', color: '#1E90FF' },
+  { id: '3', name: 'Entertainment', type: 'expense', icon: '🎬', color: '#FFD700' },
+  { id: '4', name: 'Salary', type: 'income', icon: '💼', color: '#32CD32' },
+  { id: '5', name: 'Freelance', type: 'income', icon: '🖥️', color: '#8A2BE2' },
+  { id: '6', name: 'Health', type: 'expense', icon: '💊', color: '#FF69B4' },
+  { id: '7', name: 'Education', type: 'expense', icon: '📚', color: '#20B2AA' },
+  { id: '8', name: 'Investment', type: 'income', icon: '📈', color: '#FF4500' },
+  { id: '9', name: 'Gifts', type: 'income', icon: '🎁', color: '#FF1493' },
+  { id: '10', name: 'Utilities', type: 'expense', icon: '💡', color: '#00CED1' },
+  { id: '11', name: 'Travel', type: 'expense', icon: '✈️', color: '#FF8C00' },
+  { id: '12', name: 'Miscellaneous', type: 'expense', icon: '🛍️', color: '#A52A2A' },
+  { id: '13', name: 'Bonus', type: 'income', icon: '🎉', color: '#32CD32' },
+  { id: '14', name: 'Rent', type: 'expense', icon: '🏠', color: '#8B4513' },
+  { id: '15', name: 'Savings', type: 'income', icon: '💰', color: '#228B22' },
+  { id: '16', name: 'Charity', type: 'expense', icon: '❤️', color: '#FF69B4' },
+  { id: '17', name: 'Side Hustle', type: 'income', icon: '🛠️', color: '#8A2BE2' },
+  { id: '18', name: 'Subscriptions', type: 'expense', icon: '📱', color: '#1E90FF' },
+  { id: '19', name: 'Other Income', type: 'income', icon: '💵', color: '#32CD32' },
+  { id: '20', name: 'Other Expense', type: 'expense', icon: '🛒', color: '#A52A2A' },
+  { id: '21', name: 'Health Insurance', type: 'expense', icon: '🏥', color: '#FF69B4' },
+  { id: '22', name: 'Car Maintenance', type: 'expense', icon: '🔧', color: '#1E90FF' },
+  { id: '23', name: 'Grocery', type: 'expense', icon: '🛒', color: '#FF6347' },
+  { id: '24', name: 'Dining Out', type: 'expense', icon: '🍽️', color: '#FFD700' },
+]

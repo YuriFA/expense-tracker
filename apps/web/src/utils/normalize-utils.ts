@@ -1,0 +1,38 @@
+import type { TransactionRecord } from './transactions'
+
+export const isRecord = (value: unknown): value is TransactionRecord =>
+  typeof value === 'object' && value !== null
+
+export const asString = (value: unknown) => (typeof value === 'string' ? value : null)
+
+export const asNonEmptyString = (value: unknown) => {
+  const stringValue = asString(value)
+
+  return stringValue && stringValue.trim().length > 0 ? stringValue : null
+}
+
+export const asNumber = (value: unknown) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return null
+  }
+
+  return value
+}
+
+export const asPositiveNumber = (value: unknown) => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return null
+  }
+
+  return value
+}
+
+export const asDateTimeString = (value: unknown) => {
+  const stringValue = asNonEmptyString(value)
+
+  if (!stringValue || Number.isNaN(Date.parse(stringValue))) {
+    return null
+  }
+
+  return stringValue
+}
