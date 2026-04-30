@@ -2,18 +2,18 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useStorage } from '@vueuse/core'
-import { APP_NAME } from '@/constants/config'
+import { APP_NAME } from '@/app/config'
 import type { Transaction, TransactionType } from '@/types/transaction'
-import { parseAccountsStorage } from '@/utils/accounts'
-import { parseCategoriesStorage } from '@/utils/categories'
+import { parseAccountsStorage } from '@/entities/account'
+import { parseCategoriesStorage } from '@/entities/category/category.lib'
 import {
   hasValidTransactionReferences,
   isTransaction,
   isTransferTransaction,
   parseTransactionsStorage,
   serializeTransactionsStorage,
-} from '@/utils/transactions'
-import { generateId } from '@/utils/generate-id'
+} from '@/entities/transaction'
+import { generateId } from '@/shared/lib/generate-id'
 
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
 const ACCOUNTS_STORAGE_KEY = `${APP_NAME}:accounts`
