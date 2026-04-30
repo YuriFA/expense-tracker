@@ -1,7 +1,7 @@
 import type { Account } from '@/types/account'
 import type { Transaction } from '@/types/transaction'
-import { isTransferTransaction } from './transactions'
-import { asNonEmptyString, asNumber, asString, isRecord } from './normalize-utils'
+import { isTransferTransaction } from './transaction'
+import { asNonEmptyString, asNumber, asString, isRecord } from '@/shared/lib/normalize'
 
 export const getTransactionImpactForAccount = (transaction: Transaction, accountId: string) => {
   if (!isTransferTransaction(transaction)) {

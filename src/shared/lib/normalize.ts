@@ -1,6 +1,4 @@
-import type { TransactionRecord } from './transactions'
-
-export const isRecord = (value: unknown): value is TransactionRecord =>
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
 export const asString = (value: unknown) => (typeof value === 'string' ? value : null)

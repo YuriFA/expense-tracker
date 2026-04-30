@@ -12,9 +12,9 @@ import {
   asPositiveNumber,
   asString,
   isRecord,
-} from './normalize-utils'
+} from '@/shared/lib/normalize'
 
-export type TransactionRecord = Record<string, unknown>
+type TransactionRecord = Record<string, unknown>
 
 type BaseTransaction = {
   id: string

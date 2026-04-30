@@ -1,5 +1,5 @@
 import type { Category, CategoryType } from '@/types/category'
-import { asNonEmptyString, asString, isRecord } from './normalize-utils'
+import { asNonEmptyString, asString, isRecord } from '@/shared/lib/normalize'
 
 const isCategoryType = (value: unknown): value is CategoryType =>
   value === 'income' || value === 'expense'
