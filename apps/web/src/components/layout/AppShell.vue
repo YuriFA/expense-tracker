@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import AppNav from './AppNav.vue'
+</script>
+
 <template>
   <div class="min-h-screen">
     <AppNav />
@@ -8,6 +12,3 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import AppNav from './AppNav.vue'
-</script>
