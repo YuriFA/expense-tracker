@@ -29,6 +29,39 @@ export const sumTransactionsImpactForAccount = (transactions: Transaction[], acc
     0,
   )
 
+export const getAccountsBalances = (accounts: Account[], transactions: Transaction[]) => {
+  const balancesByAccountId = Object.fromEntries(
+    accounts.map((account) => [account.id, account.openingBalance + account.manualAdjustment]),
+  ) as Record<string, number>
+
+  for (const transaction of transactions) {
+    if (!isTransferTransaction(transaction)) {
+      const currentBalance = balancesByAccountId[transaction.accountId]
+
+      if (currentBalance !== undefined) {
+        balancesByAccountId[transaction.accountId] =
+          currentBalance + (transaction.type === 'income' ? transaction.amount : -transaction.amount)
+      }
+
+      continue
+    }
+
+    const fromBalance = balancesByAccountId[transaction.fromAccountId]
+
+    if (fromBalance !== undefined) {
+      balancesByAccountId[transaction.fromAccountId] = fromBalance - transaction.amount
+    }
+
+    const toBalance = balancesByAccountId[transaction.toAccountId]
+
+    if (toBalance !== undefined) {
+      balancesByAccountId[transaction.toAccountId] = toBalance + transaction.amount
+    }
+  }
+
+  return balancesByAccountId
+}
+
 export const getComputedAccountBalance = (account: Account, transactions: Transaction[]) =>
   account.openingBalance +
   account.manualAdjustment +
