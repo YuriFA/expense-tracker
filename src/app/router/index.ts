@@ -5,7 +5,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: () => import('@/pages/DashboardPage.vue'),
+      component: () => import('@/pages/dashboard/DashboardPage.vue'),
     },
     {
       path: '/transactions',
