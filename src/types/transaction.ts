@@ -4,9 +4,8 @@ type BaseTransaction = {
   id: string
   type: TransactionType
   amount: number
-  description: string
+  description?: string
   occurredAt: string
-  createdAt: string
   updatedAt?: string
 }
 

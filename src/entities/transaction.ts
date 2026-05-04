@@ -22,7 +22,6 @@ type BaseTransaction = {
   amount: number
   description: string
   occurredAt: string
-  createdAt: string
   updatedAt?: string
 }
 
@@ -33,13 +32,12 @@ const normalizeBaseTransaction = (value: TransactionRecord): BaseTransaction | n
   const id = asNonEmptyString(value.id)
   const type = isTransactionType(value.type) ? value.type : null
   const amount = asPositiveNumber(value.amount)
-  const description = asString(value.description)
+  const description = asString(value.description) ?? ''
   const occurredAt = asDateTimeString(value.occurredAt)
-  const createdAt = asDateTimeString(value.createdAt)
   const updatedAtValue =
     value.updatedAt === undefined ? undefined : asDateTimeString(value.updatedAt)
 
-  if (!id || !type || !amount || description === null || !occurredAt || !createdAt) {
+  if (!id || !type || !amount || description === null || !occurredAt) {
     return null
   }
 
@@ -53,7 +51,6 @@ const normalizeBaseTransaction = (value: TransactionRecord): BaseTransaction | n
     amount,
     description,
     occurredAt,
-    createdAt,
     ...(updatedAtValue ? { updatedAt: updatedAtValue } : {}),
   }
 }
@@ -154,7 +151,11 @@ export const hasValidTransactionReferences = (
 
   const category = categories.find((item) => item.id === transaction.categoryId)
 
-  return hasAccount(transaction.accountId) && category !== undefined && category.type === transaction.type
+  return (
+    hasAccount(transaction.accountId) &&
+    category !== undefined &&
+    category.type === transaction.type
+  )
 }
 
 export const normalizeTransaction = (value: unknown): Transaction | null => {
