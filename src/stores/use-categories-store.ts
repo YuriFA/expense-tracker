@@ -1,18 +1,22 @@
-import { CATEGORIES } from '@/entities/category/defaults'
+import { getDefaultCategories } from '@/entities/category/defaults'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import type { Category } from '@/types/category'
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
-import { parseCategoriesStorage, serializeCategoriesStorage } from '@/entities/category/category.lib'
+import {
+  parseCategoriesStorage,
+  serializeCategoriesStorage,
+} from '@/entities/category/category.lib'
 import { isTransactionLinkedToCategory, parseTransactionsStorage } from '@/entities/transaction'
+import { generateId } from '@/shared/lib/generate-id'
 
 const CATEGORIES_STORAGE_KEY = `${APP_NAME}:categories`
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
 
 export const useCategoriesStore = defineStore('categories', () => {
-  const items = useStorage(CATEGORIES_STORAGE_KEY, CATEGORIES, localStorage, {
+  const items = useStorage(CATEGORIES_STORAGE_KEY, getDefaultCategories(), localStorage, {
     serializer: {
       read: parseCategoriesStorage,
       write: serializeCategoriesStorage,
@@ -27,10 +31,7 @@ export const useCategoriesStore = defineStore('categories', () => {
   const addCategory = (payload: Omit<Category, 'id'> & Partial<Pick<Category, 'id'>>) => {
     const category: Category = {
       ...payload,
-      id:
-        payload.id ??
-        globalThis.crypto?.randomUUID?.() ??
-        `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: payload.id ?? generateId(),
     }
 
     items.value.push(category)
@@ -51,7 +52,9 @@ export const useCategoriesStore = defineStore('categories', () => {
   }
 
   const removeCategory = (id: string) => {
-    const transactions = parseTransactionsStorage(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) ?? '[]')
+    const transactions = parseTransactionsStorage(
+      localStorage.getItem(TRANSACTIONS_STORAGE_KEY) ?? '[]',
+    )
 
     if (transactions.some((transaction) => isTransactionLinkedToCategory(transaction, id))) {
       return false

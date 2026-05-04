@@ -4,8 +4,6 @@ import { computed } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
 import type { Transaction, TransactionType } from '@/types/transaction'
-import { parseAccountsStorage } from '@/entities/account'
-import { parseCategoriesStorage } from '@/entities/category/category.lib'
 import {
   hasValidTransactionReferences,
   isTransaction,
@@ -14,10 +12,11 @@ import {
   serializeTransactionsStorage,
 } from '@/entities/transaction'
 import { generateId } from '@/shared/lib/generate-id'
+import i18n from '@/app/i18n'
+import { useAccountsStore } from './use-accounts-store'
+import { useCategoriesStore } from './use-categories-store'
 
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
-const ACCOUNTS_STORAGE_KEY = `${APP_NAME}:accounts`
-const CATEGORIES_STORAGE_KEY = `${APP_NAME}:categories`
 
 type GetRecentTransactionsOptions = {
   limit?: number
@@ -26,6 +25,8 @@ type GetRecentTransactionsOptions = {
 }
 
 export const useTransactionsStore = defineStore('transactions', () => {
+  const accountsStore = useAccountsStore()
+  const categoriesStore = useCategoriesStore()
   const items = useStorage<Transaction[]>(TRANSACTIONS_STORAGE_KEY, [], localStorage, {
     serializer: {
       read: parseTransactionsStorage,
@@ -70,24 +71,21 @@ export const useTransactionsStore = defineStore('transactions', () => {
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
   const hasValidReferences = (transaction: Transaction) => {
-    const accounts = parseAccountsStorage(localStorage.getItem(ACCOUNTS_STORAGE_KEY) ?? '[]')
-    const categories = parseCategoriesStorage(localStorage.getItem(CATEGORIES_STORAGE_KEY) ?? '[]')
-
-    return hasValidTransactionReferences(transaction, accounts, categories)
+    return hasValidTransactionReferences(transaction, accountsStore.items, categoriesStore.items)
   }
 
-  const addTransaction = (payload: Omit<Transaction, 'id'> & Partial<Pick<Transaction, 'id'>>) => {
+  const addTransaction = <T extends Transaction>(payload: Omit<T, 'id'> & Partial<Pick<T, 'id'>>) => {
     const nextTransaction = {
       ...payload,
       id: payload.id ?? generateId(),
     }
 
     if (!isTransaction(nextTransaction)) {
-      throw new Error('Invalid transaction payload')
+      throw new Error(i18n.global.t('errors.invalidTransactionPayload'))
     }
 
     if (!hasValidReferences(nextTransaction)) {
-      throw new Error('Transaction references unknown account or category')
+      throw new Error(i18n.global.t('errors.unknownTransactionReferences'))
     }
 
     items.value.push(nextTransaction)

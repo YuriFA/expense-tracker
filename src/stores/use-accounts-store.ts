@@ -3,20 +3,35 @@ import { defineStore } from 'pinia'
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
 import type { Account } from '@/types/account'
-import type { Transaction } from '@/types/transaction'
-import {
-  getComputedAccountBalance,
-  parseAccountsStorage,
-  serializeAccountsStorage,
-} from '@/entities/account'
+import { parseAccountsStorage, serializeAccountsStorage } from '@/entities/account'
 import { generateId } from '@/shared/lib/generate-id'
 import { isTransactionLinkedToAccount, parseTransactionsStorage } from '@/entities/transaction'
+import i18n from '@/app/i18n'
 
 const ACCOUNTS_STORAGE_KEY = `${APP_NAME}:accounts`
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
+const getDefaultAccounts = (): Account[] => {
+  const { t } = i18n.global
+
+  return [
+    {
+      id: '1',
+      name: t('seeds.accounts.cash'),
+      openingBalance: 1000,
+      manualAdjustment: 0,
+    },
+    { id: '2', name: t('seeds.accounts.bank'), openingBalance: 5000, manualAdjustment: 0 },
+    {
+      id: '3',
+      name: t('seeds.accounts.creditCard'),
+      openingBalance: -2000,
+      manualAdjustment: 0,
+    },
+  ]
+}
 
 export const useAccountsStore = defineStore('accounts', () => {
-  const items = useStorage<Account[]>(ACCOUNTS_STORAGE_KEY, [], localStorage, {
+  const items = useStorage<Account[]>(ACCOUNTS_STORAGE_KEY, getDefaultAccounts(), localStorage, {
     serializer: {
       read: parseAccountsStorage,
       write: serializeAccountsStorage,
@@ -49,7 +64,9 @@ export const useAccountsStore = defineStore('accounts', () => {
   }
 
   const removeAccount = (id: string) => {
-    const transactions = parseTransactionsStorage(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) ?? '[]')
+    const transactions = parseTransactionsStorage(
+      localStorage.getItem(TRANSACTIONS_STORAGE_KEY) ?? '[]',
+    )
 
     if (transactions.some((transaction) => isTransactionLinkedToAccount(transaction, id))) {
       return false
@@ -66,22 +83,11 @@ export const useAccountsStore = defineStore('accounts', () => {
     return true
   }
 
-  const getAccountBalance = (accountId: string, transactions: Transaction[]) => {
-    const account = findById(accountId)
-
-    if (!account) {
-      return null
-    }
-
-    return getComputedAccountBalance(account, transactions)
-  }
-
   return {
     items,
     findById,
     addAccount,
     updateAccount,
     removeAccount,
-    getAccountBalance,
   }
 })
