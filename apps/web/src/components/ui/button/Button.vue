@@ -1,20 +1,25 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <script setup lang="ts">
 import type { PrimitiveProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
+import type { ButtonHTMLAttributes, HTMLAttributes } from 'vue'
 import type { ButtonVariants } from '.'
 import { Primitive } from 'reka-ui'
-import { cn } from '@/shared/lib/cn'
+import { cn } from '@/shared/lib/utils'
 import { buttonVariants } from '.'
 
 interface Props extends PrimitiveProps {
+  type?: ButtonHTMLAttributes['type']
+  // eslint-disable-next-line vue/require-default-prop
   variant?: ButtonVariants['variant']
+  // eslint-disable-next-line vue/require-default-prop
   size?: ButtonVariants['size']
+  // eslint-disable-next-line vue/require-default-prop
   class?: HTMLAttributes['class']
 }
 
 const props = withDefaults(defineProps<Props>(), {
   as: 'button',
+  type: 'button',
 })
 </script>
 
@@ -26,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
     :as="as"
     :as-child="asChild"
     :class="cn(buttonVariants({ variant, size }), props.class)"
+    :type="props.type"
   >
     <slot />
   </Primitive>
