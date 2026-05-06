@@ -6,32 +6,12 @@ import type { Account } from '@/types/account'
 import { parseAccountsStorage, serializeAccountsStorage } from '@/entities/account'
 import { generateId } from '@/shared/lib/generate-id'
 import { isTransactionLinkedToAccount, parseTransactionsStorage } from '@/entities/transaction'
-import i18n from '@/app/i18n'
 
 const ACCOUNTS_STORAGE_KEY = `${APP_NAME}:accounts`
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
-const getDefaultAccounts = (): Account[] => {
-  const { t } = i18n.global
-
-  return [
-    {
-      id: '1',
-      name: t('seeds.accounts.cash'),
-      openingBalance: 1000,
-      manualAdjustment: 0,
-    },
-    { id: '2', name: t('seeds.accounts.bank'), openingBalance: 5000, manualAdjustment: 0 },
-    {
-      id: '3',
-      name: t('seeds.accounts.creditCard'),
-      openingBalance: -2000,
-      manualAdjustment: 0,
-    },
-  ]
-}
 
 export const useAccountsStore = defineStore('accounts', () => {
-  const items = useStorage<Account[]>(ACCOUNTS_STORAGE_KEY, getDefaultAccounts(), localStorage, {
+  const items = useStorage<Account[]>(ACCOUNTS_STORAGE_KEY, [], localStorage, {
     serializer: {
       read: parseAccountsStorage,
       write: serializeAccountsStorage,

@@ -16,12 +16,13 @@ const CATEGORIES_STORAGE_KEY = `${APP_NAME}:categories`
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
 
 export const useCategoriesStore = defineStore('categories', () => {
-  const items = useStorage(CATEGORIES_STORAGE_KEY, getDefaultCategories(), localStorage, {
+  const userCategories = useStorage(CATEGORIES_STORAGE_KEY, getDefaultCategories(), localStorage, {
     serializer: {
       read: parseCategoriesStorage,
       write: serializeCategoriesStorage,
     },
   })
+  const items = computed(() => [...getDefaultCategories(), ...userCategories.value])
 
   const incomeCategories = computed(() => items.value.filter((item) => item.type === 'income'))
   const expenseCategories = computed(() => items.value.filter((item) => item.type === 'expense'))
@@ -34,13 +35,13 @@ export const useCategoriesStore = defineStore('categories', () => {
       id: payload.id ?? generateId(),
     }
 
-    items.value.push(category)
+    userCategories.value.push(category)
 
     return category
   }
 
   const updateCategory = (id: string, payload: Partial<Omit<Category, 'id'>>) => {
-    const category = findById(id)
+    const category = userCategories.value.find((item) => item.id === id)
 
     if (!category) {
       return false
@@ -60,13 +61,13 @@ export const useCategoriesStore = defineStore('categories', () => {
       return false
     }
 
-    const nextItems = items.value.filter((item) => item.id !== id)
+    const nextItems = userCategories.value.filter((item) => item.id !== id)
 
-    if (nextItems.length === items.value.length) {
+    if (nextItems.length === userCategories.value.length) {
       return false
     }
 
-    items.value = nextItems
+    userCategories.value = nextItems
 
     return true
   }
