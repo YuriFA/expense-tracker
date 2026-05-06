@@ -15,7 +15,7 @@ export const ru = {
     transactionType: 'Тип транзакции',
     currentCurrency: 'Текущая валюта',
     amountPlaceholder: '100',
-    descriptionPlaceholder: 'Добавить заметку (необязательно)',
+    descriptionPlaceholder: 'Заметка (необязательно)',
     categoryPlaceholder: 'Категория',
     accountPlaceholder: 'Счет',
     submit: 'Добавить',
@@ -66,5 +66,9 @@ export const ru = {
       grocery: 'Продукты',
       diningOut: 'Рестораны',
     },
+  },
+  settings: {
+    currency: 'Валюта',
+    locale: 'Язык'
   },
 }

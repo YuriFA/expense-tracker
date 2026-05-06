@@ -2,21 +2,26 @@
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { useAccountsStore } from '@/stores/use-accounts-store'
 import { useCategoriesStore } from '@/stores/use-categories-store'
-import { useSettingsStore } from '@/stores/use-settings-store'
 import type { Transaction } from '@/types/transaction'
 import { useDateFormat } from '@vueuse/core'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const { transaction } = defineProps<{ transaction: Transaction }>()
 const { format } = useCurrencyFormatter()
-const { locale } = useSettingsStore()
+const { locale } = useI18n()
 const categories = useCategoriesStore()
 const accounts = useAccountsStore()
 const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH:mm:ss', {
-  locales: locale,
+  locales: locale.value,
 })
 
-const category = transaction.categoryId ? categories.findById(transaction.categoryId) : undefined
-const account = 'accountId' in transaction ? accounts.findById(transaction.accountId) : undefined
+const category = computed(() =>
+  transaction.categoryId ? categories.findById(transaction.categoryId) : undefined,
+)
+const account = computed(() =>
+  'accountId' in transaction ? accounts.findById(transaction.accountId) : undefined,
+)
 </script>
 
 <template>
