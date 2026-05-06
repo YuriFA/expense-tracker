@@ -67,4 +67,8 @@ export const en = {
       diningOut: 'Dining Out',
     },
   },
+  settings: {
+    currency: 'Currency',
+    locale: 'Locale',
+  },
 }

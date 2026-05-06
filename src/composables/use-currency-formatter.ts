@@ -1,13 +1,15 @@
 import { useSettingsStore } from '@/stores/use-settings-store'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 export function useCurrencyFormatter() {
-  const store = useSettingsStore()
+  const { locale } = useI18n()
+  const settings = useSettingsStore()
 
   const formatter = computed(() => {
-    return new Intl.NumberFormat(store.locale, {
+    return new Intl.NumberFormat(locale.value, {
       style: 'currency',
-      currency: store.currency,
+      currency: settings.currency,
       currencyDisplay: 'narrowSymbol',
     })
   })
