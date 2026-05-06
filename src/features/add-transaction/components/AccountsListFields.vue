@@ -21,17 +21,17 @@ const { format } = useCurrencyFormatter()
         :aria-invalid="!!errors.length"
         @update:model-value="field.onChange"
       >
-          <FieldLabel
-            v-for="account in accounts.items"
-            :key="account.id"
-            :for="`account-${account.id}`"
-            class="w-auto!"
+        <FieldLabel
+          v-for="account in accounts.items"
+          :key="account.id"
+          :for="`account-${account.id}`"
+          class="w-auto! has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground [&:not(:has(*[data-state=checked])):has(>[data-slot=field])]:hover:bg-primary/5 data-[state=checked=true]:border-primary"
+        >
+          <Field
+            orientation="horizontal"
+            class="flex flex-col items-start gap-0 rounded-lg py-1! px-2! md:p-3!"
+            :data-invalid="!!errors.length"
           >
-            <Field
-              orientation="horizontal"
-              class="flex flex-col items-start gap-0 rounded-lg py-1! px-2! md:p-3!"
-              :data-invalid="!!errors.length"
-            >
             <RadioGroupItem
               :id="`account-${account.id}`"
               :value="account.id"
