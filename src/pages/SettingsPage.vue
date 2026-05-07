@@ -51,8 +51,8 @@ const locales = computed(() => {
 </script>
 
 <template>
-  <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h1 class="text-2xl font-semibold text-slate-900">{{ t('pages.settings') }}</h1>
+  <section>
+    <h1 class="text-2xl font-semibold">{{ t('pages.settings') }}</h1>
 
     <label class="flex items-center gap-2 mt-4">
       <p>{{ t('settings.currency') }}:</p>

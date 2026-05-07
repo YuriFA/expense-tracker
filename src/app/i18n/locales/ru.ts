@@ -2,14 +2,13 @@ export const ru = {
   nav: {
     dashboard: 'Дашборд',
     transactions: 'Транзакции',
-    analytics: 'Аналитика',
+    accounts: 'Счета',
     settings: 'Настройки',
   },
   pages: {
-    dashboard: 'Страница дашборда',
-    transactions: 'Страница транзакций',
-    analytics: 'Страница аналитики',
-    settings: 'Страница настроек',
+    transactions: 'Транзакции',
+    accounts: 'Счета',
+    settings: 'Настройки',
   },
   addTransaction: {
     transactionType: 'Тип транзакции',
@@ -66,6 +65,10 @@ export const ru = {
       grocery: 'Продукты',
       diningOut: 'Рестораны',
     },
+  },
+  accounts: {
+    description: 'Управление счетами и балансами',
+    totalBalance: 'Общий баланс',
   },
   settings: {
     currency: 'Валюта',
