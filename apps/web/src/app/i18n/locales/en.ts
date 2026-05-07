@@ -2,13 +2,13 @@ export const en = {
   nav: {
     dashboard: 'Dashboard',
     transactions: 'Transactions',
-    analytics: 'Analytics',
+    accounts: 'Accounts',
     settings: 'Settings',
   },
   pages: {
     dashboard: 'Dashboard Page',
     transactions: 'Transactions Page',
-    analytics: 'Analytics Page',
+    accounts: 'Accounts Page',
     settings: 'Settings Page',
   },
   addTransaction: {
@@ -66,6 +66,10 @@ export const en = {
       grocery: 'Grocery',
       diningOut: 'Dining Out',
     },
+  },
+  accounts: {
+    description: 'Manage your accounts and balances',
+    totalBalance: 'Total Balance',
   },
   settings: {
     currency: 'Currency',
