@@ -23,7 +23,7 @@ const navItems = computed(() => [
           class="transition hover:bg-accent"
           active-class="bg-accent hover:bg-accent/70"
         >
-          {{ t(item.label) }}
+          {{ item.label }}
         </RouterLink>
       </Button>
     </div>
