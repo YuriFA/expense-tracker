@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
+import { isTransferTransaction } from '@/entities/transaction'
 import { useAccountsStore } from '@/stores/use-accounts-store'
 import { useCategoriesStore } from '@/stores/use-categories-store'
 import type { Transaction } from '@/types/transaction'
@@ -9,7 +10,7 @@ import { useI18n } from 'vue-i18n'
 
 const { transaction } = defineProps<{ transaction: Transaction }>()
 const { format } = useCurrencyFormatter()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const categories = useCategoriesStore()
 const accounts = useAccountsStore()
 const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH:mm:ss', {
@@ -22,6 +23,13 @@ const category = computed(() =>
 const account = computed(() =>
   'accountId' in transaction ? accounts.findById(transaction.accountId) : undefined,
 )
+const fromAccount = computed(() =>
+  isTransferTransaction(transaction) ? accounts.findById(transaction.fromAccountId) : undefined,
+)
+const toAccount = computed(() =>
+  isTransferTransaction(transaction) ? accounts.findById(transaction.toAccountId) : undefined,
+)
+const isTransfer = computed(() => isTransferTransaction(transaction))
 </script>
 
 <template>
@@ -31,11 +39,18 @@ const account = computed(() =>
         {{ transaction.description }}
       </p>
       <p class="text-xs text-muted-foreground">
-        <span v-if="category">
-          {{ category.icon }}
-          {{ category.name }}
-        </span>
-        · <span v-if="account">{{ account.name }}</span> · <span>{{ formattedOccuredAt }}</span>
+        <template v-if="isTransfer">
+          <span v-if="fromAccount && toAccount">{{ fromAccount.name }} -> {{ toAccount.name }}</span>
+          <span v-else>{{ t('addTransaction.types.transfer') }}</span>
+          · <span>{{ formattedOccuredAt }}</span>
+        </template>
+        <template v-else>
+          <span v-if="category">
+            {{ category.icon }}
+            {{ category.name }}
+          </span>
+          · <span v-if="account">{{ account.name }}</span> · <span>{{ formattedOccuredAt }}</span>
+        </template>
       </p>
     </div>
     <p
@@ -43,6 +58,7 @@ const account = computed(() =>
       :class="{
         'text-green-500': transaction.type === 'income',
         'text-red-500': transaction.type === 'expense',
+        'text-foreground': transaction.type === 'transfer',
       }"
     >
       <span v-if="transaction.type === 'income'">+</span>

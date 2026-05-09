@@ -1,0 +1,83 @@
+<script setup lang="ts">
+import { useLastUsedAccountId } from '@/composables/use-last-used-account-id'
+import { useForm } from 'vee-validate'
+import { useTransactionsStore } from '@/stores/use-transactions-store'
+import {
+  createAddTransferSchema,
+  type AddTransferFormValues,
+} from './validation/add-transfer-schema'
+import type { TransferTransaction } from '@/types/transaction'
+import { toTypedSchema } from '@vee-validate/zod'
+import { Button } from '@/components/ui/button'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Field as VeeField } from 'vee-validate'
+import { useI18n } from 'vue-i18n'
+import AmountField from '@/features/add-transaction/components/AmountField.vue'
+import FromAccountField from './components/FromAccountField.vue'
+import ToAccountField from './components/ToAccountField.vue'
+import { useAccountsStore } from '@/stores/use-accounts-store'
+
+const transactions = useTransactionsStore()
+const accounts = useAccountsStore()
+const lastUsedAccountId = useLastUsedAccountId()
+const { t } = useI18n()
+
+const initialFromAccountId = lastUsedAccountId.value ?? ''
+const initialToAccountId = accounts.items.find((item) => item.id !== initialFromAccountId)?.id ?? ''
+
+const { handleSubmit } = useForm<AddTransferFormValues>({
+  validationSchema: toTypedSchema(createAddTransferSchema()),
+  initialValues: {
+    type: 'transfer',
+    fromAccountId: initialFromAccountId,
+    toAccountId: initialToAccountId,
+  },
+})
+
+const onSubmit = handleSubmit((data) => {
+  transactions.addTransaction<TransferTransaction>({
+    type: data.type,
+    fromAccountId: data.fromAccountId,
+    toAccountId: data.toAccountId,
+    amount: data.amount,
+    description: data.description,
+    occurredAt: new Date().toISOString(),
+  })
+})
+</script>
+
+<template>
+  <section>
+    <form id="add-transfer-form" class="flex flex-col gap-3" @submit="onSubmit">
+      <div class="space-y-1">
+        <FieldLabel for="from-account-id">{{ t('addTransaction.fromAccountLabel') }}</FieldLabel>
+        <div class="flex items-end gap-2">
+          <FromAccountField class="w-full" />
+          <AmountField class="min-w-0 w-auto!" />
+        </div>
+      </div>
+
+      <ToAccountField class="w-full" />
+
+      <VeeField v-slot="{ field, errors }" name="description">
+        <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">
+          <FieldLabel for="transfer-description">{{
+            t('addTransaction.descriptionLabel')
+          }}</FieldLabel>
+          <Input
+            id="transfer-description"
+            :placeholder="t('addTransaction.descriptionPlaceholder')"
+            v-bind="field"
+            :aria-invalid="!!errors.length"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+
+      <Button form="add-transfer-form" type="submit" class="w-full md:ml-auto md:w-auto">
+        {{ t('addTransaction.submit') }}
+      </Button>
+    </form>
+  </section>
+</template>
