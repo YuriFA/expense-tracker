@@ -13,7 +13,7 @@ const { format } = useCurrencyFormatter()
 const { locale, t } = useI18n()
 const categories = useCategoriesStore()
 const accounts = useAccountsStore()
-const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH:mm:ss', {
+const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH:mm', {
   locales: locale.value,
 })
 
