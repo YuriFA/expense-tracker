@@ -40,6 +40,18 @@ export const en = {
   recentTransactions: {
     title: 'Recent Transactions',
   },
+  transactions: {
+    filter: 'Filter',
+    dateFilter: {
+      today: 'Today',
+      last7Days: 'Last 7 days',
+      last30Days: 'Last 30 days',
+      thisMonth: 'This month',
+      cancel: 'Cancel',
+      apply: 'Apply',
+      pickDate: 'Pick a date',
+    },
+  },
   validation: {
     transactionTypeRequired: 'Select a transaction type',
     accountRequired: 'Select an account',

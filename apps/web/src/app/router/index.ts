@@ -9,7 +9,7 @@ const router = createRouter({
     },
     {
       path: '/transactions',
-      component: () => import('@/pages/TransactionsPage.vue'),
+      component: () => import('@/pages/transactions/TransactionsPage.vue'),
     },
     {
       path: '/accounts',

@@ -40,6 +40,18 @@ export const ru = {
   recentTransactions: {
     title: 'Последние транзакции',
   },
+  transactions: {
+    filter: 'Фильтр',
+    dateFilter: {
+      today: 'Сегодня',
+      last7Days: 'Последние 7 дней',
+      last30Days: 'Последние 30 дней',
+      thisMonth: 'Этот месяц',
+      cancel: 'Отмена',
+      apply: 'Применить',
+      pickDate: 'Выберите дату',
+    },
+  },
   validation: {
     transactionTypeRequired: 'Выберите тип транзакции',
     accountRequired: 'Выберите счет',
