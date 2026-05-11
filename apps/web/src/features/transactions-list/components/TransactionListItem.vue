@@ -34,19 +34,26 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
 
 <template>
   <li class="flex items-center gap-3 px-3 py-2 border rounded-md">
+    <div
+      v-if="category"
+      class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm"
+    >
+      {{ category.icon }}
+    </div>
     <div class="flex-1">
       <p v-if="transaction.description" class="text-sm font-medium">
         {{ transaction.description }}
       </p>
       <p class="text-xs text-muted-foreground">
         <template v-if="isTransfer">
-          <span v-if="fromAccount && toAccount">{{ fromAccount.name }} -> {{ toAccount.name }}</span>
+          <span v-if="fromAccount && toAccount">
+            {{ fromAccount.name }} -> {{ toAccount.name }}
+          </span>
           <span v-else>{{ t('addTransaction.types.transfer') }}</span>
           · <span>{{ formattedOccuredAt }}</span>
         </template>
         <template v-else>
           <span v-if="category">
-            {{ category.icon }}
             {{ category.name }}
           </span>
           · <span v-if="account">{{ account.name }}</span> · <span>{{ formattedOccuredAt }}</span>

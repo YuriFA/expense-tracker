@@ -5,7 +5,7 @@ import { computed } from 'vue'
 
 const transactions = useTransactionsStore()
 const recentTransactions = computed(() => {
-  return transactions.getTransactions({ limit: 10 })
+  return transactions.getTransactions({ limit: 5 })
 })
 </script>
 
