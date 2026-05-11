@@ -17,12 +17,14 @@
     "format": "oxfmt src/"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.1",
     "@maskito/core": "^5.2.2",
     "@maskito/kit": "^5.2.2",
     "@maskito/vue": "^5.2.2",
     "@tailwindcss/vite": "^4.2.4",
     "@vee-validate/zod": "^4.15.1",
     "@vueuse/core": "^14.3.0",
+    "@vueuse/router": "^14.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-vue-next": "^1.0.0",

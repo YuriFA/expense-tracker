@@ -15,13 +15,16 @@ import { generateId } from '@/shared/lib/generate-id'
 import i18n from '@/app/i18n'
 import { useAccountsStore } from './use-accounts-store'
 import { useCategoriesStore } from './use-categories-store'
+import { toEndOfDay, toStartOfDay, type DateValue } from '@/shared/lib/date'
 
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
 
-type GetRecentTransactionsOptions = {
+type GetTransactionsOptions = {
   limit?: number
   type?: TransactionType
   accountId?: string
+  fromDate?: DateValue
+  toDate?: DateValue
 }
 
 export const useTransactionsStore = defineStore('transactions', () => {
@@ -45,8 +48,20 @@ export const useTransactionsStore = defineStore('transactions', () => {
       .slice()
       .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
   )
-  const getTransactions = (options: GetRecentTransactionsOptions = {}) => {
+  const getTransactions = (options: GetTransactionsOptions = {}) => {
     let result = sortedTransactions.value
+
+    if (options.fromDate) {
+      const fromDate = toStartOfDay(options.fromDate)
+
+      result = result.filter((transaction) => new Date(transaction.occurredAt) >= fromDate)
+    }
+
+    if (options.toDate) {
+      const toDate = toEndOfDay(options.toDate)
+
+      result = result.filter((transaction) => new Date(transaction.occurredAt) <= toDate)
+    }
 
     if (options.type) {
       result = result.filter((transaction) => transaction.type === options.type)
@@ -74,7 +89,9 @@ export const useTransactionsStore = defineStore('transactions', () => {
     return hasValidTransactionReferences(transaction, accountsStore.items, categoriesStore.items)
   }
 
-  const addTransaction = <T extends Transaction>(payload: Omit<T, 'id'> & Partial<Pick<T, 'id'>>) => {
+  const addTransaction = <T extends Transaction>(
+    payload: Omit<T, 'id'> & Partial<Pick<T, 'id'>>,
+  ) => {
     const nextTransaction = {
       ...payload,
       id: payload.id ?? generateId(),
