@@ -7,6 +7,7 @@ import type { Transaction, TransactionType } from '@/types/transaction'
 import {
   hasValidTransactionReferences,
   isTransaction,
+  isTransactionLinkedToCategory,
   isTransferTransaction,
   parseTransactionsStorage,
   serializeTransactionsStorage,
@@ -23,6 +24,7 @@ type GetTransactionsOptions = {
   limit?: number
   type?: TransactionType
   accountId?: string
+  categoryId?: string
   fromDate?: DateValue
   toDate?: DateValue
 }
@@ -73,6 +75,14 @@ export const useTransactionsStore = defineStore('transactions', () => {
           ? transaction.fromAccountId === options.accountId ||
             transaction.toAccountId === options.accountId
           : options.accountId === transaction.accountId,
+      )
+    }
+
+    if (options.categoryId) {
+      const categoryId = options.categoryId
+
+      result = result.filter((transaction) =>
+        isTransactionLinkedToCategory(transaction, categoryId),
       )
     }
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import TransactionsList from '@/features/transactions-list/TransactionsList.vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from '@/components/ui/button'
-import { ListFilterIcon } from 'lucide-vue-next'
 import TransactionsDateFilter from '@/features/transactions-list/components/TransactionsDateFilter.vue'
+import TransactionsFiltersSheet from '@/features/transactions-list/components/TransactionsFiltersSheet.vue'
+import TransactionsActiveFilters from '@/features/transactions-list/components/TransactionsActiveFilters.vue'
 
 const { t } = useI18n()
 </script>
@@ -15,9 +15,10 @@ const { t } = useI18n()
     <div class="space-y-4 mt-4">
       <div class="flex items-center gap-4 justify-between">
         <TransactionsDateFilter />
-
-        <Button variant="outline"><ListFilterIcon /> {{ t('transactions.filter') }}</Button>
+        <TransactionsFiltersSheet />
       </div>
+
+      <TransactionsActiveFilters />
 
       <TransactionsList />
     </div>
