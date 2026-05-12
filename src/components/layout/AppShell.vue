@@ -11,4 +11,3 @@ import AppNav from './AppNav.vue'
     </main>
   </div>
 </template>
-
