@@ -66,7 +66,7 @@ const activeFilters = computed(() => {
       v-for="filter in activeFilters"
       :key="filter.key"
       variant="outline"
-      :on-remove="filter.onRemove"
+      @remove="filter.onRemove"
     >
       {{ filter.label }}
     </Chip>
