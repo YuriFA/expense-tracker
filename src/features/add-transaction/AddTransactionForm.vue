@@ -22,14 +22,14 @@ const { type } = defineProps<{
 }>()
 
 const transactions = useTransactionsStore()
-const lasUsedAccountId = useLastUsedAccountId()
+const lastUsedAccountId = useLastUsedAccountId()
 const { t } = useI18n()
 
 const { handleSubmit } = useForm<AddTransactionFormValues>({
   validationSchema: toTypedSchema(createAddTransactionSchema()),
   initialValues: {
     type,
-    accountId: lasUsedAccountId.value,
+    accountId: lastUsedAccountId.value,
   },
 })
 
@@ -46,34 +46,32 @@ const onSubmit = handleSubmit((data) => {
 </script>
 
 <template>
-  <section>
-    <form id="add-transaction-form" class="flex flex-col gap-3" @submit="onSubmit">
-      <div class="space-y-1">
-        <FieldLabel for="account-id">{{ t('addTransaction.accountLabel') }}</FieldLabel>
-        <div class="flex items-end gap-2">
-          <AccountField class="w-full" />
-          <AmountField class="min-w-0 w-auto" />
-        </div>
+  <form id="add-transaction-form" class="flex flex-col gap-3" @submit="onSubmit">
+    <div class="space-y-1">
+      <FieldLabel for="account-id">{{ t('addTransaction.accountLabel') }}</FieldLabel>
+      <div class="flex items-end gap-2">
+        <AccountField class="w-full" />
+        <AmountField class="min-w-0 w-auto" />
       </div>
+    </div>
 
-      <VeeField v-slot="{ field, errors }" name="description">
-        <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">
-          <FieldLabel for="description">{{ t('addTransaction.descriptionLabel') }}</FieldLabel>
-          <Input
-            id="description"
-            :placeholder="t('addTransaction.descriptionPlaceholder')"
-            v-bind="field"
-            :aria-invalid="!!errors.length"
-          />
-          <FieldError v-if="errors.length" :errors="errors" />
-        </Field>
-      </VeeField>
+    <VeeField v-slot="{ field, errors }" name="description">
+      <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">
+        <FieldLabel for="description">{{ t('addTransaction.descriptionLabel') }}</FieldLabel>
+        <Input
+          id="description"
+          :placeholder="t('addTransaction.descriptionPlaceholder')"
+          v-bind="field"
+          :aria-invalid="!!errors.length"
+        />
+        <FieldError v-if="errors.length" :errors="errors" />
+      </Field>
+    </VeeField>
 
-      <CategoriesField />
+    <CategoriesField />
 
-      <Button form="add-transaction-form" type="submit" class="w-full md:ml-auto md:w-auto">
-        {{ t('addTransaction.submit') }}
-      </Button>
-    </form>
-  </section>
+    <Button form="add-transaction-form" type="submit" class="w-full md:ml-auto md:w-auto">
+      {{ t('addTransaction.submit') }}
+    </Button>
+  </form>
 </template>
