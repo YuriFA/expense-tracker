@@ -49,7 +49,7 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
           <span v-if="fromAccount && toAccount">
             {{ fromAccount.name }} -> {{ toAccount.name }}
           </span>
-          <span v-else>{{ t('addTransaction.types.transfer') }}</span>
+          <span v-else>{{ t('transactions.types.transfer') }}</span>
           · <span>{{ formattedOccuredAt }}</span>
         </template>
         <template v-else>

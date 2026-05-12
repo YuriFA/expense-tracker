@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getTransactionsOptions } from '@/entities/transaction/constants'
 import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vue'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const transactionTypes = [
-  { labelKey: 'addTransaction.types.expense', value: 'expense' },
-  { labelKey: 'addTransaction.types.income', value: 'income' },
-  { labelKey: 'addTransaction.types.transfer', value: 'transfer' },
-]
+const transactionTypes = getTransactionsOptions()
 </script>
 
 <template>
@@ -24,7 +21,7 @@ const transactionTypes = [
       <Tabs default-value="expense">
         <TabsList class="w-full">
           <TabsTrigger v-for="item in transactionTypes" :key="item.value" :value="item.value">
-            {{ t(item.labelKey) }}
+            {{ item.label }}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="expense">

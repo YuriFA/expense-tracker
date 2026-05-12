@@ -35,7 +35,7 @@ const filteredAccounts = computed(() =>
           :aria-invalid="!!errors.length"
           class="w-full! min-w-0"
         >
-          <SelectValue :placeholder="t('addTransaction.fromAccountPlaceholder')" />
+          <SelectValue :placeholder="t('addTransfer.fromAccountPlaceholder')" />
         </SelectTrigger>
         <SelectContent position="item-aligned">
           <SelectItem v-for="item in filteredAccounts" :key="item.id" :value="item.id">

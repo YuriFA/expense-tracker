@@ -6,9 +6,15 @@ import { Field, FieldError } from '@/components/ui/field'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/components/ui/number-field'
 import type { AddTransactionFormValues } from '../validation/add-transaction-schema'
 
-defineProps<{
+const props = withDefaults(
+  defineProps<{
   class?: string
-}>()
+    placeholderKey?: string
+  }>(),
+  {
+    placeholderKey: 'addTransaction.amountPlaceholder',
+  },
+)
 
 const { t, locale } = useI18n()
 const settings = useSettingsStore()
@@ -45,7 +51,7 @@ const { setValue } = useField<AddTransactionFormValues['amount']>('amount')
         <NumberFieldContent>
           <NumberFieldInput
             class="text-left px-2"
-            :placeholder="t('addTransaction.amountPlaceholder')"
+            :placeholder="t(props.placeholderKey)"
             :aria-invalid="!!errors.length"
           />
         </NumberFieldContent>
