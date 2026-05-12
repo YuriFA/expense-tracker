@@ -11,6 +11,9 @@ export const ru = {
     accounts: 'Счета',
     settings: 'Настройки',
   },
+  actions: {
+    new: 'Новая',
+  },
   dashboard: {
     newTransaction: 'Новая транзакция',
     netWorth: 'Капитал',

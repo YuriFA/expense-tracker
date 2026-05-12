@@ -11,6 +11,9 @@ export const en = {
     accounts: 'Accounts Page',
     settings: 'Settings Page',
   },
+  actions: {
+    new: 'New',
+  },
   dashboard: {
     newTransaction: 'New transaction',
     netWorth: 'Net worth',
