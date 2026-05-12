@@ -124,6 +124,6 @@ export const ru = {
   },
   settings: {
     currency: 'Валюта',
-    locale: 'Язык'
+    locale: 'Язык',
   },
 }

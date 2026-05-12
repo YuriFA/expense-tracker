@@ -15,8 +15,7 @@ type DraftRange = {
 }
 
 const { locale, t } = useI18n()
-const { fromDate, toDate, setRange } =
-  useTransactionsFilters()
+const { fromDate, toDate, setRange } = useTransactionsFilters()
 
 const open = ref(false)
 const draftRange = shallowRef<DraftRange>({
@@ -36,12 +35,18 @@ const presetRanges = computed(() => {
 
   return [
     { label: t('transactions.dateFilter.today'), range: { start: now, end: now } },
-    { label: t('transactions.dateFilter.last7Days'), range: { start: now.subtract({ days: 6 }), end: now } },
+    {
+      label: t('transactions.dateFilter.last7Days'),
+      range: { start: now.subtract({ days: 6 }), end: now },
+    },
     {
       label: t('transactions.dateFilter.last30Days'),
       range: { start: now.subtract({ days: 29 }), end: now },
     },
-    { label: t('transactions.dateFilter.thisMonth'), range: { start: startOfMonth(now), end: now } },
+    {
+      label: t('transactions.dateFilter.thisMonth'),
+      range: { start: startOfMonth(now), end: now },
+    },
   ]
 })
 
@@ -112,7 +117,9 @@ const applyRange = () => {
         />
 
         <div class="flex items-center justify-end gap-2 border-t pt-4">
-          <Button variant="ghost" @click="open = false">{{ t('transactions.dateFilter.cancel') }}</Button>
+          <Button variant="ghost" @click="open = false">{{
+            t('transactions.dateFilter.cancel')
+          }}</Button>
           <Button :disabled="isApplyDisabled" @click="applyRange">
             {{ t('transactions.dateFilter.apply') }}
           </Button>

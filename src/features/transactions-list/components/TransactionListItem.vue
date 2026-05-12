@@ -5,6 +5,7 @@ import { useAccountsStore } from '@/stores/use-accounts-store'
 import { useCategoriesStore } from '@/stores/use-categories-store'
 import type { Transaction } from '@/types/transaction'
 import { useDateFormat } from '@vueuse/core'
+import { RepeatIcon } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -39,6 +40,12 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
       class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm"
     >
       {{ category.icon }}
+    </div>
+    <div
+      v-if="isTransfer"
+      class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm"
+    >
+      <RepeatIcon class="size-4" />
     </div>
     <div class="flex-1">
       <p v-if="transaction.description" class="text-sm font-medium">

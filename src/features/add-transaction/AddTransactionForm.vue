@@ -49,7 +49,7 @@ const onSubmit = handleSubmit((data) => {
   <form id="add-transaction-form" class="flex flex-col gap-3" @submit="onSubmit">
     <div class="space-y-1">
       <FieldLabel for="account-id">{{ t('addTransaction.accountLabel') }}</FieldLabel>
-      <div class="flex items-end gap-2">
+      <div class="flex gap-2">
         <AccountField class="w-full" />
         <AmountField class="min-w-0 w-auto" />
       </div>

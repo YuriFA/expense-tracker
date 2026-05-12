@@ -30,11 +30,7 @@ const filteredAccounts = computed(() =>
   <VeeField v-slot="{ field, errors }" name="fromAccountId">
     <Field :class="$props.class" orientation="responsive" :data-invalid="!!errors.length">
       <Select :name="field.name" :model-value="field.value" @update:model-value="field.onChange">
-        <SelectTrigger
-          id="from-account-id"
-          :aria-invalid="!!errors.length"
-          class="w-full! min-w-0"
-        >
+        <SelectTrigger id="from-account-id" :aria-invalid="!!errors.length" class="w-full! min-w-0">
           <SelectValue :placeholder="t('addTransfer.fromAccountPlaceholder')" />
         </SelectTrigger>
         <SelectContent position="item-aligned">
