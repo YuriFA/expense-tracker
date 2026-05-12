@@ -8,7 +8,8 @@ import type { AddTransactionFormValues } from '../validation/add-transaction-sch
 
 const props = withDefaults(
   defineProps<{
-  class?: string
+    // eslint-disable-next-line vue/require-default-prop
+    class?: string
     placeholderKey?: string
   }>(),
   {

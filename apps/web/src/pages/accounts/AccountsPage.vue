@@ -21,9 +21,7 @@ const totalBalanceFormatted = computed(() => {
     <h1 class="text-2xl font-semibold">{{ t('pages.accounts') }}</h1>
     <p class="text-muted-foreground text-sm">{{ t('accounts.description') }}</p>
 
-    <Card
-      class="mt-4 bg-linear-to-br from-primary to-primary/80 text-primary-foreground"
-    >
+    <Card class="mt-4 bg-linear-to-br from-primary to-primary/80 text-primary-foreground">
       <CardContent>
         <p class="text-sm">{{ t('accounts.totalBalance') }}</p>
         <p class="text-2xl font-semibold">

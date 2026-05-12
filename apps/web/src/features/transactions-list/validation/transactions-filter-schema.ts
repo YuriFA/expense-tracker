@@ -8,4 +8,6 @@ export const createTransactionsFilterSchema = () => {
   })
 }
 
-export type TransactionsFilterFormValues = z.infer<ReturnType<typeof createTransactionsFilterSchema>>
+export type TransactionsFilterFormValues = z.infer<
+  ReturnType<typeof createTransactionsFilterSchema>
+>

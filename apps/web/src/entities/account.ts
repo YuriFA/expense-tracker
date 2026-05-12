@@ -40,7 +40,8 @@ export const getAccountsBalances = (accounts: Account[], transactions: Transacti
 
       if (currentBalance !== undefined) {
         balancesByAccountId[transaction.accountId] =
-          currentBalance + (transaction.type === 'income' ? transaction.amount : -transaction.amount)
+          currentBalance +
+          (transaction.type === 'income' ? transaction.amount : -transaction.amount)
       }
 
       continue
