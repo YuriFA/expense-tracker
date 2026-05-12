@@ -26,6 +26,7 @@ export const en = {
     categoryPlaceholder: 'Category',
     accountPlaceholder: 'Account',
     submit: 'Add',
+    success: 'Transaction added',
   },
   addTransfer: {
     fromAccountLabel: 'From account',

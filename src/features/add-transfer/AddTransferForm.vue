@@ -18,6 +18,10 @@ import FromAccountField from './components/FromAccountField.vue'
 import ToAccountField from './components/ToAccountField.vue'
 import { useAccountsStore } from '@/stores/use-accounts-store'
 
+const emit = defineEmits<{
+  success: []
+}>()
+
 const transactions = useTransactionsStore()
 const accounts = useAccountsStore()
 const lastUsedAccountId = useLastUsedAccountId()
@@ -44,6 +48,7 @@ const onSubmit = handleSubmit((data) => {
     description: data.description,
     occurredAt: new Date().toISOString(),
   })
+  emit('success')
 })
 </script>
 

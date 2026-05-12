@@ -17,6 +17,10 @@ import AmountField from './components/AmountField.vue'
 import CategoriesField from './components/CategoriesField.vue'
 import AccountField from './components/AccountField.vue'
 
+const emit = defineEmits<{
+  success: []
+}>()
+
 const { type } = defineProps<{
   type: 'expense' | 'income'
 }>()
@@ -42,6 +46,7 @@ const onSubmit = handleSubmit((data) => {
     categoryId: data.category,
     occurredAt: new Date().toISOString(),
   })
+  emit('success')
 })
 </script>
 
