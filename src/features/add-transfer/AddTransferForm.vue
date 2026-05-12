@@ -51,10 +51,10 @@ const onSubmit = handleSubmit((data) => {
   <section>
     <form id="add-transfer-form" class="flex flex-col gap-3" @submit="onSubmit">
       <div class="space-y-1">
-        <FieldLabel for="from-account-id">{{ t('addTransaction.fromAccountLabel') }}</FieldLabel>
+        <FieldLabel for="from-account-id">{{ t('addTransfer.fromAccountLabel') }}</FieldLabel>
         <div class="flex items-end gap-2">
           <FromAccountField class="w-full" />
-          <AmountField class="min-w-0 w-auto!" />
+          <AmountField class="min-w-0 w-auto!" placeholder-key="addTransfer.amountPlaceholder" />
         </div>
       </div>
 
@@ -62,12 +62,10 @@ const onSubmit = handleSubmit((data) => {
 
       <VeeField v-slot="{ field, errors }" name="description">
         <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">
-          <FieldLabel for="transfer-description">{{
-            t('addTransaction.descriptionLabel')
-          }}</FieldLabel>
+          <FieldLabel for="transfer-description">{{ t('addTransfer.descriptionLabel') }}</FieldLabel>
           <Input
             id="transfer-description"
-            :placeholder="t('addTransaction.descriptionPlaceholder')"
+            :placeholder="t('addTransfer.descriptionPlaceholder')"
             v-bind="field"
             :aria-invalid="!!errors.length"
           />
@@ -76,7 +74,7 @@ const onSubmit = handleSubmit((data) => {
       </VeeField>
 
       <Button form="add-transfer-form" type="submit" class="w-full md:ml-auto md:w-auto">
-        {{ t('addTransaction.submit') }}
+        {{ t('addTransfer.submit') }}
       </Button>
     </form>
   </section>

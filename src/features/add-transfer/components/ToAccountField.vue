@@ -29,10 +29,10 @@ const filteredAccounts = computed(() =>
 <template>
   <VeeField v-slot="{ field, errors }" name="toAccountId">
     <Field :class="$props.class" orientation="responsive" :data-invalid="!!errors.length">
-      <FieldLabel for="to-account-id">{{ t('addTransaction.toAccountLabel') }}</FieldLabel>
+      <FieldLabel for="to-account-id">{{ t('addTransfer.toAccountLabel') }}</FieldLabel>
       <Select :name="field.name" :model-value="field.value" @update:model-value="field.onChange">
         <SelectTrigger id="to-account-id" :aria-invalid="!!errors.length" class="w-full! min-w-0">
-          <SelectValue :placeholder="t('addTransaction.toAccountPlaceholder')" />
+          <SelectValue :placeholder="t('addTransfer.toAccountPlaceholder')" />
         </SelectTrigger>
         <SelectContent position="item-aligned">
           <SelectItem v-for="item in filteredAccounts" :key="item.id" :value="item.id">
