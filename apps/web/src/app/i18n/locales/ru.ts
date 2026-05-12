@@ -26,6 +26,7 @@ export const ru = {
     categoryPlaceholder: 'Категория',
     accountPlaceholder: 'Счет',
     submit: 'Добавить',
+    success: 'Транзакция добавлена',
   },
   addTransfer: {
     fromAccountLabel: 'Со счета',

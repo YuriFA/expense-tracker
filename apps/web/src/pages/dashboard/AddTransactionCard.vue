@@ -5,10 +5,15 @@ import { getTransactionsOptions } from '@/entities/transaction/constants'
 import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vue'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
 import { useI18n } from 'vue-i18n'
+import { toast } from 'vue-sonner'
 
 const { t } = useI18n()
 
 const transactionTypes = getTransactionsOptions()
+
+const onSuccess = () => {
+  toast.success(t('addTransaction.success'))
+}
 </script>
 
 <template>
@@ -25,13 +30,13 @@ const transactionTypes = getTransactionsOptions()
           </TabsTrigger>
         </TabsList>
         <TabsContent value="expense">
-          <AddTransactionForm type="expense" />
+          <AddTransactionForm type="expense" @success="onSuccess" />
         </TabsContent>
         <TabsContent value="income">
-          <AddTransactionForm type="income" />
+          <AddTransactionForm type="income" @success="onSuccess" />
         </TabsContent>
         <TabsContent value="transfer">
-          <AddTransferForm />
+          <AddTransferForm @success="onSuccess" />
         </TabsContent>
       </Tabs>
     </CardContent>
