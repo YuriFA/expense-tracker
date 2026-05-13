@@ -5,26 +5,23 @@ import { useField, Field as VeeField } from 'vee-validate'
 import { Field, FieldError } from '@/components/ui/field'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/components/ui/number-field'
 import type { AddTransactionFormValues } from '../validation/add-transaction-schema'
+import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
+import { computed } from 'vue'
 
-const props = withDefaults(
-  defineProps<{
-    // eslint-disable-next-line vue/require-default-prop
-    class?: string
-    placeholderKey?: string
-  }>(),
-  {
-    placeholderKey: 'addTransaction.amountPlaceholder',
-  },
-)
+const props = defineProps<{
+  class?: string
+}>()
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
 const settings = useSettingsStore()
 const { setValue } = useField<AddTransactionFormValues['amount']>('amount')
+const { format } = useCurrencyFormatter()
+const placeholder = computed(() => format(100))
 </script>
 
 <template>
   <VeeField v-slot="{ field, errors }" name="amount">
-    <Field :class="$props.class" :data-invalid="!!errors.length">
+    <Field :class="props.class" :data-invalid="!!errors.length">
       <NumberField
         id="amount"
         :locale
@@ -50,11 +47,7 @@ const { setValue } = useField<AddTransactionFormValues['amount']>('amount')
         "
       >
         <NumberFieldContent>
-          <NumberFieldInput
-            class="text-left px-2"
-            :placeholder="t(props.placeholderKey)"
-            :aria-invalid="!!errors.length"
-          />
+          <NumberFieldInput class="text-left px-2" :placeholder :aria-invalid="!!errors.length" />
         </NumberFieldContent>
       </NumberField>
       <FieldError v-if="errors.length" :errors="errors" />
