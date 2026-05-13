@@ -1,0 +1,148 @@
+{
+  "common": {
+    "close": "Close"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "settings": "Settings"
+  },
+  "pages": {
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "settings": "Settings"
+  },
+  "actions": {
+    "new": "New"
+  },
+  "dashboard": {
+    "newTransaction": "New transaction",
+    "netWorth": "Net worth"
+  },
+  "addTransaction": {
+    "accountLabel": "Account",
+    "amountLabel": "Amount",
+    "descriptionLabel": "Note",
+    "categoryLabel": "Category",
+    "currentCurrency": "Current currency",
+    "descriptionPlaceholder": "Note",
+    "categoryPlaceholder": "Category",
+    "accountPlaceholder": "Account",
+    "submit": "Add",
+    "success": "Transaction added"
+  },
+  "addAccount": {
+    "nameLabel": "Name",
+    "namePlaceholder": "Account name",
+    "openingBalanceLabel": "Opening balance",
+    "submit": "Add account",
+    "new": "New account",
+    "newAccount": "New account",
+    "success": "Account added"
+  },
+  "addTransfer": {
+    "fromAccountLabel": "From account",
+    "toAccountLabel": "To account",
+    "amountPlaceholder": "Amount",
+    "descriptionLabel": "Note",
+    "descriptionPlaceholder": "Note",
+    "fromAccountPlaceholder": "From account",
+    "toAccountPlaceholder": "To account",
+    "submit": "Transfer"
+  },
+  "recentTransactions": {
+    "title": "Recent Transactions"
+  },
+  "transactions": {
+    "filter": "Filter",
+    "filtersTitle": "Filters",
+    "reset": "Reset",
+    "apply": "Apply",
+    "types": {
+      "expense": "Expense",
+      "income": "Income",
+      "transfer": "Transfer"
+    },
+    "filters": {
+      "typeLabel": "Type",
+      "typePlaceholder": "Type",
+      "accountLabel": "Account",
+      "accountPlaceholder": "Account",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Category",
+      "activeType": "Transaction type",
+      "activeAccount": "Account",
+      "activeCategory": "Category"
+    },
+    "dateFilter": {
+      "today": "Today",
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "thisMonth": "This month",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "pickDate": "Pick a date"
+    }
+  },
+  "validation": {
+    "nameRequired": "Enter a name",
+    "openingBalanceRequired": "Enter an opening balance",
+    "openingBalanceNonNegative": "Balance must be non-negative",
+    "transactionTypeRequired": "Select a transaction type",
+    "accountRequired": "Select an account",
+    "fromAccountRequired": "Select a source account",
+    "toAccountRequired": "Select a destination account",
+    "amountRequired": "Enter an amount",
+    "amountPositive": "Amount must be greater than zero",
+    "descriptionInvalid": "Description must be text",
+    "categoryRequired": "Select a category",
+    "transferAccountsMustDiffer": "Transfer accounts must be different"
+  },
+  "errors": {
+    "invalidTransactionPayload": "Invalid transaction payload",
+    "unknownTransactionReferences": "Transaction references an unknown account or category"
+  },
+  "seeds": {
+    "accounts": {
+      "cash": "Cash",
+      "bank": "Bank",
+      "creditCard": "Credit Card"
+    },
+    "categories": {
+      "food": "Food",
+      "transport": "Transport",
+      "entertainment": "Entertainment",
+      "salary": "Salary",
+      "freelance": "Freelance",
+      "health": "Health",
+      "education": "Education",
+      "investment": "Investment",
+      "gifts": "Gifts",
+      "utilities": "Utilities",
+      "travel": "Travel",
+      "miscellaneous": "Miscellaneous",
+      "bonus": "Bonus",
+      "rent": "Rent",
+      "savings": "Savings",
+      "charity": "Charity",
+      "sideHustle": "Side Hustle",
+      "subscriptions": "Subscriptions",
+      "otherIncome": "Other Income",
+      "otherExpense": "Other Expense",
+      "healthInsurance": "Health Insurance",
+      "carMaintenance": "Car Maintenance",
+      "grocery": "Grocery",
+      "diningOut": "Dining Out"
+    }
+  },
+  "accounts": {
+    "description": "Manage your accounts and balances",
+    "totalBalance": "Total Balance"
+  },
+  "settings": {
+    "currency": "Currency",
+    "locale": "Locale"
+  }
+}
