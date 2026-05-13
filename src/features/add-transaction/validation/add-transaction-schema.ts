@@ -8,10 +8,10 @@ export const createAddTransactionSchema = () => {
     type: z.enum(['expense', 'income'], {
       message: t('validation.transactionTypeRequired'),
     }),
-    accountId: z.string().min(1, t('validation.accountRequired')),
-    amount: z.number().positive(t('validation.amountPositive')),
-    description: z.string().optional(),
-    category: z.string().min(1, t('validation.categoryRequired')),
+    accountId: z.string({ error: t('validation.accountRequired') }).min(1, t('validation.accountRequired')),
+    amount: z.number({ error: t('validation.amountRequired') }).positive(t('validation.amountPositive')),
+    description: z.string({ error: t('validation.descriptionInvalid') }).optional(),
+    category: z.string({ error: t('validation.categoryRequired') }).min(1, t('validation.categoryRequired')),
   })
 }
 
