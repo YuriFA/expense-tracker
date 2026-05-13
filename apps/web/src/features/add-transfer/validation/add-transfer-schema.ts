@@ -15,7 +15,9 @@ export const createAddTransferSchema = () => {
       toAccountId: z
         .string({ error: t('validation.toAccountRequired') })
         .min(1, t('validation.toAccountRequired')),
-      amount: z.number({ error: t('validation.amountRequired') }).positive(t('validation.amountPositive')),
+      amount: z
+        .number({ error: t('validation.amountRequired') })
+        .positive(t('validation.amountPositive')),
       description: z.string({ error: t('validation.descriptionInvalid') }).optional(),
     })
     .refine((data) => data.fromAccountId !== data.toAccountId, {
