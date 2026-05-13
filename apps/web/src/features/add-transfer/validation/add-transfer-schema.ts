@@ -9,10 +9,14 @@ export const createAddTransferSchema = () => {
       type: z.literal('transfer', {
         message: t('validation.transactionTypeRequired'),
       }),
-      fromAccountId: z.string().min(1, t('validation.fromAccountRequired')),
-      toAccountId: z.string().min(1, t('validation.toAccountRequired')),
-      amount: z.number().positive(t('validation.amountPositive')),
-      description: z.string().optional(),
+      fromAccountId: z
+        .string({ error: t('validation.fromAccountRequired') })
+        .min(1, t('validation.fromAccountRequired')),
+      toAccountId: z
+        .string({ error: t('validation.toAccountRequired') })
+        .min(1, t('validation.toAccountRequired')),
+      amount: z.number({ error: t('validation.amountRequired') }).positive(t('validation.amountPositive')),
+      description: z.string({ error: t('validation.descriptionInvalid') }).optional(),
     })
     .refine((data) => data.fromAccountId !== data.toAccountId, {
       path: ['toAccountId'],
