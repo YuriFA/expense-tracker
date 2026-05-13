@@ -20,10 +20,13 @@ export const useAccountsStore = defineStore('accounts', () => {
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
-  const addAccount = (payload: Omit<Account, 'id'> & Partial<Pick<Account, 'id'>>) => {
+  const addAccount = (
+    payload: Omit<Account, 'id' | 'manualAdjustment'> & Partial<Pick<Account, 'id'>>,
+  ) => {
     const account: Account = {
       ...payload,
       id: payload.id ?? generateId(),
+      manualAdjustment: 0,
     }
 
     items.value.push(account)
