@@ -53,36 +53,32 @@ const onSubmit = handleSubmit((data) => {
 </script>
 
 <template>
-  <section>
-    <form id="add-transfer-form" class="flex flex-col gap-3" @submit="onSubmit">
-      <div class="space-y-1">
-        <FieldLabel for="from-account-id">{{ t('addTransfer.fromAccountLabel') }}</FieldLabel>
-        <div class="flex gap-2">
-          <FromAccountField class="w-full" />
-          <AmountField class="min-w-0 w-auto!" placeholder-key="addTransfer.amountPlaceholder" />
-        </div>
+  <form id="add-transfer-form" class="flex flex-col gap-3" @submit="onSubmit">
+    <div class="space-y-1">
+      <FieldLabel for="from-account-id">{{ t('addTransfer.fromAccountLabel') }}</FieldLabel>
+      <div class="flex gap-2">
+        <FromAccountField class="w-full" />
+        <AmountField class="min-w-0 w-auto!" :placeholder="t('addTransfer.amountPlaceholder')" />
       </div>
+    </div>
 
-      <ToAccountField class="w-full" />
+    <ToAccountField class="w-full" />
 
-      <VeeField v-slot="{ field, errors }" name="description">
-        <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">
-          <FieldLabel for="transfer-description">{{
-            t('addTransfer.descriptionLabel')
-          }}</FieldLabel>
-          <Input
-            id="transfer-description"
-            :placeholder="t('addTransfer.descriptionPlaceholder')"
-            v-bind="field"
-            :aria-invalid="!!errors.length"
-          />
-          <FieldError v-if="errors.length" :errors="errors" />
-        </Field>
-      </VeeField>
+    <VeeField v-slot="{ field, errors }" name="description">
+      <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">
+        <FieldLabel for="transfer-description">{{ t('addTransfer.descriptionLabel') }}</FieldLabel>
+        <Input
+          id="transfer-description"
+          :placeholder="t('addTransfer.descriptionPlaceholder')"
+          v-bind="field"
+          :aria-invalid="!!errors.length"
+        />
+        <FieldError v-if="errors.length" :errors="errors" />
+      </Field>
+    </VeeField>
 
-      <Button form="add-transfer-form" type="submit" class="w-full md:ml-auto md:w-auto">
-        {{ t('addTransfer.submit') }}
-      </Button>
-    </form>
-  </section>
+    <Button form="add-transfer-form" type="submit" class="w-full md:ml-auto md:w-auto">
+      {{ t('addTransfer.submit') }}
+    </Button>
+  </form>
 </template>
