@@ -36,7 +36,7 @@ const onSuccess = () => {
 
       <Dialog v-model:open="dialogOpen">
         <DialogTrigger as-child>
-            <Button>{{ t('actions.new') }}</Button>
+          <Button>{{ t('actions.new') }}</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
