@@ -33,11 +33,11 @@ const onSuccess = () => {
 
       <Dialog v-model:open="dialogOpen">
         <DialogTrigger as-child>
-          <Button>{{ t('actions.new') }}</Button>
+          <Button>{{ t('actions.create') }}</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{{ t('dashboard.newTransaction') }}</DialogTitle>
+            <DialogTitle>{{ t('addTransaction.newTransaction') }}</DialogTitle>
           </DialogHeader>
           <Tabs default-value="expense">
             <TabsList class="w-full">

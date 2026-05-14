@@ -15,13 +15,13 @@
     "settings": "Настройки"
   },
   "actions": {
-    "new": "Новая"
+    "create": "Создать"
   },
   "dashboard": {
-    "newTransaction": "Новая транзакция",
     "netWorth": "Капитал"
   },
   "addTransaction": {
+    "newTransaction": "Новая транзакция",
     "accountLabel": "Счет",
     "amountLabel": "Сумма",
     "descriptionLabel": "Заметка",
@@ -34,12 +34,11 @@
     "success": "Транзакция добавлена"
   },
   "addAccount": {
+    "newAccount": "Новый счёт",
     "nameLabel": "Название",
     "namePlaceholder": "Название счёта",
     "openingBalanceLabel": "Начальный баланс",
     "submit": "Добавить счёт",
-    "new": "Новый счёт",
-    "newAccount": "Новый счёт",
     "success": "Счёт добавлен"
   },
   "addTransfer": {
