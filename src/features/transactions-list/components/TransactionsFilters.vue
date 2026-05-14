@@ -18,20 +18,19 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const { typeQuery, accountIdQuery, categoryIdQuery, setFilters, resetFilters } =
-  useTransactionsFilters()
+const { filters, setFilters, resetFilters } = useTransactionsFilters()
 
 const { handleSubmit, resetForm } = useForm<TransactionsFilterFormValues>({
   validationSchema: toTypedSchema(createTransactionsFilterSchema()),
   initialValues: {
-    accountId: accountIdQuery.value ?? undefined,
-    categoryId: categoryIdQuery.value ?? undefined,
-    type: typeQuery.value ?? undefined,
+    accountId: filters.value.accountId,
+    categoryId: filters.value.categoryId,
+    type: filters.value.type,
   },
 })
 
-const onSubmit = handleSubmit((data) => {
-  setFilters({
+const onSubmit = handleSubmit(async (data) => {
+  await setFilters({
     type: data.type,
     accountId: data.accountId,
     categoryId: data.categoryId,
@@ -40,8 +39,8 @@ const onSubmit = handleSubmit((data) => {
   emit('submit')
 })
 
-const onReset = () => {
-  resetFilters()
+const onReset = async () => {
+  await resetFilters()
   resetForm({
     values: {
       accountId: undefined,

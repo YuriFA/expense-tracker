@@ -34,11 +34,11 @@
     "success": "Транзакция добавлена"
   },
   "addAccount": {
-    "newAccount": "Новый счёт",
     "nameLabel": "Название",
     "namePlaceholder": "Название счёта",
     "openingBalanceLabel": "Начальный баланс",
     "submit": "Добавить счёт",
+    "newAccount": "Новый счёт",
     "success": "Счёт добавлен"
   },
   "addTransfer": {
@@ -76,8 +76,8 @@
       "activeCategory": "Категория"
     },
     "dateFilter": {
+      "allTime": "Все время",
       "today": "Сегодня",
-      "last7Days": "Последние 7 дней",
       "last30Days": "Последние 30 дней",
       "thisMonth": "Этот месяц",
       "cancel": "Отмена",
@@ -97,7 +97,8 @@
     "amountPositive": "Сумма должна быть больше нуля",
     "descriptionInvalid": "Описание должно быть текстом",
     "categoryRequired": "Выберите категорию",
-    "transferAccountsMustDiffer": "Счета перевода должны отличаться"
+    "transferAccountsMustDiffer": "Счета перевода должны отличаться",
+    "invalidDate": "Некорректная дата"
   },
   "errors": {
     "invalidTransactionPayload": "Некорректные данные транзакции",

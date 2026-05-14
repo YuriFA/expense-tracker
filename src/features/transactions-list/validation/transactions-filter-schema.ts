@@ -5,6 +5,8 @@ export const createTransactionsFilterSchema = () => {
   const { t } = i18n.global
 
   return z.object({
+    fromDate: z.date({ error: t('validation.invalidDate') }).optional(),
+    toDate: z.date({ error: t('validation.invalidDate') }).optional(),
     type: z
       .enum(['expense', 'income', 'transfer'], {
         message: t('validation.transactionTypeRequired'),

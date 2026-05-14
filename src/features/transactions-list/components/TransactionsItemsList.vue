@@ -5,15 +5,15 @@ import { computed } from 'vue'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'
 
 const transactions = useTransactionsStore()
-const { fromDate, toDate, typeQuery, accountIdQuery, categoryIdQuery } = useTransactionsFilters()
+const { filters } = useTransactionsFilters()
 
 const filteredTransactions = computed(() => {
   return transactions.getTransactions({
-    fromDate: fromDate.value,
-    toDate: toDate.value,
-    type: typeQuery.value ?? undefined,
-    accountId: accountIdQuery.value ?? undefined,
-    categoryId: categoryIdQuery.value ?? undefined,
+    fromDate: filters.value.fromDate,
+    toDate: filters.value.toDate,
+    type: filters.value.type,
+    accountId: filters.value.accountId,
+    categoryId: filters.value.categoryId,
   })
 })
 </script>

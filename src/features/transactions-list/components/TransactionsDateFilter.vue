@@ -15,18 +15,18 @@ type DraftRange = {
 }
 
 const { locale, t } = useI18n()
-const { fromDate, toDate, setRange } = useTransactionsFilters()
+const { filters, setFilters } = useTransactionsFilters()
 
 const open = ref(false)
 const draftRange = shallowRef<DraftRange>({
-  start: fromDate.value,
-  end: toDate.value,
+  start: filters.value.fromDate,
+  end: filters.value.toDate,
 })
 
 const syncDraftRange = () => {
   draftRange.value = {
-    start: fromDate.value,
-    end: toDate.value,
+    start: filters.value.fromDate,
+    end: filters.value.toDate,
   }
 }
 
@@ -34,11 +34,11 @@ const presetRanges = computed(() => {
   const now = currentDay()
 
   return [
-    { label: t('transactions.dateFilter.today'), range: { start: now, end: now } },
     {
-      label: t('transactions.dateFilter.last7Days'),
-      range: { start: now.subtract({ days: 6 }), end: now },
+      label: t('transactions.dateFilter.allTime'),
+      range: { start: undefined, end: undefined },
     },
+    { label: t('transactions.dateFilter.today'), range: { start: now, end: now } },
     {
       label: t('transactions.dateFilter.last30Days'),
       range: { start: now.subtract({ days: 29 }), end: now },
@@ -51,15 +51,25 @@ const presetRanges = computed(() => {
 })
 
 const dateFormatted = computed(() => {
+  if (!filters.value.fromDate || !filters.value.toDate) {
+    return t('transactions.dateFilter.allTime')
+  }
+
   const formatter = new DateFormatter(locale.value, { dateStyle: 'medium' })
-  const from = fromDate.value.toDate(getLocalTimeZone())
-  const to = toDate.value.toDate(getLocalTimeZone())
-  return fromDate.value.compare(toDate.value) === 0
+  const from = filters.value.fromDate.toDate(getLocalTimeZone())
+  const to = filters.value.toDate.toDate(getLocalTimeZone())
+  return filters.value.fromDate.compare(filters.value.toDate) === 0
     ? formatter.format(from)
     : formatter.formatRange(from, to)
 })
 
-const isApplyDisabled = computed(() => !draftRange.value.start || !draftRange.value.end)
+const isApplyDisabled = computed(() => {
+  if (!draftRange.value.start && !draftRange.value.end) {
+    return false
+  }
+
+  return !draftRange.value.start || !draftRange.value.end
+})
 
 const onOpenChange = (value: boolean) => {
   open.value = value
@@ -76,12 +86,15 @@ const setDraftRange = (range: DraftRange) => {
   }
 }
 
-const applyRange = () => {
+const applyRange = async () => {
   if (!draftRange.value.start || !draftRange.value.end) {
+    await setFilters({ fromDate: undefined, toDate: undefined })
+    open.value = false
     return
   }
 
-  setRange(draftRange.value.start, draftRange.value.end)
+  await setFilters({ fromDate: draftRange.value.start, toDate: draftRange.value.end })
+
   open.value = false
 }
 </script>
@@ -99,6 +112,10 @@ const applyRange = () => {
             :key="preset.label"
             variant="outline"
             size="sm"
+            :class="{
+              'bg-muted border-primary':
+                draftRange.start === preset.range.start && draftRange.end === preset.range.end,
+            }"
             @click="setDraftRange(preset.range)"
           >
             {{ preset.label }}
@@ -109,7 +126,7 @@ const applyRange = () => {
 
         <RangeCalendar
           :model-value="draftRange"
-          :placeholder="draftRange.start ?? fromDate"
+          :placeholder="draftRange.start ?? filters.fromDate ?? currentDay()"
           :locale="locale"
           :number-of-months="2"
           initial-focus
@@ -117,9 +134,9 @@ const applyRange = () => {
         />
 
         <div class="flex items-center justify-end gap-2 border-t pt-4">
-          <Button variant="ghost" @click="open = false">{{
-            t('transactions.dateFilter.cancel')
-          }}</Button>
+          <Button variant="ghost" @click="open = false">
+            {{ t('transactions.dateFilter.cancel') }}
+          </Button>
           <Button :disabled="isApplyDisabled" @click="applyRange">
             {{ t('transactions.dateFilter.apply') }}
           </Button>

@@ -5,6 +5,8 @@ import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { useAccountsStore } from '@/stores/use-accounts-store'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
+import { serializeTransactionsQuery } from '@/features/transactions-list/lib/transactions-query'
 
 const accounts = useAccountsStore()
 const { getAccountBalance } = useAccountBalances()
@@ -30,7 +32,16 @@ const totalBalanceFormatted = computed(() => {
         :for="`account-${account.id}`"
         class="flex items-center gap-2 justify-between border-b-2 border-b-muted last:border-0 py-2"
       >
-        <p class="text-sm text-muted-foreground">{{ account.name }}</p>
+        <RouterLink
+          class="text-sm text-muted-foreground hover:underline"
+          :to="{
+            path: '/transactions',
+            query: serializeTransactionsQuery({
+              accountId: account.id,
+            }),
+          }"
+          >{{ account.name }}</RouterLink
+        >
         <p class="text-md">
           {{ format(getAccountBalance(account.id) ?? 0) }}
         </p>
