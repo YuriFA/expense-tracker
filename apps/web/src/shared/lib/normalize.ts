@@ -1,3 +1,5 @@
+import { isIsoDateTime, type IsoDateTime } from '@/shared/lib/date'
+
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
@@ -28,9 +30,9 @@ export const asPositiveNumber = (value: unknown) => {
 export const asDateTimeString = (value: unknown) => {
   const stringValue = asNonEmptyString(value)
 
-  if (!stringValue || Number.isNaN(Date.parse(stringValue))) {
+  if (!stringValue || !isIsoDateTime(stringValue)) {
     return null
   }
 
-  return stringValue
+  return stringValue as IsoDateTime
 }

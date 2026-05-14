@@ -16,7 +16,7 @@ import { generateId } from '@/shared/lib/generate-id'
 import i18n from '@/app/i18n'
 import { useAccountsStore } from './use-accounts-store'
 import { useCategoriesStore } from './use-categories-store'
-import { toEndOfDay, toStartOfDay, type DateValue } from '@/shared/lib/date'
+import { getDateTimestamp, toEndOfDay, toStartOfDay, type CalendarDay } from '@/shared/lib/date'
 
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
 
@@ -25,8 +25,8 @@ type GetTransactionsOptions = {
   type?: TransactionType
   accountId?: string
   categoryId?: string
-  fromDate?: DateValue
-  toDate?: DateValue
+  fromDate?: CalendarDay
+  toDate?: CalendarDay
 }
 
 export const useTransactionsStore = defineStore('transactions', () => {
@@ -48,7 +48,7 @@ export const useTransactionsStore = defineStore('transactions', () => {
   const sortedTransactions = computed(() =>
     items.value
       .slice()
-      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
+      .sort((a, b) => getDateTimestamp(b.occurredAt) - getDateTimestamp(a.occurredAt)),
   )
   const getTransactions = (options: GetTransactionsOptions = {}) => {
     let result = sortedTransactions.value
@@ -56,13 +56,13 @@ export const useTransactionsStore = defineStore('transactions', () => {
     if (options.fromDate) {
       const fromDate = toStartOfDay(options.fromDate)
 
-      result = result.filter((transaction) => new Date(transaction.occurredAt) >= fromDate)
+      result = result.filter((transaction) => getDateTimestamp(transaction.occurredAt) >= fromDate.getTime())
     }
 
     if (options.toDate) {
       const toDate = toEndOfDay(options.toDate)
 
-      result = result.filter((transaction) => new Date(transaction.occurredAt) <= toDate)
+      result = result.filter((transaction) => getDateTimestamp(transaction.occurredAt) <= toDate.getTime())
     }
 
     if (options.type) {

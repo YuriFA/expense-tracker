@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n'
 import AmountField from './components/AmountField.vue'
 import CategoriesField from './components/CategoriesField.vue'
 import AccountField from './components/AccountField.vue'
+import { nowIsoString } from '@/shared/lib/date'
 
 const emit = defineEmits<{
   success: []
@@ -44,7 +45,7 @@ const onSubmit = handleSubmit((data) => {
     amount: data.amount,
     description: data.description,
     categoryId: data.category,
-    occurredAt: new Date().toISOString(),
+    occurredAt: nowIsoString(),
   })
   emit('success')
 })

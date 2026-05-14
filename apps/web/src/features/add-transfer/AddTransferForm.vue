@@ -17,6 +17,7 @@ import AmountField from '@/features/add-transaction/components/AmountField.vue'
 import FromAccountField from './components/FromAccountField.vue'
 import ToAccountField from './components/ToAccountField.vue'
 import { useAccountsStore } from '@/stores/use-accounts-store'
+import { nowIsoString } from '@/shared/lib/date'
 
 const emit = defineEmits<{
   success: []
@@ -46,7 +47,7 @@ const onSubmit = handleSubmit((data) => {
     toAccountId: data.toAccountId,
     amount: data.amount,
     description: data.description,
-    occurredAt: new Date().toISOString(),
+    occurredAt: nowIsoString(),
   })
   emit('success')
 })
