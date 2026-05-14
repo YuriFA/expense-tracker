@@ -9,7 +9,6 @@
     "settings": "Настройки"
   },
   "pages": {
-    "dashboard": "Дашборд",
     "transactions": "Транзакции",
     "accounts": "Счета",
     "settings": "Настройки"
@@ -23,10 +22,8 @@
   "addTransaction": {
     "newTransaction": "Новая транзакция",
     "accountLabel": "Счет",
-    "amountLabel": "Сумма",
     "descriptionLabel": "Заметка",
     "categoryLabel": "Категория",
-    "currentCurrency": "Текущая валюта",
     "descriptionPlaceholder": "Заметка",
     "categoryPlaceholder": "Категория",
     "accountPlaceholder": "Счет",
@@ -105,11 +102,6 @@
     "unknownTransactionReferences": "В транзакции указан неизвестный счет или категория"
   },
   "seeds": {
-    "accounts": {
-      "cash": "Наличные",
-      "bank": "Банк",
-      "creditCard": "Кредитная карта"
-    },
     "categories": {
       "food": "Еда",
       "transport": "Транспорт",

@@ -9,7 +9,6 @@
     "settings": "Settings"
   },
   "pages": {
-    "dashboard": "Dashboard",
     "transactions": "Transactions",
     "accounts": "Accounts",
     "settings": "Settings"
@@ -23,10 +22,8 @@
   "addTransaction": {
     "newTransaction": "New transaction",
     "accountLabel": "Account",
-    "amountLabel": "Amount",
     "descriptionLabel": "Note",
     "categoryLabel": "Category",
-    "currentCurrency": "Current currency",
     "descriptionPlaceholder": "Note",
     "categoryPlaceholder": "Category",
     "accountPlaceholder": "Account",
@@ -105,11 +102,6 @@
     "unknownTransactionReferences": "Transaction references an unknown account or category"
   },
   "seeds": {
-    "accounts": {
-      "cash": "Cash",
-      "bank": "Bank",
-      "creditCard": "Credit Card"
-    },
     "categories": {
       "food": "Food",
       "transport": "Transport",
