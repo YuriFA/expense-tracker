@@ -3,12 +3,12 @@
 import type { CalendarRootEmits, CalendarRootProps, DateValue } from 'reka-ui'
 import type { HTMLAttributes, Ref } from 'vue'
 import type { LayoutTypes } from '.'
-import { getLocalTimeZone, today } from '@internationalized/date'
 import { createReusableTemplate, reactiveOmit, useVModel } from '@vueuse/core'
 import { CalendarRoot, useDateFormatter, useForwardPropsEmits } from 'reka-ui'
 import { createYear, createYearRange, toDate } from 'reka-ui/date'
 import { computed, toRaw } from 'vue'
 import { cn } from '@/shared/lib/utils'
+import { currentDay, toDateValue } from '@/shared/lib/date'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import {
   CalendarCell,
@@ -45,7 +45,7 @@ const delegatedProps = reactiveOmit(props, 'class', 'layout', 'placeholder')
 
 const placeholder = useVModel(props, 'placeholder', emits, {
   passive: true,
-  defaultValue: props.defaultPlaceholder ?? today(getLocalTimeZone()),
+  defaultValue: props.defaultPlaceholder ?? toDateValue(currentDay()),
 }) as Ref<DateValue>
 
 const formatter = useDateFormatter(props.locale ?? 'en')
@@ -56,14 +56,14 @@ const yearRange = computed(() => {
     createYearRange({
       start:
         props?.minValue ??
-        (toRaw(props.placeholder) ?? props.defaultPlaceholder ?? today(getLocalTimeZone())).cycle(
+        (toRaw(props.placeholder) ?? props.defaultPlaceholder ?? toDateValue(currentDay())).cycle(
           'year',
           -100,
         ),
 
       end:
         props?.maxValue ??
-        (toRaw(props.placeholder) ?? props.defaultPlaceholder ?? today(getLocalTimeZone())).cycle(
+        (toRaw(props.placeholder) ?? props.defaultPlaceholder ?? toDateValue(currentDay())).cycle(
           'year',
           10,
         ),

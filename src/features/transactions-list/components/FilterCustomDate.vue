@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
-import { DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
 
 import { CalendarIcon } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -9,8 +8,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { computed, ref, type Ref } from 'vue'
 import { cn } from '@/shared/lib/utils'
 import { useI18n } from 'vue-i18n'
+import { currentDay, formatCalendarDay, fromDateValue, toDateValue } from '@/shared/lib/date'
 
-const defaultPlaceholder = today(getLocalTimeZone())
+const defaultPlaceholder = toDateValue(currentDay())
 const date = ref() as Ref<DateValue>
 const { locale, t } = useI18n()
 
@@ -19,9 +19,9 @@ const dateFormatted = computed(() => {
     return t('transactions.dateFilter.pickDate')
   }
 
-  return new DateFormatter(locale.value, {
+  return formatCalendarDay(fromDateValue(date.value), locale.value, {
     dateStyle: 'long',
-  }).format(date.value.toDate(getLocalTimeZone()))
+  })
 })
 </script>
 

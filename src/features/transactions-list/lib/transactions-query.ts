@@ -1,10 +1,14 @@
 import type { LocationQuery, LocationQueryRaw, LocationQueryValue } from 'vue-router'
 import type { TransactionType } from '@/entities/transaction/types'
-import { currentDay, parseCalendarDate, type DateValue } from '@/shared/lib/date'
+import {
+  currentDay,
+  parseCalendarDayOrFallback,
+  type CalendarDay,
+} from '@/shared/lib/date'
 
 export type TransactionsFilters = {
-  fromDate?: DateValue
-  toDate?: DateValue
+  fromDate?: CalendarDay
+  toDate?: CalendarDay
   type?: TransactionType
   accountId?: string
   categoryId?: string
@@ -26,18 +30,6 @@ const isTransactionType = (value: string | undefined): value is TransactionType 
   return value !== undefined && TRANSACTION_TYPES.has(value as TransactionType)
 }
 
-const parseDateOrFallback = (value: string | null | undefined, fallback: DateValue) => {
-  if (!value) {
-    return fallback
-  }
-
-  try {
-    return parseCalendarDate(value)
-  } catch {
-    return fallback
-  }
-}
-
 const parseOptionalString = (value: QueryParamValue) => {
   const normalized = getQueryValue(value)
 
@@ -49,8 +41,8 @@ export const parseTransactionsQuery = (query: LocationQuery): TransactionsFilter
   const toValue = getQueryValue(query.to)
   const type = parseOptionalString(query.type)
 
-  const fromDate = fromValue ? parseDateOrFallback(fromValue, currentDay()) : undefined
-  const toDate = toValue ? parseDateOrFallback(toValue, currentDay()) : undefined
+  const fromDate = fromValue ? parseCalendarDayOrFallback(fromValue, currentDay()) : undefined
+  const toDate = toValue ? parseCalendarDayOrFallback(toValue, currentDay()) : undefined
 
   return {
     fromDate,

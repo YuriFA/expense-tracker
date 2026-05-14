@@ -1,15 +1,29 @@
 <script setup lang="ts">
+import type { DateValue } from '@internationalized/date'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { RangeCalendar } from '@/components/ui/range-calendar'
 import { CalendarIcon } from 'lucide-vue-next'
 import { computed, ref, shallowRef } from 'vue'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'
-import { currentDay, startOfMonth, type DateValue } from '@/shared/lib/date'
-import { DateFormatter, getLocalTimeZone } from '@internationalized/date'
+import {
+  addCalendarDays,
+  currentDay,
+  formatCalendarDay,
+  formatCalendarRange,
+  fromDateValue,
+  startOfMonth,
+  toDateValue,
+  type CalendarDay,
+} from '@/shared/lib/date'
 import { useI18n } from 'vue-i18n'
 
 type DraftRange = {
+  start: CalendarDay | undefined
+  end: CalendarDay | undefined
+}
+
+type CalendarRangeValue = {
   start: DateValue | undefined
   end: DateValue | undefined
 }
@@ -22,6 +36,11 @@ const draftRange = shallowRef<DraftRange>({
   start: filters.value.fromDate,
   end: filters.value.toDate,
 })
+
+const calendarRange = computed<CalendarRangeValue>(() => ({
+  start: draftRange.value.start ? toDateValue(draftRange.value.start) : undefined,
+  end: draftRange.value.end ? toDateValue(draftRange.value.end) : undefined,
+}))
 
 const syncDraftRange = () => {
   draftRange.value = {
@@ -41,7 +60,7 @@ const presetRanges = computed(() => {
     { label: t('transactions.dateFilter.today'), range: { start: now, end: now } },
     {
       label: t('transactions.dateFilter.last30Days'),
-      range: { start: now.subtract({ days: 29 }), end: now },
+      range: { start: addCalendarDays(now, -29), end: now },
     },
     {
       label: t('transactions.dateFilter.thisMonth'),
@@ -55,12 +74,11 @@ const dateFormatted = computed(() => {
     return t('transactions.dateFilter.allTime')
   }
 
-  const formatter = new DateFormatter(locale.value, { dateStyle: 'medium' })
-  const from = filters.value.fromDate.toDate(getLocalTimeZone())
-  const to = filters.value.toDate.toDate(getLocalTimeZone())
-  return filters.value.fromDate.compare(filters.value.toDate) === 0
-    ? formatter.format(from)
-    : formatter.formatRange(from, to)
+  return filters.value.fromDate === filters.value.toDate
+    ? formatCalendarDay(filters.value.fromDate, locale.value, { dateStyle: 'medium' })
+    : formatCalendarRange(filters.value.fromDate, filters.value.toDate, locale.value, {
+        dateStyle: 'medium',
+      })
 })
 
 const isApplyDisabled = computed(() => {
@@ -84,6 +102,13 @@ const setDraftRange = (range: DraftRange) => {
     start: range.start,
     end: range.end,
   }
+}
+
+const onRangeChange = (range: CalendarRangeValue) => {
+  setDraftRange({
+    start: range.start ? fromDateValue(range.start) : undefined,
+    end: range.end ? fromDateValue(range.end) : undefined,
+  })
 }
 
 const applyRange = async () => {
@@ -125,12 +150,12 @@ const applyRange = async () => {
         <div class="border-t" />
 
         <RangeCalendar
-          :model-value="draftRange"
-          :placeholder="draftRange.start ?? filters.fromDate ?? currentDay()"
+          :model-value="calendarRange"
+          :placeholder="toDateValue(draftRange.start ?? filters.fromDate ?? currentDay())"
           :locale="locale"
           :number-of-months="2"
           initial-focus
-          @update:model-value="setDraftRange"
+          @update:model-value="onRangeChange"
         />
 
         <div class="flex items-center justify-end gap-2 border-t pt-4">
