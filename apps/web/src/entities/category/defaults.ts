@@ -1,4 +1,4 @@
-import type { Category } from '@/types/category'
+import type { Category } from './types'
 import i18n from '@/app/i18n'
 
 export const getDefaultCategories = (): Category[] => {

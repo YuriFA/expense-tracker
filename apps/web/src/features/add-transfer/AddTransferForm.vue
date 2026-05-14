@@ -6,7 +6,7 @@ import {
   createAddTransferSchema,
   type AddTransferFormValues,
 } from './validation/add-transfer-schema'
-import type { TransferTransaction } from '@/types/transaction'
+import type { TransferTransaction } from '@/entities/transaction/types'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'

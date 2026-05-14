@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAccountBalances } from '@/composables/use-account-balances'
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { generateHashIndex } from '@/shared/lib/hash-generator'
-import type { Account } from '@/types/account'
+import type { Account } from '@/entities/account/types'
 import { computed } from 'vue'
 
 const { account } = defineProps<{

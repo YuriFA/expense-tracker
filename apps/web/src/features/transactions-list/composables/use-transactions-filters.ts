@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useRouteQuery } from '@vueuse/router'
 import { currentDay, parseCalendarDate, startOfMonth, type DateValue } from '@/shared/lib/date'
-import type { TransactionType } from '@/types/transaction'
+import type { TransactionType } from '@/entities/transaction/types'
 
 export function useTransactionsFilters() {
   const fromQuery = useRouteQuery('from', currentDay().subtract({ days: 6 }).toString())
