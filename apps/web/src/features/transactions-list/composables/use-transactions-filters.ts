@@ -1,82 +1,46 @@
 import { computed } from 'vue'
-import { useRouteQuery } from '@vueuse/router'
-import { currentDay, parseCalendarDate, startOfMonth, type DateValue } from '@/shared/lib/date'
-import type { TransactionType } from '@/entities/transaction/types'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  parseTransactionsQuery,
+  serializeTransactionsQuery,
+  type TransactionsFilters,
+} from '../lib/transactions-query'
 
 export function useTransactionsFilters() {
-  const fromQuery = useRouteQuery('from', currentDay().subtract({ days: 6 }).toString())
-  const toQuery = useRouteQuery('to', currentDay().toString())
-  const typeQuery = useRouteQuery<TransactionType | null>('type', null)
-  const accountIdQuery = useRouteQuery<string | null>('accountId', null)
-  const categoryIdQuery = useRouteQuery<string | null>('categoryId', null)
+  const route = useRoute()
+  const router = useRouter()
 
-  const fromDate = computed({
-    get: () => parseCalendarDate(fromQuery.value),
-    set: (value: DateValue) => {
-      fromQuery.value = value.toString()
-    },
-  })
-  const toDate = computed({
-    get: () => parseCalendarDate(toQuery.value),
-    set: (value: DateValue) => {
-      toQuery.value = value.toString()
-    },
-  })
+  const filters = computed(() => parseTransactionsQuery(route.query))
 
-  const setRange = (from: DateValue, to: DateValue) => {
-    fromDate.value = from
-    toDate.value = to
-  }
+  const setFilters = async (patch: Partial<TransactionsFilters>) => {
+    const nextFilters: TransactionsFilters = {
+      ...filters.value,
+      ...patch,
+    }
 
-  const setFilters = (filters: {
-    type?: TransactionType | null
-    accountId?: string | null
-    categoryId?: string | null
-  }) => {
-    typeQuery.value = filters.type ?? null
-    accountIdQuery.value = filters.accountId ?? null
-    categoryIdQuery.value = filters.categoryId ?? null
-  }
-
-  const resetFilters = () => {
-    setFilters({
-      type: null,
-      accountId: null,
-      categoryId: null,
+    await router.replace({
+      query: serializeTransactionsQuery(nextFilters),
     })
   }
 
-  const setToday = () => {
-    const now = currentDay()
-    setRange(now, now)
+  const removeFilter = async (key: 'type' | 'accountId' | 'categoryId') => {
+    await setFilters({
+      [key]: undefined,
+    })
   }
-  const setLast7Days = () => {
-    const now = currentDay()
-    setRange(now.subtract({ days: 6 }), now)
-  }
-  const setLast30Days = () => {
-    const now = currentDay()
-    setRange(now.subtract({ days: 29 }), now)
-  }
-  const setThisMonth = () => {
-    const now = currentDay()
-    setRange(startOfMonth(now), now)
+
+  const resetFilters = async () => {
+    await setFilters({
+      type: undefined,
+      accountId: undefined,
+      categoryId: undefined,
+    })
   }
 
   return {
-    fromQuery,
-    toQuery,
-    typeQuery,
-    accountIdQuery,
-    categoryIdQuery,
-    fromDate,
-    toDate,
-    setRange,
+    filters,
+    removeFilter,
     setFilters,
     resetFilters,
-    setToday,
-    setLast7Days,
-    setLast30Days,
-    setThisMonth,
   }
 }

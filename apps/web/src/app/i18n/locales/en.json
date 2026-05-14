@@ -76,8 +76,8 @@
       "activeCategory": "Category"
     },
     "dateFilter": {
+      "allTime": "All time",
       "today": "Today",
-      "last7Days": "Last 7 days",
       "last30Days": "Last 30 days",
       "thisMonth": "This month",
       "cancel": "Cancel",
@@ -97,7 +97,8 @@
     "amountPositive": "Amount must be greater than zero",
     "descriptionInvalid": "Description must be text",
     "categoryRequired": "Select a category",
-    "transferAccountsMustDiffer": "Transfer accounts must be different"
+    "transferAccountsMustDiffer": "Transfer accounts must be different",
+    "invalidDate": "Invalid date "
   },
   "errors": {
     "invalidTransactionPayload": "Invalid transaction payload",
