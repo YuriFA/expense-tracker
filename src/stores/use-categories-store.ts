@@ -5,10 +5,7 @@ import { computed } from 'vue'
 import type { Category } from '@/entities/category/types'
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
-import {
-  parseCategoriesStorage,
-  serializeCategoriesStorage,
-} from '@/entities/category/category'
+import { parseCategoriesStorage, serializeCategoriesStorage } from '@/entities/category/category'
 import {
   isTransactionLinkedToCategory,
   parseTransactionsStorage,

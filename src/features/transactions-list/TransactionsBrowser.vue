@@ -2,7 +2,7 @@
 import TransactionsActiveFilters from './components/TransactionsActiveFilters.vue'
 import TransactionsDateFilter from './components/TransactionsDateFilter.vue'
 import TransactionsFiltersSheet from './components/TransactionsFiltersSheet.vue'
-import TransactionsItemsList from './components/TransactionsItemsList.vue';
+import TransactionsItemsList from './components/TransactionsItemsList.vue'
 </script>
 
 <template>

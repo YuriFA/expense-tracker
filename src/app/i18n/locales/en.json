@@ -15,13 +15,13 @@
     "settings": "Settings"
   },
   "actions": {
-    "new": "New"
+    "create": "Create"
   },
   "dashboard": {
-    "newTransaction": "New transaction",
     "netWorth": "Net worth"
   },
   "addTransaction": {
+    "newTransaction": "New transaction",
     "accountLabel": "Account",
     "amountLabel": "Amount",
     "descriptionLabel": "Note",
@@ -38,7 +38,6 @@
     "namePlaceholder": "Account name",
     "openingBalanceLabel": "Opening balance",
     "submit": "Add account",
-    "new": "New account",
     "newAccount": "New account",
     "success": "Account added"
   },

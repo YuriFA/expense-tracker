@@ -42,7 +42,7 @@ const onSuccess = () => {
 
       <Dialog v-model:open="dialogOpen">
         <DialogTrigger as-child>
-          <Button class="max-sm:w-full">{{ t('addAccount.new') }}</Button>
+          <Button class="max-sm:w-full">{{ t('actions.create') }}</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>

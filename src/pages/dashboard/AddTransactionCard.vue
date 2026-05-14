@@ -19,7 +19,7 @@ const onSuccess = () => {
 <template>
   <Card>
     <CardHeader>
-      <CardTitle class="text-muted-foreground">{{ t('dashboard.newTransaction') }}</CardTitle>
+      <CardTitle class="text-muted-foreground">{{ t('addTransaction.newTransaction') }}</CardTitle>
     </CardHeader>
 
     <CardContent>
