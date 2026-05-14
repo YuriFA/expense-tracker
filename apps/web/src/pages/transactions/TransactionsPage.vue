@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
-import TransactionsList from '@/features/transactions-list/TransactionsList.vue'
 import { useI18n } from 'vue-i18n'
-import TransactionsDateFilter from '@/features/transactions-list/components/TransactionsDateFilter.vue'
-import TransactionsFiltersSheet from '@/features/transactions-list/components/TransactionsFiltersSheet.vue'
-import TransactionsActiveFilters from '@/features/transactions-list/components/TransactionsActiveFilters.vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,6 +14,7 @@ import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vu
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
 import { getTransactionsOptions } from '@/entities/transaction/constants'
+import TransactionsBrowser from '@/features/transactions-list/TransactionsBrowser.vue'
 
 const { t } = useI18n()
 const transactionTypes = getTransactionsOptions()
@@ -62,15 +59,6 @@ const onSuccess = () => {
       </Dialog>
     </div>
 
-    <div class="space-y-4 mt-6">
-      <div class="flex items-center gap-4 justify-between">
-        <TransactionsDateFilter />
-        <TransactionsFiltersSheet />
-      </div>
-
-      <TransactionsActiveFilters />
-
-      <TransactionsList />
-    </div>
+    <TransactionsBrowser class="mt-6" />
   </section>
 </template>

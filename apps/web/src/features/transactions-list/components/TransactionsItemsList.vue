@@ -2,7 +2,7 @@
 import TransactionListItem from '@/features/transactions-list/components/TransactionListItem.vue'
 import { useTransactionsStore } from '@/stores/use-transactions-store'
 import { computed } from 'vue'
-import { useTransactionsFilters } from './composables/use-transactions-filters'
+import { useTransactionsFilters } from '../composables/use-transactions-filters'
 
 const transactions = useTransactionsStore()
 const { fromDate, toDate, typeQuery, accountIdQuery, categoryIdQuery } = useTransactionsFilters()
