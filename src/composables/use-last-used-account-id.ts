@@ -1,7 +1,6 @@
 import { useAccountsStore } from '@/stores/use-accounts-store'
 import { useTransactionsStore } from '@/stores/use-transactions-store'
-import type { CashflowTransaction } from '@/types/transaction'
-import { useArrayFindLast } from '@vueuse/core'
+import type { CashflowTransaction } from '@/entities/transaction/types'
 import { computed } from 'vue'
 
 export const useLastUsedAccountId = () => {
@@ -9,10 +8,11 @@ export const useLastUsedAccountId = () => {
   const transactions = useTransactionsStore()
 
   return computed(() => {
-    const findedLast = useArrayFindLast(transactions.items, (item) =>
-      Boolean(item.type !== 'transfer' && accounts.findById(item.accountId)),
+    const transaction = transactions.items.findLast(
+      (item): item is CashflowTransaction =>
+        item.type !== 'transfer' && Boolean(accounts.findById(item.accountId)),
     )
 
-    return (findedLast.value as CashflowTransaction | undefined)?.accountId ?? accounts.items[0]?.id
+    return transaction?.accountId
   })
 }

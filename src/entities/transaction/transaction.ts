@@ -3,9 +3,9 @@ import type {
   Transaction,
   TransferTransaction,
   TransactionType,
-} from '@/types/transaction'
-import type { Account } from '@/types/account'
-import type { Category } from '@/types/category'
+} from './types'
+import type { Account } from '@/entities/account/types'
+import type { Category } from '@/entities/category/types'
 import {
   asDateTimeString,
   asNonEmptyString,

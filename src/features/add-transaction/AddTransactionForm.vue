@@ -6,7 +6,7 @@ import {
   createAddTransactionSchema,
   type AddTransactionFormValues,
 } from './validation/add-transaction-schema'
-import type { CashflowTransaction } from '@/types/transaction'
+import type { CashflowTransaction } from '@/entities/transaction/types'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'

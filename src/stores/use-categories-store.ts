@@ -2,14 +2,17 @@ import { getDefaultCategories } from '@/entities/category/defaults'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
-import type { Category } from '@/types/category'
+import type { Category } from '@/entities/category/types'
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
 import {
   parseCategoriesStorage,
   serializeCategoriesStorage,
-} from '@/entities/category/category.lib'
-import { isTransactionLinkedToCategory, parseTransactionsStorage } from '@/entities/transaction'
+} from '@/entities/category/category'
+import {
+  isTransactionLinkedToCategory,
+  parseTransactionsStorage,
+} from '@/entities/transaction/transaction'
 import { generateId } from '@/shared/lib/generate-id'
 
 const CATEGORIES_STORAGE_KEY = `${APP_NAME}:categories`

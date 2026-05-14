@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
-import type { Transaction, TransactionType } from '@/types/transaction'
+import type { Transaction, TransactionType } from '@/entities/transaction/types'
 import {
   hasValidTransactionReferences,
   isTransaction,
@@ -11,7 +11,7 @@ import {
   isTransferTransaction,
   parseTransactionsStorage,
   serializeTransactionsStorage,
-} from '@/entities/transaction'
+} from '@/entities/transaction/transaction'
 import { generateId } from '@/shared/lib/generate-id'
 import i18n from '@/app/i18n'
 import { useAccountsStore } from './use-accounts-store'

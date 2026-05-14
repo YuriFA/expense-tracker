@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-import type { Settings } from '@/types/settings'
+import type { Settings } from '@/shared/types/settings'
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
 import { DEFAULT_CURRENCY } from '@/shared/config/currencies'

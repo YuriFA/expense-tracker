@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
-import { isTransferTransaction } from '@/entities/transaction'
+import { isTransferTransaction } from '@/entities/transaction/transaction'
 import { useAccountsStore } from '@/stores/use-accounts-store'
 import { useCategoriesStore } from '@/stores/use-categories-store'
-import type { Transaction } from '@/types/transaction'
+import type { Transaction } from '@/entities/transaction/types'
 import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from 'lucide-vue-next'
 import { computed } from 'vue'

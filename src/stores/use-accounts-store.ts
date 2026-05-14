@@ -2,10 +2,13 @@ import { defineStore } from 'pinia'
 
 import { useStorage } from '@vueuse/core'
 import { APP_NAME } from '@/app/config'
-import type { Account } from '@/types/account'
-import { parseAccountsStorage, serializeAccountsStorage } from '@/entities/account'
+import type { Account } from '@/entities/account/types'
+import { parseAccountsStorage, serializeAccountsStorage } from '@/entities/account/account'
 import { generateId } from '@/shared/lib/generate-id'
-import { isTransactionLinkedToAccount, parseTransactionsStorage } from '@/entities/transaction'
+import {
+  isTransactionLinkedToAccount,
+  parseTransactionsStorage,
+} from '@/entities/transaction/transaction'
 
 const ACCOUNTS_STORAGE_KEY = `${APP_NAME}:accounts`
 const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`

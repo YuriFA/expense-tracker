@@ -1,4 +1,4 @@
-import type { Category, CategoryType } from '@/types/category'
+import type { Category, CategoryType } from './types'
 import { asNonEmptyString, asString, isRecord } from '@/shared/lib/normalize'
 
 const isCategoryType = (value: unknown): value is CategoryType =>
