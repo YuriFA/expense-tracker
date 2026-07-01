@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import TransactionListItem from '@/features/transactions-list/components/TransactionListItem.vue'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'
-import { useFilteredTransactions } from '../composables/use-filtered-transactions'
 import { useI18n } from 'vue-i18n'
+import { useTransactions } from '@/stores/use-transactions'
 
 const { t } = useI18n()
 const { filters } = useTransactionsFilters()
-const { data, error, isLoading } = useFilteredTransactions(filters)
+const { data, error, isLoading } = useTransactions(filters)
 </script>
 
 <template>
@@ -17,7 +17,7 @@ const { data, error, isLoading } = useFilteredTransactions(filters)
     <template v-else-if="error">
       <li class="text-red-500">{{ t('transactions.errorLoadingTransactions', { error }) }}</li>
     </template>
-    <template v-else-if="data.length === 0">
+    <template v-else-if="data && data.length === 0">
       <li class="text-gray-500">{{ t('transactions.noTransactions') }}</li>
     </template>
     <template v-else>

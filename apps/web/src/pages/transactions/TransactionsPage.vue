@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
@@ -15,15 +15,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
 import { getTransactionsOptions } from '@/entities/transaction/constants'
 import TransactionsBrowser from '@/features/transactions-list/TransactionsBrowser.vue'
-import { useTransactionsStore } from '@/stores/use-transactions-store'
-import { useAccountsStore } from '@/stores/use-accounts-store'
+import { useLastCreatedTransaction } from '@/features/add-transaction/composables/use-transaction-form-data'
+import { Spinner } from '@/components/ui/spinner'
 
 const { t } = useI18n()
 const transactionTypes = getTransactionsOptions()
 const dialogOpen = ref(false)
-const transactions = useTransactionsStore()
-const accounts = useAccountsStore()
-const isReady = computed(() => !accounts.isLoading && !transactions.isLoading)
+const { lastCreatedCashflowTransaction, lastCreatedTransferTransaction, isReady } =
+  useLastCreatedTransaction()
 
 const handleSuccess = () => {
   toast.success(t('addTransaction.success'))
@@ -44,22 +43,34 @@ const handleSuccess = () => {
           <DialogHeader>
             <DialogTitle>{{ t('addTransaction.newTransaction') }}</DialogTitle>
           </DialogHeader>
-          <Tabs default-value="expense">
+          <Tabs v-if="isReady" default-value="expense">
             <TabsList class="w-full">
               <TabsTrigger v-for="item in transactionTypes" :key="item.value" :value="item.value">
                 {{ item.label }}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="expense">
-              <AddTransactionForm v-if="isReady" type="expense" @success="handleSuccess" />
+              <AddTransactionForm
+                type="expense"
+                :last-created-transaction="lastCreatedCashflowTransaction"
+                @success="handleSuccess"
+              />
             </TabsContent>
             <TabsContent value="income">
-              <AddTransactionForm v-if="isReady" type="income" @success="handleSuccess" />
+              <AddTransactionForm
+                type="income"
+                :last-created-transaction="lastCreatedCashflowTransaction"
+                @success="handleSuccess"
+              />
             </TabsContent>
             <TabsContent value="transfer">
-              <AddTransferForm v-if="isReady" @success="handleSuccess" />
+              <AddTransferForm
+                :last-created-transaction="lastCreatedTransferTransaction"
+                @success="handleSuccess"
+              />
             </TabsContent>
           </Tabs>
+          <Spinner v-else class="mx-auto my-6" />
         </DialogContent>
       </Dialog>
     </div>

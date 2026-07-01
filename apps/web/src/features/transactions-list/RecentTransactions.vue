@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import TransactionListItem from './components/TransactionListItem.vue'
-import { useFilteredTransactions } from './composables/use-filtered-transactions'
-import { ref } from 'vue'
+import { useTransactions } from '@/stores/use-transactions'
 
 const { t } = useI18n()
-const query = ref({ limit: 5 })
-const { data, error, isLoading } = useFilteredTransactions(query)
+const { data, error, isLoading } = useTransactions({ limit: 5 })
 </script>
 
 <template>
@@ -17,7 +15,7 @@ const { data, error, isLoading } = useFilteredTransactions(query)
     <template v-else-if="error">
       <li class="text-red-500">{{ t('transactions.errorLoadingTransactions', { error }) }}</li>
     </template>
-    <template v-else-if="data.length === 0">
+    <template v-else-if="data && data.length === 0">
       <li class="text-gray-500">{{ t('transactions.noTransactions') }}</li>
     </template>
     <template v-else>

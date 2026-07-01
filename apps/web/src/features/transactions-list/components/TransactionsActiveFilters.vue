@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { getTransactionsOptions } from '@/entities/transaction/constants'
-import { useAccountsStore } from '@/stores/use-accounts-store'
-import { useCategoriesStore } from '@/stores/use-categories-store'
+import { useAccount } from '@/stores/use-accounts'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'
 import { computed } from 'vue'
 import { Chip } from '@/components/ui/chip'
 import { useI18n } from 'vue-i18n'
+import { useCategory } from '@/stores/use-categories'
 
 const { filters, removeFilter } = useTransactionsFilters()
-const accounts = useAccountsStore()
-const categories = useCategoriesStore()
+const { data: account } = useAccount(() => filters.value.accountId)
+const { data: category } = useCategory(() => filters.value.categoryId)
 const transactionOptions = getTransactionsOptions()
 const { t } = useI18n()
 
@@ -32,26 +32,20 @@ const activeFilters = computed(() => {
     })
   }
 
-  const account = filters.value.accountId ? accounts.findById(filters.value.accountId) : undefined
-
-  if (account) {
+  if (account.value) {
     items.push({
       key: 'accountId',
-      label: `${t('transactions.filters.activeAccount')}: ${account.name}`,
+      label: `${t('transactions.filters.activeAccount')}: ${account.value.name}`,
       onRemove: () => {
         void removeFilter('accountId')
       },
     })
   }
 
-  const category = filters.value.categoryId
-    ? categories.findById(filters.value.categoryId)
-    : undefined
-
-  if (category) {
+  if (category.value) {
     items.push({
       key: 'categoryId',
-      label: `${t('transactions.filters.activeCategory')}: ${category.icon} ${category.name}`,
+      label: `${t('transactions.filters.activeCategory')}: ${category.value.icon} ${category.value.name}`,
       onRemove: () => {
         void removeFilter('categoryId')
       },
