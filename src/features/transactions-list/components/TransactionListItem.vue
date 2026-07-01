@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { isTransferTransaction } from '@/entities/transaction/transaction'
-import { useAccountsStore } from '@/stores/use-accounts-store'
-import { useCategoriesStore } from '@/stores/use-categories-store'
+import { useAccounts } from '@/stores/use-accounts'
+import { useCategories } from '@/stores/use-categories'
 import type { Transaction } from '@/entities/transaction/types'
 import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
@@ -12,24 +12,37 @@ import { useI18n } from 'vue-i18n'
 const { transaction } = defineProps<{ transaction: Transaction }>()
 const { format } = useCurrencyFormatter()
 const { locale, t } = useI18n()
-const categories = useCategoriesStore()
-const accounts = useAccountsStore()
+const { data: categories } = useCategories()
+const { data: accounts } = useAccounts()
+
+const category = computed(() => {
+  return categories.value?.find((category) => category.id === transaction.categoryId)
+})
+
+const account = computed(() => {
+  if (transaction.type === 'transfer') {
+    return undefined
+  }
+
+  return accounts.value?.find((account) => account.id === transaction.accountId)
+})
+const fromAccount = computed(() => {
+  if (transaction.type === 'transfer') {
+    return accounts.value?.find((account) => account.id === transaction.fromAccountId)
+  }
+  return undefined
+})
+const toAccount = computed(() => {
+  if (transaction.type === 'transfer') {
+    return accounts.value?.find((account) => account.id === transaction.toAccountId)
+  }
+  return undefined
+})
+
 const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH:mm', {
   locales: locale.value,
 })
 
-const category = computed(() =>
-  transaction.categoryId ? categories.findById(transaction.categoryId) : undefined,
-)
-const account = computed(() =>
-  'accountId' in transaction ? accounts.findById(transaction.accountId) : undefined,
-)
-const fromAccount = computed(() =>
-  isTransferTransaction(transaction) ? accounts.findById(transaction.fromAccountId) : undefined,
-)
-const toAccount = computed(() =>
-  isTransferTransaction(transaction) ? accounts.findById(transaction.toAccountId) : undefined,
-)
 const isTransfer = computed(() => isTransferTransaction(transaction))
 </script>
 

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { useLastUsedAccountId } from '@/composables/use-last-used-account-id'
 import { useForm } from 'vee-validate'
-import { useTransactionsStore } from '@/stores/use-transactions-store'
 import {
   createAddTransferSchema,
   type AddTransferFormValues,
@@ -16,32 +14,31 @@ import { useI18n } from 'vue-i18n'
 import AmountField from '@/features/add-transaction/components/AmountField.vue'
 import FromAccountField from './components/FromAccountField.vue'
 import ToAccountField from './components/ToAccountField.vue'
-import { useAccountsStore } from '@/stores/use-accounts-store'
 import { nowIsoString } from '@/shared/lib/date'
+import { useCreateTransaction } from '@/stores/use-transactions'
 
 const emit = defineEmits<{
   success: []
 }>()
 
-const transactions = useTransactionsStore()
-const accounts = useAccountsStore()
-const lastUsedAccountId = useLastUsedAccountId()
-const { t } = useI18n()
+const { lastCreatedTransaction = undefined } = defineProps<{
+  lastCreatedTransaction?: TransferTransaction
+}>()
 
-const initialFromAccountId = lastUsedAccountId.value ?? ''
-const initialToAccountId = accounts.items.find((item) => item.id !== initialFromAccountId)?.id ?? ''
+const { mutateAsync: createTransaction } = useCreateTransaction<TransferTransaction>()
+const { t } = useI18n()
 
 const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransferFormValues>({
   validationSchema: toTypedSchema(createAddTransferSchema()),
   initialValues: {
     type: 'transfer',
-    fromAccountId: initialFromAccountId,
-    toAccountId: initialToAccountId,
+    fromAccountId: lastCreatedTransaction?.fromAccountId ?? '',
+    toAccountId: lastCreatedTransaction?.toAccountId ?? '',
   },
 })
 
 const handleSubmit = handleFormSubmit(async (data) => {
-  await transactions.addTransaction<TransferTransaction>({
+  await createTransaction({
     type: data.type,
     fromAccountId: data.fromAccountId,
     toAccountId: data.toAccountId,

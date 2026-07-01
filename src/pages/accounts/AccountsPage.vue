@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAccountsStore } from '@/stores/use-accounts-store'
+import { useAccounts } from '@/stores/use-accounts'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,12 +17,13 @@ import { toast } from 'vue-sonner'
 import AddAccountForm from '@/features/add-account/AddAccountForm.vue'
 
 const { t } = useI18n()
-const accounts = useAccountsStore()
+const { data } = useAccounts()
 const { format } = useCurrencyFormatter()
 const totalBalanceFormatted = computed(() => {
-  const totalBalance = accounts.items.reduce((acc, account) => {
-    return acc + (account.balance ?? 0)
-  }, 0)
+  const totalBalance =
+    data.value?.reduce((acc, account) => {
+      return acc + (account.balance ?? 0)
+    }, 0) ?? 0
   return format(totalBalance)
 })
 
@@ -64,7 +65,7 @@ const handleSuccess = () => {
     </Card>
 
     <ul class="mt-6 grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 flex-wrap">
-      <li v-for="account in accounts.items" :key="account.id">
+      <li v-for="account in data" :key="account.id">
         <AccountCard :account />
       </li>
     </ul>

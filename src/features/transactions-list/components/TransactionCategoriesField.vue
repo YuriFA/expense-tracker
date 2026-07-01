@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { useCategoriesStore } from '@/stores/use-categories-store'
+import { useCategories } from '@/stores/use-categories'
 import { useFieldValue, Field as VeeField } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -16,14 +16,14 @@ import type { TransactionsFilterFormValues } from '../validation/transactions-fi
 const { t } = useI18n()
 
 const typeField = useFieldValue<TransactionsFilterFormValues['type']>('type')
-const categories = useCategoriesStore()
+const { data: categories } = useCategories()
 
 const fiteredCategories = computed(() => {
   if (typeField.value === undefined) {
-    return categories.items
+    return categories.value
   }
 
-  return categories.items.filter((category) => category.type === typeField.value)
+  return categories.value?.filter((category) => category.type === typeField.value)
 })
 </script>
 

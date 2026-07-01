@@ -3,7 +3,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/components/ui/button'
 import { useI18n } from 'vue-i18n'
-import { useAccountsStore } from '@/stores/use-accounts-store'
+import { useCreateAccount } from '@/stores/use-accounts'
 import { createAddAccountSchema, type AddAccountFormValues } from './validation/add-account-schema'
 import { Field as VeeField } from 'vee-validate'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -19,7 +19,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 const settings = useSettingsStore()
-const accounts = useAccountsStore()
+const { mutateAsync: createAccount } = useCreateAccount()
 const { format } = useCurrencyFormatter()
 const openingBalancePlaceholder = computed(() => format(1000))
 
@@ -32,7 +32,7 @@ const { handleSubmit: handleFormSubmit, setFieldValue } = useForm<AddAccountForm
 })
 
 const handleSubmit = handleFormSubmit(async (data) => {
-  await accounts.addAccount(data)
+  await createAccount(data)
   emit('success')
 })
 </script>

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { useLastUsedAccountId } from '@/composables/use-last-used-account-id'
 import { useForm } from 'vee-validate'
-import { useTransactionsStore } from '@/stores/use-transactions-store'
 import {
   createAddTransactionSchema,
   type AddTransactionFormValues,
@@ -17,29 +15,30 @@ import AmountField from './components/AmountField.vue'
 import CategoriesField from './components/CategoriesField.vue'
 import AccountField from './components/AccountField.vue'
 import { nowIsoString } from '@/shared/lib/date'
+import { useCreateTransaction } from '@/stores/use-transactions'
 
 const emit = defineEmits<{
   success: []
 }>()
 
-const { type } = defineProps<{
+const { type, lastCreatedTransaction = undefined } = defineProps<{
   type: 'expense' | 'income'
+  lastCreatedTransaction?: CashflowTransaction
 }>()
 
-const transactions = useTransactionsStore()
-const lastUsedAccountId = useLastUsedAccountId()
+const { mutateAsync: createTransaction } = useCreateTransaction<CashflowTransaction>()
 const { t } = useI18n()
 
 const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransactionFormValues>({
   validationSchema: toTypedSchema(createAddTransactionSchema()),
   initialValues: {
     type,
-    accountId: lastUsedAccountId.value,
+    accountId: lastCreatedTransaction?.accountId ?? '',
   },
 })
 
 const handleSubmit = handleFormSubmit(async (data) => {
-  await transactions.addTransaction<CashflowTransaction>({
+  await createTransaction({
     type: data.type,
     accountId: data.accountId,
     amount: data.amount,

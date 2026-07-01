@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getTransactionsOptions } from '@/entities/transaction/constants'
 import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vue'
+import { useLastCreatedTransaction } from '@/features/add-transaction/composables/use-transaction-form-data'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
-import { useAccountsStore } from '@/stores/use-accounts-store'
-import { useTransactionsStore } from '@/stores/use-transactions-store'
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 const { t } = useI18n()
 
 const transactionTypes = getTransactionsOptions()
-const transactions = useTransactionsStore()
-const accounts = useAccountsStore()
-const isReady = computed(() => !accounts.isLoading && !transactions.isLoading)
+const { lastCreatedCashflowTransaction, lastCreatedTransferTransaction, isReady } =
+  useLastCreatedTransaction()
 
 const handleSuccess = () => {
   toast.success(t('addTransaction.success'))
@@ -37,16 +33,26 @@ const handleSuccess = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="expense">
-          <AddTransactionForm type="expense" @success="handleSuccess" />
+          <AddTransactionForm
+            type="expense"
+            :last-created-transaction="lastCreatedCashflowTransaction"
+            @success="handleSuccess"
+          />
         </TabsContent>
         <TabsContent value="income">
-          <AddTransactionForm type="income" @success="handleSuccess" />
+          <AddTransactionForm
+            type="income"
+            :last-created-transaction="lastCreatedCashflowTransaction"
+            @success="handleSuccess"
+          />
         </TabsContent>
         <TabsContent value="transfer">
-          <AddTransferForm @success="handleSuccess" />
+          <AddTransferForm
+            :last-created-transaction="lastCreatedTransferTransaction"
+            @success="handleSuccess"
+          />
         </TabsContent>
       </Tabs>
-      <Spinner v-else class="mx-auto" />
     </CardContent>
   </Card>
 </template>

@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldError } from '@/components/ui/field'
-import { useAccountsStore } from '@/stores/use-accounts-store'
+import { useAccounts } from '@/stores/use-accounts'
 import { useI18n } from 'vue-i18n'
 import { Field as VeeField } from 'vee-validate'
 
@@ -15,7 +15,7 @@ defineProps<{
   class?: string
 }>()
 
-const accounts = useAccountsStore()
+const { data } = useAccounts()
 const { t } = useI18n()
 </script>
 
@@ -27,7 +27,7 @@ const { t } = useI18n()
           <SelectValue :placeholder="t('addTransaction.accountPlaceholder')" />
         </SelectTrigger>
         <SelectContent position="item-aligned">
-          <SelectItem v-for="item in accounts.items" :key="item.id" :value="item.id">
+          <SelectItem v-for="item in data" :key="item.id" :value="item.id">
             {{ item.name }}
           </SelectItem>
         </SelectContent>

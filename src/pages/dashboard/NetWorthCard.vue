@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
-import { useAccountsStore } from '@/stores/use-accounts-store'
+import { useAccounts } from '@/stores/use-accounts'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
@@ -9,12 +9,13 @@ import { serializeTransactionsQuery } from '@/features/transactions-list/lib/tra
 
 const { format } = useCurrencyFormatter()
 const { t } = useI18n()
-const accounts = useAccountsStore()
+const { data: accounts } = useAccounts()
 
 const totalBalanceFormatted = computed(() => {
-  const totalBalance = accounts.items.reduce((acc, account) => {
-    return acc + (account.balance ?? 0)
-  }, 0)
+  const totalBalance =
+    accounts.value?.reduce((acc, account) => {
+      return acc + (account.balance ?? 0)
+    }, 0) ?? 0
   return format(totalBalance)
 })
 </script>
@@ -27,7 +28,7 @@ const totalBalanceFormatted = computed(() => {
     </CardHeader>
     <CardContent class="mt-2">
       <div
-        v-for="account in accounts.items"
+        v-for="account in accounts"
         :key="account.id"
         :for="`account-${account.id}`"
         class="flex items-center gap-2 justify-between border-b-2 border-b-muted last:border-0 py-2"

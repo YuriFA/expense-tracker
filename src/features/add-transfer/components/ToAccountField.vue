@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { useAccountsStore } from '@/stores/use-accounts-store'
+import { useAccounts } from '@/stores/use-accounts'
 import { useFieldValue, Field as VeeField } from 'vee-validate'
 import type { AddTransferFormValues } from '../validation/add-transfer-schema'
 import { computed } from 'vue'
@@ -18,11 +18,11 @@ defineProps<{
 }>()
 
 const { t } = useI18n()
-const accounts = useAccountsStore()
+const { data } = useAccounts()
 const fromAccountId = useFieldValue<AddTransferFormValues['fromAccountId']>('fromAccountId')
 
 const filteredAccounts = computed(() =>
-  accounts.items.filter((account) => account.id !== fromAccountId.value),
+  data.value?.filter((account) => account.id !== fromAccountId.value),
 )
 </script>
 
