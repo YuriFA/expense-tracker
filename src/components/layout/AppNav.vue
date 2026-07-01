@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import Button from '../ui/button/Button.vue'
 import { RouterLink } from 'vue-router'
 import { computed } from 'vue'
+import { Button } from '../ui/button'
 
 const { t } = useI18n()
 
