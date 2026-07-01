@@ -18,7 +18,7 @@ const transactions = useTransactionsStore()
 const accounts = useAccountsStore()
 const isReady = computed(() => !accounts.isLoading && !transactions.isLoading)
 
-const onSuccess = () => {
+const handleSuccess = () => {
   toast.success(t('addTransaction.success'))
 }
 </script>
@@ -37,13 +37,13 @@ const onSuccess = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="expense">
-          <AddTransactionForm type="expense" @success="onSuccess" />
+          <AddTransactionForm type="expense" @success="handleSuccess" />
         </TabsContent>
         <TabsContent value="income">
-          <AddTransactionForm type="income" @success="onSuccess" />
+          <AddTransactionForm type="income" @success="handleSuccess" />
         </TabsContent>
         <TabsContent value="transfer">
-          <AddTransferForm @success="onSuccess" />
+          <AddTransferForm @success="handleSuccess" />
         </TabsContent>
       </Tabs>
       <Spinner v-else class="mx-auto" />

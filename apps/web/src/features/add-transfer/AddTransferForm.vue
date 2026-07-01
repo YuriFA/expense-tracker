@@ -31,7 +31,7 @@ const { t } = useI18n()
 const initialFromAccountId = lastUsedAccountId.value ?? ''
 const initialToAccountId = accounts.items.find((item) => item.id !== initialFromAccountId)?.id ?? ''
 
-const { handleSubmit, isSubmitting } = useForm<AddTransferFormValues>({
+const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransferFormValues>({
   validationSchema: toTypedSchema(createAddTransferSchema()),
   initialValues: {
     type: 'transfer',
@@ -40,7 +40,7 @@ const { handleSubmit, isSubmitting } = useForm<AddTransferFormValues>({
   },
 })
 
-const onSubmit = handleSubmit(async (data) => {
+const handleSubmit = handleFormSubmit(async (data) => {
   await transactions.addTransaction<TransferTransaction>({
     type: data.type,
     fromAccountId: data.fromAccountId,
@@ -54,7 +54,7 @@ const onSubmit = handleSubmit(async (data) => {
 </script>
 
 <template>
-  <form id="add-transfer-form" class="flex flex-col gap-3" @submit="onSubmit">
+  <form id="add-transfer-form" class="flex flex-col gap-3" @submit="handleSubmit">
     <div class="space-y-1">
       <FieldLabel for="from-account-id">{{ t('addTransfer.fromAccountLabel') }}</FieldLabel>
       <div class="flex gap-2">
