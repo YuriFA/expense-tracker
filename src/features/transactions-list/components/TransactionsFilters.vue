@@ -20,7 +20,7 @@ const { t } = useI18n()
 
 const { filters, setFilters, resetFilters } = useTransactionsFilters()
 
-const { handleSubmit, resetForm } = useForm<TransactionsFilterFormValues>({
+const { handleSubmit: handleFormSubmit, resetForm } = useForm<TransactionsFilterFormValues>({
   validationSchema: toTypedSchema(createTransactionsFilterSchema()),
   initialValues: {
     accountId: filters.value.accountId,
@@ -29,7 +29,7 @@ const { handleSubmit, resetForm } = useForm<TransactionsFilterFormValues>({
   },
 })
 
-const onSubmit = handleSubmit(async (data) => {
+const handleSubmit = handleFormSubmit(async (data) => {
   await setFilters({
     type: data.type,
     accountId: data.accountId,
@@ -39,7 +39,7 @@ const onSubmit = handleSubmit(async (data) => {
   emit('submit')
 })
 
-const onReset = async () => {
+const handleReset = async () => {
   await resetFilters()
   resetForm({
     values: {
@@ -52,13 +52,13 @@ const onReset = async () => {
 </script>
 
 <template>
-  <form id="transactions-filter-form" class="flex flex-col gap-3" @submit="onSubmit">
+  <form id="transactions-filter-form" class="flex flex-col gap-3" @submit="handleSubmit">
     <TransactionTypeField />
     <TransactionAccountField />
     <TransactionCategoriesField />
 
     <div class="flex flex-col gap-2 md:flex-row md:justify-end">
-      <Button type="button" variant="outline" class="w-full md:w-auto" @click="onReset">
+      <Button type="button" variant="outline" class="w-full md:w-auto" @click="handleReset">
         {{ t('transactions.reset') }}
       </Button>
       <Button type="submit" class="w-full md:w-auto">

@@ -89,7 +89,7 @@ const isApplyDisabled = computed(() => {
   return !draftRange.value.start || !draftRange.value.end
 })
 
-const onOpenChange = (value: boolean) => {
+const handleOpenChange = (value: boolean) => {
   open.value = value
 
   if (value) {
@@ -104,7 +104,7 @@ const setDraftRange = (range: DraftRange) => {
   }
 }
 
-const onRangeChange = (range: CalendarRangeValue) => {
+const handleRangeChange = (range: CalendarRangeValue) => {
   setDraftRange({
     start: range.start ? fromDateValue(range.start) : undefined,
     end: range.end ? fromDateValue(range.end) : undefined,
@@ -125,7 +125,7 @@ const applyRange = async () => {
 </script>
 
 <template>
-  <Popover :open="open" @update:open="onOpenChange">
+  <Popover :open="open" @update:open="handleOpenChange">
     <PopoverTrigger as-child>
       <Button variant="outline"><CalendarIcon /> {{ dateFormatted }}</Button>
     </PopoverTrigger>
@@ -155,7 +155,7 @@ const applyRange = async () => {
           :locale="locale"
           :number-of-months="2"
           initial-focus
-          @update:model-value="onRangeChange"
+          @update:model-value="handleRangeChange"
         />
 
         <div class="flex items-center justify-end gap-2 border-t pt-4">

@@ -30,7 +30,7 @@ const transactions = useTransactionsStore()
 const lastUsedAccountId = useLastUsedAccountId()
 const { t } = useI18n()
 
-const { handleSubmit, isSubmitting } = useForm<AddTransactionFormValues>({
+const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransactionFormValues>({
   validationSchema: toTypedSchema(createAddTransactionSchema()),
   initialValues: {
     type,
@@ -38,7 +38,7 @@ const { handleSubmit, isSubmitting } = useForm<AddTransactionFormValues>({
   },
 })
 
-const onSubmit = handleSubmit(async (data) => {
+const handleSubmit = handleFormSubmit(async (data) => {
   await transactions.addTransaction<CashflowTransaction>({
     type: data.type,
     accountId: data.accountId,
@@ -52,7 +52,7 @@ const onSubmit = handleSubmit(async (data) => {
 </script>
 
 <template>
-  <form id="add-transaction-form" class="flex flex-col gap-3" @submit="onSubmit">
+  <form id="add-transaction-form" class="flex flex-col gap-3" @submit="handleSubmit">
     <div class="space-y-1">
       <FieldLabel for="account-id">{{ t('addTransaction.accountLabel') }}</FieldLabel>
       <div class="flex gap-2">

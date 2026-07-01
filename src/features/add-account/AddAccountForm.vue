@@ -23,7 +23,7 @@ const accounts = useAccountsStore()
 const { format } = useCurrencyFormatter()
 const openingBalancePlaceholder = computed(() => format(1000))
 
-const { handleSubmit, setFieldValue } = useForm<AddAccountFormValues>({
+const { handleSubmit: handleFormSubmit, setFieldValue } = useForm<AddAccountFormValues>({
   validationSchema: toTypedSchema(createAddAccountSchema()),
   initialValues: {
     name: '',
@@ -31,14 +31,14 @@ const { handleSubmit, setFieldValue } = useForm<AddAccountFormValues>({
   },
 })
 
-const onSubmit = handleSubmit(async (data) => {
+const handleSubmit = handleFormSubmit(async (data) => {
   await accounts.addAccount(data)
   emit('success')
 })
 </script>
 
 <template>
-  <form id="add-account-form" class="flex flex-col gap-3" @submit="onSubmit">
+  <form id="add-account-form" class="flex flex-col gap-3" @submit="handleSubmit">
     <VeeField v-slot="{ field, errors }" name="name">
       <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">
         <FieldLabel for="name">{{ t('addAccount.nameLabel') }}</FieldLabel>
