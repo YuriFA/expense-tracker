@@ -10,7 +10,8 @@ export function useFilteredTransactions(query: Ref<TransactionQuery>) {
     [],
   )
 
-  watch([query, () => transactions.items], executeImmediate, { deep: true, immediate: false })
+  watch(query, executeImmediate, { deep: 1 })
+  watch(() => transactions.items, executeImmediate)
 
   return {
     data: state,
