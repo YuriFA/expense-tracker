@@ -1,23 +1,16 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAccountBalances } from '@/composables/use-account-balances'
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { generateHashIndex } from '@/shared/lib/hash-generator'
-import type { Account } from '@/entities/account/types'
+import type { AccountWithBalance } from '@/entities/account/types'
 import { computed } from 'vue'
 
 const { account } = defineProps<{
-  account: Account
+  account: AccountWithBalance
 }>()
 
 const index = computed(() => generateHashIndex(account.id))
-
 const { format } = useCurrencyFormatter()
-const { getAccountBalance } = useAccountBalances()
-
-const balance = computed(() => {
-  return format(getAccountBalance(account.id) ?? 0)
-})
 </script>
 
 <template>
@@ -33,7 +26,7 @@ const balance = computed(() => {
       <CardTitle>{{ account.name }}</CardTitle>
     </CardHeader>
     <CardContent>
-      <p class="text-xl font-bold">{{ balance }}</p>
+      <p class="text-xl font-bold">{{ format(account.balance) }}</p>
     </CardContent>
   </Card>
 </template>

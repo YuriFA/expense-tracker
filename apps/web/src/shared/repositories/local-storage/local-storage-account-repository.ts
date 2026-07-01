@@ -1,6 +1,10 @@
 import type { Account } from '@/entities/account/types'
-import { useLocalStorageRef, type LocalStorageSerializer } from './local-storage-adapter'
-import { parseAccountsStorage, serializeAccountsStorage } from '@/entities/account/account'
+import {
+  getAccountsBalances,
+  getComputedAccountBalance,
+  parseAccountsStorage,
+  serializeAccountsStorage,
+} from '@/entities/account/account'
 import type {
   AccountRepository,
   CreateAccountPayload,
@@ -8,27 +12,40 @@ import type {
 } from '../account-repository'
 import { STORAGE_KEYS } from './storage-keys'
 import { generateId } from '@/shared/lib/generate-id'
+import type { Transaction } from '@/entities/transaction/types'
+import { createLocalStorageAdapter } from './local-storage-adapter'
 
-const serializer: LocalStorageSerializer<Account[]> = {
+const accountsStorage = createLocalStorageAdapter<Account[]>(STORAGE_KEYS.accounts, [], {
   read: parseAccountsStorage,
   write: serializeAccountsStorage,
-}
+})
 
 export function createLocalStorageAccountRepository(deps: {
   hasTransactionsForAccount: (accountId: string) => Promise<boolean>
+  getAllTransactions: () => Promise<Transaction[]>
 }): AccountRepository {
-  const items = useLocalStorageRef<Account[]>({
-    storageKey: STORAGE_KEYS.accounts,
-    initialValue: [],
-    serializer,
-  })
-
   return {
     async getAll() {
-      return items.value.slice()
+      const [accounts, transactions] = await Promise.all([
+        accountsStorage.get(),
+        deps.getAllTransactions(),
+      ])
+      const balances = getAccountsBalances(accounts, transactions)
+      return accounts.map((account) => ({
+        ...account,
+        balance: balances[account.id] ?? account.openingBalance + account.manualAdjustment,
+      }))
     },
     async getById(id: string) {
-      return items.value.find((item) => item.id === id) ?? null
+      const [account, transactions] = await Promise.all([
+        accountsStorage.get().find((item) => item.id === id) ?? null,
+        deps.getAllTransactions(),
+      ])
+      if (!account) {
+        return null
+      }
+
+      return { ...account, balance: getComputedAccountBalance(account, transactions) }
     },
     async create(payload: CreateAccountPayload) {
       const account: Account = {
@@ -36,28 +53,37 @@ export function createLocalStorageAccountRepository(deps: {
         id: payload.id ?? generateId(),
         manualAdjustment: 0,
       }
-      items.value.push(account)
-      return account
+      const accounts = accountsStorage.get()
+      accounts.push(account)
+      accountsStorage.set(accounts)
+      return { ...account, balance: getComputedAccountBalance(account, []) }
     },
     async update(id, payload: UpdateAccountPayload) {
-      const target = items.value.find((item) => item.id === id)
+      const accounts = accountsStorage.get()
+      const target = accounts.find((item) => item.id === id)
 
       if (!target) {
         throw new Error(`Account with id ${id} not found`)
       }
 
-      return Object.assign(target, payload)
+      const transactions = await deps.getAllTransactions()
+      const updated = Object.assign({}, target, payload, {
+        balance: getComputedAccountBalance({ ...target, ...payload }, transactions),
+      })
+      accountsStorage.set(accounts.map((a) => (a.id === id ? updated : a)))
+      return updated
     },
     async remove(id) {
       if (await deps.hasTransactionsForAccount(id)) {
         return false
       }
-      const next = items.value.filter((item) => item.id !== id)
-      if (next.length === items.value.length) {
+      const accounts = accountsStorage.get()
+      const next = accounts.filter((item) => item.id !== id)
+      if (next.length === accounts.length) {
         return false
       }
 
-      items.value = next
+      accountsStorage.set(next)
       return true
     },
     async hasReferencingTransactions(accountId) {

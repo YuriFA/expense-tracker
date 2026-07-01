@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAccountBalances } from '@/composables/use-account-balances'
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { useAccountsStore } from '@/stores/use-accounts-store'
 import { computed } from 'vue'
@@ -8,14 +7,15 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { serializeTransactionsQuery } from '@/features/transactions-list/lib/transactions-query'
 
-const accounts = useAccountsStore()
-const { getAccountBalance } = useAccountBalances()
 const { format } = useCurrencyFormatter()
-const { totalBalance } = useAccountBalances()
 const { t } = useI18n()
+const accounts = useAccountsStore()
 
 const totalBalanceFormatted = computed(() => {
-  return format(totalBalance.value)
+  const totalBalance = accounts.items.reduce((acc, account) => {
+    return acc + (account.balance ?? 0)
+  }, 0)
+  return format(totalBalance)
 })
 </script>
 
@@ -43,7 +43,7 @@ const totalBalanceFormatted = computed(() => {
           >{{ account.name }}</RouterLink
         >
         <p class="text-md">
-          {{ format(getAccountBalance(account.id) ?? 0) }}
+          {{ format(account.balance) }}
         </p>
       </div>
     </CardContent>

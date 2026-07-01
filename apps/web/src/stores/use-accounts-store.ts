@@ -1,16 +1,22 @@
 import { defineStore } from 'pinia'
 
-import type { Account } from '@/entities/account/types'
+import type { Account, AccountWithBalance } from '@/entities/account/types'
 import { getRepositories } from '@/shared/repositories/repository-factory'
 import { useAsyncState } from '@vueuse/core'
+import { watch } from 'vue'
+import { useTransactionsStore } from './use-transactions-store'
 
 export const useAccountsStore = defineStore('accounts', () => {
   const repository = getRepositories().accounts
+  const transactionsStore = useTransactionsStore()
   const {
     state: items,
     isLoading,
     isReady,
-  } = useAsyncState<Account[]>(() => repository.getAll(), [])
+    executeImmediate,
+  } = useAsyncState<AccountWithBalance[]>(() => repository.getAll(), [])
+
+  watch(() => transactionsStore.items, executeImmediate)
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 

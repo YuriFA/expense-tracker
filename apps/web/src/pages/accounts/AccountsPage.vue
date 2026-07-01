@@ -3,7 +3,6 @@ import { useAccountsStore } from '@/stores/use-accounts-store'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/components/ui/card'
-import { useAccountBalances } from '@/composables/use-account-balances'
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { computed, ref } from 'vue'
 import { Button } from '@/components/ui/button'
@@ -19,14 +18,16 @@ import AddAccountForm from '@/features/add-account/AddAccountForm.vue'
 
 const { t } = useI18n()
 const accounts = useAccountsStore()
-const { totalBalance } = useAccountBalances()
 const { format } = useCurrencyFormatter()
 const totalBalanceFormatted = computed(() => {
-  return format(totalBalance.value)
+  const totalBalance = accounts.items.reduce((acc, account) => {
+    return acc + (account.balance ?? 0)
+  }, 0)
+  return format(totalBalance)
 })
 
 const dialogOpen = ref(false)
-const onSuccess = () => {
+const handleSuccess = () => {
   toast.success(t('addAccount.success'))
   dialogOpen.value = false
 }
@@ -48,7 +49,7 @@ const onSuccess = () => {
           <DialogHeader>
             <DialogTitle>{{ t('addAccount.newAccount') }}</DialogTitle>
           </DialogHeader>
-          <AddAccountForm @success="onSuccess" />
+          <AddAccountForm @success="handleSuccess" />
         </DialogContent>
       </Dialog>
     </div>
