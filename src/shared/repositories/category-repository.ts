@@ -9,6 +9,5 @@ export interface CategoryRepository extends Repository<
   CreateCategoryPayload,
   UpdateCategoryPayload
 > {
-  getUserCategories(): Promise<Category[]>
   hasReferencingTransactions(categoryId: Category['id']): Promise<boolean>
 }

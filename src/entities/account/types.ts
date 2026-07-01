@@ -4,3 +4,7 @@ export type Account = {
   openingBalance: number
   manualAdjustment: number
 }
+
+export type AccountWithBalance = Account & {
+  balance: number
+}

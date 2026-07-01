@@ -1,5 +1,4 @@
 import type { Account } from '@/entities/account/types'
-import { useLocalStorageRef, type LocalStorageSerializer } from './local-storage-adapter'
 import { STORAGE_KEYS } from './storage-keys'
 import type { Transaction } from '@/entities/transaction/types'
 import {
@@ -21,31 +20,27 @@ import type {
 import { getDateTimestamp, toStartOfDay } from '@/shared/lib/date'
 import { generateId } from '@/shared/lib/generate-id'
 import i18n from '@/app/i18n'
+import { createLocalStorageAdapter } from './local-storage-adapter'
 
-const serializer: LocalStorageSerializer<Transaction[]> = {
+const transactionsStorage = createLocalStorageAdapter<Transaction[]>(STORAGE_KEYS.transactions, [], {
   read: parseTransactionsStorage,
   write: serializeTransactionsStorage,
-}
+})
+
 
 export function createLocalStorageTransactionRepository(deps: {
   getAccounts: () => Promise<Account[]>
   getCategories: () => Promise<Category[]>
 }): TransactionRepository {
-  const items = useLocalStorageRef<Transaction[]>({
-    storageKey: STORAGE_KEYS.transactions,
-    initialValue: [],
-    serializer,
-  })
-
   return {
     async getAll() {
-      return items.value.slice()
+      return transactionsStorage.get().slice()
     },
     async getById(id: string) {
-      return items.value.find((item) => item.id === id) ?? null
+      return transactionsStorage.get().find((item) => item.id === id) ?? null
     },
     async query(options: TransactionQuery = {}) {
-      let result = items.value
+      let result = transactionsStorage.get()
         .slice()
         .sort((a, b) => getDateTimestamp(b.occurredAt) - getDateTimestamp(a.occurredAt))
 
@@ -84,10 +79,10 @@ export function createLocalStorageTransactionRepository(deps: {
       return result
     },
     async hasTransactionsForAccount(accountId) {
-      return items.value.some((t) => isTransactionLinkedToAccount(t, accountId))
+      return transactionsStorage.get().some((t) => isTransactionLinkedToAccount(t, accountId))
     },
     async hasTransactionsForCategory(categoryId) {
-      return items.value.some((t) => isTransactionLinkedToCategory(t, categoryId))
+      return transactionsStorage.get().some((t) => isTransactionLinkedToCategory(t, categoryId))
     },
     async create(payload: CreateTransactionPayload) {
       const next = {
@@ -101,11 +96,14 @@ export function createLocalStorageTransactionRepository(deps: {
       if (!hasValidTransactionReferences(next, accounts, categories)) {
         throw new Error(i18n.global.t('errors.unknownTransactionReferences'))
       }
-      items.value.push(next)
+      const transactions = transactionsStorage.get()
+      transactions.push(next)
+      transactionsStorage.set(transactions)
       return next
     },
     async update(id, payload: UpdateTransactionPayload) {
-      const existing = items.value.find((i) => i.id === id)
+      const transactions = transactionsStorage.get()
+      const existing = transactions.find((i) => i.id === id)
       if (!existing) {
         throw new Error(i18n.global.t('errors.transactionNotFound'))
       }
@@ -117,17 +115,19 @@ export function createLocalStorageTransactionRepository(deps: {
       if (!hasValidTransactionReferences(next, accounts, categories)) {
         throw new Error(i18n.global.t('errors.unknownTransactionReferences'))
       }
-      const index = items.value.findIndex((i) => i.id === id)
+      const index = transactions.findIndex((i) => i.id === id)
       if (index === -1) {
         throw new Error(i18n.global.t('errors.transactionNotFound'))
       }
-      items.value[index] = next
+      transactions[index] = next
+      transactionsStorage.set(transactions)
       return next
     },
     async remove(id) {
-      const next = items.value.filter((i) => i.id !== id)
-      if (next.length === items.value.length) return false
-      items.value = next
+      const transactions = transactionsStorage.get()
+      const next = transactions.filter((i) => i.id !== id)
+      if (next.length === transactions.length) return false
+      transactionsStorage.set(next)
       return true
     },
   }

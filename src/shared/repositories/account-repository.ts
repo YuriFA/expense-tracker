@@ -1,4 +1,4 @@
-import type { Account } from '@/entities/account/types'
+import type { Account, AccountWithBalance } from '@/entities/account/types'
 import type { Repository } from './repository'
 
 export type CreateAccountPayload = Omit<Account, 'id' | 'manualAdjustment'> &
@@ -6,7 +6,7 @@ export type CreateAccountPayload = Omit<Account, 'id' | 'manualAdjustment'> &
 export type UpdateAccountPayload = Partial<Omit<Account, 'id'>>
 
 export interface AccountRepository extends Repository<
-  Account,
+  AccountWithBalance,
   CreateAccountPayload,
   UpdateAccountPayload
 > {

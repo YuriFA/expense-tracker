@@ -30,6 +30,7 @@ export function getRepositories(): RepositoryBundle {
   })
   accountsRepo = createLocalStorageAccountRepository({
     hasTransactionsForAccount: transactions.hasTransactionsForAccount,
+    getAllTransactions: transactions.getAll,
   })
   categoriesRepo = createLocalStorageCategoryRepository({
     hasTransactionsForCategory: transactions.hasTransactionsForCategory,
