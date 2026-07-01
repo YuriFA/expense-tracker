@@ -80,7 +80,9 @@
       "cancel": "Отмена",
       "apply": "Применить",
       "pickDate": "Выберите дату"
-    }
+    },
+    "errorLoadingTransactions": "Ошибка загрузки транзакций: {error}",
+    "noTransactions": "Транзакции не найдены"
   },
   "validation": {
     "nameRequired": "Введите название",
@@ -98,6 +100,7 @@
     "invalidDate": "Некорректная дата"
   },
   "errors": {
+    "transactionNotFound": "Транзакция не найдена",
     "invalidTransactionPayload": "Некорректные данные транзакции",
     "unknownTransactionReferences": "В транзакции указан неизвестный счет или категория"
   },

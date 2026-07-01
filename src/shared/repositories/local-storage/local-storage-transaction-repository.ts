@@ -106,15 +106,23 @@ export function createLocalStorageTransactionRepository(deps: {
     },
     async update(id, payload: UpdateTransactionPayload) {
       const existing = items.value.find((i) => i.id === id)
-      if (!existing) return false
+      if (!existing) {
+        throw new Error(i18n.global.t('errors.transactionNotFound'))
+      }
       const next = { ...payload, id } as Transaction
-      if (!isTransaction(next)) return false
+      if (!isTransaction(next)) {
+        throw new Error(i18n.global.t('errors.invalidTransactionPayload'))
+      }
       const [accounts, categories] = await Promise.all([deps.getAccounts(), deps.getCategories()])
-      if (!hasValidTransactionReferences(next, accounts, categories)) return false
+      if (!hasValidTransactionReferences(next, accounts, categories)) {
+        throw new Error(i18n.global.t('errors.unknownTransactionReferences'))
+      }
       const index = items.value.findIndex((i) => i.id === id)
-      if (index === -1) return false
+      if (index === -1) {
+        throw new Error(i18n.global.t('errors.transactionNotFound'))
+      }
       items.value[index] = next
-      return true
+      return next
     },
     async remove(id) {
       const next = items.value.filter((i) => i.id !== id)

@@ -80,7 +80,9 @@
       "cancel": "Cancel",
       "apply": "Apply",
       "pickDate": "Pick a date"
-    }
+    },
+    "errorLoadingTransactions": "Error loading transactions: {error}",
+    "noTransactions": "No transactions found"
   },
   "validation": {
     "nameRequired": "Enter a name",
@@ -98,6 +100,7 @@
     "invalidDate": "Invalid date "
   },
   "errors": {
+    "transactionNotFound": "Transaction not found",
     "invalidTransactionPayload": "Invalid transaction payload",
     "unknownTransactionReferences": "Transaction references an unknown account or category"
   },

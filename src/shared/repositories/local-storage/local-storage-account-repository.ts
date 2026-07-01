@@ -7,6 +7,7 @@ import type {
   UpdateAccountPayload,
 } from '../account-repository'
 import { STORAGE_KEYS } from './storage-keys'
+import { generateId } from '@/shared/lib/generate-id'
 
 const serializer: LocalStorageSerializer<Account[]> = {
   read: parseAccountsStorage,
@@ -32,7 +33,7 @@ export function createLocalStorageAccountRepository(deps: {
     async create(payload: CreateAccountPayload) {
       const account: Account = {
         ...payload,
-        id: payload.id ?? crypto.randomUUID(),
+        id: payload.id ?? generateId(),
         manualAdjustment: 0,
       }
       items.value.push(account)
@@ -42,11 +43,10 @@ export function createLocalStorageAccountRepository(deps: {
       const target = items.value.find((item) => item.id === id)
 
       if (!target) {
-        return false
+        throw new Error(`Account with id ${id} not found`)
       }
 
-      Object.assign(target, payload)
-      return true
+      return Object.assign(target, payload)
     },
     async remove(id) {
       if (await deps.hasTransactionsForAccount(id)) {

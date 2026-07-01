@@ -31,8 +31,8 @@ const { handleSubmit, setFieldValue } = useForm<AddAccountFormValues>({
   },
 })
 
-const onSubmit = handleSubmit((data) => {
-  accounts.addAccount(data)
+const onSubmit = handleSubmit(async (data) => {
+  await accounts.addAccount(data)
   emit('success')
 })
 </script>

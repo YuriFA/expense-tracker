@@ -17,17 +17,5 @@ export const useSettingsStore = defineStore('settings', () => {
   )
   const theme = useStorage<Settings['theme']>(THEME_STORAGE_KEY, DEFAULT_SETTINGS.theme)
 
-  const setLocale = (value: Settings['locale']) => {
-    locale.value = value
-  }
-
-  const setCurrency = (value: Settings['currency']) => {
-    currency.value = value
-  }
-
-  const setTheme = (value: Settings['theme']) => {
-    theme.value = value
-  }
-
-  return { locale, currency, theme, setLocale, setCurrency, setTheme }
+  return { locale, currency, theme }
 })

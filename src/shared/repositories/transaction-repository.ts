@@ -2,7 +2,8 @@ import type { Transaction, TransactionType } from '@/entities/transaction/types'
 import type { Repository } from './repository'
 import type { CalendarDay } from '../lib/date'
 
-export type CreateTransactionPayload = Omit<Transaction, 'id'> & Partial<Pick<Transaction, 'id'>>
+export type CreateTransactionPayload<T extends Transaction = Transaction> = Omit<T, 'id'> &
+  Partial<Pick<T, 'id'>>
 export type UpdateTransactionPayload = Partial<Omit<Transaction, 'id'>>
 
 export interface TransactionQuery {
