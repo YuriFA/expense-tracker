@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { ListFilterIcon } from 'lucide-vue-next'
+import { ListFilterIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import TransactionsFilters from './TransactionsFilters.vue'
 import { ref } from 'vue'
