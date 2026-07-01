@@ -17,7 +17,7 @@ import type {
   TransactionRepository,
   UpdateTransactionPayload,
 } from '../transaction-repository'
-import { getDateTimestamp, toStartOfDay } from '@/shared/lib/date'
+import { getDateTimestamp, toEndOfDay, toStartOfDay } from '@/shared/lib/date'
 import { generateId } from '@/shared/lib/generate-id'
 import i18n from '@/app/i18n'
 import { createLocalStorageAdapter } from './local-storage-adapter'
@@ -50,7 +50,7 @@ export function createLocalStorageTransactionRepository(deps: {
       }
 
       if (options.toDate) {
-        const to = toStartOfDay(options.toDate).getTime()
+        const to = toEndOfDay(options.toDate).getTime()
         result = result.filter((item) => getDateTimestamp(item.occurredAt) <= to)
       }
 
