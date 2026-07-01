@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { shallowRef } from 'vue'
 
 import type { Transaction } from '@/entities/transaction/types'
 import { getRepositories } from '@/shared/repositories/repository-factory'
@@ -7,18 +6,21 @@ import type {
   CreateTransactionPayload,
   TransactionQuery,
 } from '@/shared/repositories/transaction-repository'
+import { useAsyncState } from '@vueuse/core'
 
 type GetTransactionsOptions = TransactionQuery
 
 export const useTransactionsStore = defineStore('transactions', () => {
   const repository = getRepositories().transactions
-  const items = shallowRef<Transaction[]>([])
+  const {
+    state: items,
+    isLoading,
+    isReady,
+  } = useAsyncState<Transaction[]>(() => repository.getAll(), [])
 
-  const ready = repository.getAll().then((transactions) => {
-    items.value = transactions
-  })
-
-  const getTransactions = async (options: GetTransactionsOptions = {}) => repository.query(options)
+  const getTransactions = async (options: GetTransactionsOptions = {}) => {
+    return repository.query(options)
+  }
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
@@ -45,7 +47,8 @@ export const useTransactionsStore = defineStore('transactions', () => {
 
   return {
     items,
-    ready,
+    isLoading,
+    isReady,
     getTransactions,
     findById,
     addTransaction,

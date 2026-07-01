@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
-import { shallowRef } from 'vue'
 
 import type { Category } from '@/entities/category/types'
 import { getRepositories } from '@/shared/repositories/repository-factory'
+import { useAsyncState } from '@vueuse/core'
 
 export const useCategoriesStore = defineStore('categories', () => {
   const repository = getRepositories().categories
-  const items = shallowRef<Category[]>([])
-
-  const ready = repository.getAll().then((category) => {
-    items.value = category
-  })
+  const {
+    state: items,
+    isLoading,
+    isReady,
+  } = useAsyncState<Category[]>(() => repository.getAll(), [])
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
@@ -37,7 +37,8 @@ export const useCategoriesStore = defineStore('categories', () => {
 
   return {
     items,
-    ready,
+    isLoading,
+    isReady,
     findById,
     addCategory,
     updateCategory,
