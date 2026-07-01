@@ -8,6 +8,7 @@ import type {
   UpdateCategoryPayload,
 } from '../category-repository'
 import { getDefaultCategories } from '@/entities/category/defaults'
+import { generateId } from '@/shared/lib/generate-id'
 
 const serializer: LocalStorageSerializer<Category[]> = {
   read: parseCategoriesStorage,
@@ -36,7 +37,7 @@ export function createLocalStorageCategoryRepository(deps: {
     async create(payload: CreateCategoryPayload) {
       const category: Category = {
         ...payload,
-        id: payload.id ?? crypto.randomUUID(),
+        id: payload.id ?? generateId(),
       }
       userItems.value.push(category)
       return category
@@ -45,11 +46,10 @@ export function createLocalStorageCategoryRepository(deps: {
       const target = userItems.value.find((item) => item.id === id)
 
       if (!target) {
-        return false
+        throw new Error(`Category with id ${id} not found`)
       }
 
-      Object.assign(target, payload)
-      return true
+      return Object.assign(target, payload)
     },
     async remove(id) {
       if (await deps.hasTransactionsForCategory(id)) {

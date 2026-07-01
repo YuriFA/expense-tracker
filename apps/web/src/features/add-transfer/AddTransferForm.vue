@@ -31,7 +31,7 @@ const { t } = useI18n()
 const initialFromAccountId = lastUsedAccountId.value ?? ''
 const initialToAccountId = accounts.items.find((item) => item.id !== initialFromAccountId)?.id ?? ''
 
-const { handleSubmit } = useForm<AddTransferFormValues>({
+const { handleSubmit, isSubmitting } = useForm<AddTransferFormValues>({
   validationSchema: toTypedSchema(createAddTransferSchema()),
   initialValues: {
     type: 'transfer',
@@ -40,8 +40,8 @@ const { handleSubmit } = useForm<AddTransferFormValues>({
   },
 })
 
-const onSubmit = handleSubmit((data) => {
-  transactions.addTransaction<TransferTransaction>({
+const onSubmit = handleSubmit(async (data) => {
+  await transactions.addTransaction<TransferTransaction>({
     type: data.type,
     fromAccountId: data.fromAccountId,
     toAccountId: data.toAccountId,
@@ -78,7 +78,12 @@ const onSubmit = handleSubmit((data) => {
       </Field>
     </VeeField>
 
-    <Button form="add-transfer-form" type="submit" class="w-full md:ml-auto md:w-auto">
+    <Button
+      form="add-transfer-form"
+      type="submit"
+      class="w-full md:ml-auto md:w-auto"
+      :loading="isSubmitting"
+    >
       {{ t('addTransfer.submit') }}
     </Button>
   </form>

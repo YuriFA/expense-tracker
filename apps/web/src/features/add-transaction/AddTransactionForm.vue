@@ -30,7 +30,7 @@ const transactions = useTransactionsStore()
 const lastUsedAccountId = useLastUsedAccountId()
 const { t } = useI18n()
 
-const { handleSubmit } = useForm<AddTransactionFormValues>({
+const { handleSubmit, isSubmitting } = useForm<AddTransactionFormValues>({
   validationSchema: toTypedSchema(createAddTransactionSchema()),
   initialValues: {
     type,
@@ -38,8 +38,8 @@ const { handleSubmit } = useForm<AddTransactionFormValues>({
   },
 })
 
-const onSubmit = handleSubmit((data) => {
-  transactions.addTransaction<CashflowTransaction>({
+const onSubmit = handleSubmit(async (data) => {
+  await transactions.addTransaction<CashflowTransaction>({
     type: data.type,
     accountId: data.accountId,
     amount: data.amount,
@@ -76,7 +76,12 @@ const onSubmit = handleSubmit((data) => {
 
     <CategoriesField />
 
-    <Button form="add-transaction-form" type="submit" class="w-full md:ml-auto md:w-auto">
+    <Button
+      form="add-transaction-form"
+      type="submit"
+      class="w-full md:ml-auto md:w-auto"
+      :loading="isSubmitting"
+    >
       {{ t('addTransaction.submit') }}
     </Button>
   </form>

@@ -1,173 +1,51 @@
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
+import { shallowRef } from 'vue'
 
-import { useStorage } from '@vueuse/core'
-import { APP_NAME } from '@/app/config'
-import type { Transaction, TransactionType } from '@/entities/transaction/types'
-import {
-  hasValidTransactionReferences,
-  isTransaction,
-  isTransactionLinkedToCategory,
-  isTransferTransaction,
-  parseTransactionsStorage,
-  serializeTransactionsStorage,
-} from '@/entities/transaction/transaction'
-import { generateId } from '@/shared/lib/generate-id'
-import i18n from '@/app/i18n'
-import { useAccountsStore } from './use-accounts-store'
-import { useCategoriesStore } from './use-categories-store'
-import { getDateTimestamp, toEndOfDay, toStartOfDay, type CalendarDay } from '@/shared/lib/date'
+import type { Transaction } from '@/entities/transaction/types'
+import { getRepositories } from '@/shared/repositories/repository-factory'
+import type {
+  CreateTransactionPayload,
+  TransactionQuery,
+} from '@/shared/repositories/transaction-repository'
 
-const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
-
-type GetTransactionsOptions = {
-  limit?: number
-  type?: TransactionType
-  accountId?: string
-  categoryId?: string
-  fromDate?: CalendarDay
-  toDate?: CalendarDay
-}
+type GetTransactionsOptions = TransactionQuery
 
 export const useTransactionsStore = defineStore('transactions', () => {
-  const accountsStore = useAccountsStore()
-  const categoriesStore = useCategoriesStore()
-  const items = useStorage<Transaction[]>(TRANSACTIONS_STORAGE_KEY, [], localStorage, {
-    serializer: {
-      read: parseTransactionsStorage,
-      write: serializeTransactionsStorage,
-    },
+  const repository = getRepositories().transactions
+  const items = shallowRef<Transaction[]>([])
+
+  const ready = repository.getAll().then((transactions) => {
+    items.value = transactions
   })
 
-  const incomeTransactions = computed(() => items.value.filter((item) => item.type === 'income'))
-  const expenseTransactions = computed(() => items.value.filter((item) => item.type === 'expense'))
-  const transferTransactions = computed(() =>
-    items.value.filter((item) => item.type === 'transfer'),
-  )
-
-  const sortedTransactions = computed(() =>
-    items.value
-      .slice()
-      .sort((a, b) => getDateTimestamp(b.occurredAt) - getDateTimestamp(a.occurredAt)),
-  )
-  const getTransactions = (options: GetTransactionsOptions = {}) => {
-    let result = sortedTransactions.value
-
-    if (options.fromDate) {
-      const fromDate = toStartOfDay(options.fromDate)
-
-      result = result.filter((transaction) => getDateTimestamp(transaction.occurredAt) >= fromDate.getTime())
-    }
-
-    if (options.toDate) {
-      const toDate = toEndOfDay(options.toDate)
-
-      result = result.filter((transaction) => getDateTimestamp(transaction.occurredAt) <= toDate.getTime())
-    }
-
-    if (options.type) {
-      result = result.filter((transaction) => transaction.type === options.type)
-    }
-
-    if (options.accountId) {
-      result = result.filter((transaction) =>
-        isTransferTransaction(transaction)
-          ? transaction.fromAccountId === options.accountId ||
-            transaction.toAccountId === options.accountId
-          : options.accountId === transaction.accountId,
-      )
-    }
-
-    if (options.categoryId) {
-      const categoryId = options.categoryId
-
-      result = result.filter((transaction) =>
-        isTransactionLinkedToCategory(transaction, categoryId),
-      )
-    }
-
-    if (options.limit) {
-      return result.slice(0, options.limit)
-    }
-
-    return result
-  }
+  const getTransactions = async (options: GetTransactionsOptions = {}) => repository.query(options)
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
-  const hasValidReferences = (transaction: Transaction) => {
-    return hasValidTransactionReferences(transaction, accountsStore.items, categoriesStore.items)
+  const addTransaction = async <T extends Transaction>(payload: CreateTransactionPayload<T>) => {
+    const created = await repository.create(payload)
+    items.value = [...items.value, created]
+    return created
   }
 
-  const addTransaction = <T extends Transaction>(
-    payload: Omit<T, 'id'> & Partial<Pick<T, 'id'>>,
-  ) => {
-    const nextTransaction = {
-      ...payload,
-      id: payload.id ?? generateId(),
-    }
-
-    if (!isTransaction(nextTransaction)) {
-      throw new Error(i18n.global.t('errors.invalidTransactionPayload'))
-    }
-
-    if (!hasValidReferences(nextTransaction)) {
-      throw new Error(i18n.global.t('errors.unknownTransactionReferences'))
-    }
-
-    items.value.push(nextTransaction)
-
-    return nextTransaction
+  const updateTransaction = async (id: string, payload: Omit<Transaction, 'id'>) => {
+    const updated = await repository.update(id, payload)
+    items.value = items.value.map((item) => (item.id === id ? updated : item))
   }
 
-  const updateTransaction = (id: string, payload: Omit<Transaction, 'id'>) => {
-    const transaction = findById(id)
-
-    if (!transaction) {
+  const removeTransaction = async (id: string) => {
+    const ok = await repository.remove(id)
+    if (!ok) {
       return false
     }
 
-    const nextTransaction = {
-      ...payload,
-      id,
-    }
-
-    if (!isTransaction(nextTransaction)) {
-      return false
-    }
-
-    if (!hasValidReferences(nextTransaction)) {
-      return false
-    }
-
-    const index = items.value.findIndex((item) => item.id === id)
-
-    if (index === -1) {
-      return false
-    }
-
-    items.value[index] = nextTransaction
-
-    return true
-  }
-
-  const removeTransaction = (id: string) => {
-    const nextItems = items.value.filter((item) => item.id !== id)
-
-    if (nextItems.length === items.value.length) {
-      return false
-    }
-
-    items.value = nextItems
-
+    items.value = items.value.filter((item) => item.id !== id)
     return true
   }
 
   return {
     items,
-    incomeTransactions,
-    expenseTransactions,
-    transferTransactions,
+    ready,
     getTransactions,
     findById,
     addTransaction,

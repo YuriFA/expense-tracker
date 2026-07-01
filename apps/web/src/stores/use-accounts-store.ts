@@ -1,76 +1,47 @@
 import { defineStore } from 'pinia'
 
-import { useStorage } from '@vueuse/core'
-import { APP_NAME } from '@/app/config'
 import type { Account } from '@/entities/account/types'
-import { parseAccountsStorage, serializeAccountsStorage } from '@/entities/account/account'
-import { generateId } from '@/shared/lib/generate-id'
-import {
-  isTransactionLinkedToAccount,
-  parseTransactionsStorage,
-} from '@/entities/transaction/transaction'
-
-const ACCOUNTS_STORAGE_KEY = `${APP_NAME}:accounts`
-const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
+import { getRepositories } from '@/shared/repositories/repository-factory'
+import { shallowRef } from 'vue'
 
 export const useAccountsStore = defineStore('accounts', () => {
-  const items = useStorage<Account[]>(ACCOUNTS_STORAGE_KEY, [], localStorage, {
-    serializer: {
-      read: parseAccountsStorage,
-      write: serializeAccountsStorage,
-    },
+  const repository = getRepositories().accounts
+  const items = shallowRef<Account[]>([])
+
+  const ready = repository.getAll().then((accounts) => {
+    items.value = accounts
   })
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
-  const addAccount = (
+  const addAccount = async (
     payload: Omit<Account, 'id' | 'manualAdjustment'> & Partial<Pick<Account, 'id'>>,
   ) => {
-    const account: Account = {
-      ...payload,
-      id: payload.id ?? generateId(),
-      manualAdjustment: 0,
-    }
-
-    items.value.push(account)
-
-    return account
+    const created = await repository.create(payload)
+    items.value = [...items.value, created]
+    return created
   }
 
-  const updateAccount = (id: string, payload: Partial<Omit<Account, 'id'>>) => {
-    const account = findById(id)
-
-    if (!account) {
-      return false
-    }
-
-    Object.assign(account, payload)
-
-    return true
+  const updateAccount = async (id: string, payload: Partial<Omit<Account, 'id'>>) => {
+    const updated = await repository.update(id, payload)
+    items.value = items.value.map((item) => (item.id === id ? updated : item))
   }
 
-  const removeAccount = (id: string) => {
-    const transactions = parseTransactionsStorage(
-      localStorage.getItem(TRANSACTIONS_STORAGE_KEY) ?? '[]',
-    )
+  const removeAccount = async (id: string) => {
+    const ok = await repository.remove(id)
 
-    if (transactions.some((transaction) => isTransactionLinkedToAccount(transaction, id))) {
+    if (!ok) {
       return false
     }
 
-    const nextItems = items.value.filter((item) => item.id !== id)
-
-    if (nextItems.length === items.value.length) {
-      return false
-    }
-
-    items.value = nextItems
+    items.value = items.value.filter((item) => item.id !== id)
 
     return true
   }
 
   return {
     items,
+    ready,
     findById,
     addAccount,
     updateAccount,

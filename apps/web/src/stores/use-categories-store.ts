@@ -1,81 +1,43 @@
-import { getDefaultCategories } from '@/entities/category/defaults'
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
+import { shallowRef } from 'vue'
 
 import type { Category } from '@/entities/category/types'
-import { useStorage } from '@vueuse/core'
-import { APP_NAME } from '@/app/config'
-import { parseCategoriesStorage, serializeCategoriesStorage } from '@/entities/category/category'
-import {
-  isTransactionLinkedToCategory,
-  parseTransactionsStorage,
-} from '@/entities/transaction/transaction'
-import { generateId } from '@/shared/lib/generate-id'
-
-const CATEGORIES_STORAGE_KEY = `${APP_NAME}:categories`
-const TRANSACTIONS_STORAGE_KEY = `${APP_NAME}:transactions`
+import { getRepositories } from '@/shared/repositories/repository-factory'
 
 export const useCategoriesStore = defineStore('categories', () => {
-  const userCategories = useStorage(CATEGORIES_STORAGE_KEY, getDefaultCategories(), localStorage, {
-    serializer: {
-      read: parseCategoriesStorage,
-      write: serializeCategoriesStorage,
-    },
-  })
-  const items = computed(() => [...getDefaultCategories(), ...userCategories.value])
+  const repository = getRepositories().categories
+  const items = shallowRef<Category[]>([])
 
-  const incomeCategories = computed(() => items.value.filter((item) => item.type === 'income'))
-  const expenseCategories = computed(() => items.value.filter((item) => item.type === 'expense'))
+  const ready = repository.getAll().then((category) => {
+    items.value = category
+  })
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
-  const addCategory = (payload: Omit<Category, 'id'> & Partial<Pick<Category, 'id'>>) => {
-    const category: Category = {
-      ...payload,
-      id: payload.id ?? generateId(),
-    }
-
-    userCategories.value.push(category)
-
-    return category
+  const addCategory = async (payload: Omit<Category, 'id'> & Partial<Pick<Category, 'id'>>) => {
+    const created = await repository.create(payload)
+    items.value = [...items.value, created]
+    return created
   }
 
-  const updateCategory = (id: string, payload: Partial<Omit<Category, 'id'>>) => {
-    const category = userCategories.value.find((item) => item.id === id)
-
-    if (!category) {
-      return false
-    }
-
-    Object.assign(category, payload)
-
-    return true
+  const updateCategory = async (id: string, payload: Partial<Omit<Category, 'id'>>) => {
+    const updated = await repository.update(id, payload)
+    items.value = items.value.map((item) => (item.id === id ? updated : item))
   }
 
-  const removeCategory = (id: string) => {
-    const transactions = parseTransactionsStorage(
-      localStorage.getItem(TRANSACTIONS_STORAGE_KEY) ?? '[]',
-    )
-
-    if (transactions.some((transaction) => isTransactionLinkedToCategory(transaction, id))) {
+  const removeCategory = async (id: string) => {
+    const ok = await repository.remove(id)
+    if (!ok) {
       return false
     }
 
-    const nextItems = userCategories.value.filter((item) => item.id !== id)
-
-    if (nextItems.length === userCategories.value.length) {
-      return false
-    }
-
-    userCategories.value = nextItems
-
+    items.value = items.value.filter((item) => item.id !== id)
     return true
   }
 
   return {
     items,
-    incomeCategories,
-    expenseCategories,
+    ready,
     findById,
     addCategory,
     updateCategory,
