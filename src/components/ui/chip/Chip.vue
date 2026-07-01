@@ -4,7 +4,7 @@ import type { PrimitiveProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { Badge, type BadgeVariants } from '../badge'
 import { Button } from '../button'
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 
 const props = defineProps<
   PrimitiveProps & {

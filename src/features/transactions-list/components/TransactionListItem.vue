@@ -5,7 +5,7 @@ import { useAccountsStore } from '@/stores/use-accounts-store'
 import { useCategoriesStore } from '@/stores/use-categories-store'
 import type { Transaction } from '@/entities/transaction/types'
 import { useDateFormat } from '@vueuse/core'
-import { RepeatIcon } from 'lucide-vue-next'
+import { RepeatIcon } from '@lucide/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
