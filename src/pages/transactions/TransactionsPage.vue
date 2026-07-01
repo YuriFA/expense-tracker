@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
@@ -15,10 +15,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
 import { getTransactionsOptions } from '@/entities/transaction/constants'
 import TransactionsBrowser from '@/features/transactions-list/TransactionsBrowser.vue'
+import { useTransactionsStore } from '@/stores/use-transactions-store'
+import { useAccountsStore } from '@/stores/use-accounts-store'
 
 const { t } = useI18n()
 const transactionTypes = getTransactionsOptions()
 const dialogOpen = ref(false)
+const transactions = useTransactionsStore()
+const accounts = useAccountsStore()
+const isReady = computed(() => !accounts.isLoading && !transactions.isLoading)
 
 const onSuccess = () => {
   toast.success(t('addTransaction.success'))
@@ -46,13 +51,13 @@ const onSuccess = () => {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="expense">
-              <AddTransactionForm type="expense" @success="onSuccess" />
+              <AddTransactionForm v-if="isReady" type="expense" @success="onSuccess" />
             </TabsContent>
             <TabsContent value="income">
-              <AddTransactionForm type="income" @success="onSuccess" />
+              <AddTransactionForm v-if="isReady" type="income" @success="onSuccess" />
             </TabsContent>
             <TabsContent value="transfer">
-              <AddTransferForm @success="onSuccess" />
+              <AddTransferForm v-if="isReady" @success="onSuccess" />
             </TabsContent>
           </Tabs>
         </DialogContent>

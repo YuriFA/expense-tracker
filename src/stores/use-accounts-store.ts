@@ -2,15 +2,15 @@ import { defineStore } from 'pinia'
 
 import type { Account } from '@/entities/account/types'
 import { getRepositories } from '@/shared/repositories/repository-factory'
-import { shallowRef } from 'vue'
+import { useAsyncState } from '@vueuse/core'
 
 export const useAccountsStore = defineStore('accounts', () => {
   const repository = getRepositories().accounts
-  const items = shallowRef<Account[]>([])
-
-  const ready = repository.getAll().then((accounts) => {
-    items.value = accounts
-  })
+  const {
+    state: items,
+    isLoading,
+    isReady,
+  } = useAsyncState<Account[]>(() => repository.getAll(), [])
 
   const findById = (id: string) => items.value.find((item) => item.id === id)
 
@@ -41,7 +41,8 @@ export const useAccountsStore = defineStore('accounts', () => {
 
   return {
     items,
-    ready,
+    isLoading,
+    isReady,
     findById,
     addAccount,
     updateAccount,
