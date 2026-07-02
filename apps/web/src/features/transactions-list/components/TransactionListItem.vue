@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
 import { isTransferTransaction } from '@/entities/transaction/transaction'
-import { useAccounts } from '@/stores/use-accounts'
-import { useCategories } from '@/stores/use-categories'
+import { useAccounts } from '@/entities/account/use-accounts'
+import { useCategories } from '@/entities/category/use-categories'
 import type { Transaction } from '@/entities/transaction/types'
 import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
@@ -20,20 +20,19 @@ const category = computed(() => {
 })
 
 const account = computed(() => {
-  if (transaction.type === 'transfer') {
+  if (isTransferTransaction(transaction)) {
     return undefined
   }
-
   return accounts.value?.find((account) => account.id === transaction.accountId)
 })
 const fromAccount = computed(() => {
-  if (transaction.type === 'transfer') {
+  if (isTransferTransaction(transaction)) {
     return accounts.value?.find((account) => account.id === transaction.fromAccountId)
   }
   return undefined
 })
 const toAccount = computed(() => {
-  if (transaction.type === 'transfer') {
+  if (isTransferTransaction(transaction)) {
     return accounts.value?.find((account) => account.id === transaction.toAccountId)
   }
   return undefined

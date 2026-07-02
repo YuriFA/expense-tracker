@@ -5,9 +5,10 @@ import { PiniaColada } from '@pinia/colada'
 import App from './App.vue'
 import i18n from './app/i18n'
 import router from './app/router'
+import { provideRepositories } from './app/repositories'
 import './style.css'
 import { maskito } from '@maskito/vue'
-import { useSettingsStore } from './stores/use-settings-store'
+import { useSettingsStore } from './app/use-settings-store'
 
 const app = createApp(App).directive('maskito', maskito)
 const pinia = createPinia()
@@ -24,6 +25,7 @@ app.use(PiniaColada, {
   },
 })
 app.use(router)
+provideRepositories(app)
 
 watch(locale, (value) => {
   i18n.global.locale.value = value

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSettingsStore } from '@/stores/use-settings-store'
+import { useSettingsStore } from '@/app/use-settings-store'
 import { useI18n } from 'vue-i18n'
 import { useField, Field as VeeField } from 'vee-validate'
 import { Field, FieldError } from '@/components/ui/field'

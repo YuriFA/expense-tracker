@@ -1,14 +1,14 @@
-import { STORAGE_KEYS } from './storage-keys'
-import type { Category } from '@/entities/category/types'
-import { parseCategoriesStorage, serializeCategoriesStorage } from '@/entities/category/category'
+import { STORAGE_KEYS } from '@/shared/config/storage-keys'
+import type { Category } from './types'
+import { parseCategoriesStorage, serializeCategoriesStorage } from './category'
 import type {
   CategoryRepository,
   CreateCategoryPayload,
   UpdateCategoryPayload,
-} from '../category-repository'
-import { getDefaultCategories } from '@/entities/category/defaults'
+} from './repository'
+import { getDefaultCategories } from './defaults'
 import { generateId } from '@/shared/lib/generate-id'
-import { createLocalStorageAdapter } from './local-storage-adapter'
+import { createLocalStorageAdapter } from '@/shared/lib/local-storage-adapter'
 
 const categoriesStorage = createLocalStorageAdapter<Category[]>(STORAGE_KEYS.categories, [], {
   read: parseCategoriesStorage,

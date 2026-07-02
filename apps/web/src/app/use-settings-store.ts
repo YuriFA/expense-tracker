@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 import type { Settings } from '@/shared/types/settings'
 import { useStorage } from '@vueuse/core'
-import { APP_NAME } from '@/app/config'
+import { APP_NAME } from '@/shared/config/app'
 import { DEFAULT_SETTINGS } from '@/shared/config/settings'
 
 const LOCALE_STORAGE_KEY = `${APP_NAME}:locale`

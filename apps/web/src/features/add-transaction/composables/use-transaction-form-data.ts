@@ -1,6 +1,6 @@
 import type { CashflowTransaction, TransferTransaction } from '@/entities/transaction/types'
-import { useAccounts } from '@/stores/use-accounts'
-import { useTransactions } from '@/stores/use-transactions'
+import { useAccounts } from '@/entities/account/use-accounts'
+import { useTransactions } from '@/entities/transaction/use-transactions'
 import { computed } from 'vue'
 
 export const useLastCreatedTransaction = () => {

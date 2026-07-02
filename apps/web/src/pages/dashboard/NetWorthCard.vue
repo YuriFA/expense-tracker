@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
-import { useAccounts } from '@/stores/use-accounts'
+import { useAccounts } from '@/entities/account/use-accounts'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'

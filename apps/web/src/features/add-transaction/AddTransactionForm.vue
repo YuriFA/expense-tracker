@@ -15,7 +15,7 @@ import AmountField from './components/AmountField.vue'
 import CategoriesField from './components/CategoriesField.vue'
 import AccountField from './components/AccountField.vue'
 import { nowIsoString } from '@/shared/lib/date'
-import { useCreateTransaction } from '@/stores/use-transactions'
+import { useCreateTransaction } from '@/entities/transaction/use-transactions'
 
 const emit = defineEmits<{
   success: []
