@@ -7,7 +7,7 @@ import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 function mountInForm() {
   const Wrapper = defineComponent({
     setup() {
-      return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(AmountField))
+      return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(AmountField))
     },
   })
   return mountWithProviders(Wrapper, { repositories: {} })
@@ -32,7 +32,7 @@ describe('AmountField', () => {
     const Wrapper = defineComponent({
       setup() {
         return () =>
-          h(VeeForm, { onSubmit: vi.fn() }, () => h(AmountField, { class: 'custom-class' }))
+          h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(AmountField, { class: 'custom-class' }))
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: {} })

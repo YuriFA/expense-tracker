@@ -17,6 +17,7 @@ describe('AccountCard', () => {
   it('renders account name', () => {
     const wrapper = mountWithProviders(AccountCard, {
       props: { account: accountFixture } as never,
+      repositories: {},
     })
     expect(wrapper.text()).toContain('Main')
   })
@@ -24,6 +25,7 @@ describe('AccountCard', () => {
   it('renders formatted balance', async () => {
     const wrapper = mountWithProviders(AccountCard, {
       props: { account: accountFixture } as never,
+      repositories: {},
     })
     // useSettingsStore + useI18n for formatting
     await nextTick()
@@ -34,6 +36,7 @@ describe('AccountCard', () => {
   it('renders first letter of name as avatar', () => {
     const wrapper = mountWithProviders(AccountCard, {
       props: { account: { ...accountFixture, name: 'Savings' } } as never,
+      repositories: {},
     })
     expect(wrapper.text()).toContain('S')
   })
@@ -41,10 +44,12 @@ describe('AccountCard', () => {
   it('uses settings store currency for formatting', async () => {
     const wrapper = mountWithProviders(AccountCard, {
       props: { account: accountFixture } as never,
+      repositories: {},
     })
     const store = useSettingsStore()
     store.currency = 'RUB'
     await nextTick()
+    expect(wrapper.text()).toMatch(/1[,.]?234/)
     // Sanity: store currency is RUB
     expect(store.currency).toBe('RUB')
   })

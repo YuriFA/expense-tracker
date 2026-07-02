@@ -20,7 +20,7 @@ function createRepository(deps: {
 } = {}) {
   return createLocalStorageCategoryRepository({
     hasTransactionsForCategory:
-      deps.hasTransactionsForCategory ?? (vi.fn().mockResolvedValue(false) as never),
+      deps.hasTransactionsForCategory ?? (vi.fn<() => Promise<boolean>>().mockResolvedValue(false) as never),
   })
 }
 
@@ -115,7 +115,7 @@ describe('category localStorage repository', () => {
     it('returns false when category has transactions', async () => {
       seedCategories([categoryFixture])
       const repo = createRepository({
-        hasTransactionsForCategory: vi.fn().mockResolvedValue(true),
+        hasTransactionsForCategory: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
       })
       expect(await repo.remove('c1')).toBe(false)
     })
@@ -128,7 +128,7 @@ describe('category localStorage repository', () => {
     it('removes category when no transactions reference it', async () => {
       seedCategories([categoryFixture, { ...categoryFixture, id: 'c2' }])
       const repo = createRepository({
-        hasTransactionsForCategory: vi.fn().mockResolvedValue(false),
+        hasTransactionsForCategory: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       })
       expect(await repo.remove('c1')).toBe(true)
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.categories) ?? '[]')
@@ -138,7 +138,7 @@ describe('category localStorage repository', () => {
 
     it('does not remove default categories (they are not in storage)', async () => {
       const repo = createRepository({
-        hasTransactionsForCategory: vi.fn().mockResolvedValue(false),
+        hasTransactionsForCategory: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       })
       const defaults = await repo.getAll()
       const defaultId = defaults[0]!.id
@@ -150,7 +150,7 @@ describe('category localStorage repository', () => {
 
   describe('hasReferencingTransactions', () => {
     it('delegates to injected dep', async () => {
-      const dep = vi.fn().mockResolvedValue(true)
+      const dep = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
       const repo = createRepository({ hasTransactionsForCategory: dep })
       expect(await repo.hasReferencingTransactions('c1')).toBe(true)
       expect(dep).toHaveBeenCalledWith('c1')
