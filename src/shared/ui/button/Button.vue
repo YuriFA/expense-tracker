@@ -1,4 +1,3 @@
-<!-- eslint-disable vue/multi-word-component-names -->
 <script setup lang="ts">
 import type { PrimitiveProps } from 'reka-ui'
 import type { ButtonHTMLAttributes, HTMLAttributes } from 'vue'
@@ -35,9 +34,7 @@ const props = withDefaults(defineProps<Props>(), {
     :class="cn(buttonVariants({ variant, size }), props.class)"
     :type="props.type"
   >
-    <template v-if="loading">
-      <Spinner />
-    </template>
+    <Spinner v-if="loading" />
     <slot />
   </Primitive>
 </template>

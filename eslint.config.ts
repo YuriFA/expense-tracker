@@ -117,6 +117,22 @@ export default defineConfigWithVueTs(
     files: ['src/**/__tests__/*'],
   },
 
+  {
+    name: 'app/test-overrides',
+    files: ['**/*.{test,spec}.ts'],
+    rules: {
+      'vue/one-component-per-file': 'off',
+    },
+  },
+
+  {
+    name: 'app/ui-overrides',
+    files: ['src/shared/ui/**/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
 
   skipFormatting,
