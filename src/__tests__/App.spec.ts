@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 
-import { mount } from '@vue/test-utils'
+import { mountWithProviders } from './helpers/mount-with-providers'
 import App from '../App.vue'
 
 describe('App', () => {
-  it('mounts renders properly', () => {
-    const wrapper = mount(App)
-    expect(wrapper.text()).toContain('You did it!')
+  it('renders AppShell with nav', () => {
+    const wrapper = mountWithProviders(App, { repositories: {} })
+    expect(wrapper.find('nav').exists()).toBe(true)
   })
 })
