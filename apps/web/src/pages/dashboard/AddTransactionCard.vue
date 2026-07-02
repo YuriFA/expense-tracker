@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { getTransactionsOptions } from '@/entities/transaction/constants'
 import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vue'
 import { useLastCreatedTransaction } from '@/features/add-transaction/composables/use-transaction-form-data'

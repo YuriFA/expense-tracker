@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { RangeCalendar } from '@/components/ui/range-calendar'
+import { Button } from '@/shared/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { RangeCalendar } from '@/shared/ui/range-calendar'
 import { CalendarIcon } from '@lucide/vue'
 import { computed, ref, shallowRef } from 'vue'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'

@@ -2,21 +2,21 @@
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@/shared/ui/dialog'
 import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vue'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
 import { getTransactionsOptions } from '@/entities/transaction/constants'
 import TransactionsBrowser from '@/features/transactions-list/TransactionsBrowser.vue'
 import { useLastCreatedTransaction } from '@/features/add-transaction/composables/use-transaction-form-data'
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner } from '@/shared/ui/spinner'
 
 const { t } = useI18n()
 const transactionTypes = getTransactionsOptions()

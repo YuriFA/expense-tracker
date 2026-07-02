@@ -5,7 +5,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/ui/select'
 import { AVAILABLE_CURRENCIES } from '@/shared/config/currencies'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
 import { useSettingsStore } from '@/app/use-settings-store'

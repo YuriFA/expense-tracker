@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
+import { formatCurrency } from '@/shared/money/format'
 import { isTransferTransaction } from '@/entities/transaction/transaction'
 import { useAccounts } from '@/entities/account/use-accounts'
 import { useCategories } from '@/entities/category/use-categories'
@@ -8,10 +8,12 @@ import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSettingsStore } from '@/app/use-settings-store'
 
 const { transaction } = defineProps<{ transaction: Transaction }>()
-const { format } = useCurrencyFormatter()
 const { locale, t } = useI18n()
+const settings = useSettingsStore()
+const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
 const { data: categories } = useCategories()
 const { data: accounts } = useAccounts()
 

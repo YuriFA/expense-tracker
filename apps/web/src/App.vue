@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import AppShell from '@/components/layout/AppShell.vue'
-import { Toaster } from '@/components/ui/sonner'
+import AppShell from '@/app/layout/AppShell.vue'
+import { Toaster } from '@/shared/ui/sonner'
 import 'vue-sonner/style.css'
 </script>
 

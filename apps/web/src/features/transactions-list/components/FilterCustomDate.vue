@@ -2,9 +2,9 @@
 import type { DateValue } from '@internationalized/date'
 
 import { CalendarIcon } from '@lucide/vue'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/shared/ui/button'
+import { Calendar } from '@/shared/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { computed, ref, type Ref } from 'vue'
 import { cn } from '@/shared/lib/utils'
 import { useI18n } from 'vue-i18n'

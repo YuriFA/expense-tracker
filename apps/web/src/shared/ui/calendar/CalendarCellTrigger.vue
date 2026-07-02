@@ -4,7 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { CalendarCellTrigger, useForwardProps } from 'reka-ui'
 import { cn } from '@/shared/lib/utils'
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/shared/ui/button'
 
 const props = withDefaults(
   // eslint-disable-next-line vue/require-default-prop

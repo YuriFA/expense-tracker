@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { formatCurrency } from '@/shared/money/format'
 import { useAccounts } from '@/entities/account/use-accounts'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { serializeTransactionsQuery } from '@/features/transactions-list/lib/transactions-query'
+import { useSettingsStore } from '@/app/use-settings-store'
 
-const { format } = useCurrencyFormatter()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const settings = useSettingsStore()
+const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
 const { data: accounts } = useAccounts()
 
 const totalBalanceFormatted = computed(() => {

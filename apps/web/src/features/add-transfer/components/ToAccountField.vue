@@ -5,8 +5,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+} from '@/shared/ui/select'
+import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { useAccounts } from '@/entities/account/use-accounts'
 import { useFieldValue, Field as VeeField } from 'vee-validate'
 import type { AddTransferFormValues } from '../validation/add-transfer-schema'

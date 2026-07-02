@@ -9,7 +9,7 @@ import { createYear, createYearRange, toDate } from 'reka-ui/date'
 import { computed, toRaw } from 'vue'
 import { cn } from '@/shared/lib/utils'
 import { currentDay, toDateValue } from '@/shared/lib/date'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { NativeSelect, NativeSelectOption } from '@/shared/ui/native-select'
 import {
   CalendarCell,
   CalendarCellTrigger,

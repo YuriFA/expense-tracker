@@ -2,23 +2,25 @@
 import { useAccounts } from '@/entities/account/use-accounts'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
-import { Card, CardContent } from '@/components/ui/card'
-import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
+import { Card, CardContent } from '@/shared/ui/card'
+import { formatCurrency } from '@/shared/money/format'
 import { computed, ref } from 'vue'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@/shared/ui/dialog'
 import { toast } from 'vue-sonner'
 import AddAccountForm from '@/features/add-account/AddAccountForm.vue'
+import { useSettingsStore } from '@/app/use-settings-store'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { data } = useAccounts()
-const { format } = useCurrencyFormatter()
+const settings = useSettingsStore()
+const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
 const totalBalanceFormatted = computed(() => {
   const totalBalance =
     data.value?.reduce((acc, account) => {

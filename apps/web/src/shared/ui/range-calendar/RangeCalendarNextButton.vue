@@ -1,13 +1,13 @@
 <script lang="ts" setup>
-import type { RangeCalendarPrevProps } from 'reka-ui'
+import type { RangeCalendarNextProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
-import { ChevronLeft } from '@lucide/vue'
-import { RangeCalendarPrev, useForwardProps } from 'reka-ui'
+import { ChevronRight } from '@lucide/vue'
+import { RangeCalendarNext, useForwardProps } from 'reka-ui'
 import { cn } from '@/shared/lib/utils'
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/shared/ui/button'
 
-const props = defineProps<RangeCalendarPrevProps & { class?: HTMLAttributes['class'] }>()
+const props = defineProps<RangeCalendarNextProps & { class?: HTMLAttributes['class'] }>()
 
 const delegatedProps = reactiveOmit(props, 'class')
 
@@ -15,12 +15,12 @@ const forwardedProps = useForwardProps(delegatedProps)
 </script>
 
 <template>
-  <RangeCalendarPrev
-    data-slot="range-calendar-prev-button"
+  <RangeCalendarNext
+    data-slot="range-calendar-next-button"
     :class="
       cn(
         buttonVariants({ variant: 'outline' }),
-        'absolute left-1',
+        'absolute right-1',
         'size-7 bg-transparent p-0 opacity-50 hover:opacity-100',
         props.class,
       )
@@ -28,7 +28,7 @@ const forwardedProps = useForwardProps(delegatedProps)
     v-bind="forwardedProps"
   >
     <slot>
-      <ChevronLeft class="size-4" />
+      <ChevronRight class="size-4" />
     </slot>
-  </RangeCalendarPrev>
+  </RangeCalendarNext>
 </template>
