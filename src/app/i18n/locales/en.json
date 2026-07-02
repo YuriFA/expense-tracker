@@ -28,7 +28,8 @@
     "categoryPlaceholder": "Category",
     "accountPlaceholder": "Account",
     "submit": "Add",
-    "success": "Transaction added"
+    "success": "Transaction added",
+    "error": "Error adding transaction: {error}"
   },
   "addAccount": {
     "nameLabel": "Name",
@@ -36,7 +37,17 @@
     "openingBalanceLabel": "Opening balance",
     "submit": "Add account",
     "newAccount": "New account",
-    "success": "Account added"
+    "success": "Account added",
+    "error": "Error adding account: {error}"
+  },
+  "deleteAccount": {
+    "trigger": "Delete account",
+    "confirmDelete": "Are you sure you want to delete this account?",
+    "confirmDeleteDescription": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete",
+    "success": "Account deleted",
+    "error": "Error deleting account: {error}"
   },
   "addTransfer": {
     "fromAccountLabel": "From account",
@@ -46,7 +57,8 @@
     "descriptionPlaceholder": "Note",
     "fromAccountPlaceholder": "From account",
     "toAccountPlaceholder": "To account",
-    "submit": "Transfer"
+    "submit": "Transfer",
+    "error": "Error adding transfer: {error}"
   },
   "recentTransactions": {
     "title": "Recent Transactions"

@@ -4,18 +4,9 @@ import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/shared/ui/card'
 import { formatCurrency } from '@/shared/money/format'
-import { computed, ref } from 'vue'
-import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/ui/dialog'
-import { toast } from 'vue-sonner'
-import AddAccountForm from '@/features/add-account/AddAccountForm.vue'
+import { computed } from 'vue'
 import { useSettingsStore } from '@/app/use-settings-store'
+import AddAccountDialog from '@/features/add-account/AddAccountDialog.vue'
 
 const { t, locale } = useI18n()
 const { data } = useAccounts()
@@ -28,12 +19,6 @@ const totalBalanceFormatted = computed(() => {
     }, 0) ?? 0
   return format(totalBalance)
 })
-
-const dialogOpen = ref(false)
-const handleSuccess = () => {
-  toast.success(t('addAccount.success'))
-  dialogOpen.value = false
-}
 </script>
 
 <template>
@@ -44,17 +29,7 @@ const handleSuccess = () => {
         <p class="text-muted-foreground text-sm">{{ t('accounts.description') }}</p>
       </div>
 
-      <Dialog v-model:open="dialogOpen">
-        <DialogTrigger as-child>
-          <Button class="max-sm:w-full">{{ t('actions.create') }}</Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{{ t('addAccount.newAccount') }}</DialogTitle>
-          </DialogHeader>
-          <AddAccountForm @success="handleSuccess" />
-        </DialogContent>
-      </Dialog>
+      <AddAccountDialog />
     </div>
 
     <Card class="mt-4 bg-linear-to-br from-primary to-primary/80 text-primary-foreground">

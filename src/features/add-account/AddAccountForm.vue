@@ -15,12 +15,15 @@ import { computed } from 'vue'
 
 const emit = defineEmits<{
   success: []
+  error: [error: unknown]
 }>()
 
 const { t, locale } = useI18n()
 const settings = useSettingsStore()
 const { mutateAsync: createAccount } = useCreateAccount()
-const openingBalancePlaceholder = computed(() => formatCurrency(1000, settings.currency, locale.value))
+const openingBalancePlaceholder = computed(() =>
+  formatCurrency(1000, settings.currency, locale.value),
+)
 
 const { handleSubmit: handleFormSubmit, setFieldValue } = useForm<AddAccountFormValues>({
   validationSchema: toTypedSchema(createAddAccountSchema()),
@@ -31,8 +34,13 @@ const { handleSubmit: handleFormSubmit, setFieldValue } = useForm<AddAccountForm
 })
 
 const handleSubmit = handleFormSubmit(async (data) => {
-  await createAccount(data)
-  emit('success')
+  try {
+    await createAccount(data)
+    emit('success')
+  } catch (error) {
+    emit('error', error)
+    console.error('Error creating account:', error)
+  }
 })
 </script>
 
