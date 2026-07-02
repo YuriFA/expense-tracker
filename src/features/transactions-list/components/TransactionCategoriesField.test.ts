@@ -22,7 +22,7 @@ describe('TransactionCategoriesField', () => {
     categoriesRepo.getAll.mockResolvedValue(categories)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(TransactionCategoriesField))
+        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(TransactionCategoriesField))
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { categories: categoriesRepo } })

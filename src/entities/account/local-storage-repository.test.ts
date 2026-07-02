@@ -31,9 +31,9 @@ function createRepository(deps: {
 } = {}) {
   return createLocalStorageAccountRepository({
     hasTransactionsForAccount:
-      deps.hasTransactionsForAccount ?? (vi.fn().mockResolvedValue(false) as never),
+      deps.hasTransactionsForAccount ?? (vi.fn<() => Promise<boolean>>().mockResolvedValue(false) as never),
     getAllTransactions:
-      deps.getAllTransactions ?? (vi.fn().mockResolvedValue([]) as never),
+      deps.getAllTransactions ?? (vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([]) as never),
   })
 }
 
@@ -52,7 +52,7 @@ describe('account localStorage repository', () => {
     it('returns accounts with computed balances', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
-        getAllTransactions: vi.fn().mockResolvedValue([incomeTransaction]),
+        getAllTransactions: vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([incomeTransaction]),
       })
       const result = await repo.getAll()
       expect(result).toHaveLength(1)
@@ -77,7 +77,7 @@ describe('account localStorage repository', () => {
     it('returns account with computed balance when found', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
-        getAllTransactions: vi.fn().mockResolvedValue([incomeTransaction]),
+        getAllTransactions: vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([incomeTransaction]),
       })
       const result = await repo.getById('a1')
       expect(result?.id).toBe('a1')
@@ -118,7 +118,7 @@ describe('account localStorage repository', () => {
     it('updates fields and recalculates balance', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
-        getAllTransactions: vi.fn().mockResolvedValue([incomeTransaction]),
+        getAllTransactions: vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([incomeTransaction]),
       })
       const result = await repo.update('a1', { name: 'Updated', manualAdjustment: 50 })
       expect(result.name).toBe('Updated')
@@ -131,7 +131,7 @@ describe('account localStorage repository', () => {
     it('returns false when account has transactions', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
-        hasTransactionsForAccount: vi.fn().mockResolvedValue(true),
+        hasTransactionsForAccount: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
       })
       expect(await repo.remove('a1')).toBe(false)
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.accounts) ?? '[]')
@@ -146,7 +146,7 @@ describe('account localStorage repository', () => {
     it('removes account when no transactions reference it', async () => {
       seedAccounts([accountFixture, { ...accountFixture, id: 'a2' }])
       const repo = createRepository({
-        hasTransactionsForAccount: vi.fn().mockResolvedValue(false),
+        hasTransactionsForAccount: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       })
       expect(await repo.remove('a1')).toBe(true)
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.accounts) ?? '[]')
@@ -157,7 +157,7 @@ describe('account localStorage repository', () => {
 
   describe('hasReferencingTransactions', () => {
     it('delegates to injected dep', async () => {
-      const dep = vi.fn().mockResolvedValue(true)
+      const dep = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
       const repo = createRepository({ hasTransactionsForAccount: dep })
       expect(await repo.hasReferencingTransactions('a1')).toBe(true)
       expect(dep).toHaveBeenCalledWith('a1')

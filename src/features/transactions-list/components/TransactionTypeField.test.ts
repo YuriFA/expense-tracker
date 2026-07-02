@@ -7,7 +7,7 @@ import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 function mountInForm() {
   const Wrapper = defineComponent({
     setup() {
-      return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(TransactionTypeField))
+      return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(TransactionTypeField))
     },
   })
   return mountWithProviders(Wrapper, { repositories: {} })

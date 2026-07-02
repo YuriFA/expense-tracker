@@ -15,7 +15,7 @@ const categories: Category[] = [
 function mountInForm(_type: 'income' | 'expense' = 'income') {
   const Wrapper = defineComponent({
     setup() {
-      return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(CategoriesField))
+      return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(CategoriesField))
     },
   })
   return mountWithProviders(Wrapper, { repositories: {} })
@@ -31,7 +31,7 @@ describe('CategoriesField', () => {
     categoriesRepo.getAll.mockResolvedValue(categories)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(CategoriesField))
+        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(CategoriesField))
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { categories: categoriesRepo } })

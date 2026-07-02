@@ -21,7 +21,7 @@ describe('TransactionAccountField', () => {
     accountsRepo.getAll.mockResolvedValue(accounts)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(TransactionAccountField))
+        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(TransactionAccountField))
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { accounts: accountsRepo } })

@@ -38,11 +38,11 @@ describe('parseCalendarDay', () => {
   })
 
   it('rejects non-padded YYYY-MM-DD format', () => {
-    expect(() => parseCalendarDay('2024-1-5')).toThrow()
+    expect(() => parseCalendarDay('2024-1-5')).toThrow('Invalid ISO 8601 date string')
   })
 
   it('throws for invalid input', () => {
-    expect(() => parseCalendarDay('invalid')).toThrow()
+    expect(() => parseCalendarDay('invalid')).toThrow('Invalid ISO 8601 date string')
   })
 })
 
@@ -157,7 +157,7 @@ describe('formatCalendarRange', () => {
       })
       expect(result).toContain(' - ')
     } finally {
-      ;(Intl.DateTimeFormat.prototype as any).formatRange = original
+      Intl.DateTimeFormat.prototype.formatRange = original
     }
   })
 })

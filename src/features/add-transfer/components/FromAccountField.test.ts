@@ -15,7 +15,7 @@ const accounts: AccountWithBalance[] = [
 function mountInForm() {
   const Wrapper = defineComponent({
     setup() {
-      return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(FromAccountField))
+      return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(FromAccountField))
     },
   })
   return mountWithProviders(Wrapper, { repositories: {} })
@@ -31,7 +31,7 @@ describe('FromAccountField', () => {
     accountsRepo.getAll.mockResolvedValue(accounts)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn() }, () => h(FromAccountField))
+        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(FromAccountField))
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { accounts: accountsRepo } })
