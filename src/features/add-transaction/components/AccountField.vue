@@ -5,8 +5,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Field, FieldError } from '@/components/ui/field'
+} from '@/shared/ui/select'
+import { Field, FieldError } from '@/shared/ui/field'
 import { useAccounts } from '@/entities/account/use-accounts'
 import { useI18n } from 'vue-i18n'
 import { Field as VeeField } from 'vee-validate'

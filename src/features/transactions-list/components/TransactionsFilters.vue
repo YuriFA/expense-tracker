@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import { useI18n } from 'vue-i18n'
 import {
   createTransactionsFilterSchema,

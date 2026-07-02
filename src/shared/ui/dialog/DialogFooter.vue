@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DialogClose } from 'reka-ui'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 
 const props = withDefaults(
   defineProps<{

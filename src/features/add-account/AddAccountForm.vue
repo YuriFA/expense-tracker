@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import { useI18n } from 'vue-i18n'
 import { useCreateAccount } from '@/entities/account/use-accounts'
 import { createAddAccountSchema, type AddAccountFormValues } from './validation/add-account-schema'
 import { Field as VeeField } from 'vee-validate'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { NumberField, NumberFieldContent, NumberFieldInput } from '@/components/ui/number-field'
+import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
+import { Input } from '@/shared/ui/input'
+import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
 import { useSettingsStore } from '@/app/use-settings-store'
-import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
+import { formatCurrency } from '@/shared/money/format'
 import { computed } from 'vue'
 
 const emit = defineEmits<{
@@ -20,8 +20,7 @@ const emit = defineEmits<{
 const { t, locale } = useI18n()
 const settings = useSettingsStore()
 const { mutateAsync: createAccount } = useCreateAccount()
-const { format } = useCurrencyFormatter()
-const openingBalancePlaceholder = computed(() => format(1000))
+const openingBalancePlaceholder = computed(() => formatCurrency(1000, settings.currency, locale.value))
 
 const { handleSubmit: handleFormSubmit, setFieldValue } = useForm<AddAccountFormValues>({
   validationSchema: toTypedSchema(createAddAccountSchema()),

@@ -2,10 +2,10 @@
 import { useSettingsStore } from '@/app/use-settings-store'
 import { useI18n } from 'vue-i18n'
 import { useField, Field as VeeField } from 'vee-validate'
-import { Field, FieldError } from '@/components/ui/field'
-import { NumberField, NumberFieldContent, NumberFieldInput } from '@/components/ui/number-field'
+import { Field, FieldError } from '@/shared/ui/field'
+import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
 import type { AddTransactionFormValues } from '../validation/add-transaction-schema'
-import { useCurrencyFormatter } from '@/composables/use-currency-formatter'
+import { formatCurrency } from '@/shared/money/format'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -15,8 +15,7 @@ const props = defineProps<{
 const { locale } = useI18n()
 const settings = useSettingsStore()
 const { setValue } = useField<AddTransactionFormValues['amount']>('amount')
-const { format } = useCurrencyFormatter()
-const placeholder = computed(() => format(100))
+const placeholder = computed(() => formatCurrency(100, settings.currency, locale.value))
 </script>
 
 <template>

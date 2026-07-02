@@ -3,7 +3,7 @@ import type { SeparatorProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { cn } from '@/shared/lib/utils'
-import { Separator } from '@/components/ui/separator'
+import { Separator } from '@/shared/ui/separator'
 
 // eslint-disable-next-line vue/require-default-prop
 const props = withDefaults(defineProps<SeparatorProps & { class?: HTMLAttributes['class'] }>(), {

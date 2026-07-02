@@ -3,7 +3,7 @@ import { getTransactionsOptions } from '@/entities/transaction/constants'
 import { useAccount } from '@/entities/account/use-accounts'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'
 import { computed } from 'vue'
-import { Chip } from '@/components/ui/chip'
+import { Chip } from '@/shared/ui/chip'
 import { useI18n } from 'vue-i18n'
 import { useCategory } from '@/entities/category/use-categories'
 
