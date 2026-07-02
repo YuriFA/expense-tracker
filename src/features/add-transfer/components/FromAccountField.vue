@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldError } from '@/components/ui/field'
-import { useAccounts } from '@/stores/use-accounts'
+import { useAccounts } from '@/entities/account/use-accounts'
 import { useFieldValue, Field as VeeField } from 'vee-validate'
 import type { AddTransferFormValues } from '../validation/add-transfer-schema'
 import { computed } from 'vue'

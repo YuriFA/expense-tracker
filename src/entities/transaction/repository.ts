@@ -1,6 +1,7 @@
-import type { Transaction, TransactionType } from '@/entities/transaction/types'
-import type { Repository } from './repository'
-import type { CalendarDay } from '../lib/date'
+import { inject, type InjectionKey } from 'vue'
+import type { Transaction, TransactionType } from './types'
+import type { Repository } from '@/shared/lib/repository'
+import type { CalendarDay } from '@/shared/lib/date'
 
 export type CreateTransactionPayload<T extends Transaction = Transaction> = Omit<T, 'id'> &
   Partial<Pick<T, 'id'>>
@@ -23,4 +24,14 @@ export interface TransactionRepository extends Repository<
   query(options: TransactionQuery): Promise<Transaction[]>
   hasTransactionsForAccount(accountId: string): Promise<boolean>
   hasTransactionsForCategory(categoryId: string): Promise<boolean>
+}
+
+export const TRANSACTION_REPOSITORY_KEY: InjectionKey<TransactionRepository> = Symbol('transaction-repository')
+
+export function useTransactionRepository(): TransactionRepository {
+  const repo = inject(TRANSACTION_REPOSITORY_KEY)
+  if (!repo) {
+    throw new Error('TransactionRepository not provided. Call provideRepositories(app) in main.ts.')
+  }
+  return repo
 }

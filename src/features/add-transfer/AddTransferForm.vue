@@ -15,7 +15,7 @@ import AmountField from '@/features/add-transaction/components/AmountField.vue'
 import FromAccountField from './components/FromAccountField.vue'
 import ToAccountField from './components/ToAccountField.vue'
 import { nowIsoString } from '@/shared/lib/date'
-import { useCreateTransaction } from '@/stores/use-transactions'
+import { useCreateTransaction } from '@/entities/transaction/use-transactions'
 
 const emit = defineEmits<{
   success: []

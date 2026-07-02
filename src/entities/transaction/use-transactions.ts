@@ -1,29 +1,31 @@
-import type { Transaction } from '@/entities/transaction/types'
-import { getRepositories } from '@/shared/repositories/repository-factory'
-import type {
-  CreateTransactionPayload,
-  TransactionQuery,
-  UpdateTransactionPayload,
-} from '@/shared/repositories/transaction-repository'
+import type { Transaction } from './types'
+import {
+  useTransactionRepository,
+  type CreateTransactionPayload,
+  type TransactionQuery,
+  type UpdateTransactionPayload,
+} from './repository'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 
 type GetTransactionsOptions = TransactionQuery
 
 export const useTransactions = (options: MaybeRefOrGetter<GetTransactionsOptions> = {}) => {
+  const transactions = useTransactionRepository()
   return useQuery({
     key: () => ['transactions', toValue(options)],
     query: () => {
-      return getRepositories().transactions.query(toValue(options))
+      return transactions.query(toValue(options))
     },
   })
 }
 
 export const useTransaction = (id: MaybeRefOrGetter<string | undefined>) => {
+  const transactions = useTransactionRepository()
   return useQuery({
     key: () => ['transactions', toValue(id) ?? null],
     query: () => {
-      return getRepositories().transactions.getById(toValue(id)!)
+      return transactions.getById(toValue(id)!)
     },
     enabled: () => !!toValue(id),
   })
@@ -31,9 +33,10 @@ export const useTransaction = (id: MaybeRefOrGetter<string | undefined>) => {
 
 export const useCreateTransaction = <T extends Transaction>() => {
   const queryCache = useQueryCache()
+  const transactions = useTransactionRepository()
   return useMutation({
     mutation: (payload: CreateTransactionPayload<T>) => {
-      return getRepositories().transactions.create(payload)
+      return transactions.create(payload)
     },
     onSettled: () => {
       queryCache.invalidateQueries({ key: ['transactions'] })
@@ -44,9 +47,10 @@ export const useCreateTransaction = <T extends Transaction>() => {
 
 export const useUpdateTransaction = () => {
   const queryCache = useQueryCache()
+  const transactions = useTransactionRepository()
   return useMutation({
     mutation: ({ id, payload }: { id: string; payload: UpdateTransactionPayload }) => {
-      return getRepositories().transactions.update(id, payload)
+      return transactions.update(id, payload)
     },
     onSettled: (_data, _errors, { id }) => {
       queryCache.invalidateQueries({ key: ['transactions', id] })
@@ -57,9 +61,10 @@ export const useUpdateTransaction = () => {
 
 export const useDeleteTransaction = () => {
   const queryCache = useQueryCache()
+  const transactions = useTransactionRepository()
   return useMutation({
     mutation: (id: string) => {
-      return getRepositories().transactions.remove(id)
+      return transactions.remove(id)
     },
     onSettled: (_data, _errors, id) => {
       queryCache.invalidateQueries({ key: ['transactions', id] })

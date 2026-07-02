@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { useCategories } from '@/stores/use-categories'
+import { useCategories } from '@/entities/category/use-categories'
 import { useFieldValue, Field as VeeField } from 'vee-validate'
 import type { AddTransactionFormValues } from '../validation/add-transaction-schema'
 import { computed } from 'vue'

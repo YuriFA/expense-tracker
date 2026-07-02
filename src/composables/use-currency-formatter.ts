@@ -1,4 +1,4 @@
-import { useSettingsStore } from '@/stores/use-settings-store'
+import { useSettingsStore } from '@/app/use-settings-store'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

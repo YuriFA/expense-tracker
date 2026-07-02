@@ -1,4 +1,4 @@
-import { APP_NAME } from '@/app/config'
+import { APP_NAME } from './app'
 
 export const STORAGE_KEYS = {
   accounts: `${APP_NAME}:accounts`,

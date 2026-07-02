@@ -1,6 +1,6 @@
 import type { Account } from '@/entities/account/types'
-import { STORAGE_KEYS } from './storage-keys'
-import type { Transaction } from '@/entities/transaction/types'
+import { STORAGE_KEYS } from '@/shared/config/storage-keys'
+import type { Transaction } from './types'
 import {
   hasValidTransactionReferences,
   isTransaction,
@@ -9,18 +9,18 @@ import {
   isTransferTransaction,
   parseTransactionsStorage,
   serializeTransactionsStorage,
-} from '@/entities/transaction/transaction'
+} from './transaction'
 import type { Category } from '@/entities/category/types'
 import type {
   CreateTransactionPayload,
   TransactionQuery,
   TransactionRepository,
   UpdateTransactionPayload,
-} from '../transaction-repository'
+} from './repository'
 import { getDateTimestamp, toEndOfDay, toStartOfDay } from '@/shared/lib/date'
 import { generateId } from '@/shared/lib/generate-id'
 import i18n from '@/app/i18n'
-import { createLocalStorageAdapter } from './local-storage-adapter'
+import { createLocalStorageAdapter } from '@/shared/lib/local-storage-adapter'
 
 const transactionsStorage = createLocalStorageAdapter<Transaction[]>(STORAGE_KEYS.transactions, [], {
   read: parseTransactionsStorage,

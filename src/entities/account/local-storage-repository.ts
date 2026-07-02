@@ -1,19 +1,19 @@
-import type { Account } from '@/entities/account/types'
+import type { Account } from './types'
 import {
   getAccountsBalances,
   getComputedAccountBalance,
   parseAccountsStorage,
   serializeAccountsStorage,
-} from '@/entities/account/account'
+} from './account'
 import type {
   AccountRepository,
   CreateAccountPayload,
   UpdateAccountPayload,
-} from '../account-repository'
-import { STORAGE_KEYS } from './storage-keys'
+} from './repository'
+import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { generateId } from '@/shared/lib/generate-id'
 import type { Transaction } from '@/entities/transaction/types'
-import { createLocalStorageAdapter } from './local-storage-adapter'
+import { createLocalStorageAdapter } from '@/shared/lib/local-storage-adapter'
 
 const accountsStorage = createLocalStorageAdapter<Account[]>(STORAGE_KEYS.accounts, [], {
   read: parseAccountsStorage,

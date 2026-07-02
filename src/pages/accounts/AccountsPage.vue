@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAccounts } from '@/stores/use-accounts'
+import { useAccounts } from '@/entities/account/use-accounts'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/components/ui/card'

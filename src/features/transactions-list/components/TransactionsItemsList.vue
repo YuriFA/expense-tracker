@@ -2,7 +2,7 @@
 import TransactionListItem from '@/features/transactions-list/components/TransactionListItem.vue'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'
 import { useI18n } from 'vue-i18n'
-import { useTransactions } from '@/stores/use-transactions'
+import { useTransactions } from '@/entities/transaction/use-transactions'
 
 const { t } = useI18n()
 const { filters } = useTransactionsFilters()
