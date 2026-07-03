@@ -11,14 +11,11 @@ import { getTransactionsOptions } from '@/entities/transaction/constants'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
-  modelValue?: 'expense' | 'income' | 'transfer'
   errors?: string[]
   class?: string
 }>()
 
-defineEmits<{
-  'update:modelValue': [value: 'expense' | 'income' | 'transfer']
-}>()
+const modelValue = defineModel<'expense' | 'income' | 'transfer' | undefined>()
 
 const transactionOptions = getTransactionsOptions()
 const { t } = useI18n()
@@ -27,10 +24,7 @@ const { t } = useI18n()
 <template>
   <Field class="w-full md:w-auto" orientation="responsive" :data-invalid="!!$props.errors?.length">
     <FieldLabel for="type">{{ t('transactions.filters.typeLabel') }}</FieldLabel>
-    <Select
-      :model-value="$props.modelValue"
-      @update:model-value="(v) => $emit('update:modelValue', v as 'expense' | 'income' | 'transfer')"
-    >
+    <Select v-model="modelValue">
       <SelectTrigger
         id="type"
         :aria-invalid="!!$props.errors?.length"

@@ -12,15 +12,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  modelValue?: string
   errors?: string[]
   excludeId?: string
   class?: string
 }>()
 
-defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = defineModel<string | undefined>()
 
 const { t } = useI18n()
 const { data } = useAccounts()
@@ -32,10 +29,7 @@ const filteredAccounts = computed(() =>
 
 <template>
   <Field :class="props.class" orientation="responsive" :data-invalid="!!props.errors?.length">
-    <Select
-      :model-value="props.modelValue"
-      @update:model-value="(v) => $emit('update:modelValue', v as string)"
-    >
+    <Select v-model="modelValue">
       <SelectTrigger id="from-account-id" :aria-invalid="!!props.errors?.length" class="w-full! min-w-0">
         <SelectValue :placeholder="t('addTransfer.fromAccountPlaceholder')" />
       </SelectTrigger>

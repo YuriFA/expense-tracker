@@ -7,15 +7,12 @@ import { formatCurrency } from '@/shared/lib/money/format'
 import { computed } from 'vue'
 
 const props = defineProps<{
-  modelValue?: number
   errors?: string[]
   placeholder?: string
   class?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number | undefined]
-}>()
+const modelValue = defineModel<number | undefined>()
 
 const { locale } = useI18n()
 const settings = useSettingsStore()
@@ -27,6 +24,7 @@ const placeholder = computed(() => props.placeholder ?? defaultPlaceholder.value
   <Field :class="props.class" :data-invalid="!!props.errors?.length">
     <NumberField
       id="amount"
+      v-model="modelValue"
       :locale
       :format-options="{
         style: 'currency',
@@ -38,8 +36,6 @@ const placeholder = computed(() => props.placeholder ?? defaultPlaceholder.value
       }"
       :min="0"
       :step="0.01"
-      :model-value="props.modelValue"
-      @update:model-value="(value) => emit('update:modelValue', value ?? undefined)"
     >
       <NumberFieldContent>
         <NumberFieldInput class="text-left px-2" :placeholder :aria-invalid="!!props.errors?.length" />
