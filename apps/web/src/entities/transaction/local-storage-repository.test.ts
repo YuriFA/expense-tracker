@@ -4,7 +4,6 @@ import type { Category } from '@/entities/category/types'
 import type { Transaction } from './types'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageTransactionRepository } from './local-storage-repository'
-import i18n from '@/app/i18n'
 
 const accountFixture: Account = {
   id: 'a1',
@@ -280,20 +279,20 @@ describe('transaction localStorage repository', () => {
       // Missing required fields like amount
       await expect(
         repo.create({ type: 'income', accountId: 'a1', categoryId: 'cincome' } as never),
-      ).rejects.toThrow(i18n.global.t('errors.invalidTransactionPayload'))
+      ).rejects.toThrow(/Invalid transaction payload/)
     })
 
     it('throws when references are unknown (account)', async () => {
       const repo = createRepository()
       await expect(repo.create(buildTransaction({ accountId: 'unknown' }))).rejects.toThrow(
-        i18n.global.t('errors.unknownTransactionReferences'),
+        /unknown account or category/,
       )
     })
 
     it('throws when references are unknown (category)', async () => {
       const repo = createRepository()
       await expect(repo.create(buildTransaction({ categoryId: 'unknown' }))).rejects.toThrow(
-        i18n.global.t('errors.unknownTransactionReferences'),
+        /unknown account or category/,
       )
     })
 
@@ -302,7 +301,7 @@ describe('transaction localStorage repository', () => {
       // income transaction with expense category
       await expect(
         repo.create(buildTransaction({ type: 'income', categoryId: 'cexpense' })),
-      ).rejects.toThrow(i18n.global.t('errors.unknownTransactionReferences'))
+      ).rejects.toThrow(/unknown account or category/)
     })
   })
 
@@ -310,7 +309,7 @@ describe('transaction localStorage repository', () => {
     it('throws when transaction does not exist', async () => {
       const repo = createRepository()
       await expect(repo.update('missing', { type: 'income' } as never)).rejects.toThrow(
-        i18n.global.t('errors.transactionNotFound'),
+        /Transaction not found/,
       )
     })
 
@@ -318,7 +317,7 @@ describe('transaction localStorage repository', () => {
       seedTransactions([buildTransaction()])
       const repo = createRepository()
       await expect(repo.update('t1', { type: 'income' } as never)).rejects.toThrow(
-        i18n.global.t('errors.invalidTransactionPayload'),
+        /Invalid transaction payload/,
       )
     })
 
@@ -333,15 +332,15 @@ describe('transaction localStorage repository', () => {
   })
 
   describe('remove', () => {
-    it('returns false when transaction does not exist', async () => {
+    it('throws NotFoundError when transaction does not exist', async () => {
       const repo = createRepository()
-      expect(await repo.remove('missing')).toBe(false)
+      await expect(repo.remove('missing')).rejects.toThrow(/not found/)
     })
 
     it('removes transaction from storage', async () => {
       seedTransactions([buildTransaction(), buildTransaction({ id: 't2' })])
       const repo = createRepository()
-      expect(await repo.remove('t1')).toBe(true)
+      await repo.remove('t1')
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions) ?? '[]')
       expect(stored).toHaveLength(1)
       expect(stored[0].id).toBe('t2')

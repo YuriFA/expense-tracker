@@ -8,7 +8,8 @@ import type {
 } from './repository'
 import { getDefaultCategories } from './defaults'
 import { generateId } from '@/shared/lib/generate-id'
-import { createLocalStorageAdapter } from '@/shared/lib/local-storage-adapter'
+import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
+import { NotFoundError, ReferentialIntegrityError } from '@/shared/lib/data/repository'
 
 const categoriesStorage = createLocalStorageAdapter<Category[]>(STORAGE_KEYS.categories, [], {
   read: parseCategoriesStorage,
@@ -40,23 +41,24 @@ export function createLocalStorageCategoryRepository(deps: {
       const target = categories.find((item) => item.id === id)
 
       if (!target) {
-        throw new Error(`Category with id ${id} not found`)
+        throw new NotFoundError('Category not found')
       }
 
       return Object.assign(target, payload)
     },
     async remove(id) {
       if (await deps.hasTransactionsForCategory(id)) {
-        return false
+        throw new ReferentialIntegrityError(
+          `Category has referencing transactions`,
+        )
       }
       const categories = categoriesStorage.get()
       const next = categories.filter((item) => item.id !== id)
       if (next.length === categories.length) {
-        return false
+        throw new NotFoundError(`Category not found`)
       }
 
       categoriesStorage.set(next)
-      return true
     },
     async hasReferencingTransactions(categoryId) {
       return deps.hasTransactionsForCategory(categoryId)

@@ -112,7 +112,7 @@ describe('useUpdateCategory', () => {
 describe('useDeleteCategory', () => {
   it('calls repository.remove on mutate', async () => {
     const repo = createMockCategoryRepository()
-    repo.remove.mockResolvedValue(true)
+    repo.remove.mockResolvedValue(undefined)
     const { result } = mountWithComposable(() => useDeleteCategory(), {
       repositories: { categories: repo },
     })

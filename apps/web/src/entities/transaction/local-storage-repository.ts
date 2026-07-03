@@ -19,8 +19,12 @@ import type {
 } from './repository'
 import { getDateTimestamp, toEndOfDay, toStartOfDay } from '@/shared/lib/date'
 import { generateId } from '@/shared/lib/generate-id'
-import i18n from '@/app/i18n'
-import { createLocalStorageAdapter } from '@/shared/lib/local-storage-adapter'
+import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
+import {
+  InvalidPayloadError,
+  NotFoundError,
+  UnknownReferencesError,
+} from '@/shared/lib/data/repository'
 
 const transactionsStorage = createLocalStorageAdapter<Transaction[]>(STORAGE_KEYS.transactions, [], {
   read: parseTransactionsStorage,
@@ -90,11 +94,13 @@ export function createLocalStorageTransactionRepository(deps: {
         id: payload.id ?? generateId(),
       } as unknown as Transaction
       if (!isTransaction(next)) {
-        throw new Error(i18n.global.t('errors.invalidTransactionPayload'))
+        throw new InvalidPayloadError('Invalid transaction payload')
       }
       const [accounts, categories] = await Promise.all([deps.getAccounts(), deps.getCategories()])
       if (!hasValidTransactionReferences(next, accounts, categories)) {
-        throw new Error(i18n.global.t('errors.unknownTransactionReferences'))
+        throw new UnknownReferencesError(
+          'Transaction references an unknown account or category',
+        )
       }
       const transactions = transactionsStorage.get()
       transactions.push(next)
@@ -105,19 +111,21 @@ export function createLocalStorageTransactionRepository(deps: {
       const transactions = transactionsStorage.get()
       const existing = transactions.find((i) => i.id === id)
       if (!existing) {
-        throw new Error(i18n.global.t('errors.transactionNotFound'))
+        throw new NotFoundError('Transaction not found')
       }
       const next = { ...payload, id } as Transaction
       if (!isTransaction(next)) {
-        throw new Error(i18n.global.t('errors.invalidTransactionPayload'))
+        throw new InvalidPayloadError('Invalid transaction payload')
       }
       const [accounts, categories] = await Promise.all([deps.getAccounts(), deps.getCategories()])
       if (!hasValidTransactionReferences(next, accounts, categories)) {
-        throw new Error(i18n.global.t('errors.unknownTransactionReferences'))
+        throw new UnknownReferencesError(
+          'Transaction references an unknown account or category',
+        )
       }
       const index = transactions.findIndex((i) => i.id === id)
       if (index === -1) {
-        throw new Error(i18n.global.t('errors.transactionNotFound'))
+        throw new NotFoundError('Transaction not found')
       }
       transactions[index] = next
       transactionsStorage.set(transactions)
@@ -126,9 +134,10 @@ export function createLocalStorageTransactionRepository(deps: {
     async remove(id) {
       const transactions = transactionsStorage.get()
       const next = transactions.filter((i) => i.id !== id)
-      if (next.length === transactions.length) return false
+      if (next.length === transactions.length) {
+        throw new NotFoundError(`Transaction not found`)
+      }
       transactionsStorage.set(next)
-      return true
     },
   }
 }

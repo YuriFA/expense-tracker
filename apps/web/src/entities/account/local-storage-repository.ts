@@ -13,7 +13,8 @@ import type {
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { generateId } from '@/shared/lib/generate-id'
 import type { Transaction } from '@/entities/transaction/types'
-import { createLocalStorageAdapter } from '@/shared/lib/local-storage-adapter'
+import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
+import { NotFoundError, ReferentialIntegrityError } from '@/shared/lib/data/repository'
 
 const accountsStorage = createLocalStorageAdapter<Account[]>(STORAGE_KEYS.accounts, [], {
   read: parseAccountsStorage,
@@ -63,7 +64,7 @@ export function createLocalStorageAccountRepository(deps: {
       const target = accounts.find((item) => item.id === id)
 
       if (!target) {
-        throw new Error(`Account with id ${id} not found`)
+        throw new NotFoundError('Account not found')
       }
 
       const transactions = await deps.getAllTransactions()
@@ -75,16 +76,17 @@ export function createLocalStorageAccountRepository(deps: {
     },
     async remove(id) {
       if (await deps.hasTransactionsForAccount(id)) {
-        return false
+        throw new ReferentialIntegrityError(
+          `Account has referencing transactions`,
+        )
       }
       const accounts = accountsStorage.get()
       const next = accounts.filter((item) => item.id !== id)
       if (next.length === accounts.length) {
-        return false
+        throw new NotFoundError(`Account not found`)
       }
 
       accountsStorage.set(next)
-      return true
     },
     async hasReferencingTransactions(accountId) {
       return deps.hasTransactionsForAccount(accountId)

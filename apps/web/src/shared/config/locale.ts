@@ -1,3 +1,2 @@
-import type { AppLocale } from '@/app/i18n/schema'
-
+export type AppLocale = 'en' | 'ru'
 export const DEFAULT_LOCALE: AppLocale = 'en'

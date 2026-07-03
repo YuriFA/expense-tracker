@@ -128,19 +128,19 @@ describe('account localStorage repository', () => {
   })
 
   describe('remove', () => {
-    it('returns false when account has transactions', async () => {
+    it('throws ReferentialIntegrityError when account has transactions', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
         hasTransactionsForAccount: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
       })
-      expect(await repo.remove('a1')).toBe(false)
+      await expect(repo.remove('a1')).rejects.toThrow(/referencing transactions/)
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.accounts) ?? '[]')
       expect(stored).toHaveLength(1)
     })
 
-    it('returns false when account does not exist', async () => {
+    it('throws NotFoundError when account does not exist', async () => {
       const repo = createRepository()
-      expect(await repo.remove('missing')).toBe(false)
+      await expect(repo.remove('missing')).rejects.toThrow(/not found/)
     })
 
     it('removes account when no transactions reference it', async () => {
@@ -148,7 +148,7 @@ describe('account localStorage repository', () => {
       const repo = createRepository({
         hasTransactionsForAccount: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       })
-      expect(await repo.remove('a1')).toBe(true)
+      await repo.remove('a1')
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.accounts) ?? '[]')
       expect(stored).toHaveLength(1)
       expect(stored[0].id).toBe('a2')

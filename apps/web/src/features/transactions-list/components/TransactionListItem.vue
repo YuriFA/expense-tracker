@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatCurrency } from '@/shared/money/format'
+import { formatCurrency } from '@/shared/lib/money/format'
 import { isTransferTransaction } from '@/entities/transaction/transaction'
 import { useAccounts } from '@/entities/account/use-accounts'
 import { useCategories } from '@/entities/category/use-categories'

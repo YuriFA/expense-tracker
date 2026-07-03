@@ -112,17 +112,17 @@ describe('category localStorage repository', () => {
   })
 
   describe('remove', () => {
-    it('returns false when category has transactions', async () => {
+    it('throws ReferentialIntegrityError when category has transactions', async () => {
       seedCategories([categoryFixture])
       const repo = createRepository({
         hasTransactionsForCategory: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
       })
-      expect(await repo.remove('c1')).toBe(false)
+      await expect(repo.remove('c1')).rejects.toThrow(/referencing transactions/)
     })
 
-    it('returns false when category does not exist', async () => {
+    it('throws NotFoundError when category does not exist', async () => {
       const repo = createRepository()
-      expect(await repo.remove('missing')).toBe(false)
+      await expect(repo.remove('missing')).rejects.toThrow(/not found/)
     })
 
     it('removes category when no transactions reference it', async () => {
@@ -130,7 +130,7 @@ describe('category localStorage repository', () => {
       const repo = createRepository({
         hasTransactionsForCategory: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       })
-      expect(await repo.remove('c1')).toBe(true)
+      await repo.remove('c1')
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.categories) ?? '[]')
       expect(stored).toHaveLength(1)
       expect(stored[0].id).toBe('c2')
@@ -142,9 +142,8 @@ describe('category localStorage repository', () => {
       })
       const defaults = await repo.getAll()
       const defaultId = defaults[0]!.id
-      const result = await repo.remove(defaultId)
       // Default categories are not in storage, so storage removal finds nothing
-      expect(result).toBe(false)
+      await expect(repo.remove(defaultId)).rejects.toThrow(/not found/)
     })
   })
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { formatCurrency } from '@/shared/money/format'
+import { formatCurrency } from '@/shared/lib/money/format'
 import { useAccounts } from '@/entities/account/use-accounts'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
