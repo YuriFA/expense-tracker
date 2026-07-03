@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { nextTick } from 'vue'
 import SettingsPage from './SettingsPage.vue'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
-import { useSettingsStore } from '@/app/use-settings-store'
+import { useSettingsStore } from '@/shared/stores/use-settings-store'
 
 describe('SettingsPage', () => {
   it('renders page title', () => {

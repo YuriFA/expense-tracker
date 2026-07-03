@@ -8,7 +8,7 @@ import {
 } from '@/shared/ui/select'
 import { AVAILABLE_CURRENCIES } from '@/shared/config/currencies'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
-import { useSettingsStore } from '@/app/use-settings-store'
+import { useSettingsStore } from '@/shared/stores/use-settings-store'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
