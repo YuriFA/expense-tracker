@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSettingsStore } from '@/app/use-settings-store'
+import { useSettingsStore } from '@/shared/stores/use-settings-store'
 import { useI18n } from 'vue-i18n'
 import { Field, FieldError } from '@/shared/ui/field'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
