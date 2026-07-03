@@ -105,7 +105,7 @@ describe('useUpdateAccount', () => {
 describe('useDeleteAccount', () => {
   it('calls repository.remove on mutate', async () => {
     const repo = createMockAccountRepository()
-    repo.remove.mockResolvedValue(true)
+    repo.remove.mockResolvedValue(undefined)
     const { result } = mountWithComposable(() => useDeleteAccount(), {
       repositories: { accounts: repo },
     })

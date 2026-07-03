@@ -158,7 +158,7 @@ describe('useUpdateTransaction', () => {
 describe('useDeleteTransaction', () => {
   it('calls repository.remove on mutate', async () => {
     const repo = createMockTransactionRepository()
-    repo.remove.mockResolvedValue(true)
+    repo.remove.mockResolvedValue(undefined)
     const { result } = mountWithComposable(() => useDeleteTransaction(), {
       repositories: { transactions: repo },
     })

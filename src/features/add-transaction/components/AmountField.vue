@@ -5,7 +5,7 @@ import { useField, Field as VeeField } from 'vee-validate'
 import { Field, FieldError } from '@/shared/ui/field'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
 import type { AddTransactionFormValues } from '../validation/add-transaction-schema'
-import { formatCurrency } from '@/shared/money/format'
+import { formatCurrency } from '@/shared/lib/money/format'
 import { computed } from 'vue'
 
 const props = defineProps<{

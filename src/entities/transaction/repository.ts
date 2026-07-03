@@ -1,6 +1,6 @@
 import { inject, type InjectionKey } from 'vue'
 import type { Transaction, TransactionType } from './types'
-import type { Repository } from '@/shared/lib/repository'
+import type { Repository } from '@/shared/lib/data/repository'
 import type { CalendarDay } from '@/shared/lib/date'
 
 export type CreateTransactionPayload<T extends Transaction = Transaction> = Omit<T, 'id'> &
