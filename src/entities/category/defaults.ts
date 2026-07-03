@@ -1,5 +1,5 @@
 import type { Category } from './types'
-import i18n from '@/app/i18n'
+import i18n from '@/shared/i18n'
 
 export const getDefaultCategories = (): Category[] => {
   const { t } = i18n.global

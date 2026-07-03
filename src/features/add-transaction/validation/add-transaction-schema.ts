@@ -1,5 +1,5 @@
 import z from 'zod'
-import i18n from '@/app/i18n'
+import i18n from '@/shared/i18n'
 
 export const createAddTransactionSchema = () => {
   const { t } = i18n.global

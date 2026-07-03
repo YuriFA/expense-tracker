@@ -1,4 +1,4 @@
-import i18n from '@/app/i18n'
+import i18n from '@/shared/i18n'
 
 export const getTransactionsOptions = () => {
   const { t } = i18n.global
