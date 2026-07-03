@@ -2,7 +2,7 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { createPinia, type Pinia } from 'pinia'
 import { PiniaColada } from '@pinia/colada'
-import i18n from '@/app/i18n'
+import i18n from '@/shared/i18n'
 import { ACCOUNT_REPOSITORY_KEY, type AccountRepository } from '@/entities/account/repository'
 import { CATEGORY_REPOSITORY_KEY, type CategoryRepository } from '@/entities/category/repository'
 import {

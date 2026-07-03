@@ -1,4 +1,4 @@
-import i18n from '@/app/i18n'
+import i18n from '@/shared/i18n'
 import type { RepositoryErrorMessages } from './repository'
 
 export const getRepositoryErrorMessages = (): RepositoryErrorMessages => ({

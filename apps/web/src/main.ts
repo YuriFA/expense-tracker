@@ -3,7 +3,7 @@ import { createPinia, storeToRefs } from 'pinia'
 import { PiniaColada } from '@pinia/colada'
 
 import App from './App.vue'
-import i18n from './app/i18n'
+import i18n from './shared/i18n'
 import router from './app/router'
 import { provideRepositories } from './app/repositories'
 import './style.css'
