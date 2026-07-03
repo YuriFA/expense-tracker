@@ -16,6 +16,7 @@ import FromAccountField from './components/FromAccountField.vue'
 import ToAccountField from './components/ToAccountField.vue'
 import { nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction/use-transactions'
+import { notification } from '@/shared/services/notification'
 
 const emit = defineEmits<{
   success: []
@@ -38,15 +39,24 @@ const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransferForm
 })
 
 const handleSubmit = handleFormSubmit(async (data) => {
-  await createTransaction({
-    type: data.type,
-    fromAccountId: data.fromAccountId,
-    toAccountId: data.toAccountId,
-    amount: data.amount,
-    description: data.description,
-    occurredAt: nowIsoString(),
-  })
-  emit('success')
+  try {
+    await createTransaction({
+      type: data.type,
+      fromAccountId: data.fromAccountId,
+      toAccountId: data.toAccountId,
+      amount: data.amount,
+      description: data.description,
+      occurredAt: nowIsoString(),
+    })
+    notification.success(t('addTransfer.success'))
+    emit('success')
+  } catch (error) {
+    notification.mutationError(error, {
+      title: t('addTransfer.error'),
+      feature: 'transaction',
+      action: 'create',
+    })
+  }
 })
 </script>
 

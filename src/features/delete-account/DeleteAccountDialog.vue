@@ -10,8 +10,8 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { useI18n } from 'vue-i18n'
-import { toast } from 'vue-sonner'
 import { useDeleteAccount } from '@/entities/account/use-accounts'
+import { notification } from '@/shared/services/notification'
 
 const { accountId } = defineProps<{
   accountId: string
@@ -25,9 +25,13 @@ const { mutateAsync: deleteAccount } = useDeleteAccount()
 const handleConfirm = async () => {
   try {
     await deleteAccount(accountId)
-    toast.success(t('deleteAccount.success'))
+    notification.success(t('deleteAccount.success'))
   } catch (error) {
-    toast.error(t('deleteAccount.error', { error: (error as Error).message }))
+    notification.mutationError(error, {
+      title: t('deleteAccount.error'),
+      feature: 'account',
+      action: 'delete',
+    })
   } finally {
     open.value = false
   }

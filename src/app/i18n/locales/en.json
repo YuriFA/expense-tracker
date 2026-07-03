@@ -29,7 +29,7 @@
     "accountPlaceholder": "Account",
     "submit": "Add",
     "success": "Transaction added",
-    "error": "Error adding transaction: {error}"
+    "error": "Error adding transaction"
   },
   "addAccount": {
     "nameLabel": "Name",
@@ -38,7 +38,7 @@
     "submit": "Add account",
     "newAccount": "New account",
     "success": "Account added",
-    "error": "Error adding account: {error}"
+    "error": "Error adding account"
   },
   "deleteAccount": {
     "trigger": "Delete account",
@@ -47,7 +47,7 @@
     "cancel": "Cancel",
     "confirm": "Delete",
     "success": "Account deleted",
-    "error": "Error deleting account: {error}"
+    "error": "Error deleting account"
   },
   "addTransfer": {
     "fromAccountLabel": "From account",
@@ -58,7 +58,8 @@
     "fromAccountPlaceholder": "From account",
     "toAccountPlaceholder": "To account",
     "submit": "Transfer",
-    "error": "Error adding transfer: {error}"
+    "success": "Transfer completed",
+    "error": "Error completing transfer"
   },
   "recentTransactions": {
     "title": "Recent Transactions"
@@ -112,9 +113,11 @@
     "invalidDate": "Invalid date "
   },
   "errors": {
-    "transactionNotFound": "Transaction not found",
-    "invalidTransactionPayload": "Invalid transaction payload",
-    "unknownTransactionReferences": "Transaction references an unknown account or category"
+    "notFound": "Not found",
+    "hasReferences": "Cannot be deleted because it has linked transactions",
+    "invalidPayload": "Invalid data",
+    "unknownReferences": "References an unknown account or category",
+    "generic": "Something went wrong"
   },
   "seeds": {
     "categories": {
