@@ -28,7 +28,8 @@
     "categoryPlaceholder": "Категория",
     "accountPlaceholder": "Счет",
     "submit": "Добавить",
-    "success": "Транзакция добавлена"
+    "success": "Транзакция добавлена",
+    "error": "Ошибка при добавлении транзакции"
   },
   "addAccount": {
     "nameLabel": "Название",
@@ -36,7 +37,17 @@
     "openingBalanceLabel": "Начальный баланс",
     "submit": "Добавить счёт",
     "newAccount": "Новый счёт",
-    "success": "Счёт добавлен"
+    "success": "Счёт добавлен",
+    "error": "Ошибка при добавлении счёта"
+  },
+  "deleteAccount": {
+    "trigger": "Удалить счёт",
+    "confirmDelete": "Вы уверены, что хотите удалить этот счёт?",
+    "confirmDeleteDescription": "Это действие нельзя отменить.",
+    "cancel": "Отмена",
+    "confirm": "Удалить",
+    "success": "Счёт удалён",
+    "error": "Ошибка при удалении счёта"
   },
   "addTransfer": {
     "fromAccountLabel": "Со счета",
@@ -46,7 +57,9 @@
     "descriptionPlaceholder": "Заметка",
     "fromAccountPlaceholder": "Со счета",
     "toAccountPlaceholder": "На счет",
-    "submit": "Перевести"
+    "submit": "Перевести",
+    "success": "Перевод выполнен",
+    "error": "Ошибка при переводе"
   },
   "recentTransactions": {
     "title": "Последние транзакции"
@@ -100,9 +113,11 @@
     "invalidDate": "Некорректная дата"
   },
   "errors": {
-    "transactionNotFound": "Транзакция не найдена",
-    "invalidTransactionPayload": "Некорректные данные транзакции",
-    "unknownTransactionReferences": "В транзакции указан неизвестный счет или категория"
+    "notFound": "Не найдено",
+    "hasReferences": "Невозможно удалить, так как есть связанные транзакции",
+    "invalidPayload": "Некорректные данные",
+    "unknownReferences": "Указан неизвестный счёт или категория",
+    "generic": "Что-то пошло не так"
   },
   "seeds": {
     "categories": {

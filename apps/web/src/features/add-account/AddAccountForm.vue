@@ -10,12 +10,12 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
 import { useSettingsStore } from '@/app/use-settings-store'
-import { formatCurrency } from '@/shared/money/format'
+import { formatCurrency } from '@/shared/lib/money/format'
 import { computed } from 'vue'
+import { notification } from '@/shared/services/notification'
 
 const emit = defineEmits<{
   success: []
-  error: [error: unknown]
 }>()
 
 const { t, locale } = useI18n()
@@ -36,10 +36,14 @@ const { handleSubmit: handleFormSubmit, setFieldValue } = useForm<AddAccountForm
 const handleSubmit = handleFormSubmit(async (data) => {
   try {
     await createAccount(data)
+    notification.success(t('addAccount.success'))
     emit('success')
   } catch (error) {
-    emit('error', error)
-    console.error('Error creating account:', error)
+    notification.mutationError(error, {
+      title: t('addAccount.error'),
+      feature: 'account',
+      action: 'create',
+    })
   }
 })
 </script>

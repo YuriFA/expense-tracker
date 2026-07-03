@@ -6,17 +6,12 @@ import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vu
 import { useLastCreatedTransaction } from '@/features/add-transaction/composables/use-transaction-form-data'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
 import { useI18n } from 'vue-i18n'
-import { toast } from 'vue-sonner'
 
 const { t } = useI18n()
 
 const transactionTypes = getTransactionsOptions()
 const { lastCreatedCashflowTransaction, lastCreatedTransferTransaction, isReady } =
   useLastCreatedTransaction()
-
-const handleSuccess = () => {
-  toast.success(t('addTransaction.success'))
-}
 </script>
 
 <template>
@@ -36,21 +31,16 @@ const handleSuccess = () => {
           <AddTransactionForm
             type="expense"
             :last-created-transaction="lastCreatedCashflowTransaction"
-            @success="handleSuccess"
           />
         </TabsContent>
         <TabsContent value="income">
           <AddTransactionForm
             type="income"
             :last-created-transaction="lastCreatedCashflowTransaction"
-            @success="handleSuccess"
           />
         </TabsContent>
         <TabsContent value="transfer">
-          <AddTransferForm
-            :last-created-transaction="lastCreatedTransferTransaction"
-            @success="handleSuccess"
-          />
+          <AddTransferForm :last-created-transaction="lastCreatedTransferTransaction" />
         </TabsContent>
       </Tabs>
     </CardContent>

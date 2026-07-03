@@ -1,15 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vue'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
@@ -25,7 +18,6 @@ const { lastCreatedCashflowTransaction, lastCreatedTransferTransaction, isReady 
   useLastCreatedTransaction()
 
 const handleSuccess = () => {
-  toast.success(t('addTransaction.success'))
   dialogOpen.value = false
 }
 </script>
