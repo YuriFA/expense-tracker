@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useForm } from 'vee-validate'
+import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
 import {
   createAddTransferSchema,
   type AddTransferFormValues,
@@ -9,7 +9,6 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
-import { Field as VeeField } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import AmountField from '@/features/add-transaction/components/AmountField.vue'
 import FromAccountField from './components/FromAccountField.vue'
@@ -38,6 +37,9 @@ const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransferForm
   },
 })
 
+const fromAccountId = useFieldValue<AddTransferFormValues['fromAccountId']>('fromAccountId')
+const toAccountId = useFieldValue<AddTransferFormValues['toAccountId']>('toAccountId')
+
 const handleSubmit = handleFormSubmit(async (data) => {
   try {
     await createTransaction({
@@ -65,12 +67,36 @@ const handleSubmit = handleFormSubmit(async (data) => {
     <div class="space-y-1">
       <FieldLabel for="from-account-id">{{ t('addTransfer.fromAccountLabel') }}</FieldLabel>
       <div class="flex gap-2">
-        <FromAccountField class="w-full" />
-        <AmountField class="min-w-0 w-auto!" :placeholder="t('addTransfer.amountPlaceholder')" />
+        <VeeField v-slot="{ value, setValue, errors }" name="fromAccountId">
+          <FromAccountField
+            class="w-full"
+            :model-value="value"
+            :errors="errors"
+            :exclude-id="toAccountId"
+            @update:model-value="setValue"
+          />
+        </VeeField>
+        <VeeField v-slot="{ value, setValue, errors }" name="amount">
+          <AmountField
+            class="min-w-0 w-auto!"
+            :model-value="value"
+            :errors="errors"
+            :placeholder="t('addTransfer.amountPlaceholder')"
+            @update:model-value="(v) => setValue(v as number)"
+          />
+        </VeeField>
       </div>
     </div>
 
-    <ToAccountField class="w-full" />
+    <VeeField v-slot="{ value, setValue, errors }" name="toAccountId">
+      <ToAccountField
+        class="w-full"
+        :model-value="value"
+        :errors="errors"
+        :exclude-id="fromAccountId"
+        @update:model-value="setValue"
+      />
+    </VeeField>
 
     <VeeField v-slot="{ field, errors }" name="description">
       <Field class="w-full md:min-w-56 md:flex-1" :data-invalid="!!errors.length">

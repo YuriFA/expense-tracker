@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
-import { Form as VeeForm } from 'vee-validate'
 import TransactionAccountField from './TransactionAccountField.vue'
 import type { AccountWithBalance } from '@/entities/account/types'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
@@ -16,12 +15,12 @@ describe('TransactionAccountField', () => {
     vi.clearAllMocks()
   })
 
-  it('mounts inside Form context', async () => {
+  it('renders select trigger', async () => {
     const accountsRepo = createMockAccountRepository()
     accountsRepo.getAll.mockResolvedValue(accounts)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(TransactionAccountField))
+        return () => h(TransactionAccountField)
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { accounts: accountsRepo } })

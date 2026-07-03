@@ -65,8 +65,22 @@ const handleSubmit = handleFormSubmit(async (data) => {
     <div class="space-y-1">
       <FieldLabel for="account-id">{{ t('addTransaction.accountLabel') }}</FieldLabel>
       <div class="flex gap-2">
-        <AccountField class="w-full" />
-        <AmountField class="min-w-0 w-auto" />
+        <VeeField v-slot="{ value, setValue, errors }" name="accountId">
+          <AccountField
+            class="w-full"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="setValue"
+          />
+        </VeeField>
+        <VeeField v-slot="{ value, setValue, errors }" name="amount">
+          <AmountField
+            class="min-w-0 w-auto"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="(v) => setValue(v as number)"
+          />
+        </VeeField>
       </div>
     </div>
 
@@ -83,7 +97,14 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </Field>
     </VeeField>
 
-    <CategoriesField />
+    <VeeField v-slot="{ value, setValue, errors }" name="category">
+      <CategoriesField
+        :model-value="value"
+        :errors="errors"
+        :type="type"
+        @update:model-value="setValue"
+      />
+    </VeeField>
 
     <Button
       form="add-transaction-form"

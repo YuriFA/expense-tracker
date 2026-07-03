@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
-import { Form as VeeForm } from 'vee-validate'
 import TransactionCategoriesField from './TransactionCategoriesField.vue'
 import type { Category } from '@/entities/category/types'
 import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
@@ -17,12 +16,12 @@ describe('TransactionCategoriesField', () => {
     vi.clearAllMocks()
   })
 
-  it('mounts inside Form context', async () => {
+  it('renders select trigger', async () => {
     const categoriesRepo = createMockCategoryRepository()
     categoriesRepo.getAll.mockResolvedValue(categories)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(TransactionCategoriesField))
+        return () => h(TransactionCategoriesField)
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { categories: categoriesRepo } })

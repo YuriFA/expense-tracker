@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { useForm } from 'vee-validate'
+import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
 import { Button } from '@/shared/ui/button'
 import { useI18n } from 'vue-i18n'
 import {
@@ -29,6 +29,8 @@ const { handleSubmit: handleFormSubmit, resetForm } = useForm<TransactionsFilter
   },
 })
 
+const typeFieldValue = useFieldValue<TransactionsFilterFormValues['type']>('type')
+
 const handleSubmit = handleFormSubmit(async (data) => {
   await setFilters({
     type: data.type,
@@ -53,9 +55,30 @@ const handleReset = async () => {
 
 <template>
   <form id="transactions-filter-form" class="flex flex-col gap-3" @submit="handleSubmit">
-    <TransactionTypeField />
-    <TransactionAccountField />
-    <TransactionCategoriesField />
+    <VeeField v-slot="{ value, setValue, errors }" name="type">
+      <TransactionTypeField
+        :model-value="value"
+        :errors="errors"
+        @update:model-value="setValue"
+      />
+    </VeeField>
+
+    <VeeField v-slot="{ value, setValue, errors }" name="accountId">
+      <TransactionAccountField
+        :model-value="value"
+        :errors="errors"
+        @update:model-value="setValue"
+      />
+    </VeeField>
+
+    <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
+      <TransactionCategoriesField
+        :model-value="value"
+        :errors="errors"
+        :type="typeFieldValue"
+        @update:model-value="setValue"
+      />
+    </VeeField>
 
     <div class="flex flex-col gap-2 md:flex-row md:justify-end">
       <Button type="button" variant="outline" class="w-full md:w-auto" @click="handleReset">
