@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
-import { Form as VeeForm } from 'vee-validate'
 import ToAccountField from './ToAccountField.vue'
 import type { AccountWithBalance } from '@/entities/account/types'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
@@ -12,26 +11,17 @@ const accounts: AccountWithBalance[] = [
   { id: 'a2', name: 'Savings', openingBalance: 500, manualAdjustment: 0, balance: 500 },
 ]
 
-function mountInForm() {
-  const Wrapper = defineComponent({
-    setup() {
-      return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(ToAccountField))
-    },
-  })
-  return mountWithProviders(Wrapper, { repositories: {} })
-}
-
 describe('ToAccountField', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('mounts inside Form context', async () => {
+  it('renders select trigger', async () => {
     const accountsRepo = createMockAccountRepository()
     accountsRepo.getAll.mockResolvedValue(accounts)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(ToAccountField))
+        return () => h(ToAccountField)
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { accounts: accountsRepo } })
@@ -39,9 +29,9 @@ describe('ToAccountField', () => {
     expect(wrapper.find('button#to-account-id').exists()).toBe(true)
   })
 
-  it('renders FieldLabel for to-account', async () => {
-    const wrapper = mountInForm()
+  it('renders FieldLabel', async () => {
+    const wrapper = mountWithProviders(ToAccountField, { repositories: {} })
     await flushPromises()
-    expect(wrapper.find('label#to-account-id, button#to-account-id').exists()).toBe(true)
+    expect(wrapper.find('label').exists()).toBe(true)
   })
 })

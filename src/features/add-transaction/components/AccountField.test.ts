@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
-import { Form as VeeForm } from 'vee-validate'
 import AccountField from './AccountField.vue'
 import type { AccountWithBalance } from '@/entities/account/types'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
@@ -12,10 +11,10 @@ const accounts: AccountWithBalance[] = [
   { id: 'a2', name: 'Savings', openingBalance: 500, manualAdjustment: 0, balance: 500 },
 ]
 
-function mountInForm() {
+function mountField(props: Record<string, unknown> = {}) {
   const Wrapper = defineComponent({
     setup() {
-      return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(AccountField))
+      return () => h(AccountField, props)
     },
   })
   return mountWithProviders(Wrapper, { repositories: {} })
@@ -26,12 +25,12 @@ describe('AccountField', () => {
     vi.clearAllMocks()
   })
 
-  it('mounts inside Form context', async () => {
+  it('renders select trigger', async () => {
     const accountsRepo = createMockAccountRepository()
     accountsRepo.getAll.mockResolvedValue(accounts)
     const Wrapper = defineComponent({
       setup() {
-        return () => h(VeeForm, { onSubmit: vi.fn<() => void>() }, () => h(AccountField))
+        return () => h(AccountField)
       },
     })
     const wrapper = mountWithProviders(Wrapper, { repositories: { accounts: accountsRepo } })
@@ -39,9 +38,15 @@ describe('AccountField', () => {
     expect(wrapper.find('button#account-id').exists()).toBe(true)
   })
 
-  it('renders Select with SelectTrigger', async () => {
-    const wrapper = mountInForm()
+  it('renders Select component', async () => {
+    const wrapper = mountField()
     await flushPromises()
     expect(wrapper.findComponent({ name: 'Select' }).exists()).toBe(true)
+  })
+
+  it('reflects modelValue in Select', async () => {
+    const wrapper = mountField({ modelValue: 'a1' })
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'Select' }).props('modelValue')).toBe('a1')
   })
 })
