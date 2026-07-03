@@ -11,14 +11,11 @@ import { useAccounts } from '@/entities/account/use-accounts'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
-  modelValue?: string
   errors?: string[]
   class?: string
 }>()
 
-defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = defineModel<string | undefined>()
 
 const { data } = useAccounts()
 const { t } = useI18n()
@@ -27,10 +24,7 @@ const { t } = useI18n()
 <template>
   <Field :class="$props.class" orientation="responsive" :data-invalid="!!$props.errors?.length">
     <FieldLabel for="account-id">{{ t('transactions.filters.accountLabel') }}</FieldLabel>
-    <Select
-      :model-value="$props.modelValue"
-      @update:model-value="(v) => $emit('update:modelValue', v as string)"
-    >
+    <Select v-model="modelValue">
       <SelectTrigger id="account-id" :aria-invalid="!!$props.errors?.length">
         <SelectValue :placeholder="t('transactions.filters.accountPlaceholder')" />
       </SelectTrigger>

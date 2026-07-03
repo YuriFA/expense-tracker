@@ -12,15 +12,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
-  modelValue?: string
   errors?: string[]
   type?: 'expense' | 'income' | 'transfer'
   class?: string
 }>()
 
-defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+const modelValue = defineModel<string | undefined>()
 
 const { t } = useI18n()
 const { data: categories } = useCategories()
@@ -36,10 +33,7 @@ const filteredCategories = computed(() => {
 <template>
   <Field class="w-full md:w-auto" orientation="responsive" :data-invalid="!!props.errors?.length">
     <FieldLabel for="category-id">{{ t('transactions.filters.categoryLabel') }}</FieldLabel>
-    <Select
-      :model-value="props.modelValue"
-      @update:model-value="(v) => $emit('update:modelValue', v as string)"
-    >
+    <Select v-model="modelValue">
       <SelectTrigger
         id="category-id"
         :aria-invalid="!!props.errors?.length"
