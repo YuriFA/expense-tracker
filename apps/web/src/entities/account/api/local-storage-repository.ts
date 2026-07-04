@@ -1,10 +1,10 @@
 import type { Account } from '../model/types'
+import { parseAccountsStorage, serializeAccountsStorage } from '../model/account'
 import {
   getAccountsBalances,
   getComputedAccountBalance,
-  parseAccountsStorage,
-  serializeAccountsStorage,
-} from '../model/account'
+  type TransactionImpact,
+} from '../model/balance-calculator'
 import type {
   AccountRepository,
   CreateAccountPayload,
@@ -12,9 +12,11 @@ import type {
 } from './repository'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { generateId } from '@/shared/lib/generate-id'
-import type { Transaction } from '@/entities/transaction'
-import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
-import { NotFoundError, ReferentialIntegrityError } from '@/shared/lib/data/repository'
+import {
+  createLocalStorageAdapter,
+  NotFoundError,
+  ReferentialIntegrityError,
+} from '@/shared/lib/data'
 
 const accountsStorage = createLocalStorageAdapter<Account[]>(STORAGE_KEYS.accounts, [], {
   read: parseAccountsStorage,
@@ -23,7 +25,7 @@ const accountsStorage = createLocalStorageAdapter<Account[]>(STORAGE_KEYS.accoun
 
 export function createLocalStorageAccountRepository(deps: {
   hasTransactionsForAccount: (accountId: string) => Promise<boolean>
-  getAllTransactions: () => Promise<Transaction[]>
+  getAllTransactions: () => Promise<TransactionImpact[]>
 }): AccountRepository {
   return {
     async getAll() {
