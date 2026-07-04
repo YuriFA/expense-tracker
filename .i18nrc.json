@@ -1,0 +1,4 @@
+{
+  "locales": ["en", "ru"],
+  "sources": ["src/shared/i18n/locales/{locales}.json"]
+}
