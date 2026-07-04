@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { Account } from '../model/types'
-import type { Transaction } from '@/entities/transaction'
+import type { TransactionImpact } from '../model/balance-calculator'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageAccountRepository } from './local-storage-repository'
 
@@ -11,7 +11,7 @@ const accountFixture: Account = {
   manualAdjustment: 0,
 }
 
-const incomeTransaction: Transaction = {
+const incomeTransaction: TransactionImpact = {
   id: 't1',
   type: 'income',
   amount: 100,
@@ -19,7 +19,7 @@ const incomeTransaction: Transaction = {
   occurredAt: '2024-01-01T00:00:00Z',
   accountId: 'a1',
   categoryId: 'c1',
-} as never
+} as TransactionImpact
 
 function seedAccounts(accounts: Account[]) {
   localStorage.setItem(STORAGE_KEYS.accounts, JSON.stringify(accounts))
@@ -27,13 +27,13 @@ function seedAccounts(accounts: Account[]) {
 
 function createRepository(deps: {
   hasTransactionsForAccount?: (accountId: string) => Promise<boolean>
-  getAllTransactions?: () => Promise<Transaction[]>
+  getAllTransactions?: () => Promise<TransactionImpact[]>
 } = {}) {
   return createLocalStorageAccountRepository({
     hasTransactionsForAccount:
       deps.hasTransactionsForAccount ?? (vi.fn<() => Promise<boolean>>().mockResolvedValue(false) as never),
     getAllTransactions:
-      deps.getAllTransactions ?? (vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([]) as never),
+      deps.getAllTransactions ?? (vi.fn<() => Promise<TransactionImpact[]>>().mockResolvedValue([]) as never),
   })
 }
 
@@ -52,7 +52,7 @@ describe('account localStorage repository', () => {
     it('returns accounts with computed balances', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
-        getAllTransactions: vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([incomeTransaction]),
+        getAllTransactions: vi.fn<() => Promise<TransactionImpact[]>>().mockResolvedValue([incomeTransaction]),
       })
       const result = await repo.getAll()
       expect(result).toHaveLength(1)
@@ -77,7 +77,7 @@ describe('account localStorage repository', () => {
     it('returns account with computed balance when found', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
-        getAllTransactions: vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([incomeTransaction]),
+        getAllTransactions: vi.fn<() => Promise<TransactionImpact[]>>().mockResolvedValue([incomeTransaction]),
       })
       const result = await repo.getById('a1')
       expect(result?.id).toBe('a1')
@@ -118,7 +118,7 @@ describe('account localStorage repository', () => {
     it('updates fields and recalculates balance', async () => {
       seedAccounts([accountFixture])
       const repo = createRepository({
-        getAllTransactions: vi.fn<() => Promise<Transaction[]>>().mockResolvedValue([incomeTransaction]),
+        getAllTransactions: vi.fn<() => Promise<TransactionImpact[]>>().mockResolvedValue([incomeTransaction]),
       })
       const result = await repo.update('a1', { name: 'Updated', manualAdjustment: 50 })
       expect(result.name).toBe('Updated')
