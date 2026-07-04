@@ -1,7 +1,8 @@
-import type { Account } from '@/entities/account'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import type { Transaction } from '../model/types'
 import {
+  type AccountRef,
+  type CategoryRef,
   hasValidTransactionReferences,
   isTransaction,
   isTransactionLinkedToAccount,
@@ -10,7 +11,6 @@ import {
   parseTransactionsStorage,
   serializeTransactionsStorage,
 } from '../model/transaction'
-import type { Category } from '@/entities/category'
 import type {
   CreateTransactionPayload,
   TransactionQuery,
@@ -19,12 +19,12 @@ import type {
 } from './repository'
 import { getDateTimestamp, toEndOfDay, toStartOfDay } from '@/shared/lib/date'
 import { generateId } from '@/shared/lib/generate-id'
-import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
 import {
+  createLocalStorageAdapter,
   InvalidPayloadError,
   NotFoundError,
   UnknownReferencesError,
-} from '@/shared/lib/data/repository'
+} from '@/shared/lib/data'
 
 const transactionsStorage = createLocalStorageAdapter<Transaction[]>(STORAGE_KEYS.transactions, [], {
   read: parseTransactionsStorage,
@@ -33,8 +33,8 @@ const transactionsStorage = createLocalStorageAdapter<Transaction[]>(STORAGE_KEY
 
 
 export function createLocalStorageTransactionRepository(deps: {
-  getAccounts: () => Promise<Account[]>
-  getCategories: () => Promise<Category[]>
+  getAccounts: () => Promise<AccountRef[]>
+  getCategories: () => Promise<CategoryRef[]>
 }): TransactionRepository {
   return {
     async getAll() {

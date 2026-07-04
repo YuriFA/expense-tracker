@@ -1,34 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { Account } from '@/entities/account'
-import type { Category } from '@/entities/category'
+import type { AccountRef, CategoryRef } from '../model/transaction'
 import type { Transaction } from '../model/types'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageTransactionRepository } from './local-storage-repository'
 
-const accountFixture: Account = {
-  id: 'a1',
-  name: 'Main',
-  openingBalance: 1000,
-  manualAdjustment: 0,
-}
+const accountFixture: AccountRef = { id: 'a1' }
 
-const secondAccount: Account = { ...accountFixture, id: 'a2', name: 'Savings' }
+const secondAccount: AccountRef = { id: 'a2' }
 
-const incomeCategoryFixture: Category = {
-  id: 'cincome',
-  name: 'Salary',
-  type: 'income',
-  icon: '💰',
-  color: '#00FF00',
-}
+const incomeCategoryFixture: CategoryRef = { id: 'cincome', type: 'income' }
 
-const expenseCategoryFixture: Category = {
-  id: 'cexpense',
-  name: 'Food',
-  type: 'expense',
-  icon: '🍔',
-  color: '#FF0000',
-}
+const expenseCategoryFixture: CategoryRef = { id: 'cexpense', type: 'expense' }
 
 function buildTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -49,18 +31,18 @@ function seedTransactions(transactions: Transaction[]) {
 
 function createRepository(
   deps: {
-    getAccounts?: () => Promise<Account[]>
-    getCategories?: () => Promise<Category[]>
+    getAccounts?: () => Promise<AccountRef[]>
+    getCategories?: () => Promise<CategoryRef[]>
   } = {},
 ) {
   return createLocalStorageTransactionRepository({
     getAccounts:
       deps.getAccounts ??
-      vi.fn<() => Promise<Account[]>>().mockResolvedValue([accountFixture, secondAccount]),
+      vi.fn<() => Promise<AccountRef[]>>().mockResolvedValue([accountFixture, secondAccount]),
     getCategories:
       deps.getCategories ??
       vi
-        .fn<() => Promise<Category[]>>()
+        .fn<() => Promise<CategoryRef[]>>()
         .mockResolvedValue([incomeCategoryFixture, expenseCategoryFixture]),
   })
 }
