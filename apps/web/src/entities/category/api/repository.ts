@@ -1,5 +1,5 @@
 import { inject, type InjectionKey } from 'vue'
-import type { Category } from './types'
+import type { Category } from '../model/types'
 import type { Repository } from '@/shared/lib/data/repository'
 
 export type CreateCategoryPayload = Omit<Category, 'id'> & Partial<Pick<Category, 'id'>>

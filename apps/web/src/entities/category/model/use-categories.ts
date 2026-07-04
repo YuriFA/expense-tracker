@@ -2,7 +2,7 @@ import {
   useCategoryRepository,
   type CreateCategoryPayload,
   type UpdateCategoryPayload,
-} from './repository'
+} from '../api/repository'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 

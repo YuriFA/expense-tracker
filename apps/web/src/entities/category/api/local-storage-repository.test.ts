@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { Category } from './types'
+import type { Category } from '../model/types'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageCategoryRepository } from './local-storage-repository'
 
