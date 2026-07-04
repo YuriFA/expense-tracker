@@ -1,1 +1,1 @@
-export { default as AddTransferForm } from './AddTransferForm.vue'
+export { default as AddTransferForm } from './ui/AddTransferForm.vue'

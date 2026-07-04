@@ -1,1 +1,1 @@
-export { default as DeleteAccountDialog } from './DeleteAccountDialog.vue'
+export { default as DeleteAccountDialog } from './ui/DeleteAccountDialog.vue'

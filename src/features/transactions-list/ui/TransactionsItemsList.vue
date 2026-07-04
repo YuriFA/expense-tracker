@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import TransactionListItem from './TransactionListItem.vue'
-import { useTransactionsFilters } from '../composables/use-transactions-filters'
+import { useTransactionsFilters } from '../model/use-transactions-filters'
 import { useI18n } from 'vue-i18n'
 import { useTransactions } from '@/entities/transaction'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import TransactionListItem from './components/TransactionListItem.vue'
+import TransactionListItem from './TransactionListItem.vue'
 import { useTransactions } from '@/entities/transaction'
 
 const { t } = useI18n()

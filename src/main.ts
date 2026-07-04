@@ -8,7 +8,7 @@ import router from './app/router'
 import { provideRepositories } from './app/repositories'
 import './style.css'
 import { maskito } from '@maskito/vue'
-import { useSettingsStore } from './shared/stores/use-settings-store'
+import { useSettingsStore } from './shared/store/use-settings-store'
 
 const app = createApp(App).directive('maskito', maskito)
 const pinia = createPinia()

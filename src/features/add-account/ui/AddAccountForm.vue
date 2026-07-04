@@ -4,15 +4,15 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
 import { useI18n } from 'vue-i18n'
 import { useCreateAccount } from '@/entities/account'
-import { createAddAccountSchema, type AddAccountFormValues } from './validation/add-account-schema'
+import { createAddAccountSchema, type AddAccountFormValues } from '../model/add-account-schema'
 import { Field as VeeField } from 'vee-validate'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
-import { useSettingsStore } from '@/shared/stores/use-settings-store'
+import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { formatCurrency } from '@/shared/lib/money/format'
 import { computed } from 'vue'
-import { notification } from '@/shared/services/notification'
+import { notification } from '@/shared/api/notification'
 
 const emit = defineEmits<{
   success: []

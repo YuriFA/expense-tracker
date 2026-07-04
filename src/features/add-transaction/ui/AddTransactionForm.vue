@@ -3,7 +3,7 @@ import { useForm } from 'vee-validate'
 import {
   createAddTransactionSchema,
   type AddTransactionFormValues,
-} from './validation/add-transaction-schema'
+} from '../model/add-transaction-schema'
 import type { CashflowTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
@@ -12,11 +12,11 @@ import { Input } from '@/shared/ui/input'
 import { Field as VeeField } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import CategoriesField from './components/CategoriesField.vue'
-import AccountField from './components/AccountField.vue'
+import CategoriesField from './CategoriesField.vue'
+import AccountField from './AccountField.vue'
 import { nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction'
-import { notification } from '@/shared/services/notification'
+import { notification } from '@/shared/api/notification'
 
 const emit = defineEmits<{
   success: []

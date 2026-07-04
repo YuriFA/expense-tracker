@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import TransactionsBrowser from './TransactionsBrowser.vue'
-import TransactionsActiveFilters from './components/TransactionsActiveFilters.vue'
-import TransactionsItemsList from './components/TransactionsItemsList.vue'
+import TransactionsActiveFilters from './TransactionsActiveFilters.vue'
+import TransactionsItemsList from './TransactionsItemsList.vue'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 describe('TransactionsBrowser', () => {

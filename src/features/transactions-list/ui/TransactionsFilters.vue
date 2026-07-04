@@ -6,8 +6,8 @@ import { useI18n } from 'vue-i18n'
 import {
   createTransactionsFilterSchema,
   type TransactionsFilterFormValues,
-} from '../validation/transactions-filter-schema'
-import { useTransactionsFilters } from '../composables/use-transactions-filters'
+} from '../model/transactions-filter-schema'
+import { useTransactionsFilters } from '../model/use-transactions-filters'
 import TransactionTypeField from './TransactionTypeField.vue'
 import TransactionCategoriesField from './TransactionCategoriesField.vue'
 import TransactionAccountField from './TransactionAccountField.vue'
