@@ -1,6 +1,6 @@
 import type { Account } from '@/entities/account'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
-import type { Transaction } from './types'
+import type { Transaction } from '../model/types'
 import {
   hasValidTransactionReferences,
   isTransaction,
@@ -9,7 +9,7 @@ import {
   isTransferTransaction,
   parseTransactionsStorage,
   serializeTransactionsStorage,
-} from './transaction'
+} from '../model/transaction'
 import type { Category } from '@/entities/category'
 import type {
   CreateTransactionPayload,

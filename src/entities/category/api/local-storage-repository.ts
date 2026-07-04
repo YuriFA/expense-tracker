@@ -1,12 +1,12 @@
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
-import type { Category } from './types'
-import { parseCategoriesStorage, serializeCategoriesStorage } from './category'
+import type { Category } from '../model/types'
+import { parseCategoriesStorage, serializeCategoriesStorage } from '../model/category'
 import type {
   CategoryRepository,
   CreateCategoryPayload,
   UpdateCategoryPayload,
 } from './repository'
-import { getDefaultCategories } from './defaults'
+import { getDefaultCategories } from '../model/defaults'
 import { generateId } from '@/shared/lib/generate-id'
 import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
 import { NotFoundError, ReferentialIntegrityError } from '@/shared/lib/data/repository'

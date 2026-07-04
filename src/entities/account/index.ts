@@ -1,16 +1,16 @@
-export type { Account, AccountWithBalance } from './types'
+export type { Account, AccountWithBalance } from './model/types'
 export {
   ACCOUNT_REPOSITORY_KEY,
   useAccountRepository,
   type AccountRepository,
   type CreateAccountPayload,
   type UpdateAccountPayload,
-} from './repository'
-export { createLocalStorageAccountRepository } from './local-storage-repository'
+} from './api/repository'
+export { createLocalStorageAccountRepository } from './api/local-storage-repository'
 export {
   useAccounts,
   useAccount,
   useCreateAccount,
   useUpdateAccount,
   useDeleteAccount,
-} from './use-accounts'
+} from './model/use-accounts'

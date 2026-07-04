@@ -1,5 +1,5 @@
-import type { Account } from '../account/types'
-import type { Category } from '../category/types'
+import type { Account } from '@/entities/account'
+import type { Category } from '@/entities/category'
 import {
   hasValidTransactionReferences,
   isTransaction,

@@ -3,7 +3,7 @@ export type {
   CashflowTransaction,
   TransferTransaction,
   TransactionType,
-} from './types'
+} from './model/types'
 export {
   TRANSACTION_REPOSITORY_KEY,
   useTransactionRepository,
@@ -11,16 +11,16 @@ export {
   type CreateTransactionPayload,
   type UpdateTransactionPayload,
   type TransactionQuery,
-} from './repository'
-export { createLocalStorageTransactionRepository } from './local-storage-repository'
+} from './api/repository'
+export { createLocalStorageTransactionRepository } from './api/local-storage-repository'
 export {
   useTransactions,
   useTransaction,
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
-} from './use-transactions'
-export { getTransactionsOptions } from './constants'
+} from './model/use-transactions'
+export { getTransactionsOptions } from './model/constants'
 export {
   isTransferTransaction,
   isTransaction,
@@ -28,4 +28,4 @@ export {
   isTransactionLinkedToCategory,
   hasValidTransactionReferences,
   normalizeTransaction,
-} from './transaction'
+} from './model/transaction'

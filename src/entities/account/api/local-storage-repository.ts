@@ -1,10 +1,10 @@
-import type { Account } from './types'
+import type { Account } from '../model/types'
 import {
   getAccountsBalances,
   getComputedAccountBalance,
   parseAccountsStorage,
   serializeAccountsStorage,
-} from './account'
+} from '../model/account'
 import type {
   AccountRepository,
   CreateAccountPayload,

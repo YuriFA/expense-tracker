@@ -4,7 +4,7 @@ import {
   type CreateTransactionPayload,
   type TransactionQuery,
   type UpdateTransactionPayload,
-} from './repository'
+} from '../api/repository'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 

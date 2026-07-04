@@ -1,5 +1,5 @@
 import { inject, type InjectionKey } from 'vue'
-import type { Transaction, TransactionType } from './types'
+import type { Transaction, TransactionType } from '../model/types'
 import type { Repository } from '@/shared/lib/data/repository'
 import type { CalendarDay } from '@/shared/lib/date'
 
