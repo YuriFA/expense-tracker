@@ -1,41 +1,53 @@
 <script setup lang="ts">
 import { formatCurrency } from '@/shared/lib/money'
-import { isTransferTransaction } from '@/entities/transaction'
-import { useAccounts } from '@/entities/account'
-import { useCategories } from '@/entities/category'
-import type { Transaction } from '@/entities/transaction'
+import { isTransferTransaction } from '../model/transaction'
+import type { Transaction } from '../model/types'
 import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
 
-const { transaction } = defineProps<{ transaction: Transaction }>()
+interface AccountRef {
+  id: string
+  name: string
+}
+
+interface CategoryRef {
+  id: string
+  name: string
+  icon: string
+}
+
+const {transaction, accounts = [], categories = []} = defineProps<{
+  transaction: Transaction
+  accounts?: AccountRef[]
+  categories?: CategoryRef[]
+}>()
+
 const { locale, t } = useI18n()
 const settings = useSettingsStore()
 const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
-const { data: categories } = useCategories()
-const { data: accounts } = useAccounts()
 
 const category = computed(() => {
-  return categories.value?.find((category) => category.id === transaction.categoryId)
+  return categories?.find((category) => category.id === transaction.categoryId)
 })
 
 const account = computed(() => {
   if (isTransferTransaction(transaction)) {
     return undefined
   }
-  return accounts.value?.find((account) => account.id === transaction.accountId)
+  return accounts?.find((account) => account.id === transaction.accountId)
 })
 const fromAccount = computed(() => {
   if (isTransferTransaction(transaction)) {
-    return accounts.value?.find((account) => account.id === transaction.fromAccountId)
+    return accounts?.find((account) => account.id === transaction.fromAccountId)
   }
   return undefined
 })
 const toAccount = computed(() => {
   if (isTransferTransaction(transaction)) {
-    return accounts.value?.find((account) => account.id === transaction.toAccountId)
+    return accounts?.find((account) => account.id === transaction.toAccountId)
   }
   return undefined
 })
@@ -93,5 +105,6 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
       <span v-if="transaction.type === 'expense'">-</span>
       <span>{{ format(transaction.amount) }}</span>
     </p>
+    <slot name="actions" :transaction="transaction" />
   </li>
 </template>
