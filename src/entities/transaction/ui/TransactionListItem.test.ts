@@ -1,14 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import TransactionListItem from './TransactionListItem.vue'
-import type { AccountWithBalance } from '@/entities/account'
-import type { Category } from '@/entities/category'
-import type { CashflowTransaction, Transaction, TransferTransaction } from '@/entities/transaction'
-import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
-import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
+import type { CashflowTransaction, Transaction, TransferTransaction } from '../model/types'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
-const incomeAccount: AccountWithBalance = {
+const incomeAccount = {
   id: 'a1',
   name: 'Main',
   openingBalance: 1000,
@@ -16,10 +12,16 @@ const incomeAccount: AccountWithBalance = {
   balance: 1000,
 }
 
-const expenseCategory: Category = {
+const savingsAccount = {
+  ...incomeAccount,
+  id: 'a2',
+  name: 'Savings',
+}
+
+const expenseCategory = {
   id: 'c1',
   name: 'Food',
-  type: 'expense',
+  type: 'expense' as const,
   icon: '🍔',
   color: '#FF0000',
 }
@@ -52,57 +54,59 @@ const transferTransaction: TransferTransaction = {
   toAccountId: 'a2',
 } as never
 
-async function mountWithTransaction(transaction: Transaction) {
-  const accounts = createMockAccountRepository()
-  accounts.getAll.mockResolvedValue([
-    incomeAccount,
-    { ...incomeAccount, id: 'a2', name: 'Savings' },
-  ])
-  const categories = createMockCategoryRepository()
-  categories.getAll.mockResolvedValue([expenseCategory])
-  const wrapper = mountWithProviders(TransactionListItem, {
-    props: { transaction } as never,
-    repositories: { accounts, categories },
+function mountWithTransaction(
+  transaction: Transaction,
+  accounts: unknown[] = [incomeAccount, savingsAccount],
+  categories: unknown[] = [expenseCategory],
+) {
+  return mountWithProviders(TransactionListItem, {
+    props: { transaction, accounts, categories } as never,
+    repositories: {},
   })
-  await flushPromises()
-  return wrapper
 }
 
 describe('TransactionListItem', () => {
   it('renders income transaction with description and category', async () => {
-    const wrapper = await mountWithTransaction(incomeTransaction)
+    const wrapper = mountWithTransaction(incomeTransaction)
+    await flushPromises()
     expect(wrapper.text()).toContain('Salary')
     expect(wrapper.text()).toContain('Food')
     expect(wrapper.text()).toContain('+')
   })
 
   it('renders expense transaction with minus sign', async () => {
-    const wrapper = await mountWithTransaction(expenseTransaction)
+    const wrapper = mountWithTransaction(expenseTransaction)
+    await flushPromises()
     expect(wrapper.text()).toContain('Lunch')
     expect(wrapper.text()).toContain('-')
   })
 
   it('renders transfer transaction with account names', async () => {
-    const wrapper = await mountWithTransaction(transferTransaction)
+    const wrapper = mountWithTransaction(transferTransaction)
+    await flushPromises()
     expect(wrapper.text()).toContain('Main')
     expect(wrapper.text()).toContain('Savings')
   })
 
   it('renders transfer fallback when account missing', async () => {
-    const accounts = createMockAccountRepository()
-    accounts.getAll.mockResolvedValue([])
-    const categories = createMockCategoryRepository()
-    const wrapper = mountWithProviders(TransactionListItem, {
-      props: { transaction: transferTransaction } as never,
-      repositories: { accounts, categories },
-    })
+    const wrapper = mountWithTransaction(transferTransaction, [], [])
     await flushPromises()
-    // Should fall back to i18n translation for transfer type
     expect(wrapper.text()).toBeTruthy()
   })
 
   it('renders category icon for cashflow transaction', async () => {
-    const wrapper = await mountWithTransaction(incomeTransaction)
+    const wrapper = mountWithTransaction(incomeTransaction)
+    await flushPromises()
     expect(wrapper.text()).toContain('🍔')
+  })
+
+  it('renders actions slot content', async () => {
+    const wrapper = mountWithProviders(TransactionListItem, {
+      props: { transaction: incomeTransaction, accounts: [], categories: [] } as never,
+      slots: { actions: '<button data-test="action-btn">Action</button>' },
+      repositories: {},
+    })
+    await flushPromises()
+    expect(wrapper.find('[data-test="action-btn"]').exists()).toBe(true)
   })
 })

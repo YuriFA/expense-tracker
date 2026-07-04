@@ -29,3 +29,4 @@ export {
   hasValidTransactionReferences,
   normalizeTransaction,
 } from './model/transaction'
+export { default as TransactionListItem } from './ui/TransactionListItem.vue'
