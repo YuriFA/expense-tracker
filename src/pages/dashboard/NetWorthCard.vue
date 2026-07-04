@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { formatCurrency } from '@/shared/lib/money/format'
-import { useAccounts } from '@/entities/account/use-accounts'
+import { useAccounts } from '@/entities/account'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { serializeTransactionsQuery } from '@/features/transactions-list/lib/transactions-query'
+import { serializeTransactionsQuery } from '@/features/transactions-list'
 import { useSettingsStore } from '@/shared/stores/use-settings-store'
 
 const { t, locale } = useI18n()

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useAccounts } from '@/entities/account/use-accounts'
+import { useAccounts } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/shared/ui/card'
 import { formatCurrency } from '@/shared/lib/money/format'
 import { computed } from 'vue'
 import { useSettingsStore } from '@/shared/stores/use-settings-store'
-import AddAccountDialog from '@/features/add-account/AddAccountDialog.vue'
+import { AddAccountDialog } from '@/features/add-account'
 
 const { t, locale } = useI18n()
 const { data } = useAccounts()

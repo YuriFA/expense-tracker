@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
-import AddAccountForm from '@/features/add-account/AddAccountForm.vue'
+import AddAccountForm from './AddAccountForm.vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { useI18n } from 'vue-i18n'
-import { useDeleteAccount } from '@/entities/account/use-accounts'
+import { useDeleteAccount } from '@/entities/account'
 import { notification } from '@/shared/services/notification'
 
 const { accountId } = defineProps<{

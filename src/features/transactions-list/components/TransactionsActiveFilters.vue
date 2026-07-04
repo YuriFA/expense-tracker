@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { getTransactionsOptions } from '@/entities/transaction/constants'
-import { useAccount } from '@/entities/account/use-accounts'
+import { getTransactionsOptions } from '@/entities/transaction'
+import { useAccount } from '@/entities/account'
 import { useTransactionsFilters } from '../composables/use-transactions-filters'
 import { computed } from 'vue'
 import { Chip } from '@/shared/ui/chip'
 import { useI18n } from 'vue-i18n'
-import { useCategory } from '@/entities/category/use-categories'
+import { useCategory } from '@/entities/category'
 
 const { filters, removeFilter } = useTransactionsFilters()
 const { data: account } = useAccount(() => filters.value.accountId)

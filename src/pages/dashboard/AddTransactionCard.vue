@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { getTransactionsOptions } from '@/entities/transaction/constants'
-import AddTransactionForm from '@/features/add-transaction/AddTransactionForm.vue'
-import { useLastCreatedTransaction } from '@/features/add-transaction/composables/use-transaction-form-data'
-import AddTransferForm from '@/features/add-transfer/AddTransferForm.vue'
+import { getTransactionsOptions } from '@/entities/transaction'
+import { AddTransactionForm } from '@/features/add-transaction'
+import { useLastCreatedTransaction } from '@/features/add-transaction'
+import { AddTransferForm } from '@/features/add-transfer'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

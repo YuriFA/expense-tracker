@@ -1,5 +1,5 @@
 import type { LocationQuery, LocationQueryRaw, LocationQueryValue } from 'vue-router'
-import type { TransactionType } from '@/entities/transaction/types'
+import type { TransactionType } from '@/entities/transaction'
 import {
   currentDay,
   parseCalendarDayOrFallback,

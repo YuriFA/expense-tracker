@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { createApp, h } from 'vue'
 import { provideRepositories } from './repositories'
-import { ACCOUNT_REPOSITORY_KEY } from '@/entities/account/repository'
-import { CATEGORY_REPOSITORY_KEY } from '@/entities/category/repository'
-import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction/repository'
-import type { Account } from '@/entities/account/types'
-import type { Transaction } from '@/entities/transaction/types'
+import { ACCOUNT_REPOSITORY_KEY } from '@/entities/account'
+import { CATEGORY_REPOSITORY_KEY } from '@/entities/category'
+import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction'
+import type { Account } from '@/entities/account'
+import type { Transaction } from '@/entities/transaction'
 
 describe('provideRepositories', () => {
   it('registers all three repository keys on the app', async () => {

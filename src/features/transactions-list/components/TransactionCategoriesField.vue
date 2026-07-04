@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
-import { useCategories } from '@/entities/category/use-categories'
+import { useCategories } from '@/entities/category'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

@@ -1,4 +1,4 @@
-import type { Account } from '@/entities/account/types'
+import type { Account } from '@/entities/account'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import type { Transaction } from './types'
 import {
@@ -10,7 +10,7 @@ import {
   parseTransactionsStorage,
   serializeTransactionsStorage,
 } from './transaction'
-import type { Category } from '@/entities/category/types'
+import type { Category } from '@/entities/category'
 import type {
   CreateTransactionPayload,
   TransactionQuery,

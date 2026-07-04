@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import TransactionListItem from './components/TransactionListItem.vue'
-import { useTransactions } from '@/entities/transaction/use-transactions'
+import { useTransactions } from '@/entities/transaction'
 
 const { t } = useI18n()
 const { data, error, isLoading } = useTransactions({ limit: 5 })
