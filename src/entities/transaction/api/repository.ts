@@ -5,7 +5,7 @@ import type { CalendarDay } from '@/shared/lib/date'
 
 export type CreateTransactionPayload<T extends Transaction = Transaction> = Omit<T, 'id'> &
   Partial<Pick<T, 'id'>>
-export type UpdateTransactionPayload = Partial<Omit<Transaction, 'id'>>
+export type UpdateTransactionPayload<T extends Transaction = Transaction> = Partial<Omit<T, 'id'>>
 
 export interface TransactionQuery {
   limit?: number
@@ -26,7 +26,8 @@ export interface TransactionRepository extends Repository<
   hasTransactionsForCategory(categoryId: string): Promise<boolean>
 }
 
-export const TRANSACTION_REPOSITORY_KEY: InjectionKey<TransactionRepository> = Symbol('transaction-repository')
+export const TRANSACTION_REPOSITORY_KEY: InjectionKey<TransactionRepository> =
+  Symbol('transaction-repository')
 
 export function useTransactionRepository(): TransactionRepository {
   const repo = inject(TRANSACTION_REPOSITORY_KEY)
