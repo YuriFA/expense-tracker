@@ -45,11 +45,11 @@ export const useCreateTransaction = <T extends Transaction>() => {
   })
 }
 
-export const useUpdateTransaction = () => {
+export const useUpdateTransaction = <T extends Transaction>() => {
   const queryCache = useQueryCache()
   const transactions = useTransactionRepository()
   return useMutation({
-    mutation: ({ id, payload }: { id: string; payload: UpdateTransactionPayload }) => {
+    mutation: ({ id, payload }: { id: string; payload: UpdateTransactionPayload<T> }) => {
       return transactions.update(id, payload)
     },
     onSettled: (_data, _errors, { id }) => {
