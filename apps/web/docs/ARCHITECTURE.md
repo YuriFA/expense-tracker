@@ -19,10 +19,37 @@ src/
 
 Каждый слайс организован в canonical сегментах:
 - `ui/` — UI-компоненты
-- `model/` — состояние, бизнес-логика, схемы валидации, composables
-- `api/` — backend-интеграция, репозитории
-- `lib/` — утилиты
+- `model/` — состояние, **бизнес-логика**, схемы валидации, composables
+- `api/` — backend-интеграция, интерфейсы репозиториев, конкретные реализации хранилища
+- `lib/` — утилиты слайса без бизнес-смысла
 - `config/` — конфигурация
+
+### Тест на принадлежность сегменту
+
+| Вопрос | Ответ YES |
+|---|---|
+| Код знает о сети / хранилище / внешних системах? | → `api/` |
+| Чистая бизнес-логика / правила домена / типы? | → `model/` |
+| Если убрать localStorage и заменить на HTTP — этот код ещё нужен? | → `model/` |
+| Код вызывается только из `api/`, но сам не знает про хранилище? | → `model/` |
+| Утилиты только для этого слайса, без бизнес-смысла? | → `lib/` |
+| Компоненты, форматтеры отображения? | → `ui/` |
+
+**Пример:** `balance-calculator.ts` содержит чистую бизнес-логику (правила расчёта баланса — income прибавляет, expense вычитает, transfer дебетует/кредитует). Он не знает о localStorage. При замене на HTTP он остаётся нужным (оптимистичные обновления, тесты). Поэтому он живёт в `model/`, а не в `api/`, несмотря на то что вызывается только из `api/local-storage-repository.ts`.
+
+```
+entities/account/
+  model/
+    types.ts                     ← типы: Account, AccountWithBalance
+    account.ts                   ← normalize/parse/serialize
+    balance-calculator.ts        ← бизнес-логика расчёта баланса  ← model/, не api/
+    use-accounts.ts              ← composables (useQuery/useMutation)
+  api/
+    repository.ts                ← интерфейс + InjectionKey
+    local-storage-repository.ts  ← реализация (вызывает model/balance-calculator)
+```
+
+`api/` сегмент внутри слайса может импортировать из `model/` того же слайса — это валидный внутрислайсовый импорт.
 
 ## Custom структура `shared/`
 
@@ -135,3 +162,65 @@ Fractal подход сохраняет:
 - **Promotion**: перенос папки = one-line operation
 
 Trade-off: не каноничный FSD, нужна настройка Steiger и документирование конвенции (этот файл).
+
+---
+
+## Decision Tree: куда класть новый код
+
+### Шаг 1: Это entity?
+
+```
+Есть собственный репозиторий (CRUD)?
++ Используется в 2+ независимых местах?
++ Имеет устойчивую идентичность (id)?
+→ YES → entities/
+→ NO  → шаг 2
+```
+
+**Entities этого проекта: Account, Category, Transaction. Только они.**
+
+Budget при появлении — **не entity сразу**. Бюджет без транзакций не имеет смысла, это derived concept. Начинается в `pages/budget/`, переносится в `entities/` только если появится собственный репозиторий с CRUD и несколько независимых consumers.
+
+### Шаг 2: Это feature?
+
+```
+Законченное user action (что-то делает пользователь)?
++ Используется в 2+ страницах?
+→ YES → features/ (global)
+
+Используется только в 1 странице, но нужна изоляция (ui + model вместе)?
+→ YES → pages/X/features/ (Fractal FSD)
+
+Простой компонент без собственной логики?
+→ pages/X/ui/Component.vue
+```
+
+### Шаг 3: Это shared?
+
+```
+Не знает о доменных сущностях (Account, Transaction, Category...)?
+Нет бизнес-правил, только инфраструктура / утилиты / UI-kit?
+→ YES → shared/
+→ NO  → это не shared
+```
+
+`formatCurrency()` → shared. `calculateBudgetProgress(budget, transactions)` → не shared.
+
+### Шаг 4: Сомневаешься?
+
+```
+→ pages/ всегда.
+Promotion (pages → features/entities) — когда точно ясно что 2+ consumers.
+```
+
+### Примеры для планируемых фич
+
+| Что | Начальное размещение | Promotion при |
+|---|---|---|
+| Форма создания бюджета | `pages/budget/features/create-budget/` | Форма нужна на 2+ страницах |
+| Прогресс-бар бюджета | `pages/budget/ui/BudgetProgress.vue` | Нужен на dashboard |
+| Сущность Budget | `pages/budget/` сначала | Появится собственный репозиторий + 2+ consumers |
+| Виджет бюджета на dashboard | → `widgets/budget-progress/` | Уже используется на 2 страницах |
+| Экспорт в CSV | `pages/reports/features/export-csv/` | Нужен на 2+ страницах |
+| Графики / charts | `pages/reports/ui/` | Нужны на 2+ страницах |
+| Утилита форматирования дат для графиков | `pages/reports/lib/` сначала | Нужна в 2+ слайсах → `shared/lib/` |
