@@ -15,7 +15,7 @@ export const createAddTransactionSchema = () => {
       .number({ error: t('validation.amountRequired') })
       .positive(t('validation.amountPositive')),
     description: z.string({ error: t('validation.descriptionInvalid') }).optional(),
-    category: z
+    categoryId: z
       .string({ error: t('validation.categoryRequired') })
       .min(1, t('validation.categoryRequired')),
   })

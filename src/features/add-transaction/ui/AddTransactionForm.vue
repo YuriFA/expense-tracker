@@ -12,8 +12,8 @@ import { Input } from '@/shared/ui/input'
 import { Field as VeeField } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import CategoriesField from './CategoriesField.vue'
-import AccountField from './AccountField.vue'
+import { AccountSelect } from '@/entities/account'
+import { CategorySelect } from '@/entities/category'
 import { nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
@@ -42,10 +42,10 @@ const handleSubmit = handleFormSubmit(async (data) => {
   try {
     await createTransaction({
       type: data.type,
-      accountId: data.accountId,
       amount: data.amount,
       description: data.description,
-      categoryId: data.category,
+      accountId: data.accountId,
+      categoryId: data.categoryId,
       occurredAt: nowIsoString(),
     })
     notification.success(t('addTransaction.success'))
@@ -62,26 +62,26 @@ const handleSubmit = handleFormSubmit(async (data) => {
 
 <template>
   <form id="add-transaction-form" class="flex flex-col gap-3" @submit="handleSubmit">
-    <div class="space-y-1">
-      <FieldLabel for="account-id">{{ t('addTransaction.accountLabel') }}</FieldLabel>
-      <div class="flex gap-2">
-        <VeeField v-slot="{ value, setValue, errors }" name="accountId">
-          <AccountField
-            class="w-full"
-            :model-value="value"
-            :errors="errors"
-            @update:model-value="setValue"
-          />
-        </VeeField>
-        <VeeField v-slot="{ value, setValue, errors }" name="amount">
-          <AmountField
-            class="min-w-0 w-auto"
-            :model-value="value"
-            :errors="errors"
-            @update:model-value="(v) => setValue(v as number)"
-          />
-        </VeeField>
-      </div>
+    <div class="flex gap-2">
+      <VeeField v-slot="{ value, setValue, errors }" name="accountId">
+        <AccountSelect
+          input-id="account-id"
+          :label="t('addTransaction.accountLabel')"
+          :placeholder="t('addTransaction.accountPlaceholder')"
+          class="w-full"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="setValue"
+        />
+      </VeeField>
+      <VeeField v-slot="{ value, setValue, errors }" name="amount">
+        <AmountField
+          class="min-w-0 w-auto"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="(v) => setValue(v as number)"
+        />
+      </VeeField>
     </div>
 
     <VeeField v-slot="{ field, errors }" name="description">
@@ -97,11 +97,15 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </Field>
     </VeeField>
 
-    <VeeField v-slot="{ value, setValue, errors }" name="category">
-      <CategoriesField
+    <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
+      <CategorySelect
+        input-id="category-id"
+        :label="t('addTransaction.categoryLabel')"
+        :placeholder="t('addTransaction.categoryPlaceholder')"
+        :type="type"
+        class="w-full md:w-auto"
         :model-value="value"
         :errors="errors"
-        :type="type"
         @update:model-value="setValue"
       />
     </VeeField>
