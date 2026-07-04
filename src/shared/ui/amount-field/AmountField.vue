@@ -3,7 +3,7 @@ import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { useI18n } from 'vue-i18n'
 import { Field, FieldError } from '@/shared/ui/field'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
-import { formatCurrency } from '@/shared/lib/money/format'
+import { formatCurrency } from '@/shared/lib/money'
 import { computed } from 'vue'
 
 const props = defineProps<{
