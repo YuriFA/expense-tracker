@@ -10,9 +10,9 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
-import { formatCurrency } from '@/shared/lib/money/format'
+import { formatCurrency } from '@/shared/lib/money'
 import { computed } from 'vue'
-import { notification } from '@/shared/api/notification'
+import { notification } from '@/shared/services/notification'
 
 const emit = defineEmits<{
   success: []
