@@ -15,7 +15,7 @@ import FromAccountField from './FromAccountField.vue'
 import ToAccountField from './ToAccountField.vue'
 import { nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction'
-import { notification } from '@/shared/api/notification'
+import { notification } from '@/shared/services/notification'
 
 const emit = defineEmits<{
   success: []

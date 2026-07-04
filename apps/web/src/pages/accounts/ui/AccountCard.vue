@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { formatCurrency } from '@/shared/lib/money/format'
+import { formatCurrency } from '@/shared/lib/money'
 import { generateHashIndex } from '@/shared/lib/hash-generator'
 import type { AccountWithBalance } from '@/entities/account'
 import { computed, ref } from 'vue'
