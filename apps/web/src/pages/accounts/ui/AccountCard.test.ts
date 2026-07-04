@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import AccountCard from './AccountCard.vue'
 import type { AccountWithBalance } from '@/entities/account'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
-import { useSettingsStore } from '@/shared/stores/use-settings-store'
+import { useSettingsStore } from '@/shared/store/use-settings-store'
 
 const accountFixture: AccountWithBalance = {
   id: 'a1',

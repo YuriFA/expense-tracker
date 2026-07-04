@@ -5,19 +5,19 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: () => import('@/pages/dashboard/DashboardPage.vue'),
+      component: () => import('@/pages/dashboard').then((m) => m.DashboardPage),
     },
     {
       path: '/transactions',
-      component: () => import('@/pages/transactions/TransactionsPage.vue'),
+      component: () => import('@/pages/transactions').then((m) => m.TransactionsPage),
     },
     {
       path: '/accounts',
-      component: () => import('@/pages/accounts/AccountsPage.vue'),
+      component: () => import('@/pages/accounts').then((m) => m.AccountsPage),
     },
     {
       path: '/settings',
-      component: () => import('@/pages/settings/SettingsPage.vue'),
+      component: () => import('@/pages/settings').then((m) => m.SettingsPage),
     },
   ],
 })

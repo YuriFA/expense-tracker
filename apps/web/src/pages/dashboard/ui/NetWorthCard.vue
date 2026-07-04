@@ -6,7 +6,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { serializeTransactionsQuery } from '@/features/transactions-list'
-import { useSettingsStore } from '@/shared/stores/use-settings-store'
+import { useSettingsStore } from '@/shared/store/use-settings-store'
 
 const { t, locale } = useI18n()
 const settings = useSettingsStore()

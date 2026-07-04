@@ -8,7 +8,7 @@ import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSettingsStore } from '@/shared/stores/use-settings-store'
+import { useSettingsStore } from '@/shared/store/use-settings-store'
 
 const { transaction } = defineProps<{ transaction: Transaction }>()
 const { locale, t } = useI18n()

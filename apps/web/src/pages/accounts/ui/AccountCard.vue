@@ -5,7 +5,7 @@ import { generateHashIndex } from '@/shared/lib/hash-generator'
 import type { AccountWithBalance } from '@/entities/account'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSettingsStore } from '@/shared/stores/use-settings-store'
+import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { DeleteAccountDialog } from '@/features/delete-account'
 import {
   DropdownMenu,

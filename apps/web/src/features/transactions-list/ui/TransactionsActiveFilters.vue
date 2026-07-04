@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getTransactionsOptions } from '@/entities/transaction'
 import { useAccount } from '@/entities/account'
-import { useTransactionsFilters } from '../composables/use-transactions-filters'
+import { useTransactionsFilters } from '../model/use-transactions-filters'
 import { computed } from 'vue'
 import { Chip } from '@/shared/ui/chip'
 import { useI18n } from 'vue-i18n'

@@ -1,2 +1,2 @@
-export { default as AddTransactionForm } from './AddTransactionForm.vue'
-export { useLastCreatedTransaction } from './composables/use-transaction-form-data'
+export { default as AddTransactionForm } from './ui/AddTransactionForm.vue'
+export { useLastCreatedTransaction } from './model/use-transaction-form-data'

@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { RangeCalendar } from '@/shared/ui/range-calendar'
 import { CalendarIcon } from '@lucide/vue'
 import { computed, ref, shallowRef } from 'vue'
-import { useTransactionsFilters } from '../composables/use-transactions-filters'
+import { useTransactionsFilters } from '../model/use-transactions-filters'
 import {
   addCalendarDays,
   currentDay,

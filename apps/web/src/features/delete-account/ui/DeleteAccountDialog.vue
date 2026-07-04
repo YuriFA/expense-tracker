@@ -11,7 +11,7 @@ import {
 } from '@/shared/ui/alert-dialog'
 import { useI18n } from 'vue-i18n'
 import { useDeleteAccount } from '@/entities/account'
-import { notification } from '@/shared/services/notification'
+import { notification } from '@/shared/api/notification'
 
 const { accountId } = defineProps<{
   accountId: string
