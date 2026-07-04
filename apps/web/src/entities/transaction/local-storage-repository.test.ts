@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { Account } from '@/entities/account/types'
-import type { Category } from '@/entities/category/types'
+import type { Account } from '@/entities/account'
+import type { Category } from '@/entities/category'
 import type { Transaction } from './types'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageTransactionRepository } from './local-storage-repository'

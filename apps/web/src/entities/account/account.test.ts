@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Account } from './types'
-import type { Transaction } from '@/entities/transaction/types'
+import type { Transaction } from '@/entities/transaction'
 import {
   getAccountsBalances,
   getComputedAccountBalance,

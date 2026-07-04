@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import RecentTransactions from './RecentTransactions.vue'
-import type { CashflowTransaction } from '@/entities/transaction/types'
+import type { CashflowTransaction } from '@/entities/transaction'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
 import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
 import { createMockTransactionRepository } from '@/__tests__/helpers/mock-repositories'

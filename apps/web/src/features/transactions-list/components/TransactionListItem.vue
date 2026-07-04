@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { formatCurrency } from '@/shared/lib/money/format'
-import { isTransferTransaction } from '@/entities/transaction/transaction'
-import { useAccounts } from '@/entities/account/use-accounts'
-import { useCategories } from '@/entities/category/use-categories'
-import type { Transaction } from '@/entities/transaction/types'
+import { isTransferTransaction } from '@/entities/transaction'
+import { useAccounts } from '@/entities/account'
+import { useCategories } from '@/entities/category'
+import type { Transaction } from '@/entities/transaction'
 import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
 import { computed } from 'vue'

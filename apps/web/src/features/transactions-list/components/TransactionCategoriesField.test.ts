@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import TransactionCategoriesField from './TransactionCategoriesField.vue'
-import type { Category } from '@/entities/category/types'
+import type { Category } from '@/entities/category'
 import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 

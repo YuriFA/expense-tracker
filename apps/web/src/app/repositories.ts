@@ -1,13 +1,13 @@
 import type { App } from 'vue'
-import { ACCOUNT_REPOSITORY_KEY, type AccountRepository } from '@/entities/account/repository'
+import { ACCOUNT_REPOSITORY_KEY, type AccountRepository } from '@/entities/account'
 import {
   CATEGORY_REPOSITORY_KEY,
   type CategoryRepository,
-} from '@/entities/category/repository'
-import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction/repository'
-import { createLocalStorageAccountRepository } from '@/entities/account/local-storage-repository'
-import { createLocalStorageCategoryRepository } from '@/entities/category/local-storage-repository'
-import { createLocalStorageTransactionRepository } from '@/entities/transaction/local-storage-repository'
+} from '@/entities/category'
+import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction'
+import { createLocalStorageAccountRepository } from '@/entities/account'
+import { createLocalStorageCategoryRepository } from '@/entities/category'
+import { createLocalStorageTransactionRepository } from '@/entities/transaction'
 
 export function provideRepositories(app: App): void {
   // eslint-disable-next-line prefer-const

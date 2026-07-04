@@ -12,7 +12,7 @@ import type {
 } from './repository'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { generateId } from '@/shared/lib/generate-id'
-import type { Transaction } from '@/entities/transaction/types'
+import type { Transaction } from '@/entities/transaction'
 import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
 import { NotFoundError, ReferentialIntegrityError } from '@/shared/lib/data/repository'
 

@@ -1,7 +1,7 @@
 import { vi, type MockedFunction } from 'vitest'
-import type { AccountRepository } from '@/entities/account/repository'
-import type { CategoryRepository } from '@/entities/category/repository'
-import type { TransactionRepository } from '@/entities/transaction/repository'
+import type { AccountRepository } from '@/entities/account'
+import type { CategoryRepository } from '@/entities/category'
+import type { TransactionRepository } from '@/entities/transaction'
 
 export type MockedAccountRepository = {
   [K in keyof AccountRepository]: MockedFunction<AccountRepository[K]>

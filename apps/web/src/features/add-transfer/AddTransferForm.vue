@@ -4,17 +4,17 @@ import {
   createAddTransferSchema,
   type AddTransferFormValues,
 } from './validation/add-transfer-schema'
-import type { TransferTransaction } from '@/entities/transaction/types'
+import type { TransferTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
-import AmountField from '@/features/add-transaction/components/AmountField.vue'
+import { AmountField } from '@/shared/ui/amount-field'
 import FromAccountField from './components/FromAccountField.vue'
 import ToAccountField from './components/ToAccountField.vue'
 import { nowIsoString } from '@/shared/lib/date'
-import { useCreateTransaction } from '@/entities/transaction/use-transactions'
+import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
 
 const emit = defineEmits<{

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { nextTick } from 'vue'
 import AccountCard from './AccountCard.vue'
-import type { AccountWithBalance } from '@/entities/account/types'
+import type { AccountWithBalance } from '@/entities/account'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 import { useSettingsStore } from '@/shared/stores/use-settings-store'
 

@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Field, FieldError } from '@/shared/ui/field'
-import { useAccounts } from '@/entities/account/use-accounts'
+import { useAccounts } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{

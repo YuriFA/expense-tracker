@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
-import { getTransactionsOptions } from '@/entities/transaction/constants'
+import { getTransactionsOptions } from '@/entities/transaction'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
