@@ -4,8 +4,6 @@ import type {
   TransferTransaction,
   TransactionType,
 } from './types'
-import type { Account } from '@/entities/account'
-import type { Category } from '@/entities/category'
 import {
   asDateTimeString,
   asNonEmptyString,
@@ -13,6 +11,9 @@ import {
   asString,
   isRecord,
 } from '@/shared/lib/normalize'
+
+export type AccountRef = { id: string }
+export type CategoryRef = { id: string; type: TransactionType }
 
 type TransactionRecord = Record<string, unknown>
 
@@ -136,8 +137,8 @@ export const isTransactionLinkedToCategory = (transaction: Transaction, category
 
 export const hasValidTransactionReferences = (
   transaction: Transaction,
-  accounts: Account[],
-  categories: Category[],
+  accounts: AccountRef[],
+  categories: CategoryRef[],
 ) => {
   const hasAccount = (accountId: string) => accounts.some((account) => account.id === accountId)
 

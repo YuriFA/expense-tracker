@@ -1,6 +1,6 @@
-import type { Account } from '@/entities/account'
-import type { Category } from '@/entities/category'
 import {
+  type AccountRef,
+  type CategoryRef,
   hasValidTransactionReferences,
   isTransaction,
   isTransactionLinkedToAccount,
@@ -43,14 +43,11 @@ const transferTransaction: TransferTransaction = {
   toAccountId: 'a2',
 }
 
-const accounts: Account[] = [
-  { id: 'a1', name: 'Account 1', openingBalance: 1000, manualAdjustment: 0 },
-  { id: 'a2', name: 'Account 2', openingBalance: 500, manualAdjustment: 0 },
-]
+const accounts: AccountRef[] = [{ id: 'a1' }, { id: 'a2' }]
 
-const categories: Category[] = [
-  { id: 'cincome', name: 'Salary', type: 'income', icon: '💰', color: '#00FF00' },
-  { id: 'cexpense', name: 'Food', type: 'expense', icon: '🍔', color: '#FF0000' },
+const categories: CategoryRef[] = [
+  { id: 'cincome', type: 'income' },
+  { id: 'cexpense', type: 'expense' },
 ]
 
 describe('isTransaction', () => {
