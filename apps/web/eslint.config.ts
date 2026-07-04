@@ -14,7 +14,7 @@ import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 
 const i18nSettings = {
   'vue-i18n': {
-    localeDir: './src/app/i18n/locales/*.json',
+    localeDir: './src/shared/i18n/locales/*.json',
     messageSyntaxVersion: '^11.0.0',
   },
 }
@@ -82,7 +82,7 @@ export default defineConfigWithVueTs(
   },
   {
     name: 'app/i18n-strict',
-    files: ['src/**/*.{vue,ts,js}', 'src/app/i18n/locales/*.json'],
+    files: ['src/**/*.{vue,ts,js}', 'src/shared/i18n/locales/*.json'],
     rules: {
       '@intlify/vue-i18n/no-missing-keys': 'off',
       '@intlify/vue-i18n/no-missing-keys-in-other-locales': 'off',
@@ -92,7 +92,7 @@ export default defineConfigWithVueTs(
   },
   {
     name: 'app/i18n-strict-enabled',
-    files: ['src/**/*.{vue,ts,js}', 'src/app/i18n/locales/*.json'],
+    files: ['src/**/*.{vue,ts,js}', 'src/shared/i18n/locales/*.json'],
     ignores: process.env.ESLINT_I18N_STRICT === '1' ? [] : ['**/*'],
     rules: {
       '@intlify/vue-i18n/no-missing-keys': 'error',
