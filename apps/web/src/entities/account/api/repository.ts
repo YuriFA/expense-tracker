@@ -1,6 +1,6 @@
 import { inject, type InjectionKey } from 'vue'
 import type { Account, AccountWithBalance } from '../model/types'
-import type { Repository } from '@/shared/lib/data/repository'
+import type { Repository } from '@/shared/lib/data'
 
 export type CreateAccountPayload = Omit<Account, 'id' | 'manualAdjustment'> &
   Partial<Pick<Account, 'id'>>

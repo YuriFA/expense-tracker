@@ -8,8 +8,11 @@ import type {
 } from './repository'
 import { getDefaultCategories } from '../model/defaults'
 import { generateId } from '@/shared/lib/generate-id'
-import { createLocalStorageAdapter } from '@/shared/lib/data/local-storage-adapter'
-import { NotFoundError, ReferentialIntegrityError } from '@/shared/lib/data/repository'
+import {
+  createLocalStorageAdapter,
+  NotFoundError,
+  ReferentialIntegrityError,
+} from '@/shared/lib/data'
 
 const categoriesStorage = createLocalStorageAdapter<Category[]>(STORAGE_KEYS.categories, [], {
   read: parseCategoriesStorage,

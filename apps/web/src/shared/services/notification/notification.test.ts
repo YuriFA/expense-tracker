@@ -6,7 +6,7 @@ import {
   ReferentialIntegrityError,
   InvalidPayloadError,
   UnknownReferencesError,
-} from '@/shared/lib/data/repository'
+} from '@/shared/lib/data'
 
 vi.mock('vue-sonner', () => ({
   toast: {
@@ -17,15 +17,19 @@ vi.mock('vue-sonner', () => ({
   },
 }))
 
-vi.mock('@/shared/lib/data/repository-i18n', () => ({
-  getRepositoryErrorMessages: vi.fn<() => Record<string, string>>(() => ({
-    notFound: 'NOT_FOUND_MSG',
-    hasReferences: 'HAS_REFS_MSG',
-    invalidPayload: 'INVALID_PAYLOAD_MSG',
-    unknownReferences: 'UNKNOWN_REFS_MSG',
-    generic: 'GENERIC_MSG',
-  })),
-}))
+vi.mock('@/shared/lib/data', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/lib/data')>('@/shared/lib/data')
+  return {
+    ...actual,
+    getRepositoryErrorMessages: vi.fn<() => Record<string, string>>(() => ({
+      notFound: 'NOT_FOUND_MSG',
+      hasReferences: 'HAS_REFS_MSG',
+      invalidPayload: 'INVALID_PAYLOAD_MSG',
+      unknownReferences: 'UNKNOWN_REFS_MSG',
+      generic: 'GENERIC_MSG',
+    })),
+  }
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
