@@ -9,13 +9,12 @@ import { provideRepositories } from './app/repositories'
 import './style.css'
 import { maskito } from '@maskito/vue'
 import { useSettingsStore } from './shared/store/use-settings-store'
+import { setupI18nLocaleWatcher } from './app/setup-i18n-locale-watcher'
 
 const app = createApp(App).directive('maskito', maskito)
 const pinia = createPinia()
 const settingsStore = useSettingsStore(pinia)
 const { locale } = storeToRefs(settingsStore)
-
-i18n.global.locale.value = locale.value
 
 app.use(i18n)
 app.use(pinia)
@@ -27,8 +26,13 @@ app.use(PiniaColada, {
 app.use(router)
 provideRepositories(app)
 
-watch(locale, (value) => {
-  i18n.global.locale.value = value
-})
+watch(
+  locale,
+  (value) => {
+    i18n.global.locale.value = value
+  },
+  { immediate: true },
+)
 
+setupI18nLocaleWatcher()
 app.mount('#app')
