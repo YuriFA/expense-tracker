@@ -26,11 +26,14 @@ import {
   UnknownReferencesError,
 } from '@/shared/lib/data'
 
-const transactionsStorage = createLocalStorageAdapter<Transaction[]>(STORAGE_KEYS.transactions, [], {
-  read: parseTransactionsStorage,
-  write: serializeTransactionsStorage,
-})
-
+const transactionsStorage = createLocalStorageAdapter<Transaction[]>(
+  STORAGE_KEYS.transactions,
+  [],
+  {
+    read: parseTransactionsStorage,
+    write: serializeTransactionsStorage,
+  },
+)
 
 export function createLocalStorageTransactionRepository(deps: {
   getAccounts: () => Promise<AccountRef[]>
@@ -44,7 +47,8 @@ export function createLocalStorageTransactionRepository(deps: {
       return transactionsStorage.get().find((item) => item.id === id) ?? null
     },
     async query(options: TransactionQuery = {}) {
-      let result = transactionsStorage.get()
+      let result = transactionsStorage
+        .get()
         .slice()
         .sort((a, b) => getDateTimestamp(b.occurredAt) - getDateTimestamp(a.occurredAt))
 
@@ -98,9 +102,7 @@ export function createLocalStorageTransactionRepository(deps: {
       }
       const [accounts, categories] = await Promise.all([deps.getAccounts(), deps.getCategories()])
       if (!hasValidTransactionReferences(next, accounts, categories)) {
-        throw new UnknownReferencesError(
-          'Transaction references an unknown account or category',
-        )
+        throw new UnknownReferencesError('Transaction references an unknown account or category')
       }
       const transactions = transactionsStorage.get()
       transactions.push(next)
@@ -113,15 +115,13 @@ export function createLocalStorageTransactionRepository(deps: {
       if (!existing) {
         throw new NotFoundError('Transaction not found')
       }
-      const next = { ...payload, id } as Transaction
+      const next = { ...existing, ...payload } as Transaction
       if (!isTransaction(next)) {
         throw new InvalidPayloadError('Invalid transaction payload')
       }
       const [accounts, categories] = await Promise.all([deps.getAccounts(), deps.getCategories()])
       if (!hasValidTransactionReferences(next, accounts, categories)) {
-        throw new UnknownReferencesError(
-          'Transaction references an unknown account or category',
-        )
+        throw new UnknownReferencesError('Transaction references an unknown account or category')
       }
       const index = transactions.findIndex((i) => i.id === id)
       if (index === -1) {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { AccountRef, CategoryRef } from '../model/transaction'
-import type { Transaction } from '../model/types'
+import type { CashflowTransaction, Transaction } from '../model/types'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageTransactionRepository } from './local-storage-repository'
 
@@ -12,17 +12,14 @@ const incomeCategoryFixture: CategoryRef = { id: 'cincome', type: 'income' }
 
 const expenseCategoryFixture: CategoryRef = { id: 'cexpense', type: 'expense' }
 
-function buildTransaction(overrides: Partial<Transaction> = {}): Transaction {
-  return {
-    id: 't1',
-    type: 'income',
-    amount: 100,
-    description: '',
-    occurredAt: '2024-01-15T10:00:00Z',
-    accountId: 'a1',
-    categoryId: 'cincome',
-    ...overrides,
-  } as never
+const transactionFixture: CashflowTransaction = {
+  id: 't1',
+  type: 'income',
+  amount: 100,
+  description: '',
+  occurredAt: '2024-01-15T10:00:00Z',
+  accountId: 'a1',
+  categoryId: 'cincome',
 }
 
 function seedTransactions(transactions: Transaction[]) {
@@ -59,7 +56,7 @@ describe('transaction localStorage repository', () => {
     })
 
     it('returns stored transactions', async () => {
-      seedTransactions([buildTransaction()])
+      seedTransactions([transactionFixture])
       const repo = createRepository()
       const result = await repo.getAll()
       expect(result).toHaveLength(1)
@@ -74,7 +71,7 @@ describe('transaction localStorage repository', () => {
     })
 
     it('returns matching transaction', async () => {
-      seedTransactions([buildTransaction()])
+      seedTransactions([transactionFixture])
       const repo = createRepository()
       const result = await repo.getById('t1')
       expect(result?.id).toBe('t1')
@@ -83,22 +80,24 @@ describe('transaction localStorage repository', () => {
 
   describe('query', () => {
     const transactions: Transaction[] = [
-      buildTransaction({
+      {
         id: 't1',
         type: 'income',
         amount: 100,
+        description: '',
         occurredAt: '2024-01-15T10:00:00Z',
         accountId: 'a1',
         categoryId: 'cincome',
-      }),
-      buildTransaction({
+      } as never,
+      {
         id: 't2',
         type: 'expense',
         amount: 50,
+        description: '',
         occurredAt: '2024-02-15T10:00:00Z',
         accountId: 'a2',
         categoryId: 'cexpense',
-      }),
+      } as never,
       {
         id: 't3',
         type: 'transfer',
@@ -179,7 +178,7 @@ describe('transaction localStorage repository', () => {
 
   describe('hasTransactionsForAccount', () => {
     it('returns true when cashflow transaction references account', async () => {
-      seedTransactions([buildTransaction({ accountId: 'a1' })])
+      seedTransactions([{ ...transactionFixture, accountId: 'a1' }])
       const repo = createRepository()
       expect(await repo.hasTransactionsForAccount('a1')).toBe(true)
     })
@@ -202,7 +201,7 @@ describe('transaction localStorage repository', () => {
     })
 
     it('returns false when no transactions reference account', async () => {
-      seedTransactions([buildTransaction({ accountId: 'a1' })])
+      seedTransactions([{ ...transactionFixture, accountId: 'a1' }])
       const repo = createRepository()
       expect(await repo.hasTransactionsForAccount('a2')).toBe(false)
     })
@@ -215,13 +214,13 @@ describe('transaction localStorage repository', () => {
 
   describe('hasTransactionsForCategory', () => {
     it('returns true when cashflow transaction references category', async () => {
-      seedTransactions([buildTransaction({ categoryId: 'cincome' })])
+      seedTransactions([{ ...transactionFixture, categoryId: 'cincome' }])
       const repo = createRepository()
       expect(await repo.hasTransactionsForCategory('cincome')).toBe(true)
     })
 
     it('returns false when no transactions reference category', async () => {
-      seedTransactions([buildTransaction({ categoryId: 'cincome' })])
+      seedTransactions([{ ...transactionFixture, categoryId: 'cincome' }])
       const repo = createRepository()
       expect(await repo.hasTransactionsForCategory('cexpense')).toBe(false)
     })
@@ -230,7 +229,8 @@ describe('transaction localStorage repository', () => {
   describe('create', () => {
     it('creates valid cashflow transaction', async () => {
       const repo = createRepository()
-      const result = await repo.create(buildTransaction({ id: undefined }))
+      const { id: _omit, ...payload } = transactionFixture
+      const result = await repo.create(payload as never)
       expect(result.id).toBeTruthy()
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions) ?? '[]')
       expect(stored).toHaveLength(1)
@@ -238,7 +238,7 @@ describe('transaction localStorage repository', () => {
 
     it('uses provided id when given', async () => {
       const repo = createRepository()
-      const result = await repo.create(buildTransaction({ id: 'custom-id' }))
+      const result = await repo.create({ ...transactionFixture, id: 'custom-id' })
       expect(result.id).toBe('custom-id')
     })
 
@@ -266,23 +266,30 @@ describe('transaction localStorage repository', () => {
 
     it('throws when references are unknown (account)', async () => {
       const repo = createRepository()
-      await expect(repo.create(buildTransaction({ accountId: 'unknown' }))).rejects.toThrow(
-        /unknown account or category/,
-      )
+      await expect(
+        repo.create({ ...transactionFixture, accountId: 'unknown' } as never),
+      ).rejects.toThrow(/unknown account or category/)
     })
 
     it('throws when references are unknown (category)', async () => {
       const repo = createRepository()
-      await expect(repo.create(buildTransaction({ categoryId: 'unknown' }))).rejects.toThrow(
-        /unknown account or category/,
-      )
+      await expect(
+        repo.create({ ...transactionFixture, categoryId: 'unknown' } as never),
+      ).rejects.toThrow(/unknown account or category/)
     })
 
     it('throws when cashflow transaction type does not match category type', async () => {
       const repo = createRepository()
       // income transaction with expense category
       await expect(
-        repo.create(buildTransaction({ type: 'income', categoryId: 'cexpense' })),
+        repo.create({
+          type: 'income',
+          categoryId: 'cexpense',
+          amount: 100,
+          occurredAt: '2024-01-01',
+          accountId: 'a1',
+          description: '',
+        } as never),
       ).rejects.toThrow(/unknown account or category/)
     })
   })
@@ -290,23 +297,23 @@ describe('transaction localStorage repository', () => {
   describe('update', () => {
     it('throws when transaction does not exist', async () => {
       const repo = createRepository()
-      await expect(repo.update('missing', { type: 'income' } as never)).rejects.toThrow(
+      await expect(repo.update('missing', { type: 'income' })).rejects.toThrow(
         /Transaction not found/,
       )
     })
 
     it('throws when updated payload is invalid', async () => {
-      seedTransactions([buildTransaction()])
+      seedTransactions([transactionFixture])
       const repo = createRepository()
-      await expect(repo.update('t1', { type: 'income' } as never)).rejects.toThrow(
+      await expect(repo.update('t1', { type: 'somenonexisttype' } as never)).rejects.toThrow(
         /Invalid transaction payload/,
       )
     })
 
     it('updates and persists valid transaction', async () => {
-      seedTransactions([buildTransaction()])
+      seedTransactions([transactionFixture])
       const repo = createRepository()
-      const result = await repo.update('t1', buildTransaction({ id: 't1', amount: 200 }))
+      const result = await repo.update('t1', { amount: 200 })
       expect(result.amount).toBe(200)
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions) ?? '[]')
       expect(stored[0].amount).toBe(200)
@@ -320,7 +327,7 @@ describe('transaction localStorage repository', () => {
     })
 
     it('removes transaction from storage', async () => {
-      seedTransactions([buildTransaction(), buildTransaction({ id: 't2' })])
+      seedTransactions([transactionFixture, { ...transactionFixture, id: 't2' }])
       const repo = createRepository()
       await repo.remove('t1')
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions) ?? '[]')
