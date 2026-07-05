@@ -14,7 +14,7 @@ describe('provideRepositories', () => {
         return () => h('div')
       },
     })
-    provideRepositories(app)
+    provideRepositories(app, 'localStorage')
     app.mount(document.createElement('div'))
 
     const provides = (app as unknown as {
@@ -32,7 +32,7 @@ describe('provideRepositories', () => {
         return () => h('div')
       },
     })
-    provideRepositories(app)
+    provideRepositories(app, 'localStorage')
     app.mount(document.createElement('div'))
 
     const provides = (app as unknown as {
