@@ -6,13 +6,11 @@ export type CreateAccountPayload = Omit<Account, 'id' | 'manualAdjustment'> &
   Partial<Pick<Account, 'id'>>
 export type UpdateAccountPayload = Partial<Omit<Account, 'id' | 'currency'>>
 
-export interface AccountRepository extends Repository<
+export type AccountRepository = Repository<
   AccountWithBalance,
   CreateAccountPayload,
   UpdateAccountPayload
-> {
-  hasReferencingTransactions(accountId: Account['id']): Promise<boolean>
-}
+>
 
 export const ACCOUNT_REPOSITORY_KEY: InjectionKey<AccountRepository> = Symbol('account-repository')
 

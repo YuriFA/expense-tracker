@@ -1,11 +1,7 @@
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import type { Category } from '../model/types'
 import { parseCategoriesStorage, serializeCategoriesStorage } from '../model/category'
-import type {
-  CategoryRepository,
-  CreateCategoryPayload,
-  UpdateCategoryPayload,
-} from './repository'
+import type { CategoryRepository, CreateCategoryPayload, UpdateCategoryPayload } from './repository'
 import { getDefaultCategories } from '../model/defaults'
 import { generateId } from '@/shared/lib/generate-id'
 import {
@@ -27,7 +23,10 @@ export function createLocalStorageCategoryRepository(deps: {
       return [...getDefaultCategories(), ...categoriesStorage.get()]
     },
     async getById(id: string) {
-      return [...getDefaultCategories(), ...categoriesStorage.get()].find((item) => item.id === id) ?? null
+      return (
+        [...getDefaultCategories(), ...categoriesStorage.get()].find((item) => item.id === id) ??
+        null
+      )
     },
     async create(payload: CreateCategoryPayload) {
       const category: Category = {
@@ -51,9 +50,7 @@ export function createLocalStorageCategoryRepository(deps: {
     },
     async remove(id) {
       if (await deps.hasTransactionsForCategory(id)) {
-        throw new ReferentialIntegrityError(
-          `Category has referencing transactions`,
-        )
+        throw new ReferentialIntegrityError(`Category has referencing transactions`)
       }
       const categories = categoriesStorage.get()
       const next = categories.filter((item) => item.id !== id)
@@ -62,9 +59,6 @@ export function createLocalStorageCategoryRepository(deps: {
       }
 
       categoriesStorage.set(next)
-    },
-    async hasReferencingTransactions(categoryId) {
-      return deps.hasTransactionsForCategory(categoryId)
     },
   }
 }

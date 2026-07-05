@@ -5,15 +5,10 @@ import type { Repository } from '@/shared/lib/data'
 export type CreateCategoryPayload = Omit<Category, 'id'> & Partial<Pick<Category, 'id'>>
 export type UpdateCategoryPayload = Partial<Omit<Category, 'id'>>
 
-export interface CategoryRepository extends Repository<
-  Category,
-  CreateCategoryPayload,
-  UpdateCategoryPayload
-> {
-  hasReferencingTransactions(categoryId: Category['id']): Promise<boolean>
-}
+export type CategoryRepository = Repository<Category, CreateCategoryPayload, UpdateCategoryPayload>
 
-export const CATEGORY_REPOSITORY_KEY: InjectionKey<CategoryRepository> = Symbol('category-repository')
+export const CATEGORY_REPOSITORY_KEY: InjectionKey<CategoryRepository> =
+  Symbol('category-repository')
 
 export function useCategoryRepository(): CategoryRepository {
   const repo = inject(CATEGORY_REPOSITORY_KEY)

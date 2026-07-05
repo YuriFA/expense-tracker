@@ -90,8 +90,5 @@ export function createLocalStorageAccountRepository(deps: {
 
       accountsStorage.set(next)
     },
-    async hasReferencingTransactions(accountId) {
-      return deps.hasTransactionsForAccount(accountId)
-    },
   }
 }
