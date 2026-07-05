@@ -7,7 +7,7 @@ import { AddTransactionForm } from '@/features/add-transaction'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { AddTransferForm } from '@/features/add-transfer'
 import { getTransactionsOptions } from '@/entities/transaction'
-import { TransactionsBrowser } from '@/features/transactions-list'
+import TransactionsBrowser from './TransactionsBrowser.vue'
 import { useLastCreatedTransaction } from '@/features/add-transaction'
 import { Spinner } from '@/shared/ui/spinner'
 

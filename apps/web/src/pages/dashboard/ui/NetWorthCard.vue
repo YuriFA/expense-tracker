@@ -5,7 +5,6 @@ import { useAccounts } from '@/entities/account'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { serializeTransactionsQuery } from '@/features/transactions-list'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
 
 const { t, locale } = useI18n()
@@ -37,12 +36,7 @@ const totalBalanceFormatted = computed(() => {
       >
         <RouterLink
           class="text-sm text-muted-foreground hover:underline"
-          :to="{
-            path: '/transactions',
-            query: serializeTransactionsQuery({
-              accountId: account.id,
-            }),
-          }"
+          :to="{ path: '/transactions', query: { accountId: account.id } }"
           >{{ account.name }}</RouterLink
         >
         <p class="text-md">
