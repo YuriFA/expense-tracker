@@ -61,6 +61,22 @@
     "success": "Transfer completed",
     "error": "Error completing transfer"
   },
+  "editTransaction": {
+    "title": "Edit transaction",
+    "trigger": "Edit",
+    "submit": "Save",
+    "success": "Transaction updated",
+    "error": "Error updating transaction"
+  },
+  "deleteTransaction": {
+    "trigger": "Delete",
+    "confirmDelete": "Are you sure you want to delete this transaction?",
+    "confirmDeleteDescription": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete",
+    "success": "Transaction deleted",
+    "error": "Error deleting transaction"
+  },
   "recentTransactions": {
     "title": "Recent Transactions"
   },
