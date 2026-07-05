@@ -1,5 +1,6 @@
 import type { Account } from './types'
-import { asNonEmptyString, asNumber, asString, isRecord } from '@/shared/lib/normalize'
+import { asInteger, asNonEmptyString, asString, isRecord } from '@/shared/lib/normalize'
+import { isCurrencyCode } from '@/shared/lib/money'
 
 export const normalizeAccount = (value: unknown): Account | null => {
   if (!isRecord(value)) {
@@ -8,16 +9,18 @@ export const normalizeAccount = (value: unknown): Account | null => {
 
   const id = asNonEmptyString(value.id)
   const name = asString(value.name)
-  const openingBalance = asNumber(value.openingBalance)
-  const manualAdjustment = asNumber(value.manualAdjustment)
+  const currency = isCurrencyCode(value.currency) ? value.currency : null
+  const openingBalance = asInteger(value.openingBalance)
+  const manualAdjustment = asInteger(value.manualAdjustment)
 
-  if (!id || name === null || openingBalance === null || manualAdjustment === null) {
+  if (!id || name === null || currency === null || openingBalance === null || manualAdjustment === null) {
     return null
   }
 
   return {
     id,
     name,
+    currency,
     openingBalance,
     manualAdjustment,
   }

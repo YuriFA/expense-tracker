@@ -8,6 +8,7 @@ import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 const createdAccount: AccountWithBalance = {
   id: 'a1',
   name: 'Main',
+  currency: 'USD',
   openingBalance: 100,
   manualAdjustment: 0,
   balance: 100,

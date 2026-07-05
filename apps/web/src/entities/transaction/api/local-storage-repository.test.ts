@@ -4,9 +4,9 @@ import type { CashflowTransaction, Transaction } from '../model/types'
 import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageTransactionRepository } from './local-storage-repository'
 
-const accountFixture: AccountRef = { id: 'a1' }
+const accountFixture: AccountRef = { id: 'a1', currency: 'USD' }
 
-const secondAccount: AccountRef = { id: 'a2' }
+const secondAccount: AccountRef = { id: 'a2', currency: 'USD' }
 
 const incomeCategoryFixture: CategoryRef = { id: 'cincome', type: 'income' }
 

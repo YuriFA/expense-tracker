@@ -1,31 +1,43 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { formatCurrency } from '@/shared/lib/money'
+import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
 import { useAccounts } from '@/entities/account'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
 
 const { t, locale } = useI18n()
-const settings = useSettingsStore()
-const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
 const { data: accounts } = useAccounts()
 
-const totalBalanceFormatted = computed(() => {
-  const totalBalance =
-    accounts.value?.reduce((acc, account) => {
-      return acc + (account.balance ?? 0)
-    }, 0) ?? 0
-  return format(totalBalance)
+const totalsByCurrency = computed(() => {
+  const totals = new Map<CurrencyCode, number>()
+  for (const account of accounts.value ?? []) {
+    const current = totals.get(account.currency) ?? 0
+    totals.set(account.currency, current + (account.balance ?? 0))
+  }
+  return [...totals.entries()].map(([currency, amount]) => ({ currency, amount }))
 })
+
+const format = (value: number, currency: CurrencyCode) =>
+  formatMoney(value, currency, locale.value)
 </script>
 
 <template>
   <Card>
     <CardHeader>
       <CardTitle class="text-muted-foreground">{{ t('dashboard.netWorth') }}</CardTitle>
-      <p class="text-2xl font-bold">{{ totalBalanceFormatted }}</p>
+      <div v-if="totalsByCurrency.length === 0" class="text-2xl font-bold">
+        {{ format(0, 'USD') }}
+      </div>
+      <div v-else class="flex flex-col gap-1">
+        <p
+          v-for="total in totalsByCurrency"
+          :key="total.currency"
+          class="text-2xl font-bold"
+        >
+          {{ format(total.amount, total.currency) }}
+        </p>
+      </div>
     </CardHeader>
     <CardContent class="mt-2">
       <div
@@ -40,7 +52,7 @@ const totalBalanceFormatted = computed(() => {
           >{{ account.name }}</RouterLink
         >
         <p class="text-md">
-          {{ format(account.balance) }}
+          {{ format(account.balance, account.currency) }}
         </p>
       </div>
     </CardContent>

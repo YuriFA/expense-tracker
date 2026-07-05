@@ -11,6 +11,7 @@ import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 const account: AccountWithBalance = {
   id: 'a1',
   name: 'Main',
+  currency: 'USD',
   openingBalance: 1000,
   manualAdjustment: 0,
   balance: 1000,

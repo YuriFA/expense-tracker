@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { formatCurrency } from '@/shared/lib/money'
+import { formatMoney } from '@/shared/lib/money'
 import { generateHashIndex } from '@/shared/lib/hash-generator'
 import type { AccountWithBalance } from '@/entities/account'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { DeleteAccountDialog } from '../features/delete-account'
 import {
   DropdownMenu,
@@ -22,8 +21,7 @@ const { account } = defineProps<{
 
 const index = computed(() => generateHashIndex(account.id))
 const { locale, t } = useI18n()
-const settings = useSettingsStore()
-const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
+const format = (value: number) => formatMoney(value, account.currency, locale.value)
 
 const deleteDialogOpen = ref(false)
 </script>

@@ -34,6 +34,7 @@
   "addAccount": {
     "nameLabel": "Name",
     "namePlaceholder": "Account name",
+    "currencyLabel": "Currency",
     "openingBalanceLabel": "Opening balance",
     "submit": "Add account",
     "newAccount": "New account",
@@ -126,6 +127,7 @@
     "descriptionInvalid": "Description must be text",
     "categoryRequired": "Select a category",
     "transferAccountsMustDiffer": "Transfer accounts must be different",
+    "transferAccountsMustMatchCurrency": "Transfer accounts must use the same currency",
     "invalidDate": "Invalid date "
   },
   "errors": {

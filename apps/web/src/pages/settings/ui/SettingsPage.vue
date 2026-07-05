@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { AVAILABLE_CURRENCIES } from '@/shared/config/currencies'
+import { AVAILABLE_CURRENCIES } from '@/shared/lib/money'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { computed } from 'vue'

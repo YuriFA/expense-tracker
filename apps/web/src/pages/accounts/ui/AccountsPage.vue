@@ -3,22 +3,24 @@ import { useAccounts } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/shared/ui/card'
-import { formatCurrency } from '@/shared/lib/money'
+import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
 import { computed } from 'vue'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { AddAccountDialog } from '../features/add-account'
 
 const { t, locale } = useI18n()
 const { data } = useAccounts()
-const settings = useSettingsStore()
-const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
-const totalBalanceFormatted = computed(() => {
-  const totalBalance =
-    data.value?.reduce((acc, account) => {
-      return acc + (account.balance ?? 0)
-    }, 0) ?? 0
-  return format(totalBalance)
+
+const totalsByCurrency = computed(() => {
+  const totals = new Map<CurrencyCode, number>()
+  for (const account of data.value ?? []) {
+    const current = totals.get(account.currency) ?? 0
+    totals.set(account.currency, current + (account.balance ?? 0))
+  }
+  return [...totals.entries()].map(([currency, amount]) => ({ currency, amount }))
 })
+
+const format = (value: number, currency: CurrencyCode) =>
+  formatMoney(value, currency, locale.value)
 </script>
 
 <template>
@@ -35,9 +37,18 @@ const totalBalanceFormatted = computed(() => {
     <Card class="mt-4 bg-linear-to-br from-primary to-primary/80 text-primary-foreground">
       <CardContent>
         <p class="text-sm">{{ t('accounts.totalBalance') }}</p>
-        <p class="text-2xl font-semibold">
-          {{ totalBalanceFormatted }}
-        </p>
+        <div v-if="totalsByCurrency.length === 0" class="text-2xl font-semibold">
+          {{ format(0, 'USD') }}
+        </div>
+        <div v-else class="flex flex-col gap-1">
+          <p
+            v-for="total in totalsByCurrency"
+            :key="total.currency"
+            class="text-2xl font-semibold"
+          >
+            {{ format(total.amount, total.currency) }}
+          </p>
+        </div>
       </CardContent>
     </Card>
 

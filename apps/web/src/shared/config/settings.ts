@@ -1,4 +1,4 @@
-import { DEFAULT_CURRENCY } from './currencies'
+import { DEFAULT_CURRENCY } from '@/shared/lib/money'
 import { DEFAULT_LOCALE, type AppLocale } from './locale'
 
 export interface Settings {

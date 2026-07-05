@@ -8,8 +8,8 @@ import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositori
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const accounts: AccountWithBalance[] = [
-  { id: 'a1', name: 'Main', openingBalance: 1000, manualAdjustment: 0, balance: 1500 },
-  { id: 'a2', name: 'Savings', openingBalance: 500, manualAdjustment: 0, balance: 700 },
+  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, manualAdjustment: 0, balance: 1500 },
+  { id: 'a2', name: 'Savings', currency: 'USD', openingBalance: 500, manualAdjustment: 0, balance: 700 },
 ]
 
 describe('AccountsPage', () => {
@@ -46,8 +46,8 @@ describe('AccountsPage', () => {
       repositories: { accounts: accountsRepo },
     })
     await flushPromises()
-    // Total balance (1500 + 700 = 2200) should be formatted and rendered
-    expect(wrapper.text()).toMatch(/2[,.]?200/)
+    // Total balance (1500 + 700 = 2200 kopeks = $22.00) formatted per currency
+    expect(wrapper.text()).toMatch(/22\.00/)
   })
 
   it('renders create button', () => {
