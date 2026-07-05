@@ -14,8 +14,9 @@ export const normalizeCategory = (value: unknown): Category | null => {
   const type = isCategoryType(value.type) ? value.type : null
   const icon = asString(value.icon)
   const color = asString(value.color)
+  const slug = asString(value.slug)
 
-  if (!id || !name || !type || !icon || !color) {
+  if (!id || !name || !type || !icon || !color || !slug) {
     return null
   }
 
@@ -25,6 +26,7 @@ export const normalizeCategory = (value: unknown): Category | null => {
     type,
     icon,
     color,
+    slug
   }
 }
 

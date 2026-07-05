@@ -23,6 +23,7 @@ const incomeCategory: Category = {
   type: 'income',
   icon: '💰',
   color: '#00FF00',
+  slug: 'salary',
 }
 
 const expenseCategory: Category = {
@@ -31,6 +32,7 @@ const expenseCategory: Category = {
   type: 'expense',
   icon: '🍔',
   color: '#FF0000',
+  slug: 'food',
 }
 
 const createdTransaction: CashflowTransaction = {

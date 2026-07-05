@@ -2,13 +2,13 @@ import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import type { Category } from '../model/types'
 import { parseCategoriesStorage, serializeCategoriesStorage } from '../model/category'
 import type { CategoryRepository, CreateCategoryPayload, UpdateCategoryPayload } from './repository'
-import { getDefaultCategories } from '../model/defaults'
 import { generateId } from '@/shared/lib/generate-id'
 import {
   createLocalStorageAdapter,
   NotFoundError,
   ReferentialIntegrityError,
 } from '@/shared/lib/data'
+import { DEFAULT_CATEGORIES } from '../model/defaults'
 
 const categoriesStorage = createLocalStorageAdapter<Category[]>(STORAGE_KEYS.categories, [], {
   read: parseCategoriesStorage,
@@ -20,12 +20,11 @@ export function createLocalStorageCategoryRepository(deps: {
 }): CategoryRepository {
   return {
     async getAll() {
-      return [...getDefaultCategories(), ...categoriesStorage.get()]
+      return [...DEFAULT_CATEGORIES, ...categoriesStorage.get()]
     },
     async getById(id: string) {
       return (
-        [...getDefaultCategories(), ...categoriesStorage.get()].find((item) => item.id === id) ??
-        null
+        [...DEFAULT_CATEGORIES, ...categoriesStorage.get()].find((item) => item.id === id) ?? null
       )
     },
     async create(payload: CreateCategoryPayload) {
