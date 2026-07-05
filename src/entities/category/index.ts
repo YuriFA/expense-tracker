@@ -14,5 +14,4 @@ export {
   useUpdateCategory,
   useDeleteCategory,
 } from './model/use-categories'
-export { getDefaultCategories } from './model/defaults'
 export { default as CategorySelect } from './ui/CategorySelect.vue'

@@ -6,4 +6,5 @@ export interface Category {
   type: CategoryType
   icon: string
   color: string
+  slug: string
 }

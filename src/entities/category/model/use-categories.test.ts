@@ -18,6 +18,7 @@ const categoryFixture: Category = {
   type: 'expense',
   icon: '🍔',
   color: '#FF0000',
+  slug: 'food',
 }
 
 function mountWithComposable<T>(
@@ -87,12 +88,14 @@ describe('useCreateCategory', () => {
       type: 'expense',
       icon: '🍔',
       color: '#FF0000',
+      slug: 'food',
     })
     expect(repo.create).toHaveBeenCalledWith({
       name: 'Food',
       type: 'expense',
       icon: '🍔',
       color: '#FF0000',
+      slug: 'food',
     })
   })
 })

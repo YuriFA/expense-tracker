@@ -9,6 +9,7 @@ const categoryFixture: Category = {
   type: 'expense',
   icon: '🍔',
   color: '#FF0000',
+  slug: 'food',
 }
 
 function seedCategories(categories: Category[]) {
@@ -78,6 +79,7 @@ describe('category localStorage repository', () => {
         type: 'expense',
         icon: '🎯',
         color: '#00FF00',
+        slug: 'custom',
       })
       expect(result.id).toBe('custom')
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.categories) ?? '[]')
@@ -92,6 +94,7 @@ describe('category localStorage repository', () => {
         type: 'expense',
         icon: '🎯',
         color: '#00FF00',
+        slug: 'custom',
       })
       expect(result.id).toBeTruthy()
     })

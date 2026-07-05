@@ -12,6 +12,7 @@ const validCategory: Category = {
   type: 'expense',
   icon: '🍔',
   color: '#FF0000',
+  slug: 'food',
 }
 
 describe('normalizeCategory', () => {
