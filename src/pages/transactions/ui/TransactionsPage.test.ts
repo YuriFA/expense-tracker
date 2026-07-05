@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import TransactionsPage from './TransactionsPage.vue'
-import { TransactionsBrowser } from '@/features/transactions-list'
+import TransactionsBrowser from './TransactionsBrowser.vue'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 describe('TransactionsPage', () => {

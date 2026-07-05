@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { RecentTransactions } from '@/features/transactions-list'
+import RecentTransactions from './RecentTransactions.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
