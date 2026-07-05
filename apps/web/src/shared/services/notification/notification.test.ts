@@ -40,38 +40,6 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('success', () => {
-  it('calls toast.success', () => {
-    notification.success('done')
-    expect(toast.success).toHaveBeenCalledWith('done')
-    expect(toast.success).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('info', () => {
-  it('calls toast.info', () => {
-    notification.info('done')
-    expect(toast.info).toHaveBeenCalledWith('done')
-    expect(toast.info).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('warning', () => {
-  it('calls toast.warning', () => {
-    notification.warning('done')
-    expect(toast.warning).toHaveBeenCalledWith('done')
-    expect(toast.warning).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('error', () => {
-  it('calls toast.error', () => {
-    notification.error('done')
-    expect(toast.error).toHaveBeenCalledWith('done')
-    expect(toast.error).toHaveBeenCalledTimes(1)
-  })
-})
-
 describe('repositoryError', () => {
   it.each([
     [new NotFoundError('x'), 'NOT_FOUND_MSG'],

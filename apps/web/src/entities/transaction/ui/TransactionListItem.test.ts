@@ -91,7 +91,9 @@ describe('TransactionListItem', () => {
   it('renders transfer fallback when account missing', async () => {
     const wrapper = mountWithTransaction(transferTransaction, [], [])
     await flushPromises()
-    expect(wrapper.text()).toBeTruthy()
+    // When accounts are unknown, the "from -> to" span is hidden and the
+    // generic transfer-type label is rendered instead.
+    expect(wrapper.text()).not.toContain('->')
   })
 
   it('renders category icon for cashflow transaction', async () => {

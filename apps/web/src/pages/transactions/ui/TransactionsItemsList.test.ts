@@ -59,7 +59,8 @@ describe('TransactionsItemsList', () => {
       repositories: { transactions: transactionsRepo },
     })
     await flushPromises()
-    expect(wrapper.findAll('li').length).toBeGreaterThanOrEqual(1)
+    expect(wrapper.find('li.text-gray-500').exists()).toBe(true)
+    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
   })
 
   it('renders error state when query fails', async () => {
@@ -69,6 +70,7 @@ describe('TransactionsItemsList', () => {
       repositories: { transactions: transactionsRepo },
     })
     await flushPromises()
-    expect(wrapper.findAll('li').length).toBeGreaterThan(0)
+    expect(wrapper.find('li.text-red-500').exists()).toBe(true)
+    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
   })
 })

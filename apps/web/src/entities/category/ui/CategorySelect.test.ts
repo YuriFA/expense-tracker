@@ -45,12 +45,6 @@ describe('CategorySelect', () => {
     expect(wrapper.find('label[for="category-id"]').exists()).toBe(true)
   })
 
-  it('renders Select component', async () => {
-    const wrapper = mountField()
-    await flushPromises()
-    expect(wrapper.findComponent({ name: 'Select' }).exists()).toBe(true)
-  })
-
   it('reflects modelValue in Select', async () => {
     const wrapper = mountField({ modelValue: 'cincome' })
     await flushPromises()

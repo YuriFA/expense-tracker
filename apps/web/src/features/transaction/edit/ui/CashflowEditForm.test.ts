@@ -85,14 +85,6 @@ describe('CashflowEditForm', () => {
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
 
-  it('accepts type prop (expense)', () => {
-    const { wrapper } = mountForm({
-      type: 'expense',
-      categoryId: 'cexpense',
-    })
-    expect(wrapper.html()).toBeTruthy()
-  })
-
   it('preloads form with initial values', () => {
     const { wrapper } = mountForm()
     expect(wrapper.find('input#description').attributes('value')).toBe('Salary')

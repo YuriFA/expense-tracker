@@ -65,40 +65,10 @@ describe('CashflowForm', () => {
     return { wrapper, accounts, categories, transactions }
   }
 
-  it('renders form element', () => {
+  it('renders form with submit button and description input', () => {
     const { wrapper } = mountForm()
     expect(wrapper.find('form').exists()).toBe(true)
-  })
-
-  it('renders submit button', () => {
-    const { wrapper } = mountForm()
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
-  })
-
-  it('accepts type prop (expense)', () => {
-    const { wrapper } = mountForm({ type: 'expense' })
-    expect(wrapper.html()).toBeTruthy()
-  })
-
-  it('accepts lastCreatedTransaction prop', () => {
-    const last: CashflowTransaction = {
-      id: 't-prev',
-      type: 'income',
-      amount: 50,
-      description: '',
-      occurredAt: '2024-01-01T00:00:00Z',
-      accountId: 'a1',
-      categoryId: 'cincome',
-    } as never
-    const { wrapper } = mountForm({ lastCreatedTransaction: last })
-    expect(wrapper.html()).toBeTruthy()
-  })
-
-  it('renders all expected sections (account selector, amount, description, category, button)', () => {
-    const { wrapper } = mountForm()
-    // Submit button is present
-    expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
-    // There should be at least one description input
     expect(wrapper.find('input#description').exists()).toBe(true)
   })
 })
