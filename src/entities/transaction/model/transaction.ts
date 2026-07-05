@@ -7,12 +7,13 @@ import type {
 import {
   asDateTimeString,
   asNonEmptyString,
-  asPositiveNumber,
+  asPositiveInteger,
   asString,
   isRecord,
 } from '@/shared/lib/normalize'
+import type { CurrencyCode } from '@/shared/lib/money'
 
-export type AccountRef = { id: string }
+export type AccountRef = { id: string; currency: CurrencyCode }
 export type CategoryRef = { id: string; type: TransactionType }
 
 type TransactionRecord = Record<string, unknown>
@@ -32,7 +33,7 @@ const isTransactionType = (value: unknown): value is TransactionType =>
 const normalizeBaseTransaction = (value: TransactionRecord): BaseTransaction | null => {
   const id = asNonEmptyString(value.id)
   const type = isTransactionType(value.type) ? value.type : null
-  const amount = asPositiveNumber(value.amount)
+  const amount = asPositiveInteger(value.amount)
   const description = asString(value.description) ?? ''
   const occurredAt = asDateTimeString(value.occurredAt)
   const updatedAtValue =
@@ -140,16 +141,19 @@ export const hasValidTransactionReferences = (
   accounts: AccountRef[],
   categories: CategoryRef[],
 ) => {
-  const hasAccount = (accountId: string) => accounts.some((account) => account.id === accountId)
-
   if (isTransferTransaction(transaction)) {
+    const from = accounts.find((account) => account.id === transaction.fromAccountId)
+    const to = accounts.find((account) => account.id === transaction.toAccountId)
+
     return (
-      hasAccount(transaction.fromAccountId) &&
-      hasAccount(transaction.toAccountId) &&
-      transaction.fromAccountId !== transaction.toAccountId
+      from !== undefined &&
+      to !== undefined &&
+      from.id !== to.id &&
+      from.currency === to.currency
     )
   }
 
+  const hasAccount = (accountId: string) => accounts.some((account) => account.id === accountId)
   const category = categories.find((item) => item.id === transaction.categoryId)
 
   return (

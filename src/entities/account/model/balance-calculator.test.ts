@@ -10,6 +10,7 @@ import {
 const accountFixture: Account = {
   id: 'a1',
   name: 'Main',
+  currency: 'USD',
   openingBalance: 1000,
   manualAdjustment: 0,
 }
@@ -141,6 +142,7 @@ describe('getComputedAccountBalance', () => {
     const account: Account = {
       id: 'a1',
       name: 'Main',
+      currency: 'USD',
       openingBalance: 1000,
       manualAdjustment: 100,
     }

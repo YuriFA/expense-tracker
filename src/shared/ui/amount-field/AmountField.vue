@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { useI18n } from 'vue-i18n'
 import { Field, FieldError } from '@/shared/ui/field'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
-import { formatCurrency } from '@/shared/lib/money'
+import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
 import { computed } from 'vue'
 
-const props = defineProps<{
-  errors?: string[]
-  placeholder?: string
-  class?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    currency?: CurrencyCode
+    errors?: string[]
+    placeholder?: string
+    class?: string
+  }>(),
+  {
+    currency: DEFAULT_CURRENCY,
+  },
+)
 
 const modelValue = defineModel<number | undefined>()
 
 const { locale } = useI18n()
-const settings = useSettingsStore()
-const defaultPlaceholder = computed(() => formatCurrency(100, settings.currency, locale.value))
+const defaultPlaceholder = computed(() =>
+  formatMoney(10_000, props.currency, locale.value),
+)
 const placeholder = computed(() => props.placeholder ?? defaultPlaceholder.value)
 </script>
 
@@ -28,7 +34,7 @@ const placeholder = computed(() => props.placeholder ?? defaultPlaceholder.value
       :locale
       :format-options="{
         style: 'currency',
-        currency: settings.currency,
+        currency: props.currency,
         currencyDisplay: 'symbol',
         currencySign: 'accounting',
         minimumFractionDigits: 2,

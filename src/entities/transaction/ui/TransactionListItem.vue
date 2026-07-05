@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { formatCurrency } from '@/shared/lib/money'
+import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
 import { isTransferTransaction } from '../model/transaction'
 import type { Transaction } from '../model/types'
 import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
 
 interface AccountRef {
   id: string
   name: string
+  currency?: CurrencyCode
 }
 
 interface CategoryRef {
@@ -19,15 +19,13 @@ interface CategoryRef {
   icon: string
 }
 
-const {transaction, accounts = [], categories = []} = defineProps<{
+const { transaction, accounts = [], categories = [] } = defineProps<{
   transaction: Transaction
   accounts?: AccountRef[]
   categories?: CategoryRef[]
 }>()
 
 const { locale, t } = useI18n()
-const settings = useSettingsStore()
-const format = (value: number) => formatCurrency(value, settings.currency, locale.value)
 
 const category = computed(() => {
   return categories?.find((category) => category.id === transaction.categoryId)
@@ -51,6 +49,16 @@ const toAccount = computed(() => {
   }
   return undefined
 })
+
+const transactionCurrency = computed<CurrencyCode>(() => {
+  if (isTransferTransaction(transaction)) {
+    return fromAccount.value?.currency ?? DEFAULT_CURRENCY
+  }
+  return account.value?.currency ?? DEFAULT_CURRENCY
+})
+
+const format = (value: number) =>
+  formatMoney(value, transactionCurrency.value, locale.value)
 
 const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH:mm', {
   locales: locale.value,

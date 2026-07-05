@@ -34,6 +34,7 @@
   "addAccount": {
     "nameLabel": "Название",
     "namePlaceholder": "Название счёта",
+    "currencyLabel": "Валюта",
     "openingBalanceLabel": "Начальный баланс",
     "submit": "Добавить счёт",
     "newAccount": "Новый счёт",
@@ -126,6 +127,7 @@
     "descriptionInvalid": "Описание должно быть текстом",
     "categoryRequired": "Выберите категорию",
     "transferAccountsMustDiffer": "Счета перевода должны отличаться",
+    "transferAccountsMustMatchCurrency": "Счета перевода должны быть в одной валюте",
     "invalidDate": "Некорректная дата"
   },
   "errors": {

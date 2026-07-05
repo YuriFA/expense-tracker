@@ -9,6 +9,7 @@ import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 const accountFixture: AccountWithBalance = {
   id: 'a1',
   name: 'Main',
+  currency: 'USD',
   openingBalance: 1000,
   manualAdjustment: 0,
   balance: 1000,
@@ -85,8 +86,8 @@ describe('useCreateAccount', () => {
     const { result } = mountWithComposable(() => useCreateAccount(), {
       repositories: { accounts: repo },
     })
-    await result.mutateAsync({ name: 'Main', openingBalance: 1000 })
-    expect(repo.create).toHaveBeenCalledWith({ name: 'Main', openingBalance: 1000 })
+    await result.mutateAsync({ name: 'Main', currency: 'USD', openingBalance: 1000 })
+    expect(repo.create).toHaveBeenCalledWith({ name: 'Main', currency: 'USD', openingBalance: 1000 })
   })
 })
 

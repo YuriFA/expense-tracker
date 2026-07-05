@@ -7,6 +7,7 @@ import { createLocalStorageAccountRepository } from './local-storage-repository'
 const accountFixture: Account = {
   id: 'a1',
   name: 'Main',
+  currency: 'USD',
   openingBalance: 1000,
   manualAdjustment: 0,
 }
@@ -91,6 +92,7 @@ describe('account localStorage repository', () => {
       const result = await repo.create({
         id: 'custom',
         name: 'Main',
+        currency: 'USD',
         openingBalance: 100,
       })
       expect(result.id).toBe('custom')
@@ -103,7 +105,7 @@ describe('account localStorage repository', () => {
 
     it('generates id when not provided', async () => {
       const repo = createRepository()
-      const result = await repo.create({ name: 'Main', openingBalance: 100 })
+      const result = await repo.create({ name: 'Main', currency: 'USD', openingBalance: 100 })
       expect(result.id).toBeTruthy()
       expect(typeof result.id).toBe('string')
     })

@@ -10,8 +10,8 @@ import { createMockTransactionRepository } from '@/__tests__/helpers/mock-reposi
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const accounts: AccountWithBalance[] = [
-  { id: 'a1', name: 'Main', openingBalance: 1000, manualAdjustment: 0, balance: 1000 },
-  { id: 'a2', name: 'Savings', openingBalance: 500, manualAdjustment: 0, balance: 500 },
+  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, manualAdjustment: 0, balance: 1000 },
+  { id: 'a2', name: 'Savings', currency: 'USD', openingBalance: 500, manualAdjustment: 0, balance: 500 },
 ]
 
 const categories: Category[] = []

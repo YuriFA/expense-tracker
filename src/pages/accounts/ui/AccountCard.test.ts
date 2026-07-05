@@ -3,14 +3,14 @@ import { nextTick } from 'vue'
 import AccountCard from './AccountCard.vue'
 import type { AccountWithBalance } from '@/entities/account'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
 
 const accountFixture: AccountWithBalance = {
   id: 'a1',
   name: 'Main',
-  openingBalance: 1000,
+  currency: 'USD',
+  openingBalance: 100000,
   manualAdjustment: 0,
-  balance: 1234.56,
+  balance: 123456,
 }
 
 describe('AccountCard', () => {
@@ -27,9 +27,8 @@ describe('AccountCard', () => {
       props: { account: accountFixture } as never,
       repositories: {},
     })
-    // useSettingsStore + useI18n for formatting
     await nextTick()
-    // Balance should be displayed as currency
+    // 123456 kopeks = $1,234.56
     expect(wrapper.text()).toMatch(/1[,.]?234/)
   })
 
@@ -41,16 +40,17 @@ describe('AccountCard', () => {
     expect(wrapper.text()).toContain('S')
   })
 
-  it('uses settings store currency for formatting', async () => {
+  it('uses account currency for formatting (independent of settings store)', async () => {
     const wrapper = mountWithProviders(AccountCard, {
-      props: { account: accountFixture } as never,
+      props: { account: { ...accountFixture, currency: 'EUR' } } as never,
       repositories: {},
     })
-    const store = useSettingsStore()
-    store.currency = 'RUB'
     await nextTick()
+    // Account currency drives formatting; settings store currency is irrelevant
     expect(wrapper.text()).toMatch(/1[,.]?234/)
-    // Sanity: store currency is RUB
-    expect(store.currency).toBe('RUB')
+    // EUR narrowSymbol should appear (€), not USD ($)
+    expect(wrapper.text()).toContain('€')
+    expect(wrapper.text()).not.toContain('$')
   })
 })
+

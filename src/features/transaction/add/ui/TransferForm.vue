@@ -11,10 +11,12 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import { AccountSelect } from '@/entities/account'
+import { AccountSelect, useAccounts } from '@/entities/account'
 import { nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
+import { DEFAULT_CURRENCY, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
+import { computed } from 'vue'
 
 const emit = defineEmits<{
   success: []
@@ -26,26 +28,41 @@ const { lastCreatedTransaction = undefined } = defineProps<{
 
 const { mutateAsync: createTransaction } = useCreateTransaction<TransferTransaction>()
 const { t } = useI18n()
+const { data: accounts } = useAccounts()
 
-const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<TransferFormValues>({
-  validationSchema: toTypedSchema(createTransferSchema()),
-  initialValues: {
-    type: 'transfer',
-    fromAccountId: lastCreatedTransaction?.fromAccountId ?? '',
-    toAccountId: lastCreatedTransaction?.toAccountId ?? '',
-  },
-})
+const { handleSubmit: handleFormSubmit, isSubmitting, setFieldError } =
+  useForm<TransferFormValues>({
+    validationSchema: toTypedSchema(createTransferSchema()),
+    initialValues: {
+      type: 'transfer',
+      fromAccountId: lastCreatedTransaction?.fromAccountId ?? '',
+      toAccountId: lastCreatedTransaction?.toAccountId ?? '',
+    },
+  })
 
 const fromAccountId = useFieldValue<TransferFormValues['fromAccountId']>('fromAccountId')
 const toAccountId = useFieldValue<TransferFormValues['toAccountId']>('toAccountId')
 
+const fromCurrency = computed<CurrencyCode>(() => {
+  const account = accounts.value?.find((a) => a.id === fromAccountId.value)
+  return account?.currency ?? DEFAULT_CURRENCY
+})
+
 const handleSubmit = handleFormSubmit(async (data) => {
+  const fromAccount = accounts.value?.find((a) => a.id === data.fromAccountId)
+  const toAccount = accounts.value?.find((a) => a.id === data.toAccountId)
+
+  if (fromAccount && toAccount && fromAccount.currency !== toAccount.currency) {
+    setFieldError('toAccountId', t('validation.transferAccountsMustMatchCurrency'))
+    return
+  }
+
   try {
     await createTransaction({
       type: data.type,
       fromAccountId: data.fromAccountId,
       toAccountId: data.toAccountId,
-      amount: data.amount,
+      amount: toMinorUnits(data.amount),
       description: data.description,
       occurredAt: nowIsoString(),
     })
@@ -79,6 +96,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <AmountField
           class="min-w-0 w-auto!"
+          :currency="fromCurrency"
           :model-value="value"
           :errors="errors"
           :placeholder="t('addTransfer.amountPlaceholder')"

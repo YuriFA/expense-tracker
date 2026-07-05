@@ -19,12 +19,30 @@ export const asNumber = (value: unknown) => {
   return value
 }
 
+export const asInteger = (value: unknown) => {
+  const numberValue = asNumber(value)
+  if (numberValue === null || !Number.isInteger(numberValue)) {
+    return null
+  }
+
+  return numberValue
+}
+
 export const asPositiveNumber = (value: unknown) => {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
     return null
   }
 
   return value
+}
+
+export const asPositiveInteger = (value: unknown) => {
+  const numberValue = asPositiveNumber(value)
+  if (numberValue === null || !Number.isInteger(numberValue)) {
+    return null
+  }
+
+  return numberValue
 }
 
 export const asDateTimeString = (value: unknown) => {

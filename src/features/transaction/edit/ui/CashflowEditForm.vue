@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { useForm } from 'vee-validate'
+import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
 import type { CashflowTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
-import { Field as VeeField } from 'vee-validate'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import { AccountSelect } from '@/entities/account'
+import { AccountSelect, useAccounts } from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
 import { useUpdateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
@@ -16,6 +15,8 @@ import {
   createCashflowEditSchema,
   type CashflowEditValues,
 } from '../model/cashflow-schema'
+import { DEFAULT_CURRENCY, toMajorUnits, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
+import { computed } from 'vue'
 
 const emit = defineEmits<{
   success: []
@@ -32,16 +33,23 @@ const { id, type, amount, description, accountId, categoryId } = defineProps<{
 
 const { mutateAsync: updateTransaction } = useUpdateTransaction<CashflowTransaction>()
 const { t } = useI18n()
+const { data: accounts } = useAccounts()
 
 const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<CashflowEditValues>({
   validationSchema: toTypedSchema(createCashflowEditSchema()),
   initialValues: {
     type,
-    amount,
+    amount: toMajorUnits(amount),
     description,
     accountId,
     categoryId,
   },
+})
+
+const accountIdValue = useFieldValue<CashflowEditValues['accountId']>('accountId')
+const accountCurrency = computed<CurrencyCode>(() => {
+  const account = accounts.value?.find((a) => a.id === accountIdValue.value)
+  return account?.currency ?? DEFAULT_CURRENCY
 })
 
 const handleSubmit = handleFormSubmit(async (data) => {
@@ -51,7 +59,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       payload: {
         type: data.type,
         accountId: data.accountId,
-        amount: data.amount,
+        amount: toMinorUnits(data.amount),
         description: data.description,
         categoryId: data.categoryId,
       },
@@ -85,6 +93,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <AmountField
           class="min-w-0 w-auto"
+          :currency="accountCurrency"
           :model-value="value"
           :errors="errors"
           @update:model-value="(v) => setValue(v as number)"

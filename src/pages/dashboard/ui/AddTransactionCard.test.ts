@@ -10,7 +10,7 @@ import type { AccountWithBalance } from '@/entities/account'
 import type { Transaction } from '@/entities/transaction'
 
 const accounts: AccountWithBalance[] = [
-  { id: 'a1', name: 'Main', openingBalance: 1000, manualAdjustment: 0, balance: 1000 },
+  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, manualAdjustment: 0, balance: 1000 },
 ]
 
 describe('AddTransactionCard', () => {

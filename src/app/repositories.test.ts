@@ -42,14 +42,19 @@ describe('provideRepositories', () => {
       ACCOUNT_REPOSITORY_KEY as unknown as symbol
     ] as unknown as {
       getAll: () => Promise<Account[]>
-      create: (payload: { name: string; openingBalance: number; id?: string }) => Promise<Account>
+      create: (payload: {
+        name: string
+        currency: Account['currency']
+        openingBalance: number
+        id?: string
+      }) => Promise<Account>
     }
     const transactions = provides[
       TRANSACTION_REPOSITORY_KEY as unknown as symbol
     ] as unknown as { getAll: () => Promise<Transaction[]> }
 
     // Create an account; it should round-trip through storage
-    const created = await accounts.create({ name: 'Main', openingBalance: 100 })
+    const created = await accounts.create({ name: 'Main', currency: 'USD', openingBalance: 100 })
     expect(created.id).toBeTruthy()
 
     // transactions.getAll should be able to invoke its dep (accounts.getAll)

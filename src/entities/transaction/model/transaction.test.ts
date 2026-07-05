@@ -43,7 +43,10 @@ const transferTransaction: TransferTransaction = {
   toAccountId: 'a2',
 }
 
-const accounts: AccountRef[] = [{ id: 'a1' }, { id: 'a2' }]
+const accounts: AccountRef[] = [
+  { id: 'a1', currency: 'USD' },
+  { id: 'a2', currency: 'USD' },
+]
 
 const categories: CategoryRef[] = [
   { id: 'cincome', type: 'income' },
@@ -209,6 +212,16 @@ describe('hasValidTransactionReferences', () => {
       ),
     ).toBe(false)
   })
+
+  it('returns false for transfer between accounts in different currencies', () => {
+    const mixedCurrencyAccounts: AccountRef[] = [
+      { id: 'a1', currency: 'USD' },
+      { id: 'a2', currency: 'EUR' },
+    ]
+    expect(
+      hasValidTransactionReferences(transferTransaction, mixedCurrencyAccounts, categories),
+    ).toBe(false)
+  })
 })
 
 describe('normalizeTransaction', () => {
@@ -234,6 +247,12 @@ describe('normalizeTransaction', () => {
   it('returns null for non-number amount', () => {
     expect(
       normalizeTransaction({ ...incomeTransaction, amount: '100' as unknown as number }),
+    ).toBeNull()
+  })
+
+  it('returns null for non-integer amount (kopeks invariant)', () => {
+    expect(
+      normalizeTransaction({ ...incomeTransaction, amount: 100.5 }),
     ).toBeNull()
   })
 

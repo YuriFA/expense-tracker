@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
   asDateTimeString,
+  asInteger,
   asNonEmptyString,
   asNumber,
+  asPositiveInteger,
   asPositiveNumber,
   asString,
   isRecord,
@@ -101,6 +103,58 @@ describe('asPositiveNumber', () => {
   it('returns null for non-numbers', () => {
     expect(asPositiveNumber('1')).toBeNull()
     expect(asPositiveNumber(null)).toBeNull()
+  })
+})
+
+describe('asInteger', () => {
+  it('returns finite integers of any sign', () => {
+    expect(asInteger(0)).toBe(0)
+    expect(asInteger(42)).toBe(42)
+    expect(asInteger(-3)).toBe(-3)
+  })
+
+  it('returns null for floats', () => {
+    expect(asInteger(3.14)).toBeNull()
+    expect(asInteger(-0.5)).toBeNull()
+  })
+
+  it('returns null for non-numbers', () => {
+    expect(asInteger('42')).toBeNull()
+    expect(asInteger(null)).toBeNull()
+    expect(asInteger(true)).toBeNull()
+  })
+
+  it('returns null for non-finite numbers', () => {
+    expect(asInteger(Infinity)).toBeNull()
+    expect(asInteger(-Infinity)).toBeNull()
+    expect(asInteger(NaN)).toBeNull()
+  })
+})
+
+describe('asPositiveInteger', () => {
+  it('returns positive finite integers', () => {
+    expect(asPositiveInteger(1)).toBe(1)
+    expect(asPositiveInteger(100)).toBe(100)
+  })
+
+  it('returns null for zero and negatives', () => {
+    expect(asPositiveInteger(0)).toBeNull()
+    expect(asPositiveInteger(-1)).toBeNull()
+  })
+
+  it('returns null for floats', () => {
+    expect(asPositiveInteger(0.5)).toBeNull()
+    expect(asPositiveInteger(1.5)).toBeNull()
+  })
+
+  it('returns null for non-finite numbers', () => {
+    expect(asPositiveInteger(Infinity)).toBeNull()
+    expect(asPositiveInteger(NaN)).toBeNull()
+  })
+
+  it('returns null for non-numbers', () => {
+    expect(asPositiveInteger('1')).toBeNull()
+    expect(asPositiveInteger(null)).toBeNull()
   })
 })
 
