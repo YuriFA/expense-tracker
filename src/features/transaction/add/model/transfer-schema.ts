@@ -1,7 +1,7 @@
 import z from 'zod'
 import i18n from '@/shared/i18n'
 
-export const createAddTransferSchema = () => {
+export const createTransferSchema = () => {
   const { t } = i18n.global
 
   return z
@@ -26,4 +26,4 @@ export const createAddTransferSchema = () => {
     })
 }
 
-export type AddTransferFormValues = z.infer<ReturnType<typeof createAddTransferSchema>>
+export type TransferFormValues = z.infer<ReturnType<typeof createTransferSchema>>

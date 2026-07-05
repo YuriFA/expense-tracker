@@ -1,7 +1,7 @@
 import z from 'zod'
 import i18n from '@/shared/i18n'
 
-export const createAddTransactionSchema = () => {
+export const createCashflowSchema = () => {
   const { t } = i18n.global
 
   return z.object({
@@ -21,4 +21,4 @@ export const createAddTransactionSchema = () => {
   })
 }
 
-export type AddTransactionFormValues = z.infer<ReturnType<typeof createAddTransactionSchema>>
+export type CashflowFormValues = z.infer<ReturnType<typeof createCashflowSchema>>

@@ -1,9 +1,5 @@
 <script setup lang="ts">
 import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
-import {
-  createAddTransferSchema,
-  type AddTransferFormValues,
-} from '../model/add-transfer-schema'
 import type { TransferTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
@@ -12,57 +8,68 @@ import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
 import { AccountSelect } from '@/entities/account'
-import { nowIsoString } from '@/shared/lib/date'
-import { useCreateTransaction } from '@/entities/transaction'
+import { useUpdateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
+import {
+  createTransferEditSchema,
+  type TransferEditValues,
+} from '../model/transfer-schema'
 
 const emit = defineEmits<{
   success: []
 }>()
 
-const { lastCreatedTransaction = undefined } = defineProps<{
-  lastCreatedTransaction?: TransferTransaction
+const { id, amount, description, fromAccountId: initialFrom, toAccountId: initialTo } = defineProps<{
+  id: string
+  amount: number
+  description: string
+  fromAccountId: string
+  toAccountId: string
 }>()
 
-const { mutateAsync: createTransaction } = useCreateTransaction<TransferTransaction>()
+const { mutateAsync: updateTransaction } = useUpdateTransaction<TransferTransaction>()
 const { t } = useI18n()
 
-const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransferFormValues>({
-  validationSchema: toTypedSchema(createAddTransferSchema()),
+const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<TransferEditValues>({
+  validationSchema: toTypedSchema(createTransferEditSchema()),
   initialValues: {
     type: 'transfer',
-    fromAccountId: lastCreatedTransaction?.fromAccountId ?? '',
-    toAccountId: lastCreatedTransaction?.toAccountId ?? '',
+    amount,
+    description,
+    fromAccountId: initialFrom,
+    toAccountId: initialTo,
   },
 })
 
-const fromAccountId = useFieldValue<AddTransferFormValues['fromAccountId']>('fromAccountId')
-const toAccountId = useFieldValue<AddTransferFormValues['toAccountId']>('toAccountId')
+const fromAccountId = useFieldValue<TransferEditValues['fromAccountId']>('fromAccountId')
+const toAccountId = useFieldValue<TransferEditValues['toAccountId']>('toAccountId')
 
 const handleSubmit = handleFormSubmit(async (data) => {
   try {
-    await createTransaction({
-      type: data.type,
-      fromAccountId: data.fromAccountId,
-      toAccountId: data.toAccountId,
-      amount: data.amount,
-      description: data.description,
-      occurredAt: nowIsoString(),
+    await updateTransaction({
+      id,
+      payload: {
+        type: data.type,
+        fromAccountId: data.fromAccountId,
+        toAccountId: data.toAccountId,
+        amount: data.amount,
+        description: data.description,
+      },
     })
-    notification.success(t('addTransfer.success'))
+    notification.success(t('editTransaction.success'))
     emit('success')
   } catch (error) {
     notification.mutationError(error, {
-      title: t('addTransfer.error'),
+      title: t('editTransaction.error'),
       feature: 'transaction',
-      action: 'create',
+      action: 'update',
     })
   }
 })
 </script>
 
 <template>
-  <form id="add-transfer-form" class="flex flex-col gap-3" @submit="handleSubmit">
+  <form id="edit-transfer-form" class="flex flex-col gap-3" @submit="handleSubmit">
     <div class="flex gap-2">
       <VeeField v-slot="{ value, setValue, errors }" name="fromAccountId">
         <AccountSelect
@@ -114,12 +121,12 @@ const handleSubmit = handleFormSubmit(async (data) => {
     </VeeField>
 
     <Button
-      form="add-transfer-form"
+      form="edit-transfer-form"
       type="submit"
       class="w-full md:ml-auto md:w-auto"
       :loading="isSubmitting"
     >
-      {{ t('addTransfer.submit') }}
+      {{ t('editTransaction.submit') }}
     </Button>
   </form>
 </template>
