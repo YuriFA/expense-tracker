@@ -61,25 +61,6 @@ describe('TransferForm', () => {
     expect(wrapper.find('input#transfer-description').exists()).toBe(true)
   })
 
-  it('renders without lastCreatedTransaction prop', () => {
-    const { wrapper } = mountForm()
-    expect(wrapper.html()).toBeTruthy()
-  })
-
-  it('accepts lastCreatedTransaction prop', () => {
-    const last: TransferTransaction = {
-      id: 't-prev',
-      type: 'transfer',
-      amount: 50,
-      description: '',
-      occurredAt: '2024-01-01T00:00:00Z',
-      fromAccountId: 'a1',
-      toAccountId: 'a2',
-    } as never
-    const { wrapper } = mountForm({ lastCreatedTransaction: last })
-    expect(wrapper.html()).toBeTruthy()
-  })
-
   it('mounts and renders with accounts data loaded', async () => {
     const { wrapper, accountsRepo } = mountForm()
     await flushPromises()

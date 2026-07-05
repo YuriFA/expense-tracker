@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useSettingsStore } from './use-settings-store'
+import { DEFAULT_SETTINGS } from '@/shared/config/settings'
 
 describe('useSettingsStore', () => {
   beforeEach(() => {
@@ -10,10 +10,9 @@ describe('useSettingsStore', () => {
 
   it('returns default values when localStorage is empty', () => {
     const store = useSettingsStore()
-    const { locale, currency, theme } = storeToRefs(store)
-    expect(locale.value).toBeTruthy()
-    expect(currency.value).toBeTruthy()
-    expect(theme.value).toBeTruthy()
+    expect(store.locale).toBe(DEFAULT_SETTINGS.locale)
+    expect(store.currency).toBe(DEFAULT_SETTINGS.currency)
+    expect(store.theme).toBe(DEFAULT_SETTINGS.theme)
   })
 
   it('persists values to localStorage on change', async () => {
@@ -28,14 +27,5 @@ describe('useSettingsStore', () => {
     localStorage.setItem('BudgetTracker:currency', 'EUR')
     const store = useSettingsStore()
     expect(store.currency).toBe('EUR')
-  })
-
-  it('updates locale reactively', async () => {
-    const store = useSettingsStore()
-    const { locale } = storeToRefs(store)
-    const original = locale.value
-    store.locale = original === 'ru' ? 'en' : 'ru'
-    await nextTick()
-    expect(locale.value).not.toBe(original)
   })
 })

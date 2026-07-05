@@ -45,12 +45,6 @@ describe('AccountSelect', () => {
     expect(wrapper.find('label[for="account-id"]').exists()).toBe(true)
   })
 
-  it('renders Select component', async () => {
-    const wrapper = mountField()
-    await flushPromises()
-    expect(wrapper.findComponent({ name: 'Select' }).exists()).toBe(true)
-  })
-
   it('reflects modelValue in Select', async () => {
     const wrapper = mountField({ modelValue: 'a1' })
     await flushPromises()

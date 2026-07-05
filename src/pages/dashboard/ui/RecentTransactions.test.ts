@@ -71,9 +71,8 @@ describe('RecentTransactions', () => {
       repositories: { transactions: transactionsRepo },
     })
     await flushPromises()
-    // Empty state shows i18n message — verify the list has 1 empty-state li
-    const items = wrapper.findAll('li')
-    expect(items.length).toBeGreaterThanOrEqual(1)
+    expect(wrapper.find('li.text-gray-500').exists()).toBe(true)
+    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
   })
 
   it('renders error state when query fails', async () => {
@@ -83,8 +82,8 @@ describe('RecentTransactions', () => {
       repositories: { transactions: transactionsRepo },
     })
     await flushPromises()
-    // Error template should render
-    expect(wrapper.findAll('li').length).toBeGreaterThan(0)
+    expect(wrapper.find('li.text-red-500').exists()).toBe(true)
+    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
   })
 
   it('passes limit option to repository.query', async () => {
