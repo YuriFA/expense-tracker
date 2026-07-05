@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/app/router/index.ts",
+    "src/**/*.test.ts",
+    "e2e/**/*.ts",
+    "steiger.config.ts"
+  ],
+  "project": ["src/**/*.{ts,vue}", "!src/**/*.test.ts", "!src/__tests__/helpers/**"],
+  "ignoreIssues": {
+    "src/entities/**/index.ts": ["exports", "types"],
+    "src/features/**/index.ts": ["exports", "types"],
+    "src/shared/ui/**/index.ts": ["exports", "types"],
+    "src/shared/i18n/index.ts": ["exports", "types"],
+    "src/shared/i18n/schema.ts": ["exports", "types"],
+    "src/shared/lib/**/index.ts": ["exports", "types"],
+    "src/pages/**/index.ts": ["exports", "types"],
+    "src/app/**/index.ts": ["exports", "types"]
+  },
+  "ignoreDependencies": ["tailwindcss"],
+  "typescript": {
+    "config": "tsconfig.app.json"
+  }
+}
