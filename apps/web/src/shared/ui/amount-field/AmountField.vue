@@ -14,6 +14,9 @@ const props = withDefaults(
   }>(),
   {
     currency: DEFAULT_CURRENCY,
+    errors: undefined,
+    placeholder: undefined,
+    class: undefined,
   },
 )
 
