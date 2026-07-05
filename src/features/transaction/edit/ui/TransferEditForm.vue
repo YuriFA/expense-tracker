@@ -70,7 +70,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
 
 <template>
   <form id="edit-transfer-form" class="flex flex-col gap-3" @submit="handleSubmit">
-    <div class="flex gap-2">
+    <div class="flex items-end gap-2">
       <VeeField v-slot="{ value, setValue, errors }" name="fromAccountId">
         <AccountSelect
           input-id="from-account-id"
