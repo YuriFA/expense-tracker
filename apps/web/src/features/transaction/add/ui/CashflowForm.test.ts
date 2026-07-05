@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import AddTransactionForm from './AddTransactionForm.vue'
+import CashflowForm from './CashflowForm.vue'
 import type { AccountWithBalance } from '@/entities/account'
 import type { Category } from '@/entities/category'
 import type { CashflowTransaction } from '@/entities/transaction'
@@ -42,7 +42,7 @@ const createdTransaction: CashflowTransaction = {
   categoryId: 'cincome',
 } as never
 
-describe('AddTransactionForm', () => {
+describe('CashflowForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -55,7 +55,7 @@ describe('AddTransactionForm', () => {
     const transactions = createMockTransactionRepository()
     transactions.create.mockResolvedValue(createdTransaction)
 
-    const wrapper = mountWithProviders(AddTransactionForm, {
+    const wrapper = mountWithProviders(CashflowForm, {
       props: { type: 'income', ...props } as never,
       repositories: { accounts, categories, transactions },
     })

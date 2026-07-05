@@ -13,9 +13,9 @@ import { CategorySelect } from '@/entities/category'
 import { useUpdateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
 import {
-  createEditTransactionSchema,
-  type EditTransactionFormValues,
-} from '../model/edit-transaction-schema'
+  createCashflowEditSchema,
+  type CashflowEditValues,
+} from '../model/cashflow-schema'
 
 const emit = defineEmits<{
   success: []
@@ -33,8 +33,8 @@ const { id, type, amount, description, accountId, categoryId } = defineProps<{
 const { mutateAsync: updateTransaction } = useUpdateTransaction<CashflowTransaction>()
 const { t } = useI18n()
 
-const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<EditTransactionFormValues>({
-  validationSchema: toTypedSchema(createEditTransactionSchema()),
+const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<CashflowEditValues>({
+  validationSchema: toTypedSchema(createCashflowEditSchema()),
   initialValues: {
     type,
     amount,

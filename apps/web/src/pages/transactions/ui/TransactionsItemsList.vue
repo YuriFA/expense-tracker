@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import {
   TransactionListItem,
-  isTransferTransaction,
   useTransactions,
-  type CashflowTransaction,
   type Transaction,
 } from '@/entities/transaction'
 import { useAccounts } from '@/entities/account'
 import { useCategories } from '@/entities/category'
 import { useTransactionsFilters } from '../model/use-transactions-filters'
 import { useI18n } from 'vue-i18n'
-import { EditTransactionDialog } from '@/features/edit-transaction'
-import { DeleteTransactionDialog } from '@/features/delete-transaction'
+import { EditTransactionDialog } from '@/features/transaction/edit'
+import { DeleteTransactionDialog } from '@/features/transaction/delete'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,11 +28,10 @@ const { data: categories } = useCategories()
 
 const editOpen = ref(false)
 const deleteOpen = ref(false)
-const activeTransaction = ref<CashflowTransaction | null>(null)
+const activeTransaction = ref<Transaction | null>(null)
 const pendingDeleteId = ref<string | null>(null)
 
 const openEdit = (transaction: Transaction) => {
-  if (isTransferTransaction(transaction)) return
   activeTransaction.value = transaction
   editOpen.value = true
 }
@@ -73,10 +70,7 @@ const openDelete = (transaction: Transaction) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                v-if="!isTransferTransaction(transaction)"
-                @select="openEdit(transaction)"
-              >
+              <DropdownMenuItem @select="openEdit(transaction)">
                 <Pencil class="size-4" />
                 {{ t('editTransaction.trigger') }}
               </DropdownMenuItem>

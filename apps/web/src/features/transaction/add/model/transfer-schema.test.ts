@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { createAddTransferSchema } from './add-transfer-schema'
+import { createTransferSchema } from './transfer-schema'
 
-describe('createAddTransferSchema', () => {
-  const schema = createAddTransferSchema()
+describe('createTransferSchema', () => {
+  const schema = createTransferSchema()
 
   it('accepts valid transfer input', () => {
     const result = schema.safeParse({

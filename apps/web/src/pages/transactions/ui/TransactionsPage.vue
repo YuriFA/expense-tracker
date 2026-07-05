@@ -3,19 +3,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
-import { AddTransactionForm } from '@/features/add-transaction'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { AddTransferForm } from '@/features/add-transfer'
-import { getTransactionsOptions } from '@/entities/transaction'
+import { AddTransactionTabs } from '@/features/transaction/add'
 import TransactionsBrowser from './TransactionsBrowser.vue'
-import { useLastCreatedTransaction } from '@/features/add-transaction'
-import { Spinner } from '@/shared/ui/spinner'
 
 const { t } = useI18n()
-const transactionTypes = getTransactionsOptions()
 const dialogOpen = ref(false)
-const { lastCreatedCashflowTransaction, lastCreatedTransferTransaction, isReady } =
-  useLastCreatedTransaction()
 
 const handleSuccess = () => {
   dialogOpen.value = false
@@ -35,34 +27,7 @@ const handleSuccess = () => {
           <DialogHeader>
             <DialogTitle>{{ t('addTransaction.newTransaction') }}</DialogTitle>
           </DialogHeader>
-          <Tabs v-if="isReady" default-value="expense">
-            <TabsList class="w-full">
-              <TabsTrigger v-for="item in transactionTypes" :key="item.value" :value="item.value">
-                {{ item.label }}
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="expense">
-              <AddTransactionForm
-                type="expense"
-                :last-created-transaction="lastCreatedCashflowTransaction"
-                @success="handleSuccess"
-              />
-            </TabsContent>
-            <TabsContent value="income">
-              <AddTransactionForm
-                type="income"
-                :last-created-transaction="lastCreatedCashflowTransaction"
-                @success="handleSuccess"
-              />
-            </TabsContent>
-            <TabsContent value="transfer">
-              <AddTransferForm
-                :last-created-transaction="lastCreatedTransferTransaction"
-                @success="handleSuccess"
-              />
-            </TabsContent>
-          </Tabs>
-          <Spinner v-else class="mx-auto my-6" />
+          <AddTransactionTabs @success="handleSuccess" />
         </DialogContent>
       </Dialog>
     </div>

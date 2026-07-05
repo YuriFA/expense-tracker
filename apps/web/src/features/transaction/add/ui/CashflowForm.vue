@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
 import {
-  createAddTransactionSchema,
-  type AddTransactionFormValues,
-} from '../model/add-transaction-schema'
+  createCashflowSchema,
+  type CashflowFormValues,
+} from '../model/cashflow-schema'
 import type { CashflowTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
@@ -30,8 +30,8 @@ const { type, lastCreatedTransaction = undefined } = defineProps<{
 const { mutateAsync: createTransaction } = useCreateTransaction<CashflowTransaction>()
 const { t } = useI18n()
 
-const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<AddTransactionFormValues>({
-  validationSchema: toTypedSchema(createAddTransactionSchema()),
+const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<CashflowFormValues>({
+  validationSchema: toTypedSchema(createCashflowSchema()),
   initialValues: {
     type,
     accountId: lastCreatedTransaction?.accountId ?? '',

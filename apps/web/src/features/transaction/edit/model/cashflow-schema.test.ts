@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { createAddTransactionSchema } from './add-transaction-schema'
+import { createCashflowEditSchema } from './cashflow-schema'
 
-describe('createAddTransactionSchema', () => {
-  const schema = createAddTransactionSchema()
+describe('createCashflowEditSchema', () => {
+  const schema = createCashflowEditSchema()
 
   it('accepts valid income input', () => {
     const result = schema.safeParse({

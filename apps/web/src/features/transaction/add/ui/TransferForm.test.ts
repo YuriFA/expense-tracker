@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import AddTransferForm from './AddTransferForm.vue'
+import TransferForm from './TransferForm.vue'
 import type { AccountWithBalance } from '@/entities/account'
 import type { Category } from '@/entities/category'
 import type { TransferTransaction } from '@/entities/transaction'
@@ -26,7 +26,7 @@ const createdTransfer: TransferTransaction = {
   toAccountId: 'a2',
 } as never
 
-describe('AddTransferForm', () => {
+describe('TransferForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -39,7 +39,7 @@ describe('AddTransferForm', () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.create.mockResolvedValue(createdTransfer)
 
-    const wrapper = mountWithProviders(AddTransferForm, {
+    const wrapper = mountWithProviders(TransferForm, {
       props: { ...props } as never,
       repositories: { accounts: accountsRepo, categories: categoriesRepo, transactions: transactionsRepo },
     })

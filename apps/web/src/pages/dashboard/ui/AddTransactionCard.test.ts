@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import AddTransactionCard from './AddTransactionCard.vue'
-import { AddTransactionForm } from '@/features/add-transaction'
-import { AddTransferForm } from '@/features/add-transfer'
+import { CashflowForm, TransferForm } from '@/features/transaction/add'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
 import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
 import { createMockTransactionRepository } from '@/__tests__/helpers/mock-repositories'
@@ -44,7 +43,7 @@ describe('AddTransactionCard', () => {
     })
     await flushPromises()
     // After loading, form components should be present
-    expect(wrapper.findComponent(AddTransactionForm).exists() || wrapper.findComponent(AddTransferForm).exists()).toBe(true)
+    expect(wrapper.findComponent(CashflowForm).exists() || wrapper.findComponent(TransferForm).exists()).toBe(true)
   })
 
   it('renders tabs for each transaction type', async () => {
