@@ -4,6 +4,7 @@ import {
   createTransferSchema,
   type TransferFormValues,
 } from '../model/transfer-schema'
+import { lastAccountIds } from '../model/last-account-ids'
 import type { TransferTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
@@ -22,9 +23,7 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { lastCreatedTransaction = undefined } = defineProps<{
-  lastCreatedTransaction?: TransferTransaction
-}>()
+const initial = lastAccountIds.getTransferAccountIds()
 
 const { mutateAsync: createTransaction } = useCreateTransaction<TransferTransaction>()
 const { t } = useI18n()
@@ -35,8 +34,8 @@ const { handleSubmit: handleFormSubmit, isSubmitting, setFieldError } =
     validationSchema: toTypedSchema(createTransferSchema()),
     initialValues: {
       type: 'transfer',
-      fromAccountId: lastCreatedTransaction?.fromAccountId ?? '',
-      toAccountId: lastCreatedTransaction?.toAccountId ?? '',
+      fromAccountId: initial.fromAccountId ?? '',
+      toAccountId: initial.toAccountId ?? '',
     },
   })
 
@@ -66,6 +65,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       description: data.description,
       occurredAt: nowIsoString(),
     })
+    lastAccountIds.setTransferAccountIds(data.fromAccountId, data.toAccountId)
     notification.success(t('addTransfer.success'))
     emit('success')
   } catch (error) {

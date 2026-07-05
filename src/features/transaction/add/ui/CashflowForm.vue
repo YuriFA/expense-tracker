@@ -4,6 +4,7 @@ import {
   createCashflowSchema,
   type CashflowFormValues,
 } from '../model/cashflow-schema'
+import { lastAccountIds } from '../model/last-account-ids'
 import type { CashflowTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
@@ -23,9 +24,8 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { type, lastCreatedTransaction = undefined } = defineProps<{
+const { type } = defineProps<{
   type: 'expense' | 'income'
-  lastCreatedTransaction?: CashflowTransaction
 }>()
 
 const { mutateAsync: createTransaction } = useCreateTransaction<CashflowTransaction>()
@@ -36,7 +36,7 @@ const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<CashflowFormVal
   validationSchema: toTypedSchema(createCashflowSchema()),
   initialValues: {
     type,
-    accountId: lastCreatedTransaction?.accountId ?? '',
+    accountId: lastAccountIds.getCashflowAccountId() ?? '',
   },
 })
 
@@ -56,6 +56,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       categoryId: data.categoryId,
       occurredAt: nowIsoString(),
     })
+    lastAccountIds.setCashflowAccountId(data.accountId)
     notification.success(t('addTransaction.success'))
     emit('success')
   } catch (error) {

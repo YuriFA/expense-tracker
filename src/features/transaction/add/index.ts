@@ -1,7 +1,6 @@
 export { default as CashflowForm } from './ui/CashflowForm.vue'
 export { default as TransferForm } from './ui/TransferForm.vue'
 export { default as AddTransactionTabs } from './ui/AddTransactionTabs.vue'
-export { useLastCreatedTransaction } from './model/use-transaction-form-data'
 export {
   createCashflowSchema,
   type CashflowFormValues,
@@ -10,3 +9,4 @@ export {
   createTransferSchema,
   type TransferFormValues,
 } from './model/transfer-schema'
+export { lastAccountIds, type LastTransferAccountIds } from './model/last-account-ids'
