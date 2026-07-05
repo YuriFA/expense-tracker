@@ -22,7 +22,6 @@ export function createMockAccountRepository(
     create: vi.fn<AccountRepository['create']>(),
     update: vi.fn<AccountRepository['update']>(),
     remove: vi.fn<AccountRepository['remove']>(),
-    hasReferencingTransactions: vi.fn<AccountRepository['hasReferencingTransactions']>(),
     ...overrides,
   }
 }
@@ -36,7 +35,6 @@ export function createMockCategoryRepository(
     create: vi.fn<CategoryRepository['create']>(),
     update: vi.fn<CategoryRepository['update']>(),
     remove: vi.fn<CategoryRepository['remove']>(),
-    hasReferencingTransactions: vi.fn<CategoryRepository['hasReferencingTransactions']>(),
     ...overrides,
   }
 }

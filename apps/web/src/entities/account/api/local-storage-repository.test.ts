@@ -156,13 +156,4 @@ describe('account localStorage repository', () => {
       expect(stored[0].id).toBe('a2')
     })
   })
-
-  describe('hasReferencingTransactions', () => {
-    it('delegates to injected dep', async () => {
-      const dep = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
-      const repo = createRepository({ hasTransactionsForAccount: dep })
-      expect(await repo.hasReferencingTransactions('a1')).toBe(true)
-      expect(dep).toHaveBeenCalledWith('a1')
-    })
-  })
 })

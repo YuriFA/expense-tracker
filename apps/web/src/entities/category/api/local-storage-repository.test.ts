@@ -146,13 +146,4 @@ describe('category localStorage repository', () => {
       await expect(repo.remove(defaultId)).rejects.toThrow(/not found/)
     })
   })
-
-  describe('hasReferencingTransactions', () => {
-    it('delegates to injected dep', async () => {
-      const dep = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
-      const repo = createRepository({ hasTransactionsForCategory: dep })
-      expect(await repo.hasReferencingTransactions('c1')).toBe(true)
-      expect(dep).toHaveBeenCalledWith('c1')
-    })
-  })
 })
