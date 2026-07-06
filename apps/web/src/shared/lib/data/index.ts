@@ -1,5 +1,5 @@
 export { createLocalStorageAdapter } from './local-storage-adapter'
-export type { Repository, RepositoryErrorMessages } from './repository'
+export type { Repository,  } from './repository'
 export {
   NotFoundError,
   ReferentialIntegrityError,

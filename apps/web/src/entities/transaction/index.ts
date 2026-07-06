@@ -6,16 +6,16 @@ export type {
 } from './model/types'
 export {
   TRANSACTION_REPOSITORY_KEY,
-  useTransactionRepository,
+  
   type TransactionRepository,
-  type CreateTransactionPayload,
-  type UpdateTransactionPayload,
-  type TransactionQuery,
+  
+  
+  
 } from './api/repository'
 export { createLocalStorageTransactionRepository } from './api/local-storage-repository'
 export {
   useTransactions,
-  useTransaction,
+  
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
@@ -23,10 +23,11 @@ export {
 export { getTransactionsOptions } from './model/constants'
 export {
   isTransferTransaction,
-  isTransaction,
-  isTransactionLinkedToAccount,
-  isTransactionLinkedToCategory,
-  hasValidTransactionReferences,
-  normalizeTransaction,
+  
+  
+  
+  
+  
 } from './model/transaction'
 export { default as TransactionListItem } from './ui/TransactionListItem.vue'
+export { createHTTPTransactionRepository } from './api/http-repository'
