@@ -20,7 +20,7 @@ const { transactionId } = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
-const { mutateAsync: deleteTransaction } = useDeleteTransaction()
+const { mutateAsync: deleteTransaction, asyncStatus } = useDeleteTransaction()
 
 const handleConfirm = async () => {
   try {
@@ -51,7 +51,11 @@ const handleConfirm = async () => {
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>{{ t('deleteTransaction.cancel') }}</AlertDialogCancel>
-        <AlertDialogAction variant="destructive" @click="handleConfirm">
+        <AlertDialogAction
+          variant="destructive"
+          :loading="asyncStatus === 'loading'"
+          @click="handleConfirm"
+        >
           {{ t('deleteTransaction.confirm') }}
         </AlertDialogAction>
       </AlertDialogFooter>

@@ -1,22 +1,13 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
-import {
-  createAddAccountSchema,
-  type AddAccountFormValues,
-} from '../model/add-account-schema'
+import { createAddAccountSchema, type AddAccountFormValues } from '../model/add-account-schema'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
 import { Field as VeeField } from 'vee-validate'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { AVAILABLE_CURRENCIES, toMinorUnits } from '@/shared/lib/money'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
@@ -43,7 +34,12 @@ const currencyOptions = computed(() => {
 
 const openingBalancePlaceholder = computed(() => `${(1000).toFixed(2)}`)
 
-const { handleSubmit: handleFormSubmit, setFieldValue, values } = useForm<AddAccountFormValues>({
+const {
+  handleSubmit: handleFormSubmit,
+  setFieldValue,
+  values,
+  isSubmitting,
+} = useForm<AddAccountFormValues>({
   validationSchema: toTypedSchema(createAddAccountSchema()),
   initialValues: {
     name: '',
@@ -148,7 +144,12 @@ const handleSubmit = handleFormSubmit(async (data) => {
         <FieldError v-if="errors.length" :errors="errors" />
       </Field>
     </VeeField>
-    <Button form="add-account-form" type="submit" class="w-full md:ml-auto md:w-auto">
+    <Button
+      form="add-account-form"
+      type="submit"
+      class="w-full md:ml-auto md:w-auto"
+      :loading="isSubmitting"
+    >
       {{ t('addAccount.submit') }}
     </Button>
   </form>
