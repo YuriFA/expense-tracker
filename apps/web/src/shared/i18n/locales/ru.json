@@ -114,21 +114,28 @@
     "errorLoadingTransactions": "Ошибка загрузки транзакций: {error}",
     "noTransactions": "Транзакции не найдены"
   },
+  "fields": {
+    "name": "Название",
+    "openingBalance": "Начальный баланс",
+    "amount": "Сумма",
+    "account": "Счёт",
+    "fromAccount": "Счёт списания",
+    "toAccount": "Счёт зачисления",
+    "category": "Категория",
+    "transactionType": "Тип транзакции",
+    "description": "Описание",
+    "date": "Дата",
+    "currency": "Валюта"
+  },
   "validation": {
-    "nameRequired": "Введите название",
-    "openingBalanceRequired": "Введите начальный баланс",
-    "openingBalanceNonNegative": "Баланс не может быть отрицательным",
-    "transactionTypeRequired": "Выберите тип транзакции",
-    "accountRequired": "Выберите счет",
-    "fromAccountRequired": "Выберите счет списания",
-    "toAccountRequired": "Выберите счет зачисления",
-    "amountRequired": "Введите сумму",
-    "amountPositive": "Сумма должна быть больше нуля",
-    "descriptionInvalid": "Описание должно быть текстом",
-    "categoryRequired": "Выберите категорию",
+    "enter": "Введите {field}",
+    "select": "Выберите {field}",
+    "mustBePositive": "{field} должно быть больше нуля",
+    "mustBeNonNegative": "{field} не может быть отрицательным",
+    "mustBeString": "{field} должно быть текстом",
+    "mustBeDate": "{field} должно быть корректной датой",
     "transferAccountsMustDiffer": "Счета перевода должны отличаться",
-    "transferAccountsMustMatchCurrency": "Счета перевода должны быть в одной валюте",
-    "invalidDate": "Некорректная дата"
+    "transferAccountsMustMatchCurrency": "Счета перевода должны быть в одной валюте"
   },
   "errors": {
     "notFound": "Не найдено",

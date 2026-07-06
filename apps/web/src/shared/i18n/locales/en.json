@@ -114,21 +114,28 @@
     "errorLoadingTransactions": "Error loading transactions: {error}",
     "noTransactions": "No transactions found"
   },
+  "fields": {
+    "name": "Name",
+    "openingBalance": "Opening balance",
+    "amount": "Amount",
+    "account": "Account",
+    "fromAccount": "Source account",
+    "toAccount": "Destination account",
+    "category": "Category",
+    "transactionType": "Transaction type",
+    "description": "Description",
+    "date": "Date",
+    "currency": "Currency"
+  },
   "validation": {
-    "nameRequired": "Enter a name",
-    "openingBalanceRequired": "Enter an opening balance",
-    "openingBalanceNonNegative": "Balance must be non-negative",
-    "transactionTypeRequired": "Select a transaction type",
-    "accountRequired": "Select an account",
-    "fromAccountRequired": "Select a source account",
-    "toAccountRequired": "Select a destination account",
-    "amountRequired": "Enter an amount",
-    "amountPositive": "Amount must be greater than zero",
-    "descriptionInvalid": "Description must be text",
-    "categoryRequired": "Select a category",
+    "enter": "Enter {field}",
+    "select": "Select {field}",
+    "mustBePositive": "{field} must be greater than zero",
+    "mustBeNonNegative": "{field} must be non-negative",
+    "mustBeString": "{field} must be text",
+    "mustBeDate": "{field} must be a valid date",
     "transferAccountsMustDiffer": "Transfer accounts must be different",
-    "transferAccountsMustMatchCurrency": "Transfer accounts must use the same currency",
-    "invalidDate": "Invalid date "
+    "transferAccountsMustMatchCurrency": "Transfer accounts must use the same currency"
   },
   "errors": {
     "notFound": "Not found",

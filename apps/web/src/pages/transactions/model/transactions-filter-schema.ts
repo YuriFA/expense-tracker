@@ -5,20 +5,24 @@ export const createTransactionsFilterSchema = () => {
   const { t } = i18n.global
 
   return z.object({
-    fromDate: z.date({ error: t('validation.invalidDate') }).optional(),
-    toDate: z.date({ error: t('validation.invalidDate') }).optional(),
+    fromDate: z
+      .date({ error: t('validation.mustBeDate', { field: t('fields.date') }) })
+      .optional(),
+    toDate: z
+      .date({ error: t('validation.mustBeDate', { field: t('fields.date') }) })
+      .optional(),
     type: z
       .enum(['expense', 'income', 'transfer'], {
-        message: t('validation.transactionTypeRequired'),
+        message: t('validation.select', { field: t('fields.transactionType') }),
       })
       .optional(),
     accountId: z
-      .string({ error: t('validation.accountRequired') })
-      .min(1, t('validation.accountRequired'))
+      .string({ error: t('validation.select', { field: t('fields.account') }) })
+      .min(1, t('validation.select', { field: t('fields.account') }))
       .optional(),
     categoryId: z
-      .string({ error: t('validation.categoryRequired') })
-      .min(1, t('validation.categoryRequired'))
+      .string({ error: t('validation.select', { field: t('fields.category') }) })
+      .min(1, t('validation.select', { field: t('fields.category') }))
       .optional(),
   })
 }
