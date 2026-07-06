@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  TransactionListItem,
-  useTransactions,
-  type Transaction,
-} from '@/entities/transaction'
+import { TransactionListItem, useTransactions } from '@/entities/transaction'
 import { useAccounts } from '@/entities/account'
 import { useCategories } from '@/entities/category'
 import { useTransactionsFilters } from '../model/use-transactions-filters'
@@ -28,17 +24,12 @@ const { data: categories } = useCategories()
 
 const editOpen = ref(false)
 const deleteOpen = ref(false)
-const activeTransaction = ref<Transaction | null>(null)
-const pendingDeleteId = ref<string | null>(null)
 
-const openEdit = (transaction: Transaction) => {
-  activeTransaction.value = transaction
+const openEdit = () => {
   editOpen.value = true
 }
 
-const openDelete = (transaction: Transaction) => {
-  activeTransaction.value = null
-  pendingDeleteId.value = transaction.id
+const openDelete = () => {
   deleteOpen.value = true
 }
 </script>
@@ -70,29 +61,29 @@ const openDelete = (transaction: Transaction) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem @select="openEdit(transaction)">
+              <DropdownMenuItem @select="openEdit">
                 <Pencil class="size-4" />
                 {{ t('editTransaction.trigger') }}
               </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" @select="openDelete(transaction)">
+              <DropdownMenuItem variant="destructive" @select="openDelete">
                 <Trash2 class="size-4" />
                 {{ t('deleteTransaction.trigger') }}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <EditTransactionDialog
+            v-if="transaction"
+            v-model:open="editOpen"
+            :transaction="transaction"
+          />
+          <DeleteTransactionDialog
+            v-if="transaction"
+            v-model:open="deleteOpen"
+            :transaction-id="transaction?.id"
+          />
         </template>
       </TransactionListItem>
     </template>
-
-    <EditTransactionDialog
-      v-if="activeTransaction"
-      v-model:open="editOpen"
-      :transaction="activeTransaction"
-    />
-    <DeleteTransactionDialog
-      v-if="pendingDeleteId"
-      v-model:open="deleteOpen"
-      :transaction-id="pendingDeleteId"
-    />
   </ul>
 </template>
