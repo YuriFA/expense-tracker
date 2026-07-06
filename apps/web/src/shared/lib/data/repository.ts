@@ -1,10 +1,10 @@
-export type RepositoryErrorCode =
+type RepositoryErrorCode =
   | 'not-found'
   | 'has-references'
   | 'invalid-payload'
   | 'unknown-references'
 
-export class RepositoryError extends Error {
+class RepositoryError extends Error {
   constructor(
     message: string,
     readonly code: RepositoryErrorCode,
