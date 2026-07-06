@@ -18,7 +18,6 @@
     "lint:eslint": "eslint . --fix --cache",
     "knip:lint": "knip",
     "i18n:lint": "ESLINT_I18N_STRICT=1 eslint . --cache",
-    "i18n:translate": "bunx --bun @inlang/cli machine translate --project ./project.inlang",
     "format": "oxfmt src/"
   },
   "dependencies": {
