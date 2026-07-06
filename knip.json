@@ -6,7 +6,7 @@
     "e2e/**/*.ts",
     "steiger.config.ts"
   ],
-  "project": ["src/**/*.{ts,vue}", "!src/**/*.test.ts", "!src/__tests__/helpers/**"],
+  "project": ["src/**/*.{ts,vue}", "!src/**/*.test.ts", "!src/__tests__/helpers/**", "!src/**/*.d.ts"],
   "ignoreIssues": {
     "src/entities/**/index.ts": ["exports", "types"],
     "src/features/**/index.ts": ["exports", "types"],
@@ -17,8 +17,10 @@
     "src/pages/**/index.ts": ["exports", "types"],
     "src/app/**/index.ts": ["exports", "types"]
   },
-  "ignoreDependencies": ["tailwindcss"],
+  "ignoreDependencies": ["tailwindcss", "tw-animate-css"],
   "typescript": {
     "config": "tsconfig.app.json"
   }
 }
+
+

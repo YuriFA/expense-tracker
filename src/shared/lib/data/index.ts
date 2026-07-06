@@ -1,11 +1,6 @@
 export { createLocalStorageAdapter } from './local-storage-adapter'
-export type {
-  Repository,
-  RepositoryErrorCode,
-  RepositoryErrorMessages,
-} from './repository'
+export type { Repository, RepositoryErrorMessages } from './repository'
 export {
-  RepositoryError,
   NotFoundError,
   ReferentialIntegrityError,
   InvalidPayloadError,

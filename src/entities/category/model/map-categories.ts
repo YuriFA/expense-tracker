@@ -1,7 +1,7 @@
 import i18n from '@/shared/i18n'
 import type { Category } from './types'
 
-export const getCategoryNameBySlug = (slug: string): string => {
+const getCategoryNameBySlug = (slug: string): string => {
   const { t } = i18n.global
 
   switch (slug) {
