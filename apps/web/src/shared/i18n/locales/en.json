@@ -41,6 +41,16 @@
     "success": "Account added",
     "error": "Error adding account"
   },
+  "editAccount": {
+    "title": "Edit account",
+    "trigger": "Edit account",
+    "nameLabel": "Name",
+    "namePlaceholder": "Account name",
+    "openingBalanceLabel": "Balance adjustment",
+    "submit": "Save changes",
+    "success": "Account updated",
+    "error": "Error updating account"
+  },
   "deleteAccount": {
     "trigger": "Delete account",
     "confirmDelete": "Are you sure you want to delete this account?",

@@ -4,7 +4,7 @@ import type { Repository } from '@/shared/lib/data'
 
 export type CreateAccountPayload = Omit<Account, 'id' | 'manualAdjustment'> &
   Partial<Pick<Account, 'id'>>
-export type UpdateAccountPayload = Partial<Omit<Account, 'id' | 'currency'>>
+export type UpdateAccountPayload = Partial<Omit<Account, 'id' | 'currency' | 'openingBalance'>>
 
 export type AccountRepository = Repository<
   AccountWithBalance,

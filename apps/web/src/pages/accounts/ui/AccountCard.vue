@@ -13,7 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { Button } from '@/shared/ui/button'
-import { MoreVertical, Trash2 } from '@lucide/vue'
+import { MoreVertical, Pencil, Trash2 } from '@lucide/vue'
+import EditAccountDialog from '../features/edit-account/ui/EditAccountDialog.vue'
 
 const { account } = defineProps<{
   account: AccountWithBalance
@@ -24,6 +25,7 @@ const { locale, t } = useI18n()
 const format = (value: number) => formatMoney(value, account.currency, locale.value)
 
 const deleteDialogOpen = ref(false)
+const editDialogOpen = ref(false)
 </script>
 
 <template>
@@ -47,6 +49,10 @@ const deleteDialogOpen = ref(false)
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem @select="editDialogOpen = true">
+              <Pencil class="size-4" />
+              {{ t('editAccount.trigger') }}
+            </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" @select="deleteDialogOpen = true">
               <Trash2 class="size-4" />
               {{ t('deleteAccount.trigger') }}
@@ -60,5 +66,6 @@ const deleteDialogOpen = ref(false)
     </CardContent>
   </Card>
 
+  <EditAccountDialog v-model:open="editDialogOpen" :account="account" />
   <DeleteAccountDialog v-model:open="deleteDialogOpen" :account-id="account.id" />
 </template>
