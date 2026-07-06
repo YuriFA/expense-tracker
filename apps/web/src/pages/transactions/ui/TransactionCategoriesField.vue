@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useCategories } from '@/entities/category'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -20,7 +21,7 @@ const props = defineProps<{
 const modelValue = defineModel<string | undefined>()
 
 const { t } = useI18n()
-const { data: categories } = useCategories()
+const { data: categories, error, isLoading } = useCategories()
 
 const filteredCategories = computed(() => {
   if (props.type === undefined) {
@@ -42,7 +43,20 @@ const filteredCategories = computed(() => {
         <SelectValue :placeholder="t('transactions.filters.categoryPlaceholder')" />
       </SelectTrigger>
       <SelectContent position="item-aligned">
-        <SelectItem v-for="category in filteredCategories" :key="category.id" :value="category.id">
+        <template v-if="isLoading">
+          <div v-for="n in 3" :key="n" class="px-8 py-2">
+            <Skeleton class="h-4 w-full" />
+          </div>
+        </template>
+        <div v-else-if="error" class="px-8 py-2 text-sm text-muted-foreground">
+          {{ t('common.errorState.title') }}
+        </div>
+        <SelectItem
+          v-for="category in filteredCategories"
+          v-else
+          :key="category.id"
+          :value="category.id"
+        >
           {{ category.icon }} {{ category.name }}
         </SelectItem>
       </SelectContent>

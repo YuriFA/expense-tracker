@@ -28,6 +28,8 @@ const transactions: CashflowTransaction[] = [
   } as never,
 ]
 
+const neverResolves = () => new Promise<never>(() => {})
+
 describe('RecentTransactions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -35,21 +37,11 @@ describe('RecentTransactions', () => {
 
   it('renders loading skeletons initially', async () => {
     const transactionsRepo = createMockTransactionRepository()
-    transactionsRepo.query.mockReturnValue(new Promise<never>(() => {}))
-    const wrapper = mountWithProviders(RecentTransactions, {
-      repositories: { transactions: transactionsRepo },
-    })
-    await flushPromises()
-    // Loading skeletons rendered as li elements with animate-pulse
-    const skeletons = wrapper.findAll('li.animate-pulse')
-    expect(skeletons.length).toBeGreaterThan(0)
-  })
-
-  it('renders transactions after data loads', async () => {
-    const transactionsRepo = createMockTransactionRepository()
-    transactionsRepo.query.mockResolvedValue(transactions)
+    transactionsRepo.query.mockReturnValue(neverResolves())
     const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockReturnValue(neverResolves())
     const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockReturnValue(neverResolves())
 
     const wrapper = mountWithProviders(RecentTransactions, {
       repositories: {
@@ -59,7 +51,26 @@ describe('RecentTransactions', () => {
       },
     })
     await flushPromises()
-    // At least the description text should be present
+    const skeletons = wrapper.findAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
+  })
+
+  it('renders transactions after data loads', async () => {
+    const transactionsRepo = createMockTransactionRepository()
+    transactionsRepo.query.mockResolvedValue(transactions)
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
+
+    const wrapper = mountWithProviders(RecentTransactions, {
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
+    })
+    await flushPromises()
     expect(wrapper.text()).toContain('Salary')
     expect(wrapper.text()).toContain('Lunch')
   })
@@ -67,30 +78,56 @@ describe('RecentTransactions', () => {
   it('renders empty state when no transactions', async () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.query.mockResolvedValue([])
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
+
     const wrapper = mountWithProviders(RecentTransactions, {
-      repositories: { transactions: transactionsRepo },
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
     })
     await flushPromises()
     expect(wrapper.find('li.text-gray-500').exists()).toBe(true)
-    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
+    expect(wrapper.find('.animate-pulse').exists()).toBe(false)
   })
 
   it('renders error state when query fails', async () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.query.mockRejectedValue(new Error('Network error'))
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
+
     const wrapper = mountWithProviders(RecentTransactions, {
-      repositories: { transactions: transactionsRepo },
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
     })
     await flushPromises()
-    expect(wrapper.find('li.text-red-500').exists()).toBe(true)
-    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Failed to load')
+    expect(wrapper.find('.animate-pulse').exists()).toBe(false)
   })
 
   it('passes limit option to repository.query', async () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.query.mockResolvedValue([])
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
     mountWithProviders(RecentTransactions, {
-      repositories: { transactions: transactionsRepo },
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
     })
     await flushPromises()
     expect(transactionsRepo.query).toHaveBeenCalledWith({ limit: 5 })

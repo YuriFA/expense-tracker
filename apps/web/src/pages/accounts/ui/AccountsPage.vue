@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { useAccounts } from '@/entities/account'
+import { useAccounts, AccountCardSkeleton } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/shared/ui/card'
 import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
+import { ErrorState } from '@/shared/ui/error-state'
 import { computed } from 'vue'
 import { AddAccountDialog } from '../features/add-account'
 
 const { t, locale } = useI18n()
-const { data } = useAccounts()
+const { data, error, isLoading, refetch } = useAccounts()
 
 const totalsByCurrency = computed(() => {
   const totals = new Map<CurrencyCode, number>()
@@ -53,9 +54,19 @@ const format = (value: number, currency: CurrencyCode) =>
     </Card>
 
     <ul class="mt-6 grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 flex-wrap">
-      <li v-for="account in data" :key="account.id">
-        <AccountCard :account />
+      <template v-if="isLoading">
+        <li v-for="n in 3" :key="n">
+          <AccountCardSkeleton />
+        </li>
+      </template>
+      <li v-else-if="error" class="col-span-full">
+        <ErrorState @retry="refetch" />
       </li>
+      <template v-else>
+        <li v-for="account in data" :key="account.id">
+          <AccountCard :account />
+        </li>
+      </template>
     </ul>
   </section>
 </template>

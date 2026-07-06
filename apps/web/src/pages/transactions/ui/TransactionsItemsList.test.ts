@@ -19,6 +19,8 @@ const transactions: CashflowTransaction[] = [
   } as never,
 ]
 
+const neverResolves = () => new Promise<never>(() => {})
+
 describe('TransactionsItemsList', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -26,12 +28,21 @@ describe('TransactionsItemsList', () => {
 
   it('renders loading skeletons initially', async () => {
     const transactionsRepo = createMockTransactionRepository()
-    transactionsRepo.query.mockReturnValue(new Promise<never>(() => {}))
+    transactionsRepo.query.mockReturnValue(neverResolves())
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockReturnValue(neverResolves())
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockReturnValue(neverResolves())
+
     const wrapper = mountWithProviders(TransactionsItemsList, {
-      repositories: { transactions: transactionsRepo },
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
     })
     await flushPromises()
-    const skeletons = wrapper.findAll('li.animate-pulse')
+    const skeletons = wrapper.findAll('.animate-pulse')
     expect(skeletons.length).toBeGreaterThan(0)
   })
 
@@ -39,7 +50,9 @@ describe('TransactionsItemsList', () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.query.mockResolvedValue(transactions)
     const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
     const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
 
     const wrapper = mountWithProviders(TransactionsItemsList, {
       repositories: {
@@ -55,22 +68,40 @@ describe('TransactionsItemsList', () => {
   it('renders empty state when no transactions', async () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.query.mockResolvedValue([])
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
+
     const wrapper = mountWithProviders(TransactionsItemsList, {
-      repositories: { transactions: transactionsRepo },
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
     })
     await flushPromises()
     expect(wrapper.find('li.text-gray-500').exists()).toBe(true)
-    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
+    expect(wrapper.find('.animate-pulse').exists()).toBe(false)
   })
 
   it('renders error state when query fails', async () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.query.mockRejectedValue(new Error('fail'))
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
+
     const wrapper = mountWithProviders(TransactionsItemsList, {
-      repositories: { transactions: transactionsRepo },
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
     })
     await flushPromises()
-    expect(wrapper.find('li.text-red-500').exists()).toBe(true)
-    expect(wrapper.find('li.animate-pulse').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Failed to load')
+    expect(wrapper.find('.animate-pulse').exists()).toBe(false)
   })
 })

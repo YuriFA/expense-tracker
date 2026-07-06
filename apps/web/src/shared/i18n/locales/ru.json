@@ -1,6 +1,10 @@
 {
   "common": {
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "errorState": {
+      "title": "Не удалось загрузить",
+      "retry": "Повторить"
+    }
   },
   "nav": {
     "dashboard": "Дашборд",
@@ -121,7 +125,6 @@
       "apply": "Применить",
       "pickDate": "Выберите дату"
     },
-    "errorLoadingTransactions": "Ошибка загрузки транзакций: {error}",
     "noTransactions": "Транзакции не найдены"
   },
   "fields": {

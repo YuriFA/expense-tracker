@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import {
   TransactionListItem,
+  TransactionListItemSkeleton,
   useTransactions,
   type Transaction,
 } from '@/entities/transaction'
@@ -9,6 +10,7 @@ import { useAccounts } from '@/entities/account'
 import { useCategories } from '@/entities/category'
 import { EditTransactionDialog } from '@/features/transaction/edit'
 import { DeleteTransactionDialog } from '@/features/transaction/delete'
+import { ErrorState } from '@/shared/ui/error-state'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +19,38 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { Button } from '@/shared/ui/button'
 import { MoreVertical, Pencil, Trash2 } from '@lucide/vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const { t } = useI18n()
-const { data, error, isLoading } = useTransactions({ limit: 5 })
-const { data: accounts } = useAccounts()
-const { data: categories } = useCategories()
+const {
+  data,
+  error: transactionsError,
+  isLoading: isLoadingTx,
+  refetch: refetchTx,
+} = useTransactions({ limit: 5 })
+const {
+  data: accounts,
+  error: accountsError,
+  isLoading: isLoadingAccounts,
+  refetch: refetchAccounts,
+} = useAccounts()
+const {
+  data: categories,
+  error: categoriesError,
+  isLoading: isLoadingCats,
+  refetch: refetchCats,
+} = useCategories()
+
+const isLoading = computed(
+  () => isLoadingTx.value || isLoadingAccounts.value || isLoadingCats.value,
+)
+const error = computed(
+  () =>
+    transactionsError.value || accountsError.value || categoriesError.value,
+)
+
+const refetch = () =>
+  Promise.all([refetchTx(), refetchAccounts(), refetchCats()])
 
 const editOpen = ref(false)
 const deleteOpen = ref(false)
@@ -44,14 +72,14 @@ const openDelete = (transaction: Transaction) => {
 <template>
   <ul class="space-y-2">
     <template v-if="isLoading">
-      <li v-for="n in 5" :key="n" class="h-12 bg-gray-200 rounded animate-pulse"></li>
+      <TransactionListItemSkeleton v-for="n in 5" :key="n" />
     </template>
-    <template v-else-if="error">
-      <li class="text-red-500">{{ t('transactions.errorLoadingTransactions', { error }) }}</li>
-    </template>
-    <template v-else-if="data && data.length === 0">
-      <li class="text-gray-500">{{ t('transactions.noTransactions') }}</li>
-    </template>
+    <li v-else-if="error">
+      <ErrorState @retry="refetch" />
+    </li>
+    <li v-else-if="data && data.length === 0" class="text-gray-500">
+      {{ t('transactions.noTransactions') }}
+    </li>
     <template v-else>
       <TransactionListItem
         v-for="item in data"

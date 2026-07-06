@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useAccounts } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 
@@ -17,7 +18,7 @@ defineProps<{
 
 const modelValue = defineModel<string | undefined>()
 
-const { data } = useAccounts()
+const { data, error, isLoading } = useAccounts()
 const { t } = useI18n()
 </script>
 
@@ -29,7 +30,15 @@ const { t } = useI18n()
         <SelectValue :placeholder="t('transactions.filters.accountPlaceholder')" />
       </SelectTrigger>
       <SelectContent position="item-aligned">
-        <SelectItem v-for="item in data" :key="item.id" :value="item.id">
+        <template v-if="isLoading">
+          <div v-for="n in 3" :key="n" class="px-8 py-2">
+            <Skeleton class="h-4 w-full" />
+          </div>
+        </template>
+        <div v-else-if="error" class="px-8 py-2 text-sm text-muted-foreground">
+          {{ t('common.errorState.title') }}
+        </div>
+        <SelectItem v-for="item in data" v-else :key="item.id" :value="item.id">
           {{ item.name }}
         </SelectItem>
       </SelectContent>

@@ -1,6 +1,10 @@
 {
   "common": {
-    "close": "Close"
+    "close": "Close",
+    "errorState": {
+      "title": "Failed to load",
+      "retry": "Retry"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -121,7 +125,6 @@
       "apply": "Apply",
       "pickDate": "Pick a date"
     },
-    "errorLoadingTransactions": "Error loading transactions: {error}",
     "noTransactions": "No transactions found"
   },
   "fields": {

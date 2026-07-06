@@ -30,4 +30,5 @@ export {
   
 } from './model/transaction'
 export { default as TransactionListItem } from './ui/TransactionListItem.vue'
+export { default as TransactionListItemSkeleton } from './ui/TransactionListItemSkeleton.vue'
 export { createHTTPTransactionRepository } from './api/http-repository'

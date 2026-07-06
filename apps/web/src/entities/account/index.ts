@@ -15,4 +15,5 @@ export {
   useDeleteAccount,
 } from './model/use-accounts'
 export { default as AccountSelect } from './ui/AccountSelect.vue'
+export { default as AccountCardSkeleton } from './ui/AccountCardSkeleton.vue'
 export { createHTTPAccountRepository } from './api/http-repository'
