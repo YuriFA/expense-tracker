@@ -7,11 +7,10 @@ import i18n from './shared/i18n'
 import router from './app/router'
 import { provideRepositories } from './app/repositories'
 import './style.css'
-import { maskito } from '@maskito/vue'
 import { useSettingsStore } from './shared/store/use-settings-store'
 import { setupI18nLocaleWatcher } from './app/setup-i18n-locale-watcher'
 
-const app = createApp(App).directive('maskito', maskito)
+const app = createApp(App)
 const pinia = createPinia()
 const settingsStore = useSettingsStore(pinia)
 const { locale } = storeToRefs(settingsStore)
