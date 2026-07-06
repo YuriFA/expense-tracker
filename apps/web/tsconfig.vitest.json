@@ -7,9 +7,8 @@
   "exclude": [],
 
   "compilerOptions": {
-    // Vitest runs in a different environment than the application code.
-    // Adjust lib and types accordingly.
-    "lib": ["ESNext.Intl"],
+    // Vitest runs in jsdom + Node, keep the runtime + DOM libs from the app
+    // config and add Intl. Specifying lib replaces the inherited value, so
     "types": ["node", "jsdom"],
 
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.
