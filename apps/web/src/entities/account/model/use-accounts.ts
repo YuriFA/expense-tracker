@@ -5,6 +5,8 @@ import {
 } from '../api/repository'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
+import { useOptimisticMutation, type OptimisticPatch } from '@/shared/lib/use-optimistic-mutation'
+import type { AccountWithBalance } from './types'
 
 export const useAccounts = () => {
   const accounts = useAccountRepository()
@@ -35,26 +37,46 @@ export const useCreateAccount = () => {
 }
 
 export const useUpdateAccount = () => {
-  const queryCache = useQueryCache()
   const accounts = useAccountRepository()
-  return useMutation({
-    mutation: ({ id, payload }: { id: string; payload: UpdateAccountPayload }) => {
-      return accounts.update(id, payload)
+  return useOptimisticMutation<{ id: string; payload: UpdateAccountPayload }, AccountWithBalance>({
+    mutation: ({ id, payload }) => accounts.update(id, payload),
+    optimistic: ({ id, payload }) => {
+      // manualAdjustment меняет баланс — не делаем optimistic update, чтобы не было рассинхрона с сервером
+      if ('manualAdjustment' in payload) return []
+      const patches: OptimisticPatch[] = [
+        {
+          key: ['accounts'],
+          updater: (current) =>
+            (current as AccountWithBalance[] | undefined)?.map((account) =>
+              account.id === id ? { ...account, ...payload } : account,
+            ),
+        },
+        {
+          key: ['accounts', id],
+          updater: (current) =>
+            current === undefined ? undefined : { ...(current as AccountWithBalance), ...payload },
+        },
+      ]
+      return patches
     },
-    onSettled: (_data, _errors, { id }) => {
-      queryCache.invalidateQueries({ key: ['accounts', id] })
-      queryCache.invalidateQueries({ key: ['accounts'] })
-    },
+    invalidateKeys: () => [['accounts']],
   })
 }
 
 export const useDeleteAccount = () => {
-  const queryCache = useQueryCache()
   const accounts = useAccountRepository()
-  return useMutation({
-    mutation: (id: string) => accounts.remove(id),
-    onSettled: () => {
-      queryCache.invalidateQueries({ key: ['accounts'] })
-    },
+  return useOptimisticMutation<string, void>({
+    mutation: (id) => accounts.remove(id),
+    optimistic: (id) => [
+      {
+        key: ['accounts'],
+        updater: (current) =>
+          (current as AccountWithBalance[] | undefined)?.filter((account) => account.id !== id),
+      },
+      {
+        key: ['accounts', id],
+        updater: () => undefined,
+      },
+    ],
   })
 }

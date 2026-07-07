@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import { useQueryCache } from '@pinia/colada'
 import type { Category } from './types'
 import {
   useCategories,
@@ -110,6 +111,40 @@ describe('useUpdateCategory', () => {
     await result.mutateAsync({ id: 'c1', payload: { name: 'Updated' } })
     expect(repo.update).toHaveBeenCalledWith('c1', { name: 'Updated' })
   })
+
+  it('optimistically patches category in list and detail caches', async () => {
+    const repo = createMockCategoryRepository()
+    repo.update.mockResolvedValue({ ...categoryFixture, name: 'Updated' })
+    const { result } = mountWithComposable(() => {
+      const queryCache = useQueryCache()
+      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
+      queryCache.setQueryData<Category>(['categories', 'c1'], categoryFixture)
+      return { mutation: useUpdateCategory(), queryCache }
+    }, { repositories: { categories: repo } })
+
+    await result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated' } })
+    await flushPromises()
+
+    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.[0]?.name).toBe('Updated')
+    expect(result.queryCache.getQueryData<Category>(['categories', 'c1'])?.name).toBe('Updated')
+  })
+
+  it('rolls back list cache on error', async () => {
+    const repo = createMockCategoryRepository()
+    repo.update.mockRejectedValue(new Error('boom'))
+    const { result } = mountWithComposable(() => {
+      const queryCache = useQueryCache()
+      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
+      return { mutation: useUpdateCategory(), queryCache }
+    }, { repositories: { categories: repo } })
+
+    await expect(
+      result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated' } }),
+    ).rejects.toThrow('boom')
+    await flushPromises()
+
+    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.[0]?.name).toBe('Food')
+  })
 })
 
 describe('useDeleteCategory', () => {
@@ -121,5 +156,38 @@ describe('useDeleteCategory', () => {
     })
     await result.mutateAsync('c1')
     expect(repo.remove).toHaveBeenCalledWith('c1')
+  })
+
+  it('optimistically removes category from list and detail caches', async () => {
+    const repo = createMockCategoryRepository()
+    repo.remove.mockResolvedValue(undefined)
+    const otherCategory: Category = { ...categoryFixture, id: 'c2' }
+    const { result } = mountWithComposable(() => {
+      const queryCache = useQueryCache()
+      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture, otherCategory])
+      queryCache.setQueryData<Category>(['categories', 'c1'], categoryFixture)
+      return { mutation: useDeleteCategory(), queryCache }
+    }, { repositories: { categories: repo } })
+
+    await result.mutation.mutateAsync('c1')
+    await flushPromises()
+
+    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual(['c2'])
+    expect(result.queryCache.getQueryData(['categories', 'c1'])).toBeUndefined()
+  })
+
+  it('rolls back list cache on error', async () => {
+    const repo = createMockCategoryRepository()
+    repo.remove.mockRejectedValue(new Error('boom'))
+    const { result } = mountWithComposable(() => {
+      const queryCache = useQueryCache()
+      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
+      return { mutation: useDeleteCategory(), queryCache }
+    }, { repositories: { categories: repo } })
+
+    await expect(result.mutation.mutateAsync('c1')).rejects.toThrow('boom')
+    await flushPromises()
+
+    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual(['c1'])
   })
 })

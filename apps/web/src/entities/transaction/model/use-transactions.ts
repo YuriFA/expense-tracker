@@ -7,6 +7,7 @@ import {
 } from '../api/repository'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
+import { useOptimisticMutation } from '@/shared/lib/use-optimistic-mutation'
 
 type GetTransactionsOptions = TransactionQuery
 
@@ -60,16 +61,22 @@ export const useUpdateTransaction = <T extends Transaction>() => {
 }
 
 export const useDeleteTransaction = () => {
-  const queryCache = useQueryCache()
   const transactions = useTransactionRepository()
-  return useMutation({
-    mutation: (id: string) => {
-      return transactions.remove(id)
-    },
-    onSettled: (_data, _errors, id) => {
-      queryCache.invalidateQueries({ key: ['transactions', id] })
-      queryCache.invalidateQueries({ key: ['transactions'] })
-      queryCache.invalidateQueries({ key: ['accounts'] })
-    },
+  return useOptimisticMutation<string, void>({
+    mutation: (id) => transactions.remove(id),
+    optimistic: (id) => [
+      {
+        keyPrefix: ['transactions'],
+        updater: (current) =>
+          Array.isArray(current)
+            ? current.filter((transaction) => transaction.id !== id)
+            : current,
+      },
+      {
+        key: ['transactions', id],
+        updater: () => undefined,
+      },
+    ],
+    invalidateKeys: () => [['accounts']],
   })
 }
