@@ -81,7 +81,7 @@ describe('TransactionsItemsList', () => {
       },
     })
     await flushPromises()
-    expect(wrapper.find('li.text-gray-500').exists()).toBe(true)
+    expect(wrapper.text()).toContain('No transactions found')
     expect(wrapper.find('.animate-pulse').exists()).toBe(false)
   })
 

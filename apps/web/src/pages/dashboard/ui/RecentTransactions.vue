@@ -11,6 +11,7 @@ import { useCategories } from '@/entities/category'
 import { EditTransactionDialog } from '@/features/transaction/edit'
 import { DeleteTransactionDialog } from '@/features/transaction/delete'
 import { ErrorState } from '@/shared/ui/error-state'
+import { EmptyState } from '@/shared/ui/empty-state'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,8 +78,8 @@ const openDelete = (transaction: Transaction) => {
     <li v-else-if="error">
       <ErrorState @retry="refetch" />
     </li>
-    <li v-else-if="data && data.length === 0" class="text-gray-500">
-      {{ t('transactions.noTransactions') }}
+    <li v-else-if="data && data.length === 0">
+      <EmptyState :title="t('transactions.noTransactions')" />
     </li>
     <template v-else>
       <TransactionListItem

@@ -187,7 +187,9 @@
   },
   "accounts": {
     "description": "Manage your accounts and balances",
-    "totalBalance": "Total Balance"
+    "totalBalance": "Total Balance",
+    "noAccounts": "No accounts yet",
+    "noAccountsDescription": "Add your first account to start tracking"
   },
   "settings": {
     "currency": "Currency",

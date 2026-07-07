@@ -187,7 +187,9 @@
   },
   "accounts": {
     "description": "Управление счетами и балансами",
-    "totalBalance": "Общий баланс"
+    "totalBalance": "Общий баланс",
+    "noAccounts": "Счетов пока нет",
+    "noAccountsDescription": "Добавьте первый счёт, чтобы начать учёт"
   },
   "settings": {
     "currency": "Валюта",

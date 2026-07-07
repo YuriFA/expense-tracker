@@ -5,6 +5,7 @@ import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/shared/ui/card'
 import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
 import { ErrorState } from '@/shared/ui/error-state'
+import { EmptyState } from '@/shared/ui/empty-state'
 import { computed } from 'vue'
 import { AddAccountDialog } from '../features/add-account'
 
@@ -61,6 +62,12 @@ const format = (value: number, currency: CurrencyCode) =>
       </template>
       <li v-else-if="error" class="col-span-full">
         <ErrorState @retry="refetch" />
+      </li>
+      <li v-else-if="data && data.length === 0" class="col-span-full">
+        <EmptyState
+          :title="t('accounts.noAccounts')"
+          :description="t('accounts.noAccountsDescription')"
+        />
       </li>
       <template v-else>
         <li v-for="account in data" :key="account.id">
