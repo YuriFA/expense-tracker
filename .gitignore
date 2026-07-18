@@ -1,5 +1,6 @@
 .env
 /storage/
+/data/
 /backups/
 /tmp
 *.log
