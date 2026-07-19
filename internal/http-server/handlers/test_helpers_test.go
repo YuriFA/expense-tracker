@@ -42,8 +42,12 @@ func setupTestEnv(t *testing.T) (*gin.Engine, *sqlite.Storage) {
 			Secure:     false,
 			SameSite:   "lax",
 		},
+		FailureRateLimit: config.FailureRateLimit{
+			MaxAttempts:     5,
+			LockoutDuration: time.Minute,
+		},
 	}
-	h := handlers.NewHandler(log, db, cfg, auth.NewLoginRateLimiter(5, time.Minute))
+	h := handlers.NewHandler(log, db, cfg)
 	return httpserver.NewRouter(log, db, h, cfg), db
 }
 

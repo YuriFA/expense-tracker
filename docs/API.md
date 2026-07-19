@@ -104,7 +104,7 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 Ошибки:
 - `409 USER_ALREADY_EXISTS` — email занят.
 - `400 VALIDATION_FAILED` — невалидный input.
-- `429 TOO_MANY_REQUESTS` — превышен лимит регистраций с IP (10/час).
+- `429 TOO_MANY_REQUESTS` — превышен лимит регистраций с IP (TODO, пока не реализован).
 
 ### POST /api/auth/login
 
@@ -120,7 +120,7 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 
 Ошибки:
 - `401 INVALID_CREDENTIALS` — неверный email или пароль (единый ответ, не раскрывает что именно).
-- `429 TOO_MANY_REQUESTS` — 5 неудачных попыток в 5 минут.
+- `429 TOO_MANY_REQUESTS` — 5 неудачных попыток в 15 минут с одного IP.
 
 ### POST /api/auth/logout
 
@@ -368,9 +368,19 @@ Transfer:
 
 ## Rate limits
 
-- **Login:** 5 неудачных попыток в 5 минут на email → 429.
-- **Register:** 10 регистраций в час на IP → 429.
+- **Login:** 5 неудачных попыток в 15 минут с IP → 429. После 5й неудачной попытки
+  IP блокируется на 15 минут; успешный вход сбрасывает счётчик. Заголовок
+  `Retry-After` содержит количество секунд до разблокировки.
+- **Register:** без лимита (пока, TODO).
 - **Остальные endpoints:** без rate limit (пока).
+
+### Trusted proxies и X-Forwarded-For
+
+По умолчанию `trusted_proxies` пустой — IP клиента берётся из TCP-соединения
+(`RemoteAddr`), заголовки `X-Forwarded-For` / `X-Real-IP` **игнорируются**.
+Это защищает от спуфинга IP через заголовки (см. [go-chi/httprate advisory](https://github.com/go-chi/httprate/security/advisories)
+и GHSA-9g5q-2w5x-hmxf): атакующий не может ни крутить заголовок для обхода лимита,
+ни подставить чужой IP, чтобы заблокировать жертву по 429.
 
 ---
 

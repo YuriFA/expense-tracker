@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yurifa/expense-tracker-api/internal/auth"
 	"github.com/yurifa/expense-tracker-api/internal/config"
 	httpserver "github.com/yurifa/expense-tracker-api/internal/http-server"
 	"github.com/yurifa/expense-tracker-api/internal/http-server/handlers"
@@ -50,11 +49,7 @@ func run(cfg *config.Config, log *slog.Logger) error {
 	cleanupExpired(context.Background(), db, log)
 	log.Info("Storage initialized")
 
-	rl := auth.NewLoginRateLimiter(
-		cfg.LoginRateLimit.MaxAttempts,
-		cfg.LoginRateLimit.LockoutDuration,
-	)
-	h := handlers.NewHandler(log, db, &cfg.HTTPServer, rl)
+	h := handlers.NewHandler(log, db, &cfg.HTTPServer)
 	router := httpserver.NewRouter(log, db, h, &cfg.HTTPServer)
 
 	log.Info("Starting server", slog.String("address", cfg.Address))

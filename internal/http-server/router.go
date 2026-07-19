@@ -47,6 +47,11 @@ func NewRouter(
 	})
 
 	router := gin.New()
+	err := router.SetTrustedProxies(cfg.TrustedProxies)
+	if err != nil {
+		panic("failed to set trusted proxies: " + err.Error())
+	}
+
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CorsConfig.AllowedOrigins,
 		AllowMethods:     cfg.CorsConfig.AllowedMethods,
@@ -59,12 +64,20 @@ func NewRouter(
 	router.Use(gin.Recovery())
 	router.Use(middleware.SlogLogger(log))
 
+	authRL := middleware.NewFailureRateLimiter(
+		cfg.FailureRateLimit.MaxAttempts,
+		cfg.FailureRateLimit.LockoutDuration,
+	)
+
 	api := router.Group("/api")
 	{
+		// Rate limiter is attached to /login only. Applying it to the whole
+		// /auth group would let an attacker reset their budget by calling
+		// /logout (which returns 204 unconditionally, even without a session).
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", handlers.Register)
-			auth.POST("/login", handlers.Login)
+			auth.POST("/login", middleware.RateLimit(authRL), handlers.Login)
 			auth.POST("/logout", handlers.Logout)
 		}
 
@@ -85,7 +98,11 @@ func NewRouter(
 			private.DELETE("/categories/:id", handlers.DeleteCategory)
 
 			private.GET("/transactions", handlers.ListTransactions)
-			private.POST("/transactions", middleware.Idempotency(db, log), handlers.CreateTransaction)
+			private.POST(
+				"/transactions",
+				middleware.Idempotency(db, log),
+				handlers.CreateTransaction,
+			)
 			private.GET("/transactions/:id", handlers.GetTransaction)
 			private.PATCH("/transactions/:id", handlers.UpdateTransaction)
 			private.DELETE("/transactions/:id", handlers.DeleteTransaction)

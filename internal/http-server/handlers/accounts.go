@@ -44,7 +44,12 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 	})
 	if err != nil {
 		log.Error("failed to create account", logger.Error(err))
-		httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to create account")
+		httperr.Write(
+			c,
+			http.StatusInternalServerError,
+			httperr.ErrCodeInternal,
+			"failed to create account",
+		)
 		return
 	}
 
@@ -64,24 +69,44 @@ func (h *Handler) UpdateAccount(c *gin.Context) {
 	}
 
 	if req.Name == nil && req.ManualAdjustment == nil {
-		httperr.Write(c, http.StatusBadRequest, httperr.ErrCodeValidationFailed, "no fields to update")
+		httperr.Write(
+			c,
+			http.StatusBadRequest,
+			httperr.ErrCodeValidationFailed,
+			"no fields to update",
+		)
 		return
 	}
 
 	id := c.Param("id")
-	account, err := h.DB.UpdateAccount(c.Request.Context(), user.ID, id, storage.UpdateAccountParams{
-		Name:             req.Name,
-		ManualAdjustment: req.ManualAdjustment,
-	})
+	account, err := h.DB.UpdateAccount(
+		c.Request.Context(),
+		user.ID,
+		id,
+		storage.UpdateAccountParams{
+			Name:             req.Name,
+			ManualAdjustment: req.ManualAdjustment,
+		},
+	)
 	if err != nil {
 		if errors.Is(err, storage.ErrAccountNotFound) {
 			log.Info("account not found", slog.String("id", id))
-			httperr.Write(c, http.StatusNotFound, httperr.ErrCodeAccountNotFound, "account not found")
+			httperr.Write(
+				c,
+				http.StatusNotFound,
+				httperr.ErrCodeAccountNotFound,
+				"account not found",
+			)
 			return
 		}
 
 		log.Error("failed to update account", logger.Error(err))
-		httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to update account")
+		httperr.Write(
+			c,
+			http.StatusInternalServerError,
+			httperr.ErrCodeInternal,
+			"failed to update account",
+		)
 		return
 	}
 
@@ -101,7 +126,12 @@ func (h *Handler) DeleteAccount(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, storage.ErrAccountNotFound) {
 			log.Info("account not found", slog.String("id", id))
-			httperr.Write(c, http.StatusNotFound, httperr.ErrCodeAccountNotFound, "account not found")
+			httperr.Write(
+				c,
+				http.StatusNotFound,
+				httperr.ErrCodeAccountNotFound,
+				"account not found",
+			)
 			return
 		}
 
@@ -112,7 +142,12 @@ func (h *Handler) DeleteAccount(c *gin.Context) {
 		}
 
 		log.Error("failed to delete account", logger.Error(err))
-		httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to delete account")
+		httperr.Write(
+			c,
+			http.StatusInternalServerError,
+			httperr.ErrCodeInternal,
+			"failed to delete account",
+		)
 		return
 	}
 
@@ -131,12 +166,22 @@ func (h *Handler) GetAccount(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, storage.ErrAccountNotFound) {
 			log.Info("account not found", slog.String("id", id))
-			httperr.Write(c, http.StatusNotFound, httperr.ErrCodeAccountNotFound, "account not found")
+			httperr.Write(
+				c,
+				http.StatusNotFound,
+				httperr.ErrCodeAccountNotFound,
+				"account not found",
+			)
 			return
 		}
 
 		log.Error("failed to get account", logger.Error(err))
-		httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to get account")
+		httperr.Write(
+			c,
+			http.StatusInternalServerError,
+			httperr.ErrCodeInternal,
+			"failed to get account",
+		)
 		return
 	}
 
@@ -153,7 +198,12 @@ func (h *Handler) ListAccounts(c *gin.Context) {
 	accounts, err := h.DB.GetAccounts(c.Request.Context(), user.ID)
 	if err != nil {
 		log.Error("failed to get accounts", logger.Error(err))
-		httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to get accounts")
+		httperr.Write(
+			c,
+			http.StatusInternalServerError,
+			httperr.ErrCodeInternal,
+			"failed to get accounts",
+		)
 		return
 	}
 
