@@ -55,7 +55,7 @@ func TestFailureRateLimiter(t *testing.T) {
 		rl.RecordFailure("k")
 		// maxAttempts=1 → first failure locks immediately.
 		retry := rl.RetryAfter("k")
-		require.Greater(t, retry, 0)
+		require.Positive(t, retry)
 		require.LessOrEqual(t, retry, 60)
 	})
 }
@@ -103,12 +103,11 @@ func TestRateLimit_ResetOn2xx(t *testing.T) {
 	router := newRLRouter(t, rl, &status)
 	addr := "1.2.3.4:1234"
 
-	doReq := func() *httptest.ResponseRecorder {
+	doReq := func() {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.RemoteAddr = addr
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
-		return w
 	}
 
 	// Two failures do not lock.
