@@ -68,7 +68,16 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 - **Name:** `session_id` (настраивается в config).
 - **Attributes:** `HttpOnly`, `Secure` (config-driven), `SameSite=Lax` (config-driven).
 - **TTL:** 24h по умолчанию (config-driven).
-- **Sliding expiration:** при запросе, если до истечения < 25% TTL, `expires_at` продлевается.
+
+### Session lifecycle
+
+- **Создание сессии (`register`, `login`)** — всегда генерируется **новый** `session_id` и кладётся в cookie. Выпуск свежего ID на каждый вход — это защита от session fixation: server никогда не переиспользует session ID, который мог быть подставлен атакующим до входа. Существующие сессии этого user **не инвалидируются** — поддерживается multi-session (веб + мобайл параллельно).
+- **Logout** — инвалидирует **только текущую** сессию (удаляется из БД, cookie сбрасывается). Остальные сессии user остаются валидными. Idempotent.
+- **Sliding expiration** — при каждом аутентифицированном запросе, если до `expires_at` осталось < 25% TTL, сессия продлевается до `now + TTL`, cookie обновляется. Без активности сессия инвалидируется по `expires_at`.
+- **Expiration cleanup** — фоновая задача периодически удаляет просроченные сессии из БД.
+- **Удаление user** — `ON DELETE CASCADE` на `sessions.user_id`: удаление user убивает все его сессии на уровне схемы.
+
+> **Не реализовано (roadmap):** rotation после password change/reset — revoke **всех** сессий user (→ roadmap 02.5, password reset flow). Управление активными сессиями — список, logout-all, revoke по ID (→ roadmap 02.3).
 
 ### Endpoints
 
