@@ -83,12 +83,14 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 
 | Метод | Endpoint | Auth | Описание |
 |------|----------|------|----------|
-| `POST` | `/api/auth/register` | ❌ | Регистрация. Создаёт user + сессию + 24 дефолтные категории. Auto-login. |
+| `POST` | `/api/auth/register` | ❌ | Регистрация. Создаёт user + сессию + 24 дефолтные категории + verification code. Auto-login. |
 | `POST` | `/api/auth/login` | ❌ | Логин. Создаёт сессию, ставит cookie. |
 | `POST` | `/api/auth/logout` | ❌ | Удаление сессии, сброс cookie. Idempotent. |
 | `GET` | `/api/auth/me` | ✅ | Текущий пользователь. |
 | `GET` | `/api/auth/sessions` | ✅ | Список активных сессий user (без токенов). |
 | `DELETE` | `/api/auth/sessions` | ✅ | Завершить все сессии, кроме текущей. |
+| `POST` | `/api/auth/verify-email` | ✅ | Подтвердить email одноразовым кодом. |
+| `POST` | `/api/auth/verify-email/resend` | ✅ | Запросить новый verification code. |
 
 ### POST /api/auth/register
 
@@ -107,10 +109,13 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 {
   "id": "uuid",
   "email": "user@example.com",
+  "emailVerified": false,
   "createdAt": "...",
   "updatedAt": "..."
 }
 ```
+
+При регистрации создаётся одноразовый verification code (см. [Email verification](#email-verification)). В dev-режиме код логируется (mailer-stub); реальная отправка - TODO (→ roadmap 06.4).
 
 Ошибки:
 - `409 USER_ALREADY_EXISTS` — email занят.
@@ -146,6 +151,7 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 {
   "id": "uuid",
   "email": "user@example.com",
+  "emailVerified": false,
   "createdAt": "...",
   "updatedAt": "..."
 }
@@ -182,6 +188,45 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 **Response:** `204 No Content`.
 
 **Ошибки:** `401 UNAUTHORIZED` - нет cookie или сессия невалидна.
+
+### Email verification
+
+После `register` user остаётся `emailVerified: false` и получает 6-значный одноразовый код (в dev логируется mailer-stub'ом; реальная отправка - TODO, → roadmap 06.4). Свойства кода и защиты:
+
+- 6 цифр, `crypto/rand` (без modulo-bias); TTL `10 мин`; single-use.
+- Хранится **plaintext** (ephemeral + короткий TTL + single-use; реальная угроза - online brute force, не at-rest кража - поэтому hash тут не работает).
+- Brute-force защита, 3 слоя: per-code cap (`MaxVerificationAttempts = 5` - после код инвалидирован), resend throttle (`60s`), per-IP failure rate limiter на verify-эндпоинте (reuse из login rate limit).
+- OTP-код **не идентифицирует user**, поэтому verify/resend требуют auth и проверяют код текущего user.
+
+### POST /api/auth/verify-email
+
+**Request:**
+```json
+{
+  "code": "123456"
+}
+```
+
+Валидация: `code` - ровно 6 символов.
+
+**Response:** `204 No Content` (email помечен verified).
+
+**Ошибки:**
+- `403 INVALID_VERIFICATION_CODE` - неверный код.
+- `400 VERIFICATION_CODE_EXPIRED` - код истёк, запроси новый.
+- `400 VERIFICATION_CODE_NOT_FOUND` - нет активного кода, запроси новый.
+- `409 EMAIL_ALREADY_VERIFIED` - email уже подтверждён.
+- `429 TOO_MANY_REQUESTS` - brute-force lockout (per-IP).
+
+### POST /api/auth/verify-email/resend
+
+Ротация: старый код инвалидируется, создаётся новый. Throttle - не чаще раза в `60s`, иначе `429` с `Retry-After`.
+
+**Response:** `204 No Content`.
+
+**Ошибки:**
+- `409 EMAIL_ALREADY_VERIFIED` - email уже подтверждён.
+- `429 TOO_MANY_REQUESTS` - throttle (с `Retry-After`).
 
 ---
 

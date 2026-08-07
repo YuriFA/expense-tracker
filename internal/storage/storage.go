@@ -6,11 +6,12 @@ import (
 )
 
 type User struct {
-	ID           string `json:"id"`
-	Email        string `json:"email"`
-	CreatedAt    string `json:"createdAt"`
-	UpdatedAt    string `json:"updatedAt"`
-	PasswordHash string `json:"-"`
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"emailVerified"`
+	CreatedAt     string `json:"createdAt"`
+	UpdatedAt     string `json:"updatedAt"`
+	PasswordHash  string `json:"-"`
 }
 
 type RegisterUserParams struct {
@@ -31,6 +32,12 @@ type CreateSessionParams struct {
 	UserID    string
 	ExpiresAt time.Time
 }
+
+const (
+	VerificationCodeTTL        = 10 * time.Minute
+	MaxVerificationAttempts    = 5
+	VerificationResendThrottle = 60 * time.Second
+)
 
 type Account struct {
 	ID               string `json:"id"`
@@ -212,4 +219,7 @@ var (
 	ErrSameAccountTransfer        = errors.New("transfer cannot be made to the same account")
 	ErrIdempotencyKeyNotFound     = errors.New("idempotency key not found")
 	ErrIdempotencyKeyInUse        = errors.New("idempotency key is already in use")
+	ErrVerificationCodeNotFound   = errors.New("verification code not found")
+	ErrVerificationCodeExpired    = errors.New("verification code expired")
+	ErrInvalidVerificationCode    = errors.New("invalid verification code")
 )

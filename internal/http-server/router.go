@@ -69,6 +69,11 @@ func NewRouter(
 		cfg.FailureRateLimit.LockoutDuration,
 	)
 
+	verifyRL := middleware.NewFailureRateLimiter(
+		cfg.FailureRateLimit.MaxAttempts,
+		cfg.FailureRateLimit.LockoutDuration,
+	)
+
 	api := router.Group("/api")
 	{
 		// Rate limiter is attached to /login only. Applying it to the whole
@@ -86,6 +91,8 @@ func NewRouter(
 			private.GET("/auth/me", handlers.Me)
 			private.GET("/auth/sessions", handlers.ListSessions)
 			private.DELETE("/auth/sessions", handlers.DeleteAllSessions)
+			private.POST("/auth/verify-email", middleware.RateLimit(verifyRL), handlers.VerifyEmail)
+			private.POST("/auth/verify-email/resend", handlers.ResendVerification)
 			private.GET("/accounts", handlers.ListAccounts)
 			private.POST("/accounts", handlers.CreateAccount)
 			private.GET("/accounts/:id", handlers.GetAccount)

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -80,6 +81,19 @@ func (h *Handler) Register(c *gin.Context) {
 		log.Error("failed to register user", logger.Error(err))
 		httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to register user")
 		return
+	}
+
+	if code, codeErr := auth.GenerateOTPCode(); codeErr != nil {
+		log.Error("failed to generate verification code", logger.Error(codeErr))
+	} else if createErr := h.DB.CreateEmailVerificationCode(
+		c.Request.Context(),
+		user.ID,
+		code,
+		time.Now().UTC().Add(storage.VerificationCodeTTL),
+	); createErr != nil {
+		log.Error("failed to create verification code", logger.Error(createErr))
+	} else {
+		log.Info("verification code issued", slog.String("email", user.Email), slog.String("code", code))
 	}
 
 	if err := h.startUserSession(c, user.ID); err != nil {

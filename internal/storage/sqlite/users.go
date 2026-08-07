@@ -22,11 +22,12 @@ func (s *Storage) RegisterUser(ctx context.Context, params storage.RegisterUserP
 	defer func() { _ = tx.Rollback() }()
 
 	var user storage.User
+	var emailVerifiedAt sql.NullString
 	err = tx.QueryRowContext(ctx, `INSERT INTO users (id, email, password_hash)
 		VALUES (?, ?, ?)
-		RETURNING id, email, created_at, updated_at`,
+		RETURNING id, email, email_verified_at, created_at, updated_at`,
 		uuid.NewString(), params.Email, params.PasswordHash,
-	).Scan(&user.ID, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Email, &emailVerifiedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		var sqliteErr sqlite3.Error
 		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
@@ -34,6 +35,7 @@ func (s *Storage) RegisterUser(ctx context.Context, params storage.RegisterUserP
 		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	user.EmailVerified = emailVerifiedAt.Valid
 
 	for _, category := range defaultCategories {
 		_, err = tx.ExecContext(ctx, `INSERT INTO categories (id, user_id, name, type, icon, color)
@@ -57,7 +59,7 @@ func (s *Storage) GetUserByEmail(ctx context.Context, email string) (*storage.Us
 
 	stmt, err := s.db.PrepareContext(
 		ctx,
-		`SELECT id, email, password_hash, created_at, updated_at FROM users WHERE email = ?`,
+		`SELECT id, email, password_hash, email_verified_at, created_at, updated_at FROM users WHERE email = ?`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -65,14 +67,16 @@ func (s *Storage) GetUserByEmail(ctx context.Context, email string) (*storage.Us
 	defer stmt.Close()
 
 	var user storage.User
+	var emailVerifiedAt sql.NullString
 	err = stmt.QueryRowContext(ctx, email).
-		Scan(&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
+		Scan(&user.ID, &user.Email, &user.PasswordHash, &emailVerifiedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	user.EmailVerified = emailVerifiedAt.Valid
 
 	return &user, nil
 }
@@ -80,20 +84,25 @@ func (s *Storage) GetUserByEmail(ctx context.Context, email string) (*storage.Us
 func (s *Storage) GetUserByID(ctx context.Context, id string) (*storage.User, error) {
 	const op = "storage.sqlite.GetUserByID"
 
-	stmt, err := s.db.PrepareContext(ctx, `SELECT id, email, created_at, updated_at FROM users WHERE id = ?`)
+	stmt, err := s.db.PrepareContext(
+		ctx,
+		`SELECT id, email, email_verified_at, created_at, updated_at FROM users WHERE id = ?`,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer stmt.Close()
 
 	var user storage.User
-	err = stmt.QueryRowContext(ctx, id).Scan(&user.ID, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	var emailVerifiedAt sql.NullString
+	err = stmt.QueryRowContext(ctx, id).Scan(&user.ID, &user.Email, &emailVerifiedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	user.EmailVerified = emailVerifiedAt.Valid
 
 	return &user, nil
 }

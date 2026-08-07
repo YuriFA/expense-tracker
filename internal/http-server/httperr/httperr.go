@@ -31,6 +31,10 @@ const (
 	ErrCodeIdempotencyKeyInUse        = "IDEMPOTENCY_KEY_IN_USE"
 	ErrCodeIdempotencyKeyMismatch     = "IDEMPOTENCY_KEY_MISMATCH"
 	ErrCodeTransactionVersionConflict = "TRANSACTION_VERSION_CONFLICT"
+	ErrCodeEmailAlreadyVerified       = "EMAIL_ALREADY_VERIFIED"
+	ErrCodeInvalidVerificationCode    = "INVALID_VERIFICATION_CODE"
+	ErrCodeVerificationCodeExpired    = "VERIFICATION_CODE_EXPIRED"
+	ErrCodeVerificationCodeNotFound   = "VERIFICATION_CODE_NOT_FOUND"
 )
 
 type FieldError struct {
