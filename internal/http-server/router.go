@@ -84,6 +84,8 @@ func NewRouter(
 			auth.POST("/register", handlers.Register)
 			auth.POST("/login", middleware.RateLimit(authRL), handlers.Login)
 			auth.POST("/logout", handlers.Logout)
+			auth.POST("/password-reset/request", handlers.RequestPasswordReset)
+			auth.POST("/password-reset/confirm", handlers.ConfirmPasswordReset)
 		}
 
 		private := api.Group("/", middleware.AuthRequired(db, log, cfg))

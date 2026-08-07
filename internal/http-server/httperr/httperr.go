@@ -35,6 +35,7 @@ const (
 	ErrCodeInvalidVerificationCode    = "INVALID_VERIFICATION_CODE"
 	ErrCodeVerificationCodeExpired    = "VERIFICATION_CODE_EXPIRED"
 	ErrCodeVerificationCodeNotFound   = "VERIFICATION_CODE_NOT_FOUND"
+	ErrCodeInvalidPasswordResetToken  = "INVALID_PASSWORD_RESET_TOKEN"
 )
 
 type FieldError struct {

@@ -34,9 +34,11 @@ type CreateSessionParams struct {
 }
 
 const (
-	VerificationCodeTTL        = 10 * time.Minute
-	MaxVerificationAttempts    = 5
-	VerificationResendThrottle = 60 * time.Second
+	VerificationCodeTTL          = 10 * time.Minute
+	MaxVerificationAttempts      = 5
+	VerificationResendThrottle   = 60 * time.Second
+	PasswordResetTokenTTL        = 15 * time.Minute
+	PasswordResetRequestThrottle = 60 * time.Second
 )
 
 type Account struct {
@@ -222,4 +224,5 @@ var (
 	ErrVerificationCodeNotFound   = errors.New("verification code not found")
 	ErrVerificationCodeExpired    = errors.New("verification code expired")
 	ErrInvalidVerificationCode    = errors.New("invalid verification code")
+	ErrPasswordResetTokenNotFound = errors.New("password reset token not found")
 )

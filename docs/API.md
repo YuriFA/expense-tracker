@@ -76,8 +76,9 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 - **Sliding expiration** — при каждом аутентифицированном запросе, если до `expires_at` осталось < 25% TTL, сессия продлевается до `now + TTL`, cookie обновляется. Без активности сессия инвалидируется по `expires_at`.
 - **Expiration cleanup** — фоновая задача периодически удаляет просроченные сессии из БД.
 - **Удаление user** — `ON DELETE CASCADE` на `sessions.user_id`: удаление user убивает все его сессии на уровне схемы.
+- **Password reset** - после успешного reset отзываются **все** сессии user (см. [Password reset](#password-reset)): смена пароля делает все старые сессии невалидными, user перелогинивается новым паролем.
 
-> **Не реализовано (roadmap):** rotation после password change/reset - revoke **всех** сессий user (→ roadmap 02.5, password reset flow). Revoke конкретной сессии по ID (→ roadmap 02.3, требует отдельного не-секретного display-id, чтобы не утекал токен).
+> **Не реализовано (roadmap):** Revoke конкретной сессии по ID (→ roadmap 02.3, требует отдельного не-секретного display-id, чтобы не утекал токен).
 
 ### Endpoints
 
@@ -91,6 +92,8 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 | `DELETE` | `/api/auth/sessions` | ✅ | Завершить все сессии, кроме текущей. |
 | `POST` | `/api/auth/verify-email` | ✅ | Подтвердить email одноразовым кодом. |
 | `POST` | `/api/auth/verify-email/resend` | ✅ | Запросить новый verification code. |
+| `POST` | `/api/auth/password-reset/request` | ❌ | Запросить сброс пароля (высылается токен). |
+| `POST` | `/api/auth/password-reset/confirm` | ❌ | Подтвердить сброс и задать новый пароль. |
 
 ### POST /api/auth/register
 
@@ -227,6 +230,48 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 **Ошибки:**
 - `409 EMAIL_ALREADY_VERIFIED` - email уже подтверждён.
 - `429 TOO_MANY_REQUESTS` - throttle (с `Retry-After`).
+
+### Password reset
+
+Сброс пароля для забывшего пароль user'а - flow **unauthenticated** (login невозможен). Модель: **high-entropy token** (magic link), не OTP-код - high entropy (256-bit) убирает brute-force, token хранится как SHA-256 hash (O(1) lookup), token идентифицирует user (email не нужен в confirm). OWASP-стандарт для reset.
+
+- Token: 256-bit random (переиспользует `GenerateSessionToken`), TTL `15 мин`, single-use (delete-on-consume).
+- Hash at rest: SHA-256(token). High entropy → не брутфорсится → fast hash достаточен (в отличие от bcrypt для паролей).
+- Anti-enumeration: `request` всегда `204`, независимо от существования email.
+- Throttle: не чаще раза в `60s` на email (тихий - без `Retry-After`, чтобы не раскрывать существование).
+- После успешного reset - revoke **всех** сессий user (→ закрывает TODO из 02.2 policy-ноты).
+- Mailer-stub (log ссылки); реальная отправка - TODO (→ roadmap 06.4).
+
+### POST /api/auth/password-reset/request
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+Валидация: `email` - валидный email. Невалидный формат → `400`.
+
+**Response:** `204 No Content` - **всегда**, независимо от существования email (anti-enumeration). Token issue'ится только если user существует и не throttled.
+
+### POST /api/auth/password-reset/confirm
+
+**Request:**
+```json
+{
+  "token": "256-bit-hex-token",
+  "newPassword": "newsecret123"
+}
+```
+
+Валидация: `token` - required, `newPassword` - 8-72 символа.
+
+**Response:** `204 No Content` (пароль изменён, все сессии отозваны).
+
+**Ошибки:**
+- `400 INVALID_PASSWORD_RESET_TOKEN` - невалидный/истёкший/уже-использованный token.
+- `400 VALIDATION_FAILED` - невалидный input.
 
 ---
 
