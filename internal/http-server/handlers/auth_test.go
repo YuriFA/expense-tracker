@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/yurifa/expense-tracker-api/internal/auth"
 	"github.com/yurifa/expense-tracker-api/internal/http-server/httperr"
@@ -207,6 +208,44 @@ func TestLoginUser(t *testing.T) {
 		w = performRequest(t, router, req)
 		require.Equal(t, http.StatusTooManyRequests, w.Code)
 	})
+
+	t.Run("MultiSessionInvariant", func(t *testing.T) {
+		t.Parallel()
+		router, db := setupTestEnv(t)
+		passwordHash, err := auth.HashPassword("password123")
+		require.NoError(t, err)
+		user, err := db.RegisterUser(context.Background(), storage.RegisterUserParams{
+			Email:        "test@example.com",
+			PasswordHash: passwordHash,
+		})
+		require.NoError(t, err)
+
+		login := func() *http.Cookie {
+			req := newJSONRequest(t, http.MethodPost, "/api/auth/login", map[string]any{
+				"email":    "test@example.com",
+				"password": "password123",
+			})
+			w := performRequest(t, router, req)
+			require.Equal(t, http.StatusOK, w.Code)
+			cookies := w.Result().Cookies()
+			require.Len(t, cookies, 1)
+			return cookies[0]
+		}
+
+		cookieA := login()
+		cookieB := login()
+		require.NotEqual(t, cookieA.Value, cookieB.Value, "each login must mint a distinct session id")
+
+		for _, c := range []*http.Cookie{cookieA, cookieB} {
+			req := newJSONRequest(t, http.MethodGet, "/api/auth/me", nil)
+			req.AddCookie(c)
+			w := performRequest(t, router, req)
+			assert.Equal(t, http.StatusOK, w.Code)
+			var resp storage.User
+			parseBody(t, w, &resp)
+			assert.Equal(t, user.ID, resp.ID)
+		}
+	})
 }
 
 func TestLogoutUser(t *testing.T) {
@@ -252,6 +291,28 @@ func TestLogoutUser(t *testing.T) {
 		w := f.do(t, http.MethodPost, "/api/auth/logout", nil)
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
+
+	t.Run("LogoutIsolation", func(t *testing.T) {
+		t.Parallel()
+		f := newAuthFixture(t)
+		secondCookie := createSessionCookie(t, f.DB, f.User.ID)
+
+		w := f.do(t, http.MethodPost, "/api/auth/logout", nil)
+		require.Equal(t, http.StatusNoContent, w.Code)
+
+		secondReq := newJSONRequest(t, http.MethodGet, "/api/auth/me", nil)
+		secondReq.AddCookie(secondCookie)
+		secondW := performRequest(t, f.Router, secondReq)
+		assert.Equal(t, http.StatusOK, secondW.Code)
+		var resp storage.User
+		parseBody(t, secondW, &resp)
+		assert.Equal(t, f.User.ID, resp.ID)
+
+		loggedOutReq := newJSONRequest(t, http.MethodGet, "/api/auth/me", nil)
+		loggedOutReq.AddCookie(f.Cookie)
+		loggedOutW := performRequest(t, f.Router, loggedOutReq)
+		assert.Equal(t, http.StatusUnauthorized, loggedOutW.Code)
+	})
 }
 
 func TestMe(t *testing.T) {
@@ -275,6 +336,26 @@ func TestMe(t *testing.T) {
 		router, _ := setupTestEnv(t)
 
 		req := newJSONRequest(t, http.MethodGet, "/api/auth/me", nil)
+		w := performRequest(t, router, req)
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("ExpiredSession", func(t *testing.T) {
+		t.Parallel()
+		router, db := setupTestEnv(t)
+		user := seedUser(t, db, "test@example.com")
+
+		sessionID, err := auth.GenerateSessionToken()
+		require.NoError(t, err)
+		_, err = db.CreateSession(context.Background(), storage.CreateSessionParams{
+			SessionID: sessionID,
+			UserID:    user.ID,
+			ExpiresAt: time.Now().Add(-time.Minute),
+		})
+		require.NoError(t, err)
+
+		req := newJSONRequest(t, http.MethodGet, "/api/auth/me", nil)
+		req.AddCookie(&http.Cookie{Name: "session_id", Value: sessionID})
 		w := performRequest(t, router, req)
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
