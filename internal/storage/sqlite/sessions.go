@@ -125,3 +125,76 @@ func (s *Storage) DeleteExpiredSessions(ctx context.Context) (int64, error) {
 
 	return rowsAffected, nil
 }
+
+func (s *Storage) GetSessionsByUser(ctx context.Context, userID string) ([]storage.Session, error) {
+	const op = "storage.sqlite.GetSessionsByUser"
+
+	stmt, err := s.db.PrepareContext(
+		ctx,
+		`SELECT id, user_id, expires_at, created_at, updated_at
+		FROM sessions
+		WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP
+		ORDER BY created_at DESC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+
+	sessions := []storage.Session{}
+	rows, err := stmt.QueryContext(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		session := storage.Session{}
+		err := rows.Scan(
+			&session.ID,
+			&session.UserID,
+			&session.ExpiresAt,
+			&session.CreatedAt,
+			&session.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		sessions = append(sessions, session)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return sessions, nil
+}
+
+func (s *Storage) DeleteSessionsByUserExcept(
+	ctx context.Context,
+	userID string,
+	exceptSessionID string,
+) (int64, error) {
+	const op = "storage.sqlite.DeleteSessionsByUserExcept"
+
+	stmt, err := s.db.PrepareContext(
+		ctx,
+		`DELETE FROM sessions WHERE user_id = ? AND id != ?`,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	defer stmt.Close()
+
+	res, err := stmt.ExecContext(ctx, userID, exceptSessionID)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return rowsAffected, nil
+}

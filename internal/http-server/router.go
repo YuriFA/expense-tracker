@@ -84,6 +84,8 @@ func NewRouter(
 		private := api.Group("/", middleware.AuthRequired(db, log, cfg))
 		{
 			private.GET("/auth/me", handlers.Me)
+			private.GET("/auth/sessions", handlers.ListSessions)
+			private.DELETE("/auth/sessions", handlers.DeleteAllSessions)
 			private.GET("/accounts", handlers.ListAccounts)
 			private.POST("/accounts", handlers.CreateAccount)
 			private.GET("/accounts/:id", handlers.GetAccount)

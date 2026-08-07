@@ -84,6 +84,7 @@ func AuthRequired(db *sqlite.Storage, log *slog.Logger, cfg *config.HTTPServer) 
 		}
 
 		c.Set(keys.CurrentUserKey, user)
+		c.Set(keys.CurrentSessionIDKey, session.ID)
 		c.Next()
 	}
 }

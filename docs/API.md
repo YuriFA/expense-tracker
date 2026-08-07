@@ -77,7 +77,7 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 - **Expiration cleanup** — фоновая задача периодически удаляет просроченные сессии из БД.
 - **Удаление user** — `ON DELETE CASCADE` на `sessions.user_id`: удаление user убивает все его сессии на уровне схемы.
 
-> **Не реализовано (roadmap):** rotation после password change/reset — revoke **всех** сессий user (→ roadmap 02.5, password reset flow). Управление активными сессиями — список, logout-all, revoke по ID (→ roadmap 02.3).
+> **Не реализовано (roadmap):** rotation после password change/reset - revoke **всех** сессий user (→ roadmap 02.5, password reset flow). Revoke конкретной сессии по ID (→ roadmap 02.3, требует отдельного не-секретного display-id, чтобы не утекал токен).
 
 ### Endpoints
 
@@ -86,7 +86,9 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 | `POST` | `/api/auth/register` | ❌ | Регистрация. Создаёт user + сессию + 24 дефолтные категории. Auto-login. |
 | `POST` | `/api/auth/login` | ❌ | Логин. Создаёт сессию, ставит cookie. |
 | `POST` | `/api/auth/logout` | ❌ | Удаление сессии, сброс cookie. Idempotent. |
-| `GET` | `/api/me` | ✅ | Текущий пользователь. |
+| `GET` | `/api/auth/me` | ✅ | Текущий пользователь. |
+| `GET` | `/api/auth/sessions` | ✅ | Список активных сессий user (без токенов). |
+| `DELETE` | `/api/auth/sessions` | ✅ | Завершить все сессии, кроме текущей. |
 
 ### POST /api/auth/register
 
@@ -137,7 +139,7 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 
 **Response:** `204 No Content`. Idempotent — повторный вызов с уже сброшенной cookie тоже 204.
 
-### GET /api/me
+### GET /api/auth/me
 
 **Response:** `200 OK`:
 ```json
@@ -152,6 +154,34 @@ Stateful sessions. Server хранит сессии в таблице `sessions`
 `passwordHash` не возвращается (`json:"-"`).
 
 **Ошибки:** `401 UNAUTHORIZED` — нет cookie или сессия невалидна.
+
+### GET /api/auth/sessions
+
+Список активных (не истёкших) сессий текущего user. Токены **не возвращаются** - только метаданные + `isCurrent` для текущей сессии. Сессии других user не видны (scope по `user_id`).
+
+**Response:** `200 OK`:
+```json
+[
+  {
+    "createdAt": "...",
+    "updatedAt": "...",
+    "expiresAt": "...",
+    "isCurrent": true
+  }
+]
+```
+
+`updatedAt` обновляется только при sliding-продлении, поэтому это грубый proxy последней активности.
+
+**Ошибки:** `401 UNAUTHORIZED` - нет cookie или сессия невалидна.
+
+### DELETE /api/auth/sessions
+
+Завершает **все** сессии текущего user, **кроме текущей** (B2 policy: остаёшься в системе на этом устройстве). Cookie текущей сессии не сбрасывается.
+
+**Response:** `204 No Content`.
+
+**Ошибки:** `401 UNAUTHORIZED` - нет cookie или сессия невалидна.
 
 ---
 

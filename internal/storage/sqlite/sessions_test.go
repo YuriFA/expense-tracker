@@ -159,3 +159,89 @@ func TestDeleteExpiredSessions(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func seedSession(t *testing.T, db *sqlite.Storage, sessionID, userID string, expiresAt time.Time) {
+	t.Helper()
+	_, err := db.CreateSession(context.Background(), storage.CreateSessionParams{
+		SessionID: sessionID,
+		UserID:    userID,
+		ExpiresAt: expiresAt,
+	})
+	require.NoError(t, err)
+}
+
+func TestGetSessionsByUser(t *testing.T) {
+	t.Parallel()
+	t.Run("Returns only active sessions of the user", func(t *testing.T) {
+		t.Parallel()
+		f := newFixture(t)
+		active := time.Now().UTC().Add(24 * time.Hour)
+
+		seedSession(t, f.DB, "s-active-1", f.User.ID, active)
+		seedSession(t, f.DB, "s-active-2", f.User.ID, active)
+		seedSession(t, f.DB, "s-expired", f.User.ID, time.Now().UTC().Add(-24*time.Hour))
+
+		other := seedUser(t, f.DB)
+		seedSession(t, f.DB, "s-other", other.ID, active)
+
+		sessions, err := f.DB.GetSessionsByUser(context.Background(), f.User.ID)
+		require.NoError(t, err)
+
+		ids := make([]string, 0, len(sessions))
+		for _, s := range sessions {
+			ids = append(ids, s.ID)
+		}
+		assert.ElementsMatch(t, []string{"s-active-1", "s-active-2"}, ids)
+	})
+
+	t.Run("Empty when user has no active sessions", func(t *testing.T) {
+		t.Parallel()
+		f := newFixture(t)
+
+		sessions, err := f.DB.GetSessionsByUser(context.Background(), f.User.ID)
+		require.NoError(t, err)
+		assert.Empty(t, sessions)
+	})
+}
+
+func TestDeleteSessionsByUserExcept(t *testing.T) {
+	t.Parallel()
+	t.Run("Deletes all user sessions except the current one", func(t *testing.T) {
+		t.Parallel()
+		f := newFixture(t)
+		active := time.Now().UTC().Add(24 * time.Hour)
+
+		seedSession(t, f.DB, "s-1", f.User.ID, active)
+		seedSession(t, f.DB, "s-2", f.User.ID, active)
+		seedSession(t, f.DB, "s-current", f.User.ID, active)
+
+		other := seedUser(t, f.DB)
+		seedSession(t, f.DB, "s-other", other.ID, active)
+
+		count, err := f.DB.DeleteSessionsByUserExcept(context.Background(), f.User.ID, "s-current")
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), count)
+
+		_, err = f.DB.GetSessionByID(context.Background(), "s-current")
+		require.NoError(t, err)
+
+		_, err = f.DB.GetSessionByID(context.Background(), "s-1")
+		require.ErrorIs(t, err, storage.ErrSessionNotFound)
+
+		_, err = f.DB.GetSessionByID(context.Background(), "s-other")
+		require.NoError(t, err)
+	})
+
+	t.Run("Zero affected when only the current session exists", func(t *testing.T) {
+		t.Parallel()
+		f := newFixture(t)
+		seedSession(t, f.DB, "s-current", f.User.ID, time.Now().UTC().Add(24*time.Hour))
+
+		count, err := f.DB.DeleteSessionsByUserExcept(context.Background(), f.User.ID, "s-current")
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count)
+
+		_, err = f.DB.GetSessionByID(context.Background(), "s-current")
+		require.NoError(t, err)
+	})
+}

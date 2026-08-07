@@ -1,6 +1,7 @@
 package keys
 
 const (
-	CurrentUserKey  = "currentUser"
-	RequestIDHeader = "X-Request-ID"
+	CurrentUserKey      = "currentUser"
+	CurrentSessionIDKey = "currentSessionID"
+	RequestIDHeader     = "X-Request-ID"
 )
