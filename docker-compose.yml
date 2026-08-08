@@ -1,8 +1,8 @@
 services:
   app:
-    build: .
+    build: ./backend
     image: expense-tracker-api
     ports:
       - 8080:8080
     volumes:
-      - ./data:/app/storage
+      - ./backend/data:/app/storage

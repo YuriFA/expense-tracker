@@ -16,17 +16,21 @@ concurrency:
 jobs:
   lint-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26.x"
-          cache: true
+          cache-dependency-path: backend/go.sum
       - run: go mod download
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: v2.12.2
+          working-directory: backend
       - run: go test -race ./...
 
   docker-build:
@@ -38,7 +42,7 @@ jobs:
       - name: Build image (smoke)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: backend
           push: false
           tags: expense-tracker-api:ci
           cache-from: type=gha

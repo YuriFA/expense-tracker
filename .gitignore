@@ -1,10 +1,21 @@
+# --- OS ---
+.DS_Store
+
+# --- Secrets / local env ---
 .env
-/storage/
-/data/
-/backups/
-/tmp
+*.local
+
+# --- Logs ---
 *.log
-coverage.out
-.DS_STORE
-bin
-out
+
+# --- Backend (Go) ---
+/backend/storage/
+/backend/data/
+/backend/backups/
+/backend/tmp/
+/backend/bin/
+/backend/out/
+/backend/coverage.out
+
+# --- Frontend (apps/web) ---
+# node_modules, dist, coverage, playwright artifacts handled by apps/web/.gitignore
