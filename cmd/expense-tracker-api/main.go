@@ -9,11 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
 	httpserver "github.com/yurifa/expense-tracker-api/internal/http-server"
 	"github.com/yurifa/expense-tracker-api/internal/http-server/handlers"
+	"github.com/yurifa/expense-tracker-api/internal/jobs/cleanup"
 	"github.com/yurifa/expense-tracker-api/internal/logger"
 	"github.com/yurifa/expense-tracker-api/internal/storage/sqlite"
 )
@@ -46,7 +46,6 @@ func run(cfg *config.Config, log *slog.Logger) error {
 		return fmt.Errorf("run migrations: %w", err)
 	}
 
-	cleanupExpired(context.Background(), db, log)
 	log.Info("Storage initialized")
 
 	h := handlers.NewHandler(log, db, &cfg.HTTPServer)
@@ -74,58 +73,41 @@ func run(cfg *config.Config, log *slog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go runCleanupTicker(ctx, db, log, cfg.SessionConfig.CleanupInterval)
+	cleanupJob := cleanup.New(db, log, cfg.SessionConfig.CleanupInterval)
+	jobDone := make(chan struct{})
+	go func() {
+		defer close(jobDone)
+		_ = cleanupJob.Run(ctx)
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
+	var runErr error
 	select {
 	case sig := <-quit:
 		log.Info("shutting down server", slog.String("signal", sig.String()))
 	case err := <-serverErr:
-		return fmt.Errorf("listen and serve: %w", err)
+		runErr = fmt.Errorf("listen and serve: %w", err)
 	}
 
 	cancel()
+	<-jobDone
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.WriteTimeout)
 	defer shutdownCancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("server shutdown: %w", err)
+		if runErr != nil {
+			log.Error("server shutdown failed", logger.Error(err))
+		} else {
+			runErr = fmt.Errorf("server shutdown: %w", err)
+		}
+	}
+
+	if runErr != nil {
+		return runErr
 	}
 
 	log.Info("Server exiting")
 	return nil
-}
-
-func runCleanupTicker(
-	ctx context.Context,
-	db *sqlite.Storage,
-	log *slog.Logger,
-	interval time.Duration,
-) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			cleanupExpired(ctx, db, log)
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func cleanupExpired(ctx context.Context, db *sqlite.Storage, log *slog.Logger) {
-	if n, err := db.DeleteExpiredSessions(ctx); err != nil {
-		log.WarnContext(ctx, "failed to delete expired sessions", logger.Error(err))
-	} else if n > 0 {
-		log.InfoContext(ctx, "Expired sessions deleted", slog.Int64("count", n))
-	}
-
-	if n, err := db.DeleteExpiredIdempotencyKeys(ctx); err != nil {
-		log.WarnContext(ctx, "failed to delete expired idempotency keys", logger.Error(err))
-	} else if n > 0 {
-		log.InfoContext(ctx, "Expired idempotency keys deleted", slog.Int64("count", n))
-	}
 }
