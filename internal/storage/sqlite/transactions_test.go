@@ -916,26 +916,105 @@ func TestGetTransactions(t *testing.T) {
 		require.Equal(t, expected, transactions)
 	})
 
-	t.Run("sort param occurred_at DESC", func(t *testing.T) {
+	t.Run("cursor pagination without overlap", func(t *testing.T) {
 		t.Parallel()
 		f := newFixture(t)
 		createdTransactions, err := createTestTransactions(t, f.DB, f.User.ID)
 		require.NoError(t, err)
 
-		transactions, err := f.DB.GetTransactions(
+		limit := 4
+		page1, err := f.DB.GetTransactions(
 			context.Background(),
 			f.User.ID,
-			storage.GetTransactionsParams{Sort: new(storage.OccurredAtDesc)},
+			storage.GetTransactionsParams{Limit: &limit},
+		)
+		require.NoError(t, err)
+		require.Len(t, page1, 4)
+
+		cursor := storage.TransactionCursor{
+			OccurredAt: page1[len(page1)-1].OccurredAt,
+			ID:         page1[len(page1)-1].ID,
+		}
+		page2, err := f.DB.GetTransactions(
+			context.Background(),
+			f.User.ID,
+			storage.GetTransactionsParams{Limit: &limit, Cursor: &cursor},
 		)
 		require.NoError(t, err)
 
-		expected := testutil.Sort(
-			createdTransactions,
-			func(a storage.Transaction, b storage.Transaction) bool {
-				return a.OccurredAt > b.OccurredAt
-			},
+		seen := make(map[string]bool, len(page1)+len(page2))
+		for _, tr := range page1 {
+			require.False(t, seen[tr.ID], "duplicate across pages")
+			seen[tr.ID] = true
+		}
+		for _, tr := range page2 {
+			require.False(t, seen[tr.ID], "duplicate across pages")
+			seen[tr.ID] = true
+		}
+		last := page1[len(page1)-1]
+		first := page2[0]
+		require.True(t,
+			last.OccurredAt > first.OccurredAt ||
+				(last.OccurredAt == first.OccurredAt && last.ID > first.ID),
+			"page2 must start after page1 cursor",
 		)
-		require.Equal(t, expected, transactions)
+		require.Len(t, seen, len(page1)+len(page2))
+		require.Less(t, len(seen), len(createdTransactions))
+	})
+
+	t.Run("cursor stable with same occurredAt (id tiebreak)", func(t *testing.T) {
+		t.Parallel()
+		f := newFixture(t)
+		account := seedAccount(t, f.DB, f.User.ID, 100000)
+		categoryParams := defaultCategoryParams(f.User.ID)
+		categoryParams.Type = storage.TransactionTypeIncome
+		category := seedCategory(t, f.DB, categoryParams)
+
+		sameTime := testutil.GetTimeFromStr(t, "2024-06-01T00:00:00Z")
+		create := func(desc string) storage.Transaction {
+			tr, err := f.DB.CreateTransaction(context.Background(), storage.CreateTransactionParams{
+				UserID:      f.User.ID,
+				Type:        storage.TransactionTypeIncome,
+				Amount:      1000,
+				Description: desc,
+				OccurredAt:  *sameTime,
+				AccountID:   &account.ID,
+				CategoryID:  &category.ID,
+			})
+			require.NoError(t, err)
+			return *tr
+		}
+		a := create("a")
+		b := create("b")
+		c := create("c")
+
+		limit := 2
+		page1, err := f.DB.GetTransactions(
+			context.Background(), f.User.ID,
+			storage.GetTransactionsParams{Limit: &limit},
+		)
+		require.NoError(t, err)
+		require.Len(t, page1, 2)
+
+		cursor := storage.TransactionCursor{OccurredAt: page1[1].OccurredAt, ID: page1[1].ID}
+		page2, err := f.DB.GetTransactions(
+			context.Background(), f.User.ID,
+			storage.GetTransactionsParams{Limit: &limit, Cursor: &cursor},
+		)
+		require.NoError(t, err)
+		require.Len(t, page2, 1)
+
+		require.Len(t, page1, 2)
+		require.Len(t, page2, 1)
+		require.Greater(t, page1[0].ID, page1[1].ID)
+		require.Greater(t, page1[1].ID, page2[0].ID)
+		ids := map[string]bool{}
+		for _, tr := range page1 {
+			ids[tr.ID] = true
+		}
+		ids[page2[0].ID] = true
+		require.Len(t, ids, 3)
+		require.True(t, ids[a.ID] && ids[b.ID] && ids[c.ID])
 	})
 
 	t.Run("from date and to date", func(t *testing.T) {

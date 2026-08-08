@@ -259,26 +259,21 @@ func (s *Storage) GetTransactions(ctx context.Context,
 		addTimeOp("occurred_at", params.ToDate, "<=").
 		build(" AND ")
 
+	if params.Cursor != nil {
+		cursorClause := "(datetime(occurred_at) < datetime(?) OR (datetime(occurred_at) = datetime(?) AND id < ?))"
+		if whereParts != "" {
+			whereParts += " AND "
+		}
+		whereParts += cursorClause
+		args = append(args, params.Cursor.OccurredAt, params.Cursor.OccurredAt, params.Cursor.ID)
+	}
+
 	query := "SELECT id, user_id, type, amount, description, occurred_at, created_at, updated_at, version, account_id, category_id, from_account_id, to_account_id FROM transactions"
 	if len(whereParts) > 0 {
 		query = fmt.Sprintf(`%s WHERE %s`, query, whereParts)
 	}
 
-	allowedSorts := map[storage.SortParam]string{
-		storage.OccurredAtAsc:  "occurred_at ASC",
-		storage.OccurredAtDesc: "occurred_at DESC",
-		storage.AmountAsc:      "amount ASC",
-		storage.AmountDesc:     "amount DESC",
-	}
-	sortParam := storage.OccurredAtDesc
-	if params.Sort != nil {
-		sortParam = *params.Sort
-	}
-	sqlSort, ok := allowedSorts[sortParam]
-	if !ok {
-		return nil, fmt.Errorf("%s: %w", op, storage.ErrUnknownSort)
-	}
-	query = fmt.Sprintf(`%s ORDER BY %s`, query, sqlSort)
+	query = fmt.Sprintf(`%s ORDER BY occurred_at DESC, id DESC`, query)
 
 	if params.Limit != nil {
 		query = fmt.Sprintf(`%s LIMIT ?`, query)

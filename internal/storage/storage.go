@@ -156,14 +156,10 @@ type UpdateTransactionParams struct {
 	ToAccountID   *string
 }
 
-type SortParam string
-
-const (
-	OccurredAtAsc  SortParam = "occurredAt"
-	OccurredAtDesc SortParam = "-occurredAt"
-	AmountAsc      SortParam = "amount"
-	AmountDesc     SortParam = "-amount"
-)
+type TransactionCursor struct {
+	OccurredAt string
+	ID         string
+}
 
 type GetTransactionsParams struct {
 	Type       *TransactionType
@@ -172,7 +168,7 @@ type GetTransactionsParams struct {
 	FromDate   *time.Time
 	ToDate     *time.Time
 	Limit      *int
-	Sort       *SortParam
+	Cursor     *TransactionCursor
 }
 
 type IdempotencyKey struct {
@@ -214,7 +210,6 @@ var (
 	ErrCategoryTypeMismatch       = errors.New("category type mismatch")
 	ErrTransactionNotFound        = errors.New("transaction not found")
 	ErrTransactionVersionConflict = errors.New("transaction version conflict")
-	ErrUnknownSort                = errors.New("unknown sort")
 	ErrAccountHasTransactions     = errors.New("account has transactions and cannot be deleted")
 	ErrCategoryHasTransactions    = errors.New("category has transactions and cannot be deleted")
 	ErrInvalidRefs                = errors.New("invalid references in transaction")

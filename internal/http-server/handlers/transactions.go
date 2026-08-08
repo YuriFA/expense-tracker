@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -41,10 +43,56 @@ type GetTransactionsQuery struct {
 	Type       *storage.TransactionType `form:"type"       binding:"omitempty,oneof=income expense transfer"`
 	AccountID  *string                  `form:"accountId"  binding:"omitempty,uuid"`
 	CategoryID *string                  `form:"categoryId" binding:"omitempty,uuid"`
-	FromDate   *time.Time               `form:"fromDate"   binding:"omitempty"                                             time_format:"2006-01-02"`
-	ToDate     *time.Time               `form:"toDate"     binding:"omitempty,gtefield=FromDate"                           time_format:"2006-01-02"`
+	FromDate   *time.Time               `form:"fromDate"   binding:"omitempty"                               time_format:"2006-01-02"`
+	ToDate     *time.Time               `form:"toDate"     binding:"omitempty,gtefield=FromDate"             time_format:"2006-01-02"`
 	Limit      *int                     `form:"limit"      binding:"omitempty,gt=0"`
-	Sort       *storage.SortParam       `form:"sort"       binding:"omitempty,oneof=occurredAt -occurredAt amount -amount"`
+	Cursor     *string                  `form:"cursor"     binding:"omitempty"`
+}
+
+const (
+	defaultTransactionPageSize = 50
+	maxTransactionPageSize     = 100
+)
+
+type TransactionListResponse struct {
+	Transactions []storage.Transaction `json:"transactions"`
+	NextCursor   *string               `json:"nextCursor"`
+}
+
+func boundTransactionPageSize(requested *int) int {
+	size := defaultTransactionPageSize
+	if requested != nil && *requested > 0 {
+		size = *requested
+	}
+	return min(size, maxTransactionPageSize)
+}
+
+type transactionCursorPayload struct {
+	OccurredAt string `json:"occurredAt"`
+	ID         string `json:"id"`
+}
+
+func encodeTransactionCursor(t storage.Transaction) (string, error) {
+	b, err := json.Marshal(transactionCursorPayload{OccurredAt: t.OccurredAt, ID: t.ID})
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+func decodeTransactionCursor(s string) (*storage.TransactionCursor, error) {
+	b, err := base64.URLEncoding.DecodeString(s)
+	if err != nil {
+		return nil, err
+	}
+	var payload transactionCursorPayload
+	if err := json.Unmarshal(b, &payload); err != nil {
+		return nil, err
+	}
+	if payload.OccurredAt == "" || payload.ID == "" {
+		return nil, errors.New("invalid cursor payload")
+	}
+	return &storage.TransactionCursor{OccurredAt: payload.OccurredAt, ID: payload.ID}, nil
 }
 
 func validateTransactionRequest(req TransactionRequest) []httperr.FieldError {
@@ -481,6 +529,20 @@ func (h *Handler) ListTransactions(c *gin.Context) {
 		"query parameters after parse",
 		slog.Any("params", params),
 	)
+	var cursor *storage.TransactionCursor
+	if params.Cursor != nil {
+		decoded, err := decodeTransactionCursor(*params.Cursor)
+		if err != nil {
+			log.Info("invalid cursor", logger.Error(err))
+			httperr.Write(c, http.StatusBadRequest, httperr.ErrCodeInvalidRequest, "invalid cursor")
+			return
+		}
+		cursor = decoded
+	}
+
+	pageSize := boundTransactionPageSize(params.Limit)
+	fetchLimit := pageSize + 1
+
 	transactions, err := h.DB.GetTransactions(
 		c.Request.Context(),
 		user.ID,
@@ -490,8 +552,8 @@ func (h *Handler) ListTransactions(c *gin.Context) {
 			CategoryID: params.CategoryID,
 			FromDate:   params.FromDate,
 			ToDate:     params.ToDate,
-			Limit:      params.Limit,
-			Sort:       params.Sort,
+			Limit:      &fetchLimit,
+			Cursor:     cursor,
 		},
 	)
 	if err != nil {
@@ -505,5 +567,20 @@ func (h *Handler) ListTransactions(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, transactions)
+	var nextCursor *string
+	if len(transactions) > pageSize {
+		encoded, err := encodeTransactionCursor(transactions[pageSize-1])
+		if err != nil {
+			log.Error("failed to encode next cursor", logger.Error(err))
+			httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to get transactions")
+			return
+		}
+		nextCursor = &encoded
+		transactions = transactions[:pageSize]
+	}
+
+	c.JSON(http.StatusOK, TransactionListResponse{
+		Transactions: transactions,
+		NextCursor:   nextCursor,
+	})
 }

@@ -411,7 +411,10 @@ paths:
     get:
       tags: [Transactions]
       operationId: listTransactions
-      summary: Список транзакций текущего пользователя
+      summary: Список транзакций (cursor pagination)
+      description: |
+        Возвращает страницу в порядке occurredAt DESC, id DESC. Листание через
+        opaque cursor (nextCursor); page size через limit (default 50, max 100).
       parameters:
         - name: type
           in: query
@@ -442,24 +445,33 @@ paths:
             format: date
         - name: limit
           in: query
+          description: Page size (default 50, max 100).
           schema:
             type: integer
             minimum: 1
-        - name: sort
+            maximum: 100
+        - name: cursor
           in: query
+          description: Opaque курсор из nextCursor предыдущего ответа.
           schema:
             type: string
-            enum: [occurredAt, -occurredAt, amount, -amount]
-            default: occurredAt
       responses:
         "200":
-          description: Список транзакций (опционально отфильтрованный).
+          description: Страница транзакций + курсор следующей страницы.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Transaction"
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Transaction"
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: Opaque курсор; null если страниц больше нет.
+                required: [transactions, nextCursor]
         "400":
           $ref: "#/components/responses/ValidationError"
         "401":

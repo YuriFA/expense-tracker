@@ -916,15 +916,18 @@ func TestListTransactions(t *testing.T) {
 		w := f.do(t, http.MethodGet, "/api/transactions", nil)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response []storage.Transaction
+		var response struct {
+			Transactions []storage.Transaction `json:"transactions"`
+			NextCursor   *string               `json:"nextCursor"`
+		}
 		parseBody(t, w, &response)
-		assert.Len(t, response, len(seededTransactions))
+		assert.Len(t, response.Transactions, len(seededTransactions))
 
 		transactionsMap := make(map[string]*storage.Transaction)
 		for _, trx := range seededTransactions {
 			transactionsMap[trx.ID] = trx
 		}
-		for _, trx := range response {
+		for _, trx := range response.Transactions {
 			transaction, exists := transactionsMap[trx.ID]
 			assert.True(t, exists)
 			assert.Equal(t, *transaction, trx)
@@ -1048,34 +1051,7 @@ func TestListTransactions(t *testing.T) {
 				params:   map[string]string{"type": "expense", "limit": "1"},
 				expected: []*storage.Transaction{seeded2},
 			},
-			{
-				params:   map[string]string{"type": "income", "sort": "-amount"},
-				expected: []*storage.Transaction{seeded3, seeded1},
-			},
-			{
-				params:   map[string]string{"type": "expense", "sort": "-amount"},
-				expected: []*storage.Transaction{seeded4, seeded2},
-			},
-			{
-				params:   map[string]string{"type": "income", "sort": "amount"},
-				expected: []*storage.Transaction{seeded1, seeded3},
-			},
-			{
-				params:   map[string]string{"type": "expense", "sort": "amount"},
-				expected: []*storage.Transaction{seeded2, seeded4},
-			},
-			{
-				params:   map[string]string{"type": "income", "limit": "1", "sort": "-amount"},
-				expected: []*storage.Transaction{seeded3},
-			},
-			{
-				params:   map[string]string{"type": "income", "sort": "-occurredAt"},
-				expected: []*storage.Transaction{seeded1, seeded3},
-			},
-			{
-				params:   map[string]string{"type": "income", "sort": "occurredAt"},
-				expected: []*storage.Transaction{seeded3, seeded1},
-			},
+
 			{
 				params: map[string]string{
 					"accountId": *seeded5.FromAccountID,
@@ -1096,10 +1072,13 @@ func TestListTransactions(t *testing.T) {
 				w := f.do(t, http.MethodGet, "/api/transactions"+"?"+paramsEncoded, nil)
 
 				assert.Equal(t, http.StatusOK, w.Code)
-				var response []storage.Transaction
+				var response struct {
+					Transactions []storage.Transaction `json:"transactions"`
+					NextCursor   *string               `json:"nextCursor"`
+				}
 				parseBody(t, w, &response)
-				assert.Len(t, response, len(tc.expected))
-				for i, trx := range response {
+				require.Len(t, response.Transactions, len(tc.expected))
+				for i, trx := range response.Transactions {
 					assert.Equal(t, tc.expected[i].ID, trx.ID)
 				}
 			})
@@ -1163,11 +1142,14 @@ func TestListTransactions(t *testing.T) {
 		w := f.do(t, http.MethodGet, "/api/transactions?fromDate=2024-06-01&toDate=2024-06-30", nil)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response []storage.Transaction
+		var response struct {
+			Transactions []storage.Transaction `json:"transactions"`
+			NextCursor   *string               `json:"nextCursor"`
+		}
 		parseBody(t, w, &response)
 
 		var ids []string
-		for _, trx := range response {
+		for _, trx := range response.Transactions {
 			ids = append(ids, trx.ID)
 		}
 
@@ -1178,4 +1160,64 @@ func TestListTransactions(t *testing.T) {
 		assert.Contains(t, ids, inMiddle.ID)
 		assert.Contains(t, ids, onUpperBoundary.ID)
 	})
+}
+
+func TestListTransactionsPagination(t *testing.T) {
+	t.Parallel()
+	f := newAuthFixture(t)
+
+	type listResp struct {
+		Transactions []storage.Transaction `json:"transactions"`
+		NextCursor   *string               `json:"nextCursor"`
+	}
+	fetch := func(cursor string) listResp {
+		path := "/api/transactions?limit=2"
+		if cursor != "" {
+			path += "&cursor=" + cursor
+		}
+		w := f.do(t, http.MethodGet, path, nil)
+		require.Equal(t, http.StatusOK, w.Code)
+		var resp listResp
+		parseBody(t, w, &resp)
+		return resp
+	}
+
+	seed := func(i int, occ time.Time) *storage.Transaction {
+		return seedTransactionAt(t, f.DB, seedTransactionAtParams{
+			userID:          f.User.ID,
+			categoryName:    fmt.Sprintf("cat%d", i),
+			transactionType: storage.TransactionTypeIncome,
+			occurredAt:      occ,
+			amount:          1000,
+		})
+	}
+	s0 := seed(0, time.Date(2024, 5, 1, 0, 0, 0, 0, time.UTC))
+	s1 := seed(1, time.Date(2024, 5, 2, 0, 0, 0, 0, time.UTC))
+	s2 := seed(2, time.Date(2024, 5, 3, 0, 0, 0, 0, time.UTC))
+	s3 := seed(3, time.Date(2024, 5, 4, 0, 0, 0, 0, time.UTC))
+	s4 := seed(4, time.Date(2024, 5, 5, 0, 0, 0, 0, time.UTC))
+
+	page1 := fetch("")
+	require.Len(t, page1.Transactions, 2)
+	require.Equal(t, s4.ID, page1.Transactions[0].ID)
+	require.Equal(t, s3.ID, page1.Transactions[1].ID)
+	require.NotNil(t, page1.NextCursor)
+
+	page2 := fetch(*page1.NextCursor)
+	require.Len(t, page2.Transactions, 2)
+	require.Equal(t, s2.ID, page2.Transactions[0].ID)
+	require.Equal(t, s1.ID, page2.Transactions[1].ID)
+	require.NotNil(t, page2.NextCursor)
+
+	page3 := fetch(*page2.NextCursor)
+	require.Len(t, page3.Transactions, 1)
+	require.Equal(t, s0.ID, page3.Transactions[0].ID)
+	require.Nil(t, page3.NextCursor)
+
+	seen := make(map[string]bool, 5)
+	for _, tr := range append(append(page1.Transactions, page2.Transactions...), page3.Transactions...) {
+		require.False(t, seen[tr.ID], "duplicate across pages")
+		seen[tr.ID] = true
+	}
+	require.Len(t, seen, 5)
 }

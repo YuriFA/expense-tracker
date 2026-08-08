@@ -421,8 +421,19 @@ type Transaction = {
 | `categoryId` | `string` | Только для cashflow |
 | `fromDate` | ISO date | С начала дня (включительно) |
 | `toDate` | ISO date | До конца дня (включительно) |
-| `limit` | `number` | Ограничение количества |
-| `sort` | `string` | `occurredAt`, `-occurredAt`, `amount`, `-amount` |
+| `limit` | `number` | Page size (default 50, max 100) |
+| `cursor` | `string` | Opaque курсор следующей страницы (из `nextCursor` предыдущего ответа) |
+
+**Response:** объект с пагинацией (не bare array):
+
+```json
+{
+  "transactions": [ /* Transaction[] */ ],
+  "nextCursor": "opaque-base64"
+}
+```
+
+`nextCursor` - `null`, если страниц больше нет. Порядок фиксированный: `occurredAt DESC, id DESC`. Курсор кодирует `(occurredAt, id)` последнего элемента страницы; следующая страница берётся keyset-условием "после курсора" - без дублей и пропусков, стабильно даже при одинаковых `occurredAt` (tiebreak по `id`).
 
 ### Validation rules
 
@@ -546,8 +557,6 @@ make migrate-create name=add_xxx
 
 ## Roadmap (не реализовано)
 
-- **Pagination** для `/api/transactions` — cursor-based, когда > 1000 транзакций.
 - **Recurring transactions** — фоновые job'ы.
 - **Budgets** — месячные лимиты по категориям.
 - **Health/metrics** — `/healthz`, `/readyz`, `/metrics` для K8s.
-- **Email verification** — если понадобится.
