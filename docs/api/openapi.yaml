@@ -38,7 +38,13 @@ servers:
 
 tags:
   - name: Auth
-    description: Регистрация, вход, выход, текущий пользователь
+    description: Регистрация, вход, выход, верификация email, сброс пароля
+  - name: Sessions
+    description: Управление активными сессиями
+  - name: Accounts
+    description: Счета пользователя
+  - name: Categories
+    description: Категории транзакций (per-user)
   - name: Transactions
     description: Операции с транзакциями (income / expense / transfer)
 
@@ -186,6 +192,220 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/sessions:
+    get:
+      tags: [Sessions]
+      operationId: listSessions
+      summary: Список активных сессий
+      description: |
+        Возвращает активные (не истёкшие) сессии текущего user. Токены
+        **не возвращаются** — только метаданные + `isCurrent`.
+      responses:
+        "200":
+          description: Список сессий.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Sessions]
+      operationId: deleteAllSessions
+      summary: Завершить все сессии, кроме текущей
+      description: |
+        Инвалидирует все сессии user, **кроме текущей** (остаёшься в системе
+        на этом устройстве). Cookie текущей сессии не сбрасывается.
+      responses:
+        "204":
+          description: Все прочие сессии отозваны.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/verify-email:
+    post:
+      tags: [Auth]
+      operationId: verifyEmail
+      summary: Подтвердить email одноразовым кодом
+      description: |
+        Проверяет 6-значный OTP-код текущего user. Brute-force защита: после
+        MaxVerificationAttempts неверных попыток код инвалидирован; per-IP rate
+        limit блокирует серию попыток (429).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  minLength: 6
+                  maxLength: 6
+                  example: "123456"
+      responses:
+        "204":
+          description: Email подтверждён.
+        "400":
+          description: Код истёк / нет активного кода.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                expired:
+                  value:
+                    code: VERIFICATION_CODE_EXPIRED
+                    message: verification code expired, request a new one
+                notFound:
+                  value:
+                    code: VERIFICATION_CODE_NOT_FOUND
+                    message: no active verification code, request a new one
+        "403":
+          description: Неверный код (attempts остаются).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: INVALID_VERIFICATION_CODE
+                message: invalid verification code
+        "409":
+          description: Email уже подтверждён.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: EMAIL_ALREADY_VERIFIED
+                message: email already verified
+        "429":
+          description: Brute-force lockout (per-IP).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: TOO_MANY_REQUESTS
+                message: too many failed attempts, please try again later
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/verify-email/resend:
+    post:
+      tags: [Auth]
+      operationId: resendVerification
+      summary: Запросить новый verification code
+      description: |
+        Ротация: старый код инвалидируется, создаётся новый. Throttle — не
+        чаще раза в VerificationResendThrottle (60s), иначе 429 с Retry-After.
+      responses:
+        "204":
+          description: Новый код создан и "отправлен" (mailer-stub в dev).
+        "409":
+          description: Email уже подтверждён.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: EMAIL_ALREADY_VERIFIED
+                message: email already verified
+        "429":
+          description: Throttle.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: TOO_MANY_REQUESTS
+                message: please wait before requesting a new code
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/password-reset/request:
+    post:
+      tags: [Auth]
+      operationId: requestPasswordReset
+      summary: Запросить сброс пароля
+      description: |
+        Unauthenticated. Anti-enumeration: всегда 204, независимо от
+        существования email. Если user существует и не throttled — issue'ится
+        high-entropy reset token (magic link). Mailer-stub в dev.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "204":
+          description: Всегда (anti-enumeration).
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/password-reset/confirm:
+    post:
+      tags: [Auth]
+      operationId: confirmPasswordReset
+      summary: Подтвердить сброс и задать новый пароль
+      description: |
+        Unauthenticated. Потребляет одноразовый reset token, меняет пароль,
+        отзываются **все** сессии user. High-entropy token — не брутфорсится.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token:
+                  type: string
+                  description: 256-bit hex token из reset-ссылки.
+                newPassword:
+                  type: string
+                  minLength: 8
+                  maxLength: 72
+      responses:
+        "204":
+          description: Пароль изменён, все сессии отозваны.
+        "400":
+          description: Невалидный/истёкший token или validation failed.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - $ref: "#/components/schemas/ValidationErrorResponse"
+              examples:
+                invalidToken:
+                  value:
+                    code: INVALID_PASSWORD_RESET_TOKEN
+                    message: invalid or expired reset token
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/transactions:
     get:
@@ -419,6 +639,241 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/accounts:
+    get:
+      tags: [Accounts]
+      operationId: listAccounts
+      summary: Список счетов (с balance)
+      responses:
+        "200":
+          description: Счета текущего user с вычисленным balance.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Accounts]
+      operationId: createAccount
+      summary: Создать счёт
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountCreateRequest"
+      responses:
+        "201":
+          description: Счёт создан.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/accounts/balances:
+    get:
+      tags: [Accounts]
+      operationId: getAccountBalances
+      summary: Сводка балансов + netWorth
+      responses:
+        "200":
+          description: Балансы всех счетов и net worth.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountBalancesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/accounts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    get:
+      tags: [Accounts]
+      operationId: getAccount
+      summary: Получить счёт по ID
+      responses:
+        "200":
+          description: Счёт.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/AccountNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Accounts]
+      operationId: updateAccount
+      summary: Обновить счёт (name, manualAdjustment)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountUpdateRequest"
+      responses:
+        "200":
+          description: Обновлённый счёт.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/AccountNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Accounts]
+      operationId: deleteAccount
+      summary: Удалить счёт
+      description: 409 если есть привязанные transactions.
+      responses:
+        "204":
+          description: Удалено.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/AccountNotFound"
+        "409":
+          $ref: "#/components/responses/AccountInUse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/categories:
+    get:
+      tags: [Categories]
+      operationId: listCategories
+      summary: Список категорий
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [income, expense]
+      responses:
+        "200":
+          description: Категории текущего user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Categories]
+      operationId: createCategory
+      summary: Создать категорию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryCreateRequest"
+      responses:
+        "201":
+          description: Категория создана.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/CategoryAlreadyExists"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/categories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CategoryId"
+    get:
+      tags: [Categories]
+      operationId: getCategory
+      summary: Получить категорию по ID
+      responses:
+        "200":
+          description: Категория.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/CategoryNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Categories]
+      operationId: updateCategory
+      summary: Обновить категорию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdateRequest"
+      responses:
+        "200":
+          description: Обновлённая категория.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/CategoryNotFound"
+        "409":
+          $ref: "#/components/responses/CategoryAlreadyExists"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Categories]
+      operationId: deleteCategory
+      summary: Удалить категорию
+      description: 409 если есть привязанные transactions.
+      responses:
+        "204":
+          description: Удалено.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/CategoryNotFound"
+        "409":
+          $ref: "#/components/responses/CategoryInUse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -444,6 +899,20 @@ components:
       schema:
         type: string
         maxLength: 255
+    AccountId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   responses:
     Unauthorized:
@@ -494,6 +963,51 @@ components:
           example:
             code: TRANSACTION_VERSION_CONFLICT
             message: transaction version conflict
+    AccountNotFound:
+      description: Счёт не найден (или чужой).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCOUNT_NOT_FOUND
+            message: account not found
+    CategoryNotFound:
+      description: Категория не найдена (или чужая).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: CATEGORY_NOT_FOUND
+            message: category not found
+    AccountInUse:
+      description: Счёт имеет привязанные transactions, удаление невозможно.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCOUNT_IN_USE
+            message: account has transactions and cannot be deleted
+    CategoryInUse:
+      description: Категория имеет привязанные transactions, удаление невозможно.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: CATEGORY_IN_USE
+            message: category has transactions and cannot be deleted
+    CategoryAlreadyExists:
+      description: Категория с таким name уже есть у user.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: CATEGORY_ALREADY_EXISTS
+            message: category already exists
 
   schemas:
     User:
@@ -505,13 +1019,16 @@ components:
         email:
           type: string
           format: email
+        emailVerified:
+          type: boolean
+          description: Подтверждён ли email.
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, email, createdAt, updatedAt]
+      required: [id, email, emailVerified, createdAt, updatedAt]
 
     Transaction:
       type: object
@@ -672,3 +1189,165 @@ components:
         message:
           type: string
       required: [field, message]
+
+    SessionResponse:
+      type: object
+      description: Метаданные сессии без токена.
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          description: Грубый proxy последней активности (обновляется при sliding).
+        expiresAt:
+          type: string
+          format: date-time
+        isCurrent:
+          type: boolean
+      required: [createdAt, updatedAt, expiresAt, isCurrent]
+
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        currency:
+          type: string
+          enum: [USD, EUR, RUB]
+        openingBalance:
+          type: integer
+          format: int64
+        manualAdjustment:
+          type: integer
+          format: int64
+        balance:
+          type: integer
+          format: int64
+          description: Вычисляется сервером (opening + manual + Σ transactions).
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, name, currency, openingBalance, manualAdjustment, balance, createdAt, updatedAt]
+
+    AccountBalance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        currency:
+          type: string
+          enum: [USD, EUR, RUB]
+        balance:
+          type: integer
+          format: int64
+      required: [id, userId, name, currency, balance]
+
+    AccountBalancesResponse:
+      type: object
+      properties:
+        balances:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountBalance"
+        netWorth:
+          type: integer
+          format: int64
+      required: [balances, netWorth]
+
+    AccountCreateRequest:
+      type: object
+      required: [name, currency, openingBalance]
+      properties:
+        name:
+          type: string
+        currency:
+          type: string
+          enum: [USD, EUR, RUB]
+        openingBalance:
+          type: integer
+          format: int64
+
+    AccountUpdateRequest:
+      type: object
+      description: Все поля optional.
+      properties:
+        name:
+          type: string
+          minLength: 3
+        manualAdjustment:
+          type: integer
+          format: int64
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [income, expense]
+        icon:
+          type: string
+        color:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, name, type, icon, color, createdAt, updatedAt]
+
+    CategoryCreateRequest:
+      type: object
+      required: [name, type, icon, color]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [income, expense]
+        icon:
+          type: string
+        color:
+          type: string
+
+    CategoryUpdateRequest:
+      type: object
+      description: Все поля optional.
+      properties:
+        name:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [income, expense]
+        icon:
+          type: string
+          minLength: 1
+        color:
+          type: string
+          minLength: 1

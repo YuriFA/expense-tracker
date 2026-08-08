@@ -6,9 +6,9 @@ REST API для expense tracker. Все endpoints начинаются с `/api`
 > Просмотр в браузере: поднять сервер и открыть `/docs` (Redoc). Локальный
 > preview без сервера: `npx @redocly/cli preview-docs docs/api/openapi.yaml`.
 >
-> Spec сейчас покрывает `auth + transactions`. Остальные endpoints
-> добавляются по мере надобности — prose-документация ниже актуальна для всех
-> ресурсов.
+> Spec покрывает весь текущий API: `auth` (включая верификацию email, сброс
+> пароля), `sessions`, `accounts`, `categories`, `transactions`. Prose-документация
+> ниже — сопроводительное описание; формальный контракт — в `openapi.yaml`.
 
 ## Соглашения
 
