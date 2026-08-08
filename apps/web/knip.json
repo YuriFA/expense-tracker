@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/app/router/index.ts", "src/**/*.test.ts", "e2e/**/*.ts", "steiger.config.ts"],
+  "project": [
+    "src/**/*.{ts,vue}",
+    "!src/**/*.test.ts",
+    "!src/__tests__/helpers/**",
+    "!src/**/*.d.ts"
+  ],
+  "ignoreIssues": {
+    "src/shared/ui/**/index.ts": ["exports", "types"]
+  },
+  "ignoreDependencies": ["tailwindcss", "tw-animate-css"],
+  "typescript": {
+    "config": "tsconfig.app.json"
+  }
+}
