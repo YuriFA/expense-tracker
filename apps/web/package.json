@@ -1,5 +1,5 @@
 {
-  "name": "vue-project",
+  "name": "@expense-tracker/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -48,6 +48,7 @@
     "@feature-sliced/steiger-plugin": "^0.6.0",
     "@intlify/eslint-plugin-vue-i18n": "^4.3.0",
     "@playwright/test": "^1.59.1",
+    "@tsconfig/node24": "^24.0.4",
     "@types/jsdom": "^28.0.1",
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^6.0.6",

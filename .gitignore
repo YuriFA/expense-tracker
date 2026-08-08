@@ -17,5 +17,8 @@
 /backend/out/
 /backend/coverage.out
 
+# --- JS workspaces ---
+node_modules/
+
 # --- Frontend (apps/web) ---
-# node_modules, dist, coverage, playwright artifacts handled by apps/web/.gitignore
+# dist, coverage, playwright artifacts handled by apps/web/.gitignore
