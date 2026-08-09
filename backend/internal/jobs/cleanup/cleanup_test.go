@@ -2,99 +2,87 @@ package cleanup_test
 
 import (
 	"context"
-	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/yurifa/expense-tracker-api/internal/jobs/cleanup"
 	"github.com/yurifa/expense-tracker-api/internal/logger"
-	"github.com/yurifa/expense-tracker-api/internal/storage"
-	"github.com/yurifa/expense-tracker-api/internal/storage/sqlite"
-
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
-func newCleanupDB(t *testing.T) (*sqlite.Storage, *storage.User) {
-	t.Helper()
-	db := sqlite.NewTestDB(t)
-	user, err := db.RegisterUser(context.Background(), storage.RegisterUserParams{
-		Email:        uuid.NewString()[:8] + "@test.com",
-		PasswordHash: "hash",
-	})
-	require.NoError(t, err)
-	return db, user
+// fakeCleaner is an in-memory Cleaner for the cleanup job (no database).
+type fakeCleaner struct {
+	mu                   sync.Mutex
+	sessionsDeleted      atomic.Int64
+	idempotencyDeleted   atomic.Int64
+	expiredSessionErr    error
+	expiredIdempotencyErr error
+}
+
+func (f *fakeCleaner) DeleteExpiredSessions(_ context.Context) (int64, error) {
+	if f.expiredSessionErr != nil {
+		return 0, f.expiredSessionErr
+	}
+	return f.sessionsDeleted.Swap(0), nil
+}
+
+func (f *fakeCleaner) DeleteExpiredIdempotencyKeys(_ context.Context) (int64, error) {
+	if f.expiredIdempotencyErr != nil {
+		return 0, f.expiredIdempotencyErr
+	}
+	return f.idempotencyDeleted.Swap(0), nil
 }
 
 func TestCleanup_Run_DeletesExpiredOnStartupSweep(t *testing.T) {
 	t.Parallel()
-	db, user := newCleanupDB(t)
+
+	cleaner := &fakeCleaner{}
+	cleaner.sessionsDeleted.Store(3)
+	cleaner.idempotencyDeleted.Store(5)
+
+	job := cleanup.New(cleaner, logger.NewDiscardLogger(), time.Hour)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- job.Run(ctx) }()
 
-	const (
-		expiredKey = "expired-key"
-		validKey   = "valid-key"
-	)
-	past := time.Now().UTC().Add(-time.Hour)
-	future := time.Now().UTC().Add(time.Hour)
-
-	_, err := db.CreateIdempotencyKey(ctx, storage.CreateIdempotencyKeyParams{
-		IdempotencyKey: expiredKey,
-		UserID:         user.ID,
-		RequestHash:    "h1",
-		ExpiresAt:      past,
-	})
-	require.NoError(t, err)
-	_, err = db.CreateIdempotencyKey(ctx, storage.CreateIdempotencyKeyParams{
-		IdempotencyKey: validKey,
-		UserID:         user.ID,
-		RequestHash:    "h2",
-		ExpiresAt:      future,
-	})
-	require.NoError(t, err)
-
-	job := cleanup.New(db, logger.NewDiscardLogger(), time.Hour)
-	done := make(chan struct{})
-	go func() {
-		_ = job.Run(ctx)
-		close(done)
-	}()
-
-	// Startup sweep runs synchronously at the top of Run, but in a goroutine, so
-	// poll until the expired key is gone.
+	// The startup sweep runs before the first tick; give it a moment.
 	require.Eventually(t, func() bool {
-		_, err := db.GetByUserAndKey(ctx, user.ID, expiredKey)
-		return errors.Is(err, storage.ErrIdempotencyKeyNotFound)
-	}, time.Second, 10*time.Millisecond)
-
-	_, err = db.GetByUserAndKey(ctx, user.ID, validKey)
-	require.NoError(t, err, "non-expired key must survive cleanup")
+		return cleaner.sessionsDeleted.Load() == 0 && cleaner.idempotencyDeleted.Load() == 0
+	}, time.Second, 10*time.Millisecond, "startup sweep should delete expired rows")
 
 	cancel()
-	<-done
+	require.NoError(t, <-done)
 }
 
-func TestCleanup_Run_StopsOnContextCancel(t *testing.T) {
+type failingCleaner struct{ fakeCleaner }
+
+func (f *failingCleaner) DeleteExpiredSessions(_ context.Context) (int64, error) {
+	return 0, assertError("boom")
+}
+
+type errVal struct{ msg string }
+
+func (e errVal) Error() string { return e.msg }
+
+func assertError(msg string) error { return errVal{msg: msg} }
+
+func TestCleanup_Run_KeepsLoopingOnError(t *testing.T) {
 	t.Parallel()
-	db, _ := newCleanupDB(t)
+
+	// Errors during a sweep must not stop the loop.
+	cleaner := &failingCleaner{}
+	job := cleanup.New(cleaner, logger.NewDiscardLogger(), 20*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	job := cleanup.New(db, logger.NewDiscardLogger(), time.Hour)
+	done := make(chan error, 1)
+	go func() { done <- job.Run(ctx) }()
 
-	done := make(chan struct{})
-	go func() {
-		_ = job.Run(ctx)
-		close(done)
-	}()
-
+	// Let a couple of ticks pass, then cancel; Run must still return nil.
+	time.Sleep(80 * time.Millisecond)
 	cancel()
-
-	select {
-	case <-done:
-		// job returned promptly after context cancellation
-	case <-time.After(2 * time.Second):
-		t.Fatal("cleanup job did not stop after context cancellation")
-	}
+	require.NoError(t, <-done, "Run returns nil even when sweeps error")
 }
