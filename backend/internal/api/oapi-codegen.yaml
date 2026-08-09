@@ -1,0 +1,19 @@
+# oapi-codegen configuration.
+#
+# Generates the Gin server interface (ServerInterface + StrictServerInterface) and
+# all request/response models from the canonical OpenAPI spec (docs/api/openapi.yaml).
+#
+# Usage (from backend/):
+#   oapi-codegen --config internal/api/oapi-codegen.yaml ../docs/api/openapi.yaml
+#
+# Regenerate after any spec change via `make gen`. CI runs `make gen-check` to
+# reject un-regenerated / drifted generated code.
+package: api
+generate:
+  gin-server: true
+  strict-server: true
+  models: true
+  embedded-spec: true
+output: internal/api/api.gen.go
+output-options:
+  skip-prune: false
