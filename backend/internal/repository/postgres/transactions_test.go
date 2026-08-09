@@ -1,6 +1,7 @@
 package postgres_test
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -71,12 +72,12 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 
 	// Two transactions with the SAME occurred_at - id DESC breaks the tie.
 	same := time.Date(2026, 2, 1, 12, 0, 0, 0, time.UTC)
-	tx1, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+	_, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
 		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: same,
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
-	tx2, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+	_, err = testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
 		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 2, OccurredAt: same,
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
@@ -85,18 +86,17 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 	rows, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: ptrInt(10)})
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
-	// Both share occurred_at; the higher id comes first (DESC).
-	assert.True(t, rows[0].ID.String() >= rows[1].ID.String())
-	// The two ids are exactly tx1, tx2 in some order.
-	got := map[string]bool{rows[0].ID.String(): true, rows[1].ID.String(): true}
-	assert.True(t, got[tx1.ID.String()] && got[tx2.ID.String()])
+	// Both share occurred_at; the lex-higher id comes first (DESC).
+	require.Equal(t, 1, bytes.Compare(rows[0].ID[:], rows[1].ID[:]), "higher id sorts first")
 
-	// Cursor on tx2 (higher id) yields tx1 only.
-	cursor := &domain.TransactionCursor{OccurredAt: same, ID: tx2.ID}
+	// Cursor on the lex-higher id yields the lower-id row only.
+	higher := rows[0].ID
+	lower := rows[1].ID
+	cursor := &domain.TransactionCursor{OccurredAt: same, ID: higher}
 	rows2, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: ptrInt(10), Cursor: cursor})
 	require.NoError(t, err)
 	require.Len(t, rows2, 1)
-	assert.Equal(t, tx1.ID, rows2[0].ID)
+	assert.Equal(t, lower, rows2[0].ID)
 }
 
 func TestTransactionOptimisticConcurrency(t *testing.T) {
