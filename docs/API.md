@@ -1,562 +1,71 @@
 # API Reference
 
-REST API для expense tracker. Все endpoints начинаются с `/api`. Auth — через session cookie (stateful).
-
-> **Formal spec:** [`api/openapi.yaml`](./api/openapi.yaml) — OpenAPI 3.0.3.
-> Просмотр в браузере: поднять сервер и открыть `/docs` (Redoc). Локальный
-> preview без сервера: `npx @redocly/cli preview-docs docs/api/openapi.yaml`.
->
-> Spec покрывает весь текущий API: `auth` (включая верификацию email, сброс
-> пароля), `sessions`, `accounts`, `categories`, `transactions`. Prose-документация
-> ниже — сопроводительное описание; формальный контракт — в `openapi.yaml`.
-
-## Соглашения
-
-- **Базовый путь:** `/api`
-- **Формат дат:** ISO 8601 (`2026-07-13T10:30:00Z`).
-- **Денежные суммы:** `integer (int64)` в минорных единицах. $12.50 → `1250`. Divisor = 100 для USD/EUR/RUB.
-- **ID:** UUID v4 строки.
-- **Content-Type:** `application/json` для всех request bodies.
-
-### Коды ответов
-
-| HTTP | Значение |
-|------|----------|
-| 200 | Успех (GET, PATCH) |
-| 201 | Создано (POST) |
-| 204 | Нет контента (DELETE, logout) |
-| 400 | Невалидный запрос |
-| 401 | Не авторизован |
-| 403 | Запрещено |
-| 404 | Не найдено |
-| 409 | Конфликт (дубликат, ссылка используется) |
-| 422 | Бизнес-правило нарушено (невалидные ссылки в transaction) |
-| 429 | Rate limit превышен |
-| 500 | Внутренняя ошибка |
-
-### Формат ошибок
-
-```json
-{
-  "code": "ACCOUNT_NOT_FOUND",
-  "message": "account not found"
-}
-```
-
-Для validation ошибок добавляется `errors[]`:
-```json
-{
-  "code": "VALIDATION_FAILED",
-  "message": "validation failed",
-  "errors": [
-    {"field": "name", "message": "name is required"}
-  ]
-}
-```
-
-`code` — машиночитаемый (см. [Error codes](#error-codes)).
-`message` — человекочитаемое описание.
-
----
-
-## Auth
-
-Stateful sessions. Server хранит сессии в таблице `sessions`, клиент получает `session_id` через httpOnly cookie.
-
-### Cookie
-
-- **Name:** `session_id` (настраивается в config).
-- **Attributes:** `HttpOnly`, `Secure` (config-driven), `SameSite=Lax` (config-driven).
-- **TTL:** 24h по умолчанию (config-driven).
-
-### Session lifecycle
-
-- **Создание сессии (`register`, `login`)** — всегда генерируется **новый** `session_id` и кладётся в cookie. Выпуск свежего ID на каждый вход — это защита от session fixation: server никогда не переиспользует session ID, который мог быть подставлен атакующим до входа. Существующие сессии этого user **не инвалидируются** — поддерживается multi-session (веб + мобайл параллельно).
-- **Logout** — инвалидирует **только текущую** сессию (удаляется из БД, cookie сбрасывается). Остальные сессии user остаются валидными. Idempotent.
-- **Sliding expiration** — при каждом аутентифицированном запросе, если до `expires_at` осталось < 25% TTL, сессия продлевается до `now + TTL`, cookie обновляется. Без активности сессия инвалидируется по `expires_at`.
-- **Expiration cleanup** — фоновая задача периодически удаляет просроченные сессии из БД.
-- **Удаление user** — `ON DELETE CASCADE` на `sessions.user_id`: удаление user убивает все его сессии на уровне схемы.
-- **Password reset** - после успешного reset отзываются **все** сессии user (см. [Password reset](#password-reset)): смена пароля делает все старые сессии невалидными, user перелогинивается новым паролем.
-
-> **Не реализовано (roadmap):** Revoke конкретной сессии по ID (→ roadmap 02.3, требует отдельного не-секретного display-id, чтобы не утекал токен).
-
-### Endpoints
-
-| Метод | Endpoint | Auth | Описание |
-|------|----------|------|----------|
-| `POST` | `/api/auth/register` | ❌ | Регистрация. Создаёт user + сессию + 24 дефолтные категории + verification code. Auto-login. |
-| `POST` | `/api/auth/login` | ❌ | Логин. Создаёт сессию, ставит cookie. |
-| `POST` | `/api/auth/logout` | ❌ | Удаление сессии, сброс cookie. Idempotent. |
-| `GET` | `/api/auth/me` | ✅ | Текущий пользователь. |
-| `GET` | `/api/auth/sessions` | ✅ | Список активных сессий user (без токенов). |
-| `DELETE` | `/api/auth/sessions` | ✅ | Завершить все сессии, кроме текущей. |
-| `POST` | `/api/auth/verify-email` | ✅ | Подтвердить email одноразовым кодом. |
-| `POST` | `/api/auth/verify-email/resend` | ✅ | Запросить новый verification code. |
-| `POST` | `/api/auth/password-reset/request` | ❌ | Запросить сброс пароля (высылается токен). |
-| `POST` | `/api/auth/password-reset/confirm` | ❌ | Подтвердить сброс и задать новый пароль. |
-
-### POST /api/auth/register
-
-**Request:**
-```json
-{
-  "email": "user@example.com",
-  "password": "secret123"
-}
-```
-
-Валидация: `email` — валидный email, `password` — 8-72 символа (bcrypt обрезает > 72 байт).
-
-**Response:** `201 Created` + cookie + body:
-```json
-{
-  "id": "uuid",
-  "email": "user@example.com",
-  "emailVerified": false,
-  "createdAt": "...",
-  "updatedAt": "..."
-}
-```
-
-При регистрации создаётся одноразовый verification code (см. [Email verification](#email-verification)). В dev-режиме код логируется (mailer-stub); реальная отправка - TODO (→ roadmap 06.4).
-
-Ошибки:
-- `409 USER_ALREADY_EXISTS` — email занят.
-- `400 VALIDATION_FAILED` — невалидный input.
-- `429 TOO_MANY_REQUESTS` — превышен лимит регистраций с IP (TODO, пока не реализован).
-
-### POST /api/auth/login
-
-**Request:**
-```json
-{
-  "email": "user@example.com",
-  "password": "secret123"
-}
-```
-
-**Response:** `200 OK` + cookie + body (как register).
-
-Ошибки:
-- `401 INVALID_CREDENTIALS` — неверный email или пароль (единый ответ, не раскрывает что именно).
-- `429 TOO_MANY_REQUESTS` — 5 неудачных попыток в 15 минут с одного IP.
-
-### POST /api/auth/logout
-
-Тело не нужно. Cookie читается из request, сессия удаляется из БД, cookie сбрасывается.
-
-**Response:** `204 No Content`. Idempotent — повторный вызов с уже сброшенной cookie тоже 204.
-
-### GET /api/auth/me
-
-**Response:** `200 OK`:
-```json
-{
-  "id": "uuid",
-  "email": "user@example.com",
-  "emailVerified": false,
-  "createdAt": "...",
-  "updatedAt": "..."
-}
-```
-
-`passwordHash` не возвращается (`json:"-"`).
-
-**Ошибки:** `401 UNAUTHORIZED` — нет cookie или сессия невалидна.
-
-### GET /api/auth/sessions
-
-Список активных (не истёкших) сессий текущего user. Токены **не возвращаются** - только метаданные + `isCurrent` для текущей сессии. Сессии других user не видны (scope по `user_id`).
-
-**Response:** `200 OK`:
-```json
-[
-  {
-    "createdAt": "...",
-    "updatedAt": "...",
-    "expiresAt": "...",
-    "isCurrent": true
-  }
-]
-```
-
-`updatedAt` обновляется только при sliding-продлении, поэтому это грубый proxy последней активности.
-
-**Ошибки:** `401 UNAUTHORIZED` - нет cookie или сессия невалидна.
-
-### DELETE /api/auth/sessions
-
-Завершает **все** сессии текущего user, **кроме текущей** (B2 policy: остаёшься в системе на этом устройстве). Cookie текущей сессии не сбрасывается.
-
-**Response:** `204 No Content`.
-
-**Ошибки:** `401 UNAUTHORIZED` - нет cookie или сессия невалидна.
-
-### Email verification
-
-После `register` user остаётся `emailVerified: false` и получает 6-значный одноразовый код (в dev логируется mailer-stub'ом; реальная отправка - TODO, → roadmap 06.4). Свойства кода и защиты:
-
-- 6 цифр, `crypto/rand` (без modulo-bias); TTL `10 мин`; single-use.
-- Хранится **plaintext** (ephemeral + короткий TTL + single-use; реальная угроза - online brute force, не at-rest кража - поэтому hash тут не работает).
-- Brute-force защита, 3 слоя: per-code cap (`MaxVerificationAttempts = 5` - после код инвалидирован), resend throttle (`60s`), per-IP failure rate limiter на verify-эндпоинте (reuse из login rate limit).
-- OTP-код **не идентифицирует user**, поэтому verify/resend требуют auth и проверяют код текущего user.
-
-### POST /api/auth/verify-email
-
-**Request:**
-```json
-{
-  "code": "123456"
-}
-```
-
-Валидация: `code` - ровно 6 символов.
-
-**Response:** `204 No Content` (email помечен verified).
-
-**Ошибки:**
-- `403 INVALID_VERIFICATION_CODE` - неверный код.
-- `400 VERIFICATION_CODE_EXPIRED` - код истёк, запроси новый.
-- `400 VERIFICATION_CODE_NOT_FOUND` - нет активного кода, запроси новый.
-- `409 EMAIL_ALREADY_VERIFIED` - email уже подтверждён.
-- `429 TOO_MANY_REQUESTS` - brute-force lockout (per-IP).
-
-### POST /api/auth/verify-email/resend
-
-Ротация: старый код инвалидируется, создаётся новый. Throttle - не чаще раза в `60s`, иначе `429` с `Retry-After`.
-
-**Response:** `204 No Content`.
-
-**Ошибки:**
-- `409 EMAIL_ALREADY_VERIFIED` - email уже подтверждён.
-- `429 TOO_MANY_REQUESTS` - throttle (с `Retry-After`).
-
-### Password reset
-
-Сброс пароля для забывшего пароль user'а - flow **unauthenticated** (login невозможен). Модель: **high-entropy token** (magic link), не OTP-код - high entropy (256-bit) убирает brute-force, token хранится как SHA-256 hash (O(1) lookup), token идентифицирует user (email не нужен в confirm). OWASP-стандарт для reset.
-
-- Token: 256-bit random (переиспользует `GenerateSessionToken`), TTL `15 мин`, single-use (delete-on-consume).
-- Hash at rest: SHA-256(token). High entropy → не брутфорсится → fast hash достаточен (в отличие от bcrypt для паролей).
-- Anti-enumeration: `request` всегда `204`, независимо от существования email.
-- Throttle: не чаще раза в `60s` на email (тихий - без `Retry-After`, чтобы не раскрывать существование).
-- После успешного reset - revoke **всех** сессий user (→ закрывает TODO из 02.2 policy-ноты).
-- Mailer-stub (log ссылки); реальная отправка - TODO (→ roadmap 06.4).
-
-### POST /api/auth/password-reset/request
-
-**Request:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-Валидация: `email` - валидный email. Невалидный формат → `400`.
-
-**Response:** `204 No Content` - **всегда**, независимо от существования email (anti-enumeration). Token issue'ится только если user существует и не throttled.
-
-### POST /api/auth/password-reset/confirm
-
-**Request:**
-```json
-{
-  "token": "256-bit-hex-token",
-  "newPassword": "newsecret123"
-}
-```
-
-Валидация: `token` - required, `newPassword` - 8-72 символа.
-
-**Response:** `204 No Content` (пароль изменён, все сессии отозваны).
-
-**Ошибки:**
-- `400 INVALID_PASSWORD_RESET_TOKEN` - невалидный/истёкший/уже-использованный token.
-- `400 VALIDATION_FAILED` - невалидный input.
-
----
-
-## Accounts
-
-Все endpoints требуют auth. User видит только свои accounts.
-
-### Модель
-
-```ts
-type Account = {
-  id: string
-  userId: string         // владелец
-  name: string
-  currency: string       // USD | EUR | RUB
-  openingBalance: number // int64, minor units
-  manualAdjustment: number
-  balance: number        // computed: openingBalance + manualAdjustment + Σ transactions
-  createdAt: string
-  updatedAt: string
-}
-```
-
-`balance` вычисляется сервером через SQL view `account_contributions`:
-- income: `+amount` на `accountId`
-- expense: `-amount` на `accountId`
-- transfer: `-amount` с `fromAccountId`, `+amount` на `toAccountId`
-
-### Endpoints
-
-| Метод | Endpoint | Описание |
-|------|----------|----------|
-| `GET` | `/api/accounts` | Список (с balance) |
-| `POST` | `/api/accounts` | Создание |
-| `GET` | `/api/accounts/:id` | Один |
-| `PATCH` | `/api/accounts/:id` | Update (name, manualAdjustment) |
-| `DELETE` | `/api/accounts/:id` | Удаление. **409** если есть transactions |
-| `GET` | `/api/accounts/balances` | Сводка + `netWorth` |
-
-**POST/PATCH body:**
-```json
-{
-  "name": "Debit card",
-  "currency": "USD",
-  "openingBalance": 100000
-}
-```
-
-**GET /api/accounts/balances response:**
-```json
-{
-  "balances": [
-    {"id": "...", "name": "...", "currency": "USD", "balance": 85000}
-  ],
-  "netWorth": 85000
-}
-```
-
----
-
-## Categories
-
-Все endpoints требуют auth. **Categories per-user** — каждый юзер видит только свои.
-
-При регистрации пользователю копируется **24 дефолтные категории** (seed). Дальше он может их редактировать, удалять, добавлять свои.
-
-### Модель
-
-```ts
-type Category = {
-  id: string
-  userId: string
-  name: string
-  type: "income" | "expense"
-  icon: string
-  color: string
-  createdAt: string
-  updatedAt: string
-}
-```
-
-`name` уникально в рамках `(userId, name)`. Slug отсутствует — name уже на нужном языке при сидировании.
-
-### Endpoints
-
-| Метод | Endpoint | Описание |
-|------|----------|----------|
-| `GET` | `/api/categories` | Список. Query: `?type=income\|expense` |
-| `POST` | `/api/categories` | Создание |
-| `GET` | `/api/categories/:id` | Одна |
-| `PATCH` | `/api/categories/:id` | Update |
-| `DELETE` | `/api/categories/:id` | Удаление. **409** если есть transactions |
-
-**POST body:**
-```json
-{
-  "name": "Pet supplies",
-  "type": "expense",
-  "icon": "🐾",
-  "color": "#FFA500"
-}
-```
-
----
-
-## Transactions
-
-Три типа: `income`, `expense`, `transfer`. Все endpoints требуют auth.
-
-### Модель
-
-```ts
-type Transaction = {
-  id: string
-  userId: string
-  type: "income" | "expense" | "transfer"
-  amount: number          // int64, > 0
-  description: string     // "" если не передано
-  occurredAt: string
-  createdAt: string
-  updatedAt: string
-  // Cashflow (income/expense):
-  accountId?: string
-  categoryId?: string
-  // Transfer:
-  fromAccountId?: string
-  toAccountId?: string
-}
-```
-
-### Endpoints
-
-| Метод | Endpoint | Описание |
-|------|----------|----------|
-| `GET` | `/api/transactions` | Список с фильтрами |
-| `POST` | `/api/transactions` | Создание. Сервер валидирует ссылки; **422** при нарушении |
-| `GET` | `/api/transactions/:id` | Одна |
-| `PATCH` | `/api/transactions/:id` | Update. `type` иммутабелен |
-| `DELETE` | `/api/transactions/:id` | Удаление |
-
-### GET /api/transactions — query параметры
-
-| Параметр | Тип | Описание |
-|----------|------|----------|
-| `type` | `income\|expense\|transfer` | Фильтр по типу |
-| `accountId` | `string` | Для transfer проверяет и from, и to |
-| `categoryId` | `string` | Только для cashflow |
-| `fromDate` | ISO date | С начала дня (включительно) |
-| `toDate` | ISO date | До конца дня (включительно) |
-| `limit` | `number` | Page size (default 50, max 100) |
-| `cursor` | `string` | Opaque курсор следующей страницы (из `nextCursor` предыдущего ответа) |
-
-**Response:** объект с пагинацией (не bare array):
-
-```json
-{
-  "transactions": [ /* Transaction[] */ ],
-  "nextCursor": "opaque-base64"
-}
-```
-
-`nextCursor` - `null`, если страниц больше нет. Порядок фиксированный: `occurredAt DESC, id DESC`. Курсор кодирует `(occurredAt, id)` последнего элемента страницы; следующая страница берётся keyset-условием "после курсора" - без дублей и пропусков, стабильно даже при одинаковых `occurredAt` (tiebreak по `id`).
-
-### Validation rules
-
-**Shape validation (400 VALIDATION_FAILED):**
-
-- **Cashflow (income/expense):** `accountId`, `categoryId` обязательны. `fromAccountId`, `toAccountId` запрещены.
-- **Transfer:** `fromAccountId`, `toAccountId` обязательны. `accountId`, `categoryId` запрещены.
-
-**Referential integrity (422):**
-
-- **Cashflow:** `accountId` существует и принадлежит user. `categoryId` существует, принадлежит user, `category.type === transaction.type`.
-- **Transfer:** `fromAccountId`, `toAccountId` существуют, принадлежат user, различаются (`SAME_ACCOUNT_TRANSFER`).
-
-**IDOR protection:** все ссылки проверяются на ownership. Чужой `accountId` → `ACCOUNT_NOT_FOUND` (не раскрываем существование).
-
-### POST body examples
-
-Cashflow:
-```json
-{
-  "type": "expense",
-  "amount": 1250,
-  "description": "Coffee",
-  "occurredAt": "2026-07-13T08:30:00Z",
-  "accountId": "acc-uuid",
-  "categoryId": "cat-uuid"
-}
-```
-
-Transfer:
-```json
-{
-  "type": "transfer",
-  "amount": 50000,
-  "description": "Move to savings",
-  "occurredAt": "2026-07-13T10:00:00Z",
-  "fromAccountId": "acc-1",
-  "toAccountId": "acc-2"
-}
-```
-
----
-
-## Error codes
-
-| Code | HTTP | Когда |
-|------|------|-------|
-| `INVALID_REQUEST` | 400 | Malformed JSON, неверные типы |
-| `VALIDATION_FAILED` | 400 | Нарушены binding правила (`required`, `gt`, `oneof`, `uuid`, и т.д.) |
-| `UNAUTHORIZED` | 401 | Нет cookie или сессия невалидна |
-| `INVALID_CREDENTIALS` | 401 | Неверный email или пароль при login |
-| `FORBIDDEN` | 403 | Запрещено (зарезервировано) |
-| `USER_ALREADY_EXISTS` | 409 | Email уже зарегистрирован |
-| `ACCOUNT_NOT_FOUND` | 404 | Account не найден или чужой |
-| `CATEGORY_NOT_FOUND` | 404 | Category не найдена или чужая |
-| `TRANSACTION_NOT_FOUND` | 404 | Transaction не найдена или чужая |
-| `ACCOUNT_IN_USE` | 409 | На account есть transactions (DELETE) |
-| `CATEGORY_IN_USE` | 409 | На category есть transactions (DELETE) |
-| `SAME_ACCOUNT_TRANSFER` | 422 | `fromAccountId === toAccountId` |
-| `INVALID_REFS` | 422 | Null/несоответствующие refs в transaction |
-| `CATEGORY_TYPE_MISMATCH` | 422 | `transaction.type` ≠ `category.type` |
-| `TOO_MANY_REQUESTS` | 429 | Превышен rate limit (login/register) |
-| `INTERNAL_ERROR` | 500 | Внутренняя ошибка сервера |
-
-### Замечания по кодам
-
-- **404 vs 422 для `ACCOUNT_NOT_FOUND`:** 404 — прямой доступ по id; 422 — account указан как FK в transaction.
-- **401 единый:** не различаем «нет cookie» и «сессия истекла» — не раскрываем существование.
-- **`INVALID_CREDENTIALS` единый:** не различаем «неверный email» и «неверный пароль» — защита от enumeration.
-
----
-
-## Rate limits
-
-- **Login:** 5 неудачных попыток в 15 минут с IP → 429. После 5й неудачной попытки
-  IP блокируется на 15 минут; успешный вход сбрасывает счётчик. Заголовок
-  `Retry-After` содержит количество секунд до разблокировки.
-- **Register:** без лимита (пока, TODO).
-- **Остальные endpoints:** без rate limit (пока).
-
-### Trusted proxies и X-Forwarded-For
-
-По умолчанию `trusted_proxies` пустой — IP клиента берётся из TCP-соединения
-(`RemoteAddr`), заголовки `X-Forwarded-For` / `X-Real-IP` **игнорируются**.
-Это защищает от спуфинга IP через заголовки (см. [go-chi/httprate advisory](https://github.com/go-chi/httprate/security/advisories)
-и GHSA-9g5q-2w5x-hmxf): атакующий не может ни крутить заголовок для обхода лимита,
-ни подставить чужой IP, чтобы заблокировать жертву по 429.
-
----
-
-## Cookie & CSRF
-
-- Cookie `session_id` с `HttpOnly`, `Secure` (config), `SameSite=Lax`.
-- `SameSite=Lax` закрывает CSRF для большинства случаев JSON API.
-- Фронтенд **не должен** читать session_id (httpOnly) или класть его в localStorage.
-
----
-
-## Schema migrations
-
-Используется `golang-migrate`. Файлы в `internal/storage/sqlite/migrations/`:
-
-```
-000001_init.{up,down}.sql
-000002_create_users.{up,down}.sql
-000003_categories_add_user_id.{up,down}.sql
-000004_create_sessions.{up,down}.sql
-000005_accounts_transactions_add_user_id.{up,down}.sql
-```
-
-Команды:
-```bash
-make migrate-up
-make migrate-down -all    # полный откат
-make migrate-create name=add_xxx
-```
-
-Миграции встраиваются в бинарь через `//go:embed`.
-
----
-
-## Roadmap (не реализовано)
-
-- **Recurring transactions** — фоновые job'ы.
-- **Budgets** — месячные лимиты по категориям.
-- **Health/metrics** — `/healthz`, `/readyz`, `/metrics` для K8s.
+The canonical API contract is the OpenAPI 3.0.3 spec:
+
+- **[`api/openapi.yaml`](./api/openapi.yaml)** - the single source of truth for
+  every endpoint, request/response schema, status code, and error code.
+- **View it:** run the server and open `/docs` (Redoc), or preview without a
+  server with `npx @redocly/cli preview-docs docs/api/openapi.yaml`.
+- **Drift guard:** `make gen` regenerates the Go server from the spec; CI runs
+  `make gen-check` + Redocly lint + `oasdiff` breaking-change detection.
+
+This file does **not** restate the spec. It captures only the policy decisions
+that are hard to express in a machine-readable schema.
+
+## Conventions
+
+- Base path `/api`; `Content-Type: application/json` for all request bodies.
+- **Money** is `integer (int64)` minor units (divisor 100). `$12.50 -> 1250`.
+  Never float/decimal.
+- **Timestamps** are ISO 8601 (`2026-07-13T10:30:00Z`), UTC everywhere.
+- **IDs** are UUID v4 strings.
+
+## Auth (stateful sessions, NOT JWT)
+
+Auth is session-cookie based. The session id is a server-stored 256-bit token;
+the server validates it on every request.
+
+- **Session lifecycle:** every `register`/`login` mints a **fresh** `session_id`
+  (session-fixation defense). Existing sessions are NOT revoked - multi-session
+  is supported (web + mobile in parallel). `logout` revokes only the current
+  session (idempotent). Sliding expiration extends a session when < 25% of the
+  TTL remains. A successful password reset revokes **all** of the user's
+  sessions. User deletion cascades to sessions at the schema level.
+- **401 is unified:** "no cookie" and "expired/invalid session" return the same
+  `UNAUTHORIZED`; we never reveal which.
+- **`INVALID_CREDENTIALS` is unified:** bad email and bad password return the
+  same error (anti-enumeration). `password-reset/request` always returns `204`
+  regardless of whether the email exists.
+
+## Rate limiting & trusted proxies
+
+`POST /api/auth/login` and `POST /api/auth/verify-email` are failure-rate-limited
+per **ClientIP**: after `max_attempts` failures (401/403) within the lockout
+window, the IP is blocked with `429` + `Retry-After`; a success resets the
+counter. The limiter keys on `ClientIP`, which comes from the TCP `RemoteAddr`
+**unless** `trusted_proxies` is configured - by default `X-Forwarded-For` /
+`X-Real-IP` are ignored to prevent IP spoofing and lockout abuse
+(GHSA-9g5q-2w5x-hmxf). Behind a known proxy/CDN, configure `trusted_proxies`.
+
+## Error nuances
+
+- **`ACCOUNT_NOT_FOUND` 404 vs 422:** fetching an account by id returns `404`;
+  an account referenced as a foreign key inside a `POST/PATCH /transactions`
+  returns `422` (same code, distinct context). Same for `CATEGORY_NOT_FOUND`.
+- **409 variants:** `USER_ALREADY_EXISTS`, `CATEGORY_ALREADY_EXISTS`,
+  `TRANSACTION_VERSION_CONFLICT`, `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`,
+  `EMAIL_ALREADY_VERIFIED` - clients should switch on `code`, not just status.
+
+## Idempotency (`POST /api/transactions`)
+
+Send an `Idempotency-Key` header. A repeat with the same key **and** the same
+body replays the original response; a repeat with the same key **and** a
+different body returns `409 IDEMPOTENCY_KEY_MISMATCH`. A second request while
+the first is still in flight returns `409 IDEMPOTENCY_KEY_IN_USE`. Keys expire
+after 24h.
+
+## Optimistic concurrency (`PATCH /api/transactions/{id}`)
+
+`TransactionUpdateRequest.version` is required. Send back the `version` you read;
+if the row was modified concurrently the server returns `409
+TRANSACTION_VERSION_CONFLICT` (refetch and retry).
