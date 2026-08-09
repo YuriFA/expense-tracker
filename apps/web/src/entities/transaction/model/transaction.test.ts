@@ -21,6 +21,7 @@ const incomeTransaction: CashflowTransaction = {
   occurredAt: '2024-01-01T00:00:00Z',
   accountId: 'a1',
   categoryId: 'cincome',
+  version: 1,
 }
 
 const expenseTransaction: CashflowTransaction = {
@@ -31,6 +32,7 @@ const expenseTransaction: CashflowTransaction = {
   occurredAt: '2024-01-02T00:00:00Z',
   accountId: 'a1',
   categoryId: 'cexpense',
+  version: 1,
 }
 
 const transferTransaction: TransferTransaction = {
@@ -41,6 +43,7 @@ const transferTransaction: TransferTransaction = {
   occurredAt: '2024-01-03T00:00:00Z',
   fromAccountId: 'a1',
   toAccountId: 'a2',
+  version: 1,
 }
 
 const accounts: AccountRef[] = [

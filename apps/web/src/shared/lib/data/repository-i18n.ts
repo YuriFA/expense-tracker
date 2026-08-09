@@ -6,5 +6,10 @@ export const getRepositoryErrorMessages = (): RepositoryErrorMessages => ({
   hasReferences: i18n.global.t('errors.hasReferences'),
   invalidPayload: i18n.global.t('errors.invalidPayload'),
   unknownReferences: i18n.global.t('errors.unknownReferences'),
+  versionConflict: i18n.global.t('errors.versionConflict'),
+  alreadyExists: i18n.global.t('errors.alreadyExists'),
+  unauthorized: i18n.global.t('errors.unauthorized'),
+  rateLimited: i18n.global.t('errors.rateLimited'),
+  conflict: i18n.global.t('errors.conflict'),
   generic: i18n.global.t('errors.generic'),
 })

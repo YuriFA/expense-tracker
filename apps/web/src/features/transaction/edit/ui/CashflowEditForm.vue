@@ -22,8 +22,9 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { id, type, amount, description, accountId, categoryId } = defineProps<{
+const { id, version, type, amount, description, accountId, categoryId } = defineProps<{
   id: string
+  version: number
   type: 'expense' | 'income'
   amount: number
   description: string
@@ -57,6 +58,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
     await updateTransaction({
       id,
       payload: {
+        version,
         type: data.type,
         accountId: data.accountId,
         amount: toMinorUnits(data.amount),

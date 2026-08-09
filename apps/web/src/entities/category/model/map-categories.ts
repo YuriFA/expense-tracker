@@ -59,9 +59,11 @@ const getCategoryNameBySlug = (slug: string): string => {
 }
 
 export const mapCategory = (category: Category): Category => {
+  const localizedName = category.slug ? getCategoryNameBySlug(category.slug) : ''
+
   return {
     ...category,
-    name: getCategoryNameBySlug(category.slug) || category.name,
+    name: localizedName || category.name,
   }
 }
 

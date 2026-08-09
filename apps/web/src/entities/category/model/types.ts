@@ -6,5 +6,7 @@ export interface Category {
   type: CategoryType
   icon: string
   color: string
-  slug: string
+  /** Present only for the bundled default categories (localStorage mode); the
+   * backend does not return a slug. */
+  slug?: string
 }

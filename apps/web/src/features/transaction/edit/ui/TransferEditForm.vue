@@ -21,8 +21,16 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { id, amount, description, fromAccountId: initialFrom, toAccountId: initialTo } = defineProps<{
+const {
+  id,
+  version,
+  amount,
+  description,
+  fromAccountId: initialFrom,
+  toAccountId: initialTo,
+} = defineProps<{
   id: string
+  version: number
   amount: number
   description: string
   fromAccountId: string
@@ -66,6 +74,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
     await updateTransaction({
       id,
       payload: {
+        version,
         type: data.type,
         fromAccountId: data.fromAccountId,
         toAccountId: data.toAccountId,

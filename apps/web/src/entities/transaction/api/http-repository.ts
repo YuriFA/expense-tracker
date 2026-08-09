@@ -1,37 +1,170 @@
-import { api } from '@/shared/api'
+import { apiClient } from '@/shared/api'
+import type { components } from '@/shared/api/schema'
+import { generateId } from '@/shared/lib/generate-id'
+import { NotFoundError } from '@/shared/lib/data'
+import { normalizeTransaction } from '../model/transaction'
 import type { Transaction } from '../model/types'
 import type {
   CreateTransactionPayload,
+  TransactionPage,
   TransactionQuery,
   TransactionRepository,
   UpdateTransactionPayload,
 } from './repository'
+import type { CalendarDay } from '@/shared/lib/date'
+
+type ApiTransaction = components['schemas']['Transaction']
+type TransactionCreateRequest = components['schemas']['TransactionCreateRequest']
+type TransactionUpdateRequest = components['schemas']['TransactionUpdateRequest']
+
+const PAGE_SIZE = 100
+
+const toDateParam = (day: CalendarDay | undefined): string | undefined =>
+  day ? day.toString() : undefined
+
+// Normalise every backend transaction into the frontend's discriminated union.
+function toTransaction(value: ApiTransaction): Transaction | null {
+  return normalizeTransaction(value)
+}
+
+function toTransactions(values: ApiTransaction[]): Transaction[] {
+  return values.flatMap((value) => {
+    const transaction = toTransaction(value)
+    return transaction ? [transaction] : []
+  })
+}
+
+// Build the query params the backend `listTransactions` expects.
+function buildListParams(
+  options: TransactionQuery & { cursor?: string },
+): Record<string, string | undefined> {
+  return {
+    type: options.type,
+    accountId: options.accountId,
+    categoryId: options.categoryId,
+    fromDate: toDateParam(options.fromDate),
+    toDate: toDateParam(options.toDate),
+    limit: options.limit?.toString(),
+    cursor: options.cursor,
+  }
+}
+
+// The error middleware throws on every non-2xx response, so a resolved call
+// always carries a body. This asserts that invariant for the type system.
+function requireData<T>(data: T | undefined): T {
+  if (data === undefined) {
+    throw new Error('Expected a response body but received none')
+  }
+  return data
+}
 
 export function createHTTPTransactionRepository(): TransactionRepository {
+  const getById = async (id: string): Promise<Transaction | null> => {
+    try {
+      const { data } = await apiClient.GET('/api/transactions/{id}', {
+        params: { path: { id } },
+      })
+      return data ? toTransaction(data) : null
+    } catch (error) {
+      if (error instanceof NotFoundError) return null
+      throw error
+    }
+  }
+
+  const listPage = async (
+    options: TransactionQuery & { cursor?: string } = {},
+  ): Promise<TransactionPage> => {
+    const { data } = await apiClient.GET('/api/transactions', {
+      params: { query: buildListParams(options) },
+    })
+    const body = requireData(data)
+    return {
+      transactions: toTransactions(body.transactions),
+      nextCursor: body.nextCursor ?? null,
+    }
+  }
+
+  // Follow the cursor to completion (the transactions list shows everything).
+  const fetchAllPages = async (options: TransactionQuery): Promise<Transaction[]> => {
+    const merged: Transaction[] = []
+    let cursor: string | undefined
+    // Safety cap so a misbehaving cursor can never spin forever.
+    for (let page = 0; page < 1000; page++) {
+      const result = await listPage({ ...options, cursor, limit: PAGE_SIZE })
+      merged.push(...result.transactions)
+      cursor = result.nextCursor ?? undefined
+      if (!cursor) break
+    }
+    return merged
+  }
+
   return {
-    async getAll() {
-      return api<Transaction[]>('/transactions')
-    },
-    async getById(id: string) {
-      return api<Transaction | null>(`/transactions/${id}`)
-    },
+    getAll: () => fetchAllPages({}),
+    getById,
     async query(options: TransactionQuery = {}) {
-      return api<Transaction[]>('/transactions', { query: options })
+      // A bounded query (e.g. recent transactions) maps to a single page so the
+      // backend returns at most `limit` of the most recent items. Unbounded
+      // queries (the full transactions list) follow the cursor to completion.
+      if (options.limit !== undefined) {
+        const page = await listPage(options)
+        return page.transactions
+      }
+      return fetchAllPages(options)
     },
-    async hasTransactionsForAccount(accountId: string) {
-      return api<boolean>(`/accounts/${accountId}/has-transactions`)
-    },
-    async hasTransactionsForCategory(categoryId: string) {
-      return api<boolean>(`/categories/${categoryId}/has-transactions`)
-    },
+    listPage,
     async create(payload: CreateTransactionPayload) {
-      return api<Transaction>('/transactions', { method: 'POST', body: payload })
+      const { data } = await apiClient.POST('/api/transactions', {
+        params: {
+          // Idempotency-Key is required by the spec; generate a fresh UUID per
+          // intent so retries with the same key replay the cached response.
+          header: { 'Idempotency-Key': generateId() },
+        },
+        body: toCreateRequest(payload),
+      })
+      return normalizeOrThrow(requireData(data))
     },
     async update(id, payload: UpdateTransactionPayload) {
-      return api<Transaction>(`/transactions/${id}`, { method: 'PUT', body: payload })
+      const { data } = await apiClient.PATCH('/api/transactions/{id}', {
+        params: { path: { id } },
+        body: toUpdateRequest(payload),
+      })
+      return normalizeOrThrow(requireData(data))
     },
     async remove(id) {
-      await api<void>(`/transactions/${id}`, { method: 'DELETE' })
+      await apiClient.DELETE('/api/transactions/{id}', { params: { path: { id } } })
     },
   }
+}
+
+function toCreateRequest(payload: CreateTransactionPayload): TransactionCreateRequest {
+  const base = {
+    type: payload.type,
+    amount: payload.amount,
+    occurredAt: payload.occurredAt,
+    description: payload.description ?? '',
+  }
+  if (payload.type === 'transfer') {
+    return { ...base, fromAccountId: payload.fromAccountId, toAccountId: payload.toAccountId }
+  }
+  return { ...base, accountId: payload.accountId, categoryId: payload.categoryId }
+}
+
+function toUpdateRequest(payload: UpdateTransactionPayload): TransactionUpdateRequest {
+  const result: TransactionUpdateRequest = { version: payload.version }
+  if (payload.amount !== undefined) result.amount = payload.amount
+  if (payload.description !== undefined) result.description = payload.description
+  if (payload.occurredAt !== undefined) result.occurredAt = payload.occurredAt
+  if ('accountId' in payload && payload.accountId) result.accountId = payload.accountId
+  if ('categoryId' in payload && payload.categoryId) result.categoryId = payload.categoryId
+  if ('fromAccountId' in payload && payload.fromAccountId) result.fromAccountId = payload.fromAccountId
+  if ('toAccountId' in payload && payload.toAccountId) result.toAccountId = payload.toAccountId
+  return result
+}
+
+function normalizeOrThrow(value: ApiTransaction): Transaction {
+  const transaction = toTransaction(value)
+  if (!transaction) {
+    throw new Error('Received a malformed transaction from the server')
+  }
+  return transaction
 }

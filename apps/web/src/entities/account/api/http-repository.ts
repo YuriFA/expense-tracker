@@ -1,23 +1,84 @@
-import { api } from '@/shared/api'
+import { apiClient } from '@/shared/api'
+import type { components } from '@/shared/api/schema'
+import { NotFoundError } from '@/shared/lib/data'
 import type { AccountWithBalance } from '../model/types'
-import type { AccountRepository, CreateAccountPayload, UpdateAccountPayload } from './repository'
+import type {
+  AccountRepository,
+  CreateAccountPayload,
+  UpdateAccountPayload,
+} from './repository'
+
+type ApiAccount = components['schemas']['Account']
+type AccountCreateRequest = components['schemas']['AccountCreateRequest']
+type AccountUpdateRequest = components['schemas']['AccountUpdateRequest']
+
+function toAccountWithBalance(value: ApiAccount): AccountWithBalance {
+  return {
+    id: value.id,
+    name: value.name,
+    currency: value.currency,
+    openingBalance: value.openingBalance,
+    manualAdjustment: value.manualAdjustment,
+    balance: value.balance,
+  }
+}
+
+// The error middleware throws on every non-2xx response, so a resolved call
+// always carries a body. This asserts that invariant for the type system.
+function requireData<T>(data: T | undefined): T {
+  if (data === undefined) {
+    throw new Error('Expected a response body but received none')
+  }
+  return data
+}
 
 export function createHTTPAccountRepository(): AccountRepository {
   return {
     async getAll() {
-      return api<AccountWithBalance[]>('/accounts')
+      const { data } = await apiClient.GET('/api/accounts')
+      return requireData(data).map(toAccountWithBalance)
     },
     async getById(id: string) {
-      return api<AccountWithBalance | null>(`/accounts/${id}`)
+      try {
+        const { data } = await apiClient.GET('/api/accounts/{id}', { params: { path: { id } } })
+        return data ? toAccountWithBalance(data) : null
+      } catch (error) {
+        if (error instanceof NotFoundError) return null
+        throw error
+      }
     },
     async create(payload: CreateAccountPayload) {
-      return api<AccountWithBalance>('/accounts', { method: 'POST', body: payload })
+      const { data } = await apiClient.POST('/api/accounts', {
+        body: toCreateRequest(payload),
+      })
+      return toAccountWithBalance(requireData(data))
     },
     async update(id, payload: UpdateAccountPayload) {
-      return api<AccountWithBalance>(`/accounts/${id}`, { method: 'PUT', body: payload })
+      const { data } = await apiClient.PATCH('/api/accounts/{id}', {
+        params: { path: { id } },
+        body: toUpdateRequest(payload),
+      })
+      return toAccountWithBalance(requireData(data))
     },
     async remove(id) {
-      await api<void>(`/accounts/${id}`, { method: 'DELETE' })
+      await apiClient.DELETE('/api/accounts/{id}', { params: { path: { id } } })
     },
+  }
+}
+
+function toCreateRequest(payload: CreateAccountPayload): AccountCreateRequest {
+  return {
+    name: payload.name,
+    currency: payload.currency,
+    openingBalance: payload.openingBalance,
+  }
+}
+
+function toUpdateRequest(payload: UpdateAccountPayload): AccountUpdateRequest {
+  return {
+    ...(payload.name !== undefined ? { name: payload.name } : {}),
+    ...(payload.manualAdjustment !== undefined
+      ? { manualAdjustment: payload.manualAdjustment }
+      : {}),
   }
 }

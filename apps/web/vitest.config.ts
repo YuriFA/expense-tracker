@@ -7,6 +7,13 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'jsdom',
+      environmentOptions: {
+        jsdom: {
+          // Mirror the dev server origin so same-origin relative `/api/*` URLs
+          // resolve (and the generated client can build Request objects).
+          url: 'http://localhost:5173/',
+        },
+      },
       exclude: [...configDefaults.exclude, 'e2e/**'],
       root: fileURLToPath(new URL('./', import.meta.url)),
       setupFiles: ['./src/__tests__/setup.ts'],

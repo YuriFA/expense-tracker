@@ -150,7 +150,7 @@ describe('useUpdateTransaction', () => {
     const { result } = mountWithComposable(() => useUpdateTransaction(), {
       repositories: { transactions: repo },
     })
-    const payload = { amount: 200 }
+    const payload = { version: 1, amount: 200 }
     await result.mutateAsync({ id: 't1', payload })
     expect(repo.update).toHaveBeenCalledWith('t1', payload)
   })

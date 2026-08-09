@@ -7,6 +7,8 @@ type BaseTransaction = {
   description?: string
   occurredAt: string
   updatedAt?: string
+  /** Optimistic-concurrency version from the server; sent back on PATCH. */
+  version: number
 }
 
 export type CashflowTransaction = BaseTransaction & {
