@@ -13,5 +13,4 @@ export {
   ConflictError,
   getRepositoryErrorMessage,
 } from './repository'
-export type { RepositoryErrorMessages } from './repository'
 export { getRepositoryErrorMessages } from './repository-i18n'

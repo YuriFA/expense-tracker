@@ -7,6 +7,8 @@ import App from './App.vue'
 import i18n from './shared/i18n'
 import router from './app/router'
 import { provideRepositories } from './app/repositories'
+import { setUnauthorizedHandler } from './shared/api'
+import { useAuthStore } from './entities/session'
 import './style.css'
 import { useSettingsStore } from './shared/store/use-settings-store'
 import { setupI18nLocaleWatcher } from './app/setup-i18n-locale-watcher'
@@ -32,6 +34,21 @@ app.use(PiniaColada, {
 })
 app.use(router)
 provideRepositories(app)
+
+// 401 interceptor: when an authenticated request loses its session mid-flight,
+// clear local auth state and redirect to login. Unauthenticated calls (login/
+// register/me before sign-in) handle UnauthorizedError themselves and the
+// auth store is empty then, so this is a no-op for them.
+setUnauthorizedHandler(() => {
+  const auth = useAuthStore()
+  if (auth.isAuthenticated) {
+    auth.clearSession()
+    void router.push({
+      name: 'login',
+      query: { redirect: router.currentRoute.value.fullPath },
+    })
+  }
+})
 
 watch(
   locale,

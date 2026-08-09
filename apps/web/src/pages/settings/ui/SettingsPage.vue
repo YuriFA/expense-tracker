@@ -9,11 +9,18 @@ import {
 import { AVAILABLE_CURRENCIES } from '@/shared/lib/money'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
+import { Button } from '@/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { useAuthStore, sessionApi } from '@/entities/session'
+import { notification } from '@/shared/services/notification'
+import type { Session } from '@/entities/session'
 
 const { t, locale, availableLocales } = useI18n()
 const settings = useSettingsStore()
+const auth = useAuthStore()
 
 const formatNumber = (
   locale: string,
@@ -48,13 +55,53 @@ const locales = computed(() => {
     label: capitalizeFirstLetter(displayNames.of(value) ?? ''),
   }))
 })
+
+// --- Session management ----------------------------------------------------
+const sessions = ref<Session[]>([])
+const sessionsLoading = ref(false)
+const revoking = ref(false)
+
+async function loadSessions() {
+  sessionsLoading.value = true
+  try {
+    sessions.value = await sessionApi.listSessions()
+  } catch (error) {
+    notification.mutationError(error, { title: t('auth.sessionsTitle'), feature: 'session', action: 'list' })
+  } finally {
+    sessionsLoading.value = false
+  }
+}
+
+async function revokeOtherSessions() {
+  revoking.value = true
+  try {
+    await sessionApi.deleteAllSessions()
+    notification.success(t('auth.sessionsRevoked'))
+    await loadSessions()
+  } catch (error) {
+    notification.mutationError(error, { title: t('auth.revokeOtherSessions'), feature: 'session', action: 'revoke' })
+  } finally {
+    revoking.value = false
+  }
+}
+
+const formatExpiry = (iso: string) =>
+  new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(iso),
+  )
+
+onMounted(() => {
+  // Only fetch when actually signed in (keeps the unauthenticated test harness
+  // from making network calls).
+  if (auth.isAuthenticated) void loadSessions()
+})
 </script>
 
 <template>
-  <section>
+  <section class="flex flex-col gap-6">
     <h1 class="text-2xl font-semibold">{{ t('pages.settings') }}</h1>
 
-    <label class="flex items-center gap-2 mt-4">
+    <label class="flex items-center gap-2">
       <p>{{ t('settings.currency') }}:</p>
       <Select v-model="settings.currency" class="w-full">
         <SelectTrigger>
@@ -68,7 +115,7 @@ const locales = computed(() => {
       </Select>
     </label>
 
-    <label class="flex items-center gap-2 mt-4">
+    <label class="flex items-center gap-2">
       <p>{{ t('settings.locale') }}:</p>
       <Select v-model="settings.locale" class="w-full">
         <SelectTrigger>
@@ -81,5 +128,54 @@ const locales = computed(() => {
         </SelectContent>
       </Select>
     </label>
+
+    <template v-if="auth.isAuthenticated">
+      <Card v-if="!auth.user?.emailVerified">
+        <CardHeader>
+          <CardTitle>{{ t('auth.verifyEmailPrompt') }}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button as-child variant="outline">
+            <RouterLink :to="{ name: 'verify-email' }">{{ t('auth.verifyEmailTitle') }}</RouterLink>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{{ t('auth.sessionsTitle') }}</CardTitle>
+        </CardHeader>
+        <CardContent class="flex flex-col gap-3">
+          <p class="text-sm text-muted-foreground">{{ t('auth.sessionsDescription') }}</p>
+          <ul v-if="sessions.length" class="flex flex-col gap-2 text-sm">
+            <li
+              v-for="(session, index) in sessions"
+              :key="index"
+              class="flex items-center justify-between border-b border-b-muted pb-2 last:border-0"
+            >
+              <span>
+                {{ t('auth.sessionExpiresAt') }}: {{ formatExpiry(session.expiresAt) }}
+                <span v-if="session.isCurrent" class="ml-2 text-muted-foreground">
+                  ({{ t('auth.sessionCurrent') }})
+                </span>
+              </span>
+            </li>
+          </ul>
+          <p v-else-if="!sessionsLoading" class="text-sm text-muted-foreground">-</p>
+          <div class="flex gap-2">
+            <Button variant="outline" :loading="sessionsLoading" @click="loadSessions">
+              {{ t('common.errorState.retry') }}
+            </Button>
+            <Button variant="outline" :loading="revoking" @click="revokeOtherSessions">
+              {{ t('auth.revokeOtherSessions') }}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <RouterLink :to="{ name: 'reset-password' }" class="text-sm text-muted-foreground hover:underline">
+        {{ t('auth.forgotPassword') }}
+      </RouterLink>
+    </template>
   </section>
 </template>

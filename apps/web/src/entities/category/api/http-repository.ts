@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api'
-import type { components } from '@/shared/api/schema'
+import type { components } from '@/shared/api'
 import { NotFoundError } from '@/shared/lib/data'
 import type { Category } from '../model/types'
 import type {

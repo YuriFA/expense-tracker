@@ -11,7 +11,7 @@ import { type Account } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
 import { notification } from '@/shared/services/notification'
-import { useUpdateAccount } from '@/entities/account/model/use-accounts'
+import { useUpdateAccount } from '@/entities/account'
 import { toMinorUnits } from '@/shared/lib/money'
 
 const emit = defineEmits<{

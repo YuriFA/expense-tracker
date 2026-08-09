@@ -163,12 +163,11 @@
     "generic": "Something went wrong"
   },
   "auth": {
-    "appName": "BudgetTracker",
     "signIn": "Sign in",
     "signUp": "Sign up",
     "signOut": "Sign out",
     "emailLabel": "Email",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "passwordLabel": "Password",
     "passwordPlaceholder": "Your password",
     "newPasswordLabel": "New password",

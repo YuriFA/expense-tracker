@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { components } from '@/shared/api/schema'
+import type { components } from '@/shared/api'
 import { ReferentialIntegrityError } from '@/shared/lib/data'
 import { createHTTPAccountRepository } from './http-repository'
 

@@ -15,7 +15,6 @@ import {
   createHTTPTransactionRepository,
   createLocalStorageTransactionRepository,
   TRANSACTION_REPOSITORY_KEY,
-  type LocalStorageTransactionRepository,
   type TransactionRepository,
 } from '@/entities/transaction'
 
