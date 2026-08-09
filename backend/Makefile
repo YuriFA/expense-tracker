@@ -13,8 +13,8 @@ SQLC := $(shell command -v sqlc 2>/dev/null)
 OPENAPI_SPEC := ../docs/api/openapi.yaml
 
 # Files produced by codegen. `gen-check` verifies these are committed and
-# in sync with their inputs. (sqlc output is appended in Phase 4.)
-GENERATED := internal/api/api.gen.go
+# in sync with their inputs.
+GENERATED := internal/api/api.gen.go internal/repository/db
 
 .PHONY: run build tidy test gen gen-check gen-openapi gen-sqlc migrate-up migrate-down migrate-create dev
 

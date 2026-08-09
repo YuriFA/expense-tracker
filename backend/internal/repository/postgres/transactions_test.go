@@ -1,0 +1,156 @@
+package postgres_test
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/yurifa/expense-tracker-api/internal/domain"
+)
+
+func TestTransactionCursorPagination(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker for testcontainers")
+	}
+	user := seedUser(t, "cursor")
+	ctx := newCtx(t)
+
+	acct := seedAccount(t, user.ID, "A")
+	cat := seedCategory(t, user.ID, "CustomIncome", domain.TransactionTypeIncome)
+
+	// Insert 5 transactions with distinct occurred_at (oldest first).
+	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	ids := make([]string, 5)
+	for i := 0; i < 5; i++ {
+		tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+			UserID:      user.ID,
+			Type:        domain.TransactionTypeIncome,
+			Amount:      int64(100 + i),
+			Description: "t",
+			OccurredAt:  base.Add(time.Duration(i) * time.Hour),
+			AccountID:   &acct.ID,
+			CategoryID:  &cat.ID,
+		})
+		require.NoError(t, err)
+		ids[i] = tx.ID.String()
+	}
+
+	page := 2
+	fetch := page + 1 // service fetches page+1 to detect a next page
+
+	// Page 1 (fetch): newest 3 = ids[4], ids[3], ids[2]. Service trims to the
+	// first 2 and encodes the cursor from the 2nd item (ids[3]).
+	first, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: &fetch})
+	require.NoError(t, err)
+	require.Len(t, first, 3)
+	assert.Equal(t, ids[4], first[0].ID.String())
+	assert.Equal(t, ids[3], first[1].ID.String())
+
+	// Page 2: cursor at ids[3] -> everything strictly after it: ids[2], ids[1], ids[0].
+	cursor := &domain.TransactionCursor{OccurredAt: first[1].OccurredAt, ID: first[1].ID}
+	remaining := 10
+	second, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: &remaining, Cursor: cursor})
+	require.NoError(t, err)
+	require.Len(t, second, 3)
+	assert.Equal(t, ids[2], second[0].ID.String())
+	assert.Equal(t, ids[1], second[1].ID.String())
+	assert.Equal(t, ids[0], second[2].ID.String())
+}
+
+func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker for testcontainers")
+	}
+	user := seedUser(t, "tie")
+	ctx := newCtx(t)
+
+	acct := seedAccount(t, user.ID, "A")
+	cat := seedCategory(t, user.ID, "Sal", domain.TransactionTypeIncome)
+
+	// Two transactions with the SAME occurred_at - id DESC breaks the tie.
+	same := time.Date(2026, 2, 1, 12, 0, 0, 0, time.UTC)
+	tx1, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: same,
+		AccountID: &acct.ID, CategoryID: &cat.ID,
+	})
+	require.NoError(t, err)
+	tx2, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 2, OccurredAt: same,
+		AccountID: &acct.ID, CategoryID: &cat.ID,
+	})
+	require.NoError(t, err)
+
+	rows, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: ptrInt(10)})
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	// Both share occurred_at; the higher id comes first (DESC).
+	assert.True(t, rows[0].ID.String() >= rows[1].ID.String())
+	// The two ids are exactly tx1, tx2 in some order.
+	got := map[string]bool{rows[0].ID.String(): true, rows[1].ID.String(): true}
+	assert.True(t, got[tx1.ID.String()] && got[tx2.ID.String()])
+
+	// Cursor on tx2 (higher id) yields tx1 only.
+	cursor := &domain.TransactionCursor{OccurredAt: same, ID: tx2.ID}
+	rows2, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: ptrInt(10), Cursor: cursor})
+	require.NoError(t, err)
+	require.Len(t, rows2, 1)
+	assert.Equal(t, tx1.ID, rows2[0].ID)
+}
+
+func TestTransactionOptimisticConcurrency(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker for testcontainers")
+	}
+	user := seedUser(t, "occ")
+	ctx := newCtx(t)
+
+	acct := seedAccount(t, user.ID, "A")
+	cat := seedCategory(t, user.ID, "Sal", domain.TransactionTypeIncome)
+
+	tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: mustNow(),
+		AccountID: &acct.ID, CategoryID: &cat.ID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, tx.Version)
+
+	// Wrong version -> conflict.
+	_, err = testRepo.UpdateTransaction(ctx, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 999, Amount: ptrInt64(200)})
+	assert.ErrorIs(t, err, domain.ErrTransactionVersionConflict)
+
+	// Correct version -> succeeds, version increments.
+	desc := "updated"
+	updated, err := testRepo.UpdateTransaction(ctx, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 1, Description: &desc})
+	require.NoError(t, err)
+	assert.Equal(t, 2, updated.Version)
+	assert.Equal(t, "updated", updated.Description)
+}
+
+func TestTransactionIDORScoping(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker for testcontainers")
+	}
+	owner := seedUser(t, "tx-owner")
+	intruder := seedUser(t, "tx-intruder")
+	ctx := newCtx(t)
+
+	acct := seedAccount(t, owner.ID, "A")
+	cat := seedCategory(t, owner.ID, "Sal", domain.TransactionTypeIncome)
+
+	tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+		UserID: owner.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: mustNow(),
+		AccountID: &acct.ID, CategoryID: &cat.ID,
+	})
+	require.NoError(t, err)
+
+	_, err = testRepo.GetTransaction(ctx, intruder.ID, tx.ID)
+	assert.ErrorIs(t, err, domain.ErrTransactionNotFound)
+
+	err = testRepo.DeleteTransaction(ctx, intruder.ID, tx.ID)
+	assert.ErrorIs(t, err, domain.ErrTransactionNotFound)
+}
+
+func ptrInt(v int) *int       { return &v }
+func ptrInt64(v int64) *int64 { return &v }
