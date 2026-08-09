@@ -61,10 +61,12 @@ gen-check: gen
 # DATABASE_URL is a Postgres DSN, e.g.
 #   postgres://expense:expense@localhost:5432/expense?sslmode=disable
 migrate-up:
-	migrate -path ./internal/repository/postgres/migrations/ -database "postgres://$(DATABASE_URL)" up
+	@test -n "$(DATABASE_URL)" || { echo "DATABASE_URL not set"; exit 1; }
+	migrate -path ./internal/repository/postgres/migrations/ -database "$(DATABASE_URL)" up
 
 migrate-down:
-	migrate -path ./internal/repository/postgres/migrations/ -database "postgres://$(DATABASE_URL)" down
+	@test -n "$(DATABASE_URL)" || { echo "DATABASE_URL not set"; exit 1; }
+	migrate -path ./internal/repository/postgres/migrations/ -database "$(DATABASE_URL)" down
 
 migrate-create:
 	@test -n "$(name)" || { echo "Usage: make migrate-create name=add_xxx"; exit 1; }
