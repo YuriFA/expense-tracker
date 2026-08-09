@@ -24,6 +24,10 @@ services:
     environment:
       DATABASE_URL: postgres://expense:expense@db:5432/expense?sslmode=disable
       CONFIG_PATH: /app/prod.yaml
+      # Dev-only: the session cookie is served over plain HTTP through the Vite
+      # proxy. WebKit/Safari reject `Secure` cookies on http://localhost, so
+      # disable Secure here for local dev (prod.yaml keeps `secure: true`).
+      SESSION_SECURE: "false"
     ports:
       - "8080:8080"
 

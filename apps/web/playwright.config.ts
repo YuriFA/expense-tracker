@@ -102,8 +102,11 @@ export default defineConfig({
      * Use the dev server by default for faster feedback loop.
      * Use the preview server on CI for more realistic testing.
      * Playwright will re-use the local server if there is already a dev-server running.
+     *
+     * Requires the backend running (docker compose up) on localhost:8080; the
+     * Vite dev/preview proxy forwards /api/* to it (same-origin session cookie).
      */
-    command: process.env.CI ? 'npm run preview' : 'npm run dev',
+    command: process.env.CI ? 'bun run preview' : 'bun run dev',
     port: process.env.CI ? 4173 : 5173,
     reuseExistingServer: !process.env.CI,
   },
