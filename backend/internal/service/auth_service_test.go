@@ -142,22 +142,15 @@ func TestSessionService_ListAndRevoke(t *testing.T) {
 	_, err = authSvc.Login(ctx, "sess@example.com", "supersecret")
 	require.NoError(t, err)
 
-	list, err := sessSvc.List(ctx, sess.User.ID, sess.SessionID)
+	list, err := sessSvc.List(ctx, sess.User.ID)
 	require.NoError(t, err)
 	assert.Len(t, list, 2)
-	currentCount := 0
-	for _, s := range list {
-		if s.IsCurrent {
-			currentCount++
-		}
-	}
-	assert.Equal(t, 1, currentCount, "exactly one current session")
 
 	// Revoke all except current.
 	n, err := sessSvc.DeleteAllExcept(ctx, sess.User.ID, sess.SessionID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), n)
 
-	list, _ = sessSvc.List(ctx, sess.User.ID, sess.SessionID)
+	list, _ = sessSvc.List(ctx, sess.User.ID)
 	assert.Len(t, list, 1)
 }

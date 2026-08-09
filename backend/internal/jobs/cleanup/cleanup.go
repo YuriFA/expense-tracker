@@ -8,16 +8,21 @@ import (
 	"time"
 
 	"github.com/yurifa/expense-tracker-api/internal/logger"
-	"github.com/yurifa/expense-tracker-api/internal/storage/sqlite"
 )
 
+// Cleaner is the repository surface the job needs.
+type Cleaner interface {
+	DeleteExpiredSessions(ctx context.Context) (int64, error)
+	DeleteExpiredIdempotencyKeys(ctx context.Context) (int64, error)
+}
+
 type Cleanup struct {
-	db       *sqlite.Storage
+	db       Cleaner
 	log      *slog.Logger
 	interval time.Duration
 }
 
-func New(db *sqlite.Storage, log *slog.Logger, interval time.Duration) *Cleanup {
+func New(db Cleaner, log *slog.Logger, interval time.Duration) *Cleanup {
 	return &Cleanup{
 		db:       db,
 		log:      logger.WithComponent(log, "cleanup"),
