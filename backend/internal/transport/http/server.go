@@ -1,0 +1,143 @@
+package http
+
+import (
+	"context"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/getkin/kin-openapi/openapi3filter"
+	ginmiddleware "github.com/oapi-codegen/gin-middleware"
+
+	"github.com/yurifa/expense-tracker-api/internal/api"
+	"github.com/yurifa/expense-tracker-api/internal/config"
+	"github.com/yurifa/expense-tracker-api/internal/repository"
+	"github.com/yurifa/expense-tracker-api/internal/transport/http/httperr"
+	"github.com/yurifa/expense-tracker-api/internal/transport/http/middleware"
+)
+
+const corsMaxAge = 12 * time.Hour
+
+// publicRoutes are callable WITHOUT a valid session cookie (security: [] plus
+// logout, which is idempotent and clears the cookie).
+var publicRoutes = map[string]bool{
+	"POST:/api/auth/register":               true,
+	"POST:/api/auth/login":                  true,
+	"POST:/api/auth/logout":                 true,
+	"POST:/api/auth/password-reset/request": true,
+	"POST:/api/auth/password-reset/confirm": true,
+}
+
+// NewEngine builds the gin engine, wires middleware (request-id, recovery,
+// logging, CORS, spec-driven request validation, auth, rate limit, idempotency)
+// and registers the generated handlers backed by the StrictServerInterface.
+func NewEngine(
+	cfg *config.HTTPServer,
+	log *slog.Logger,
+	ssi api.StrictServerInterface,
+	sessions repository.SessionRepository,
+	users repository.UserRepository,
+	idempotency repository.IdempotencyRepository,
+) *gin.Engine {
+	router := gin.New()
+	if err := router.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		panic("failed to set trusted proxies: " + err.Error())
+	}
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.CorsConfig.AllowedOrigins,
+		AllowMethods:     cfg.CorsConfig.AllowedMethods,
+		AllowHeaders:     cfg.CorsConfig.AllowedHeaders,
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           corsMaxAge,
+	}))
+	router.Use(middleware.RequestID())
+	router.Use(gin.Recovery())
+	router.Use(middleware.SlogLogger(log))
+
+	// Spec-driven request validation (path/query/header params + request body)
+	// via the embedded OpenAPI document. Auth is NOT enforced here (see below).
+	swagger, err := api.GetSwagger()
+	if err != nil {
+		panic("failed to load embedded swagger: " + err.Error())
+	}
+	swagger.Servers = nil // accept any host
+	router.Use(ginmiddleware.OapiRequestValidatorWithOptions(swagger, &ginmiddleware.Options{
+		ErrorHandler: validationErrorHandler,
+		Options: openapi3filter.Options{
+			AuthenticationFunc: func(_ context.Context, _ *openapi3filter.AuthenticationInput) error {
+				return nil
+			},
+		},
+	}))
+
+	// Auth (path-aware), rate limit (login + verify), idempotency (create txn).
+	router.Use(pathAwareAuth(sessions, users, log, cfg))
+	loginRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
+	verifyRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
+	router.Use(pathAwareRateLimit(map[string]*middleware.FailureRateLimiter{
+		"POST:/api/auth/login":        loginRL,
+		"POST:/api/auth/verify-email": verifyRL,
+	}))
+	router.Use(pathAwareIdempotency(idempotency, log))
+
+	strictHandler := api.NewStrictHandler(ssi, nil)
+	api.RegisterHandlers(router, strictHandler)
+
+	// API docs (OpenAPI spec + Redoc UI).
+	router.StaticFile("/docs", "docs/api/redoc.html")
+	router.StaticFile("/docs/openapi.yaml", "docs/api/openapi.yaml")
+
+	return router
+}
+
+// validationErrorHandler maps the spec validator's failures to the project's
+// VALIDATION_FAILED response shape.
+func validationErrorHandler(c *gin.Context, message string, statusCode int) {
+	httperr.Write(c, statusCode, httperr.ErrCodeValidationFailed, message)
+}
+
+func pathAwareAuth(
+	sessions repository.SessionRepository,
+	users repository.UserRepository,
+	log *slog.Logger,
+	cfg *config.HTTPServer,
+) gin.HandlerFunc {
+	inner := middleware.AuthRequired(sessions, users, log, cfg)
+	return func(c *gin.Context) {
+		if isPublic(c) || !strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.Next()
+			return
+		}
+		inner(c)
+	}
+}
+
+func isPublic(c *gin.Context) bool {
+	return publicRoutes[c.Request.Method+":"+c.Request.URL.Path]
+}
+
+func pathAwareRateLimit(limiters map[string]*middleware.FailureRateLimiter) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		rl, ok := limiters[c.Request.Method+":"+c.Request.URL.Path]
+		if !ok {
+			c.Next()
+			return
+		}
+		middleware.RateLimit(rl)(c)
+	}
+}
+
+func pathAwareIdempotency(repo repository.IdempotencyRepository, log *slog.Logger) gin.HandlerFunc {
+	inner := middleware.Idempotency(repo, log)
+	return func(c *gin.Context) {
+		if c.Request.Method+":"+c.Request.URL.Path != "POST:/api/transactions" {
+			c.Next()
+			return
+		}
+		inner(c)
+	}
+}

@@ -5,7 +5,6 @@ package fakes
 import (
 	"context"
 	"crypto/subtle"
-	"errors"
 	"sort"
 	"sync"
 	"time"
@@ -31,6 +30,9 @@ type Store struct {
 
 	// catUnique enforces UNIQUE(user_id, name).
 	catUnique map[string]struct{} // "userID|name"
+
+	// idempotency: keyed by "userID|key"
+	idemKeys map[string]*domain.IdempotencyKey
 
 	verifyCodes  map[uuid.UUID]*verifyCode
 	resetTokens  map[string]*resetToken // tokenHash -> resetToken
@@ -63,6 +65,7 @@ func New() *Store {
 		categories:   make(map[uuid.UUID]*domain.Category),
 		transactions: make(map[uuid.UUID]*domain.Transaction),
 		catUnique:    make(map[string]struct{}),
+		idemKeys:     make(map[string]*domain.IdempotencyKey),
 		verifyCodes:  make(map[uuid.UUID]*verifyCode),
 		resetTokens:  make(map[string]*resetToken),
 		verifyAge:    make(map[uuid.UUID]int),
@@ -565,19 +568,89 @@ func uuidLess(a, b uuid.UUID) bool {
 	return false
 }
 
-// --- IdempotencyRepository (minimal - exercised in transport tests) ------
+// --- IdempotencyRepository ------------------------------------------------------
+
+func idemKey(userID uuid.UUID, key string) string { return userID.String() + "|" + key }
 
 func (s *Store) CreateIdempotencyKey(_ context.Context, params domain.CreateIdempotencyKeyParams) (*domain.IdempotencyKey, error) {
-	return nil, domain.ErrIdempotencyKeyInUse // not used by service-layer tests
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	k := idemKey(params.UserID, params.IdempotencyKey)
+	if _, exists := s.idemKeys[k]; exists {
+		return nil, domain.ErrIdempotencyKeyInUse
+	}
+	now := time.Now().UTC()
+	ik := &domain.IdempotencyKey{
+		ID: uuid.New(), IdempotencyKey: params.IdempotencyKey, UserID: params.UserID,
+		RequestHash: params.RequestHash, Status: "pending",
+		CreatedAt: now, UpdatedAt: now, ExpiresAt: params.ExpiresAt,
+	}
+	s.idemKeys[k] = ik
+	c := *ik
+	return &c, nil
 }
-func (s *Store) UpdateIdempotencyKey(context.Context, uuid.UUID, uuid.UUID, domain.UpdateIdempotencyKeyParams) (*domain.IdempotencyKey, error) {
-	return nil, errors.New("not implemented in fake")
-}
-func (s *Store) GetByUserAndKey(context.Context, uuid.UUID, string) (*domain.IdempotencyKey, error) {
+
+func (s *Store) UpdateIdempotencyKey(_ context.Context, userID, id uuid.UUID, params domain.UpdateIdempotencyKeyParams) (*domain.IdempotencyKey, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for k, ik := range s.idemKeys {
+		if ik.ID == id && ik.UserID == userID {
+			if params.Status != nil {
+				ik.Status = *params.Status
+			}
+			if params.ResponseStatus != nil {
+				ik.ResponseStatus = params.ResponseStatus
+			}
+			if params.ResponseHeaders != nil {
+				ik.ResponseHeaders = params.ResponseHeaders
+			}
+			if params.ResponseBody != nil {
+				ik.ResponseBody = params.ResponseBody
+			}
+			ik.UpdatedAt = time.Now().UTC()
+			c := *ik
+			_ = k
+			return &c, nil
+		}
+	}
 	return nil, domain.ErrIdempotencyKeyNotFound
 }
-func (s *Store) DeleteIdempotencyKey(context.Context, uuid.UUID, uuid.UUID) error { return nil }
-func (s *Store) DeleteExpiredIdempotencyKeys(context.Context) (int64, error)      { return 0, nil }
+
+func (s *Store) GetByUserAndKey(_ context.Context, userID uuid.UUID, key string) (*domain.IdempotencyKey, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ik, ok := s.idemKeys[idemKey(userID, key)]
+	if !ok {
+		return nil, domain.ErrIdempotencyKeyNotFound
+	}
+	c := *ik
+	return &c, nil
+}
+
+func (s *Store) DeleteIdempotencyKey(_ context.Context, userID, id uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for k, ik := range s.idemKeys {
+		if ik.ID == id && ik.UserID == userID {
+			delete(s.idemKeys, k)
+			return nil
+		}
+	}
+	return nil
+}
+
+func (s *Store) DeleteExpiredIdempotencyKeys(ctx context.Context) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var n int64
+	for k, ik := range s.idemKeys {
+		if ik.ExpiresAt.Before(time.Now()) {
+			delete(s.idemKeys, k)
+			n++
+		}
+	}
+	return n, nil
+}
 
 // --- EmailVerificationRepository -----------------------------------------
 

@@ -11,11 +11,11 @@ import (
 	"syscall"
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
-	httpserver "github.com/yurifa/expense-tracker-api/internal/http-server"
-	"github.com/yurifa/expense-tracker-api/internal/http-server/handlers"
 	"github.com/yurifa/expense-tracker-api/internal/jobs/cleanup"
 	"github.com/yurifa/expense-tracker-api/internal/logger"
-	"github.com/yurifa/expense-tracker-api/internal/storage/sqlite"
+	"github.com/yurifa/expense-tracker-api/internal/repository/postgres"
+	"github.com/yurifa/expense-tracker-api/internal/service"
+	httptransport "github.com/yurifa/expense-tracker-api/internal/transport/http"
 )
 
 func main() {
@@ -29,29 +29,40 @@ func main() {
 }
 
 func run(cfg *config.Config, log *slog.Logger) error {
-	log.Info("Logger initialized", slog.String("env", cfg.Env))
-	log.Debug("Debug message: Logger is set to debug level")
+	log.Info("logger initialized", slog.String("env", cfg.Env))
 
-	db, err := sqlite.New(cfg.StoragePath)
-	if err != nil {
-		return fmt.Errorf("initialize storage: %w", err)
-	}
-	defer func() {
-		if cerr := db.Close(); cerr != nil {
-			log.Error("failed to close database", logger.Error(cerr))
-		}
-	}()
+	ctx := context.Background()
 
-	if err := db.RunMigrations(); err != nil {
+	if err := postgres.RunMigrations(cfg.DatabaseURL); err != nil {
 		return fmt.Errorf("run migrations: %w", err)
 	}
+	log.Info("migrations applied")
 
-	log.Info("Storage initialized")
+	pool, err := postgres.New(ctx, cfg.DatabaseURL, cfg.Database)
+	if err != nil {
+		return fmt.Errorf("initialize db pool: %w", err)
+	}
+	defer func() {
+		pool.Close()
+	}()
 
-	h := handlers.NewHandler(log, db, &cfg.HTTPServer)
-	router := httpserver.NewRouter(log, db, h, &cfg.HTTPServer)
+	repo := postgres.NewRepository(pool)
+	log.Info("database initialized")
 
-	log.Info("Starting server", slog.String("address", cfg.Address))
+	// Services (all repositories are satisfied by the single *postgres.Repository).
+	accountSvc := service.NewAccountService(repo)
+	categorySvc := service.NewCategoryService(repo)
+	txnSvc := service.NewTransactionService(repo, repo, repo)
+	authSvc := service.NewAuthService(repo, repo, repo, repo, service.NewLogMailer(log), service.AuthConfig{
+		SessionTTL: cfg.SessionConfig.TTL,
+	})
+	sessionSvc := service.NewSessionService(repo)
+
+	// Transport: the StrictServerInterface implementation + gin engine.
+	server := httptransport.NewServer(log, &cfg.HTTPServer, accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
+	router := httptransport.NewEngine(&cfg.HTTPServer, log, server, repo, repo, repo)
+
+	log.Info("starting server", slog.String("address", cfg.Address))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,
@@ -70,14 +81,14 @@ func run(cfg *config.Config, log *slog.Logger) error {
 		serverErr <- nil
 	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	bgCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cleanupJob := cleanup.New(db, log, cfg.SessionConfig.CleanupInterval)
+	cleanupJob := cleanup.New(repo, log, cfg.SessionConfig.CleanupInterval)
 	jobDone := make(chan struct{})
 	go func() {
 		defer close(jobDone)
-		_ = cleanupJob.Run(ctx)
+		_ = cleanupJob.Run(bgCtx)
 	}()
 
 	quit := make(chan os.Signal, 1)
@@ -108,6 +119,6 @@ func run(cfg *config.Config, log *slog.Logger) error {
 		return runErr
 	}
 
-	log.Info("Server exiting")
+	log.Info("server exiting")
 	return nil
 }
