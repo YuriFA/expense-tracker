@@ -20,6 +20,7 @@ const transactionFixture: CashflowTransaction = {
   occurredAt: '2024-01-15T10:00:00Z',
   accountId: 'a1',
   categoryId: 'cincome',
+  version: 1,
 }
 
 function seedTransactions(transactions: Transaction[]) {
@@ -297,7 +298,7 @@ describe('transaction localStorage repository', () => {
   describe('update', () => {
     it('throws when transaction does not exist', async () => {
       const repo = createRepository()
-      await expect(repo.update('missing', { type: 'income' })).rejects.toThrow(
+      await expect(repo.update('missing', { version: 1, type: 'income' })).rejects.toThrow(
         /Transaction not found/,
       )
     })
@@ -305,15 +306,15 @@ describe('transaction localStorage repository', () => {
     it('throws when updated payload is invalid', async () => {
       seedTransactions([transactionFixture])
       const repo = createRepository()
-      await expect(repo.update('t1', { type: 'somenonexisttype' } as never)).rejects.toThrow(
-        /Invalid transaction payload/,
-      )
+      await expect(
+        repo.update('t1', { version: 1, type: 'somenonexisttype' } as never),
+      ).rejects.toThrow(/Invalid transaction payload/)
     })
 
     it('updates and persists valid transaction', async () => {
       seedTransactions([transactionFixture])
       const repo = createRepository()
-      const result = await repo.update('t1', { amount: 200 })
+      const result = await repo.update('t1', { version: 1, amount: 200 })
       expect(result.amount).toBe(200)
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions) ?? '[]')
       expect(stored[0].amount).toBe(200)

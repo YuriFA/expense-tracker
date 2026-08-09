@@ -37,6 +37,7 @@ const handleSuccess = () => {
       <TransferEditForm
         v-if="transfer"
         :id="transfer.id"
+        :version="transfer.version"
         :amount="transfer.amount"
         :description="transfer.description ?? ''"
         :from-account-id="transfer.fromAccountId"
@@ -46,6 +47,7 @@ const handleSuccess = () => {
       <CashflowEditForm
         v-else-if="cashflow"
         :id="cashflow.id"
+        :version="cashflow.version"
         :type="cashflow.type"
         :amount="cashflow.amount"
         :description="cashflow.description ?? ''"

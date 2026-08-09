@@ -13,8 +13,9 @@ import {
 } from '../model/transaction'
 import type {
   CreateTransactionPayload,
+  LocalStorageTransactionRepository,
+  TransactionPage,
   TransactionQuery,
-  TransactionRepository,
   UpdateTransactionPayload,
 } from './repository'
 import { getDateTimestamp, toEndOfDay, toStartOfDay } from '@/shared/lib/date'
@@ -35,50 +36,60 @@ const transactionsStorage = createLocalStorageAdapter<Transaction[]>(
   },
 )
 
+const PAGE_SIZE = 100
+
 export function createLocalStorageTransactionRepository(deps: {
   getAccounts: () => Promise<AccountRef[]>
   getCategories: () => Promise<CategoryRef[]>
-}): TransactionRepository {
+}): LocalStorageTransactionRepository {
+  const sortDescending = (items: Transaction[]) =>
+    items
+      .slice()
+      .sort((a, b) => getDateTimestamp(b.occurredAt) - getDateTimestamp(a.occurredAt))
+
+  const filter = (items: Transaction[], options: TransactionQuery) => {
+    let result = items
+
+    if (options.fromDate) {
+      const from = toStartOfDay(options.fromDate).getTime()
+      result = result.filter((item) => getDateTimestamp(item.occurredAt) >= from)
+    }
+
+    if (options.toDate) {
+      const to = toEndOfDay(options.toDate).getTime()
+      result = result.filter((item) => getDateTimestamp(item.occurredAt) <= to)
+    }
+
+    if (options.type) {
+      result = result.filter((item) => item.type === options.type)
+    }
+
+    if (options.accountId) {
+      const id = options.accountId
+      result = result.filter((t) =>
+        isTransferTransaction(t)
+          ? t.fromAccountId === id || t.toAccountId === id
+          : t.accountId === id,
+      )
+    }
+
+    if (options.categoryId) {
+      const id = options.categoryId
+      result = result.filter((t) => isTransactionLinkedToCategory(t, id))
+    }
+
+    return result
+  }
+
   return {
     async getAll() {
-      return transactionsStorage.get().slice()
+      return sortDescending(transactionsStorage.get())
     },
     async getById(id: string) {
       return transactionsStorage.get().find((item) => item.id === id) ?? null
     },
     async query(options: TransactionQuery = {}) {
-      let result = transactionsStorage
-        .get()
-        .slice()
-        .sort((a, b) => getDateTimestamp(b.occurredAt) - getDateTimestamp(a.occurredAt))
-
-      if (options.fromDate) {
-        const from = toStartOfDay(options.fromDate).getTime()
-        result = result.filter((item) => getDateTimestamp(item.occurredAt) >= from)
-      }
-
-      if (options.toDate) {
-        const to = toEndOfDay(options.toDate).getTime()
-        result = result.filter((item) => getDateTimestamp(item.occurredAt) <= to)
-      }
-
-      if (options.type) {
-        result = result.filter((item) => item.type === options.type)
-      }
-
-      if (options.accountId) {
-        const id = options.accountId
-        result = result.filter((t) =>
-          isTransferTransaction(t)
-            ? t.fromAccountId === id || t.toAccountId === id
-            : t.accountId === id,
-        )
-      }
-
-      if (options.categoryId) {
-        const id = options.categoryId
-        result = result.filter((t) => isTransactionLinkedToCategory(t, id))
-      }
+      let result = sortDescending(filter(transactionsStorage.get(), options))
 
       if (options.limit) {
         result = result.slice(0, options.limit)
@@ -86,10 +97,23 @@ export function createLocalStorageTransactionRepository(deps: {
 
       return result
     },
-    async hasTransactionsForAccount(accountId) {
+    async listPage(options: TransactionQuery & { cursor?: string } = {}) {
+      // Cursor is an opaque offset into the already-filtered, sorted list.
+      const pageSize = options.limit ?? PAGE_SIZE
+      const all = sortDescending(filter(transactionsStorage.get(), options))
+      const startIndex = options.cursor ? Number.parseInt(options.cursor, 10) : 0
+      const safeStart = Number.isFinite(startIndex) ? startIndex : 0
+      const slice = all.slice(safeStart, safeStart + pageSize)
+      const nextIndex = safeStart + slice.length
+      return {
+        transactions: slice,
+        nextCursor: nextIndex < all.length ? nextIndex.toString() : null,
+      }
+    },
+    async hasTransactionsForAccount(accountId: string) {
       return transactionsStorage.get().some((t) => isTransactionLinkedToAccount(t, accountId))
     },
-    async hasTransactionsForCategory(categoryId) {
+    async hasTransactionsForCategory(categoryId: string) {
       return transactionsStorage.get().some((t) => isTransactionLinkedToCategory(t, categoryId))
     },
     async create(payload: CreateTransactionPayload) {

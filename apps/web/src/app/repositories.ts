@@ -15,15 +15,20 @@ import {
   createHTTPTransactionRepository,
   createLocalStorageTransactionRepository,
   TRANSACTION_REPOSITORY_KEY,
+  type LocalStorageTransactionRepository,
   type TransactionRepository,
 } from '@/entities/transaction'
 
 export type RepositoryVariant = 'http' | 'localStorage'
 
+/**
+ * Production defaults to the HTTP client (the real backend). Set
+ * `VITE_REPO_VARIANT=localStorage` for the dev-only offline mode that persists
+ * to the browser instead of calling the API.
+ */
 export function provideRepositories(
   app: App,
-  variant: RepositoryVariant = (import.meta.env.VITE_REPO_VARIANT ??
-    'localStorage') as RepositoryVariant,
+  variant: RepositoryVariant = (import.meta.env.VITE_REPO_VARIANT ?? 'http') as RepositoryVariant,
 ): void {
   let accounts: AccountRepository
   let categories: CategoryRepository
@@ -34,16 +39,20 @@ export function provideRepositories(
     accounts = createHTTPAccountRepository()
     categories = createHTTPCategoryRepository()
   } else {
-    transactions = createLocalStorageTransactionRepository({
+    // The localStorage transaction repository exposes the extra "in use"
+    // simulation surface so account/category delete can mirror the backend's
+    // 409 *_IN_USE without a phantom endpoint.
+    const localStorageTransactions = createLocalStorageTransactionRepository({
       getAccounts: async () => accounts.getAll(),
       getCategories: async () => categories.getAll(),
     })
+    transactions = localStorageTransactions
     accounts = createLocalStorageAccountRepository({
-      hasTransactionsForAccount: transactions.hasTransactionsForAccount,
-      getAllTransactions: transactions.getAll,
+      hasTransactionsForAccount: localStorageTransactions.hasTransactionsForAccount,
+      getAllTransactions: localStorageTransactions.getAll,
     })
     categories = createLocalStorageCategoryRepository({
-      hasTransactionsForCategory: transactions.hasTransactionsForCategory,
+      hasTransactionsForCategory: localStorageTransactions.hasTransactionsForCategory,
     })
   }
 
