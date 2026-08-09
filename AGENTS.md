@@ -1,9 +1,9 @@
 # Project agent memory
 
-This backend (`backend/`) is a spec-first, layered Go API for an expense tracker.
-The authoritative architecture is the scout report at
-`/Users/yuri/web/firstmate/data/et-arch-plan/report.md` (context only - the code
-is the source of truth). Frontend (`apps/web/`) is a separate, later task.
+This backend (`backend/`) is a spec-first, layered Go API for an expense tracker,
+wired to a Vue 3 frontend in `apps/web/`. The authoritative architecture is the
+scout report at `/Users/yuri/web/firstmate/data/et-arch-plan/report.md` (context
+only - the code is the source of truth).
 
 ## Posture
 
@@ -94,9 +94,29 @@ abstraction.
 
 ## Frontend (apps/web)
 
-- Feature-Sliced Design (see apps/web/docs). Do NOT touch the frontend in this
-  backend rework; it is a separate task. The generated OpenAPI client for the
-  frontend comes later.
+- Feature-Sliced Design (see `apps/web/docs/ARCHITECTURE.md`, including the
+  Fractal FSD `pages/*/features/` extension). Steiger must stay green.
+- **Spec-first:** the API contract comes from `docs/api/openapi.yaml` via
+  codegen, never hand-written fetch/types. `bun run gen:api` (openapi-typescript)
+  regenerates `apps/web/src/shared/api/schema.ts` (committed); re-run + commit
+  after any spec change. `openapi-fetch` typed client + error middleware live in
+  `shared/api/{client,errors}.ts`.
+- **Error mapping is code-driven:** every non-2xx response is mapped to a
+  `RepositoryError` (see `shared/lib/data/repository.ts`) keyed on the backend's
+  `ErrorResponse.code` (e.g. `ACCOUNT_IN_USE` vs `TRANSACTION_VERSION_CONFLICT`
+  vs `USER_ALREADY_EXISTS`, all 409), not HTTP status alone.
+- **Transactions:** updates are PATCH with required `version` (optimistic
+  concurrency); create sends an `Idempotency-Key`; the list is cursor-paginated
+  (`{transactions,nextCursor}`).
+- **Auth:** stateful session cookie (no JWT). `entities/session` holds the
+  typed auth API + Pinia store; the router guard bootstraps the session once and
+  guards protected routes; `main.ts` wires a 401 interceptor
+  (`setUnauthorizedHandler`).
+- **Dev/prod default:** HTTP client with auth. `localStorage` repos are a
+  dev-only opt-in (`VITE_REPO_VARIANT=localStorage`). The Vite dev/preview
+  server proxies `/api` -> `localhost:8080` (same-origin cookie, no CORS).
+- Quality bar: `vue-tsc --noEmit`, `oxlint`, `eslint`, `knip`, `steiger`, and
+  the i18n strict lint all green. E2E (`apps/web/e2e`) drives the real backend.
 
 ## Maintaining this file
 
