@@ -1,21 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import type { User } from '../model/types'
+import type { Session, User } from '../model/types'
 import { UnauthorizedError } from '@/shared/lib/data'
 
 // Mock the typed auth API so the store is tested in isolation (no network).
 vi.mock('../api/session-api', () => ({
   sessionApi: {
-    getCurrentUser: vi.fn(),
-    register: vi.fn(),
-    login: vi.fn(),
-    logout: vi.fn(),
-    listSessions: vi.fn(),
-    deleteAllSessions: vi.fn(),
-    verifyEmail: vi.fn(),
-    resendVerification: vi.fn(),
-    requestPasswordReset: vi.fn(),
-    confirmPasswordReset: vi.fn(),
+    getCurrentUser: vi.fn<() => Promise<User>>(),
+    register: vi.fn<(email: string, password: string) => Promise<User>>(),
+    login: vi.fn<(email: string, password: string) => Promise<User>>(),
+    logout: vi.fn<() => Promise<void>>(),
+    listSessions: vi.fn<() => Promise<Session[]>>(),
+    deleteAllSessions: vi.fn<() => Promise<void>>(),
+    verifyEmail: vi.fn<(code: string) => Promise<void>>(),
+    resendVerification: vi.fn<() => Promise<void>>(),
+    requestPasswordReset: vi.fn<(email: string) => Promise<void>>(),
+    confirmPasswordReset: vi.fn<(token: string, newPassword: string) => Promise<void>>(),
   },
 }))
 
