@@ -7,11 +7,6 @@ export type {
 export {
   TRANSACTION_REPOSITORY_KEY,
   type TransactionRepository,
-  type LocalStorageTransactionRepository,
-  type TransactionPage,
-  type TransactionQuery,
-  type CreateTransactionPayload,
-  type UpdateTransactionPayload,
 } from './api/repository'
 export { createLocalStorageTransactionRepository } from './api/local-storage-repository'
 export {

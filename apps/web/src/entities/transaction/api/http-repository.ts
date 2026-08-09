@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api'
-import type { components } from '@/shared/api/schema'
+import type { components } from '@/shared/api'
 import { generateId } from '@/shared/lib/generate-id'
 import { NotFoundError } from '@/shared/lib/data'
 import { normalizeTransaction } from '../model/transaction'

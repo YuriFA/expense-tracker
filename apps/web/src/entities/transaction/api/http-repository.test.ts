@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { components } from '@/shared/api/schema'
+import type { components } from '@/shared/api'
 import { NotFoundError, VersionConflictError } from '@/shared/lib/data'
 import { createHTTPTransactionRepository } from './http-repository'
 

@@ -163,12 +163,11 @@
     "generic": "Что-то пошло не так"
   },
   "auth": {
-    "appName": "BudgetTracker",
     "signIn": "Вход",
     "signUp": "Регистрация",
     "signOut": "Выйти",
     "emailLabel": "Email",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "passwordLabel": "Пароль",
     "passwordPlaceholder": "Ваш пароль",
     "newPasswordLabel": "Новый пароль",

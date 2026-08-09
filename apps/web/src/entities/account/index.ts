@@ -11,7 +11,7 @@ export {
   useAccounts,
   useAccount,
   useCreateAccount,
-  
+  useUpdateAccount,
   useDeleteAccount,
 } from './model/use-accounts'
 export { default as AccountSelect } from './ui/AccountSelect.vue'

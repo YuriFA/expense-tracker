@@ -14,7 +14,6 @@ import {
 import type {
   CreateTransactionPayload,
   LocalStorageTransactionRepository,
-  TransactionPage,
   TransactionQuery,
   UpdateTransactionPayload,
 } from './repository'

@@ -8,9 +8,10 @@
     "!src/**/*.d.ts"
   ],
   "ignoreIssues": {
-    "src/shared/ui/**/index.ts": ["exports", "types"]
+    "src/shared/ui/**/index.ts": ["exports", "types"],
+    "src/shared/api/schema.ts": ["types", "exports"]
   },
-  "ignoreDependencies": ["tailwindcss", "tw-animate-css"],
+  "ignoreDependencies": ["tailwindcss", "tw-animate-css", "openapi-typescript", "@tsconfig/node24"],
   "typescript": {
     "config": "tsconfig.app.json"
   }
