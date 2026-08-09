@@ -1,3 +1,8 @@
+database:
+  max_conns: 20
+  min_conns: 2
+  max_conn_idle_time: 30m
+  max_conn_lifetime: 1h
 http_server:
   address: "0.0.0.0:8080"
   read_timeout: 5s

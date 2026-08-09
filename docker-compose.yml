@@ -1,8 +1,31 @@
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: expense
+      POSTGRES_PASSWORD: expense
+      POSTGRES_DB: expense
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U expense"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   app:
     build: ./backend
     image: expense-tracker-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://expense:expense@db:5432/expense?sslmode=disable
+      CONFIG_PATH: /app/prod.yaml
     ports:
-      - 8080:8080
-    volumes:
-      - ./backend/data:/app/storage
+      - "8080:8080"
+
+volumes:
+  pgdata:

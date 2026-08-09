@@ -11,8 +11,17 @@ import (
 type Config struct {
 	HTTPServer `yaml:"http_server"`
 
-	Env         string `yaml:"env"          env:"ENV"          env-required:"true"`
-	StoragePath string `yaml:"storage_path" env:"STORAGE_PATH" env-required:"true"`
+	Env         string         `yaml:"env"          env:"ENV"          env-required:"true"`
+	DatabaseURL string         `yaml:"database_url" env:"DATABASE_URL" env-required:"true"`
+	Database    DatabaseConfig `yaml:"database"`
+}
+
+// DatabaseConfig tunes the pgxpool connection pool.
+type DatabaseConfig struct {
+	MaxConns        int32         `yaml:"max_conns"         env:"DB_MAX_CONNS"         env-default:"10"`
+	MinConns        int32         `yaml:"min_conns"         env:"DB_MIN_CONNS"         env-default:"2"`
+	MaxConnIdleTime time.Duration `yaml:"max_conn_idle_time" env:"DB_MAX_CONN_IDLE_TIME" env-default:"30m"`
+	MaxConnLifetime time.Duration `yaml:"max_conn_lifetime" env:"DB_MAX_CONN_LIFETIME" env-default:"1h"`
 }
 
 type HTTPServer struct {

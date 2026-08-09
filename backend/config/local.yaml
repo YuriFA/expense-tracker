@@ -1,5 +1,10 @@
 env: "local"
-storage_path: "./storage/storage.db"
+database_url: "postgres://expense:expense@localhost:5432/expense?sslmode=disable"
+database:
+  max_conns: 10
+  min_conns: 2
+  max_conn_idle_time: 30m
+  max_conn_lifetime: 1h
 http_server:
   address: "localhost:8080"
   read_timeout: 5s
