@@ -1,0 +1,11 @@
+extends:
+  - recommended
+
+# Project-specific tuning of the Redocly recommended ruleset.
+rules:
+  # The spec documents a local development server (http://localhost:8080); that
+  # is intentional, not a leftover.
+  no-server-example.com: off
+  # `POST /api/auth/logout` is idempotent and public (callable without a session):
+  # it always returns 204 or 500 and has no 4XX response by design.
+  operation-4xx-response: off

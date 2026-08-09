@@ -14,6 +14,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the base ref is available for oasdiff
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Lint OpenAPI spec (Redocly)
+        run: npx --yes @redocly/cli@latest lint --config docs/api/redocly.yaml docs/api/openapi.yaml
+      - name: Detect breaking contract changes (oasdiff)
+        # Only meaningful on PRs: compare the spec against the PR base branch.
+        if: github.event_name == 'pull_request'
+        run: |
+          set -e
+          git fetch origin "${{ github.base_ref }}"
+          if git cat-file -e "origin/${{ github.base_ref }}:docs/api/openapi.yaml" 2>/dev/null; then
+            git show "origin/${{ github.base_ref }}:docs/api/openapi.yaml" > /tmp/base.yaml
+            cp docs/api/openapi.yaml /tmp/head.yaml
+            docker run --rm -v /tmp:/spec oasdiff/oasdiff:latest breaking /spec/base.yaml /spec/head.yaml
+          else
+            echo "No baseline spec on base ref; skipping breaking-change check."
+          fi
+
+  gen-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: backend/go.sum
+      - run: go mod download
+      - name: Verify generated code is in sync
+        run: make gen-check
+
   lint-test:
     runs-on: ubuntu-latest
     defaults:
