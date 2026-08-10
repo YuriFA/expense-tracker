@@ -76,6 +76,25 @@ local SQLite implementations and wires them through DI (React context). The HTTP
 implementations from the package remain the swappable alternative behind the same
 seam.
 
+## Testing (E2E launch smoke)
+
+A [Maestro](https://maestro.mobile.dev/) launch-smoke flow lives under
+[`.maestro/`](./.maestro). It cold-boots the app (`clearState`) and asserts the
+Home input screen mounted (type switch + Save button + the hero amount field),
+which fails automatically on any launch-time crash - the class of bug it was
+added for: a New-Architecture-only native dep red-boxing at boot.
+
+Prerequisites: a **booted iOS simulator or Android emulator**, the **dev build
+installed** (see Run above), and the **`maestro` CLI** on PATH ([install](https://maestro.mobile.dev/getting-started/installing-maestro)).
+
+```sh
+# from the repo root (or apps/mobile)
+bun --filter @expense-tracker/mobile test:e2e   # maestro test .maestro/
+```
+
+Add more flows (e.g. the enter-transaction happy path) as additional
+`.maestro/*.yaml` files; `test:e2e` runs the whole directory.
+
 ## Design tokens
 
 Tokens carry the **same oklch values** as the web design system
