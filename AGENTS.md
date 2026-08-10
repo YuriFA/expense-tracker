@@ -179,10 +179,21 @@ work.
   (`app/providers/RepositoryProvider`).
 - **Persistence (offline-first, default):** domain (accounts/categories/
   transactions) in **expo-sqlite** (`shared/services/database.ts`, schema +
-  default-category seeding + a single starter account so the input flow works on
-  first launch); settings (locale/currency/theme) in **MMKV**
+  default-category seeding + a single localized starter account so the input
+  flow works on first launch); settings (locale/currency/theme) in **MMKV**
   (`shared/services/storage.ts` + `shared/store/use-settings-store.ts`, zustand).
   The HTTP impls from the package stay the swappable DI alternative.
+- **Settings hydrate synchronously:** MMKV is read into the zustand store's
+  *initial* state (not a post-commit effect), so the persisted locale/currency/
+  theme are correct on first paint AND already in place when the SQLite seed
+  runs. Do NOT regress this to an async effect (it reintroduces a cold-start
+  theme/locale flash + a wrong-currency seed account).
+- **Category CRUD:** the entity layer (SQLite repo + TanStack hooks) is in
+  `@expense-tracker/api`/`entities/category`; the management UI lives in
+  `pages/settings/features/category-manage` (Fractal FSD, reached from Settings
+  since the design's 4-tab structure has no Categories tab). The web twin has
+  the data layer but no management UI; mobile surfaces one for MVP completeness
+  (design section 13).
 - **Money** is shared `@expense-tracker/money` minor units; amounts render with
   `tabular` figures (`shared/lib/format.ts`). i18n is react-i18next over the
   shared bundles, runtime switching via the settings store (no restart).
@@ -204,6 +215,13 @@ work.
 - **Native modules** (expo-sqlite, react-native-mmkv, expo-haptics) require a
   dev build / `expo prebuild`, not Expo Go. Quality bar: `tsc --noEmit` clean,
   `expo-doctor` 18/18, `expo export` bundles.
+- **Accessibility primitives:** Reduce Motion is read via the shared
+  `useReduceMotion()` hook (`shared/lib/reduce-motion.ts`) - animate
+  accordingly (skeleton pulse, sheet slide). Haptics (`shared/lib/haptics.ts`,
+  via `expo-haptics` `UIFeedbackGenerator`) are OS-gated: iOS suppresses them
+  under the system "System Haptics" toggle and Android under its touch-feedback
+  setting, so there is no app-level haptics toggle. Token contrast was verified
+  WCAG-AA (body >=4.5:1) in both themes.
 
 ## Maintaining this file
 
