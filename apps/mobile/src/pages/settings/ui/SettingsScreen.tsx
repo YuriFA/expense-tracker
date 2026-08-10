@@ -1,101 +1,132 @@
+import { useState } from 'react'
 import { View, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useTranslation } from 'react-i18next'
-import {
-  AVAILABLE_CURRENCIES,
-  type CurrencyCode,
-} from '@expense-tracker/money'
+import { type CurrencyCode } from '@expense-tracker/money'
 import type { AppLocale } from '@expense-tracker/i18n'
-import {
-  Screen,
-  Text,
-  SegmentedControl,
-  type SegmentOption,
-} from '@shared/ui'
-import {
-  useSettingsStore,
-} from '@shared/store/use-settings-store'
-import type { ThemePreference } from '@shared/config/settings'
-import { APP_DISPLAY_NAME } from '@shared/config/app'
+import { Screen, Text, ListRow, useTokens } from '@shared/ui'
+import { useSettingsStore } from '@shared/store/use-settings-store'
+import { currencyOptions, LANGUAGE_OPTIONS } from '../model/options'
+import { OptionPicker } from './OptionPicker'
+
+type PickerKind = 'language' | 'currency' | null
 
 /**
- * Settings screen. Language / default currency / theme are real controls
- * backed by the persisted settings store: changing any of them applies
- * globally and immediately (i18n switches the active bundle, theme resolves
- * against the OS scheme) without restart - the mobile design's hard contract.
+ * Settings screen (design.md section 7). Language and default currency are
+ * selector rows that open a bottom-sheet picker (OptionPicker). Both are backed
+ * by the persisted settings store and apply globally and immediately with NO
+ * restart (design section 6/10):
+ *   - language -> the store calls `i18next.changeLanguage`, react-i18next
+ *     re-renders every translated surface (incl. localized default categories);
+ *   - currency -> the default for new accounts, persisted for next launch.
  */
 export function SettingsScreen() {
   const { t } = useTranslation()
+  const tokens = useTokens()
+
   const locale = useSettingsStore((s) => s.locale)
   const currency = useSettingsStore((s) => s.currency)
-  const theme = useSettingsStore((s) => s.theme)
   const setLocale = useSettingsStore((s) => s.setLocale)
   const setCurrency = useSettingsStore((s) => s.setCurrency)
-  const setTheme = useSettingsStore((s) => s.setTheme)
 
-  const localeOptions: ReadonlyArray<SegmentOption<AppLocale>> = [
-    { value: 'en', label: 'EN' },
-    { value: 'ru', label: 'RU' },
-  ]
-  const currencyOptions: ReadonlyArray<SegmentOption<CurrencyCode>> = AVAILABLE_CURRENCIES.map(
-    (code) => ({ value: code, label: code }),
-  )
-  const themeOptions: ReadonlyArray<SegmentOption<ThemePreference>> = [
-    { value: 'system', label: 'System' },
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-  ]
+  const [openPicker, setOpenPicker] = useState<PickerKind>(null)
+
+  const currencyOpts = currencyOptions(locale)
+  const selectedCurrencyLabel =
+    currencyOpts.find((option) => option.value === currency)?.label ?? currency
+  const selectedLanguageLabel =
+    LANGUAGE_OPTIONS.find((option) => option.value === locale)?.label ?? locale
 
   return (
     <Screen scrollable>
-      <View style={styles.section}>
-        <Text size="title" weight={600}>
-          {APP_DISPLAY_NAME}
-        </Text>
+      <View style={styles.stack}>
+        <SettingsGroup>
+          <ListRow
+            onPress={() => setOpenPicker('language')}
+            divider
+            trailing={
+              <View style={styles.valueTrailing}>
+                <Text size="body" tone="muted">
+                  {selectedLanguageLabel}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={tokens.mutedForeground} />
+              </View>
+            }
+          >
+            <Text size="body">{t('settings.language')}</Text>
+          </ListRow>
+
+          <ListRow
+            onPress={() => setOpenPicker('currency')}
+            divider={false}
+            trailing={
+              <View style={styles.valueTrailing}>
+                <Text size="body" tone="muted">
+                  {selectedCurrencyLabel}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={tokens.mutedForeground} />
+              </View>
+            }
+          >
+            <Text size="body">{t('settings.defaultCurrency')}</Text>
+          </ListRow>
+        </SettingsGroup>
       </View>
 
-      <SettingRow label={t('settings.locale')}>
-        <SegmentedControl
-          options={localeOptions}
-          value={locale}
-          onChange={setLocale}
-          accessibilityLabel={t('settings.locale')}
-        />
-      </SettingRow>
-
-      <SettingRow label={t('settings.currency')}>
-        <SegmentedControl
-          options={currencyOptions}
-          value={currency}
-          onChange={setCurrency}
-          accessibilityLabel={t('settings.currency')}
-        />
-      </SettingRow>
-
-      <SettingRow label={t('settings.theme')}>
-        <SegmentedControl
-          options={themeOptions}
-          value={theme}
-          onChange={setTheme}
-          accessibilityLabel={t('settings.theme')}
-        />
-      </SettingRow>
+      <OptionPicker<AppLocale>
+        visible={openPicker === 'language'}
+        onClose={() => setOpenPicker(null)}
+        title={t('settings.language')}
+        options={LANGUAGE_OPTIONS}
+        selectedValue={locale}
+        onSelect={setLocale}
+      />
+      <OptionPicker<CurrencyCode>
+        visible={openPicker === 'currency'}
+        onClose={() => setOpenPicker(null)}
+        title={t('settings.defaultCurrency')}
+        options={currencyOpts}
+        selectedValue={currency}
+        onSelect={setCurrency}
+      />
     </Screen>
   )
 }
 
-function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
+/**
+ * Inset grouped card - the iOS-Settings surface for a cluster of related rows.
+ * A hairline border defines the group in light mode (where surface == background),
+ * rounded corners + overflow clip give the grouped-list look.
+ */
+function SettingsGroup({ children }: { children: React.ReactNode }) {
+  const tokens = useTokens()
   return (
-    <View style={styles.section}>
-      <Text size="label" tone="muted" style={{ marginBottom: 8 }}>
-        {label}
-      </Text>
+    <View
+      style={[
+        styles.group,
+        {
+          backgroundColor: tokens.surface,
+          borderColor: tokens.border,
+          borderWidth: StyleSheet.hairlineWidth,
+        },
+      ]}
+    >
       {children}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 24,
+  stack: {
+    gap: 20,
+  },
+  group: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  valueTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
 })
