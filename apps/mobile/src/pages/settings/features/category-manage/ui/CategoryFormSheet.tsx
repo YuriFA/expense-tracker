@@ -187,7 +187,11 @@ export function CategoryFormSheet({ visible, onClose, mode, category }: Category
           <Text size="label" tone="muted" style={styles.fieldLabel}>
             {t('addCategory.iconLabel')}
           </Text>
-          <View style={styles.iconGrid}>
+          <View
+            style={styles.iconGrid}
+            accessibilityRole="radiogroup"
+            accessibilityLabel={t('addCategory.iconLabel')}
+          >
             {CATEGORY_ICONS.map((entry) => {
               const selected = entry.icon === icon
               return (
