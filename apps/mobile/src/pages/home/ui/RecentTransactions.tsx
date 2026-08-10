@@ -33,8 +33,10 @@ interface RecentTransactionsProps {
  * above), ErrorState + retry on failure - and optimistic swipe-to-delete + tap
  * / swipe-to-edit via the shared `SwipeableRow` and `TransactionListItem`.
  *
- * Updates instantly after a save because `useCreateTransaction` writes the
- * provisional row into every cached list optimistically.
+ * The list breaks out to full width (negative margin cancelling the screen's
+ * 16px content padding) so each row's built-in 16px padding is the only inset -
+ * the standard edge-to-edge mobile list. Updates instantly after a save because
+ * `useCreateTransaction` writes the provisional row into every cached list.
  */
 export function RecentTransactions({ onEditTransaction }: RecentTransactionsProps) {
   const { t } = useTranslation()
@@ -73,9 +75,11 @@ export function RecentTransactions({ onEditTransaction }: RecentTransactionsProp
     },
   ]
 
+  const lastIndex = recent.data ? recent.data.length - 1 : -1
+
   return (
     <View style={styles.container}>
-      <Text size="label" weight={600} tone="muted" style={styles.title}>
+      <Text size="label" weight={600} tone="muted">
         {t('recentTransactions.title')}
       </Text>
 
@@ -92,12 +96,11 @@ export function RecentTransactions({ onEditTransaction }: RecentTransactionsProp
           {recent.data.map((transaction, index) => (
             <View
               key={transaction.id}
-              style={[
-                styles.item,
-                index < recent.data!.length - 1
+              style={
+                index < lastIndex
                   ? { borderBottomColor: tokens.border, borderBottomWidth: StyleSheet.hairlineWidth }
-                  : null,
-              ]}
+                  : null
+              }
             >
               <SwipeableRow rightActions={buildActions(transaction)}>
                 <PressableRow onPress={() => onEditTransaction(transaction)}>
@@ -152,11 +155,10 @@ const styles = StyleSheet.create({
   container: {
     gap: 12,
   },
-  title: {},
-  list: {},
-  item: {
-    paddingLeft: 0,
-    paddingRight: 8,
+  // Break out of the screen's 16px content padding so each row's built-in
+  // padding is the only horizontal inset (edge-to-edge list).
+  list: {
+    marginHorizontal: -16,
   },
 })
 
@@ -166,6 +168,7 @@ const skeletonStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   text: {
     flex: 1,
