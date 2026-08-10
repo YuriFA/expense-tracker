@@ -8,6 +8,8 @@ interface ChipProps extends PropsWithChildren {
   onPress?: () => void
   /** Icon node rendered before the label (category glyph, etc.). */
   leading?: React.ReactNode
+  /** VoiceOver/TalkBack label; defaults to the label text when omitted. */
+  accessibilityLabel?: string
   style?: ViewStyle
 }
 
@@ -15,12 +17,14 @@ interface ChipProps extends PropsWithChildren {
  * Chip - account pick, active filters. Selectable; the selected state takes the
  * ink fill + inverse label, unselected is bordered. Touch target >= 44pt.
  */
-export function Chip({ selected = false, onPress, leading, style, children }: ChipProps) {
+export function Chip({ selected = false, onPress, leading, accessibilityLabel, style, children }: ChipProps) {
   const tokens = useTokens()
 
   if (!onPress) {
     return (
       <View
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
         style={[
           styles.base,
           {
@@ -42,6 +46,7 @@ export function Chip({ selected = false, onPress, leading, style, children }: Ch
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
