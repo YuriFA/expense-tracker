@@ -3,9 +3,10 @@ export CONFIG_PATH
 export DATABASE_URL
 
 # --- Tooling --------------------------------------------------------------
-# Codegen tools must be on PATH. Install with:
-#   go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
-#   go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+# Codegen tools must be on PATH. Versions are pinned via go.mod (see tools.go);
+# install the pinned versions with plain `go install` (no @latest):
+#   go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+#   go install github.com/sqlc-dev/sqlc/cmd/sqlc
 OAPI_CODEGEN := $(shell command -v oapi-codegen 2>/dev/null)
 SQLC := $(shell command -v sqlc 2>/dev/null)
 
