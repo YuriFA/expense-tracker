@@ -1,3 +1,6 @@
+// Intl polyfills MUST load first - Hermes lacks the ICU/Intl the money/date/
+// settings formatting relies on. Side-effect-only; see ./intl-polyfill.
+import './intl-polyfill'
 import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
