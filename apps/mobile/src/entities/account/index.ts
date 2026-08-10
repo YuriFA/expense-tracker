@@ -22,3 +22,4 @@ export {
   useUpdateAccount,
   useDeleteAccount,
 } from './model/use-accounts'
+export { AccountChips } from './ui/AccountChips'

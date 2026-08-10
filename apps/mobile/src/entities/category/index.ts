@@ -17,3 +17,4 @@ export {
   useUpdateCategory,
   useDeleteCategory,
 } from './model/use-categories'
+export { CategoryGrid } from './ui/CategoryGrid'

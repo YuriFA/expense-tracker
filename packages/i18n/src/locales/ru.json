@@ -23,6 +23,13 @@
   "dashboard": {
     "netWorth": "Капитал"
   },
+  "home": {
+    "balance": "Баланс",
+    "emptyTitle": "Пока нет транзакций",
+    "emptyDescription": "Введите сумму выше, чтобы добавить первую",
+    "commentPlaceholder": "Добавить заметку",
+    "swapAccounts": "Поменять счета местами"
+  },
   "addTransaction": {
     "newTransaction": "Новая транзакция",
     "accountLabel": "Счет",

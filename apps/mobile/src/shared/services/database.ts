@@ -1,6 +1,10 @@
 import * as SQLite from 'expo-sqlite'
 import { DEFAULT_CATEGORIES } from '@expense-tracker/i18n'
-import { DATABASE_NAME } from '@shared/config/storage-keys'
+import { DEFAULT_CURRENCY, type CurrencyCode } from '@expense-tracker/money'
+import { generateId } from '@expense-tracker/api'
+import { DATABASE_NAME, STORAGE_KEYS } from '@shared/config/storage-keys'
+import { settingsStorage } from '@shared/services/storage'
+import type { Settings } from '@shared/config/settings'
 
 /**
  * Local persistence for the relational domain (accounts / categories /
@@ -76,6 +80,7 @@ export async function getDatabase(): Promise<Database> {
   await db.execAsync('PRAGMA foreign_keys = ON;')
   await db.execAsync(SCHEMA)
   await seedDefaultCategories(db)
+  await seedDefaultAccount(db)
 
   dbInstance = db
   return db
@@ -106,4 +111,29 @@ async function seedDefaultCategories(db: Database): Promise<void> {
       )
     }
   })
+}
+
+/**
+ * Seeds a single starter account in the user's default currency when the table
+ * is empty. The Home input screen requires at least one account to record a
+ * transaction against, so this guarantees "open -> type" works on first launch
+ * without a blocking onboarding flow (design section 3). Account CRUD lives in
+ * the Accounts screen; this is a one-time convenience seed.
+ */
+async function seedDefaultAccount(db: Database): Promise<void> {
+  const row = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) AS c FROM accounts')
+  if (row && row.c > 0) {
+    return
+  }
+
+  const settings = settingsStorage.get<Settings>(STORAGE_KEYS.settings)
+  const currency: CurrencyCode = settings?.currency ?? DEFAULT_CURRENCY
+
+  await db.runAsync(
+    /* sql */ `INSERT INTO accounts (id, name, currency, opening_balance, manual_adjustment)
+               VALUES (?, ?, ?, 0, 0)`,
+    generateId(),
+    'Cash',
+    currency,
+  )
 }
