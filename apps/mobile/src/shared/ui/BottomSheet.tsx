@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Modal,
   View,
   Pressable,
   StyleSheet,
   Animated,
+  AccessibilityInfo,
   useWindowDimensions,
   type ViewStyle,
 } from 'react-native'
@@ -43,16 +44,29 @@ export function BottomSheet({
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
   const slide = useRef(new Animated.Value(0)).current
+  const [reduceMotion, setReduceMotion] = useState(false)
 
-  // Slide the panel up on present; snap back on dismiss. (Reduce Motion users
-  // see a near-instant transition because the duration is short.)
+  // Respect Reduce Motion (design section 11): present/dismiss instantly
+  // instead of sliding.
   useEffect(() => {
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion)
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion)
+    return () => sub.remove()
+  }, [])
+
+  // Slide the panel up on present; snap back on dismiss. Reduce Motion users
+  // see an instant transition.
+  useEffect(() => {
+    if (reduceMotion) {
+      slide.setValue(visible ? 1 : 0)
+      return
+    }
     Animated.timing(slide, {
       toValue: visible ? 1 : 0,
       duration: 200,
       useNativeDriver: true,
     }).start()
-  }, [visible, slide])
+  }, [visible, slide, reduceMotion])
 
   const panelHeight = Math.max(220, height * heightRatio)
 

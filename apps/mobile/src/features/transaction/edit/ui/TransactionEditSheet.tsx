@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { View, ScrollView, StyleSheet, type TextStyle } from 'react-native'
+import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, type TextStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { mapCategories } from '@expense-tracker/i18n'
 import {
@@ -153,10 +153,14 @@ export function TransactionEditSheet({ transaction, visible, onClose }: Transact
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title={t('editTransaction.title')}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={styles.body}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
         {isTransfer ? (
           <>
             <FieldLabel label={t('addTransfer.fromAccountLabel')} />
@@ -239,6 +243,7 @@ export function TransactionEditSheet({ transaction, visible, onClose }: Transact
           {t('editTransaction.submit')}
         </Button>
       </View>
+      </KeyboardAvoidingView>
     </BottomSheet>
   )
 }
@@ -252,6 +257,9 @@ function FieldLabel({ label, style }: { label: string; style?: TextStyle }) {
 }
 
 const styles = StyleSheet.create({
+  body: {
+    flex: 1,
+  },
   content: {
     gap: 8,
     paddingBottom: 16,

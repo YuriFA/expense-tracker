@@ -2,9 +2,10 @@ import { useTranslation } from 'react-i18next'
 import { ListRow, Text } from '@shared/ui'
 import { formatAmount } from '@shared/lib/format'
 import { useSettingsStore } from '@shared/store/use-settings-store'
-import { DEFAULT_CURRENCY as _fallback, type CurrencyCode } from '@expense-tracker/money'
+import type { CurrencyCode } from '@expense-tracker/money'
 import { isTransferTransaction } from '@expense-tracker/api'
 import type { AccountWithBalance, Category, Transaction } from '@expense-tracker/api'
+import type { AppLocale } from '@expense-tracker/i18n'
 
 const TRANSFER_ICON = '🔄'
 
@@ -32,8 +33,8 @@ export function TransactionListItem({
   categories,
 }: TransactionListItemProps) {
   const { t } = useTranslation()
-  const locale = useSettingsStore((state) => state.locale)
-  const fallbackCurrency = useSettingsStore((state) => state.currency) as CurrencyCode
+  const locale = useSettingsStore((state) => state.locale) as AppLocale
+  const fallbackCurrency = useSettingsStore((state) => state.currency)
 
   const accountName = (id: string | undefined): string =>
     accounts?.find((account) => account.id === id)?.name ?? ''
@@ -44,48 +45,52 @@ export function TransactionListItem({
     const from = accountName(transaction.fromAccountId)
     const to = accountName(transaction.toAccountId)
     const currency = accountCurrency(transaction.fromAccountId)
-    const title = from && to ? `${from} → ${to}` : t('transactions.types.transfer')
+    const route = from && to ? `${from} → ${to}` : t('transactions.types.transfer')
 
     return (
       <ListRow
         leading={<Text size="title">{TRANSFER_ICON}</Text>}
+        trailing={<RowTrailing amount={transaction.amount} currency={currency} locale={locale} />}
         divider={false}
       >
         <Text weight={500} numberOfLines={1}>
-          {transaction.description || title}
+          {transaction.description || route}
         </Text>
-        <Text size="caption" tone="muted" numberOfLines={1}>
-          {title}
-        </Text>
-        <RowTrailing
-          amount={transaction.amount}
-          currency={currency}
-          locale={locale}
-          sign={null}
-        />
+        {transaction.description ? (
+          <Text size="caption" tone="muted" numberOfLines={1}>
+            {route}
+          </Text>
+        ) : null}
       </ListRow>
     )
   }
 
   const category = categories?.find((item) => item.id === transaction.categoryId)
   const currency = accountCurrency(transaction.accountId)
-  const title = category?.name ?? t(`transactions.types.${transaction.type}`)
-  const subtitle = accountName(transaction.accountId)
+  const categoryName = category?.name ?? t(`transactions.types.${transaction.type}`)
+  const account = accountName(transaction.accountId)
+  const primary = transaction.description || categoryName
+  const secondary = transaction.description ? `${categoryName} · ${account}`.trim() : account || categoryName
 
   return (
-    <ListRow leading={<Text size="title">{category?.icon ?? '💸'}</Text>} divider={false}>
+    <ListRow
+      leading={<Text size="title">{category?.icon ?? '💸'}</Text>}
+      trailing={
+        <RowTrailing
+          amount={transaction.amount}
+          currency={currency}
+          locale={locale}
+          sign={transaction.type === 'income' ? '+' : '−'}
+        />
+      }
+      divider={false}
+    >
       <Text weight={500} numberOfLines={1}>
-        {transaction.description || title}
+        {primary}
       </Text>
       <Text size="caption" tone="muted" numberOfLines={1}>
-        {subtitle || title}
+        {secondary}
       </Text>
-      <RowTrailing
-        amount={transaction.amount}
-        currency={currency}
-        locale={locale}
-        sign={transaction.type === 'income' ? '+' : '−'}
-      />
     </ListRow>
   )
 }
@@ -93,8 +98,8 @@ export function TransactionListItem({
 interface RowTrailingProps {
   amount: number
   currency: CurrencyCode
-  locale: 'en' | 'ru'
-  sign: '+' | '−' | null
+  locale: AppLocale
+  sign?: '+' | '−'
 }
 
 function RowTrailing({ amount, currency, locale, sign }: RowTrailingProps) {
