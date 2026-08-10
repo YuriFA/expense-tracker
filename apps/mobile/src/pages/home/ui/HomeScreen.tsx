@@ -7,9 +7,9 @@ import {
   type TextInput,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { Screen, Button, Text } from '@shared/ui'
-import { useTokens } from '@shared/ui'
+import { Screen, Button, Text, EmptyState, useTokens } from '@shared/ui'
 import { useAccounts } from '@entities/account'
 import { useCategories } from '@entities/category'
 import type { Transaction } from '@expense-tracker/api'
@@ -31,6 +31,7 @@ import { TransactionEditSheet } from '@features/transaction/edit'
 export function HomeScreen() {
   const { t } = useTranslation()
   const tokens = useTokens()
+  const router = useRouter()
   const queryClient = useQueryClient()
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
@@ -87,9 +88,13 @@ export function HomeScreen() {
       >
         <HomeHeader />
         {noAccounts ? (
-          <Text size="body" tone="muted" style={styles.noAccounts}>
-            {t('accounts.noAccountsDescription')}
-          </Text>
+          <EmptyState
+            icon={<Text size="display">🏦</Text>}
+            heading={t('accounts.homeEmptyAccountsTitle')}
+            description={t('accounts.homeEmptyAccountsDescription')}
+            actionLabel={t('accounts.homeEmptyAccountsAction')}
+            onAction={() => router.navigate('/accounts')}
+          />
         ) : (
           <TransactionInput
             form={form}
@@ -137,9 +142,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 24,
     gap: 20,
-  },
-  noAccounts: {
-    paddingVertical: 16,
   },
   saveBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
