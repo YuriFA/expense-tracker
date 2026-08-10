@@ -197,6 +197,13 @@ work.
 - **Money** is shared `@expense-tracker/money` minor units; amounts render with
   `tabular` figures (`shared/lib/format.ts`). i18n is react-i18next over the
   shared bundles, runtime switching via the settings store (no restart).
+- **Intl on Hermes:** Hermes ships without full ICU/`Intl`, so `formatToParts`,
+  `currencyDisplay: 'narrowSymbol'`, `Intl.DateTimeFormat`, and
+  `Intl.DisplayNames` throw on device. The `@formatjs` ponyfills
+  (number/datetime/displaynames + `en`/`ru` locale data) are installed via
+  `src/app/intl-polyfill.ts`, which MUST be the first import in the root
+  `app/_layout.tsx` (before any render-time `Intl` use). The shared money
+  package is untouched; web keeps native Intl.
 - **UI kit + canonical components:** one component vocabulary in `shared/ui`
   (`Screen` keyboard-aware safe-area foundation, `Button`, `TextField`,
   `SegmentedControl`, `Chip`, `AmountField` currency+numeric hero/field input,
