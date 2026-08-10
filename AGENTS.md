@@ -154,6 +154,41 @@ and form-layer Zod schemas.
 - Quality bar: `vue-tsc --noEmit`, `oxlint`, `eslint`, `knip`, `steiger`, and
   the i18n strict lint all green. E2E (`apps/web/e2e`) drives the real backend.
 
+## Frontend (apps/mobile)
+
+React Native (Expo SDK 53) + Expo Router + TypeScript (strict). The mobile
+"twin" of web: same domain model, design tokens, and shared packages
+(`@expense-tracker/{api,money,i18n}`). Authoritative design:
+`/Users/yuri/web/firstmate/data/et-mobile/design.md`. Read it before any mobile
+work.
+
+- **FSD layers** (`apps/mobile/src/`): `app -> pages -> features -> entities ->
+  shared`, public-API barrels between slices. Expo Router files live in
+  `app/` (auto-detected `src/app/`); route files are thin and render `pages/*`.
+- **Navigation:** bottom tab bar only (Home / Transactions / Accounts /
+  Settings), one level of depth; secondary actions use bottom sheets, not
+  nested stacks. Safe areas + keyboard respected via `shared/ui/Screen`.
+- **Design tokens** carry the **same oklch values** as web
+  (`shared/config/theme-tokens.ts`), as a JS map (RN 0.76+ new arch parses
+  oklch). Theme is system/light/dark; `useTokens()`/`useTheme()` from
+  `shared/ui/theme`. Outfit font via `@expo-google-fonts/outfit`.
+- **Data:** TanStack Query (React Query) with optimistic update + invalidation
+  in `entities/*/model/use-*.ts`. Repository **interfaces** come from
+  `@expense-tracker/api`; mobile adds **local SQLite impls**
+  (`entities/*/api/sqlite-*-repository.ts`) wired via React context DI
+  (`app/providers/RepositoryProvider`).
+- **Persistence (offline-first, default):** domain (accounts/categories/
+  transactions) in **expo-sqlite** (`shared/services/database.ts`, schema +
+  default-category seeding); settings (locale/currency/theme) in **MMKV**
+  (`shared/services/storage.ts` + `shared/store/use-settings-store.ts`, zustand).
+  The HTTP impls from the package stay the swappable DI alternative.
+- **Money** is shared `@expense-tracker/money` minor units; amounts render with
+  `tabular` figures (`shared/lib/format.ts`). i18n is react-i18next over the
+  shared bundles, runtime switching via the settings store (no restart).
+- **Native modules** (expo-sqlite, react-native-mmkv, expo-haptics) require a
+  dev build / `expo prebuild`, not Expo Go. Quality bar: `tsc --noEmit` clean,
+  `expo-doctor` 18/18, `expo export` bundles.
+
 ## Maintaining this file
 
 Keep this file for knowledge useful to almost every future agent session in this project.
