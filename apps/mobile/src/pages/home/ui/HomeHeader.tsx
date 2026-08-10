@@ -2,14 +2,11 @@ import { useMemo } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Text } from '@shared/ui'
-import { formatAmount } from '@shared/lib/format'
+import { formatAmount, formatHeaderDate } from '@shared/lib/format'
 import { useSettingsStore } from '@shared/store/use-settings-store'
 import { useAccounts } from '@entities/account'
 import { APP_DISPLAY_NAME } from '@shared/config/app'
 import type { CurrencyCode } from '@expense-tracker/money'
-import type { AppLocale } from '@expense-tracker/i18n'
-
-const INTL_LOCALE: Record<AppLocale, string> = { en: 'en-US', ru: 'ru-RU' }
 
 /**
  * Compact home header (design section 7): app name + current date on one line,
@@ -29,11 +26,7 @@ export function HomeHeader() {
     return [...byCurrency.entries()]
   }, [accounts])
 
-  const dateLabel = new Date().toLocaleDateString(INTL_LOCALE[locale], {
-    weekday: 'short',
-    month: 'long',
-    day: 'numeric',
-  })
+  const dateLabel = formatHeaderDate(new Date(), locale)
 
   return (
     <View style={styles.container}>
