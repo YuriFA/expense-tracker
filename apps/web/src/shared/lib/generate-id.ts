@@ -1,3 +1,1 @@
-export function generateId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
+export { generateId } from '@expense-tracker/api'

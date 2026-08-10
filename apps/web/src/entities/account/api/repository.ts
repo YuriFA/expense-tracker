@@ -1,16 +1,15 @@
 import { inject, type InjectionKey } from 'vue'
-import type { Account, AccountWithBalance } from '../model/types'
-import type { Repository } from '@/shared/lib/data'
-
-export type CreateAccountPayload = Omit<Account, 'id' | 'manualAdjustment'> &
-  Partial<Pick<Account, 'id'>>
-export type UpdateAccountPayload = Partial<Omit<Account, 'id' | 'currency' | 'openingBalance'>>
-
-export type AccountRepository = Repository<
-  AccountWithBalance,
+import type {
+  AccountRepository,
   CreateAccountPayload,
-  UpdateAccountPayload
->
+  UpdateAccountPayload,
+} from '@expense-tracker/api'
+
+export type {
+  AccountRepository,
+  CreateAccountPayload,
+  UpdateAccountPayload,
+} from '@expense-tracker/api'
 
 export const ACCOUNT_REPOSITORY_KEY: InjectionKey<AccountRepository> = Symbol('account-repository')
 

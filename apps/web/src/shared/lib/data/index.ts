@@ -1,5 +1,4 @@
 export { createLocalStorageAdapter } from './local-storage-adapter'
-export type { Repository } from './repository'
 export {
   RepositoryError,
   NotFoundError,
@@ -12,5 +11,5 @@ export {
   RateLimitedError,
   ConflictError,
   getRepositoryErrorMessage,
-} from './repository'
+} from '@expense-tracker/api'
 export { getRepositoryErrorMessages } from './repository-i18n'

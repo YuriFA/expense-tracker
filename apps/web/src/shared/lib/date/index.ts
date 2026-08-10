@@ -3,13 +3,12 @@ import type { BrandedCalendarDay, CalendarDay } from './types'
 
 export type {
   BrandedCalendarDay,
-  
+
   CalendarDay,
-  IsoDateTime,
 } from './types'
 
 export { fromDateValue, toDateValue } from './date-value-bridge'
-export { getDateTimestamp, isIsoDateTime, nowIsoString,  } from './datetime'
+export { getDateTimestamp, nowIsoString,  } from './datetime'
 
 const dateAdapter = internationalizedDateAdapter
 

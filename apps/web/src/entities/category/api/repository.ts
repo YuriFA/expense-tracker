@@ -1,11 +1,15 @@
 import { inject, type InjectionKey } from 'vue'
-import type { Category } from '../model/types'
-import type { Repository } from '@/shared/lib/data'
+import type {
+  CategoryRepository,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
+} from '@expense-tracker/api'
 
-export type CreateCategoryPayload = Omit<Category, 'id'> & Partial<Pick<Category, 'id'>>
-export type UpdateCategoryPayload = Partial<Omit<Category, 'id'>>
-
-export type CategoryRepository = Repository<Category, CreateCategoryPayload, UpdateCategoryPayload>
+export type {
+  CategoryRepository,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
+} from '@expense-tracker/api'
 
 export const CATEGORY_REPOSITORY_KEY: InjectionKey<CategoryRepository> =
   Symbol('category-repository')
