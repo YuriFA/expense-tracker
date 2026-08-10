@@ -1,24 +1,40 @@
 import { useState } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import Constants from 'expo-constants'
 import { useTranslation } from 'react-i18next'
 import { type CurrencyCode } from '@expense-tracker/money'
 import type { AppLocale } from '@expense-tracker/i18n'
-import { Screen, Text, ListRow, useTokens } from '@shared/ui'
+import {
+  Screen,
+  Text,
+  ListRow,
+  SegmentedControl,
+  type SegmentOption,
+  useTokens,
+} from '@shared/ui'
 import { useSettingsStore } from '@shared/store/use-settings-store'
+import type { ThemePreference } from '@shared/config/settings'
 import { currencyOptions, LANGUAGE_OPTIONS } from '../model/options'
 import { OptionPicker } from './OptionPicker'
 
 type PickerKind = 'language' | 'currency' | null
 
 /**
- * Settings screen (design.md section 7). Language and default currency are
- * selector rows that open a bottom-sheet picker (OptionPicker). Both are backed
- * by the persisted settings store and apply globally and immediately with NO
- * restart (design section 6/10):
+ * Settings screen (design.md section 7). Three knobs the design lists -
+ * language, default currency, theme - plus an optional version row.
+ *
+ * All three are backed by the persisted settings store and apply globally and
+ * immediately with NO restart (the hard contract from design section 6/10):
  *   - language -> the store calls `i18next.changeLanguage`, react-i18next
  *     re-renders every translated surface (incl. localized default categories);
+ *   - theme -> the ThemeProvider resolves the new preference against the OS
+ *     scheme and swaps the token map live;
  *   - currency -> the default for new accounts, persisted for next launch.
+ *
+ * Language and currency are selector rows that open a bottom-sheet picker
+ * (OptionPicker); theme is an inline segmented control (system / light / dark),
+ * matching the design's inline three-way toggle for quick light/dark previews.
  */
 export function SettingsScreen() {
   const { t } = useTranslation()
@@ -26,16 +42,26 @@ export function SettingsScreen() {
 
   const locale = useSettingsStore((s) => s.locale)
   const currency = useSettingsStore((s) => s.currency)
+  const theme = useSettingsStore((s) => s.theme)
   const setLocale = useSettingsStore((s) => s.setLocale)
   const setCurrency = useSettingsStore((s) => s.setCurrency)
+  const setTheme = useSettingsStore((s) => s.setTheme)
 
   const [openPicker, setOpenPicker] = useState<PickerKind>(null)
+
+  const themeOptions: ReadonlyArray<SegmentOption<ThemePreference>> = [
+    { value: 'system', label: t('settings.themeSystem') },
+    { value: 'light', label: t('settings.themeLight') },
+    { value: 'dark', label: t('settings.themeDark') },
+  ]
 
   const currencyOpts = currencyOptions(locale)
   const selectedCurrencyLabel =
     currencyOpts.find((option) => option.value === currency)?.label ?? currency
   const selectedLanguageLabel =
     LANGUAGE_OPTIONS.find((option) => option.value === locale)?.label ?? locale
+
+  const appVersion = Constants.expoConfig?.version ?? '0.0.0'
 
   return (
     <Screen scrollable>
@@ -69,6 +95,31 @@ export function SettingsScreen() {
             }
           >
             <Text size="body">{t('settings.defaultCurrency')}</Text>
+          </ListRow>
+        </SettingsGroup>
+
+        <SettingsGroup>
+          <View style={styles.themeBlock}>
+            <Text size="body">{t('settings.theme')}</Text>
+            <SegmentedControl
+              options={themeOptions}
+              value={theme}
+              onChange={setTheme}
+              accessibilityLabel={t('settings.theme')}
+            />
+          </View>
+        </SettingsGroup>
+
+        <SettingsGroup>
+          <ListRow
+            divider={false}
+            trailing={
+              <Text size="body" tone="muted">
+                {appVersion}
+              </Text>
+            }
+          >
+            <Text size="body">{t('settings.version')}</Text>
           </ListRow>
         </SettingsGroup>
       </View>
@@ -123,6 +174,10 @@ const styles = StyleSheet.create({
   group: {
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  themeBlock: {
+    padding: 16,
+    gap: 12,
   },
   valueTrailing: {
     flexDirection: 'row',
