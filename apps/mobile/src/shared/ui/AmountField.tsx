@@ -3,15 +3,9 @@ import { TextInput, View, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import type { CurrencyCode } from '@expense-tracker/money'
 import type { AppLocale } from '@expense-tracker/i18n'
-import { currencySymbol } from '@shared/lib/format'
+import { currencySymbol, currencyName } from '@shared/lib/format'
 import { useTokens } from './theme'
 import { Text } from './Text'
-
-/** App locale -> Intl locale string for currency-name resolution. */
-const intlLocale: Record<AppLocale, string> = {
-  en: 'en-US',
-  ru: 'ru-RU',
-}
 
 export type AmountFieldSize = 'hero' | 'field'
 
@@ -49,18 +43,12 @@ export const AmountField = forwardRef<TextInput, AmountFieldProps>(function Amou
   const tokens = useTokens()
   const { i18n } = useTranslation()
   const locale: AppLocale = i18n.language === 'ru' ? 'ru' : 'en'
-  const symbol = currencySymbol(currency, locale)
-  // VoiceOver/TalkBack label includes the currency so the announced context is
-  // complete ("Amount, US dollars"); the field's own text (the typed digits) is
-  // voiced naturally as the user types. Currency names are locale-aware via Intl.
-  const currencyName = new Intl.NumberFormat(intlLocale[locale], {
-    style: 'currency',
-    currency,
-  })
-    .formatToParts(0)
-    .find((part) => part.type === 'currency')?.value ?? symbol
+  const symbol = currencySymbol(currency)
+  // VoiceOver/TalkBack label includes the localized currency name so the
+  // announced context is complete ("Amount, US Dollar"); the field's own text
+  // (the typed digits) is voiced naturally as the user types.
   const resolvedLabel = accessibilityLabel
-    ? `${accessibilityLabel}, ${currencyName}`
+    ? `${accessibilityLabel}, ${currencyName(currency, locale)}`
     : undefined
 
   if (size === 'field') {
