@@ -1,8 +1,9 @@
 // Platform-agnostic money model + formatting + balance math.
 //
 // All amounts are integer minor units (kopeks); float is forbidden in storage
-// and calculation. Formatting is locale- and currency-aware via `Intl`, which
-// is available in browsers, Node, and React Native. No DOM or framework APIs.
+// and calculation. Formatting is locale- and currency-aware via a small
+// deterministic, `Intl`-free formatter (Hermes-safe on React Native;
+// identical output on web). No DOM or framework APIs.
 
 export { formatMoney } from './format'
 export { toMoney, type Money } from './money'
