@@ -1,251 +1,240 @@
-import { useState } from 'react'
-import { FlatList, StyleSheet, View } from 'react-native'
-import { useTranslation } from 'react-i18next'
+import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  AVAILABLE_CURRENCIES,
-  type CurrencyCode,
-} from '@expense-tracker/money'
-import { useAccounts, useCreateAccount } from '@entities/account'
+  View,
+  Pressable,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+} from 'react-native'
+import { useNavigation } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
+import type { AccountWithBalance } from '@expense-tracker/api'
+import { useAccounts } from '@entities/account'
 import {
   Screen,
-  ListRow,
+  Text,
   EmptyState,
   ErrorState,
   Skeleton,
-  Text,
-  Button,
-  TextField,
-  FieldGroup,
-  BottomSheet,
-  SegmentedControl,
-  type SegmentOption,
+  useTokens,
 } from '@shared/ui'
 import { useSettingsStore } from '@shared/store/use-settings-store'
-import { formatAmount } from '@shared/lib/format'
+import { groupAccountsByCurrency } from '../model/grouping'
+import { AccountGroup } from './AccountGroup'
+import { AddAccountSheet } from './AddAccountSheet'
+import { EditAccountSheet } from './EditAccountSheet'
+import { ConfirmDeleteSheet } from './ConfirmDeleteSheet'
 
 /**
- * Accounts screen. The full grouping-by-currency + balances + edit/delete UX is
- * a later task; this shell wires the offline create→read round-trip end to end:
- * an empty list offers an "Add account" sheet that writes through the local
- * repository (TanStack mutation), and the list reflects it instantly.
+ * Accounts screen (design section 7). Account cards with balances grouped by
+ * currency, each group carrying a per-currency total; add via the header button
+ * -> bottom sheet; tap a card -> edit (name + balance correction); delete via a
+ * confirmation sheet. Offline-first via the local-persistence repository +
+ * TanStack Query. Loading/empty/error use the canonical state vocabulary.
  */
 export function AccountsScreen() {
   const { t } = useTranslation()
+  const tokens = useTokens()
+  const locale = useSettingsStore((state) => state.locale)
+  const defaultCurrency = useSettingsStore((state) => state.currency)
   const { data: accounts, isLoading, isError, refetch } = useAccounts()
-  const createAccount = useCreateAccount()
-  const locale = useSettingsStore((s) => s.locale)
-  const defaultCurrency = useSettingsStore((s) => s.currency)
 
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency)
-  const [opening, setOpening] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
+  const [editing, setEditing] = useState<AccountWithBalance | null>(null)
+  const [deleting, setDeleting] = useState<AccountWithBalance | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const currencyOptions: ReadonlyArray<SegmentOption<CurrencyCode>> = AVAILABLE_CURRENCIES.map(
-    (code) => ({ value: code, label: code }),
-  )
+  const groups = useMemo(() => groupAccountsByCurrency(accounts ?? []), [accounts])
 
-  const resetForm = () => {
-    setName('')
-    setCurrency(defaultCurrency)
-    setOpening('')
+  const openAdd = useCallback(() => setAddOpen(true), [])
+
+  // Header "+" button (design: "Add button (in header)"). Always available so
+  // the user can add even from the empty state.
+  const navigation = useNavigation()
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <HeaderAddButton onPress={openAdd} label={t('addAccount.newAccount')} />
+      ),
+    })
+  }, [navigation, openAdd, t])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await refetch()
+    } finally {
+      setRefreshing(false)
+    }
   }
 
-  const closeSheet = () => {
-    setSheetOpen(false)
-    resetForm()
-  }
+  const requestDelete = useCallback((account: AccountWithBalance) => {
+    // Close the edit sheet, then open the confirmation (never stack two sheets).
+    setEditing(null)
+    setDeleting(account)
+  }, [])
 
-  const handleSubmit = () => {
-    const trimmed = name.trim()
-    if (!trimmed) return
-    // UI major-units string -> integer minor units (the storage model).
-    const major = Number.parseFloat(opening) || 0
-    const openingMinor = Math.round(major * 100)
-
-    createAccount.mutate(
-      { name: trimmed, currency, openingBalance: openingMinor },
-      {
-        onSettled: closeSheet,
-      },
-    )
-  }
-
+  let body: ReactNode
   if (isLoading) {
-    return (
-      <Screen>
-        <View style={styles.skeleton}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} height={56} style={{ marginBottom: 8 }} />
-          ))}
-        </View>
-      </Screen>
-    )
-  }
-
-  if (isError) {
-    return (
+    body = <AccountsSkeleton />
+  } else if (isError) {
+    body = (
       <Screen centered>
         <ErrorState onRetry={() => void refetch()} />
       </Screen>
     )
-  }
-
-  if (!accounts || accounts.length === 0) {
-    return (
-      <>
-        <Screen centered>
-          <EmptyState
-            icon={<Text size="display">🏦</Text>}
-            heading={t('accounts.noAccounts')}
-            description={t('accounts.noAccountsDescription')}
-            actionLabel={t('addAccount.submit')}
-            onAction={() => setSheetOpen(true)}
-          />
-        </Screen>
-        <CreateAccountSheet
-          visible={sheetOpen}
-          onClose={closeSheet}
-          name={name}
-          currency={currency}
-          currencyOptions={currencyOptions}
-          opening={opening}
-          onName={setName}
-          onCurrency={setCurrency}
-          onOpening={setOpening}
-          submitting={createAccount.isPending}
-          onSubmit={handleSubmit}
+  } else if (!accounts || accounts.length === 0) {
+    body = (
+      <Screen centered>
+        <EmptyState
+          icon={<Text size="display">🏦</Text>}
+          heading={t('accounts.noAccounts')}
+          description={t('accounts.noAccountsDescription')}
+          actionLabel={t('addAccount.submit')}
+          onAction={openAdd}
         />
-      </>
+      </Screen>
+    )
+  } else {
+    body = (
+      <Screen padded={false}>
+        <ScrollView
+          contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void handleRefresh()}
+              tintColor={tokens.mutedForeground}
+              colors={[tokens.mutedForeground]}
+            />
+          }
+        >
+          {groups.map((group) => (
+            <AccountGroup
+              key={group.currency}
+              group={group}
+              locale={locale}
+              onAccountPress={setEditing}
+            />
+          ))}
+        </ScrollView>
+      </Screen>
     )
   }
 
   return (
     <>
-      <Screen padded={false}>
-        <FlatList
-          data={accounts}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={
-            <View style={styles.header}>
-              <Text size="title" weight={600}>
-                {t('accounts.totalBalance')}
-              </Text>
-              <Button size="md" variant="outline" onPress={() => setSheetOpen(true)}>
-                {t('addAccount.submit')}
-              </Button>
-            </View>
-          }
-          onRefresh={() => void refetch()}
-          refreshing={isLoading}
-          renderItem={({ item }) => (
-            <ListRow
-              leading={<Text size="title">{item.currency[0]}</Text>}
-              trailing={
-                <Text size="body" weight={600} tabular>
-                  {formatAmount(item.balance, item.currency, locale)}
-                </Text>
-              }
-            >
-              <Text size="body" weight={500}>
-                {item.name}
-              </Text>
-              <Text size="caption" tone="muted">
-                {item.currency}
-              </Text>
-            </ListRow>
-          )}
-        />
-      </Screen>
-      <CreateAccountSheet
-        visible={sheetOpen}
-        onClose={closeSheet}
-        name={name}
-        currency={currency}
-        currencyOptions={currencyOptions}
-        opening={opening}
-        onName={setName}
-        onCurrency={setCurrency}
-        onOpening={setOpening}
-        submitting={createAccount.isPending}
-        onSubmit={handleSubmit}
+      {body}
+      <AddAccountSheet
+        visible={addOpen}
+        onClose={() => setAddOpen(false)}
+        defaultCurrency={defaultCurrency}
       />
+      {editing ? (
+        <EditAccountSheet
+          account={editing}
+          visible
+          onClose={() => setEditing(null)}
+          onRequestDelete={requestDelete}
+        />
+      ) : null}
+      {deleting ? (
+        <ConfirmDeleteSheet
+          account={deleting}
+          visible
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
     </>
   )
 }
 
-interface CreateAccountSheetProps {
-  visible: boolean
-  onClose: () => void
-  name: string
-  currency: CurrencyCode
-  currencyOptions: ReadonlyArray<SegmentOption<CurrencyCode>>
-  opening: string
-  onName: (v: string) => void
-  onCurrency: (v: CurrencyCode) => void
-  onOpening: (v: string) => void
-  submitting: boolean
-  onSubmit: () => void
+interface HeaderAddButtonProps {
+  onPress: () => void
+  label: string
 }
 
-function CreateAccountSheet({
-  visible,
-  onClose,
-  name,
-  currency,
-  currencyOptions,
-  opening,
-  onName,
-  onCurrency,
-  onOpening,
-  submitting,
-  onSubmit,
-}: CreateAccountSheetProps) {
-  const { t } = useTranslation()
+function HeaderAddButton({ onPress, label }: HeaderAddButtonProps) {
+  const tokens = useTokens()
   return (
-    <BottomSheet visible={visible} onClose={onClose} title={t('addAccount.newAccount')}>
-      <FieldGroup>
-        <TextField
-          label={t('addAccount.nameLabel')}
-          placeholder={t('addAccount.namePlaceholder')}
-          value={name}
-          onChangeText={onName}
-        />
-        <View>
-          <Text size="label" tone="muted" style={{ marginBottom: 6 }}>
-            {t('addAccount.currencyLabel')}
-          </Text>
-          <SegmentedControl
-            options={currencyOptions}
-            value={currency}
-            onChange={onCurrency}
-            accessibilityLabel={t('fields.currency')}
-          />
-        </View>
-        <TextField
-          label={t('addAccount.openingBalanceLabel')}
-          placeholder="0"
-          value={opening}
-          onChangeText={onOpening}
-          keyboardType="numeric"
-        />
-      </FieldGroup>
-      <View style={{ flex: 1 }} />
-      <Button full size="lg" loading={submitting} disabled={!name.trim()} onPress={onSubmit}>
-        {t('addAccount.submit')}
-      </Button>
-    </BottomSheet>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={8}
+      onPress={onPress}
+      style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.6 }]}
+    >
+      <Ionicons name="add" size={28} color={tokens.ink} />
+    </Pressable>
+  )
+}
+
+/** Loading vocabulary (design section 9): skeletons, not centered spinners. */
+function AccountsSkeleton() {
+  return (
+    <Screen padded={false}>
+      <View style={styles.skeletonList}>
+        {[0, 1].map((section) => (
+          <View key={section} style={styles.skeletonSection}>
+            <View style={styles.skeletonHeader}>
+              <Skeleton width={48} height={16} />
+              <Skeleton width={96} height={20} />
+            </View>
+            <View style={styles.skeletonCard}>
+              {[0, 1].map((row) => (
+                <View key={row} style={styles.skeletonRow}>
+                  <Skeleton width={36} height={36} radius={10} />
+                  <View style={styles.skeletonRowText}>
+                    <Skeleton width={120} height={16} />
+                  </View>
+                  <Skeleton width={72} height={16} />
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+      </View>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  skeleton: {
+  list: {
     padding: 16,
+    gap: 24,
   },
-  header: {
+  headerButton: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skeletonList: {
+    padding: 16,
+    gap: 24,
+  },
+  skeletonSection: {
+    gap: 8,
+  },
+  skeletonHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  skeletonCard: {
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  skeletonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+    gap: 12,
+  },
+  skeletonRowText: {
+    flex: 1,
   },
 })
