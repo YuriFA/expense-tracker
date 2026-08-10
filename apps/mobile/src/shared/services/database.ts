@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite'
-import { DEFAULT_CATEGORIES } from '@expense-tracker/i18n'
+import { DEFAULT_CATEGORIES, messages, type AppLocale } from '@expense-tracker/i18n'
 import { DEFAULT_CURRENCY, type CurrencyCode } from '@expense-tracker/money'
 import { generateId } from '@expense-tracker/api'
 import { DATABASE_NAME, STORAGE_KEYS } from '@shared/config/storage-keys'
@@ -128,12 +128,14 @@ async function seedDefaultAccount(db: Database): Promise<void> {
 
   const settings = settingsStorage.get<Settings>(STORAGE_KEYS.settings)
   const currency: CurrencyCode = settings?.currency ?? DEFAULT_CURRENCY
+  const locale: AppLocale = settings?.locale === 'ru' ? 'ru' : 'en'
+  const name = messages[locale].accounts.starterAccountName
 
   await db.runAsync(
     /* sql */ `INSERT INTO accounts (id, name, currency, opening_balance, manual_adjustment)
                VALUES (?, ?, ?, 0, 0)`,
     generateId(),
-    'Cash',
+    name,
     currency,
   )
 }

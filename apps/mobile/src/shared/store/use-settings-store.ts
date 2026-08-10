@@ -25,15 +25,20 @@ function readPersisted(): Settings {
  * Global settings store. Every mutation persists immediately and - for locale -
  * propagates to the i18next instance so language change applies at runtime
  * without restart (design.md section 6/10).
+ *
+ * The persisted values are read into the *initial* state (not via an async
+ * effect) because MMKV is synchronous: this means the correct locale + theme +
+ * currency apply on the very first paint (no cold-start theme/locale flash) and
+ * are already in place when the SQLite seed runs on first launch. `hydrate()`
+ * only syncs the i18next instance (initialized separately) to that locale.
  */
 export const useSettingsStore = create<SettingsState>((set, get) => ({
-  ...DEFAULT_SETTINGS,
+  ...readPersisted(),
 
   hydrate: () => {
-    const settings = readPersisted()
-    set(settings)
-    // Keep the i18next instance in sync with the persisted locale.
-    void i18next.changeLanguage(settings.locale)
+    // State is already seeded synchronously at creation; just keep i18next in
+    // sync with the persisted locale (initI18n runs in the same boot effect).
+    void i18next.changeLanguage(get().locale)
   },
 
   setLocale: (locale) => {

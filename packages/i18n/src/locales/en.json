@@ -257,7 +257,10 @@
     "description": "Manage your accounts and balances",
     "totalBalance": "Total Balance",
     "noAccounts": "No accounts yet",
-    "noAccountsDescription": "Add your first account to start tracking"
+    "noAccountsDescription": "Add your first account to start tracking",
+    "starterAccountName": "Cash",
+    "homeEmptyAccountsTitle": "No account to record against",
+    "homeEmptyAccountsDescription": "Create an account in the Accounts tab to start logging transactions."
   },
   "settings": {
     "currency": "Currency",
