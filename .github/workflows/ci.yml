@@ -52,6 +52,12 @@ jobs:
           go-version: "1.26.x"
           cache-dependency-path: backend/go.sum
       - run: go mod download
+      # Versions are pinned via go.mod (see backend/tools.go), so plain
+      # `go install <path>` resolves to the exact committed version.
+      - name: Install codegen tools
+        run: |
+          go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc
       - name: Verify generated code is in sync
         run: make gen-check
 
@@ -68,7 +74,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - run: go mod download
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
           working-directory: backend
