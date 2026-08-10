@@ -99,6 +99,24 @@
     "success": "Транзакция удалена",
     "error": "Ошибка при удалении транзакции"
   },
+  "addCategory": {
+    "newCategory": "Новая категория",
+    "nameLabel": "Название",
+    "namePlaceholder": "напр. Продукты",
+    "iconLabel": "Значок",
+    "submit": "Создать категорию"
+  },
+  "editCategory": {
+    "title": "Изменить категорию",
+    "submit": "Сохранить"
+  },
+  "deleteCategory": {
+    "trigger": "Удалить категорию",
+    "confirmDelete": "Удалить эту категорию?",
+    "confirmDeleteDescription": "Это действие нельзя отменить. Категории, привязанные к существующим транзакциям, удалить нельзя.",
+    "cancel": "Отмена",
+    "confirm": "Удалить"
+  },
   "recentTransactions": {
     "title": "Последние транзакции"
   },
@@ -273,6 +291,8 @@
     "themeLight": "Светлая",
     "themeDark": "Тёмная",
     "about": "О приложении",
-    "version": "Версия"
+    "version": "Версия",
+    "categories": "Категории",
+    "categoriesEmpty": "Категорий пока нет"
   }
 }
