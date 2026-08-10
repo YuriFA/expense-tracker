@@ -260,7 +260,8 @@
     "noAccountsDescription": "Добавьте первый счёт, чтобы начать учёт",
     "starterAccountName": "Наличные",
     "homeEmptyAccountsTitle": "Нет счёта для записи",
-    "homeEmptyAccountsDescription": "Создайте счёт на вкладке «Счета», чтобы начать фиксировать транзакции."
+    "homeEmptyAccountsDescription": "Создайте счёт на вкладке «Счета», чтобы начать фиксировать транзакции.",
+    "homeEmptyAccountsAction": "Перейти к счетам"
   },
   "settings": {
     "currency": "Валюта",
