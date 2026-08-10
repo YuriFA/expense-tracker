@@ -1,0 +1,41 @@
+# Launch smoke for the mobile app (apps/mobile).
+#
+# Why this exists: a native dependency that requires the New Architecture
+# (TurboModules) - e.g. react-native-mmkv 3.x or react-native-reanimated 4.x -
+# red-boxes at boot ("requires TurboModules, but the new architecture is not
+# enabled!") before any screen renders, if the app is built/run on the old
+# architecture. This flow fails automatically in that case: the assertions
+# below only become visible once the Home input screen has mounted, i.e. once
+# the app has booted past MMKV + SQLite initialization WITHOUT crashing.
+#
+# `clearState: true` forces a true cold boot on every run (sandbox wiped ->
+# MMKV re-inits and SQLite re-opens + re-seeds), which is the most crash-prone
+# path and the one that would surface a boot-time TurboModule error.
+#
+# Prerequisites + how to run: see README.md "Testing (E2E launch smoke)".
+appId: works.earendil.expensetracker
+name: Launch smoke
+tags:
+  - launch
+  - smoke
+---
+# Cold boot: wipe the sandbox so MMKV + SQLite re-initialize and the seed
+# (en locale, USD starter account) runs deterministically every time.
+- launchApp:
+    clearState: true
+
+# The type segmented control and the Save button only render as part of the
+# Home input form (TransactionInput). Seeing them proves the "open = ready to
+# enter a transaction" contract (design section 3) and that the app did NOT
+# red-box on launch. Default type is "expense", so the Save label is "Add".
+- assertVisible:
+    text: "Expense"
+- assertVisible:
+    text: "Add"
+
+# The hero amount field itself. On the en/USD seed its VoiceOver/TalkBack label
+# is "Amount, $" (accessibilityLabel = `${t('fields.amount')}, ${currencyName}`,
+# and Intl resolves USD in en-US to "$"). Asserting it directly satisfies the
+# "amount/input field is visible" requirement.
+- assertVisible:
+    accessibilityLabel: "Amount, $"
