@@ -7,6 +7,12 @@ import { currencySymbol } from '@shared/lib/format'
 import { useTokens } from './theme'
 import { Text } from './Text'
 
+/** App locale -> Intl locale string for currency-name resolution. */
+const intlLocale: Record<AppLocale, string> = {
+  en: 'en-US',
+  ru: 'ru-RU',
+}
+
 export type AmountFieldSize = 'hero' | 'field'
 
 interface AmountFieldProps {
@@ -44,6 +50,18 @@ export const AmountField = forwardRef<TextInput, AmountFieldProps>(function Amou
   const { i18n } = useTranslation()
   const locale: AppLocale = i18n.language === 'ru' ? 'ru' : 'en'
   const symbol = currencySymbol(currency, locale)
+  // VoiceOver/TalkBack label includes the currency so the announced context is
+  // complete ("Amount, US dollars"); the field's own text (the typed digits) is
+  // voiced naturally as the user types. Currency names are locale-aware via Intl.
+  const currencyName = new Intl.NumberFormat(intlLocale[locale], {
+    style: 'currency',
+    currency,
+  })
+    .formatToParts(0)
+    .find((part) => part.type === 'currency')?.value ?? symbol
+  const resolvedLabel = accessibilityLabel
+    ? `${accessibilityLabel}, ${currencyName}`
+    : undefined
 
   if (size === 'field') {
     return (
@@ -65,7 +83,7 @@ export const AmountField = forwardRef<TextInput, AmountFieldProps>(function Amou
           keyboardType="decimal-pad"
           returnKeyType="done"
           autoFocus={autoFocus}
-          accessibilityLabel={accessibilityLabel}
+          accessibilityLabel={resolvedLabel}
           style={[styles.inputBase, styles.fieldInput, { color: tokens.foreground }]}
         />
       </View>
@@ -87,8 +105,10 @@ export const AmountField = forwardRef<TextInput, AmountFieldProps>(function Amou
         returnKeyType="done"
         autoFocus={autoFocus}
         selectTextOnFocus
-        accessibilityLabel={accessibilityLabel}
-        accessibilityRole="header"
+        // Not a heading: it is an editable text field. The native editable-text
+        // behavior voices each typed digit, satisfying "amount announced while
+        // typing" (design section 11).
+        accessibilityLabel={resolvedLabel}
         style={[
           styles.inputBase,
           styles.heroInput,
