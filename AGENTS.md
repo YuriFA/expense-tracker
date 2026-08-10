@@ -197,13 +197,16 @@ work.
 - **Money** is shared `@expense-tracker/money` minor units; amounts render with
   `tabular` figures (`shared/lib/format.ts`). i18n is react-i18next over the
   shared bundles, runtime switching via the settings store (no restart).
-- **Intl on Hermes:** Hermes ships without full ICU/`Intl`, so `formatToParts`,
-  `currencyDisplay: 'narrowSymbol'`, `Intl.DateTimeFormat`, and
-  `Intl.DisplayNames` throw on device. The `@formatjs` ponyfills
-  (number/datetime/displaynames + `en`/`ru` locale data) are installed via
-  `src/app/intl-polyfill.ts`, which MUST be the first import in the root
-  `app/_layout.tsx` (before any render-time `Intl` use). The shared money
-  package is untouched; web keeps native Intl.
+- **Formatting is Intl-free (Hermes-safe):** Hermes ships without full ICU/`Intl`
+  (`formatToParts`, `currencyDisplay: 'narrowSymbol'`, `Intl.DateTimeFormat`,
+  and `Intl.DisplayNames` all throw), and the `@formatjs` polyfill itself
+  crashed on import (taking down the whole app bootstrap), so all money and
+  date formatting is deterministic and Intl-free. `packages/money`
+  `formatMoney` shapes the dinero `toDecimal` value by hand per locale (en/ru);
+  `apps/mobile/src/shared/lib/format.ts` carries the static currency-symbol /
+  currency-name maps and the manual en/ru `formatDate`/`formatHeaderDate`
+  formatters. Do NOT re-introduce `Intl`/`toLocaleDateString`/`@formatjs` in
+  mobile or in the shared money package.
 - **UI kit + canonical components:** one component vocabulary in `shared/ui`
   (`Screen` keyboard-aware safe-area foundation, `Button`, `TextField`,
   `SegmentedControl`, `Chip`, `AmountField` currency+numeric hero/field input,
