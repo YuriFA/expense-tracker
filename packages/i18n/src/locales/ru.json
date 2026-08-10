@@ -257,7 +257,10 @@
     "description": "Управление счетами и балансами",
     "totalBalance": "Общий баланс",
     "noAccounts": "Счетов пока нет",
-    "noAccountsDescription": "Добавьте первый счёт, чтобы начать учёт"
+    "noAccountsDescription": "Добавьте первый счёт, чтобы начать учёт",
+    "starterAccountName": "Наличные",
+    "homeEmptyAccountsTitle": "Нет счёта для записи",
+    "homeEmptyAccountsDescription": "Создайте счёт на вкладке «Счета», чтобы начать фиксировать транзакции."
   },
   "settings": {
     "currency": "Валюта",
