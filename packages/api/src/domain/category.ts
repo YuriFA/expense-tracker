@@ -1,0 +1,63 @@
+import { asNonEmptyString, asString, isRecord } from '../lib/normalize'
+
+export type CategoryType = 'income' | 'expense'
+
+export interface Category {
+  id: string
+  name: string
+  type: CategoryType
+  icon: string
+  color: string
+  /** Present only for the bundled default categories (localStorage mode); the
+   * backend does not return a slug. */
+  slug?: string
+}
+
+const isCategoryType = (value: unknown): value is CategoryType =>
+  value === 'income' || value === 'expense'
+
+export const normalizeCategory = (value: unknown): Category | null => {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const id = asNonEmptyString(value.id)
+  const name = asString(value.name)
+  const type = isCategoryType(value.type) ? value.type : null
+  const icon = asString(value.icon)
+  const color = asString(value.color)
+  const slug = asString(value.slug)
+
+  if (!id || !name || !type || !icon || !color) {
+    return null
+  }
+
+  return {
+    id,
+    name,
+    type,
+    icon,
+    color,
+    ...(slug ? { slug } : {}),
+  }
+}
+
+export const parseCategoriesStorage = (value: string): Category[] => {
+  try {
+    const parsedValue: unknown = JSON.parse(value)
+
+    if (!Array.isArray(parsedValue)) {
+      return []
+    }
+
+    return parsedValue.flatMap((item) => {
+      const account = normalizeCategory(item)
+
+      return account ? [account] : []
+    })
+  } catch {
+    return []
+  }
+}
+
+export const serializeCategoriesStorage = (value: Category[]) => JSON.stringify(value)
