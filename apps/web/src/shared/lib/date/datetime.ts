@@ -1,3 +1,4 @@
+import { isIsoDateTime } from '@expense-tracker/api'
 import type { BrandedIsoDateTime, IsoDateTime } from './types'
 
 const asIsoDateTime = (value: string): BrandedIsoDateTime => value as BrandedIsoDateTime
@@ -6,9 +7,9 @@ const toNativeDate = (value: Date | IsoDateTime) => {
   return value instanceof Date ? value : new Date(value)
 }
 
-export const isIsoDateTime = (value: string): value is BrandedIsoDateTime => {
-  return !Number.isNaN(Date.parse(value))
-}
+// The pure `isIsoDateTime` predicate is owned by the shared package (it backs
+// the domain model's datetime normalization); re-exported for web consumers.
+export { isIsoDateTime }
 
 export const nowIsoString = (): IsoDateTime => asIsoDateTime(new Date().toISOString())
 

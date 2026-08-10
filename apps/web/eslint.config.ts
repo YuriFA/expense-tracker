@@ -12,9 +12,11 @@ import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 // configureVueProject({ scriptLangs: ['ts', 'tsx'] })
 // More info at https://github.com/vuejs/eslint-config-typescript/#advanced-setup
 
+// Message bundles live in the shared `@expense-tracker/i18n` workspace package;
+// the i18n lint reads them from there so key usage stays validated.
 const i18nSettings = {
   'vue-i18n': {
-    localeDir: './src/shared/i18n/locales/*.json',
+    localeDir: '../../packages/i18n/src/locales/*.json',
     messageSyntaxVersion: '^11.0.0',
   },
 }

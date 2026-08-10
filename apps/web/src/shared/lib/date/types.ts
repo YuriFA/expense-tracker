@@ -1,8 +1,12 @@
+import type { CalendarDay, IsoDateTime } from '@expense-tracker/api'
+
+// The unbranded `CalendarDay` / `IsoDateTime` primitives live in the shared
+// `@expense-tracker/api` package (used by the domain model + repository
+// contracts). Re-exported here so the web date lib's historical import paths
+// keep resolving.
+export type { CalendarDay, IsoDateTime }
+
 type Brand<TValue, TName extends string> = TValue & { readonly __brand: TName }
-
-export type CalendarDay = string
-
-export type IsoDateTime = string
 
 export type BrandedCalendarDay = Brand<string, 'CalendarDay'>
 
