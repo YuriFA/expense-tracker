@@ -6,7 +6,7 @@ React Native (Expo) app for the expense tracker - the mobile twin of
 
 ## Stack
 
-- **Expo** (SDK 53) + **Expo Router** (file-based routing) + TypeScript (strict)
+- **Expo** (SDK 54) + **Expo Router** (file-based routing) + TypeScript (strict)
 - **TanStack Query** (React Query) for the data layer (optimistic update + invalidation)
 - **react-i18next** over the shared message bundles (EN/RU), runtime switching
 - **zustand** + **MMKV** for settings persistence
@@ -22,11 +22,27 @@ bun --filter @expense-tracker/mobile dev        # expo start
 bun --filter @expense-tracker/mobile type-check # tsc --noEmit
 ```
 
-Open in a development build (expo-sqlite + react-native-mmkv are native
-modules, so use a dev client / `expo prebuild`, not Expo Go):
+Open in a development build. Several deps are native modules that need a
+prebuilt dev client, not Expo Go: `expo-sqlite`, `react-native-mmkv` (v3), and
+`react-native-reanimated` (v4). The latter two require the **New Architecture**
+(TurboModules); without it the app red-boxes at boot (`react-native-mmkv 3.x.x
+requires TurboModules, but the new architecture is not enabled!`). New Arch is
+enabled via `expo.newArchEnabled: true` in `app.json` (also the SDK 54 / RN 0.81
+default) and is verified at prebuild (`RCT_NEW_ARCH_ENABLED` lands in the iOS
+Pods build flags and `newArchEnabled=true` in `android/gradle.properties`). Keep
+it on; do not downgrade mmkv/reanimated to dodge it.
 
 ```sh
 bun --filter @expense-tracker/mobile prebuild
+```
+
+Then build + install the dev client on a booted simulator/emulator, e.g.:
+
+```sh
+# iOS (from apps/mobile, after prebuild)
+npx expo run:ios
+# Android
+npx expo run:android
 ```
 
 ## Structure (Feature-Sliced Design)

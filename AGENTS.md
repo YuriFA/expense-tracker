@@ -212,9 +212,15 @@ work.
   (type/account/category/date-range preset) + active-filter `Chip` rail + swipe
   delete / tap-to-edit; its `model/use-transaction-filters` derives the
   repository `TransactionQuery` and `lib/date-range.ts` resolves the presets.
-- **Native modules** (expo-sqlite, react-native-mmkv, expo-haptics) require a
-  dev build / `expo prebuild`, not Expo Go. Quality bar: `tsc --noEmit` clean,
-  `expo-doctor` 18/18, `expo export` bundles.
+- **Native modules** (expo-sqlite, react-native-mmkv, react-native-reanimated,
+  expo-haptics) require a dev build / `expo prebuild`, not Expo Go.
+  **react-native-mmkv 3 + react-native-reanimated 4 require the New
+  Architecture** (TurboModules); without it the app red-boxes at boot. New Arch
+  is on via `expo.newArchEnabled: true` in `app.json` (also the SDK 54 / RN 0.81
+  default); keep it on, do not downgrade mmkv/reanimated to dodge it. A Maestro
+  launch-smoke flow (`apps/mobile/.maestro/launch.yaml`, `bun run test:e2e`)
+  cold-boots and asserts the Home input screen, so boot-time crashes fail CI.
+  Quality bar: `tsc --noEmit` clean, `expo-doctor` 18/18, `expo export` bundles.
 - **Accessibility primitives:** Reduce Motion is read via the shared
   `useReduceMotion()` hook (`shared/lib/reduce-motion.ts`) - animate
   accordingly (skeleton pulse, sheet slide). Haptics (`shared/lib/haptics.ts`,
