@@ -92,17 +92,53 @@ abstraction.
 - Docker image is CGO-free (`CGO_ENABLED=0`); `docker compose up` brings up
   `db` (postgres:17) + `app`.
 
+## Shared workspace packages (`packages/*`)
+
+Platform-agnostic TS packages consumed by every app (web now; mobile next).
+They MUST stay free of DOM/Vue/browser-only APIs (only the fetch-family
+`fetch`/`Request`/`Response`/`Headers`, available in browser/Node/RN, is OK).
+Consumed as workspace packages by name (`@expense-tracker/{api,money,i18n}`),
+resolved to source `.ts` via `exports` (no build step; `moduleResolution:
+bundler`). Each has its own `tsconfig.json` + `type-check` script and must
+type-check cleanly on its own.
+
+- **`@expense-tracker/api`** (depends on `money`): generated OpenAPI types
+  (`src/schema.ts`, owned here - `gen:api` regenerates from
+  `docs/api/openapi.yaml`), `createApiClient({ baseUrl, fetch })` factory
+  (apps supply their own base URL - no `window` in the package), error
+  mapping + `setUnauthorizedHandler`, the `Repository<T,C,U>` interface +
+  per-entity repository contracts (the **DI seam**), the HTTP repository
+  implementations (factories take the client), and the domain models
+  (account/category/transaction + normalize). Also re-exports generic helpers
+  (`generateId`, `normalize`, `isIsoDateTime`, `CalendarDay`).
+- **`@expense-tracker/money`** (leaf, no internal deps): minor-units money
+  model (dinero.js), locale-aware `formatMoney`, currency list, unit
+  conversion, and the balance calculator (generic over a minimal account
+  shape, so it has no domain dependency).
+- **`@expense-tracker/i18n`** (no internal deps): EN/RU message bundles,
+  `MessageSchema`, locale config, and the localized default-categories seed.
+  `mapCategory`/`mapCategories` take an injected `Translator` (vue-i18n `t`
+  on web, react-i18next on mobile).
+
+App-local concerns stay OUT of packages: web keeps its vue-i18n instance,
+Vite base-URL resolution, localStorage repositories, Vue DI keys/composables,
+and form-layer Zod schemas.
+
 ## Frontend (apps/web)
 
 - Feature-Sliced Design (see `apps/web/docs/ARCHITECTURE.md`, including the
   Fractal FSD `pages/*/features/` extension). Steiger must stay green.
 - **Spec-first:** the API contract comes from `docs/api/openapi.yaml` via
-  codegen, never hand-written fetch/types. `bun run gen:api` (openapi-typescript)
-  regenerates `apps/web/src/shared/api/schema.ts` (committed); re-run + commit
-  after any spec change. `openapi-fetch` typed client + error middleware live in
-  `shared/api/{client,errors}.ts`.
+  codegen, never hand-written fetch/types. `bun run gen:api` delegates to
+  `@expense-tracker/api`, which regenerates `packages/api/src/schema.ts`
+  (committed) via openapi-typescript; re-run + commit after any spec change.
+  The contract, client factory, error mapping, repository interfaces, and
+  HTTP impls all live in the package; web only adds the Vite base-URL
+  resolution (`shared/api/client.ts`). Old import paths (`@/shared/api`,
+  `@/shared/lib/data`, entity `model/*`) are kept stable via thin re-export
+  barrels sourced from the packages.
 - **Error mapping is code-driven:** every non-2xx response is mapped to a
-  `RepositoryError` (see `shared/lib/data/repository.ts`) keyed on the backend's
+  `RepositoryError` (in `@expense-tracker/api`) keyed on the backend's
   `ErrorResponse.code` (e.g. `ACCOUNT_IN_USE` vs `TRANSACTION_VERSION_CONFLICT`
   vs `USER_ALREADY_EXISTS`, all 409), not HTTP status alone.
 - **Transactions:** updates are PATCH with required `version` (optimistic
