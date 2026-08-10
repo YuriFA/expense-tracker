@@ -17,6 +17,7 @@ import { useSettingsStore } from '@shared/store/use-settings-store'
 import type { ThemePreference } from '@shared/config/settings'
 import { currencyOptions, LANGUAGE_OPTIONS } from '../model/options'
 import { OptionPicker } from './OptionPicker'
+import { CategoryManageSheet } from '../features/category-manage'
 
 type PickerKind = 'language' | 'currency' | null
 
@@ -48,6 +49,7 @@ export function SettingsScreen() {
   const setTheme = useSettingsStore((s) => s.setTheme)
 
   const [openPicker, setOpenPicker] = useState<PickerKind>(null)
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
 
   const themeOptions: ReadonlyArray<SegmentOption<ThemePreference>> = [
     { value: 'system', label: t('settings.themeSystem') },
@@ -99,6 +101,20 @@ export function SettingsScreen() {
         </SettingsGroup>
 
         <SettingsGroup>
+          <ListRow
+            onPress={() => setCategoriesOpen(true)}
+            divider={false}
+            trailing={
+              <View style={styles.valueTrailing}>
+                <Ionicons name="chevron-forward" size={16} color={tokens.mutedForeground} />
+              </View>
+            }
+          >
+            <Text size="body">{t('settings.categories')}</Text>
+          </ListRow>
+        </SettingsGroup>
+
+        <SettingsGroup>
           <View style={styles.themeBlock}>
             <Text size="body">{t('settings.theme')}</Text>
             <SegmentedControl
@@ -140,6 +156,7 @@ export function SettingsScreen() {
         selectedValue={currency}
         onSelect={setCurrency}
       />
+      <CategoryManageSheet visible={categoriesOpen} onClose={() => setCategoriesOpen(false)} />
     </Screen>
   )
 }

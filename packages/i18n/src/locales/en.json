@@ -99,6 +99,24 @@
     "success": "Transaction deleted",
     "error": "Error deleting transaction"
   },
+  "addCategory": {
+    "newCategory": "New category",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Groceries",
+    "iconLabel": "Icon",
+    "submit": "Create category"
+  },
+  "editCategory": {
+    "title": "Edit category",
+    "submit": "Save"
+  },
+  "deleteCategory": {
+    "trigger": "Delete category",
+    "confirmDelete": "Delete this category?",
+    "confirmDeleteDescription": "This action cannot be undone. Categories linked to existing transactions cannot be deleted.",
+    "cancel": "Cancel",
+    "confirm": "Delete"
+  },
   "recentTransactions": {
     "title": "Recent Transactions"
   },
@@ -273,6 +291,8 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "about": "About",
-    "version": "Version"
+    "version": "Version",
+    "categories": "Categories",
+    "categoriesEmpty": "No categories yet"
   }
 }
