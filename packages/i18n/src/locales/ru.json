@@ -250,6 +250,14 @@
   },
   "settings": {
     "currency": "Валюта",
-    "locale": "Язык"
+    "locale": "Язык",
+    "language": "Язык",
+    "defaultCurrency": "Валюта по умолчанию",
+    "theme": "Тема",
+    "themeSystem": "Системная",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная",
+    "about": "О приложении",
+    "version": "Версия"
   }
 }
