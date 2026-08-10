@@ -23,6 +23,13 @@
   "dashboard": {
     "netWorth": "Net worth"
   },
+  "home": {
+    "balance": "Balance",
+    "emptyTitle": "No transactions yet",
+    "emptyDescription": "Enter an amount above to record your first",
+    "commentPlaceholder": "Add a note",
+    "swapAccounts": "Swap accounts"
+  },
   "addTransaction": {
     "newTransaction": "New transaction",
     "accountLabel": "Account",

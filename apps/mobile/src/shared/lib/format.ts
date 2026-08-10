@@ -18,3 +18,17 @@ export function formatAmount(
 ): string {
   return formatMoney(amountMinor, currency, intlLocale[locale])
 }
+
+/**
+ * The narrow currency symbol ("$", "€", "₽") for display next to an amount.
+ * Derived from `Intl` so it stays locale- and currency-aware with no hard-coded
+ * map; falls back to the ISO code if the formatter offers no symbol part.
+ */
+export function currencySymbol(currency: CurrencyCode, locale: AppLocale): string {
+  const parts = new Intl.NumberFormat(intlLocale[locale], {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'narrowSymbol',
+  }).formatToParts(0)
+  return parts.find((part) => part.type === 'currency')?.value ?? currency
+}

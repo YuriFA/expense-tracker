@@ -6,6 +6,8 @@ import { APP_NAME } from './app'
  */
 export const STORAGE_KEYS = {
   settings: `${APP_NAME}:settings`,
+  /** Last-used account per entry mode, so the Home form re-selects it on reopen. */
+  lastAccountIds: `${APP_NAME}:last-account-ids`,
 } as const
 
 /**

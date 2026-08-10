@@ -24,3 +24,4 @@ export {
   useUpdateTransaction,
   useDeleteTransaction,
 } from './model/use-transactions'
+export { TransactionListItem } from './ui/TransactionListItem'
