@@ -121,7 +121,11 @@
       "categoryPlaceholder": "Категория",
       "activeType": "Тип транзакции",
       "activeAccount": "Счет",
-      "activeCategory": "Категория"
+      "activeCategory": "Категория",
+      "dateRangeLabel": "Период",
+      "allTypes": "Все типы",
+      "allAccounts": "Все счета",
+      "allCategories": "Все категории"
     },
     "dateFilter": {
       "allTime": "Все время",
@@ -132,7 +136,14 @@
       "apply": "Применить",
       "pickDate": "Выберите дату"
     },
-    "noTransactions": "Транзакции не найдены"
+    "noTransactions": "Транзакции не найдены",
+    "emptyTitle": "Транзакций пока нет",
+    "emptyDescription": "Запишите первую транзакцию на вкладке Главная",
+    "emptyAction": "Добавить транзакцию",
+    "noMatchesTitle": "Подходящих транзакций нет",
+    "noMatchesDescription": "Измените или сбросьте фильтры",
+    "noMatchesAction": "Сбросить фильтры",
+    "clearFilter": "Очистить фильтр"
   },
   "fields": {
     "name": "Название",

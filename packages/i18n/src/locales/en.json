@@ -121,7 +121,11 @@
       "categoryPlaceholder": "Category",
       "activeType": "Transaction type",
       "activeAccount": "Account",
-      "activeCategory": "Category"
+      "activeCategory": "Category",
+      "dateRangeLabel": "Date range",
+      "allTypes": "All types",
+      "allAccounts": "All accounts",
+      "allCategories": "All categories"
     },
     "dateFilter": {
       "allTime": "All time",
@@ -132,7 +136,14 @@
       "apply": "Apply",
       "pickDate": "Pick a date"
     },
-    "noTransactions": "No transactions found"
+    "noTransactions": "No transactions found",
+    "emptyTitle": "No transactions yet",
+    "emptyDescription": "Record your first transaction from the Home tab",
+    "emptyAction": "Add transaction",
+    "noMatchesTitle": "No matching transactions",
+    "noMatchesDescription": "Try changing or clearing the filters",
+    "noMatchesAction": "Clear filters",
+    "clearFilter": "Clear filter"
   },
   "fields": {
     "name": "Name",

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { ListRow, Text } from '@shared/ui'
-import { formatAmount } from '@shared/lib/format'
+import { formatAmount, formatDate } from '@shared/lib/format'
 import { useSettingsStore } from '@shared/store/use-settings-store'
 import type { CurrencyCode } from '@expense-tracker/money'
 import { isTransferTransaction } from '@expense-tracker/api'
@@ -15,6 +15,12 @@ interface TransactionListItemProps {
   accounts?: AccountWithBalance[]
   /** Categories, to resolve the cashflow title + icon. Optional while loading. */
   categories?: Category[]
+  /**
+   * Append a compact date to the subtitle (the full Transactions history shows
+   * dates; the Home recent list does not). Defaults to false to keep the Home
+   * row unchanged.
+   */
+  showDate?: boolean
 }
 
 /**
@@ -31,6 +37,7 @@ export function TransactionListItem({
   transaction,
   accounts,
   categories,
+  showDate = false,
 }: TransactionListItemProps) {
   const { t } = useTranslation()
   const locale = useSettingsStore((state) => state.locale) as AppLocale
@@ -46,6 +53,12 @@ export function TransactionListItem({
     const to = accountName(transaction.toAccountId)
     const currency = accountCurrency(transaction.fromAccountId)
     const route = from && to ? `${from} → ${to}` : t('transactions.types.transfer')
+    const datePart = showDate ? formatDate(transaction.occurredAt, locale) : ''
+    const subtitle = transaction.description
+      ? datePart
+        ? `${route} · ${datePart}`
+        : route
+      : datePart
 
     return (
       <ListRow
@@ -56,9 +69,9 @@ export function TransactionListItem({
         <Text weight={500} numberOfLines={1}>
           {transaction.description || route}
         </Text>
-        {transaction.description ? (
+        {subtitle ? (
           <Text size="caption" tone="muted" numberOfLines={1}>
-            {route}
+            {subtitle}
           </Text>
         ) : null}
       </ListRow>
@@ -70,7 +83,11 @@ export function TransactionListItem({
   const categoryName = category?.name ?? t(`transactions.types.${transaction.type}`)
   const account = accountName(transaction.accountId)
   const primary = transaction.description || categoryName
-  const secondary = transaction.description ? `${categoryName} · ${account}`.trim() : account || categoryName
+  const datePart = showDate ? formatDate(transaction.occurredAt, locale) : ''
+  const baseSecondary = transaction.description
+    ? `${categoryName} · ${account}`.trim()
+    : account || categoryName
+  const secondary = datePart ? `${baseSecondary} · ${datePart}` : baseSecondary
 
   return (
     <ListRow

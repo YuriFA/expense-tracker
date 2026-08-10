@@ -20,6 +20,23 @@ export function formatAmount(
 }
 
 /**
+ * Format an ISO 8601 datetime as a compact locale-aware calendar date (e.g.
+ * "Apr 5"). The year is included only for dates outside the current year so
+ * the recent-history list stays dense. Returns an empty string for an
+ * unparseable value.
+ */
+export function formatDate(isoDateTime: string, locale: AppLocale): string {
+  const date = new Date(isoDateTime)
+  if (Number.isNaN(date.getTime())) return ''
+  const sameYear = date.getFullYear() === new Date().getFullYear()
+  return date.toLocaleDateString(intlLocale[locale], {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  })
+}
+
+/**
  * The narrow currency symbol ("$", "€", "₽") for display next to an amount.
  * Derived from `Intl` so it stays locale- and currency-aware with no hard-coded
  * map; falls back to the ISO code if the formatter offers no symbol part.
