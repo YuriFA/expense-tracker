@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   Modal,
   View,
   Pressable,
   StyleSheet,
   Animated,
-  AccessibilityInfo,
   useWindowDimensions,
   type ViewStyle,
 } from 'react-native'
@@ -13,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { type PropsWithChildren } from 'react'
 import { useTokens } from './theme'
 import { Text } from './Text'
+import { useReduceMotion } from '@shared/lib/reduce-motion'
 
 interface BottomSheetProps extends PropsWithChildren {
   visible: boolean
@@ -44,15 +44,7 @@ export function BottomSheet({
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
   const slide = useRef(new Animated.Value(0)).current
-  const [reduceMotion, setReduceMotion] = useState(false)
-
-  // Respect Reduce Motion (design section 11): present/dismiss instantly
-  // instead of sliding.
-  useEffect(() => {
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion)
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion)
-    return () => sub.remove()
-  }, [])
+  const reduceMotion = useReduceMotion()
 
   // Slide the panel up on present; snap back on dismiss. Reduce Motion users
   // see an instant transition.
