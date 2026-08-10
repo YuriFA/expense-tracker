@@ -195,7 +195,12 @@ work.
   (`pages/home`) IS the input screen and sets the inline-entry + serial-entry
   pattern (autofocus amount, pinned save, optimistic create, amount clears on
   save) the other tabs reuse; amount parse/sanitize helpers are in
-  `shared/lib/amount.ts`, the edit sheet in `features/transaction/edit`.
+  `shared/lib/amount.ts`, the edit sheet in `features/transaction/edit`. The
+  Transactions screen (`pages/transactions`) is the reference for the
+  full-history **virtualized list** (`FlatList`) + **live-filter `BottomSheet`**
+  (type/account/category/date-range preset) + active-filter `Chip` rail + swipe
+  delete / tap-to-edit; its `model/use-transaction-filters` derives the
+  repository `TransactionQuery` and `lib/date-range.ts` resolves the presets.
 - **Native modules** (expo-sqlite, react-native-mmkv, expo-haptics) require a
   dev build / `expo prebuild`, not Expo Go. Quality bar: `tsc --noEmit` clean,
   `expo-doctor` 18/18, `expo export` bundles.
