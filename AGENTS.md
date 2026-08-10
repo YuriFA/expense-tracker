@@ -179,12 +179,23 @@ work.
   (`app/providers/RepositoryProvider`).
 - **Persistence (offline-first, default):** domain (accounts/categories/
   transactions) in **expo-sqlite** (`shared/services/database.ts`, schema +
-  default-category seeding); settings (locale/currency/theme) in **MMKV**
+  default-category seeding + a single starter account so the input flow works on
+  first launch); settings (locale/currency/theme) in **MMKV**
   (`shared/services/storage.ts` + `shared/store/use-settings-store.ts`, zustand).
   The HTTP impls from the package stay the swappable DI alternative.
 - **Money** is shared `@expense-tracker/money` minor units; amounts render with
   `tabular` figures (`shared/lib/format.ts`). i18n is react-i18next over the
   shared bundles, runtime switching via the settings store (no restart).
+- **UI kit + canonical components:** one component vocabulary in `shared/ui`
+  (`Screen` keyboard-aware safe-area foundation, `Button`, `TextField`,
+  `SegmentedControl`, `Chip`, `AmountField` currency+numeric hero/field input,
+  `SwipeableRow` left-swipe actions, `BottomSheet`, `Skeleton`/`EmptyState`/
+  `ErrorState` states); entity-specific display in `entities/*/ui`
+  (`AccountChips`, `CategoryGrid`, `TransactionListItem`). The Home screen
+  (`pages/home`) IS the input screen and sets the inline-entry + serial-entry
+  pattern (autofocus amount, pinned save, optimistic create, amount clears on
+  save) the other tabs reuse; amount parse/sanitize helpers are in
+  `shared/lib/amount.ts`, the edit sheet in `features/transaction/edit`.
 - **Native modules** (expo-sqlite, react-native-mmkv, expo-haptics) require a
   dev build / `expo prebuild`, not Expo Go. Quality bar: `tsc --noEmit` clean,
   `expo-doctor` 18/18, `expo export` bundles.
