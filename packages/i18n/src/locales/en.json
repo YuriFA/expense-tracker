@@ -1,0 +1,248 @@
+{
+  "common": {
+    "close": "Close",
+    "errorState": {
+      "title": "Failed to load",
+      "retry": "Retry"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "settings": "Settings"
+  },
+  "pages": {
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "settings": "Settings"
+  },
+  "actions": {
+    "create": "Create"
+  },
+  "dashboard": {
+    "netWorth": "Net worth"
+  },
+  "addTransaction": {
+    "newTransaction": "New transaction",
+    "accountLabel": "Account",
+    "descriptionLabel": "Note",
+    "categoryLabel": "Category",
+    "descriptionPlaceholder": "Note",
+    "categoryPlaceholder": "Category",
+    "accountPlaceholder": "Account",
+    "submit": "Add",
+    "success": "Transaction added",
+    "error": "Error adding transaction"
+  },
+  "addAccount": {
+    "nameLabel": "Name",
+    "namePlaceholder": "Account name",
+    "currencyLabel": "Currency",
+    "openingBalanceLabel": "Opening balance",
+    "submit": "Add account",
+    "newAccount": "New account",
+    "success": "Account added",
+    "error": "Error adding account"
+  },
+  "editAccount": {
+    "title": "Edit account",
+    "trigger": "Edit account",
+    "nameLabel": "Name",
+    "namePlaceholder": "Account name",
+    "openingBalanceLabel": "Balance adjustment",
+    "submit": "Save changes",
+    "success": "Account updated",
+    "error": "Error updating account"
+  },
+  "deleteAccount": {
+    "trigger": "Delete account",
+    "confirmDelete": "Are you sure you want to delete this account?",
+    "confirmDeleteDescription": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete",
+    "success": "Account deleted",
+    "error": "Error deleting account"
+  },
+  "addTransfer": {
+    "fromAccountLabel": "From account",
+    "toAccountLabel": "To account",
+    "amountPlaceholder": "Amount",
+    "descriptionLabel": "Note",
+    "descriptionPlaceholder": "Note",
+    "fromAccountPlaceholder": "From account",
+    "toAccountPlaceholder": "To account",
+    "submit": "Transfer",
+    "success": "Transfer completed",
+    "error": "Error completing transfer"
+  },
+  "editTransaction": {
+    "title": "Edit transaction",
+    "trigger": "Edit",
+    "submit": "Save",
+    "success": "Transaction updated",
+    "error": "Error updating transaction"
+  },
+  "deleteTransaction": {
+    "trigger": "Delete",
+    "confirmDelete": "Are you sure you want to delete this transaction?",
+    "confirmDeleteDescription": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete",
+    "success": "Transaction deleted",
+    "error": "Error deleting transaction"
+  },
+  "recentTransactions": {
+    "title": "Recent Transactions"
+  },
+  "transactions": {
+    "filter": "Filter",
+    "filtersTitle": "Filters",
+    "reset": "Reset",
+    "apply": "Apply",
+    "types": {
+      "expense": "Expense",
+      "income": "Income",
+      "transfer": "Transfer"
+    },
+    "filters": {
+      "typeLabel": "Type",
+      "typePlaceholder": "Type",
+      "accountLabel": "Account",
+      "accountPlaceholder": "Account",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Category",
+      "activeType": "Transaction type",
+      "activeAccount": "Account",
+      "activeCategory": "Category"
+    },
+    "dateFilter": {
+      "allTime": "All time",
+      "today": "Today",
+      "last30Days": "Last 30 days",
+      "thisMonth": "This month",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "pickDate": "Pick a date"
+    },
+    "noTransactions": "No transactions found"
+  },
+  "fields": {
+    "name": "Name",
+    "openingBalance": "Opening balance",
+    "amount": "Amount",
+    "account": "Account",
+    "fromAccount": "Source account",
+    "toAccount": "Destination account",
+    "category": "Category",
+    "transactionType": "Transaction type",
+    "description": "Description",
+    "date": "Date",
+    "currency": "Currency"
+  },
+  "validation": {
+    "enter": "Enter {field}",
+    "select": "Select {field}",
+    "mustBePositive": "{field} must be greater than zero",
+    "mustBeNonNegative": "{field} must be non-negative",
+    "mustBeString": "{field} must be text",
+    "mustBeDate": "{field} must be a valid date",
+    "transferAccountsMustDiffer": "Transfer accounts must be different",
+    "transferAccountsMustMatchCurrency": "Transfer accounts must use the same currency"
+  },
+  "errors": {
+    "notFound": "Not found",
+    "hasReferences": "Cannot be deleted because it has linked transactions",
+    "invalidPayload": "Invalid data",
+    "unknownReferences": "References an unknown account or category",
+    "versionConflict": "This was changed by another action. Refresh and try again",
+    "alreadyExists": "Already exists",
+    "unauthorized": "You need to sign in",
+    "rateLimited": "Too many attempts. Try again later",
+    "conflict": "This action conflicts with the current state",
+    "generic": "Something went wrong"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you{'@'}example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Your password",
+    "newPasswordLabel": "New password",
+    "codeLabel": "Verification code",
+    "codePlaceholder": "6-digit code",
+    "submitSignIn": "Sign in",
+    "submitSignUp": "Create account",
+    "submitVerify": "Verify email",
+    "submitReset": "Send reset link",
+    "submitConfirmReset": "Set new password",
+    "submitResend": "Resend code",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "forgotPassword": "Forgot password?",
+    "verifyEmailTitle": "Verify your email",
+    "verifyEmailDescription": "Enter the 6-digit code we sent to your email",
+    "verifyEmailPrompt": "Your email is not verified yet",
+    "emailVerified": "Email verified",
+    "resetPasswordTitle": "Reset password",
+    "resetPasswordDescription": "Enter your email and we'll send you a reset link",
+    "confirmResetTitle": "Set a new password",
+    "confirmResetDescription": "Paste the reset token from the email and choose a new password",
+    "resetTokenLabel": "Reset token",
+    "resetTokenPlaceholder": "Paste reset token",
+    "backToSignIn": "Back to sign in",
+    "signedInAs": "Signed in as",
+    "sessionsTitle": "Active sessions",
+    "sessionsDescription": "Sign out other devices while keeping this one signed in",
+    "revokeOtherSessions": "Sign out other sessions",
+    "sessionsRevoked": "Other sessions signed out",
+    "sessionCurrent": "Current",
+    "sessionExpiresAt": "Expires",
+    "verifySuccess": "Email verified",
+    "resendSent": "New code sent",
+    "resetRequested": "If that email exists, a reset link is on its way",
+    "passwordReset": "Password updated. Sign in with your new password",
+    "rateLimited": "Too many attempts. Try again in {seconds}s",
+    "signedOut": "Signed out"
+  },
+  "seeds": {
+    "categories": {
+      "food": "Food",
+      "transport": "Transport",
+      "entertainment": "Entertainment",
+      "salary": "Salary",
+      "freelance": "Freelance",
+      "health": "Health",
+      "education": "Education",
+      "investment": "Investment",
+      "gifts": "Gifts",
+      "utilities": "Utilities",
+      "travel": "Travel",
+      "miscellaneous": "Miscellaneous",
+      "bonus": "Bonus",
+      "rent": "Rent",
+      "savings": "Savings",
+      "charity": "Charity",
+      "sideHustle": "Side Hustle",
+      "subscriptions": "Subscriptions",
+      "otherIncome": "Other Income",
+      "otherExpense": "Other Expense",
+      "healthInsurance": "Health Insurance",
+      "carMaintenance": "Car Maintenance",
+      "grocery": "Grocery",
+      "diningOut": "Dining Out"
+    }
+  },
+  "accounts": {
+    "description": "Manage your accounts and balances",
+    "totalBalance": "Total Balance",
+    "noAccounts": "No accounts yet",
+    "noAccountsDescription": "Add your first account to start tracking"
+  },
+  "settings": {
+    "currency": "Currency",
+    "locale": "Locale"
+  }
+}
