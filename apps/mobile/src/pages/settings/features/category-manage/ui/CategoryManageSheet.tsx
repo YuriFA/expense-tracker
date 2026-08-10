@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { Ionicons } from '@expo/vector-icons'
 import type { Category } from '@expense-tracker/api'
 import { mapCategories } from '@expense-tracker/i18n'
 import { BottomSheet, ListRow, Text, Button, useTokens } from '@shared/ui'
@@ -130,12 +131,11 @@ function Section({
   )
 }
 
-/** Inline decorative chevron; the row itself is the button (no nested target). */
+/** Inline chevron matching the Settings rows (Ionicons), decorative. */
 function Chevron() {
+  const tokens = useTokens()
   return (
-    <Text size="title" tone="muted" accessible={false}>
-      ›
-    </Text>
+    <Ionicons name="chevron-forward" size={16} color={tokens.mutedForeground} />
   )
 }
 
