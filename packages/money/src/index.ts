@@ -1,0 +1,25 @@
+// Platform-agnostic money model + formatting + balance math.
+//
+// All amounts are integer minor units (kopeks); float is forbidden in storage
+// and calculation. Formatting is locale- and currency-aware via `Intl`, which
+// is available in browsers, Node, and React Native. No DOM or framework APIs.
+
+export { formatMoney } from './format'
+export { toMoney, type Money } from './money'
+export {
+  CURRENCY_MAP,
+  AVAILABLE_CURRENCIES,
+  DEFAULT_CURRENCY,
+  isCurrencyCode,
+  getDineroCurrency,
+  type CurrencyCode,
+} from './currencies'
+export { toMinorUnits, toMajorUnits } from './convert'
+export {
+  getTransactionImpactForAccount,
+  sumTransactionsImpactForAccount,
+  getAccountsBalances,
+  getComputedAccountBalance,
+  type TransactionImpact,
+  type BalanceAccount,
+} from './balance-calculator'
