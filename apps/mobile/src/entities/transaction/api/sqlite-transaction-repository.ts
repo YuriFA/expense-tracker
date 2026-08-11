@@ -12,6 +12,7 @@ import {
   isTransactionLinkedToAccount,
   isTransactionLinkedToCategory,
   isTransferTransaction,
+  normalizeTransaction,
   InvalidPayloadError,
   NotFoundError,
   UnknownReferencesError,
@@ -205,8 +206,16 @@ export function createSQLiteTransactionRepository(
     },
 
     async create(payload: CreateTransactionPayload): Promise<Transaction> {
-      const next = { ...payload, id: payload.id ?? generateId() } as Transaction
-      if (!isTransaction(next)) {
+      // Route through the shared domain normalizer so a freshly created row is
+      // assigned the optimistic-concurrency starting `version = 1` (the design
+      // contract; see normalizeBaseTransaction). `CreateTransactionPayload`
+      // intentionally omits `version` - it is server/store-owned - so a raw
+      // `as Transaction` cast would leave it undefined. The INSERT below lists
+      // `version` explicitly, so it would bind SQL NULL and trip the NOT NULL
+      // constraint on transactions.version (SQLite's DEFAULT 1 only applies
+      // when the column is omitted from the INSERT list, which it is not).
+      const next = normalizeTransaction({ ...payload, id: payload.id ?? generateId() })
+      if (!next) {
         throw new InvalidPayloadError('Invalid transaction payload')
       }
       const [accounts, categories] = await Promise.all([deps.getAccounts(), deps.getCategories()])

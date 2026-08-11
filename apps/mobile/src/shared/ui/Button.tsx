@@ -20,6 +20,8 @@ interface ButtonProps extends PropsWithChildren {
   full?: boolean
   disabled?: boolean
   loading?: boolean
+  /** Explicit VoiceOver/TalkBack label; falls back to the text children. */
+  accessibilityLabel?: string
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }
@@ -38,6 +40,7 @@ export function Button({
   full = false,
   disabled = false,
   loading = false,
+  accessibilityLabel,
   onPress,
   style,
   children,
@@ -51,6 +54,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       disabled={disabled || loading}
       onPress={() => {

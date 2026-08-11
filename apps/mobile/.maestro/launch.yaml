@@ -34,8 +34,11 @@ tags:
     text: "Add"
 
 # The hero amount field itself. On the en/USD seed its VoiceOver/TalkBack label
-# is "Amount, $" (accessibilityLabel = `${t('fields.amount')}, ${currencyName}`,
-# and Intl resolves USD in en-US to "$"). Asserting it directly satisfies the
-# "amount/input field is visible" requirement.
+# is "Amount, US Dollar" (AmountField composes `${t('fields.amount')},
+# ${currencyName(currency, locale)}`, and the static, Intl-free currencyName
+# map resolves USD in en to "US Dollar"). Asserting it directly satisfies the
+# "amount/input field is visible" requirement. Maestro 2.x matches this via the
+# `text` selector (the native accessibility label), not a separate
+# `accessibilityLabel` property.
 - assertVisible:
-    accessibilityLabel: "Amount, $"
+    text: "Amount, US Dollar"
