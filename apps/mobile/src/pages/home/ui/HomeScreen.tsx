@@ -115,6 +115,7 @@ export function HomeScreen() {
         <Button
           full
           size="lg"
+          accessibilityLabel={submitLabel}
           disabled={!form.canSave || noAccounts}
           loading={form.isSaving}
           onPress={() => void handleSave()}
