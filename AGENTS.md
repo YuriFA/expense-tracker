@@ -225,18 +225,28 @@ work.
 - **UI kit + canonical components:** one component vocabulary in `shared/ui`
   (`Screen` keyboard-aware safe-area foundation, `Button`, `TextField`,
   `SegmentedControl`, `Chip`, `AmountField` currency+numeric hero/field input,
-  `SwipeableRow` left-swipe actions, `BottomSheet`, `Skeleton`/`EmptyState`/
-  `ErrorState` states); entity-specific display in `entities/*/ui`
-  (`AccountChips`, `CategoryGrid`, `TransactionListItem`). The Home screen
-  (`pages/home`) IS the input screen and sets the inline-entry + serial-entry
-  pattern (autofocus amount, pinned save, optimistic create, amount clears on
-  save) the other tabs reuse; amount parse/sanitize helpers are in
-  `shared/lib/amount.ts`, the edit sheet in `features/transaction/edit`. The
-  Transactions screen (`pages/transactions`) is the reference for the
-  full-history **virtualized list** (`FlatList`) + **live-filter `BottomSheet`**
-  (type/account/category/date-range preset) + active-filter `Chip` rail + swipe
-  delete / tap-to-edit; its `model/use-transaction-filters` derives the
-  repository `TransactionQuery` and `lib/date-range.ts` resolves the presets.
+  `PickerButton` tappable field that opens a picker, `DateCarousel`
+  reanimated-backed horizontal day strip, `SwipeableRow` left-swipe actions,
+  `BottomSheet`, `Skeleton`/`EmptyState`/`ErrorState` states); entity-specific
+  display in `entities/*/ui` (`AccountChips`, `CategoryGrid`,
+  `CategoryPickerSheet`, `AccountPickerSheet`, `TransactionListItem`). The Home
+  screen (`pages/home`) IS the input screen: a focused, **non-scrolling**
+  Mibu-style layout (date carousel at top -> type switch -> hero amount as the
+  flex centerpiece -> account/category `PickerButton`s that open bottom-sheet
+  pickers -> pinned Save) that fits one viewport with the keypad up. It sets the
+  serial-entry pattern (autofocus amount, pinned save, optimistic create; on
+  save the amount clears AND the date resets to today). The date carousel drives
+  `occurredAt` (selected calendar day + current time-of-day, in
+  `model/use-transaction-form`); the recent-transactions list + balance header
+  moved off Home to the Transactions/Accounts tabs to satisfy the no-scroll
+  constraint. Amount parse/sanitize helpers are in `shared/lib/amount.ts`, the
+  calendar-day helpers in `shared/lib/date.ts`, the edit sheet in
+  `features/transaction/edit`. The Transactions screen (`pages/transactions`) is
+  the reference for the full-history **virtualized list** (`FlatList`) +
+  **live-filter `BottomSheet`** (type/account/category/date-range preset) +
+  active-filter `Chip` rail + swipe delete / tap-to-edit; its
+  `model/use-transaction-filters` derives the repository `TransactionQuery` and
+  `lib/date-range.ts` resolves the presets.
 - **Native modules** (expo-sqlite, react-native-mmkv, react-native-reanimated,
   expo-haptics) require a dev build / `expo prebuild`, not Expo Go.
   **react-native-mmkv 3 + react-native-reanimated 4 require the New

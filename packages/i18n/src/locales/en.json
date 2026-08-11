@@ -28,7 +28,11 @@
     "emptyTitle": "No transactions yet",
     "emptyDescription": "Enter an amount above to record your first",
     "commentPlaceholder": "Add a note",
-    "swapAccounts": "Swap accounts"
+    "swapAccounts": "Swap accounts",
+    "today": "Today",
+    "dateCarousel": "Date",
+    "chooseCategory": "Choose category",
+    "chooseAccount": "Choose account"
   },
   "addTransaction": {
     "newTransaction": "New transaction",

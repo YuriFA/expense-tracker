@@ -1,18 +1,21 @@
+import { useMemo, useState, type RefObject } from 'react'
+import { View, Pressable, TextInput } from 'react-native'
 import { Controller } from 'react-hook-form'
-import { useMemo, type RefObject } from 'react'
-import { View, Pressable, StyleSheet, TextInput, type TextStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { Ionicons } from '@expo/vector-icons'
 import { mapCategories } from '@expense-tracker/i18n'
 import {
   AmountField,
+  DateCarousel,
+  PickerButton,
   SegmentedControl,
-  TextField,
   Text,
   useTokens,
   type SegmentOption,
 } from '@shared/ui'
-import { AccountChips } from '@entities/account'
-import { CategoryGrid } from '@entities/category'
+import { CategoryPickerSheet } from '@entities/category'
+import { AccountPickerSheet } from '@entities/account'
+import { currencySymbol } from '@shared/lib/format'
 import type { AccountWithBalance, Category, TransactionType } from '@expense-tracker/api'
 import type { TransactionForm } from '../model/use-transaction-form'
 
@@ -24,25 +27,34 @@ interface TransactionInputProps {
   amountRef: RefObject<TextInput | null>
 }
 
+type PickerKind = 'account' | 'category' | 'from' | 'to' | null
+
 /**
- * The inline Home input form (design section 7) - NOT a modal. Type segmented
- * control, the hero amount field, then type-dependent selectors (cashflow:
- * account chips + category grid; transfer: From/To chips + swap), then the
- * optional comment. Every field is a react-hook-form `Controller` bound to the
- * form owned by {@link useTransactionForm}; the full-width Save button lives in
- * the screen's thumb zone (above the keyboard) - this component owns only the
- * field stack.
+ * The focused, non-scrolling add-transaction form (Mibu-style minimal layout).
+ * Top to bottom - everything fits one viewport with the keypad up:
+ *
+ *   1. Date carousel (today selected by default) - drives `occurredAt`.
+ *   2. Type segmented control (expense / income / transfer).
+ *   3. Hero amount - the visual centerpiece; grows/shrinks to fill leftover
+ *      space so the screen never overflows when the keypad appears.
+ *   4. Controls row - account + category buttons (cashflow) or From/To + swap
+ *      (transfer); each button opens a native bottom-sheet picker.
+ *
+ * No note field on the create surface (it stays reachable via the edit sheet);
+ * the balance header moved off Home to satisfy the no-scroll constraint. The
+ * Save button lives in the screen's pinned thumb zone.
  */
 export function TransactionInput({ form, accounts, categories, amountRef }: TransactionInputProps) {
   const { t } = useTranslation()
+  const [picker, setPicker] = useState<PickerKind>(null)
 
-  const typeOptions: ReadonlyArray<SegmentOption<TransactionType>> = [
+  const typeOptions: readonly SegmentOption<TransactionType>[] = [
     { value: 'expense', label: t('transactions.types.expense') },
     { value: 'income', label: t('transactions.types.income') },
     { value: 'transfer', label: t('transactions.types.transfer') },
   ]
 
-  // Localize the seed category names once per render; filter by active type.
+  // Localize seed category names once; filter by active type for the grid/picker.
   const localizedCategories = useMemo(
     () => mapCategories(categories, (key) => t(key)),
     [categories, t],
@@ -52,198 +64,160 @@ export function TransactionInput({ form, accounts, categories, amountRef }: Tran
     [localizedCategories, form.type],
   )
 
+  const selectedCategory =
+    localizedCategories.find((category) => category.id === form.categoryId) ?? null
+  const selectedAccount = accounts.find((account) => account.id === form.accountId) ?? null
+  const fromAccount = accounts.find((account) => account.id === form.fromAccountId) ?? null
+  const toAccount = accounts.find((account) => account.id === form.toAccountId) ?? null
+
+  const isTransfer = form.type === 'transfer'
+
   return (
-    <View style={styles.container}>
-      <Controller
-        control={form.control}
-        name="type"
-        render={({ field }) => (
-          <SegmentedControl
-            options={typeOptions}
-            value={field.value}
-            onChange={(next) => form.setType(next)}
-            accessibilityLabel={t('fields.transactionType')}
-          />
-        )}
-      />
+    <>
+      <View className="flex-1 flex-col px-4 gap-2.5">
+        <DateCarousel
+          value={form.date}
+          onChange={form.setDate}
+          accessibilityLabel={t('home.dateCarousel')}
+        />
 
-      <Controller
-        control={form.control}
-        name="amountText"
-        render={({ field }) => (
-          <AmountField
-            ref={amountRef}
-            value={field.value}
-            onChangeText={(text) => form.setAmountText(text)}
-            currency={form.amountCurrency}
-            autoFocus
-            accessibilityLabel={t('fields.amount')}
-          />
-        )}
-      />
+        <Controller
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <SegmentedControl
+              options={typeOptions}
+              value={field.value}
+              onChange={(next) => form.setType(next)}
+              accessibilityLabel={t('fields.transactionType')}
+            />
+          )}
+        />
 
-      {form.type === 'transfer' ? (
-        <TransferAccountPickers form={form} accounts={accounts} />
-      ) : (
-        <View style={styles.cashflow}>
-          <FieldLabel label={t('fields.account')} />
+        {/* Hero amount - the centerpiece; absorbs leftover vertical space. */}
+        <View className="flex-1 items-center justify-center">
           <Controller
             control={form.control}
-            name="accountId"
+            name="amountText"
             render={({ field }) => (
-              <AccountChips
-                accounts={accounts}
-                selectedId={field.value}
-                onSelect={field.onChange}
-                accessibilityLabel={t('fields.account')}
+              <AmountField
+                ref={amountRef}
+                value={field.value}
+                onChangeText={(text) => form.setAmountText(text)}
+                currency={form.amountCurrency}
+                autoFocus
+                accessibilityLabel={t('fields.amount')}
               />
             )}
           />
-          <FieldLabel label={t('fields.category')} style={styles.sectionGap} />
-          <Controller
-            control={form.control}
-            name="categoryId"
-            render={({ field }) => (
-              <CategoryGrid
-                categories={gridCategories}
-                selectedId={field.value}
-                onSelect={field.onChange}
-                accessibilityLabel={t('fields.category')}
-              />
-            )}
-          />
+          {form.transferCurrencyMismatch ? (
+            <Text size="caption" tone="destructive" style={{ marginTop: 8, textAlign: 'center' }}>
+              {t('validation.transferAccountsMustMatchCurrency')}
+            </Text>
+          ) : null}
         </View>
-      )}
 
-      <Controller
-        control={form.control}
-        name="comment"
-        render={({ field }) => (
-          <TextField
-            value={field.value}
-            onChangeText={field.onChange}
-            placeholder={t('home.commentPlaceholder')}
-            accessibilityLabel={t('addTransaction.descriptionLabel')}
-            containerStyle={styles.sectionGap}
-          />
+        {isTransfer ? (
+          <View className="flex-row items-center gap-2.5">
+            <PickerButton
+              label={t('addTransfer.fromAccountLabel')}
+              value={fromAccount?.name}
+              onPress={() => setPicker('from')}
+              accessibilityLabel={t('addTransfer.fromAccountLabel')}
+            />
+            <SwapButton onPress={form.swapTransferAccounts} />
+            <PickerButton
+              label={t('addTransfer.toAccountLabel')}
+              value={toAccount?.name}
+              onPress={() => setPicker('to')}
+              accessibilityLabel={t('addTransfer.toAccountLabel')}
+            />
+          </View>
+        ) : (
+          <View className="flex-row items-center gap-2.5">
+            <PickerButton
+              label={t('fields.account')}
+              value={selectedAccount?.name}
+              leading={
+                selectedAccount ? (
+                  <Text size="label" weight={600} tone="muted">
+                    {currencySymbol(selectedAccount.currency)}
+                  </Text>
+                ) : null
+              }
+              placeholder={t('addTransaction.accountPlaceholder')}
+              onPress={() => setPicker('account')}
+              accessibilityLabel={t('fields.account')}
+            />
+            <PickerButton
+              label={t('fields.category')}
+              value={selectedCategory?.name}
+              leading={
+                selectedCategory ? <Text size="title">{selectedCategory.icon}</Text> : null
+              }
+              placeholder={t('addTransaction.categoryPlaceholder')}
+              onPress={() => setPicker('category')}
+              accessibilityLabel={t('fields.category')}
+            />
+          </View>
         )}
-      />
+      </View>
 
-      {form.transferCurrencyMismatch ? (
-        <Text size="caption" tone="destructive" style={styles.error}>
-          {t('validation.transferAccountsMustMatchCurrency')}
-        </Text>
-      ) : null}
-    </View>
+      <CategoryPickerSheet
+        visible={picker === 'category'}
+        onClose={() => setPicker(null)}
+        title={t('home.chooseCategory')}
+        categories={gridCategories}
+        selectedId={form.categoryId}
+        onSelect={(id) => form.setValue('categoryId', id)}
+      />
+      <AccountPickerSheet
+        visible={picker === 'account'}
+        onClose={() => setPicker(null)}
+        title={t('home.chooseAccount')}
+        accounts={accounts}
+        selectedId={form.accountId}
+        onSelect={(id) => form.setValue('accountId', id)}
+      />
+      <AccountPickerSheet
+        visible={picker === 'from'}
+        onClose={() => setPicker(null)}
+        title={t('addTransfer.fromAccountLabel')}
+        accounts={accounts}
+        selectedId={form.fromAccountId}
+        onSelect={(id) => form.setValue('fromAccountId', id)}
+      />
+      <AccountPickerSheet
+        visible={picker === 'to'}
+        onClose={() => setPicker(null)}
+        title={t('addTransfer.toAccountLabel')}
+        accounts={accounts}
+        selectedId={form.toAccountId}
+        onSelect={(id) => form.setValue('toAccountId', id)}
+      />
+    </>
   )
 }
 
-function TransferAccountPickers({
-  form,
-  accounts,
-}: {
-  form: TransactionForm
-  accounts: AccountWithBalance[]
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <View style={styles.cashflow}>
-      <FieldLabel label={t('addTransfer.fromAccountLabel')} />
-      <Controller
-        control={form.control}
-        name="fromAccountId"
-        render={({ field }) => (
-          <AccountChips
-            accounts={accounts}
-            selectedId={field.value}
-            onSelect={field.onChange}
-            accessibilityLabel={t('addTransfer.fromAccountLabel')}
-          />
-        )}
-      />
-      <SwapButton onPress={form.swapTransferAccounts} />
-      <FieldLabel label={t('addTransfer.toAccountLabel')} />
-      <Controller
-        control={form.control}
-        name="toAccountId"
-        render={({ field }) => (
-          <AccountChips
-            accounts={accounts}
-            selectedId={field.value}
-            onSelect={field.onChange}
-            accessibilityLabel={t('addTransfer.toAccountLabel')}
-          />
-        )}
-      />
-    </View>
-  )
-}
-
-/** Swap the transfer From/To accounts - a centered 44pt touch target. */
+/** Swap the transfer From/To accounts - a compact circular touch target. */
 function SwapButton({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation()
   const tokens = useTokens()
 
   return (
-    <View style={styles.swapRow}>
-      <View style={[styles.swapLine, { backgroundColor: tokens.border }]} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('home.swapAccounts')}
-        onPress={onPress}
-        hitSlop={4}
-        style={({ pressed }) => [
-          styles.swapBtn,
-          { backgroundColor: tokens.surface, borderColor: tokens.border, opacity: pressed ? 0.6 : 1 },
-        ]}
-      >
-        <Text size="body" weight={600}>
-          ⇅
-        </Text>
-      </Pressable>
-      <View style={[styles.swapLine, { backgroundColor: tokens.border }]} />
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('home.swapAccounts')}
+      hitSlop={6}
+      onPress={onPress}
+      className="h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full border-hairline"
+      style={({ pressed }) => ({
+        backgroundColor: tokens.surface,
+        borderColor: tokens.border,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <Ionicons name="swap-horizontal" size={18} color={tokens.ink} />
+    </Pressable>
   )
 }
-
-function FieldLabel({ label, style }: { label: string; style?: TextStyle }) {
-  return (
-    <Text size="label" tone="muted" style={style}>
-      {label}
-    </Text>
-  )
-}
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 16,
-  },
-  cashflow: {
-    gap: 8,
-  },
-  sectionGap: {
-    marginTop: 4,
-  },
-  error: {
-    marginTop: 4,
-  },
-  swapRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    height: 44,
-  },
-  swapLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-  },
-  swapBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-})

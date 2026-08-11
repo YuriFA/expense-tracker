@@ -42,3 +42,10 @@ tags:
 # `accessibilityLabel` property.
 - assertVisible:
     text: "Amount, US Dollar"
+
+# The date carousel (DateCarousel, react-native-reanimated). Today's chip is
+# labelled "Today" (home.today) in the default en locale; seeing it proves the
+# reanimated-backed carousel mounted without red-boxing - a stronger boot check
+# now that the carousel is part of the Home input screen.
+- assertVisible:
+    text: "Today"
