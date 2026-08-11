@@ -28,7 +28,11 @@
     "emptyTitle": "Пока нет транзакций",
     "emptyDescription": "Введите сумму выше, чтобы добавить первую",
     "commentPlaceholder": "Добавить заметку",
-    "swapAccounts": "Поменять счета местами"
+    "swapAccounts": "Поменять счета местами",
+    "today": "Сегодня",
+    "dateCarousel": "Дата",
+    "chooseCategory": "Выберите категорию",
+    "chooseAccount": "Выберите счёт"
   },
   "addTransaction": {
     "newTransaction": "Новая транзакция",

@@ -1,42 +1,34 @@
-import { useRef, useState } from 'react'
-import {
-  View,
-  ScrollView,
-  RefreshControl,
-  StyleSheet,
-  type TextInput,
-} from 'react-native'
+import { useRef } from 'react'
+import { View, type TextInput } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
-import { useQueryClient } from '@tanstack/react-query'
-import { Screen, Button, Text, EmptyState, useTokens } from '@shared/ui'
+import { Button, EmptyState, Screen, Text, useTokens } from '@shared/ui'
 import { useAccounts } from '@entities/account'
 import { useCategories } from '@entities/category'
-import type { Transaction } from '@expense-tracker/api'
 import { useTransactionForm } from '../model/use-transaction-form'
-import { HomeHeader } from './HomeHeader'
 import { TransactionInput } from './TransactionInput'
-import { RecentTransactions } from './RecentTransactions'
-import { TransactionEditSheet } from '@features/transaction/edit'
 
 /**
- * Home = the input screen (design section 3/7). On open the hero amount field
- * is focused and the numeric keypad is up; the type switch, account chips,
- * category grid, and optional comment are within thumb reach; the full-width
- * Save button is pinned in the lower thumb zone and stays visible above the
- * keyboard. After a save the amount clears and focus returns to it - serial
- * entry for logging several transactions in a row - while account/category/type
- * persist. The recent list beneath the form updates optimistically.
+ * Home = the focused, non-scrolling add-transaction screen (Mibu-style minimal
+ * layout). The hero amount is the visual centerpiece; a date carousel, type
+ * switch, and account/category picker buttons all fit one viewport - with the
+ * numeric keypad up - so the user can log an entry without scrolling. The Save
+ * button is pinned in the thumb zone above the keyboard; after a save the amount
+ * clears, the date resets to today, and focus returns to the hero field for
+ * serial entry.
+ *
+ * The recent-transactions list moved off Home to the Transactions tab (the
+ * canonical history surface); the balance header moved with it so the form has
+ * room on small devices. This screen owns only the input flow + the empty-state
+ * shown when there is no account yet.
  */
 export function HomeScreen() {
   const { t } = useTranslation()
   const tokens = useTokens()
   const router = useRouter()
-  const queryClient = useQueryClient()
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
 
-  // Raw categories; the grid localizes seed names via `mapCategories` itself.
   const categories = categoriesQuery.data ?? []
 
   const form = useTransactionForm({
@@ -45,25 +37,12 @@ export function HomeScreen() {
   })
   const amountRef = useRef<TextInput>(null)
 
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-
   const handleSave = async () => {
     const ok = await form.save()
     if (ok) {
-      // Serial entry: the form cleared the amount; refocus the hero field.
+      // Serial entry: the form cleared the amount + reset the date; refocus.
       amountRef.current?.focus()
     }
-  }
-
-  const handleRefresh = async () => {
-    setRefreshing(true)
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['accounts'] }),
-      queryClient.invalidateQueries({ queryKey: ['categories'] }),
-      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
-    ])
-    setRefreshing(false)
   }
 
   const accounts = accountsQuery.data ?? []
@@ -73,21 +52,8 @@ export function HomeScreen() {
 
   return (
     <Screen padded={false}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="always"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void handleRefresh()}
-            tintColor={tokens.mutedForeground}
-            colors={[tokens.mutedForeground]}
-          />
-        }
-      >
-        <HomeHeader />
-        {noAccounts ? (
+      {noAccounts ? (
+        <View className="flex-1 items-center justify-center px-6">
           <EmptyState
             icon={<Text size="display">🏦</Text>}
             heading={t('accounts.homeEmptyAccountsTitle')}
@@ -95,61 +61,38 @@ export function HomeScreen() {
             actionLabel={t('accounts.homeEmptyAccountsAction')}
             onAction={() => router.navigate('/accounts')}
           />
-        ) : (
+        </View>
+      ) : (
+        <View className="flex-1 flex-col">
           <TransactionInput
             form={form}
             accounts={accounts}
             categories={categories}
             amountRef={amountRef}
           />
-        )}
-        <RecentTransactions onEditTransaction={setEditingTransaction} />
-      </ScrollView>
 
-      <View style={[styles.saveBar, { borderTopColor: tokens.border }]}>
-        {form.error ? (
-          <Text size="caption" tone="destructive" style={styles.saveError}>
-            {form.error}
-          </Text>
-        ) : null}
-        <Button
-          full
-          size="lg"
-          accessibilityLabel={submitLabel}
-          disabled={!form.canSave || noAccounts}
-          loading={form.isSaving}
-          onPress={() => void handleSave()}
-        >
-          {submitLabel}
-        </Button>
-      </View>
-
-      {editingTransaction ? (
-        <TransactionEditSheet
-          transaction={editingTransaction}
-          visible={Boolean(editingTransaction)}
-          onClose={() => setEditingTransaction(null)}
-        />
-      ) : null}
+          <View
+            className="px-4 pt-2 pb-2 gap-1.5"
+            style={{ borderTopColor: tokens.border, borderTopWidth: 1 }}
+          >
+            {form.error ? (
+              <Text size="caption" tone="destructive" style={{ textAlign: 'center' }}>
+                {form.error}
+              </Text>
+            ) : null}
+            <Button
+              full
+              size="lg"
+              accessibilityLabel={submitLabel}
+              disabled={!form.canSave || noAccounts}
+              loading={form.isSaving}
+              onPress={() => void handleSave()}
+            >
+              {submitLabel}
+            </Button>
+          </View>
+        </View>
+      )}
     </Screen>
   )
 }
-
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 24,
-    gap: 20,
-  },
-  saveBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-    gap: 6,
-  },
-  saveError: {},
-})

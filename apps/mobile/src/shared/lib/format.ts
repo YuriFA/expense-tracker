@@ -111,6 +111,21 @@ export function formatHeaderDate(date: Date, locale: AppLocale): string {
 }
 
 /**
+ * Short weekday abbreviation (e.g. en "Mon", ru "Пн") for compact date chips.
+ * `Intl`-free; indexed by `Date.getDay()` (0=Sunday..6=Saturday).
+ */
+export function formatWeekdayShort(date: Date, locale: AppLocale): string {
+  return WEEKDAYS[locale][date.getDay()] ?? ''
+}
+
+/**
+ * The day-of-month as a string (e.g. "5", "23") for compact date chips.
+ */
+export function formatDayNumber(date: Date): string {
+  return String(date.getDate())
+}
+
+/**
  * The narrow currency symbol ("$", "€", "₽") for display next to an amount.
  * A static map keeps it deterministic and `Intl`-free (Hermes-safe); unknown
  * currencies fall back to their ISO code.
