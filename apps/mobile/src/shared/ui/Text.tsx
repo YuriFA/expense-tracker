@@ -1,6 +1,7 @@
 import { Text as RNText, type TextProps, type TextStyle } from 'react-native'
 import { useTokens } from './theme'
 import { familyForWeight, type FontWeight } from '@shared/lib/fonts'
+import { cn } from '@shared/lib/cn'
 
 export type TextSize = 'display' | 'title' | 'body' | 'label' | 'caption'
 export type TextTone = 'default' | 'muted' | 'ink' | 'inverse' | 'destructive'
@@ -19,6 +20,8 @@ interface AppTextProps extends TextProps {
   tone?: TextTone
   /** Use tabular (monospaced) figures - required for all amounts. */
   tabular?: boolean
+  /** Extra classes composed onto the text (react-native-reusables idiom). */
+  className?: string
 }
 
 /**
@@ -31,6 +34,7 @@ export function Text({
   weight = 400,
   tone = 'default',
   tabular = false,
+  className,
   style,
   ...rest
 }: AppTextProps) {
@@ -56,5 +60,5 @@ export function Text({
     ...(tabular ? { fontVariant: ['tabular-nums'] } : {}),
   }
 
-  return <RNText style={[textStyle, style]} {...rest} />
+  return <RNText className={cn(className)} style={[textStyle, style]} {...rest} />
 }
