@@ -86,7 +86,7 @@ export function HomeScreen() {
               accessibilityLabel={submitLabel}
               disabled={!form.canSave || noAccounts}
               loading={form.isSaving}
-              onPress={() => void handleSave()}
+              onPress={handleSave}
             >
               {submitLabel}
             </Button>

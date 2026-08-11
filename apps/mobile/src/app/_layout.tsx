@@ -4,7 +4,7 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLoadFonts } from '@shared/lib/fonts'
-import { AppProviders } from './providers'
+import { AppProviders } from '../app-providers'
 
 /**
  * Root Expo Router layout. Keeps the native splash visible while Outfit loads,

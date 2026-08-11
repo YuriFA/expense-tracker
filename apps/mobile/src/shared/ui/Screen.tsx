@@ -1,21 +1,16 @@
 import { PropsWithChildren } from 'react'
 import {
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   View,
-  type StyleProp,
-  type ViewStyle,
 } from 'react-native'
-import { useTokens } from './theme'
 
 interface ScreenProps extends PropsWithChildren {
   /** Extra padding inside the safe area. */
   padded?: boolean
   /** Make the body scrollable (lists, long forms). */
   scrollable?: boolean
-  style?: StyleProp<ViewStyle>
   /** Center the content (used by full-screen empty/error placeholders). */
   centered?: boolean
 }
@@ -34,9 +29,7 @@ export function Screen({
   padded = true,
   scrollable = false,
   centered = false,
-  style,
 }: ScreenProps) {
-  const tokens = useTokens()
 
   const content = scrollable ? (
     <ScrollView
@@ -60,7 +53,7 @@ export function Screen({
   )
 
   return (
-    <SafeAreaView style={[{ flex: 1, backgroundColor: tokens.background }, style]}>
+    <View className="flex-1 bg-background">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -68,6 +61,6 @@ export function Screen({
       >
         {content}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   )
 }
