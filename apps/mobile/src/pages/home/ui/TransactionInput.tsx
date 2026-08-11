@@ -1,3 +1,4 @@
+import { Controller } from 'react-hook-form'
 import { useMemo, type RefObject } from 'react'
 import { View, Pressable, StyleSheet, TextInput, type TextStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
@@ -27,8 +28,10 @@ interface TransactionInputProps {
  * The inline Home input form (design section 7) - NOT a modal. Type segmented
  * control, the hero amount field, then type-dependent selectors (cashflow:
  * account chips + category grid; transfer: From/To chips + swap), then the
- * optional comment. The full-width Save button lives in the screen's thumb
- * zone (above the keyboard); this component owns only the field stack.
+ * optional comment. Every field is a react-hook-form `Controller` bound to the
+ * form owned by {@link useTransactionForm}; the full-width Save button lives in
+ * the screen's thumb zone (above the keyboard) - this component owns only the
+ * field stack.
  */
 export function TransactionInput({ form, accounts, categories, amountRef }: TransactionInputProps) {
   const { t } = useTranslation()
@@ -51,20 +54,32 @@ export function TransactionInput({ form, accounts, categories, amountRef }: Tran
 
   return (
     <View style={styles.container}>
-      <SegmentedControl
-        options={typeOptions}
-        value={form.type}
-        onChange={form.setType}
-        accessibilityLabel={t('fields.transactionType')}
+      <Controller
+        control={form.control}
+        name="type"
+        render={({ field }) => (
+          <SegmentedControl
+            options={typeOptions}
+            value={field.value}
+            onChange={(next) => form.setType(next)}
+            accessibilityLabel={t('fields.transactionType')}
+          />
+        )}
       />
 
-      <AmountField
-        ref={amountRef}
-        value={form.amountText}
-        onChangeText={form.setAmountText}
-        currency={form.amountCurrency}
-        autoFocus
-        accessibilityLabel={t('fields.amount')}
+      <Controller
+        control={form.control}
+        name="amountText"
+        render={({ field }) => (
+          <AmountField
+            ref={amountRef}
+            value={field.value}
+            onChangeText={(text) => form.setAmountText(text)}
+            currency={form.amountCurrency}
+            autoFocus
+            accessibilityLabel={t('fields.amount')}
+          />
+        )}
       />
 
       {form.type === 'transfer' ? (
@@ -72,28 +87,46 @@ export function TransactionInput({ form, accounts, categories, amountRef }: Tran
       ) : (
         <View style={styles.cashflow}>
           <FieldLabel label={t('fields.account')} />
-          <AccountChips
-            accounts={accounts}
-            selectedId={form.accountId}
-            onSelect={form.setAccountId}
-            accessibilityLabel={t('fields.account')}
+          <Controller
+            control={form.control}
+            name="accountId"
+            render={({ field }) => (
+              <AccountChips
+                accounts={accounts}
+                selectedId={field.value}
+                onSelect={field.onChange}
+                accessibilityLabel={t('fields.account')}
+              />
+            )}
           />
           <FieldLabel label={t('fields.category')} style={styles.sectionGap} />
-          <CategoryGrid
-            categories={gridCategories}
-            selectedId={form.categoryId}
-            onSelect={form.setCategoryId}
-            accessibilityLabel={t('fields.category')}
+          <Controller
+            control={form.control}
+            name="categoryId"
+            render={({ field }) => (
+              <CategoryGrid
+                categories={gridCategories}
+                selectedId={field.value}
+                onSelect={field.onChange}
+                accessibilityLabel={t('fields.category')}
+              />
+            )}
           />
         </View>
       )}
 
-      <TextField
-        value={form.comment}
-        onChangeText={form.setComment}
-        placeholder={t('home.commentPlaceholder')}
-        accessibilityLabel={t('addTransaction.descriptionLabel')}
-        containerStyle={styles.sectionGap}
+      <Controller
+        control={form.control}
+        name="comment"
+        render={({ field }) => (
+          <TextField
+            value={field.value}
+            onChangeText={field.onChange}
+            placeholder={t('home.commentPlaceholder')}
+            accessibilityLabel={t('addTransaction.descriptionLabel')}
+            containerStyle={styles.sectionGap}
+          />
+        )}
       />
 
       {form.transferCurrencyMismatch ? (
@@ -117,19 +150,31 @@ function TransferAccountPickers({
   return (
     <View style={styles.cashflow}>
       <FieldLabel label={t('addTransfer.fromAccountLabel')} />
-      <AccountChips
-        accounts={accounts}
-        selectedId={form.fromAccountId}
-        onSelect={form.setFromAccountId}
-        accessibilityLabel={t('addTransfer.fromAccountLabel')}
+      <Controller
+        control={form.control}
+        name="fromAccountId"
+        render={({ field }) => (
+          <AccountChips
+            accounts={accounts}
+            selectedId={field.value}
+            onSelect={field.onChange}
+            accessibilityLabel={t('addTransfer.fromAccountLabel')}
+          />
+        )}
       />
       <SwapButton onPress={form.swapTransferAccounts} />
       <FieldLabel label={t('addTransfer.toAccountLabel')} />
-      <AccountChips
-        accounts={accounts}
-        selectedId={form.toAccountId}
-        onSelect={form.setToAccountId}
-        accessibilityLabel={t('addTransfer.toAccountLabel')}
+      <Controller
+        control={form.control}
+        name="toAccountId"
+        render={({ field }) => (
+          <AccountChips
+            accounts={accounts}
+            selectedId={field.value}
+            onSelect={field.onChange}
+            accessibilityLabel={t('addTransfer.toAccountLabel')}
+          />
+        )}
       />
     </View>
   )
