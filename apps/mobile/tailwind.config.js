@@ -18,8 +18,8 @@ module.exports = {
         bold: ['Outfit-Bold'],
       },
       colors: {
-        // Raw `var(--x)` (oklch values) instead of the shadcn `hsl(var(--x))`
-        // convention, so the palette stays identical to web. See global.css.
+        // Raw `var(--x)` (rgba values) instead of the shadcn `hsl(var(--x))`
+        // convention, so the palette stays the product palette. See global.css.
         border: 'var(--border)',
         input: 'var(--input)',
         ring: 'var(--ring)',
@@ -34,7 +34,7 @@ module.exports = {
           DEFAULT: 'var(--ink)',
           foreground: 'var(--ink-foreground)',
         },
-        // shadcn / react-native-reusables aliases (same oklch values).
+        // shadcn / react-native-reusables aliases (same rgba values).
         primary: {
           DEFAULT: 'var(--primary)',
           foreground: 'var(--primary-foreground)',

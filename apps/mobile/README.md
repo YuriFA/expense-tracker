@@ -97,7 +97,11 @@ Add more flows (e.g. the enter-transaction happy path) as additional
 
 ## Design tokens
 
-Tokens carry the **same oklch values** as the web design system
-(`apps/web/src/style.css`), exposed as a plain JS map
-(`shared/config/theme-tokens.ts`) instead of CSS custom properties. React Native
-0.76+ (new architecture) parses `oklch()` strings natively.
+The mobile palette is an **rgba (sRGB) encoding** of the same design-system
+colors as the web twin (`apps/web/src/style.css`, which stays on `oklch()`),
+exposed as a plain JS map (`shared/config/theme-tokens.ts`) instead of CSS
+custom properties. The rgba form is required because
+`react-native-reanimated` cannot parse or interpolate `oklch()` colors; the
+inline-styled components (and anything reanimated might animate) read `rgba()`
+from `useTokens()`. See the header comment in `theme-tokens.ts` for the
+mobile-rgba <-> web-oklch sync rule.

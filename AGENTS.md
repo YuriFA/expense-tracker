@@ -168,17 +168,20 @@ work.
 - **Navigation:** bottom tab bar only (Home / Transactions / Accounts /
   Settings), one level of depth; secondary actions use bottom sheets, not
   nested stacks. Safe areas + keyboard respected via `shared/ui/Screen`.
-- **Design tokens** carry the **same oklch values** as web
-  (`shared/config/theme-tokens.ts`), as a JS map (RN 0.76+ new arch parses
-  oklch). Theme is system/light/dark; `useTokens()`/`useTheme()` from
-  `shared/ui/theme`. Outfit font via `@expo-google-fonts/outfit`.
+- **Design tokens** are an **rgba (sRGB) encoding** of the same palette as
+  web (`shared/config/theme-tokens.ts`, a JS map) - NOT oklch, because
+  `react-native-reanimated` cannot parse/interpolate `oklch()` colors; web
+  keeps oklch in `apps/web/src/style.css`. Sync rule + the oklch -> sRGB -> rgba
+  pipeline are documented in `theme-tokens.ts` + `global.css` headers. Theme is
+  system/light/dark; `useTokens()`/`useTheme()` from `shared/ui/theme`. Outfit
+  font via `@expo-google-fonts/outfit`.
 - **Design-system foundation: react-native-reusables + nativewind v4**
   (JS-only; no native deps, so no pod/rebuild needed). Wiring: `babel.config.js`
   (`jsxImportSource: 'nativewind'` + `nativewind/babel`), `metro.config.js`
   (`withNativeWind`, `inlineRem: 16`), `tailwind.config.js` (`darkMode: 'class'`,
   `presets: [nativewind/preset]`, colors mapped to raw `var(--x)`), and
-  `global.css` (the oklch CSS vars - **identical values to web**). Component
-  variants use `cva`; classes compose via `cn()` (`shared/lib/cn.ts`).
+  `global.css` (the rgba CSS vars - the sRGB encoding of web's oklch).
+  Component variants use `cva`; classes compose via `cn()` (`shared/lib/cn.ts`).
   **Theme invariant:** colors stay token-driven via `useTokens()` (synchronous,
   MMKV-backed), NOT nativewind color classes - `ThemeProvider` paints the `dark`
   class on the root View from the resolved preference so the persisted theme is
