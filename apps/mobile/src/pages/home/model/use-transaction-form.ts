@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useForm, useWatch } from 'react-hook-form'
 import {
   type AccountWithBalance,
   type Category,
@@ -12,6 +13,7 @@ import { DEFAULT_CURRENCY, type CurrencyCode } from '@expense-tracker/money'
 import { useCreateTransaction } from '@entities/transaction'
 import { haptics } from '@shared/lib/haptics'
 import { parseAmountToMinor, sanitizeAmountInput } from '@shared/lib/amount'
+import { useState } from 'react'
 import { lastAccountIds } from './last-account'
 
 interface UseTransactionFormOptions {
@@ -23,6 +25,12 @@ interface UseTransactionFormOptions {
  * The Home input form: a single state machine for all three transaction types,
  * with smart defaults and serial-entry behavior.
  *
+ * Field state is owned by react-hook-form (each field is a `Controller` in
+ * {@link TransactionInput}); this hook owns the *business logic* on top of it -
+ * the smart-default effects (last-used account/category/transfer pair), the
+ * cross-currency transfer rejection, the optimistic create + rollback, and the
+ * serial-entry behavior (clear the amount only on save).
+ *
  * Defaults (design section 3, "last-used preselected"):
  *  - cashflow: account + category are preselected from the last save (or the
  *    first available) and *kept* across saves; only the amount clears.
@@ -33,19 +41,47 @@ interface UseTransactionFormOptions {
  * next transaction without extra taps. Account + category + type persist.
  *
  * Cross-currency transfers are rejected up front (canSave stays false and a
- * localized mismatch error surfaces) - no FX at this stage.
+ * localized mismatch error surfaces) - no FX at this stage. `version` is never
+ * part of a create payload (the et-fix-tx-version invariant).
  */
+export interface HomeFormValues {
+  type: TransactionType
+  amountText: string
+  accountId: string | null
+  categoryId: string | null
+  fromAccountId: string | null
+  toAccountId: string | null
+  comment: string
+}
+
+const DEFAULTS: HomeFormValues = {
+  type: 'expense',
+  amountText: '',
+  accountId: null,
+  categoryId: null,
+  fromAccountId: null,
+  toAccountId: null,
+  comment: '',
+}
+
 export function useTransactionForm({ accounts, categories }: UseTransactionFormOptions) {
   const { t } = useTranslation()
   const createTransaction = useCreateTransaction()
 
-  const [type, setTypeState] = useState<TransactionType>('expense')
-  const [amountText, setAmountTextState] = useState('')
-  const [accountId, setAccountId] = useState<string | null>(null)
-  const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [fromAccountId, setFromAccountId] = useState<string | null>(null)
-  const [toAccountId, setToAccountId] = useState<string | null>(null)
-  const [comment, setComment] = useState('')
+  const { control, setValue, getValues } = useForm<HomeFormValues>({
+    defaultValues: DEFAULTS,
+  })
+
+  // Watch every field once; the business logic + the render both depend on the
+  // full set, mirroring the pre-migration useState behavior.
+  const type = useWatch({ control, name: 'type' }) ?? 'expense'
+  const amountText = useWatch({ control, name: 'amountText' }) ?? ''
+  const accountId = useWatch({ control, name: 'accountId' }) ?? null
+  const categoryId = useWatch({ control, name: 'categoryId' }) ?? null
+  const fromAccountId = useWatch({ control, name: 'fromAccountId' }) ?? null
+  const toAccountId = useWatch({ control, name: 'toAccountId' }) ?? null
+  const comment = useWatch({ control, name: 'comment' }) ?? ''
+
   const [error, setError] = useState<string | null>(null)
 
   // --- Defaults -----------------------------------------------------------
@@ -56,17 +92,17 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
     if (!accounts || accounts.length === 0) return
     const last = lastAccountIds.getCashflowAccountId()
     const match = last ? accounts.find((account) => account.id === last) : undefined
-    setAccountId(match ? match.id : accounts[0]!.id)
-  }, [accounts, type, accountId])
+    setValue('accountId', match ? match.id : accounts[0]!.id)
+  }, [accounts, type, accountId, setValue])
 
   // Cashflow category: first category matching the active type.
   useEffect(() => {
     if (type === 'transfer' || categoryId !== null) return
     const firstOfType = categories?.find((category) => category.type === type)
     if (firstOfType) {
-      setCategoryId(firstOfType.id)
+      setValue('categoryId', firstOfType.id)
     }
-  }, [categories, type, categoryId])
+  }, [categories, type, categoryId, setValue])
 
   // Transfer From/To: last-used pair (validated), else the first two accounts.
   useEffect(() => {
@@ -75,14 +111,14 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
     if (fromAccountId === null) {
       const last = lastAccountIds.getTransferAccountIds().fromAccountId
       const match = last ? accounts.find((account) => account.id === last) : undefined
-      setFromAccountId(match ? match.id : accounts[0]!.id)
+      setValue('fromAccountId', match ? match.id : accounts[0]!.id)
     }
     if (toAccountId === null) {
       const last = lastAccountIds.getTransferAccountIds().toAccountId
       const match = last ? accounts.find((account) => account.id === last) : undefined
-      setToAccountId(match ? match.id : accounts[1]?.id ?? accounts[0]!.id)
+      setValue('toAccountId', match ? match.id : accounts[1]?.id ?? accounts[0]!.id)
     }
-  }, [accounts, type, fromAccountId, toAccountId])
+  }, [accounts, type, fromAccountId, toAccountId, setValue])
 
   // --- Derived ------------------------------------------------------------
 
@@ -118,7 +154,7 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
 
   const setType = useCallback(
     (next: TransactionType) => {
-      setTypeState(next)
+      setValue('type', next)
       setError(null)
       if (next === 'expense' || next === 'income') {
         // Keep the category only if it still matches the new type.
@@ -127,60 +163,66 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
         )
         if (!stillValid) {
           const firstOfType = categories?.find((category) => category.type === next)
-          setCategoryId(firstOfType?.id ?? null)
+          setValue('categoryId', firstOfType?.id ?? null)
         }
       }
     },
-    [categories, categoryId],
+    [categories, categoryId, setValue],
   )
 
-  const setAmountText = useCallback((text: string) => {
-    setAmountTextState(sanitizeAmountInput(text))
-    setError(null)
-  }, [])
+  const setAmountText = useCallback(
+    (text: string) => {
+      setValue('amountText', sanitizeAmountInput(text))
+      setError(null)
+    },
+    [setValue],
+  )
 
   const swapTransferAccounts = useCallback(() => {
-    setFromAccountId(toAccountId)
-    setToAccountId(fromAccountId)
-  }, [fromAccountId, toAccountId])
+    const { fromAccountId: from, toAccountId: to } = getValues()
+    setValue('fromAccountId', to)
+    setValue('toAccountId', from)
+  }, [getValues, setValue])
 
   const save = useCallback(async (): Promise<boolean> => {
-    if (!canSave || amountMinor === null) {
+    const values = getValues()
+    const minor = parseAmountToMinor(values.amountText)
+    if (!canSave || minor === null) {
       return false
     }
 
     const occurredAt = new Date().toISOString()
-    const description = comment.trim()
+    const description = values.comment.trim()
 
     try {
-      if (type === 'transfer') {
-        if (!fromAccountId || !toAccountId) return false
+      if (values.type === 'transfer') {
+        if (!values.fromAccountId || !values.toAccountId) return false
         const payload: CreateTransactionPayload = {
           type: 'transfer',
-          amount: amountMinor,
-          fromAccountId,
-          toAccountId,
+          amount: minor,
+          fromAccountId: values.fromAccountId,
+          toAccountId: values.toAccountId,
           description,
           occurredAt,
         }
         await createTransaction.mutateAsync(payload)
-        lastAccountIds.setTransferAccountIds(fromAccountId, toAccountId)
+        lastAccountIds.setTransferAccountIds(values.fromAccountId, values.toAccountId)
       } else {
-        if (!accountId || !categoryId) return false
+        if (!values.accountId || !values.categoryId) return false
         const payload: CreateTransactionPayload = {
-          type,
-          amount: amountMinor,
-          accountId,
-          categoryId,
+          type: values.type,
+          amount: minor,
+          accountId: values.accountId,
+          categoryId: values.categoryId,
           description,
           occurredAt,
         }
         await createTransaction.mutateAsync(payload)
-        lastAccountIds.setCashflowAccountId(accountId)
+        lastAccountIds.setCashflowAccountId(values.accountId)
       }
 
       // Serial entry: clear the amount only; account + category + type remain.
-      setAmountTextState('')
+      setValue('amountText', '')
       setError(null)
       haptics.notify('success')
       return true
@@ -201,20 +243,10 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
       haptics.notify('warning')
       return false
     }
-  }, [
-    canSave,
-    amountMinor,
-    type,
-    comment,
-    fromAccountId,
-    toAccountId,
-    accountId,
-    categoryId,
-    createTransaction,
-    t,
-  ])
+  }, [canSave, createTransaction, getValues, setValue, t])
 
   return {
+    control,
     // state
     type,
     amountText,
@@ -232,12 +264,7 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
     // handlers
     setType,
     setAmountText,
-    setAccountId,
-    setCategoryId,
-    setFromAccountId,
-    setToAccountId,
     swapTransferAccounts,
-    setComment,
     save,
   }
 }
