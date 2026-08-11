@@ -228,8 +228,11 @@ work.
 - **UI kit + canonical components:** one component vocabulary in `shared/ui`
   (`Screen` keyboard-aware safe-area foundation, `Button`, `TextField`,
   `SegmentedControl`, `Chip`, `AmountField` currency+numeric hero/field input,
-  `PickerButton` tappable field that opens a picker, `DateCarousel`
-  reanimated-backed horizontal day strip, `SwipeableRow` left-swipe actions,
+  `PickerButton` tappable field that opens a picker, `DayCarousel`
+  centered swipe-to-snap horizontal day picker (`react-native-reanimated-carousel`
+  v5 + reanimated v4; the presentational chip is `DayItem`; date logic in
+  `shared/lib/date-carousel.ts` + `date.ts`; `DateCarousel` is a legacy alias
+  re-export), `SwipeableRow` left-swipe actions,
   `BottomSheet`, `Skeleton`/`EmptyState`/`ErrorState` states); entity-specific
   display in `entities/*/ui` (`AccountChips`, `CategoryGrid`,
   `CategoryPickerSheet`, `AccountPickerSheet`, `TransactionListItem`). The Home
@@ -264,6 +267,11 @@ work.
   Quality bar: `tsc --noEmit` clean, `expo-doctor` no new regressions (the repo
   has 2 pre-existing failures: bun `node_modules` duplicates + the committed
   `ios/`/`android` non-CNG warning), `expo export --platform ios` bundles.
+  **Unit tests:** a minimal Vitest config (`vitest.config.ts`, `node` env)
+  covers PURE `react-native`-free TS (calendar-day utils under
+  `shared/lib/__tests__/`); run `bun --filter @expense-tracker/mobile test:unit`.
+  Reanimated/gesture components are NOT unit-tested (no RN/Jest transform) -
+  they rely on the Maestro flows + manual device testing.
 - **Forms: react-hook-form + @hookform/resolvers (zodResolver).** Every submit
   form (`AddAccountSheet`, `EditAccountSheet`, `CategoryFormSheet`,
   `TransactionEditSheet`, and the Home `use-transaction-form` hook) uses

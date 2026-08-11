@@ -16,6 +16,10 @@ export { SegmentedControl, type SegmentOption } from './SegmentedControl'
 export { Chip } from './Chip'
 export { AmountField } from './AmountField'
 export { PickerButton } from './PickerButton'
+// `DayCarousel` is the current centered carousel; `DateCarousel` is the legacy
+// alias kept for backward-compatible imports.
+export { DayCarousel, type DayCarouselProps } from './DayCarousel'
+export { DayItem, type DayItemProps } from './DayItem'
 export { DateCarousel } from './DateCarousel'
 export { SwipeableRow, type SwipeAction } from './SwipeableRow'
 export { ListRow, ListGroup } from './ListRow'
