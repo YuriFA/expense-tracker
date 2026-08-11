@@ -8,6 +8,8 @@ import {
   Platform,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm } from 'react-hook-form'
 import {
   type AccountWithBalance,
   type UpdateAccountPayload,
@@ -16,11 +18,8 @@ import {
 import { BottomSheet, Button, TextField, FieldGroup, Text } from '@shared/ui'
 import { useUpdateAccount } from '@entities/account'
 import { haptics } from '@shared/lib/haptics'
-import {
-  parseSignedMinor,
-  sanitizeSignedAmount,
-  minorToSignedText,
-} from '../model/balance'
+import { editAccountSchema, type EditAccountValues } from '../model/form-schema'
+import { minorToSignedText, parseSignedMinor, sanitizeSignedAmount } from '../model/balance'
 import { accountRepositoryErrorMessages } from '../model/repository-errors'
 
 interface EditAccountSheetProps {
@@ -41,6 +40,10 @@ interface EditAccountSheetProps {
  * the required `manualAdjustment` delta is back-computed (`current adjustment +
  * (desired - current balance)`), so the stored model is unchanged while the
  * input stays intuitive ("make my balance be X").
+ *
+ * Field state + validation are owned by react-hook-form (+ zod resolver that
+ * parses the signed balance to minor units); submit is enabled only when the
+ * form is both valid and dirty (an actual change) and not mid-mutation.
  */
 export function EditAccountSheet({
   account,
@@ -51,33 +54,40 @@ export function EditAccountSheet({
   const { t } = useTranslation()
   const updateAccount = useUpdateAccount()
 
-  const [name, setName] = useState(account.name)
-  const [balanceText, setBalanceText] = useState('')
+  const defaults: EditAccountValues = {
+    name: account.name,
+    balance: minorToSignedText(account.balance),
+  }
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isValid, isDirty },
+  } = useForm<EditAccountValues>({
+    resolver: zodResolver(editAccountSchema(t)),
+    mode: 'onChange',
+    defaultValues: defaults,
+  })
+
   const [error, setError] = useState<string | null>(null)
 
   // Seed from the account every time the sheet opens.
   useEffect(() => {
     if (!visible) return
-    setName(account.name)
-    setBalanceText(minorToSignedText(account.balance))
+    reset({ name: account.name, balance: minorToSignedText(account.balance) })
     setError(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, account.id, account.name, account.balance])
 
-  const balanceMinor = parseSignedMinor(balanceText)
-  const nameChanged = name.trim() !== account.name
-  const balanceChanged = balanceMinor !== null && balanceMinor !== account.balance
-  const canSubmit =
-    name.trim().length > 0 &&
-    balanceMinor !== null &&
-    (nameChanged || balanceChanged) &&
-    !updateAccount.isPending
+  const submitting = updateAccount.isPending
+  const canSubmit = isValid && isDirty && !submitting
 
-  const handleSubmit = async () => {
-    if (!canSubmit || balanceMinor === null) return
+  const onSubmit = async (values: EditAccountValues) => {
     setError(null)
     // Back out the adjustment delta from the desired balance vs. current.
+    const balanceMinor = parseSignedMinor(values.balance) ?? 0
     const manualAdjustment = account.manualAdjustment + (balanceMinor - account.balance)
-    const payload: UpdateAccountPayload = { name: name.trim(), manualAdjustment }
+    const payload: UpdateAccountPayload = { name: values.name, manualAdjustment }
     try {
       await updateAccount.mutateAsync({ id: account.id, payload })
       haptics.notify('success')
@@ -87,6 +97,8 @@ export function EditAccountSheet({
       haptics.notify('warning')
     }
   }
+
+  const clearError = () => setError(null)
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title={t('editAccount.title')}>
@@ -100,26 +112,40 @@ export function EditAccountSheet({
           keyboardShouldPersistTaps="handled"
         >
           <FieldGroup>
-            <TextField
-              label={t('editAccount.nameLabel')}
-              placeholder={t('editAccount.namePlaceholder')}
-              value={name}
-              onChangeText={(text) => {
-                setName(text)
-                setError(null)
-              }}
+            <Controller
+              control={control}
+              name="name"
+              render={({ field: { value, onChange }, fieldState: { error: fieldError } }) => (
+                <TextField
+                  label={t('editAccount.nameLabel')}
+                  placeholder={t('editAccount.namePlaceholder')}
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text)
+                    clearError()
+                  }}
+                  error={fieldError?.message ?? null}
+                />
+              )}
             />
             <View>
-              <TextField
-                label={t('editAccount.openingBalanceLabel')}
-                value={balanceText}
-                onChangeText={(text) => {
-                  setBalanceText(sanitizeSignedAmount(text))
-                  setError(null)
-                }}
-                // A balance can be negative (overdraft), so the keypad must
-                // offer a minus sign; `numbers-and-punctuation` does on iOS.
-                keyboardType="numbers-and-punctuation"
+              <Controller
+                control={control}
+                name="balance"
+                render={({ field: { value, onChange }, fieldState: { error: fieldError } }) => (
+                  <TextField
+                    label={t('editAccount.openingBalanceLabel')}
+                    value={value}
+                    onChangeText={(text) => {
+                      onChange(sanitizeSignedAmount(text))
+                      clearError()
+                    }}
+                    error={fieldError?.message ?? null}
+                    // A balance can be negative (overdraft), so the keypad must
+                    // offer a minus sign; `numbers-and-punctuation` does on iOS.
+                    keyboardType="numbers-and-punctuation"
+                  />
+                )}
               />
               <Text size="caption" tone="muted" style={styles.currencyHint}>
                 {account.currency}
@@ -137,9 +163,9 @@ export function EditAccountSheet({
           <Button
             full
             size="lg"
-            loading={updateAccount.isPending}
+            loading={submitting}
             disabled={!canSubmit}
-            onPress={() => void handleSubmit()}
+            onPress={() => void handleSubmit(onSubmit)()}
           >
             {t('editAccount.submit')}
           </Button>

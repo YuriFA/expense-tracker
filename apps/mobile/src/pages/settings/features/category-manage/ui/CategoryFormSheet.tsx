@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Alert, View, ScrollView, StyleSheet, Pressable } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import {
   type Category,
   type CategoryType,
@@ -24,6 +26,7 @@ import {
 } from '@entities/category'
 import { haptics } from '@shared/lib/haptics'
 import { CATEGORY_ICONS, DEFAULT_CATEGORY_ICON } from '../model/category-icons'
+import { categoryFormSchema, type CategoryFormValues } from '../model/form-schema'
 import { categoryRepositoryErrorMessages } from '../../../model/repository-errors'
 
 interface CategoryFormSheetProps {
@@ -41,10 +44,9 @@ interface CategoryFormSheetProps {
  * components (TextField, SegmentedControl, AmountField not needed). Fields:
  * name, type (income/expense), and an emoji + color pick from a curated palette.
  *
- * Color is stored (matching the seed shape) but is not used in chrome - the
- * category is distinguished by icon + name (color-blind safe). On edit the
- * sheet also offers a destructive delete (confirmation alert), disabled-state is
- * the canonical empty/blank guard.
+ * Field state + validation are owned by react-hook-form (+ zod resolver); the
+ * icon + color are picked together via `setValue`. On edit the sheet also offers
+ * a destructive delete (confirmation alert).
  *
  * Lives under `pages/settings/features/category-manage` (Fractal FSD) because it
  * is only reached from the Settings screen.
@@ -56,30 +58,39 @@ export function CategoryFormSheet({ visible, onClose, mode, category }: Category
   const updateCategory = useUpdateCategory()
   const deleteCategory = useDeleteCategory()
 
-  const [name, setName] = useState('')
-  const [type, setType] = useState<CategoryType>('expense')
-  const [icon, setIcon] = useState<string>(DEFAULT_CATEGORY_ICON.icon)
-  const [color, setColor] = useState<string>(DEFAULT_CATEGORY_ICON.color)
-  const [error, setError] = useState<string | null>(null)
-
   const isEdit = mode === 'edit' && category
+
+  const buildDefaults = (): CategoryFormValues =>
+    isEdit && category
+      ? { name: category.name, type: category.type, icon: category.icon, color: category.color }
+      : {
+          name: '',
+          type: 'expense',
+          icon: DEFAULT_CATEGORY_ICON.icon,
+          color: DEFAULT_CATEGORY_ICON.color,
+        }
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { isValid },
+  } = useForm<CategoryFormValues>({
+    resolver: zodResolver(categoryFormSchema(t)),
+    mode: 'onChange',
+    defaultValues: buildDefaults(),
+  })
+  const selectedIcon = useWatch({ control, name: 'icon' }) ?? DEFAULT_CATEGORY_ICON.icon
+
+  const [error, setError] = useState<string | null>(null)
 
   // Seed local state from the category whenever the sheet opens (edit mode),
   // and reset to sensible defaults in create mode.
   useEffect(() => {
     if (!visible) return
     setError(null)
-    if (isEdit && category) {
-      setName(category.name)
-      setType(category.type)
-      setIcon(category.icon)
-      setColor(category.color)
-    } else {
-      setName('')
-      setType('expense')
-      setIcon(DEFAULT_CATEGORY_ICON.icon)
-      setColor(DEFAULT_CATEGORY_ICON.color)
-    }
+    reset(buildDefaults())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, mode, category?.id])
 
@@ -89,31 +100,27 @@ export function CategoryFormSheet({ visible, onClose, mode, category }: Category
   ]
 
   const submitting = createCategory.isPending || updateCategory.isPending
-  const canSubmit = name.trim().length > 0 && !submitting
+  const canSubmit = isValid && !submitting
 
-  const pickIcon = (value: string, accent: string) => {
-    setIcon(value)
-    setColor(accent)
-  }
+  const clearError = () => setError(null)
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return
+  const onSubmit = async (values: CategoryFormValues) => {
     setError(null)
     try {
       if (isEdit && category) {
         const payload: UpdateCategoryPayload = {
-          name: name.trim(),
-          type,
-          icon,
-          color,
+          name: values.name,
+          type: values.type,
+          icon: values.icon,
+          color: values.color,
         }
         await updateCategory.mutateAsync({ id: category.id, payload })
       } else {
         const payload: CreateCategoryPayload = {
-          name: name.trim(),
-          type,
-          icon,
-          color,
+          name: values.name,
+          type: values.type,
+          icon: values.icon,
+          color: values.color,
         }
         await createCategory.mutateAsync(payload)
       }
@@ -136,6 +143,7 @@ export function CategoryFormSheet({ visible, onClose, mode, category }: Category
           text: t('deleteCategory.confirm'),
           style: 'destructive',
           onPress: async () => {
+            setError(null)
             try {
               await deleteCategory.mutateAsync(category.id)
               haptics.notify('success')
@@ -157,29 +165,42 @@ export function CategoryFormSheet({ visible, onClose, mode, category }: Category
       title={t(isEdit ? 'editCategory.title' : 'addCategory.newCategory')}
       heightRatio={0.78}
     >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <TextField
-          label={t('addCategory.nameLabel')}
-          placeholder={t('addCategory.namePlaceholder')}
-          value={name}
-          onChangeText={(text) => {
-            setName(text)
-            setError(null)
-          }}
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { value, onChange }, fieldState: { error: fieldError } }) => (
+            <TextField
+              label={t('addCategory.nameLabel')}
+              placeholder={t('addCategory.namePlaceholder')}
+              value={value}
+              onChangeText={(text) => {
+                onChange(text)
+                clearError()
+              }}
+              error={fieldError?.message ?? null}
+            />
+          )}
         />
 
         <View style={styles.field}>
           <Text size="label" tone="muted" style={styles.fieldLabel}>
             {t('fields.transactionType')}
           </Text>
-          <SegmentedControl
-            options={typeOptions}
-            value={type}
-            onChange={setType}
-            accessibilityLabel={t('fields.transactionType')}
+          <Controller
+            control={control}
+            name="type"
+            render={({ field: { value, onChange } }) => (
+              <SegmentedControl
+                options={typeOptions}
+                value={value}
+                onChange={(next) => {
+                  onChange(next)
+                  clearError()
+                }}
+                accessibilityLabel={t('fields.transactionType')}
+              />
+            )}
           />
         </View>
 
@@ -193,14 +214,18 @@ export function CategoryFormSheet({ visible, onClose, mode, category }: Category
             accessibilityLabel={t('addCategory.iconLabel')}
           >
             {CATEGORY_ICONS.map((entry) => {
-              const selected = entry.icon === icon
+              const selected = entry.icon === selectedIcon
               return (
                 <Pressable
                   key={`${entry.icon}-${entry.color}`}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
                   accessibilityLabel={entry.icon}
-                  onPress={() => pickIcon(entry.icon, entry.color)}
+                  onPress={() => {
+                    setValue('icon', entry.icon, { shouldDirty: true, shouldValidate: true })
+                    setValue('color', entry.color, { shouldDirty: true, shouldValidate: true })
+                    clearError()
+                  }}
                   style={({ pressed }) => [
                     styles.iconTile,
                     {
@@ -230,7 +255,7 @@ export function CategoryFormSheet({ visible, onClose, mode, category }: Category
           size="lg"
           loading={submitting}
           disabled={!canSubmit}
-          onPress={() => void handleSubmit()}
+          onPress={() => void handleSubmit(onSubmit)()}
         >
           {t(isEdit ? 'editCategory.submit' : 'addCategory.submit')}
         </Button>
