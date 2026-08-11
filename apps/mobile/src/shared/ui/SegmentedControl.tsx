@@ -1,6 +1,8 @@
-import { Pressable, View, StyleSheet } from 'react-native'
+import { Pressable, View } from 'react-native'
+import { cva } from 'class-variance-authority'
 import { useTokens } from './theme'
 import { Text } from './Text'
+import { cn } from '@shared/lib/cn'
 import { haptics } from '@shared/lib/haptics'
 
 export interface SegmentOption<T extends string> {
@@ -14,7 +16,26 @@ interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void
   /** A11y label for the whole control, e.g. "Transaction type". */
   accessibilityLabel?: string
+  /** Extra classes composed onto the track (react-native-reusables idiom). */
+  className?: string
 }
+
+/** Track layout (theme-independent); the muted fill is applied from tokens. */
+const trackClasses = cva('flex-row rounded-xl p-[3px]')
+
+/** Segment layout + the selected "lift" shadow; the surface fill is token-driven. */
+const segmentClasses = cva(
+  'flex-1 min-h-[44px] rounded-[10px] items-center justify-center',
+  {
+    variants: {
+      selected: {
+        true: 'shadow-sm shadow-black/5 elevation-1',
+        false: '',
+      },
+    },
+    defaultVariants: { selected: false },
+  },
+)
 
 /**
  * Segmented control - the canonical type switch (Expense / Income / Transfer).
@@ -26,6 +47,7 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   accessibilityLabel,
+  className,
 }: SegmentedControlProps<T>) {
   const tokens = useTokens()
 
@@ -34,10 +56,8 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
-      style={[
-        styles.track,
-        { backgroundColor: tokens.muted, borderRadius: 12 },
-      ]}
+      className={cn(trackClasses(), className)}
+      style={{ backgroundColor: tokens.muted }}
     >
       {options.map((option) => {
         const selected = option.value === value
@@ -54,11 +74,8 @@ export function SegmentedControl<T extends string>({
                 onChange(option.value)
               }
             }}
-            style={[
-              styles.segment,
-              selected && { backgroundColor: tokens.surface },
-              selected && styles.segmentSelected,
-            ]}
+            className={cn(segmentClasses({ selected }))}
+            style={selected ? { backgroundColor: tokens.surface } : undefined}
           >
             <Text weight={selected ? 600 : 500} tone={selected ? 'default' : 'muted'}>
               {option.label}
@@ -69,26 +86,3 @@ export function SegmentedControl<T extends string>({
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  track: {
-    flexDirection: 'row',
-    padding: 3,
-  },
-  segment: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentSelected: {
-    // Hairline "lift" via subtle shadow only on the active segment (allowed:
-    // depth in navigation/material, not decoration).
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-})
