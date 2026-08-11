@@ -1,0 +1,114 @@
+/*
+ * NativeWind v4 global stylesheet + design tokens.
+ *
+ * The CSS custom properties below carry the **exact same oklch values** as the
+ * web design system (`apps/web/src/style.css`) and the JS token map
+ * (`src/shared/config/theme-tokens.ts`). They are the single source of truth
+ * for the NativeWind-backed primitives; the JS `useTokens()` map is kept in
+ * lock-step (same values) for the inline-styled components and the synchronous
+ * first-paint theme. DO NOT change a value here without mirroring it in
+ * `theme-tokens.ts` and the web `style.css`.
+ *
+ * React Native 0.76+ (new architecture) parses `oklch()` natively, so the
+ * values are passed through verbatim (no lossy HSL conversion). The shadcn /
+ * react-native-reusables convention is `hsl(var(--x))`; we deliberately use raw
+ * `var(--x)` with oklch values so the palette stays identical to web.
+ *
+ * Naming: the project vocabulary (`ink`, `surface`, ...) is primary. The
+ * shadcn aliases (`primary`, `card`, `input`, ...) are mirrored to the SAME
+ * oklch values so verbatim-copied react-native-reusables components render in
+ * the product palette without inventing new colors.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* --- Light theme (mirrors web `:root` / theme-tokens.ts `lightTokens`) --- */
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+
+    --surface: oklch(1 0 0);
+    --surface-foreground: oklch(0.145 0 0);
+    /* shadcn alias for raised surface */
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+
+    /* The brand ink - primary action fill + strong text */
+    --ink: oklch(0.205 0 0);
+    --ink-foreground: oklch(0.985 0 0);
+    /* shadcn alias for the brand */
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.985 0 0);
+
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+
+    /* 0.75rem == 12px with inlineRem: 16, matching the product's 12px radii. */
+    --radius: 0.75rem;
+  }
+
+  .dark:root {
+    /* --- Dark theme (mirrors web `.dark` / theme-tokens.ts `darkTokens`) --- */
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+
+    --surface: oklch(0.205 0 0);
+    --surface-foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+
+    --ink: oklch(0.922 0 0);
+    --ink-foreground: oklch(0.205 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.985 0 0);
+
+    /* Dark border carries a 10% white wash (alpha baked into the value). */
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 10%);
+    --ring: oklch(0.556 0 0);
+
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+
+    --radius: 0.75rem;
+  }
+}
