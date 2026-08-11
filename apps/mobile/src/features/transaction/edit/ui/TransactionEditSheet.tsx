@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, type TextStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { mapCategories } from '@expense-tracker/i18n'
 import {
   BottomSheet,
@@ -24,6 +26,7 @@ import { useCategories } from '@entities/category'
 import { DEFAULT_CURRENCY } from '@expense-tracker/money'
 import { haptics } from '@shared/lib/haptics'
 import { parseAmountToMinor, sanitizeAmountInput, minorToAmountText } from '@shared/lib/amount'
+import { transactionEditSchema, type TransactionEditValues } from '../model/form-schema'
 
 interface TransactionEditSheetProps {
   transaction: Transaction
@@ -36,11 +39,14 @@ interface TransactionEditSheetProps {
  * bottom sheet"). Reuses the same canonical components as the inline input
  * (AmountField in `field` size, AccountChips, CategoryGrid), but the type is
  * fixed - changing a transaction's type is a delete+create, not an edit, so the
- * type switch is omitted. Patches with the current `version` for optimistic
- * concurrency; on success the sheet closes and the list updates optimistically.
+ * type switch is omitted.
  *
- * Lives in `features/transaction/edit` so the later Transactions screen reuses
- * it unchanged.
+ * Field state is owned by react-hook-form (+ zod resolver); the submit patches
+ * with the current `version` for optimistic concurrency. On success the sheet
+ * closes and the list updates optimistically.
+ *
+ * Lives in `features/transaction/edit` so the Transactions screen reuses it
+ * unchanged.
  */
 export function TransactionEditSheet({ transaction, visible, onClose }: TransactionEditSheetProps) {
   const { t } = useTranslation()
@@ -49,29 +55,56 @@ export function TransactionEditSheet({ transaction, visible, onClose }: Transact
   const { data: categories } = useCategories()
 
   const isTransfer = isTransferTransaction(transaction)
-  const [amountText, setAmountText] = useState('')
-  const [comment, setComment] = useState('')
-  const [accountId, setAccountId] = useState<string | null>(null)
-  const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [fromAccountId, setFromAccountId] = useState<string | null>(null)
-  const [toAccountId, setToAccountId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+
+  const buildDefaults = (): TransactionEditValues => {
+    const base = {
+      amount: minorToAmountText(transaction.amount),
+      description: transaction.description ?? '',
+    }
+    if (isTransferTransaction(transaction)) {
+      return {
+        ...base,
+        accountId: null,
+        categoryId: null,
+        fromAccountId: transaction.fromAccountId,
+        toAccountId: transaction.toAccountId,
+      }
+    }
+    return {
+      ...base,
+      accountId: transaction.accountId,
+      categoryId: transaction.categoryId,
+      fromAccountId: null,
+      toAccountId: null,
+    }
+  }
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isValid },
+  } = useForm<TransactionEditValues>({
+    resolver: zodResolver(transactionEditSchema(t)),
+    mode: 'onChange',
+    defaultValues: buildDefaults(),
+  })
+
+  const amountText = useWatch({ control, name: 'amount' }) ?? ''
+  const accountId = useWatch({ control, name: 'accountId' })
+  const categoryId = useWatch({ control, name: 'categoryId' })
+  const fromAccountId = useWatch({ control, name: 'fromAccountId' })
+  const toAccountId = useWatch({ control, name: 'toAccountId' })
 
   // Seed local state from the transaction whenever it is opened.
   useEffect(() => {
     if (!visible) return
-    setAmountText(minorToAmountText(transaction.amount))
-    setComment(transaction.description ?? '')
+    reset(buildDefaults())
     setError(null)
-    if (isTransferTransaction(transaction)) {
-      setFromAccountId(transaction.fromAccountId)
-      setToAccountId(transaction.toAccountId)
-    } else {
-      setAccountId(transaction.accountId)
-      setCategoryId(transaction.categoryId)
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, transaction.id])
+
+  const [error, setError] = useState<string | null>(null)
 
   const localizedCategories = useMemo(
     () => mapCategories(categories ?? [], (key) => t(key)),
@@ -111,23 +144,26 @@ export function TransactionEditSheet({ transaction, visible, onClose }: Transact
     )
 
   const canSave =
+    isValid &&
     amountMinor !== null &&
     !mismatch &&
     (isTransfer
       ? Boolean(fromAccountId && toAccountId && fromAccountId !== toAccountId)
       : Boolean(accountId && categoryId))
 
-  const handleSave = async () => {
-    if (!canSave || amountMinor === null) return
+  const clearError = () => setError(null)
+
+  const onSubmit = async (values: TransactionEditValues) => {
+    if (amountMinor === null) return
     setError(null)
     const base = {
       version: transaction.version,
       amount: amountMinor,
-      description: comment.trim(),
+      description: values.description.trim(),
     }
     const payload: UpdateTransactionPayload = isTransfer
-      ? { ...base, fromAccountId: fromAccountId!, toAccountId: toAccountId! }
-      : { ...base, accountId: accountId!, categoryId: categoryId! }
+      ? { ...base, fromAccountId: values.fromAccountId!, toAccountId: values.toAccountId! }
+      : { ...base, accountId: values.accountId!, categoryId: values.categoryId! }
 
     try {
       await update.mutateAsync({ id: transaction.id, payload })
@@ -164,57 +200,108 @@ export function TransactionEditSheet({ transaction, visible, onClose }: Transact
         {isTransfer ? (
           <>
             <FieldLabel label={t('addTransfer.fromAccountLabel')} />
-            <AccountChips
-              accounts={accounts ?? []}
-              selectedId={fromAccountId}
-              onSelect={setFromAccountId}
-              accessibilityLabel={t('addTransfer.fromAccountLabel')}
+            <Controller
+              control={control}
+              name="fromAccountId"
+              render={({ field: { value, onChange } }) => (
+                <AccountChips
+                  accounts={accounts ?? []}
+                  selectedId={value}
+                  onSelect={(id) => {
+                    onChange(id)
+                    clearError()
+                  }}
+                  accessibilityLabel={t('addTransfer.fromAccountLabel')}
+                />
+              )}
             />
             <FieldLabel label={t('addTransfer.toAccountLabel')} style={styles.gap} />
-            <AccountChips
-              accounts={accounts ?? []}
-              selectedId={toAccountId}
-              onSelect={setToAccountId}
-              accessibilityLabel={t('addTransfer.toAccountLabel')}
+            <Controller
+              control={control}
+              name="toAccountId"
+              render={({ field: { value, onChange } }) => (
+                <AccountChips
+                  accounts={accounts ?? []}
+                  selectedId={value}
+                  onSelect={(id) => {
+                    onChange(id)
+                    clearError()
+                  }}
+                  accessibilityLabel={t('addTransfer.toAccountLabel')}
+                />
+              )}
             />
           </>
         ) : (
           <>
             <FieldLabel label={t('fields.account')} />
-            <AccountChips
-              accounts={accounts ?? []}
-              selectedId={accountId}
-              onSelect={setAccountId}
-              accessibilityLabel={t('fields.account')}
+            <Controller
+              control={control}
+              name="accountId"
+              render={({ field: { value, onChange } }) => (
+                <AccountChips
+                  accounts={accounts ?? []}
+                  selectedId={value}
+                  onSelect={(id) => {
+                    onChange(id)
+                    clearError()
+                  }}
+                  accessibilityLabel={t('fields.account')}
+                />
+              )}
             />
             <FieldLabel label={t('fields.category')} style={styles.gap} />
-            <CategoryGrid
-              categories={gridCategories}
-              selectedId={categoryId}
-              onSelect={setCategoryId}
-              accessibilityLabel={t('fields.category')}
+            <Controller
+              control={control}
+              name="categoryId"
+              render={({ field: { value, onChange } }) => (
+                <CategoryGrid
+                  categories={gridCategories}
+                  selectedId={value}
+                  onSelect={(id) => {
+                    onChange(id)
+                    clearError()
+                  }}
+                  accessibilityLabel={t('fields.category')}
+                />
+              )}
             />
           </>
         )}
 
         <FieldLabel label={t('fields.amount')} style={styles.gap} />
-        <AmountField
-          value={amountText}
-          onChangeText={(text) => {
-            setAmountText(sanitizeAmountInput(text))
-            setError(null)
-          }}
-          currency={amountCurrency}
-          size="field"
-          accessibilityLabel={t('fields.amount')}
+        <Controller
+          control={control}
+          name="amount"
+          render={({ field: { value, onChange } }) => (
+            <AmountField
+              value={value}
+              onChangeText={(text) => {
+                onChange(sanitizeAmountInput(text))
+                clearError()
+              }}
+              currency={amountCurrency}
+              size="field"
+              accessibilityLabel={t('fields.amount')}
+            />
+          )}
         />
 
         <FieldLabel label={t('addTransaction.descriptionLabel')} style={styles.gap} />
-        <TextField
-          value={comment}
-          onChangeText={setComment}
-          placeholder={t('home.commentPlaceholder')}
-          accessibilityLabel={t('addTransaction.descriptionLabel')}
+        <Controller
+          control={control}
+          name="description"
+          render={({ field: { value, onChange } }) => (
+            <TextField
+              value={value}
+              onChangeText={(text) => {
+                onChange(text)
+                clearError()
+              }}
+              placeholder={t('home.commentPlaceholder')}
+              accessibilityLabel={t('addTransaction.descriptionLabel')}
+            />
+          )}
         />
 
         {mismatch ? (
@@ -237,7 +324,7 @@ export function TransactionEditSheet({ transaction, visible, onClose }: Transact
           full
           disabled={!canSave}
           loading={update.isPending}
-          onPress={() => void handleSave()}
+          onPress={() => void handleSubmit(onSubmit)()}
           style={styles.flex}
         >
           {t('editTransaction.submit')}
