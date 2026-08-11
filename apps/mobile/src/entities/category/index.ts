@@ -18,3 +18,4 @@ export {
   useDeleteCategory,
 } from './model/use-categories'
 export { CategoryGrid } from './ui/CategoryGrid'
+export { CategoryPickerSheet } from './ui/CategoryPickerSheet'

@@ -1,4 +1,4 @@
-# Add-transaction happy path for the mobile app (apps/mobile).
+# Add-transaction happy path for the mobile app.
 #
 # Regression guard for the SQLite create() bug where a freshly created
 # transaction tripped `NOT NULL constraint failed: transactions.version`
@@ -14,6 +14,12 @@
 # the list is re-read from SQLite. A transaction whose create() rolled back is
 # absent from the durable store; a persisted one survives. This also satisfies
 # design section 13's "data is not lost" / persists-across-restart contract.
+#
+# Home is now a focused, non-scrolling add-transaction screen (Mibu-style): the
+# recent-transactions list moved off Home to the Transactions tab, so the
+# persistence assertion navigates there after the relaunch instead of looking
+# beneath the form. The type switch ("Expense"), the save button ("Add"), and
+# the hero amount field label ("Amount, US Dollar") remain on Home.
 #
 # Locale/currency are deterministic because `clearState: true` on the first
 # launch wipes MMKV, so the app re-seeds in the default en/USD locale (the same
@@ -47,9 +53,9 @@ tags:
 - tapOn:
     text: "Amount, US Dollar"
 - inputText: "12.50"
-# Dismiss the keypad before saving: the full-width Save button lives in the
-# thumb zone and the numeric keypad covers it while up, so tapping through the
-# keypad would miss it. The amount field's return key is "Done".
+# Dismiss the keypad before saving. The Save button is pinned in the thumb zone
+# and the KeyboardAvoidingView lifts it above the keypad, but dismissing first
+# keeps the tap unambiguous. The amount field's return key is "Done".
 - tapOn:
     text: "Done"
 
@@ -65,18 +71,22 @@ tags:
 - launchApp:
     clearState: false
 
-# Home input screen mounted again.
+# Home input screen mounted again (type switch visible).
 - assertVisible:
     text: "Expense"
 
-# The persisted expense is visible in the recent-transactions list beneath the
-# form - its row reads "<icon>, Food, Cash, − $12.50" - and the header balance
-# now reflects it (-$12.50). Match the amount with regex wildcards (Maestro
-# matches selectors as a full-match regex against the element's accessibility
-# text, so the bare "12.50" would not match the full row) and wait for the
-# post-relaunch list query to resolve. On the unfixed code this fails: the
-# amount field is empty on the fresh launch and no transaction was stored, so
-# "12.50" appears nowhere.
+# The recent-transactions list no longer lives on Home (it moved to the
+# Transactions tab), so navigate there to assert persistence. The tab bar label
+# is "Transactions" (nav.transactions).
+- tapOn:
+    text: "Transactions"
+
+# The persisted expense is visible in the Transactions list - its row trailing
+# amount reads "− $12.50" (expense sign + amount). Match the amount with regex
+# wildcards (Maestro matches selectors as a full-match regex against the
+# element's accessibility text, so the bare "12.50" would not match the full
+# row) and wait for the post-relaunch list query to resolve. On the unfixed code
+# this fails: nothing was stored, so "12.50" appears nowhere.
 - extendedWaitUntil:
     visible:
       text: ".*12.50.*"

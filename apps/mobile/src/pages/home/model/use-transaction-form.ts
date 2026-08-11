@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm, useWatch } from 'react-hook-form'
 import {
@@ -13,7 +13,7 @@ import { DEFAULT_CURRENCY, type CurrencyCode } from '@expense-tracker/money'
 import { useCreateTransaction } from '@entities/transaction'
 import { haptics } from '@shared/lib/haptics'
 import { parseAmountToMinor, sanitizeAmountInput } from '@shared/lib/amount'
-import { useState } from 'react'
+import { today } from '@shared/lib/date'
 import { lastAccountIds } from './last-account'
 
 interface UseTransactionFormOptions {
@@ -52,6 +52,8 @@ export interface HomeFormValues {
   fromAccountId: string | null
   toAccountId: string | null
   comment: string
+  /** Selected calendar day (local midnight) driven by the date carousel. */
+  date: Date
 }
 
 const DEFAULTS: HomeFormValues = {
@@ -62,6 +64,7 @@ const DEFAULTS: HomeFormValues = {
   fromAccountId: null,
   toAccountId: null,
   comment: '',
+  date: today(),
 }
 
 export function useTransactionForm({ accounts, categories }: UseTransactionFormOptions) {
@@ -81,6 +84,7 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
   const fromAccountId = useWatch({ control, name: 'fromAccountId' }) ?? null
   const toAccountId = useWatch({ control, name: 'toAccountId' }) ?? null
   const comment = useWatch({ control, name: 'comment' }) ?? ''
+  const date = useWatch({ control, name: 'date' }) ?? today()
 
   const [error, setError] = useState<string | null>(null)
 
@@ -184,6 +188,13 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
     setValue('toAccountId', from)
   }, [getValues, setValue])
 
+  const setDate = useCallback(
+    (next: Date) => {
+      setValue('date', next)
+    },
+    [setValue],
+  )
+
   const save = useCallback(async (): Promise<boolean> => {
     const values = getValues()
     const minor = parseAmountToMinor(values.amountText)
@@ -191,7 +202,7 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
       return false
     }
 
-    const occurredAt = new Date().toISOString()
+    const occurredAt = combineDateWithNow(values.date).toISOString()
     const description = values.comment.trim()
 
     try {
@@ -221,8 +232,10 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
         lastAccountIds.setCashflowAccountId(values.accountId)
       }
 
-      // Serial entry: clear the amount only; account + category + type remain.
+      // Serial entry: clear the amount only and reset the date to today (the
+      // next entry is usually "now"); account + category + type remain.
       setValue('amountText', '')
+      setValue('date', today())
       setError(null)
       haptics.notify('success')
       return true
@@ -247,6 +260,7 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
 
   return {
     control,
+    setValue,
     // state
     type,
     amountText,
@@ -256,6 +270,7 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
     toAccountId,
     comment,
     error,
+    date,
     // derived
     amountCurrency,
     transferCurrencyMismatch,
@@ -264,9 +279,29 @@ export function useTransactionForm({ accounts, categories }: UseTransactionFormO
     // handlers
     setType,
     setAmountText,
+    setDate,
     swapTransferAccounts,
     save,
   }
+}
+
+/**
+ * Combine the selected calendar day with the current wall-clock time, so a
+ * same-day entry sorts by the moment it was recorded and a back-dated entry
+ * still carries a sensible (sortable) time component on its day. Local time,
+ * matching the carousel's calendar-day model.
+ */
+function combineDateWithNow(day: Date): Date {
+  const now = new Date()
+  return new Date(
+    day.getFullYear(),
+    day.getMonth(),
+    day.getDate(),
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+    now.getMilliseconds(),
+  )
 }
 
 export type TransactionForm = ReturnType<typeof useTransactionForm>
