@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { mapCategories } from '@expense-tracker/i18n'
 import {
   AmountField,
-  DateCarousel,
+  DayCarousel,
   PickerButton,
   SegmentedControl,
   Text,
@@ -16,6 +16,7 @@ import {
 import { CategoryPickerSheet } from '@entities/category'
 import { AccountPickerSheet } from '@entities/account'
 import { currencySymbol } from '@shared/lib/format'
+import { today } from '@shared/lib/date'
 import type { AccountWithBalance, Category, TransactionType } from '@expense-tracker/api'
 import type { TransactionForm } from '../model/use-transaction-form'
 
@@ -75,9 +76,10 @@ export function TransactionInput({ form, accounts, categories, amountRef }: Tran
   return (
     <>
       <View className="flex-1 flex-col px-4 gap-2.5">
-        <DateCarousel
+        <DayCarousel
           value={form.date}
           onChange={form.setDate}
+          maxDate={today()}
           accessibilityLabel={t('home.dateCarousel')}
         />
 

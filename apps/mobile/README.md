@@ -95,6 +95,22 @@ bun --filter @expense-tracker/mobile test:e2e   # maestro test .maestro/
 Add more flows (e.g. the enter-transaction happy path) as additional
 `.maestro/*.yaml` files; `test:e2e` runs the whole directory.
 
+## Testing (unit, pure logic)
+
+A minimal [Vitest](https://vitest.dev/) config (`vitest.config.ts`, `node`
+environment) covers PURE TypeScript modules with no `react-native` imports -
+currently the calendar-day utilities under `src/shared/lib` (see
+`src/shared/lib/__tests__/`). There is no RN/Jest transform wired up, so
+Reanimated/gesture components are NOT unit-tested here; they are covered by the
+Maestro flows and manual device testing. Add new pure-logic tests as
+`src/**/*.test.ts`; keep them `react-native`-free so they stay fast and
+Hermes/`Intl`-independent.
+
+```sh
+bun --filter @expense-tracker/mobile test:unit   # vitest run
+bun --filter @expense-tracker/mobile test:watch   # vitest (watch)
+```
+
 ## Design tokens
 
 The mobile palette is an **rgba (sRGB) encoding** of the same design-system
