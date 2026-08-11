@@ -22,7 +22,7 @@ import type { ResolvedTheme } from '@shared/config/settings'
  *      1. The JS token map (`useTokens()`) is filled from `resolved` - the path
  *         the inline-styled components (and the Home hero amount) already use.
  *      2. A `dark` class is painted on the root wrapper View, which flips the
- *         NativeWind CSS custom properties (oklch values) for the
+ *         NativeWind CSS custom properties (rgba values) for the
  *         react-native-reusables-backed primitives.
  *  - NativeWind's own `useColorScheme()` is deliberately NOT the source of
  *    truth: its observable can lag a frame for an explicit (non-system)
