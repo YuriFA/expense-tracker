@@ -156,7 +156,7 @@ and form-layer Zod schemas.
 
 ## Frontend (apps/mobile)
 
-React Native (Expo SDK 53) + Expo Router + TypeScript (strict). The mobile
+React Native (Expo SDK 54) + Expo Router + TypeScript (strict). The mobile
 "twin" of web: same domain model, design tokens, and shared packages
 (`@expense-tracker/{api,money,i18n}`). Authoritative design:
 `/Users/yuri/web/firstmate/data/et-mobile/design.md`. Read it before any mobile
@@ -172,6 +172,21 @@ work.
   (`shared/config/theme-tokens.ts`), as a JS map (RN 0.76+ new arch parses
   oklch). Theme is system/light/dark; `useTokens()`/`useTheme()` from
   `shared/ui/theme`. Outfit font via `@expo-google-fonts/outfit`.
+- **Design-system foundation: react-native-reusables + nativewind v4**
+  (JS-only; no native deps, so no pod/rebuild needed). Wiring: `babel.config.js`
+  (`jsxImportSource: 'nativewind'` + `nativewind/babel`), `metro.config.js`
+  (`withNativeWind`, `inlineRem: 16`), `tailwind.config.js` (`darkMode: 'class'`,
+  `presets: [nativewind/preset]`, colors mapped to raw `var(--x)`), and
+  `global.css` (the oklch CSS vars - **identical values to web**). Component
+  variants use `cva`; classes compose via `cn()` (`shared/lib/cn.ts`).
+  **Theme invariant:** colors stay token-driven via `useTokens()` (synchronous,
+  MMKV-backed), NOT nativewind color classes - `ThemeProvider` paints the `dark`
+  class on the root View from the resolved preference so the persisted theme is
+  correct on first paint. Do NOT move colors to nativewind `bg-*`/`text-*`
+  classes without first proving dark mode end-to-end (nativewind's CSS-var
+  cascade follows its own global colorScheme observable, and the iOS sim
+  `appearance dark` does not propagate to RN's `Appearance` - verify dark via
+  the in-app Settings toggle, not `xcrun simctl ui appearance`).
 - **Data:** TanStack Query (React Query) with optimistic update + invalidation
   in `entities/*/model/use-*.ts`. Repository **interfaces** come from
   `@expense-tracker/api`; mobile adds **local SQLite impls**
@@ -229,8 +244,22 @@ work.
   is on via `expo.newArchEnabled: true` in `app.json` (also the SDK 54 / RN 0.81
   default); keep it on, do not downgrade mmkv/reanimated to dodge it. A Maestro
   launch-smoke flow (`apps/mobile/.maestro/launch.yaml`, `bun run test:e2e`)
-  cold-boots and asserts the Home input screen, so boot-time crashes fail CI.
-  Quality bar: `tsc --noEmit` clean, `expo-doctor` 18/18, `expo export` bundles.
+  cold-boots and asserts the Home input screen, so boot-time crashes fail CI;
+  `add-transaction.yaml` guards the create path (enter amount -> Save -> kill ->
+  relaunch -> persisted). Maestro 2.x needs **Java 17+** on PATH
+  (`JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`).
+  Quality bar: `tsc --noEmit` clean, `expo-doctor` no new regressions (the repo
+  has 2 pre-existing failures: bun `node_modules` duplicates + the committed
+  `ios/`/`android` non-CNG warning), `expo export --platform ios` bundles.
+- **Forms: react-hook-form + @hookform/resolvers (zodResolver).** Every submit
+  form (`AddAccountSheet`, `EditAccountSheet`, `CategoryFormSheet`,
+  `TransactionEditSheet`, and the Home `use-transaction-form` hook) uses
+  `useForm` + `Controller`; zod schemas live in each slice's
+  `model/form-schema.ts`. Money fields are validated as the raw editable string
+  and parsed to minor units in the submit handler (no zod `.transform` - it
+  splits input/output typing against RHF `defaultValues`). **Never** push
+  `version` into a create payload (the `transactions.version` NOT NULL fix);
+  `UpdateTransactionPayload` carries `version` from the loaded record at submit.
 - **Accessibility primitives:** Reduce Motion is read via the shared
   `useReduceMotion()` hook (`shared/lib/reduce-motion.ts`) - animate
   accordingly (skeleton pulse, sheet slide). Haptics (`shared/lib/haptics.ts`,
