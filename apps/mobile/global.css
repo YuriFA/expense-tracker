@@ -1,22 +1,33 @@
 /*
  * NativeWind v4 global stylesheet + design tokens.
  *
- * The CSS custom properties below carry the **exact same oklch values** as the
- * web design system (`apps/web/src/style.css`) and the JS token map
+ * The CSS custom properties below are the **rgba (sRGB) encoding** of the same
+ * design-system colors as the web twin (`apps/web/src/style.css`, which stays
+ * on `oklch()`), and they are kept in lock-step with the JS token map
  * (`src/shared/config/theme-tokens.ts`). They are the single source of truth
  * for the NativeWind-backed primitives; the JS `useTokens()` map is kept in
  * lock-step (same values) for the inline-styled components and the synchronous
  * first-paint theme. DO NOT change a value here without mirroring it in
- * `theme-tokens.ts` and the web `style.css`.
+ * `theme-tokens.ts`.
  *
- * React Native 0.76+ (new architecture) parses `oklch()` natively, so the
- * values are passed through verbatim (no lossy HSL conversion). The shadcn /
- * react-native-reusables convention is `hsl(var(--x))`; we deliberately use raw
- * `var(--x)` with oklch values so the palette stays identical to web.
+ * Why rgba and not oklch here: `react-native-reanimated` cannot parse or
+ * interpolate `oklch()` colors, so any `interpolateColor` / animated-color work
+ * needs sRGB `rgba()` values. The web twin keeps the wider-gamut oklch (browsers
+ * render it natively); the mobile twin uses the sRGB rgba encoding so the JS
+ * token map and NativeWind vars carry the SAME format reanimated can animate.
+ *
+ * SYNC RULE (mobile-rgba <-> web-oklch): when a color changes, edit the oklch
+ * value in `apps/web/src/style.css` FIRST, then re-derive the matching rgba via
+ * the verified oklch -> linear-sRGB -> sRGB -> rgba pipeline (see the PR that
+ * introduced rgba tokens, or any CSS-Color-4 tool / `culori`). Saturated colors
+ * (destructive, chart-*) may sit outside the sRGB gamut and clip to the nearest
+ * in-gamut rgba. The shadcn / react-native-reusables convention is
+ * `hsl(var(--x))`; we deliberately use raw `var(--x)` with rgba values so the
+ * palette stays the product palette (not a hue-shifted approximation).
  *
  * Naming: the project vocabulary (`ink`, `surface`, ...) is primary. The
  * shadcn aliases (`primary`, `card`, `input`, ...) are mirrored to the SAME
- * oklch values so verbatim-copied react-native-reusables components render in
+ * rgba values so verbatim-copied react-native-reusables components render in
  * the product palette without inventing new colors.
  */
 
@@ -26,88 +37,93 @@
 
 @layer base {
   :root {
-    /* --- Light theme (mirrors web `:root` / theme-tokens.ts `lightTokens`) --- */
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    /* --- Light theme (mirrors web `:root` / theme-tokens.ts `lightTokens`) ---
+       rgba values are the sRGB encoding of the oklch values in
+       apps/web/src/style.css (derived via oklch -> sRGB -> rgba). */
+    --background: rgba(255,255,255,1);
+    --foreground: rgba(10,10,10,1);
 
-    --surface: oklch(1 0 0);
-    --surface-foreground: oklch(0.145 0 0);
+    --surface: rgba(255,255,255,1);
+    --surface-foreground: rgba(10,10,10,1);
     /* shadcn alias for raised surface */
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
+    --card: rgba(255,255,255,1);
+    --card-foreground: rgba(10,10,10,1);
+    --popover: rgba(255,255,255,1);
+    --popover-foreground: rgba(10,10,10,1);
 
     /* The brand ink - primary action fill + strong text */
-    --ink: oklch(0.205 0 0);
-    --ink-foreground: oklch(0.985 0 0);
+    --ink: rgba(23,23,23,1);
+    --ink-foreground: rgba(250,250,250,1);
     /* shadcn alias for the brand */
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
+    --primary: rgba(23,23,23,1);
+    --primary-foreground: rgba(250,250,250,1);
 
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
+    --secondary: rgba(245,245,245,1);
+    --secondary-foreground: rgba(23,23,23,1);
 
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --muted: rgba(245,245,245,1);
+    --muted-foreground: rgba(115,115,115,1);
+    --accent: rgba(245,245,245,1);
+    --accent-foreground: rgba(23,23,23,1);
 
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.985 0 0);
+    --destructive: rgba(231,0,11,1);
+    --destructive-foreground: rgba(250,250,250,1);
 
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: rgba(229,229,229,1);
+    --input: rgba(229,229,229,1);
+    --ring: rgba(161,161,161,1);
 
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
+    --chart-1: rgba(245,73,0,1);
+    --chart-2: rgba(0,150,137,1);
+    --chart-3: rgba(16,78,100,1);
+    --chart-4: rgba(255,185,0,1);
+    --chart-5: rgba(254,154,0,1);
 
     /* 0.75rem == 12px with inlineRem: 16, matching the product's 12px radii. */
     --radius: 0.75rem;
   }
 
   .dark:root {
-    /* --- Dark theme (mirrors web `.dark` / theme-tokens.ts `darkTokens`) --- */
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
+    /* --- Dark theme (mirrors web `.dark` / theme-tokens.ts `darkTokens`) ---
+       rgba values are the sRGB encoding of the oklch values in
+       apps/web/src/style.css (derived via oklch -> sRGB -> rgba). */
+    --background: rgba(10,10,10,1);
+    --foreground: rgba(250,250,250,1);
 
-    --surface: oklch(0.205 0 0);
-    --surface-foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
+    --surface: rgba(23,23,23,1);
+    --surface-foreground: rgba(250,250,250,1);
+    --card: rgba(23,23,23,1);
+    --card-foreground: rgba(250,250,250,1);
+    --popover: rgba(23,23,23,1);
+    --popover-foreground: rgba(250,250,250,1);
 
-    --ink: oklch(0.922 0 0);
-    --ink-foreground: oklch(0.205 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
+    --ink: rgba(229,229,229,1);
+    --ink-foreground: rgba(23,23,23,1);
+    --primary: rgba(229,229,229,1);
+    --primary-foreground: rgba(23,23,23,1);
 
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
+    --secondary: rgba(38,38,38,1);
+    --secondary-foreground: rgba(250,250,250,1);
 
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --muted: rgba(38,38,38,1);
+    --muted-foreground: rgba(161,161,161,1);
+    --accent: rgba(38,38,38,1);
+    --accent-foreground: rgba(250,250,250,1);
 
-    --destructive: oklch(0.704 0.191 22.216);
-    --destructive-foreground: oklch(0.985 0 0);
+    --destructive: rgba(255,100,103,1);
+    --destructive-foreground: rgba(250,250,250,1);
 
-    /* Dark border carries a 10% white wash (alpha baked into the value). */
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 10%);
-    --ring: oklch(0.556 0 0);
+    /* Dark border/input carry a 10% white wash (alpha preserved from the
+       oklch `oklch(1 0 0 / 10%)` source). */
+    --border: rgba(255,255,255,0.1);
+    --input: rgba(255,255,255,0.1);
+    --ring: rgba(115,115,115,1);
 
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
+    --chart-1: rgba(20,71,230,1);
+    --chart-2: rgba(0,188,125,1);
+    --chart-3: rgba(254,154,0,1);
+    --chart-4: rgba(173,70,255,1);
+    --chart-5: rgba(255,32,86,1);
 
     --radius: 0.75rem;
   }
