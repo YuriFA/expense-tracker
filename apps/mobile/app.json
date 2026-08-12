@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Expense Tracker",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "expensetracker",
     "ios": {
       "supportsTablet": true
     },
@@ -19,7 +20,15 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar"
+    ],
+    "experiments": {
+      "tsconfigPaths": true
     }
   }
 }
