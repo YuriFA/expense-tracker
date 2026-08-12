@@ -1,7 +1,7 @@
-// Package e2e runs the full HTTP stack against a real PostgreSQL instance
+// Package e2e_test runs the full HTTP stack against a real PostgreSQL instance
 // (testcontainers) to confirm the auth + data flows work end to end. Skipped
 // under `go test -short`.
-package e2e
+package e2e_test
 
 import (
 	"context"
@@ -55,13 +55,27 @@ func (m *captureMailer) SendPasswordResetToken(_ context.Context, email, token s
 	return nil
 }
 
-func (m *captureMailer) code(email string) string  { m.mu.Lock(); defer m.mu.Unlock(); return m.codes[email] }
-func (m *captureMailer) token(email string) string { m.mu.Lock(); defer m.mu.Unlock(); return m.tokens[email] }
+func (m *captureMailer) code(email string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.codes[email]
+}
+func (m *captureMailer) token(email string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.tokens[email]
+}
 
 func TestMain(m *testing.M) {
+	os.Exit(testMain(m))
+}
+
+// testMain does the container + stack setup so its defers run before the
+// [os.Exit] called by TestMain. Returns the process exit code.
+func testMain(m *testing.M) int {
 	flag.Parse()
 	if testing.Short() {
-		os.Exit(m.Run())
+		return m.Run()
 	}
 
 	ctx := context.Background()
@@ -71,45 +85,62 @@ func TestMain(m *testing.M) {
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: failed to start postgres container: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	defer func() { _ = container.Terminate(context.Background()) }()
 
 	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: connection string: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	if err := postgres.RunMigrations(connStr); err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: migrations: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	pool, err := postgres.New(ctx, connStr, config.DatabaseConfig{MaxConns: 5, MinConns: 1})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: pool: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	defer pool.Close()
 
 	e2eRepo = postgres.NewRepository(pool)
 	mailer = newCaptureMailer()
-	authSvc := service.NewAuthService(e2eRepo, e2eRepo, e2eRepo, e2eRepo, mailer, service.AuthConfig{SessionTTL: time.Hour})
+	authSvc := service.NewAuthService(
+		e2eRepo,
+		e2eRepo,
+		e2eRepo,
+		e2eRepo,
+		mailer,
+		service.AuthConfig{SessionTTL: time.Hour},
+	)
 	accountSvc := service.NewAccountService(e2eRepo)
 	categorySvc := service.NewCategoryService(e2eRepo)
 	txnSvc := service.NewTransactionService(e2eRepo, e2eRepo, e2eRepo)
 	sessionSvc := service.NewSessionService(e2eRepo)
 
-	server := httptransport.NewServer(discardLogger(), testCfg(), accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
+	server := httptransport.NewServer(testCfg(), accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
 	e2eEngine = httptransport.NewEngine(testCfg(), discardLogger(), server, e2eRepo, e2eRepo, e2eRepo)
 
-	os.Exit(m.Run())
+	return m.Run()
 }
 
 func testCfg() *config.HTTPServer {
 	return &config.HTTPServer{
-		Address:          "127.0.0.1:0",
-		CorsConfig:       config.CORSConfig{AllowedOrigins: []string{"*"}, AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"}, AllowedHeaders: []string{"Content-Type"}},
-		SessionConfig:    config.SessionConfig{TTL: time.Hour, CookieName: "session_id", Secure: false, SameSite: "lax", SlidingExpiration: true},
+		Address: "127.0.0.1:0",
+		CorsConfig: config.CORSConfig{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+			AllowedHeaders: []string{"Content-Type"},
+		},
+		SessionConfig: config.SessionConfig{
+			TTL:               time.Hour,
+			CookieName:        "session_id",
+			Secure:            false,
+			SameSite:          "lax",
+			SlidingExpiration: true,
+		},
 		FailureRateLimit: config.FailureRateLimit{MaxAttempts: 100, LockoutDuration: time.Minute},
 	}
 }

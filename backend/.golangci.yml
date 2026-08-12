@@ -413,6 +413,13 @@ linters:
       # Default: "" (disabled)
       context: scope
 
+    paralleltest:
+      # t.Run subtests commonly share their parent test's fixtures, so they run
+      # serially within an otherwise-parallel parent. Only require t.Parallel()
+      # on top-level Test functions.
+      # Default: false
+      ignore-missing-subtests: true
+
     staticcheck:
       # SAxxxx checks in https://staticcheck.dev/docs/configuration/options/#checks
       # Example (to disable some checks): [ "all", "-SA1000", "-SA1001"]
@@ -457,13 +464,21 @@ linters:
       - text: 'comment on exported \S+ \S+ should be of the form ".+"'
         source: '// ?(nolint|TODO)'
         linters: [ revive, staticcheck ]
+      # Test fixtures shared via TestMain (a single container / pool) are the
+      # canonical exception to gochecknoglobals; flagging them is noise.
       - path: '_test\.go'
         linters:
           - bodyclose
           - dupl
           - errcheck
           - funlen
+          - gochecknoglobals
           - goconst
           - gosec
           - noctx
           - wrapcheck
+      # Integration tests share a single Postgres container + connection pool
+      # (and the e2e suite a single engine + rate limiter), so they MUST run
+      # serially. paralleltest is intentionally disabled for these packages.
+      - path: 'internal/(e2e|repository/postgres)/.*_test\.go'
+        linters: [ paralleltest ]

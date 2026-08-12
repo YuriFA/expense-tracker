@@ -2,7 +2,6 @@ package cleanup_test
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -15,10 +14,9 @@ import (
 
 // fakeCleaner is an in-memory Cleaner for the cleanup job (no database).
 type fakeCleaner struct {
-	mu                   sync.Mutex
-	sessionsDeleted      atomic.Int64
-	idempotencyDeleted   atomic.Int64
-	expiredSessionErr    error
+	sessionsDeleted       atomic.Int64
+	idempotencyDeleted    atomic.Int64
+	expiredSessionErr     error
 	expiredIdempotencyErr error
 }
 
@@ -64,11 +62,11 @@ func (f *failingCleaner) DeleteExpiredSessions(_ context.Context) (int64, error)
 	return 0, assertError("boom")
 }
 
-type errVal struct{ msg string }
+type errValError struct{ msg string }
 
-func (e errVal) Error() string { return e.msg }
+func (e errValError) Error() string { return e.msg }
 
-func assertError(msg string) error { return errVal{msg: msg} }
+func assertError(msg string) error { return errValError{msg: msg} }
 
 func TestCleanup_Run_KeepsLoopingOnError(t *testing.T) {
 	t.Parallel()

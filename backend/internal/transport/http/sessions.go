@@ -7,12 +7,14 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/httpctx"
 )
 
-func (s *Server) ListSessions(ctx context.Context, _ api.ListSessionsRequestObject) (api.ListSessionsResponseObject, error) {
+func (s *Server) ListSessions(
+	ctx context.Context,
+	_ api.ListSessionsRequestObject,
+) (api.ListSessionsResponseObject, error) {
 	user := s.currentUser(ctx)
 	sessions, err := s.sessions.List(ctx, user.ID)
 	if err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+		return nil, err
 	}
 	current := httpctx.CurrentSessionID(ginCtx(ctx))
 	out := make([]api.SessionResponse, 0, len(sessions))
@@ -27,12 +29,14 @@ func (s *Server) ListSessions(ctx context.Context, _ api.ListSessionsRequestObje
 	return api.ListSessions200JSONResponse(out), nil
 }
 
-func (s *Server) DeleteAllSessions(ctx context.Context, _ api.DeleteAllSessionsRequestObject) (api.DeleteAllSessionsResponseObject, error) {
+func (s *Server) DeleteAllSessions(
+	ctx context.Context,
+	_ api.DeleteAllSessionsRequestObject,
+) (api.DeleteAllSessionsResponseObject, error) {
 	user := s.currentUser(ctx)
 	current := httpctx.CurrentSessionID(ginCtx(ctx))
 	if _, err := s.sessions.DeleteAllExcept(ctx, user.ID, current); err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+		return nil, err
 	}
 	return api.DeleteAllSessions204Response{}, nil
 }

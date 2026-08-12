@@ -4,7 +4,7 @@
 // and repository layers. Domain types use idiomatic Go:
 //   - IDs are github.com/google/uuid.UUID (UUID v4)
 //   - money is int64 minor units (never float/decimal)
-//   - timestamps are time.Time, UTC everywhere
+//   - timestamps are [time.Time], UTC everywhere
 //   - optional references are *uuid.UUID
 //
 // No SQL, no HTTP, no gin lives here.

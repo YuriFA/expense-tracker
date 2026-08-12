@@ -9,19 +9,26 @@ import (
 	db "github.com/yurifa/expense-tracker-api/internal/repository/db"
 )
 
-func (r *Repository) CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error) {
+// defaultListTransactionsLimit is the page size used when the caller omits one;
+// the service normally sets an explicit (bounded) limit.
+const defaultListTransactionsLimit = 50
+
+func (r *Repository) CreateTransaction(
+	ctx context.Context,
+	params domain.CreateTransactionParams,
+) (*domain.Transaction, error) {
 	const op = "repository.postgres.CreateTransaction"
 
 	row, err := r.q.CreateTransaction(ctx, db.CreateTransactionParams{
-		UserID:         params.UserID,
-		Type:           string(params.Type),
-		Amount:         params.Amount,
-		Description:    params.Description,
-		OccurredAt:     params.OccurredAt,
-		AccountID:      params.AccountID,
-		CategoryID:     params.CategoryID,
-		FromAccountID:  params.FromAccountID,
-		ToAccountID:    params.ToAccountID,
+		UserID:        params.UserID,
+		Type:          string(params.Type),
+		Amount:        params.Amount,
+		Description:   params.Description,
+		OccurredAt:    params.OccurredAt,
+		AccountID:     params.AccountID,
+		CategoryID:    params.CategoryID,
+		FromAccountID: params.FromAccountID,
+		ToAccountID:   params.ToAccountID,
 	})
 	if err != nil {
 		return nil, opWrap(op, err)
@@ -37,16 +44,16 @@ func (r *Repository) UpdateTransaction(
 	const op = "repository.postgres.UpdateTransaction"
 
 	row, err := r.q.UpdateTransaction(ctx, db.UpdateTransactionParams{
-		ID:             id,
-		UserID:         userID,
-		Version:        int32(params.Version),
-		Amount:         params.Amount,
-		Description:    params.Description,
-		OccurredAt:     params.OccurredAt,
-		AccountID:      params.AccountID,
-		CategoryID:     params.CategoryID,
-		FromAccountID:  params.FromAccountID,
-		ToAccountID:    params.ToAccountID,
+		ID:            id,
+		UserID:        userID,
+		Version:       int32(params.Version), //nolint:gosec // optimistic version is a small positive int
+		Amount:        params.Amount,
+		Description:   params.Description,
+		OccurredAt:    params.OccurredAt,
+		AccountID:     params.AccountID,
+		CategoryID:    params.CategoryID,
+		FromAccountID: params.FromAccountID,
+		ToAccountID:   params.ToAccountID,
 	})
 	if err != nil {
 		if errNoRows(err) {
@@ -100,9 +107,9 @@ func (r *Repository) GetTransactions(
 		typ = &s
 	}
 
-	limit := int32(50) // default; the service always sets an explicit fetchLimit.
+	limit := int32(defaultListTransactionsLimit) // default; the service always sets an explicit fetchLimit.
 	if params.Limit != nil {
-		limit = int32(*params.Limit)
+		limit = int32(*params.Limit) //nolint:gosec // page limit is bounded by the service (<= maxTransactionPageSize)
 	}
 
 	qparams := db.ListTransactionsParams{

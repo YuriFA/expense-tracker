@@ -30,9 +30,15 @@ var (
 // TestMain starts one Postgres container for the whole package, applies the
 // embedded migrations, and exposes a ready *postgres.Repository to all tests.
 func TestMain(m *testing.M) {
+	os.Exit(testMain(m))
+}
+
+// testMain does the container setup so its defers run before the [os.Exit]
+// called by TestMain. Returns the process exit code.
+func testMain(m *testing.M) int {
 	flag.Parse() // required before testing.Short() in TestMain (Go 1.24+ guard)
 	if testing.Short() {
-		os.Exit(m.Run())
+		return m.Run()
 	}
 
 	ctx := context.Background()
@@ -47,7 +53,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to start postgres container: %v\n", err)
 		fmt.Fprintln(os.Stderr, "is Docker running? these tests need it (or run with -short)")
-		os.Exit(1)
+		return 1
 	}
 	defer func() {
 		_ = container.Terminate(context.Background())
@@ -56,12 +62,12 @@ func TestMain(m *testing.M) {
 	connStr, err := container.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get connection string: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	if err := postgres.RunMigrations(connStr); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to run migrations: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	pool, err := postgres.New(ctx, connStr, config.DatabaseConfig{
@@ -72,7 +78,7 @@ func TestMain(m *testing.M) {
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create pool: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	defer pool.Close()
 
@@ -82,7 +88,7 @@ func TestMain(m *testing.M) {
 	// Discard logs during tests.
 	_ = slog.Default()
 
-	os.Exit(m.Run())
+	return m.Run()
 }
 
 // newCtx returns a context with a short-ish timeout for a single test operation.

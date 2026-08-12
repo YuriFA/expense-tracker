@@ -19,7 +19,11 @@ func NewCategoryService(categories repository.CategoryRepository) *CategoryServi
 	return &CategoryService{categories: categories}
 }
 
-func (s *CategoryService) Create(ctx context.Context, userID uuid.UUID, params domain.CreateCategoryParams) (*domain.Category, error) {
+func (s *CategoryService) Create(
+	ctx context.Context,
+	userID uuid.UUID,
+	params domain.CreateCategoryParams,
+) (*domain.Category, error) {
 	const op = "service.category.Create"
 	params.UserID = userID
 	c, err := s.categories.CreateCategory(ctx, params)
@@ -29,7 +33,11 @@ func (s *CategoryService) Create(ctx context.Context, userID uuid.UUID, params d
 	return c, nil
 }
 
-func (s *CategoryService) Update(ctx context.Context, userID, id uuid.UUID, params domain.UpdateCategoryParams) (*domain.Category, error) {
+func (s *CategoryService) Update(
+	ctx context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateCategoryParams,
+) (*domain.Category, error) {
 	const op = "service.category.Update"
 	if params.Name == nil && params.Type == nil && params.Icon == nil && params.Color == nil {
 		return nil, ErrNoFieldsToUpdate
@@ -58,7 +66,11 @@ func (s *CategoryService) Get(ctx context.Context, userID, id uuid.UUID) (*domai
 	return c, nil
 }
 
-func (s *CategoryService) List(ctx context.Context, userID uuid.UUID, params domain.GetCategoriesParams) ([]domain.Category, error) {
+func (s *CategoryService) List(
+	ctx context.Context,
+	userID uuid.UUID,
+	params domain.GetCategoriesParams,
+) ([]domain.Category, error) {
 	const op = "service.category.List"
 	c, err := s.categories.GetCategories(ctx, userID, params)
 	if err != nil {

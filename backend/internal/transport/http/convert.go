@@ -10,15 +10,16 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 )
 
-// toUUID converts a domain uuid.UUID to the generated openapi_types.UUID (both
-// are [16]byte; an explicit conversion is still required between named types).
-func toUUID(u uuid.UUID) openapi_types.UUID { return openapi_types.UUID(u) }
+// toUUID converts a domain uuid.UUID to the generated openapi_types.UUID.
+// openapi_types.UUID is a type alias for uuid.UUID, so this is effectively an
+// identity kept for readability at the call sites.
+func toUUID(u uuid.UUID) openapi_types.UUID { return u }
 
 func toUUIDPtr(u *uuid.UUID) *openapi_types.UUID {
 	if u == nil {
 		return nil
 	}
-	x := openapi_types.UUID(*u)
+	x := *u
 	return &x
 }
 
@@ -26,7 +27,7 @@ func fromUUIDPtr(u *openapi_types.UUID) *uuid.UUID {
 	if u == nil {
 		return nil
 	}
-	x := uuid.UUID(*u)
+	x := *u
 	return &x
 }
 

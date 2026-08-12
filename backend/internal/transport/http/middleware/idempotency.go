@@ -17,14 +17,15 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/yurifa/expense-tracker-api/internal/domain"
+	"github.com/yurifa/expense-tracker-api/internal/logger"
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/httpctx"
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/httperr"
-	"github.com/yurifa/expense-tracker-api/internal/logger"
 )
 
 type bodyRecorder struct {
 	gin.ResponseWriter
+
 	body *bytes.Buffer
 }
 
@@ -103,7 +104,7 @@ func Idempotency(repo repository.IdempotencyRepository, log *slog.Logger) gin.Ha
 func dispatchExisting(
 	c *gin.Context,
 	repo repository.IdempotencyRepository,
-	l *slog.Logger,
+	_ *slog.Logger,
 	ik *domain.IdempotencyKey,
 	userID uuid.UUID,
 	hashStr string,
@@ -123,7 +124,12 @@ func dispatchExisting(
 		return true
 	case "completed":
 		if hashStr != ik.RequestHash {
-			httperr.Write(c, http.StatusConflict, httperr.ErrCodeIdempotencyKeyMismatch, "idempotency key request hash mismatch")
+			httperr.Write(
+				c,
+				http.StatusConflict,
+				httperr.ErrCodeIdempotencyKeyMismatch,
+				"idempotency key request hash mismatch",
+			)
 			return true
 		}
 		replayResponse(c, ik)

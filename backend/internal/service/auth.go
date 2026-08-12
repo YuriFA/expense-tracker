@@ -18,13 +18,13 @@ import (
 // keeps the sliding/anti-enumeration/revoke-on-reset semantics, and treats the
 // Mailer as a stub (real delivery is out of scope).
 type AuthService struct {
-	users       repository.UserRepository
-	sessions    repository.SessionRepository
-	verify      repository.EmailVerificationRepository
-	resets      repository.PasswordResetRepository
-	mailer      Mailer
-	sessionTTL  time.Duration
-	clock       func() time.Time
+	users      repository.UserRepository
+	sessions   repository.SessionRepository
+	verify     repository.EmailVerificationRepository
+	resets     repository.PasswordResetRepository
+	mailer     Mailer
+	sessionTTL time.Duration
+	clock      func() time.Time
 }
 
 // AuthConfig is the AuthService configuration.
@@ -207,7 +207,12 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, email string) er
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if err := s.resets.CreatePasswordResetToken(ctx, user.ID, auth.HashToken(token), s.now().Add(domain.PasswordResetTokenTTL)); err != nil {
+	if err := s.resets.CreatePasswordResetToken(
+		ctx,
+		user.ID,
+		auth.HashToken(token),
+		s.now().Add(domain.PasswordResetTokenTTL),
+	); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -258,7 +263,12 @@ func (s *AuthService) issueVerificationCode(ctx context.Context, user *domain.Us
 	if err != nil {
 		return
 	}
-	if err := s.verify.CreateEmailVerificationCode(ctx, user.ID, code, s.now().Add(domain.VerificationCodeTTL)); err != nil {
+	if err := s.verify.CreateEmailVerificationCode(
+		ctx,
+		user.ID,
+		code,
+		s.now().Add(domain.VerificationCodeTTL),
+	); err != nil {
 		return
 	}
 	_ = s.mailer.SendVerificationCode(ctx, user.Email, code)

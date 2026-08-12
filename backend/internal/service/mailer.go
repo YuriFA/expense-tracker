@@ -25,12 +25,12 @@ func NewLogMailer(log *slog.Logger) Mailer {
 	return &logMailer{log: log}
 }
 
-func (m *logMailer) SendVerificationCode(_ context.Context, to, code string) error {
-	m.log.Info("verification code issued", slog.String("email", to), slog.String("code", code))
+func (m *logMailer) SendVerificationCode(ctx context.Context, to, code string) error {
+	m.log.InfoContext(ctx, "verification code issued", slog.String("email", to), slog.String("code", code))
 	return nil
 }
 
-func (m *logMailer) SendPasswordResetToken(_ context.Context, to, token string) error {
-	m.log.Info("password reset token issued", slog.String("email", to), slog.String("reset_token", token))
+func (m *logMailer) SendPasswordResetToken(ctx context.Context, to, token string) error {
+	m.log.InfoContext(ctx, "password reset token issued", slog.String("email", to), slog.String("reset_token", token))
 	return nil
 }

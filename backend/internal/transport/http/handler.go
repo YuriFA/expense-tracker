@@ -6,7 +6,6 @@ package http
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/gin-gonic/gin"
 
@@ -19,7 +18,6 @@ import (
 // Server implements api.StrictServerInterface. It holds the services and the
 // session config (needed to set/clear cookies on login/logout).
 type Server struct {
-	log        *slog.Logger
 	cfg        *config.HTTPServer
 	accounts   *service.AccountService
 	categories *service.CategoryService
@@ -29,7 +27,6 @@ type Server struct {
 }
 
 func NewServer(
-	log *slog.Logger,
 	cfg *config.HTTPServer,
 	accounts *service.AccountService,
 	categories *service.CategoryService,
@@ -38,14 +35,14 @@ func NewServer(
 	sessions *service.SessionService,
 ) *Server {
 	return &Server{
-		log: log, cfg: cfg,
+		cfg:      cfg,
 		accounts: accounts, categories: categories, txn: txn,
 		auth: auth, sessions: sessions,
 	}
 }
 
 // ginCtx extracts the underlying *gin.Context. oapi-codegen passes the gin
-// context as a context.Context to the strict handler; this type assertion
+// context as a [context.Context] to the strict handler; this type assertion
 // recovers it so handlers can read auth context / set cookies.
 func ginCtx(ctx context.Context) *gin.Context {
 	c, _ := ctx.(*gin.Context)

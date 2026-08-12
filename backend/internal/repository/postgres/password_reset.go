@@ -69,7 +69,12 @@ func (r *Repository) ResetPassword(ctx context.Context, tokenHash, passwordHash 
 		return opWrap(op, err)
 	}
 
-	if _, err := tx.Exec(ctx, `UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2`, passwordHash, userID); err != nil {
+	if _, err := tx.Exec(
+		ctx,
+		`UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2`,
+		passwordHash,
+		userID,
+	); err != nil {
 		return opWrap(op, err)
 	}
 

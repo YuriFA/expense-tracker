@@ -1,4 +1,4 @@
-package e2e
+package e2e_test
 
 import (
 	"bytes"
@@ -39,7 +39,7 @@ func (c *client) do(method, path string, body any) map[string]any {
 			delete(c.jar, sc.Name)
 		}
 	}
-	var resp map[string]any = map[string]any{}
+	var resp = map[string]any{}
 	if w.Body.Len() > 0 {
 		_ = json.Unmarshal(w.Body.Bytes(), &resp)
 	}
@@ -123,7 +123,11 @@ func TestE2E_PasswordReset(t *testing.T) {
 	}
 	email := uniqueEmail()
 	c := &client{t: t, jar: map[string]string{}}
-	require.Equal(t, 201, c.do("POST", "/api/auth/register", map[string]string{"email": email, "password": "supersecret1"})["__status"])
+	require.Equal(
+		t,
+		201,
+		c.do("POST", "/api/auth/register", map[string]string{"email": email, "password": "supersecret1"})["__status"],
+	)
 
 	// Request reset -> 204 (anti-enumeration: always 204).
 	r := c.do("POST", "/api/auth/password-reset/request", map[string]string{"email": email})
@@ -137,7 +141,11 @@ func TestE2E_PasswordReset(t *testing.T) {
 	require.NotEmpty(t, token)
 
 	// Confirm reset with wrong token -> 400.
-	r = c.do("POST", "/api/auth/password-reset/confirm", map[string]string{"token": "wrong", "newPassword": "newpass123"})
+	r = c.do(
+		"POST",
+		"/api/auth/password-reset/confirm",
+		map[string]string{"token": "wrong", "newPassword": "newpass123"},
+	)
 	require.Equal(t, 400, r["__status"])
 
 	// Confirm with the right token -> 204, sessions revoked.
@@ -159,7 +167,11 @@ func TestE2E_LoginWrongPassword(t *testing.T) {
 	}
 	email := uniqueEmail()
 	c := &client{t: t, jar: map[string]string{}}
-	require.Equal(t, 201, c.do("POST", "/api/auth/register", map[string]string{"email": email, "password": "supersecret1"})["__status"])
+	require.Equal(
+		t,
+		201,
+		c.do("POST", "/api/auth/register", map[string]string{"email": email, "password": "supersecret1"})["__status"],
+	)
 
 	// Wrong password -> 401 invalid credentials.
 	r := c.do("POST", "/api/auth/login", map[string]string{"email": email, "password": "nope"})
@@ -173,7 +185,11 @@ func TestE2E_Logout(t *testing.T) {
 	}
 	email := uniqueEmail()
 	c := &client{t: t, jar: map[string]string{}}
-	require.Equal(t, 201, c.do("POST", "/api/auth/register", map[string]string{"email": email, "password": "supersecret1"})["__status"])
+	require.Equal(
+		t,
+		201,
+		c.do("POST", "/api/auth/register", map[string]string{"email": email, "password": "supersecret1"})["__status"],
+	)
 
 	r := c.do("POST", "/api/auth/logout", nil)
 	require.Equal(t, 204, r["__status"])

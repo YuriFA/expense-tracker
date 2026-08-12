@@ -35,7 +35,13 @@ func seedFakeAccount(t *testing.T, store *fakes.Store, userID uuid.UUID) *domain
 	return a
 }
 
-func seedFakeCategory(t *testing.T, store *fakes.Store, userID uuid.UUID, name string, typ domain.TransactionType) *domain.Category {
+func seedFakeCategory(
+	t *testing.T,
+	store *fakes.Store,
+	userID uuid.UUID,
+	name string,
+	typ domain.TransactionType,
+) *domain.Category {
 	t.Helper()
 	c, err := store.CreateCategory(context.Background(), domain.CreateCategoryParams{
 		UserID: userID, Name: name, Type: typ, Icon: "i", Color: "#fff",
@@ -46,5 +52,5 @@ func seedFakeCategory(t *testing.T, store *fakes.Store, userID uuid.UUID, name s
 	return c
 }
 
-func strPtr(s string) *string { return &s }
-func i64(v int64) *int64      { return &v }
+func strPtr(s string) *string { x := s; return &x }
+func i64(v int64) *int64      { x := v; return &x }

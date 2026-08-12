@@ -22,7 +22,17 @@ func (r *Repository) CreateAccount(ctx context.Context, params domain.CreateAcco
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
-	return accountRow(row.ID, row.UserID, row.Name, row.Currency, row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt), nil
+	return accountRow(
+		row.ID,
+		row.UserID,
+		row.Name,
+		row.Currency,
+		row.OpeningBalance,
+		row.ManualAdjustment,
+		row.Balance,
+		row.CreatedAt,
+		row.UpdatedAt,
+	), nil
 }
 
 func (r *Repository) UpdateAccount(
@@ -44,7 +54,17 @@ func (r *Repository) UpdateAccount(
 		}
 		return nil, opWrap(op, err)
 	}
-	return accountRow(row.ID, row.UserID, row.Name, row.Currency, row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt), nil
+	return accountRow(
+		row.ID,
+		row.UserID,
+		row.Name,
+		row.Currency,
+		row.OpeningBalance,
+		row.ManualAdjustment,
+		row.Balance,
+		row.CreatedAt,
+		row.UpdatedAt,
+	), nil
 }
 
 func (r *Repository) DeleteAccount(ctx context.Context, userID, id uuid.UUID) error {
@@ -73,7 +93,17 @@ func (r *Repository) GetAccount(ctx context.Context, userID, id uuid.UUID) (*dom
 		}
 		return nil, opWrap(op, err)
 	}
-	return accountRow(row.ID, row.UserID, row.Name, row.Currency, row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt), nil
+	return accountRow(
+		row.ID,
+		row.UserID,
+		row.Name,
+		row.Currency,
+		row.OpeningBalance,
+		row.ManualAdjustment,
+		row.Balance,
+		row.CreatedAt,
+		row.UpdatedAt,
+	), nil
 }
 
 func (r *Repository) GetAccounts(ctx context.Context, userID uuid.UUID) ([]domain.Account, error) {
@@ -85,7 +115,10 @@ func (r *Repository) GetAccounts(ctx context.Context, userID uuid.UUID) ([]domai
 	}
 	out := make([]domain.Account, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, *accountRow(row.ID, row.UserID, row.Name, row.Currency, row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt))
+		out = append(
+			out,
+			*accountRow(row.ID, row.UserID, row.Name, row.Currency, row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt),
+		)
 	}
 	return out, nil
 }

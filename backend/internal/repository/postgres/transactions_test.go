@@ -18,13 +18,13 @@ func TestTransactionCursorPagination(t *testing.T) {
 	user := seedUser(t, "cursor")
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, user.ID, "A")
-	cat := seedCategory(t, user.ID, "CustomIncome", domain.TransactionTypeIncome)
+	acct := seedAccount(t, user.ID)
+	cat := seedCategory(t, user.ID, "CustomIncome")
 
 	// Insert 5 transactions with distinct occurred_at (oldest first).
 	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	ids := make([]string, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
 			UserID:      user.ID,
 			Type:        domain.TransactionTypeIncome,
@@ -52,7 +52,11 @@ func TestTransactionCursorPagination(t *testing.T) {
 	// Page 2: cursor at ids[3] -> everything strictly after it: ids[2], ids[1], ids[0].
 	cursor := &domain.TransactionCursor{OccurredAt: first[1].OccurredAt, ID: first[1].ID}
 	remaining := 10
-	second, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: &remaining, Cursor: cursor})
+	second, err := testRepo.GetTransactions(
+		ctx,
+		user.ID,
+		domain.GetTransactionsParams{Limit: &remaining, Cursor: cursor},
+	)
 	require.NoError(t, err)
 	require.Len(t, second, 3)
 	assert.Equal(t, ids[2], second[0].ID.String())
@@ -67,8 +71,8 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 	user := seedUser(t, "tie")
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, user.ID, "A")
-	cat := seedCategory(t, user.ID, "Sal", domain.TransactionTypeIncome)
+	acct := seedAccount(t, user.ID)
+	cat := seedCategory(t, user.ID, "Sal")
 
 	// Two transactions with the SAME occurred_at - id DESC breaks the tie.
 	same := time.Date(2026, 2, 1, 12, 0, 0, 0, time.UTC)
@@ -93,7 +97,11 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 	higher := rows[0].ID
 	lower := rows[1].ID
 	cursor := &domain.TransactionCursor{OccurredAt: same, ID: higher}
-	rows2, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: ptrInt(10), Cursor: cursor})
+	rows2, err := testRepo.GetTransactions(
+		ctx,
+		user.ID,
+		domain.GetTransactionsParams{Limit: ptrInt(10), Cursor: cursor},
+	)
 	require.NoError(t, err)
 	require.Len(t, rows2, 1)
 	assert.Equal(t, lower, rows2[0].ID)
@@ -106,8 +114,8 @@ func TestTransactionOptimisticConcurrency(t *testing.T) {
 	user := seedUser(t, "occ")
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, user.ID, "A")
-	cat := seedCategory(t, user.ID, "Sal", domain.TransactionTypeIncome)
+	acct := seedAccount(t, user.ID)
+	cat := seedCategory(t, user.ID, "Sal")
 
 	tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
 		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: mustNow(),
@@ -117,12 +125,22 @@ func TestTransactionOptimisticConcurrency(t *testing.T) {
 	require.Equal(t, 1, tx.Version)
 
 	// Wrong version -> conflict.
-	_, err = testRepo.UpdateTransaction(ctx, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 999, Amount: ptrInt64(200)})
-	assert.ErrorIs(t, err, domain.ErrTransactionVersionConflict)
+	_, err = testRepo.UpdateTransaction(
+		ctx,
+		user.ID,
+		tx.ID,
+		domain.UpdateTransactionParams{Version: 999, Amount: ptrInt64(200)},
+	)
+	require.ErrorIs(t, err, domain.ErrTransactionVersionConflict)
 
 	// Correct version -> succeeds, version increments.
 	desc := "updated"
-	updated, err := testRepo.UpdateTransaction(ctx, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 1, Description: &desc})
+	updated, err := testRepo.UpdateTransaction(
+		ctx,
+		user.ID,
+		tx.ID,
+		domain.UpdateTransactionParams{Version: 1, Description: &desc},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, 2, updated.Version)
 	assert.Equal(t, "updated", updated.Description)
@@ -136,8 +154,8 @@ func TestTransactionIDORScoping(t *testing.T) {
 	intruder := seedUser(t, "tx-intruder")
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, owner.ID, "A")
-	cat := seedCategory(t, owner.ID, "Sal", domain.TransactionTypeIncome)
+	acct := seedAccount(t, owner.ID)
+	cat := seedCategory(t, owner.ID, "Sal")
 
 	tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
 		UserID: owner.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: mustNow(),
@@ -146,11 +164,11 @@ func TestTransactionIDORScoping(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testRepo.GetTransaction(ctx, intruder.ID, tx.ID)
-	assert.ErrorIs(t, err, domain.ErrTransactionNotFound)
+	require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 
 	err = testRepo.DeleteTransaction(ctx, intruder.ID, tx.ID)
-	assert.ErrorIs(t, err, domain.ErrTransactionNotFound)
+	require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 }
 
-func ptrInt(v int) *int       { return &v }
-func ptrInt64(v int64) *int64 { return &v }
+func ptrInt(v int) *int       { x := v; return &x }
+func ptrInt64(v int64) *int64 { x := v; return &x }

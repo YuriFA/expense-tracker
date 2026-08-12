@@ -98,7 +98,16 @@ func (s *Store) RegisterUser(_ context.Context, params domain.RegisterUserParams
 	s.users[u.ID] = u
 	s.emails[u.Email] = u.ID
 	for _, c := range domain.DefaultCategories {
-		cat := &domain.Category{ID: uuid.New(), UserID: u.ID, Name: c.Name, Type: c.Type, Icon: c.Icon, Color: c.Color, CreatedAt: now, UpdatedAt: now}
+		cat := &domain.Category{
+			ID:        uuid.New(),
+			UserID:    u.ID,
+			Name:      c.Name,
+			Type:      c.Type,
+			Icon:      c.Icon,
+			Color:     c.Color,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
 		s.categories[cat.ID] = cat
 		s.catUnique[u.ID.String()+"|"+c.Name] = struct{}{}
 	}
@@ -131,7 +140,13 @@ func (s *Store) CreateSession(_ context.Context, params domain.CreateSessionPara
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now().UTC()
-	sess := &domain.Session{ID: params.SessionID, UserID: params.UserID, ExpiresAt: params.ExpiresAt, CreatedAt: now, UpdatedAt: now}
+	sess := &domain.Session{
+		ID:        params.SessionID,
+		UserID:    params.UserID,
+		ExpiresAt: params.ExpiresAt,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
 	s.sessions[sess.ID] = sess
 	c := *sess
 	return &c, nil
@@ -169,7 +184,7 @@ func (s *Store) ExtendSession(_ context.Context, id string, newExpiresAt time.Ti
 	return nil
 }
 
-func (s *Store) DeleteExpiredSessions(ctx context.Context) (int64, error) {
+func (s *Store) DeleteExpiredSessions(_ context.Context) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var n int64
@@ -264,7 +279,11 @@ func (s *Store) recomputeBalance(a *domain.Account) int64 {
 	return bal
 }
 
-func (s *Store) UpdateAccount(_ context.Context, userID, id uuid.UUID, params domain.UpdateAccountParams) (*domain.Account, error) {
+func (s *Store) UpdateAccount(
+	_ context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateAccountParams,
+) (*domain.Account, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
@@ -333,7 +352,16 @@ func (s *Store) GetAccountBalances(_ context.Context, userID uuid.UUID) ([]domai
 	var out []domain.AccountBalance
 	for _, a := range s.accounts {
 		if a.UserID == userID {
-			out = append(out, domain.AccountBalance{ID: a.ID, UserID: a.UserID, Name: a.Name, Currency: a.Currency, Balance: s.recomputeBalance(a)})
+			out = append(
+				out,
+				domain.AccountBalance{
+					ID:       a.ID,
+					UserID:   a.UserID,
+					Name:     a.Name,
+					Currency: a.Currency,
+					Balance:  s.recomputeBalance(a),
+				},
+			)
 		}
 	}
 	return out, nil
@@ -351,8 +379,14 @@ func (s *Store) CreateCategory(_ context.Context, params domain.CreateCategoryPa
 	}
 	now := time.Now().UTC()
 	c := &domain.Category{
-		ID: uuid.New(), UserID: params.UserID, Name: params.Name, Type: params.Type, Icon: params.Icon, Color: params.Color,
-		CreatedAt: now, UpdatedAt: now,
+		ID:        uuid.New(),
+		UserID:    params.UserID,
+		Name:      params.Name,
+		Type:      params.Type,
+		Icon:      params.Icon,
+		Color:     params.Color,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	s.categories[c.ID] = c
 	s.catUnique[catUniqueKey(params.UserID, params.Name)] = struct{}{}
@@ -360,7 +394,11 @@ func (s *Store) CreateCategory(_ context.Context, params domain.CreateCategoryPa
 	return &cc, nil
 }
 
-func (s *Store) UpdateCategory(_ context.Context, userID, id uuid.UUID, params domain.UpdateCategoryParams) (*domain.Category, error) {
+func (s *Store) UpdateCategory(
+	_ context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateCategoryParams,
+) (*domain.Category, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
@@ -417,7 +455,11 @@ func (s *Store) GetCategory(_ context.Context, userID, id uuid.UUID) (*domain.Ca
 	return &cc, nil
 }
 
-func (s *Store) GetCategories(_ context.Context, userID uuid.UUID, params domain.GetCategoriesParams) ([]domain.Category, error) {
+func (s *Store) GetCategories(
+	_ context.Context,
+	userID uuid.UUID,
+	params domain.GetCategoriesParams,
+) ([]domain.Category, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Category
@@ -435,21 +477,38 @@ func (s *Store) GetCategories(_ context.Context, userID uuid.UUID, params domain
 
 // --- TransactionRepository -----------------------------------------------
 
-func (s *Store) CreateTransaction(_ context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error) {
+func (s *Store) CreateTransaction(
+	_ context.Context,
+	params domain.CreateTransactionParams,
+) (*domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now().UTC()
 	t := &domain.Transaction{
-		ID: uuid.New(), UserID: params.UserID, Type: params.Type, Amount: params.Amount, Description: params.Description,
-		OccurredAt: params.OccurredAt, CreatedAt: now, UpdatedAt: now, Version: 1,
-		AccountID: params.AccountID, CategoryID: params.CategoryID, FromAccountID: params.FromAccountID, ToAccountID: params.ToAccountID,
+		ID:            uuid.New(),
+		UserID:        params.UserID,
+		Type:          params.Type,
+		Amount:        params.Amount,
+		Description:   params.Description,
+		OccurredAt:    params.OccurredAt,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+		Version:       1,
+		AccountID:     params.AccountID,
+		CategoryID:    params.CategoryID,
+		FromAccountID: params.FromAccountID,
+		ToAccountID:   params.ToAccountID,
 	}
 	s.transactions[t.ID] = t
 	c := *t
 	return &c, nil
 }
 
-func (s *Store) UpdateTransaction(_ context.Context, userID, id uuid.UUID, params domain.UpdateTransactionParams) (*domain.Transaction, error) {
+func (s *Store) UpdateTransaction(
+	_ context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateTransactionParams,
+) (*domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
@@ -508,43 +567,18 @@ func (s *Store) GetTransaction(_ context.Context, userID, id uuid.UUID) (*domain
 	return &c, nil
 }
 
-func (s *Store) GetTransactions(_ context.Context, userID uuid.UUID, params domain.GetTransactionsParams) ([]domain.Transaction, error) {
+func (s *Store) GetTransactions(
+	_ context.Context,
+	userID uuid.UUID,
+	params domain.GetTransactionsParams,
+) ([]domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Transaction
 	for _, t := range s.transactions {
-		if t.UserID != userID {
-			continue
+		if t.UserID == userID && transactionMatchesFilters(*t, params) {
+			out = append(out, *t)
 		}
-		if params.Type != nil && t.Type != *params.Type {
-			continue
-		}
-		if params.AccountID != nil {
-			match := (t.AccountID != nil && *t.AccountID == *params.AccountID) ||
-				(t.FromAccountID != nil && *t.FromAccountID == *params.AccountID) ||
-				(t.ToAccountID != nil && *t.ToAccountID == *params.AccountID)
-			if !match {
-				continue
-			}
-		}
-		if params.CategoryID != nil && (t.CategoryID == nil || *t.CategoryID != *params.CategoryID) {
-			continue
-		}
-		if params.FromDate != nil && t.OccurredAt.Before(*params.FromDate) {
-			continue
-		}
-		if params.ToDate != nil && t.OccurredAt.After(*params.ToDate) {
-			continue
-		}
-		if params.Cursor != nil {
-			if t.OccurredAt.After(params.Cursor.OccurredAt) {
-				continue
-			}
-			if t.OccurredAt.Equal(params.Cursor.OccurredAt) && !uuidLess(t.ID, params.Cursor.ID) {
-				continue
-			}
-		}
-		out = append(out, *t)
 	}
 	// ORDER BY occurred_at DESC, id DESC
 	sort.Slice(out, func(i, j int) bool {
@@ -557,6 +591,40 @@ func (s *Store) GetTransactions(_ context.Context, userID uuid.UUID, params doma
 		out = out[:*params.Limit]
 	}
 	return out, nil
+}
+
+// transactionMatchesFilters reports whether a single transaction satisfies all
+// of the list filters (type, account, category, date range, keyset cursor).
+func transactionMatchesFilters(t domain.Transaction, params domain.GetTransactionsParams) bool {
+	if params.Type != nil && t.Type != *params.Type {
+		return false
+	}
+	if params.AccountID != nil {
+		match := (t.AccountID != nil && *t.AccountID == *params.AccountID) ||
+			(t.FromAccountID != nil && *t.FromAccountID == *params.AccountID) ||
+			(t.ToAccountID != nil && *t.ToAccountID == *params.AccountID)
+		if !match {
+			return false
+		}
+	}
+	if params.CategoryID != nil && (t.CategoryID == nil || *t.CategoryID != *params.CategoryID) {
+		return false
+	}
+	if params.FromDate != nil && t.OccurredAt.Before(*params.FromDate) {
+		return false
+	}
+	if params.ToDate != nil && t.OccurredAt.After(*params.ToDate) {
+		return false
+	}
+	if params.Cursor != nil {
+		if t.OccurredAt.After(params.Cursor.OccurredAt) {
+			return false
+		}
+		if t.OccurredAt.Equal(params.Cursor.OccurredAt) && !uuidLess(t.ID, params.Cursor.ID) {
+			return false
+		}
+	}
+	return true
 }
 
 func uuidLess(a, b uuid.UUID) bool {
@@ -572,7 +640,10 @@ func uuidLess(a, b uuid.UUID) bool {
 
 func idemKey(userID uuid.UUID, key string) string { return userID.String() + "|" + key }
 
-func (s *Store) CreateIdempotencyKey(_ context.Context, params domain.CreateIdempotencyKeyParams) (*domain.IdempotencyKey, error) {
+func (s *Store) CreateIdempotencyKey(
+	_ context.Context,
+	params domain.CreateIdempotencyKeyParams,
+) (*domain.IdempotencyKey, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	k := idemKey(params.UserID, params.IdempotencyKey)
@@ -590,7 +661,11 @@ func (s *Store) CreateIdempotencyKey(_ context.Context, params domain.CreateIdem
 	return &c, nil
 }
 
-func (s *Store) UpdateIdempotencyKey(_ context.Context, userID, id uuid.UUID, params domain.UpdateIdempotencyKeyParams) (*domain.IdempotencyKey, error) {
+func (s *Store) UpdateIdempotencyKey(
+	_ context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateIdempotencyKeyParams,
+) (*domain.IdempotencyKey, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for k, ik := range s.idemKeys {
@@ -639,7 +714,7 @@ func (s *Store) DeleteIdempotencyKey(_ context.Context, userID, id uuid.UUID) er
 	return nil
 }
 
-func (s *Store) DeleteExpiredIdempotencyKeys(ctx context.Context) (int64, error) {
+func (s *Store) DeleteExpiredIdempotencyKeys(_ context.Context) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var n int64
@@ -654,7 +729,12 @@ func (s *Store) DeleteExpiredIdempotencyKeys(ctx context.Context) (int64, error)
 
 // --- EmailVerificationRepository -----------------------------------------
 
-func (s *Store) CreateEmailVerificationCode(_ context.Context, userID uuid.UUID, code string, expiresAt time.Time) error {
+func (s *Store) CreateEmailVerificationCode(
+	_ context.Context,
+	userID uuid.UUID,
+	code string,
+	expiresAt time.Time,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.verifyCodes[userID] = &verifyCode{code: code, attempts: 0, expiresAt: expiresAt, createdAt: time.Now().UTC()}
@@ -698,7 +778,12 @@ func (s *Store) LatestVerificationCodeAgeSeconds(_ context.Context, userID uuid.
 
 // --- PasswordResetRepository --------------------------------------------
 
-func (s *Store) CreatePasswordResetToken(_ context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error {
+func (s *Store) CreatePasswordResetToken(
+	_ context.Context,
+	userID uuid.UUID,
+	tokenHash string,
+	expiresAt time.Time,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.resetTokens[tokenHash] = &resetToken{userID: userID, expiresAt: expiresAt, createdAt: time.Now().UTC()}

@@ -48,7 +48,11 @@ type AccountRepository interface {
 // CategoryRepository owns per-user categories.
 type CategoryRepository interface {
 	CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error)
-	UpdateCategory(ctx context.Context, userID, id uuid.UUID, params domain.UpdateCategoryParams) (*domain.Category, error)
+	UpdateCategory(
+		ctx context.Context,
+		userID, id uuid.UUID,
+		params domain.UpdateCategoryParams,
+	) (*domain.Category, error)
 	DeleteCategory(ctx context.Context, userID, id uuid.UUID) error
 	GetCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
 	GetCategories(ctx context.Context, userID uuid.UUID, params domain.GetCategoriesParams) ([]domain.Category, error)
@@ -58,16 +62,28 @@ type CategoryRepository interface {
 // concurrency). Reference validation lives in the service layer.
 type TransactionRepository interface {
 	CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error)
-	UpdateTransaction(ctx context.Context, userID, id uuid.UUID, params domain.UpdateTransactionParams) (*domain.Transaction, error)
+	UpdateTransaction(
+		ctx context.Context,
+		userID, id uuid.UUID,
+		params domain.UpdateTransactionParams,
+	) (*domain.Transaction, error)
 	DeleteTransaction(ctx context.Context, userID, id uuid.UUID) error
 	GetTransaction(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
-	GetTransactions(ctx context.Context, userID uuid.UUID, params domain.GetTransactionsParams) ([]domain.Transaction, error)
+	GetTransactions(
+		ctx context.Context,
+		userID uuid.UUID,
+		params domain.GetTransactionsParams,
+	) ([]domain.Transaction, error)
 }
 
 // IdempotencyRepository caches POST /api/transactions responses for replay.
 type IdempotencyRepository interface {
 	CreateIdempotencyKey(ctx context.Context, params domain.CreateIdempotencyKeyParams) (*domain.IdempotencyKey, error)
-	UpdateIdempotencyKey(ctx context.Context, userID, id uuid.UUID, params domain.UpdateIdempotencyKeyParams) (*domain.IdempotencyKey, error)
+	UpdateIdempotencyKey(
+		ctx context.Context,
+		userID, id uuid.UUID,
+		params domain.UpdateIdempotencyKeyParams,
+	) (*domain.IdempotencyKey, error)
 	GetByUserAndKey(ctx context.Context, userID uuid.UUID, key string) (*domain.IdempotencyKey, error)
 	DeleteIdempotencyKey(ctx context.Context, userID, id uuid.UUID) error
 	DeleteExpiredIdempotencyKeys(ctx context.Context) (int64, error)

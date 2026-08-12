@@ -98,7 +98,11 @@ func (r *Repository) VerifyEmailCode(ctx context.Context, userID uuid.UUID, code
 		if _, err := tx.Exec(ctx, `DELETE FROM email_verification_codes WHERE id = $1`, rowID); err != nil {
 			return opWrap(op, err)
 		}
-		if _, err := tx.Exec(ctx, `UPDATE users SET email_verified_at = now(), updated_at = now() WHERE id = $1`, userID); err != nil {
+		if _, err := tx.Exec(
+			ctx,
+			`UPDATE users SET email_verified_at = now(), updated_at = now() WHERE id = $1`,
+			userID,
+		); err != nil {
 			return opWrap(op, err)
 		}
 		if err := tx.Commit(ctx); err != nil {

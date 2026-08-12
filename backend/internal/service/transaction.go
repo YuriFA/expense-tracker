@@ -37,10 +37,22 @@ func NewTransactionService(
 	return &TransactionService{transactions: transactions, accounts: accounts, categories: categories}
 }
 
-func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, params domain.CreateTransactionParams) (*domain.Transaction, error) {
+func (s *TransactionService) Create(
+	ctx context.Context,
+	userID uuid.UUID,
+	params domain.CreateTransactionParams,
+) (*domain.Transaction, error) {
 	const op = "service.transaction.Create"
 
-	if err := s.validateRefs(ctx, userID, params.Type, params.AccountID, params.CategoryID, params.FromAccountID, params.ToAccountID); err != nil {
+	if err := s.validateRefs(
+		ctx,
+		userID,
+		params.Type,
+		params.AccountID,
+		params.CategoryID,
+		params.FromAccountID,
+		params.ToAccountID,
+	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -52,7 +64,11 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, param
 	return tx, nil
 }
 
-func (s *TransactionService) Update(ctx context.Context, userID, id uuid.UUID, params domain.UpdateTransactionParams) (*domain.Transaction, error) {
+func (s *TransactionService) Update(
+	ctx context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateTransactionParams,
+) (*domain.Transaction, error) {
 	const op = "service.transaction.Update"
 
 	if params.Amount == nil && params.Description == nil && params.OccurredAt == nil &&
@@ -136,7 +152,11 @@ type TransactionListQuery struct {
 // List fetches a page of transactions. It asks the repository for pageSize+1
 // rows; if more than pageSize came back, it encodes a nextCursor from the last
 // item of the page and trims to pageSize.
-func (s *TransactionService) List(ctx context.Context, userID uuid.UUID, q TransactionListQuery) (*TransactionListPage, error) {
+func (s *TransactionService) List(
+	ctx context.Context,
+	userID uuid.UUID,
+	q TransactionListQuery,
+) (*TransactionListPage, error) {
 	const op = "service.transaction.List"
 
 	pageSize := boundPageSize(q.Limit)
@@ -201,50 +221,65 @@ func (s *TransactionService) validateRefs(
 ) error {
 	switch typ {
 	case domain.TransactionTypeIncome, domain.TransactionTypeExpense:
-		if fromAccountID != nil || toAccountID != nil {
+		if fromAccountID != nil || toAccountID != nil || accountID == nil || categoryID == nil {
 			return domain.ErrInvalidRefs
 		}
-		if accountID == nil || categoryID == nil {
-			return domain.ErrInvalidRefs
-		}
-		if _, err := s.accounts.GetAccount(ctx, userID, *accountID); err != nil {
-			if errors.Is(err, domain.ErrAccountNotFound) {
-				return domain.ErrTransactionAccountNotFound
-			}
-			return err
-		}
-		cat, err := s.categories.GetCategory(ctx, userID, *categoryID)
-		if err != nil {
-			if errors.Is(err, domain.ErrCategoryNotFound) {
-				return domain.ErrTransactionCategoryNotFound
-			}
-			return err
-		}
-		if cat.Type != typ {
-			return domain.ErrCategoryTypeMismatch
-		}
+		return s.validateCashflowRefs(ctx, userID, *accountID, *categoryID, typ)
 	case domain.TransactionTypeTransfer:
-		if accountID != nil || categoryID != nil {
+		if accountID != nil || categoryID != nil || fromAccountID == nil || toAccountID == nil {
 			return domain.ErrInvalidRefs
 		}
-		if fromAccountID == nil || toAccountID == nil {
-			return domain.ErrInvalidRefs
+		return s.validateTransferRefs(ctx, userID, *fromAccountID, *toAccountID)
+	}
+	return nil
+}
+
+// validateCashflowRefs verifies the income/expense account + category exist,
+// belong to userID, and that the category type matches the transaction type.
+func (s *TransactionService) validateCashflowRefs(
+	ctx context.Context,
+	userID, accountID, categoryID uuid.UUID,
+	typ domain.TransactionType,
+) error {
+	if _, err := s.accounts.GetAccount(ctx, userID, accountID); err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			return domain.ErrTransactionAccountNotFound
 		}
-		if _, err := s.accounts.GetAccount(ctx, userID, *fromAccountID); err != nil {
-			if errors.Is(err, domain.ErrAccountNotFound) {
-				return domain.ErrTransactionFromAccountNotFound
-			}
-			return err
+		return err
+	}
+	cat, err := s.categories.GetCategory(ctx, userID, categoryID)
+	if err != nil {
+		if errors.Is(err, domain.ErrCategoryNotFound) {
+			return domain.ErrTransactionCategoryNotFound
 		}
-		if _, err := s.accounts.GetAccount(ctx, userID, *toAccountID); err != nil {
-			if errors.Is(err, domain.ErrAccountNotFound) {
-				return domain.ErrTransactionToAccountNotFound
-			}
-			return err
+		return err
+	}
+	if cat.Type != typ {
+		return domain.ErrCategoryTypeMismatch
+	}
+	return nil
+}
+
+// validateTransferRefs verifies both transfer endpoints exist and belong to
+// userID, and rejects same-account transfers.
+func (s *TransactionService) validateTransferRefs(
+	ctx context.Context,
+	userID, fromAccountID, toAccountID uuid.UUID,
+) error {
+	if _, err := s.accounts.GetAccount(ctx, userID, fromAccountID); err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			return domain.ErrTransactionFromAccountNotFound
 		}
-		if *fromAccountID == *toAccountID {
-			return domain.ErrSameAccountTransfer
+		return err
+	}
+	if _, err := s.accounts.GetAccount(ctx, userID, toAccountID); err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			return domain.ErrTransactionToAccountNotFound
 		}
+		return err
+	}
+	if fromAccountID == toAccountID {
+		return domain.ErrSameAccountTransfer
 	}
 	return nil
 }

@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -30,14 +29,14 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 // Compile-time guarantees that *Repository implements every repository
 // interface. If a method signature drifts, the build breaks here.
 var (
-	_ repository.UserRepository             = (*Repository)(nil)
-	_ repository.SessionRepository          = (*Repository)(nil)
-	_ repository.AccountRepository          = (*Repository)(nil)
-	_ repository.CategoryRepository         = (*Repository)(nil)
-	_ repository.TransactionRepository      = (*Repository)(nil)
-	_ repository.IdempotencyRepository      = (*Repository)(nil)
+	_ repository.UserRepository              = (*Repository)(nil)
+	_ repository.SessionRepository           = (*Repository)(nil)
+	_ repository.AccountRepository           = (*Repository)(nil)
+	_ repository.CategoryRepository          = (*Repository)(nil)
+	_ repository.TransactionRepository       = (*Repository)(nil)
+	_ repository.IdempotencyRepository       = (*Repository)(nil)
 	_ repository.EmailVerificationRepository = (*Repository)(nil)
-	_ repository.PasswordResetRepository    = (*Repository)(nil)
+	_ repository.PasswordResetRepository     = (*Repository)(nil)
 )
 
 // pgConstraintViolation reports whether err is a Postgres error with the given
@@ -58,9 +57,4 @@ const (
 // errNoRows unwraps the pgx "no rows" case.
 func errNoRows(err error) bool {
 	return errors.Is(err, pgx.ErrNoRows)
-}
-
-// op wraps an error with an operation tag using the project convention.
-func op(op string, err error) error {
-	return fmt.Errorf("%s: %w", op, err)
 }

@@ -14,8 +14,8 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx/v5" database/sql driver
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx/v5" database/sql driver
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
 )
@@ -25,6 +25,9 @@ import (
 //
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
+
+// pingTimeout caps how long New waits for the first connectivity check.
+const pingTimeout = 5 * time.Second
 
 // New builds and configures a pgxpool.Pool from the given DSN and pool config,
 // and verifies connectivity before returning.
@@ -54,7 +57,7 @@ func New(ctx context.Context, databaseURL string, cfg config.DatabaseConfig) (*p
 		return nil, fmt.Errorf("%s: create pool: %w", op, err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, pingTimeout)
 	defer cancel()
 	if err := pool.Ping(pingCtx); err != nil {
 		pool.Close()
@@ -65,7 +68,7 @@ func New(ctx context.Context, databaseURL string, cfg config.DatabaseConfig) (*p
 }
 
 // RunMigrations applies all embedded up-migrations against the database at
-// databaseURL. It opens its own short-lived *sql.DB (pgx stdlib) separate from
+// databaseURL. It opens its own short-lived *[sql.DB] (pgx stdlib) separate from
 // the application pool: migrations run once at startup and never need the pool.
 // migrate.ErrNoChange (DB already current) is treated as success.
 func RunMigrations(databaseURL string) error {
@@ -78,20 +81,20 @@ func RunMigrations(databaseURL string) error {
 
 	db, err := sql.Open("pgx/v5", databaseURL)
 	if err != nil {
-		src.Close()
+		_ = src.Close()
 		return fmt.Errorf("%s: open migrate connection: %w", op, err)
 	}
 	defer db.Close()
 
 	drv, err := pgxmigrate.WithInstance(db, &pgxmigrate.Config{})
 	if err != nil {
-		src.Close()
+		_ = src.Close()
 		return fmt.Errorf("%s: migrate driver: %w", op, err)
 	}
 
 	m, err := migrate.NewWithInstance("iofs", src, "pgx5", drv)
 	if err != nil {
-		src.Close()
+		_ = src.Close()
 		return fmt.Errorf("%s: new migrate instance: %w", op, err)
 	}
 	defer m.Close()

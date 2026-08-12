@@ -21,7 +21,11 @@ func NewAccountService(accounts repository.AccountRepository) *AccountService {
 	return &AccountService{accounts: accounts}
 }
 
-func (s *AccountService) Create(ctx context.Context, userID uuid.UUID, params domain.CreateAccountParams) (*domain.Account, error) {
+func (s *AccountService) Create(
+	ctx context.Context,
+	userID uuid.UUID,
+	params domain.CreateAccountParams,
+) (*domain.Account, error) {
 	const op = "service.account.Create"
 	params.UserID = userID
 	a, err := s.accounts.CreateAccount(ctx, params)
@@ -31,7 +35,11 @@ func (s *AccountService) Create(ctx context.Context, userID uuid.UUID, params do
 	return a, nil
 }
 
-func (s *AccountService) Update(ctx context.Context, userID, id uuid.UUID, params domain.UpdateAccountParams) (*domain.Account, error) {
+func (s *AccountService) Update(
+	ctx context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateAccountParams,
+) (*domain.Account, error) {
 	const op = "service.account.Update"
 	if params.Name == nil && params.ManualAdjustment == nil {
 		return nil, ErrNoFieldsToUpdate

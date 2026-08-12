@@ -31,7 +31,11 @@ func (s *SessionService) List(ctx context.Context, userID uuid.UUID) ([]domain.S
 }
 
 // DeleteAllExcept revokes every session for the user except the current one.
-func (s *SessionService) DeleteAllExcept(ctx context.Context, userID uuid.UUID, currentSessionID string) (int64, error) {
+func (s *SessionService) DeleteAllExcept(
+	ctx context.Context,
+	userID uuid.UUID,
+	currentSessionID string,
+) (int64, error) {
 	const op = "service.session.DeleteAllExcept"
 	n, err := s.sessions.DeleteSessionsByUserExcept(ctx, userID, currentSessionID)
 	if err != nil {

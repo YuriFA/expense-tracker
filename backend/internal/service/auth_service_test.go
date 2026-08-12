@@ -14,6 +14,7 @@ import (
 )
 
 func TestAuth_RegisterAndLogin(t *testing.T) {
+	t.Parallel()
 	_, _, _, authSvc, _, _ := services(t)
 	ctx := context.Background()
 
@@ -26,7 +27,7 @@ func TestAuth_RegisterAndLogin(t *testing.T) {
 
 	// Duplicate email -> already exists.
 	_, err = authSvc.Register(ctx, "alice@example.com", "other")
-	assert.ErrorIs(t, err, domain.ErrUserAlreadyExists)
+	require.ErrorIs(t, err, domain.ErrUserAlreadyExists)
 
 	// Login with correct password.
 	sess2, err := authSvc.Login(ctx, "alice@example.com", "supersecret")
@@ -36,18 +37,22 @@ func TestAuth_RegisterAndLogin(t *testing.T) {
 
 	// Anti-enumeration: wrong password AND unknown email both -> INVALID_CREDENTIALS.
 	_, err = authSvc.Login(ctx, "alice@example.com", "wrong")
-	assert.ErrorIs(t, err, domain.ErrInvalidCredentials)
+	require.ErrorIs(t, err, domain.ErrInvalidCredentials)
 	_, err = authSvc.Login(ctx, "nobody@example.com", "whatever")
-	assert.ErrorIs(t, err, domain.ErrInvalidCredentials)
+	require.ErrorIs(t, err, domain.ErrInvalidCredentials)
 }
 
 func TestAuth_VerifyEmail(t *testing.T) {
+	t.Parallel()
 	_, _, _, authSvc, _, store := services(t)
 	ctx := context.Background()
 
 	user := seedFakeUser(t, store)
 	// Issue a code directly through the store to know the value.
-	require.NoError(t, store.CreateEmailVerificationCode(ctx, user.ID, "654321", time.Now().UTC().Add(domain.VerificationCodeTTL)))
+	require.NoError(
+		t,
+		store.CreateEmailVerificationCode(ctx, user.ID, "654321", time.Now().UTC().Add(domain.VerificationCodeTTL)),
+	)
 
 	// Wrong code.
 	require.ErrorIs(t, authSvc.VerifyEmail(ctx, user.ID, "000000"), domain.ErrInvalidVerificationCode)
@@ -58,6 +63,7 @@ func TestAuth_VerifyEmail(t *testing.T) {
 }
 
 func TestAuth_ResendThrottle(t *testing.T) {
+	t.Parallel()
 	_, _, _, authSvc, _, store := services(t)
 	ctx := context.Background()
 
@@ -69,10 +75,11 @@ func TestAuth_ResendThrottle(t *testing.T) {
 	require.Error(t, err)
 	var throttle *service.ThrottleError
 	require.ErrorAs(t, err, &throttle)
-	assert.Greater(t, throttle.RetryAfterSeconds, 0)
+	assert.Positive(t, throttle.RetryAfterSeconds)
 }
 
 func TestAuth_PasswordReset_AntiEnumeration(t *testing.T) {
+	t.Parallel()
 	_, _, _, authSvc, _, store := services(t)
 	ctx := context.Background()
 
@@ -86,6 +93,7 @@ func TestAuth_PasswordReset_AntiEnumeration(t *testing.T) {
 }
 
 func TestAuth_PasswordResetConfirm(t *testing.T) {
+	t.Parallel()
 	_, _, _, authSvc, _, store := services(t)
 	ctx := context.Background()
 
@@ -93,7 +101,15 @@ func TestAuth_PasswordResetConfirm(t *testing.T) {
 
 	// Issue a token directly via the store: tokenHash = sha256("mytoken").
 	token := "mytoken"
-	require.NoError(t, store.CreatePasswordResetToken(ctx, user.ID, auth.HashToken(token), time.Now().UTC().Add(domain.PasswordResetTokenTTL)))
+	require.NoError(
+		t,
+		store.CreatePasswordResetToken(
+			ctx,
+			user.ID,
+			auth.HashToken(token),
+			time.Now().UTC().Add(domain.PasswordResetTokenTTL),
+		),
+	)
 
 	// Wrong token -> not found.
 	require.ErrorIs(t, authSvc.ConfirmPasswordReset(ctx, "wrong", "newpassword"), domain.ErrPasswordResetTokenNotFound)
@@ -111,26 +127,29 @@ func TestAuth_PasswordResetConfirm(t *testing.T) {
 }
 
 func TestAccountService_NoFieldsToUpdate(t *testing.T) {
+	t.Parallel()
 	acctSvc, _, _, _, _, store := services(t)
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
 	a := seedFakeAccount(t, store, user.ID)
 
 	_, err := acctSvc.Update(ctx, user.ID, a.ID, domain.UpdateAccountParams{})
-	assert.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
+	require.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
 }
 
 func TestCategoryService_NoFieldsToUpdate(t *testing.T) {
+	t.Parallel()
 	_, catSvc, _, _, _, store := services(t)
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
 	c := seedFakeCategory(t, store, user.ID, "Z", domain.TransactionTypeIncome)
 
 	_, err := catSvc.Update(ctx, user.ID, c.ID, domain.UpdateCategoryParams{})
-	assert.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
+	require.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
 }
 
 func TestSessionService_ListAndRevoke(t *testing.T) {
+	t.Parallel()
 	_, _, _, authSvc, sessSvc, _ := services(t)
 	ctx := context.Background()
 

@@ -14,87 +14,163 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/httperr"
 )
 
-// writeDomainError is the ONE central domain-error -> HTTP mapper. It maps every
-// sentinel domain error to the status + machine code documented in the OpenAPI
-// spec. Handlers call this when a service returns an error; on return the
-// response is already written (handler returns a nil ResponseObject).
+// domainErrorSpec is the (status, machine code, human message) triple every
+// sentinel domain error maps to. It is the documented shape from the OpenAPI
+// spec's error responses.
+type domainErrorSpec struct {
+	status  int
+	code    string
+	message string
+}
+
+// writeDomainError is the ONE central domain-error -> HTTP mapper, wired in as
+// the oapi-codegen HandlerErrorFunc (see NewEngine). Handlers therefore just
+// `return nil, err` and this single place decides the status + machine code.
+func writeDomainError(c *gin.Context, log *slog.Logger, err error) {
+	// Throttle is a wrapped error type (not a sentinel): it needs a Retry-After
+	// header, so handle it before the sentinel table lookup.
+	var throttle *service.ThrottleError
+	if errors.As(err, &throttle) {
+		c.Header("Retry-After", strconv.Itoa(throttle.RetryAfterSeconds))
+		httperr.Write(
+			c,
+			http.StatusTooManyRequests,
+			httperr.ErrCodeTooManyRequests,
+			"please wait before requesting a new code",
+		)
+		return
+	}
+
+	for sentinel, spec := range domainErrorMap {
+		if errors.Is(err, sentinel) {
+			httperr.Write(c, spec.status, spec.code, spec.message)
+			return
+		}
+	}
+
+	log.Error("unhandled domain error", logger.Error(err))
+	httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error")
+}
+
+// domainErrorMap is the sentinel -> HTTP shape mapping table. Add a row when a
+// new sentinel error needs an HTTP response. Read-only after init.
 //
 // Nuance preserved: ErrAccountNotFound is 404 when an account is fetched by id,
 // but the transaction-FK case uses DISTINCT errors
 // (ErrTransactionAccountNotFound / ErrTransactionFromAccountNotFound) that map
-// to 422, so this function stays a pure 1:1 mapping.
-func writeDomainError(c *gin.Context, log *slog.Logger, err error) {
-	switch {
+// to 422, so this table stays a pure 1:1 mapping.
+//
+//nolint:gochecknoglobals // immutable lookup table; the idiomatic home for constant dispatch data
+var domainErrorMap = map[error]domainErrorSpec{
 	// --- resource not found by id (404) ---
-	case errors.Is(err, domain.ErrAccountNotFound):
-		httperr.Write(c, http.StatusNotFound, httperr.ErrCodeAccountNotFound, "account not found")
-	case errors.Is(err, domain.ErrCategoryNotFound):
-		httperr.Write(c, http.StatusNotFound, httperr.ErrCodeCategoryNotFound, "category not found")
-	case errors.Is(err, domain.ErrTransactionNotFound):
-		httperr.Write(c, http.StatusNotFound, httperr.ErrCodeTransactionNotFound, "transaction not found")
-	case errors.Is(err, domain.ErrPasswordResetTokenNotFound):
-		httperr.Write(c, http.StatusBadRequest, httperr.ErrCodeInvalidPasswordResetToken, "invalid or expired reset token")
-	case errors.Is(err, domain.ErrIdempotencyKeyNotFound):
-		httperr.Write(c, http.StatusNotFound, httperr.ErrCodeInternal, "idempotency key not found")
+	domain.ErrAccountNotFound:  {http.StatusNotFound, httperr.ErrCodeAccountNotFound, "account not found"},
+	domain.ErrCategoryNotFound: {http.StatusNotFound, httperr.ErrCodeCategoryNotFound, "category not found"},
+	domain.ErrTransactionNotFound: {
+		http.StatusNotFound,
+		httperr.ErrCodeTransactionNotFound,
+		"transaction not found",
+	},
+	domain.ErrIdempotencyKeyNotFound: {http.StatusNotFound, httperr.ErrCodeInternal, "idempotency key not found"},
 
 	// --- conflict (409) ---
-	case errors.Is(err, domain.ErrUserAlreadyExists):
-		httperr.Write(c, http.StatusConflict, httperr.ErrCodeUserAlreadyExists, "user already exists")
-	case errors.Is(err, domain.ErrCategoryAlreadyExists):
-		httperr.Write(c, http.StatusConflict, httperr.ErrCodeCategoryAlreadyExists, "category already exists")
-	case errors.Is(err, domain.ErrTransactionVersionConflict):
-		httperr.Write(c, http.StatusConflict, httperr.ErrCodeTransactionVersionConflict,
-			"transaction was modified by another request, please refetch and retry")
-	case errors.Is(err, domain.ErrAccountHasTransactions):
-		httperr.Write(c, http.StatusConflict, httperr.ErrCodeAccountInUse, "account has transactions and cannot be deleted")
-	case errors.Is(err, domain.ErrCategoryHasTransactions):
-		httperr.Write(c, http.StatusConflict, httperr.ErrCodeCategoryInUse, "category has transactions and cannot be deleted")
+	domain.ErrUserAlreadyExists: {
+		http.StatusConflict,
+		httperr.ErrCodeUserAlreadyExists,
+		"user already exists",
+	},
+	domain.ErrCategoryAlreadyExists: {
+		http.StatusConflict,
+		httperr.ErrCodeCategoryAlreadyExists,
+		"category already exists",
+	},
+	domain.ErrTransactionVersionConflict: {
+		http.StatusConflict,
+		httperr.ErrCodeTransactionVersionConflict,
+		"transaction was modified by another request, please refetch and retry",
+	},
+	domain.ErrAccountHasTransactions: {
+		http.StatusConflict,
+		httperr.ErrCodeAccountInUse,
+		"account has transactions and cannot be deleted",
+	},
+	domain.ErrCategoryHasTransactions: {
+		http.StatusConflict,
+		httperr.ErrCodeCategoryInUse,
+		"category has transactions and cannot be deleted",
+	},
+	domain.ErrEmailAlreadyVerified: {
+		http.StatusConflict,
+		httperr.ErrCodeEmailAlreadyVerified,
+		"email already verified",
+	},
 
 	// --- auth (401/403) ---
-	case errors.Is(err, domain.ErrInvalidCredentials):
-		httperr.Write(c, http.StatusUnauthorized, httperr.ErrCodeInvalidCredentials, "invalid credentials")
-	case errors.Is(err, domain.ErrEmailAlreadyVerified):
-		httperr.Write(c, http.StatusConflict, httperr.ErrCodeEmailAlreadyVerified, "email already verified")
-	case errors.Is(err, domain.ErrInvalidVerificationCode):
-		httperr.Write(c, http.StatusForbidden, httperr.ErrCodeInvalidVerificationCode, "invalid verification code")
+	domain.ErrInvalidCredentials: {
+		http.StatusUnauthorized,
+		httperr.ErrCodeInvalidCredentials,
+		"invalid credentials",
+	},
+	domain.ErrInvalidVerificationCode: {
+		http.StatusForbidden,
+		httperr.ErrCodeInvalidVerificationCode,
+		"invalid verification code",
+	},
 
-	// --- verification code states (400) ---
-	case errors.Is(err, domain.ErrVerificationCodeExpired):
-		httperr.Write(c, http.StatusBadRequest, httperr.ErrCodeVerificationCodeExpired, "verification code expired, request a new one")
-	case errors.Is(err, domain.ErrVerificationCodeNotFound):
-		httperr.Write(c, http.StatusBadRequest, httperr.ErrCodeVerificationCodeNotFound, "no active verification code, request a new one")
+	// --- verification / password-reset code states (400) ---
+	domain.ErrPasswordResetTokenNotFound: {
+		http.StatusBadRequest,
+		httperr.ErrCodeInvalidPasswordResetToken,
+		"invalid or expired reset token",
+	},
+	domain.ErrVerificationCodeExpired: {
+		http.StatusBadRequest,
+		httperr.ErrCodeVerificationCodeExpired,
+		"verification code expired, request a new one",
+	},
+	domain.ErrVerificationCodeNotFound: {
+		http.StatusBadRequest,
+		httperr.ErrCodeVerificationCodeNotFound,
+		"no active verification code, request a new one",
+	},
 
 	// --- transaction business-rule violations (422) ---
-	case errors.Is(err, domain.ErrTransactionAccountNotFound):
-		httperr.Write(c, http.StatusUnprocessableEntity, httperr.ErrCodeAccountNotFound, "account not found")
-	case errors.Is(err, domain.ErrTransactionCategoryNotFound):
-		httperr.Write(c, http.StatusUnprocessableEntity, httperr.ErrCodeCategoryNotFound, "category not found")
-	case errors.Is(err, domain.ErrTransactionFromAccountNotFound):
-		httperr.Write(c, http.StatusUnprocessableEntity, httperr.ErrCodeAccountNotFound, "account not found")
-	case errors.Is(err, domain.ErrTransactionToAccountNotFound):
-		httperr.Write(c, http.StatusUnprocessableEntity, httperr.ErrCodeAccountNotFound, "account not found")
-	case errors.Is(err, domain.ErrCategoryTypeMismatch):
-		httperr.Write(c, http.StatusUnprocessableEntity, httperr.ErrCodeCategoryTypeMismatch, "transaction type does not match category type")
-	case errors.Is(err, domain.ErrSameAccountTransfer):
-		httperr.Write(c, http.StatusUnprocessableEntity, httperr.ErrCodeSameAccountTransfer, "transaction from and to accounts are the same")
-	case errors.Is(err, domain.ErrInvalidRefs):
-		httperr.Write(c, http.StatusUnprocessableEntity, httperr.ErrCodeInvalidRefs, "invalid references")
+	domain.ErrTransactionAccountNotFound: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeAccountNotFound,
+		"account not found",
+	},
+	domain.ErrTransactionCategoryNotFound: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeCategoryNotFound,
+		"category not found",
+	},
+	domain.ErrTransactionFromAccountNotFound: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeAccountNotFound,
+		"account not found",
+	},
+	domain.ErrTransactionToAccountNotFound: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeAccountNotFound,
+		"account not found",
+	},
+	domain.ErrCategoryTypeMismatch: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeCategoryTypeMismatch,
+		"transaction type does not match category type",
+	},
+	domain.ErrSameAccountTransfer: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeSameAccountTransfer,
+		"transaction from and to accounts are the same",
+	},
+	domain.ErrInvalidRefs: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeInvalidRefs,
+		"invalid references",
+	},
 
 	// --- transport/service errors ---
-	case errors.Is(err, service.ErrNoFieldsToUpdate):
-		httperr.Write(c, http.StatusBadRequest, httperr.ErrCodeValidationFailed, "no fields to update")
-	case errors.Is(err, service.ErrInvalidCursor):
-		httperr.Write(c, http.StatusBadRequest, httperr.ErrCodeInvalidRequest, "invalid cursor")
-
-	// --- throttle (429 with Retry-After) ---
-	default:
-		var throttle *service.ThrottleError
-		if errors.As(err, &throttle) {
-			c.Header("Retry-After", strconv.Itoa(throttle.RetryAfterSeconds))
-			httperr.Write(c, http.StatusTooManyRequests, httperr.ErrCodeTooManyRequests, "please wait before requesting a new code")
-			return
-		}
-		log.Error("unhandled domain error", logger.Error(err))
-		httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error")
-	}
+	service.ErrNoFieldsToUpdate: {http.StatusBadRequest, httperr.ErrCodeValidationFailed, "no fields to update"},
+	service.ErrInvalidCursor:    {http.StatusBadRequest, httperr.ErrCodeInvalidRequest, "invalid cursor"},
 }

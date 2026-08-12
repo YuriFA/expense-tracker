@@ -28,7 +28,10 @@ func TestEmailVerificationFlow(t *testing.T) {
 	require.ErrorIs(t, testRepo.VerifyEmailCode(ctx, user.ID, "000000"), domain.ErrVerificationCodeNotFound)
 
 	// Issue a code, verify it.
-	require.NoError(t, testRepo.CreateEmailVerificationCode(ctx, user.ID, "123456", time.Now().UTC().Add(domain.VerificationCodeTTL)))
+	require.NoError(
+		t,
+		testRepo.CreateEmailVerificationCode(ctx, user.ID, "123456", time.Now().UTC().Add(domain.VerificationCodeTTL)),
+	)
 	require.NoError(t, testRepo.VerifyEmailCode(ctx, user.ID, "123456"))
 
 	// User is now verified.
@@ -50,10 +53,13 @@ func TestEmailVerificationWrongCodeAttempts(t *testing.T) {
 	user := seedUser(t, "attempts")
 	ctx := newCtx(t)
 
-	require.NoError(t, testRepo.CreateEmailVerificationCode(ctx, user.ID, "999999", time.Now().UTC().Add(domain.VerificationCodeTTL)))
+	require.NoError(
+		t,
+		testRepo.CreateEmailVerificationCode(ctx, user.ID, "999999", time.Now().UTC().Add(domain.VerificationCodeTTL)),
+	)
 
 	// MaxVerificationAttempts-1 wrong guesses return ErrInvalidVerificationCode.
-	for i := 0; i < domain.MaxVerificationAttempts-1; i++ {
+	for range domain.MaxVerificationAttempts - 1 {
 		require.ErrorIs(t, testRepo.VerifyEmailCode(ctx, user.ID, "000000"), domain.ErrInvalidVerificationCode)
 	}
 	// The MaxVerificationAttempts-th wrong guess invalidates the code -> next is not found.
@@ -90,15 +96,22 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	token := "raw-reset-token"
 	tokenHash := auth.HashToken(token)
-	require.NoError(t, testRepo.CreatePasswordResetToken(ctx, user.ID, tokenHash, time.Now().UTC().Add(domain.PasswordResetTokenTTL)))
+	require.NoError(
+		t,
+		testRepo.CreatePasswordResetToken(ctx, user.ID, tokenHash, time.Now().UTC().Add(domain.PasswordResetTokenTTL)),
+	)
 
 	// Wrong token -> not found.
-	require.ErrorIs(t, testRepo.ResetPassword(ctx, auth.HashToken("wrong"), "newhash"), domain.ErrPasswordResetTokenNotFound)
+	require.ErrorIs(
+		t,
+		testRepo.ResetPassword(ctx, auth.HashToken("wrong"), "newhash"),
+		domain.ErrPasswordResetTokenNotFound,
+	)
 
 	// Correct token -> consumes, and revokes all sessions.
 	require.NoError(t, testRepo.ResetPassword(ctx, tokenHash, "newhash"))
 	_, err = testRepo.GetSessionByID(ctx, sess.ID)
-	assert.ErrorIs(t, err, domain.ErrSessionNotFound)
+	require.ErrorIs(t, err, domain.ErrSessionNotFound)
 
 	// Token is single-use: re-using it fails.
 	require.ErrorIs(t, testRepo.ResetPassword(ctx, tokenHash, "again"), domain.ErrPasswordResetTokenNotFound)

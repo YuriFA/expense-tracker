@@ -3,18 +3,18 @@ package http
 import (
 	"context"
 
-	"github.com/google/uuid"
-
 	"github.com/yurifa/expense-tracker-api/internal/api"
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 )
 
-func (s *Server) ListAccounts(ctx context.Context, _ api.ListAccountsRequestObject) (api.ListAccountsResponseObject, error) {
+func (s *Server) ListAccounts(
+	ctx context.Context,
+	_ api.ListAccountsRequestObject,
+) (api.ListAccountsResponseObject, error) {
 	user := s.currentUser(ctx)
 	accounts, err := s.accounts.List(ctx, user.ID)
 	if err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+		return nil, err
 	}
 	out := make([]api.Account, 0, len(accounts))
 	for _, a := range accounts {
@@ -23,7 +23,10 @@ func (s *Server) ListAccounts(ctx context.Context, _ api.ListAccountsRequestObje
 	return api.ListAccounts200JSONResponse(out), nil
 }
 
-func (s *Server) CreateAccount(ctx context.Context, req api.CreateAccountRequestObject) (api.CreateAccountResponseObject, error) {
+func (s *Server) CreateAccount(
+	ctx context.Context,
+	req api.CreateAccountRequestObject,
+) (api.CreateAccountResponseObject, error) {
 	user := s.currentUser(ctx)
 	a, err := s.accounts.Create(ctx, user.ID, domain.CreateAccountParams{
 		Name:           req.Body.Name,
@@ -31,18 +34,19 @@ func (s *Server) CreateAccount(ctx context.Context, req api.CreateAccountRequest
 		OpeningBalance: req.Body.OpeningBalance,
 	})
 	if err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+		return nil, err
 	}
 	return api.CreateAccount201JSONResponse(toAPIAccount(*a)), nil
 }
 
-func (s *Server) GetAccountBalances(ctx context.Context, _ api.GetAccountBalancesRequestObject) (api.GetAccountBalancesResponseObject, error) {
+func (s *Server) GetAccountBalances(
+	ctx context.Context,
+	_ api.GetAccountBalancesRequestObject,
+) (api.GetAccountBalancesResponseObject, error) {
 	user := s.currentUser(ctx)
 	res, err := s.accounts.Balances(ctx, user.ID)
 	if err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+		return nil, err
 	}
 	balances := make([]api.AccountBalance, 0, len(res.Balances))
 	for _, b := range res.Balances {
@@ -60,20 +64,23 @@ func (s *Server) GetAccountBalances(ctx context.Context, _ api.GetAccountBalance
 	}), nil
 }
 
-func (s *Server) GetAccount(ctx context.Context, req api.GetAccountRequestObject) (api.GetAccountResponseObject, error) {
+func (s *Server) GetAccount(
+	ctx context.Context,
+	req api.GetAccountRequestObject,
+) (api.GetAccountResponseObject, error) {
 	user := s.currentUser(ctx)
-	id := uuid.UUID(req.Id)
-	a, err := s.accounts.Get(ctx, user.ID, id)
+	a, err := s.accounts.Get(ctx, user.ID, req.Id)
 	if err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+		return nil, err
 	}
 	return api.GetAccount200JSONResponse(toAPIAccount(*a)), nil
 }
 
-func (s *Server) UpdateAccount(ctx context.Context, req api.UpdateAccountRequestObject) (api.UpdateAccountResponseObject, error) {
+func (s *Server) UpdateAccount(
+	ctx context.Context,
+	req api.UpdateAccountRequestObject,
+) (api.UpdateAccountResponseObject, error) {
 	user := s.currentUser(ctx)
-	id := uuid.UUID(req.Id)
 	var name *string
 	var manual *int64
 	if req.Body.Name != nil {
@@ -84,23 +91,23 @@ func (s *Server) UpdateAccount(ctx context.Context, req api.UpdateAccountRequest
 		m := *req.Body.ManualAdjustment
 		manual = &m
 	}
-	a, err := s.accounts.Update(ctx, user.ID, id, domain.UpdateAccountParams{
+	a, err := s.accounts.Update(ctx, user.ID, req.Id, domain.UpdateAccountParams{
 		Name:             name,
 		ManualAdjustment: manual,
 	})
 	if err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+		return nil, err
 	}
 	return api.UpdateAccount200JSONResponse(toAPIAccount(*a)), nil
 }
 
-func (s *Server) DeleteAccount(ctx context.Context, req api.DeleteAccountRequestObject) (api.DeleteAccountResponseObject, error) {
+func (s *Server) DeleteAccount(
+	ctx context.Context,
+	req api.DeleteAccountRequestObject,
+) (api.DeleteAccountResponseObject, error) {
 	user := s.currentUser(ctx)
-	id := uuid.UUID(req.Id)
-	if err := s.accounts.Delete(ctx, user.ID, id); err != nil {
-		writeDomainError(ginCtx(ctx), s.log, err)
-		return nil, nil
+	if err := s.accounts.Delete(ctx, user.ID, req.Id); err != nil {
+		return nil, err
 	}
 	return api.DeleteAccount204Response{}, nil
 }

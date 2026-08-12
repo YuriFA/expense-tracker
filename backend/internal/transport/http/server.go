@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/getkin/kin-openapi/openapi3filter"
 	ginmiddleware "github.com/oapi-codegen/gin-middleware"
 
 	"github.com/yurifa/expense-tracker-api/internal/api"
@@ -19,16 +19,6 @@ import (
 )
 
 const corsMaxAge = 12 * time.Hour
-
-// publicRoutes are callable WITHOUT a valid session cookie (security: [] plus
-// logout, which is idempotent and clears the cookie).
-var publicRoutes = map[string]bool{
-	"POST:/api/auth/register":               true,
-	"POST:/api/auth/login":                  true,
-	"POST:/api/auth/logout":                 true,
-	"POST:/api/auth/password-reset/request": true,
-	"POST:/api/auth/password-reset/confirm": true,
-}
 
 // NewEngine builds the gin engine, wires middleware (request-id, recovery,
 // logging, CORS, spec-driven request validation, auth, rate limit, idempotency)
@@ -60,9 +50,9 @@ func NewEngine(
 
 	// Spec-driven request validation (path/query/header params + request body)
 	// via the embedded OpenAPI document. Auth is NOT enforced here (see below).
-	swagger, err := api.GetSwagger()
+	swagger, err := api.GetSpec()
 	if err != nil {
-		panic("failed to load embedded swagger: " + err.Error())
+		panic("failed to load embedded spec: " + err.Error())
 	}
 	swagger.Servers = nil // accept any host
 	router.Use(ginmiddleware.OapiRequestValidatorWithOptions(swagger, &ginmiddleware.Options{
@@ -75,7 +65,8 @@ func NewEngine(
 	}))
 
 	// Auth (path-aware), rate limit (login + verify), idempotency (create txn).
-	router.Use(pathAwareAuth(sessions, users, log, cfg))
+	publicRoutes := publicRouteSet()
+	router.Use(pathAwareAuth(sessions, users, log, cfg, publicRoutes))
 	loginRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
 	verifyRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
 	router.Use(pathAwareRateLimit(map[string]*middleware.FailureRateLimiter{
@@ -84,7 +75,11 @@ func NewEngine(
 	}))
 	router.Use(pathAwareIdempotency(idempotency, log))
 
-	strictHandler := api.NewStrictHandler(ssi, nil)
+	// Strict handlers return (ResponseObject, error); on error the central
+	// domain-error -> HTTP mapper writes the response (see writeDomainError).
+	strictHandler := api.NewStrictHandlerWithOptions(ssi, nil, api.StrictGinServerOptions{
+		HandlerErrorFunc: func(c *gin.Context, err error) { writeDomainError(c, log, err) },
+	})
 	api.RegisterHandlers(router, strictHandler)
 
 	// API docs (OpenAPI spec + Redoc UI).
@@ -100,15 +95,28 @@ func validationErrorHandler(c *gin.Context, message string, statusCode int) {
 	httperr.Write(c, statusCode, httperr.ErrCodeValidationFailed, message)
 }
 
+// publicRouteSet returns the routes callable WITHOUT a valid session cookie
+// (security: [] plus logout, which is idempotent and clears the cookie).
+func publicRouteSet() map[string]bool {
+	return map[string]bool{
+		"POST:/api/auth/register":               true,
+		"POST:/api/auth/login":                  true,
+		"POST:/api/auth/logout":                 true,
+		"POST:/api/auth/password-reset/request": true,
+		"POST:/api/auth/password-reset/confirm": true,
+	}
+}
+
 func pathAwareAuth(
 	sessions repository.SessionRepository,
 	users repository.UserRepository,
 	log *slog.Logger,
 	cfg *config.HTTPServer,
+	publicRoutes map[string]bool,
 ) gin.HandlerFunc {
 	inner := middleware.AuthRequired(sessions, users, log, cfg)
 	return func(c *gin.Context) {
-		if isPublic(c) || !strings.HasPrefix(c.Request.URL.Path, "/api/") {
+		if isPublic(c, publicRoutes) || !strings.HasPrefix(c.Request.URL.Path, "/api/") {
 			c.Next()
 			return
 		}
@@ -116,7 +124,7 @@ func pathAwareAuth(
 	}
 }
 
-func isPublic(c *gin.Context) bool {
+func isPublic(c *gin.Context, publicRoutes map[string]bool) bool {
 	return publicRoutes[c.Request.Method+":"+c.Request.URL.Path]
 }
 

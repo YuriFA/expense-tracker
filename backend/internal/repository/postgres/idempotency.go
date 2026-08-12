@@ -9,7 +9,10 @@ import (
 	db "github.com/yurifa/expense-tracker-api/internal/repository/db"
 )
 
-func (r *Repository) CreateIdempotencyKey(ctx context.Context, params domain.CreateIdempotencyKeyParams) (*domain.IdempotencyKey, error) {
+func (r *Repository) CreateIdempotencyKey(
+	ctx context.Context,
+	params domain.CreateIdempotencyKeyParams,
+) (*domain.IdempotencyKey, error) {
 	const op = "repository.postgres.CreateIdempotencyKey"
 
 	row, err := r.q.CreateIdempotencyKey(ctx, db.CreateIdempotencyKeyParams{
@@ -36,7 +39,7 @@ func (r *Repository) UpdateIdempotencyKey(
 
 	var respStatus *int32
 	if params.ResponseStatus != nil {
-		v := int32(*params.ResponseStatus)
+		v := int32(*params.ResponseStatus) //nolint:gosec // HTTP status code, always < 600
 		respStatus = &v
 	}
 
@@ -57,7 +60,11 @@ func (r *Repository) UpdateIdempotencyKey(
 	return idempotencyFromRow(row), nil
 }
 
-func (r *Repository) GetByUserAndKey(ctx context.Context, userID uuid.UUID, key string) (*domain.IdempotencyKey, error) {
+func (r *Repository) GetByUserAndKey(
+	ctx context.Context,
+	userID uuid.UUID,
+	key string,
+) (*domain.IdempotencyKey, error) {
 	const op = "repository.postgres.GetByUserAndKey"
 
 	row, err := r.q.GetIdempotencyByUserAndKey(ctx, db.GetIdempotencyByUserAndKeyParams{

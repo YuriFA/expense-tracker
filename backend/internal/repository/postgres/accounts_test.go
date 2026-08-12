@@ -56,7 +56,7 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 	// Delete.
 	require.NoError(t, testRepo.DeleteAccount(ctx, user.ID, created.ID))
 	_, err = testRepo.GetAccount(ctx, user.ID, created.ID)
-	assert.ErrorIs(t, err, domain.ErrAccountNotFound)
+	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 }
 
 func TestAccountIDORScoping(t *testing.T) {
@@ -74,16 +74,16 @@ func TestAccountIDORScoping(t *testing.T) {
 
 	// Intruder cannot read owner's account -> not found.
 	_, err = testRepo.GetAccount(ctx, intruder.ID, acct.ID)
-	assert.ErrorIs(t, err, domain.ErrAccountNotFound)
+	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 
 	// Intruder cannot delete owner's account -> not found (NOT a FK error).
 	err = testRepo.DeleteAccount(ctx, intruder.ID, acct.ID)
-	assert.ErrorIs(t, err, domain.ErrAccountNotFound)
+	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 
 	// Intruder cannot update owner's account.
 	name := "hacked"
 	_, err = testRepo.UpdateAccount(ctx, intruder.ID, acct.ID, domain.UpdateAccountParams{Name: &name})
-	assert.ErrorIs(t, err, domain.ErrAccountNotFound)
+	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 }
 
 func TestDeleteAccountInUseReturnsConflict(t *testing.T) {
@@ -97,7 +97,7 @@ func TestDeleteAccountInUseReturnsConflict(t *testing.T) {
 		UserID: user.ID, Name: "A", Currency: "USD", OpeningBalance: 0,
 	})
 	require.NoError(t, err)
-	cat := seedCategory(t, user.ID, "Cat", domain.TransactionTypeIncome)
+	cat := seedCategory(t, user.ID, "Cat")
 
 	_, err = testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
 		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 100,
@@ -107,5 +107,5 @@ func TestDeleteAccountInUseReturnsConflict(t *testing.T) {
 
 	// Deleting the referenced account must surface a domain error (-> 409).
 	err = testRepo.DeleteAccount(ctx, user.ID, acct.ID)
-	assert.ErrorIs(t, err, domain.ErrAccountHasTransactions)
+	require.ErrorIs(t, err, domain.ErrAccountHasTransactions)
 }

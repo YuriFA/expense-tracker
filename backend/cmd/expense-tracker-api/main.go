@@ -49,28 +49,8 @@ func run(cfg *config.Config, log *slog.Logger) error {
 	repo := postgres.NewRepository(pool)
 	log.Info("database initialized")
 
-	// Services (all repositories are satisfied by the single *postgres.Repository).
-	accountSvc := service.NewAccountService(repo)
-	categorySvc := service.NewCategoryService(repo)
-	txnSvc := service.NewTransactionService(repo, repo, repo)
-	authSvc := service.NewAuthService(repo, repo, repo, repo, service.NewLogMailer(log), service.AuthConfig{
-		SessionTTL: cfg.SessionConfig.TTL,
-	})
-	sessionSvc := service.NewSessionService(repo)
-
-	// Transport: the StrictServerInterface implementation + gin engine.
-	server := httptransport.NewServer(log, &cfg.HTTPServer, accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
-	router := httptransport.NewEngine(&cfg.HTTPServer, log, server, repo, repo, repo)
-
+	srv := newHTTPServer(cfg, repo, log)
 	log.Info("starting server", slog.String("address", cfg.Address))
-
-	srv := &http.Server{
-		Addr:         cfg.Address,
-		Handler:      router,
-		ReadTimeout:  cfg.ReadTimeout,
-		WriteTimeout: cfg.WriteTimeout,
-		IdleTimeout:  cfg.IdleTimeout,
-	}
 
 	serverErr := make(chan error, 1)
 	go func() {
@@ -121,4 +101,27 @@ func run(cfg *config.Config, log *slog.Logger) error {
 
 	log.Info("server exiting")
 	return nil
+}
+
+// newHTTPServer wires every service to the single *postgres.Repository, builds
+// the gin engine, and returns a configured *[http.Server] ready to serve.
+func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logger) *http.Server {
+	accountSvc := service.NewAccountService(repo)
+	categorySvc := service.NewCategoryService(repo)
+	txnSvc := service.NewTransactionService(repo, repo, repo)
+	authSvc := service.NewAuthService(repo, repo, repo, repo, service.NewLogMailer(log), service.AuthConfig{
+		SessionTTL: cfg.SessionConfig.TTL,
+	})
+	sessionSvc := service.NewSessionService(repo)
+
+	server := httptransport.NewServer(&cfg.HTTPServer, accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
+	router := httptransport.NewEngine(&cfg.HTTPServer, log, server, repo, repo, repo)
+
+	return &http.Server{
+		Addr:         cfg.Address,
+		Handler:      router,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+		IdleTimeout:  cfg.IdleTimeout,
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -20,27 +21,48 @@ import (
 	httptransport "github.com/yurifa/expense-tracker-api/internal/transport/http"
 )
 
-func newTestEngine(t *testing.T) (*gin.Engine, *fakes.Store) {
-	t.Helper()
+func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
+	os.Exit(m.Run())
+}
+
+func newTestEngine(t *testing.T) *gin.Engine {
+	t.Helper()
 	log := logger.NewDiscardLogger()
 	store := fakes.New()
-	authSvc := service.NewAuthService(store, store, store, store, service.NewLogMailer(log), service.AuthConfig{SessionTTL: time.Hour})
+	authSvc := service.NewAuthService(
+		store,
+		store,
+		store,
+		store,
+		service.NewLogMailer(log),
+		service.AuthConfig{SessionTTL: time.Hour},
+	)
 	accountSvc := service.NewAccountService(store)
 	categorySvc := service.NewCategoryService(store)
 	txnSvc := service.NewTransactionService(store, store, store)
 	sessionSvc := service.NewSessionService(store)
 
-	server := httptransport.NewServer(log, testHTTPConfig(), accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
+	server := httptransport.NewServer(testHTTPConfig(), accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
 	engine := httptransport.NewEngine(testHTTPConfig(), log, server, store, store, store)
-	return engine, store
+	return engine
 }
 
 func testHTTPConfig() *config.HTTPServer {
 	return &config.HTTPServer{
-		Address:         "127.0.0.1:0",
-		CorsConfig:      config.CORSConfig{AllowedOrigins: []string{"*"}, AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"}, AllowedHeaders: []string{"Content-Type"}},
-		SessionConfig:   config.SessionConfig{TTL: time.Hour, CookieName: "session_id", Secure: false, SameSite: "lax", SlidingExpiration: true},
+		Address: "127.0.0.1:0",
+		CorsConfig: config.CORSConfig{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+			AllowedHeaders: []string{"Content-Type"},
+		},
+		SessionConfig: config.SessionConfig{
+			TTL:               time.Hour,
+			CookieName:        "session_id",
+			Secure:            false,
+			SameSite:          "lax",
+			SlidingExpiration: true,
+		},
 		FailureRateLimit: config.FailureRateLimit{MaxAttempts: 100, LockoutDuration: time.Minute},
 	}
 }
@@ -89,11 +111,17 @@ func decode(t *testing.T, rec *httptest.ResponseRecorder, v any) {
 }
 
 func TestTransport_RegisterLoginCreateFlow(t *testing.T) {
-	engine, _ := newTestEngine(t)
+	t.Parallel()
+	engine := newTestEngine(t)
 	client := newClient(t, engine)
 
 	// Register -> 201 + session cookie.
-	rec := client.do("POST", "/api/auth/register", map[string]string{"email": "flow@example.com", "password": "supersecret1"}, nil)
+	rec := client.do(
+		"POST",
+		"/api/auth/register",
+		map[string]string{"email": "flow@example.com", "password": "supersecret1"},
+		nil,
+	)
 	require.Equal(t, 201, rec.Code, rec.Body.String())
 	require.NotEmpty(t, client.jar["session_id"], "register sets a session cookie")
 
@@ -102,11 +130,16 @@ func TestTransport_RegisterLoginCreateFlow(t *testing.T) {
 	require.Equal(t, 200, rec.Code, rec.Body.String())
 
 	// Create account.
-	rec = client.do("POST", "/api/accounts", map[string]any{"name": "Wallet", "currency": "USD", "openingBalance": 10000}, nil)
+	rec = client.do(
+		"POST",
+		"/api/accounts",
+		map[string]any{"name": "Wallet", "currency": "USD", "openingBalance": 10000},
+		nil,
+	)
 	require.Equal(t, 201, rec.Code, rec.Body.String())
 	var acct map[string]any
 	decode(t, rec, &acct)
-	assert.Equal(t, float64(10000), acct["balance"])
+	assert.InDelta(t, float64(10000), acct["balance"], 0)
 	accountID := acct["id"].(string)
 
 	// Seed categories include income ones.
@@ -135,21 +168,28 @@ func TestTransport_RegisterLoginCreateFlow(t *testing.T) {
 	rec = client.do("GET", "/api/accounts/"+accountID, nil, nil)
 	require.Equal(t, 200, rec.Code, rec.Body.String())
 	decode(t, rec, &acct)
-	assert.Equal(t, float64(15000), acct["balance"])
+	assert.InDelta(t, float64(15000), acct["balance"], 0)
 }
 
 func TestTransport_UnauthReturns401(t *testing.T) {
-	engine, _ := newTestEngine(t)
+	t.Parallel()
+	engine := newTestEngine(t)
 	client := newClient(t, engine)
 	rec := client.do("GET", "/api/accounts", nil, nil)
 	assert.Equal(t, 401, rec.Code, rec.Body.String())
 }
 
 func TestTransport_SpecValidationRejectsBadBody(t *testing.T) {
-	engine, _ := newTestEngine(t)
+	t.Parallel()
+	engine := newTestEngine(t)
 	client := newClient(t, engine)
 
-	_ = client.do("POST", "/api/auth/register", map[string]string{"email": "v@example.com", "password": "supersecret1"}, nil)
+	_ = client.do(
+		"POST",
+		"/api/auth/register",
+		map[string]string{"email": "v@example.com", "password": "supersecret1"},
+		nil,
+	)
 
 	// Account create missing required openingBalance -> 400 validation.
 	rec := client.do("POST", "/api/accounts", map[string]any{"name": "X", "currency": "USD"}, nil)

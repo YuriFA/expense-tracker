@@ -83,7 +83,11 @@ func (r *Repository) GetSessionsByUser(ctx context.Context, userID uuid.UUID) ([
 	return out, nil
 }
 
-func (r *Repository) DeleteSessionsByUserExcept(ctx context.Context, userID uuid.UUID, exceptSessionID string) (int64, error) {
+func (r *Repository) DeleteSessionsByUserExcept(
+	ctx context.Context,
+	userID uuid.UUID,
+	exceptSessionID string,
+) (int64, error) {
 	const op = "repository.postgres.DeleteSessionsByUserExcept"
 
 	n, err := r.q.DeleteSessionsByUserExcept(ctx, db.DeleteSessionsByUserExceptParams{
