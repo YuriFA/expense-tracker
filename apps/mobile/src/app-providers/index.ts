@@ -1,5 +1,0 @@
-export { AppProviders } from './AppProviders'
-export { QueryProvider } from './QueryProvider'
-export { I18nProvider } from './I18nProvider'
-export { ThemeProvider } from './ThemeProvider'
-export { RepositoryProvider } from './RepositoryProvider'

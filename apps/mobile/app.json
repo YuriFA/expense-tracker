@@ -1,44 +1,25 @@
 {
   "expo": {
-    "name": "Expense Tracker",
-    "slug": "expense-tracker",
-    "version": "0.0.0",
+    "name": "mobile",
+    "slug": "mobile",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "scheme": "expensetracker",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "works.earendil.expensetracker"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "works.earendil.expensetracker"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
-      "bundler": "metro",
-      "output": "server"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-sqlite",
-        {
-          "enableFTS": true,
-          "useSQLCipher": false
-        }
-      ],
-      "expo-font"
-    ],
-    "experiments": {
-      "tsconfigPaths": true,
-      "typedRoutes": true
-    },
-    "newArchEnabled": true
+      "favicon": "./assets/favicon.png"
+    }
   }
 }
