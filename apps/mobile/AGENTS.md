@@ -67,6 +67,62 @@ login, authed redirected away from login) is **not yet ported**.
 (`bunx expo export --platform ios`) is the end-to-end check that `@/*` and the
 route tree resolve. Run: `bun run start` (`expo start`), `ios`, `android`, `web`.
 
+## Testing / e2e (Maestro)
+
+Flows live in `.maestro/flows/*.yaml`; shared launch logic in
+`.maestro/_launch.yaml` (+ `_launch.js`); config in `.maestro/config.yaml`.
+
+**Target: Expo Go.** Flows deep-link into the running dev server
+(`host.exp.Exponent` -> `exp://127.0.0.1:<port>`), so the suite needs no native
+build while the app only uses modules shipped with Expo Go. This is the
+lightest path that works against the current skeleton.
+
+Two rules every agent MUST follow here:
+
+- **Add coverage for new use cases.** Landing or changing a user-facing flow in
+  `apps/mobile` REQUIRES adding (or updating) a Maestro flow covering it. No new
+  user-facing behavior ships without an e2e flow.
+- **Run the suite green before `done`.** Before any task here reports done, run
+  `bun run test:e2e` and it must pass. A failing run blocks `done` - fix the app
+  or the flow; do not skip or weaken the assertion.
+
+**Selectors:** assert/tap by `testID` (Maestro `id`), not text. Conventions:
+lowercase-kebab ids; screens carry `screen-<name>` (set on `ScreenPlaceholder`
+via the spread props), tab buttons carry `tab-<name>` (via `tabBarButtonTestID`
+on `(tabs)/_layout.tsx`).
+
+**Run it** (from `apps/mobile`):
+
+1. Boot an iOS simulator and install the matching Expo Go:
+   `npx expo-go download ios <sdk>` -> `xcrun simctl install booted <Expo-Go-*.tar.app>`.
+2. Start the dev server in its own terminal: `bun run start` (Metro on :8081).
+3. `bun run test:e2e` (whole suite) or
+   `maestro test .maestro/flows/<file>.yaml` (one flow).
+
+Override the dev-server URL without editing files (e.g. port 8081 is busy):
+`MAESTRO_EXPO_URL='exp://127.0.0.1:<port>' bun run test:e2e`. Prerequisites:
+Java 17+ on `PATH` and the `maestro` CLI (install per maestro.dev); a booted
+simulator with Expo Go; the dev server running. Artifacts land in
+`.maestro/.output/` (gitignored); flow YAML stays committed.
+
+**New flow template** - copy `_launch.yaml`'s header, `runFlow: ../_launch.yaml`,
+then the user actions and assertions:
+
+```yaml
+appId: host.exp.Exponent
+---
+- runFlow: ../_launch.yaml
+- tapOn:
+    id: <element-testid>
+- assertVisible:
+    id: <expected-testid>
+```
+
+**Switching off Expo Go:** when a feature needs native code not bundled in Expo
+Go (mmkv / SQLite / custom modules), add `ios.bundleIdentifier` + android
+`package` to `app.json`, produce a dev build, and repoint `_launch.yaml` from
+the `openLink` Expo-Go path to `launchApp: <bundleId>`.
+
 ## Not yet built (re-establish here as it lands)
 
 The app is a skeleton: screens are placeholders, `entities/`, `features/`, and
@@ -74,9 +130,16 @@ most of `shared/` are empty. Open decisions before the first real feature:
 
 - **Session gate** in `src/app/_layout.tsx` (port the web router guard;
   needs `entities/session` + an unauthorized interceptor).
-- **Persistence & data fetching.** The `.pi/skills/maestro` skill references
-  react-native-mmkv 3 + a SQLite store, `appId works.earendil.expensetracker`,
-  and `expo.newArchEnabled: true` - none of which exist in code yet. **Reconcile
-  whether that skill is the target or stale before building native**; those deps
-  require a dev build (not Expo Go).
+- **Persistence & data fetching.** Not yet built. When it lands, modules
+  outside Expo Go (e.g. react-native-mmkv, SQLite, custom native code) require a
+  **dev build** and also flip the Maestro e2e target off Expo Go (see
+  "Testing / e2e" above - the prior `.pi/skills/maestro` note referencing that
+  skill was stale; `.pi/` does not exist in this repo).
 - **i18n wiring** (`shared/i18n` + react-i18next) and localized tab/screen titles.
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.

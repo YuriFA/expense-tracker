@@ -1,0 +1,9 @@
+# Smoke: the app launches in Expo Go and the Dashboard renders.
+appId: host.exp.Exponent
+tags:
+  - smoke
+---
+- runFlow: ../_launch.yaml
+- assertVisible:
+    id: screen-dashboard
+- takeScreenshot: dashboard

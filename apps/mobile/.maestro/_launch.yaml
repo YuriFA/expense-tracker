@@ -1,0 +1,24 @@
+# Shared launch subflow. Imported by every flow via `runFlow: ../_launch.yaml`.
+#
+# Targets Expo Go (appId host.exp.Exponent): it deep-links into the running
+# dev server instead of launching a standalone app, so the suite needs no native
+# build while the app only uses modules shipped with Expo Go. The dev-server URL
+# is resolved by _launch.js (overridable via the MAESTRO_EXPO_URL env var).
+#
+# killApp first so every flow starts from the initial route (Dashboard)
+# regardless of where a previous flow left the navigator.
+appId: host.exp.Exponent
+---
+- runScript: _launch.js
+- killApp: host.exp.Exponent
+- openLink: ${output.url}
+# iOS shows "Open in 'Expo Go'?" the first time a scheme opens Expo Go.
+- runFlow:
+    when:
+      visible: 'Open in'
+    commands:
+      - tapOn: Open
+- extendedWaitUntil:
+    visible:
+      id: screen-dashboard
+    timeout: 90000
