@@ -1,0 +1,12 @@
+# Maestro workspace config for @expense-tracker/mobile.
+# Docs: https://docs.maestro.dev/
+#
+# Run the whole suite from apps/mobile with `bun run test:e2e`.
+# Only the flows under flows/ are discovered as runnable tests; the shared
+# launch helpers at the workspace root (_launch.js / _launch.yaml) are invoked
+# explicitly via `runFlow` and must not be discovered.
+flows:
+  - 'flows/**'
+# Per-run artifacts (screenshots, logs) - gitignored. Paths are relative to the
+# apps/mobile CWD, so this keeps them inside the committed .maestro dir.
+testOutputDir: .maestro/.output

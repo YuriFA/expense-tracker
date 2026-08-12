@@ -1,0 +1,14 @@
+# Reaches an (auth) screen. The skeleton has no session gate and no in-app link
+# into (auth), so the flow drives the route the same way Expo Router deep links
+# do: through the dev-server URL (${output.url} is set by _launch.yaml).
+appId: host.exp.Exponent
+---
+- runFlow: ../_launch.yaml
+- openLink: ${output.url}/--/login
+- extendedWaitUntil:
+    visible:
+      id: screen-login
+    timeout: 30000
+- assertVisible:
+    id: screen-login
+- takeScreenshot: auth-login

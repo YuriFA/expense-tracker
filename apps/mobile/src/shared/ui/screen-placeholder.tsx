@@ -11,6 +11,9 @@ interface ScreenPlaceholderProps extends ViewProps {
  * Temporary centered placeholder used by every screen while the real UI is
  * built out. Demonstrates the `shared/ui` layer being consumed through the
  * `@/` alias and will be removed once screens have real content.
+ *
+ * Each screen passes a stable lowercase-kebab `testID` (e.g. `screen-dashboard`)
+ * via the spread props; the Maestro e2e flows assert on it.
  */
 export function ScreenPlaceholder({ title, hint, style, ...rest }: ScreenPlaceholderProps) {
   return (

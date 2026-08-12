@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Maestro e2e artifacts (screenshots, logs). Flows stay committed.
+.maestro/.output/
+.output/

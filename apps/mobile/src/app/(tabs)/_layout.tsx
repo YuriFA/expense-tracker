@@ -12,10 +12,10 @@ type IconName = ComponentProps<typeof Ionicons>['name']
  * bundle (`nav.dashboard` etc.) once react-i18next is wired in shared/i18n.
  */
 const TABS = [
-  { name: 'index', title: 'Dashboard', icon: 'grid-outline' as IconName },
-  { name: 'transactions', title: 'Transactions', icon: 'swap-horizontal-outline' as IconName },
-  { name: 'accounts', title: 'Accounts', icon: 'wallet-outline' as IconName },
-  { name: 'settings', title: 'Settings', icon: 'settings-outline' as IconName },
+  { name: 'index', title: 'Dashboard', testId: 'tab-dashboard', icon: 'grid-outline' as IconName },
+  { name: 'transactions', title: 'Transactions', testId: 'tab-transactions', icon: 'swap-horizontal-outline' as IconName },
+  { name: 'accounts', title: 'Accounts', testId: 'tab-accounts', icon: 'wallet-outline' as IconName },
+  { name: 'settings', title: 'Settings', testId: 'tab-settings', icon: 'settings-outline' as IconName },
 ] as const
 
 export default function TabsLayout() {
@@ -32,6 +32,7 @@ export default function TabsLayout() {
           name={tab.name}
           options={{
             title: tab.title,
+            tabBarButtonTestID: tab.testId,
             tabBarIcon: ({ color }) => <Ionicons name={tab.icon} size={24} color={color} />,
           }}
         />

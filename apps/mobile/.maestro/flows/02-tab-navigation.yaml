@@ -1,0 +1,23 @@
+# Smoke: bottom-tab navigation across every tab and back.
+appId: host.exp.Exponent
+tags:
+  - smoke
+---
+- runFlow: ../_launch.yaml
+- tapOn:
+    id: tab-transactions
+- assertVisible:
+    id: screen-transactions
+- tapOn:
+    id: tab-accounts
+- assertVisible:
+    id: screen-accounts
+- tapOn:
+    id: tab-settings
+- assertVisible:
+    id: screen-settings
+- tapOn:
+    id: tab-dashboard
+- assertVisible:
+    id: screen-dashboard
+- takeScreenshot: tab-navigation
