@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native'
+import { Pressable, View, type ViewStyle } from 'react-native'
 import { cva } from 'class-variance-authority'
 import { useTokens } from './theme'
 import { Text } from './Text'
@@ -23,19 +23,27 @@ interface SegmentedControlProps<T extends string> {
 /** Track layout (theme-independent); the muted fill is applied from tokens. */
 const trackClasses = cva('flex-row rounded-xl p-[3px]')
 
-/** Segment layout + the selected "lift" shadow; the surface fill is token-driven. */
-const segmentClasses = cva(
-  'flex-1 min-h-[44px] rounded-[10px] items-center justify-center',
-  {
-    variants: {
-      selected: {
-        true: 'shadow-sm shadow-black/5 elevation-1',
-        false: '',
-      },
-    },
-    defaultVariants: { selected: false },
-  },
-)
+/**
+ * Segment layout. This className MUST stay stable across renders / segments -
+ * the selected "lift" is applied via the inline `style` below, not via NativeWind
+ * classes. NativeWind implements `shadow-*`/`elevation-*` with CSS custom
+ * properties (`--tw-shadow-color`, `-rn-shadow-*`), which it can only apply by
+ * wrapping the component in a variable-context provider, decided at render
+ * time. Conditionally adding those classes (only on the selected segment) forces
+ * NativeWind to remount the segment whenever the selection changes - a remount
+ * inside a re-render tears down the React tree and surfaces as a misleading
+ * "Couldn't find a navigation context" crash.
+ */
+const segmentClasses = 'flex-1 min-h-[44px] rounded-[10px] items-center justify-center'
+
+/** Equivalent to `shadow-sm shadow-black/5 elevation-1`, but as a plain RN style. */
+const selectedShadow: ViewStyle = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.05,
+  shadowRadius: 2,
+  elevation: 1,
+}
 
 /**
  * Segmented control - the canonical type switch (Expense / Income / Transfer).
@@ -74,8 +82,8 @@ export function SegmentedControl<T extends string>({
                 onChange(option.value)
               }
             }}
-            className={cn(segmentClasses({ selected }))}
-            style={selected ? { backgroundColor: tokens.surface } : undefined}
+            className={cn(segmentClasses)}
+            style={selected ? { backgroundColor: tokens.surface, ...selectedShadow } : undefined}
           >
             <Text weight={selected ? 600 : 500} tone={selected ? 'default' : 'muted'}>
               {option.label}
