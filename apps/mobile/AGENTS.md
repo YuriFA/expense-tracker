@@ -56,6 +56,18 @@ login, authed redirected away from login) is **not yet ported**.
 | `(tabs)/settings.tsx` | `/settings` | Settings |
 | `(auth)/{login,register,verify-email,reset-password}.tsx` | `/...` | - |
 
+**Bottom tab bar** is a custom `widgets/bottom-tab-bar/` (consumes
+`expo-router/js-tabs` `BottomTabBarProps`), not the default. It renders the 4
+real tabs + a central spacer; the central `+` is a **SpeedDial** overlay
+(`shared/ui/SpeedDial`, `position="center"`) mounted as a **sibling** of `<Tabs>`
+in `(tabs)/_layout.tsx` - a global floating action, NOT a route and NOT a tab
+(opening it never changes the active route). Actions (Expense/Income/Transfer)
+are wired in that layout; their create-transaction flows don't exist yet
+(placeholder callbacks). The active tab tint comes from the `primary` token.
+The FAB straddles the bar's top edge via `bottomOffset = measuredBarHeight -
+FAB_SIZE/2` (height shared via `widgets/bottom-tab-bar` `TabBarHeightProvider`,
+not hardcoded).
+
 ## Conventions
 
 - **Component files are PascalCase** (`DashboardScreen.tsx`) - matches `apps/web`

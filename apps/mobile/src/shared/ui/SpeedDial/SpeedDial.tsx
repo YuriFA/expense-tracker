@@ -92,7 +92,10 @@ export function SpeedDial(props: SpeedDialProps) {
 
   const insets = useSafeAreaInsets()
   const isRight = position === "bottom-right"
+  const isCenter = position === "center"
   const resolvedBottomOffset = bottomOffset ?? insets.bottom + DEFAULT_EDGE_MARGIN
+  // Anchors the corner variants only; `center` spans the full width and
+  // self-centers, so this value is unused when `position="center"`.
   const resolvedHorizontalOffset =
     horizontalOffset ?? (isRight ? insets.right : insets.left) + DEFAULT_EDGE_MARGIN
 
@@ -133,9 +136,11 @@ export function SpeedDial(props: SpeedDialProps) {
         style={{
           position: "absolute",
           bottom: resolvedBottomOffset,
-          ...(isRight
-            ? { right: resolvedHorizontalOffset, alignItems: "flex-end" }
-            : { left: resolvedHorizontalOffset, alignItems: "flex-start" }),
+          ...(isCenter
+            ? { left: 0, right: 0, alignItems: "center" }
+            : isRight
+              ? { right: resolvedHorizontalOffset, alignItems: "flex-end" }
+              : { left: resolvedHorizontalOffset, alignItems: "flex-start" }),
         }}
       >
         {/* Actions grow upward; column-reverse keeps action[0] nearest the FAB. */}
@@ -143,7 +148,7 @@ export function SpeedDial(props: SpeedDialProps) {
           pointerEvents="box-none"
           style={{
             flexDirection: "column-reverse",
-            alignItems: isRight ? "flex-end" : "flex-start",
+            alignItems: isCenter ? "center" : isRight ? "flex-end" : "flex-start",
           }}
         >
           {actions.map((action, index) => (
