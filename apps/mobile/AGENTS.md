@@ -102,10 +102,13 @@ Components using `useSafeAreaInsets`/`useTheme` need `SafeAreaProvider` (with
 Flows live in `.maestro/flows/*.yaml`; shared launch logic in
 `.maestro/_launch.yaml` (+ `_launch.js`); config in `.maestro/config.yaml`.
 
-**Target: Expo Go.** Flows deep-link into the running dev server
+**Target: Expo Go (iOS).** Flows deep-link into the running dev server
 (`host.exp.Exponent` -> `exp://127.0.0.1:<port>`), so the suite needs no native
 build while the app only uses modules shipped with Expo Go. This is the
-lightest path that works against the current skeleton.
+lightest path that works against the current skeleton. The committed `appId`
+(`host.exp.Exponent`, capital E) is the iOS Expo Go bundle id; Android Expo Go's
+package is `host.exp.exponent` (lowercase), so the suite is iOS-only today and
+needs its own launch handling before Android can run it.
 
 Two rules every agent MUST follow here:
 

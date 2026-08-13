@@ -1,24 +1,127 @@
-# Smoke: the central SpeedDial FAB opens to reveal the Expense/Income/Transfer
-# actions and closes via the backdrop. The comprehensive SpeedDial e2e suite
-# (open/close states, action navigation, tab interplay) is task 3; this just
-# covers the core new user-facing behavior so it never ships unverified.
+# Comprehensive SpeedDial + bottom-tab-bar integration e2e coverage.
+#
+# Replaces the PR-8 smoke flow with full behavior coverage. Selectors are
+# testIDs only (Maestro `id`), never text. Each section relies on
+# assertVisible/assertNotVisible polling instead of hardcoded sleeps.
+#
+# Sections:
+#   1. Closed state - only the FAB is shown.
+#   2. Open / close via the FAB.
+#   3. Backdrop (scrim) dismiss.
+#   4. Action tap collapses the dial. Expense/Income/Transfer are placeholder
+#      callbacks in (tabs)/_layout.tsx until create-transaction screens exist,
+#      so we assert the dial CLOSED after each tap, not a destination screen.
+#   5. The 4 real tabs still switch screens with the SpeedDial present.
+#
+# Visibility note: the SpeedDial backdrop is a full-screen overlay that Maestro
+# reports as not-visible while closed (it becomes visible when the dial opens),
+# so asserting it toggles is a reliable closed/open signal - not a weakened one.
 appId: host.exp.Exponent
-tags:
-  - smoke
 ---
 - runFlow: ../_launch.yaml
+
+# --- 1. Closed state: FAB shown, scrim + actions hidden ----------------------
 - assertVisible:
     id: speed-dial-fab
+- assertNotVisible:
+    id: speed-dial-backdrop
+- assertNotVisible:
+    id: speed-dial-action-expense
+- assertNotVisible:
+    id: speed-dial-action-income
+- assertNotVisible:
+    id: speed-dial-action-transfer
+
+# --- 2. Open / close via the FAB --------------------------------------------
 - tapOn:
     id: speed-dial-fab
+- assertVisible:
+    id: speed-dial-backdrop
 - assertVisible:
     id: speed-dial-action-expense
 - assertVisible:
     id: speed-dial-action-income
 - assertVisible:
     id: speed-dial-action-transfer
+# Toggle the FAB back to closed.
 - tapOn:
+    id: speed-dial-fab
+- assertNotVisible:
     id: speed-dial-backdrop
 - assertNotVisible:
     id: speed-dial-action-expense
+- assertNotVisible:
+    id: speed-dial-action-income
+- assertNotVisible:
+    id: speed-dial-action-transfer
+
+# --- 3. Backdrop (scrim) dismiss --------------------------------------------
+- tapOn:
+    id: speed-dial-fab
+- assertVisible:
+    id: speed-dial-backdrop
+- tapOn:
+    id: speed-dial-backdrop
+- assertNotVisible:
+    id: speed-dial-backdrop
+- assertNotVisible:
+    id: speed-dial-action-expense
+- assertNotVisible:
+    id: speed-dial-action-income
+- assertNotVisible:
+    id: speed-dial-action-transfer
+
+# --- 4. Action tap collapses the dial (placeholder callbacks) ----------------
+# Expense
+- tapOn:
+    id: speed-dial-fab
+- assertVisible:
+    id: speed-dial-action-expense
+- tapOn:
+    id: speed-dial-action-expense
+- assertNotVisible:
+    id: speed-dial-backdrop
+- assertNotVisible:
+    id: speed-dial-action-expense
+# Income
+- tapOn:
+    id: speed-dial-fab
+- assertVisible:
+    id: speed-dial-action-income
+- tapOn:
+    id: speed-dial-action-income
+- assertNotVisible:
+    id: speed-dial-backdrop
+- assertNotVisible:
+    id: speed-dial-action-income
+# Transfer
+- tapOn:
+    id: speed-dial-fab
+- assertVisible:
+    id: speed-dial-action-transfer
+- tapOn:
+    id: speed-dial-action-transfer
+- assertNotVisible:
+    id: speed-dial-backdrop
+- assertNotVisible:
+    id: speed-dial-action-transfer
+
+# --- 5. Real tabs still switch screens with the SpeedDial present ------------
+# Dial is closed so the scrim passes touches through; tab taps land.
+- tapOn:
+    id: tab-transactions
+- assertVisible:
+    id: screen-transactions
+- tapOn:
+    id: tab-accounts
+- assertVisible:
+    id: screen-accounts
+- tapOn:
+    id: tab-settings
+- assertVisible:
+    id: screen-settings
+- tapOn:
+    id: tab-dashboard
+- assertVisible:
+    id: screen-dashboard
 - takeScreenshot: speed-dial

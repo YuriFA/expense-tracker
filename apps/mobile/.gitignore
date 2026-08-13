@@ -43,3 +43,7 @@ yarn-error.*
 # Maestro e2e artifacts (screenshots, logs). Flows stay committed.
 .maestro/.output/
 .output/
+
+# Expo Go downloads from the e2e run recipe (`expo-go download ios|android`).
+Expo-Go-*.apk
+Expo-Go-*.tar.app
