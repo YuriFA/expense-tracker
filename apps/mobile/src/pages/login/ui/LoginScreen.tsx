@@ -16,7 +16,7 @@ export function LoginScreen() {
   }
 
   return (
-    <Screen>
+    <Screen testID="screen-login">
       <Stack gap="lg" className="p-6 justify-center">
         {/* Header */}
         <Stack gap="sm">
