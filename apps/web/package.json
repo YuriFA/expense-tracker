@@ -26,6 +26,7 @@
     "@expense-tracker/api": "workspace:*",
     "@expense-tracker/i18n": "workspace:*",
     "@expense-tracker/money": "workspace:*",
+    "@expense-tracker/tokens": "workspace:*",
     "@internationalized/date": "^3.12.1",
     "@lucide/vue": "^1.22.0",
     "@pinia/colada": "^1.3.1",
