@@ -36,7 +36,7 @@ export type { BadgeProps, BadgeVariant, BadgeSize } from "./badge"
 export { Divider } from "./divider"
 export type { DividerProps } from "./divider"
 
-export { SpeedDial } from "./SpeedDial"
+export { SpeedDial, FAB_SIZE } from "./SpeedDial"
 export type {
   SpeedDialProps,
   SpeedDialAction,

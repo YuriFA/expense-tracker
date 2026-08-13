@@ -1,0 +1,24 @@
+# Smoke: the central SpeedDial FAB opens to reveal the Expense/Income/Transfer
+# actions and closes via the backdrop. The comprehensive SpeedDial e2e suite
+# (open/close states, action navigation, tab interplay) is task 3; this just
+# covers the core new user-facing behavior so it never ships unverified.
+appId: host.exp.Exponent
+tags:
+  - smoke
+---
+- runFlow: ../_launch.yaml
+- assertVisible:
+    id: speed-dial-fab
+- tapOn:
+    id: speed-dial-fab
+- assertVisible:
+    id: speed-dial-action-expense
+- assertVisible:
+    id: speed-dial-action-income
+- assertVisible:
+    id: speed-dial-action-transfer
+- tapOn:
+    id: speed-dial-backdrop
+- assertNotVisible:
+    id: speed-dial-action-expense
+- takeScreenshot: speed-dial

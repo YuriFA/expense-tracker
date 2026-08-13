@@ -1,7 +1,7 @@
 import type { SharedValue } from "react-native-reanimated"
 
-/** Corner the FAB anchors to. */
-export type SpeedDialPosition = "bottom-right" | "bottom-left"
+/** Where the FAB anchors horizontally. */
+export type SpeedDialPosition = "bottom-right" | "bottom-left" | "center"
 
 /**
  * A single action rendered inside the SpeedDial. The component is generic -
@@ -48,16 +48,25 @@ export interface SpeedDialProps {
   /** FAB accessibility label when open. @default "Close actions" */
   closeLabel?: string
 
-  /** @default "bottom-right" */
+  /**
+   * Horizontal anchoring. `bottom-right` / `bottom-left` pin the FAB to a corner
+   * via `horizontalOffset`; `center` spans the full width and self-centers the
+   * FAB and action column (used for a central tab-bar FAB). @default "bottom-right"
+   */
   position?: SpeedDialPosition
   /**
    * Distance from the viewport's bottom edge to the FAB's bottom edge.
-   * Defaults to the safe-area bottom inset + edge margin. Pass
-   * `tabBarHeight + safeAreaBottom` when mounting over a bottom tab bar -
-   * the component never hardcodes the tab-bar height.
+   * Defaults to the safe-area bottom inset + edge margin. When mounting over a
+   * bottom tab bar pass the measured tab-bar height (already including its
+   * safe-area padding) minus the desired overlap, e.g. `tabBarHeight - FAB_SIZE/2`
+   * to straddle the bar's top edge - the component never hardcodes the tab-bar
+   * height. Ignored for `horizontalOffset` when `position="center"`.
    */
   bottomOffset?: number
-  /** Distance from the near horizontal edge. Defaults to safe-area inset + margin. */
+  /**
+   * Distance from the near horizontal edge. Defaults to safe-area inset + margin.
+   * Ignored when `position="center"` (the FAB self-centers).
+   */
   horizontalOffset?: number
 
   /** Show the dimmed scrim. @default true */

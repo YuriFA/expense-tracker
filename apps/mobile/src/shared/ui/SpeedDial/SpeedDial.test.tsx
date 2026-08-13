@@ -4,6 +4,7 @@ import { Text } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { ThemeProvider } from "@/shared/config/theme"
 import { SpeedDial, type SpeedDialAction } from "../SpeedDial"
+import { DEFAULT_EDGE_MARGIN } from "./constants"
 
 // --- Shared fixtures & helpers ------------------------------------------------
 
@@ -250,5 +251,76 @@ describe("SpeedDial · rendering", () => {
     expect(screen.getByTestId("fab-menu-fab")).toBeTruthy()
     expect(screen.getByTestId("fab-menu-backdrop")).toBeTruthy()
     expect(screen.getByTestId("fab-menu-action-a")).toBeTruthy()
+  })
+})
+
+// --- Center position (spec: central tab-bar FAB) -----------------------------
+
+/** Walk up from the FAB to its absolute-positioned container (the anchor View). */
+const fabContainer = () => {
+  let node = fab().parent
+  while (node) {
+    const s = node.props.style
+    if (s && s.position === "absolute" && typeof s.bottom === "number") return node
+    node = node.parent
+  }
+  throw new Error("FAB positioning container not found")
+}
+
+/** Walk up from an action to the actions column (column-reverse stack). */
+const actionsColumn = () => {
+  let node = screen.getByTestId("speed-dial-action-income").parent
+  while (node) {
+    const s = node.props.style
+    if (s && s.flexDirection === "column-reverse") return node
+    node = node.parent
+  }
+  throw new Error("actions column not found")
+}
+
+describe("SpeedDial · center position", () => {
+  it("spans the full width and self-centers the FAB container", () => {
+    renderWithProviders(<SpeedDial actions={threeActions} position="center" />)
+    const style = fabContainer().props.style
+    expect(style.left).toBe(0)
+    expect(style.right).toBe(0)
+    expect(style.alignItems).toBe("center")
+  })
+
+  it("keeps the bottom-right corner anchoring unchanged", () => {
+    renderWithProviders(<SpeedDial actions={threeActions} position="bottom-right" />)
+    const style = fabContainer().props.style
+    expect(style.alignItems).toBe("flex-end")
+    // Zero insets -> safe-area right (0) + DEFAULT_EDGE_MARGIN.
+    expect(style.right).toBe(DEFAULT_EDGE_MARGIN)
+    expect(style.left).toBeUndefined()
+  })
+
+  it("keeps the bottom-left corner anchoring unchanged", () => {
+    renderWithProviders(<SpeedDial actions={threeActions} position="bottom-left" />)
+    const style = fabContainer().props.style
+    expect(style.alignItems).toBe("flex-start")
+    expect(style.left).toBe(DEFAULT_EDGE_MARGIN)
+    expect(style.right).toBeUndefined()
+  })
+
+  it("centers the action column", () => {
+    renderWithProviders(<SpeedDial actions={threeActions} position="center" defaultOpen />)
+    expect(actionsColumn().props.style.alignItems).toBe("center")
+  })
+
+  it("opens and closes normally in center mode", () => {
+    renderWithProviders(<SpeedDial actions={threeActions} position="center" />)
+    fireEvent.press(fab())
+    expect(fabExpanded()).toBe(true)
+    fireEvent.press(fab())
+    expect(fabExpanded()).toBe(false)
+  })
+
+  it("pressing an action closes the menu in center mode", () => {
+    renderWithProviders(<SpeedDial actions={threeActions} position="center" />)
+    fireEvent.press(fab())
+    fireEvent.press(screen.getByTestId("speed-dial-action-expense"))
+    expect(fabExpanded()).toBe(false)
   })
 })
