@@ -21,7 +21,7 @@ defaults over minimal shortcuts; avoid speculative abstraction.
   FIRST, then regenerate everywhere; never hand-maintain duplicate types/structs.
   Lint: `npx @redocly/cli lint --config docs/api/redocly.yaml docs/api/openapi.yaml`.
   - Backend server code: `make gen` (oapi-codegen); CI drift gate `make gen-check`.
-  - TS types: `bun run gen:api` (in `packages/api` or `apps/web`) regenerates
+  - TS types: `pnpm gen:api` (in `packages/api` or `apps/web`) regenerates
     `packages/api/src/schema.ts` via openapi-typescript; re-run + commit after spec changes.
 - **Money is `int64` minor units** (divisor 100), everywhere. Never float/decimal.
 - **Timestamps are UTC** (`TIMESTAMPTZ` / `time.Time`); `time.Local = time.UTC` in tests.

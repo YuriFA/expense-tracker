@@ -12,7 +12,7 @@ This package is part of the Expense Tracker monorepo and uses workspace dependen
 
 ```bash
 # Already installed in apps/web and apps/mobile via workspace:*
-bun install
+pnpm install
 ```
 
 ## Usage

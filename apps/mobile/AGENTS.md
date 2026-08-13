@@ -1,9 +1,19 @@
 # Mobile (`apps/mobile/`) - agent memory
 
-React Native + Expo (SDK 57 / RN 0.86 / React 19.2). Workspace member
+React Native + Expo (**SDK 54** / RN 0.81 / React 19.1). Workspace member
 `@expense-tracker/mobile`, the "twin" of `apps/web` - shares the domain model and
 the `@expense-tracker/{api,money,i18n}` packages. Project-wide invariants live in
 the root `AGENTS.md`.
+
+> **Why SDK 54, not newer:** NativeWind v4 (`react-native-css-interop`) relies on
+> `babel-preset-expo` receiving `jsxImportSource: "nativewind"`. On SDK 55+ the
+> Expo metro babel-transformer loads `babel.config.js` via `extends` +
+> `configFile:false`, which silently drops that preset option - JSX compiles to
+> `react/jsx-runtime`, `className` is ignored, and NativeWind styling does nothing
+> (no error). NativeWind v4 + Expo SDK 54 is the officially recommended stable
+> combo (see nativewind/nativewind discussion #1604). Do NOT bump to SDK 55+
+> without first verifying `jsxImportSource` still reaches the preset (check the
+> bundle uses `react-native-css-interop/jsx-runtime`, not `react/jsx-runtime`).
 
 ## Architecture: FSD + Expo Router
 
@@ -36,7 +46,7 @@ export { DashboardScreen as default } from '@/pages/dashboard'
 needed). There **is** a `babel.config.js` - it is required for NativeWind v4
 (`jsxImportSource: "nativewind"` + the `nativewind/babel` preset drive
 `className` -> style resolution; without them NativeWind styling is a no-op).
-`babel-preset-expo` (SDK 57) auto-adds the `react-native-worklets/plugin` when
+`babel-preset-expo` (SDK 54) auto-adds the `react-native-worklets/plugin` when
 worklets/reanimated is installed, so do NOT list it explicitly. Under jest
 (`JEST_WORKER_ID`) the config drops NativeWind and compiles plain React JSX
 (`className` is an ignored prop, `react-native-reanimated` is mocked in
@@ -57,7 +67,7 @@ login, authed redirected away from login) is **not yet ported**.
 | `(auth)/{login,register,verify-email,reset-password}.tsx` | `/...` | - |
 
 **Bottom tab bar** is a custom `widgets/bottom-tab-bar/` (consumes
-`expo-router/js-tabs` `BottomTabBarProps`), not the default. It renders the 4
+`@react-navigation/bottom-tabs` `BottomTabBarProps`), not the default. It renders the 4
 real tabs + a central spacer; the central `+` is a **SpeedDial** overlay
 (`shared/ui/SpeedDial`, `position="center"`) mounted as a **sibling** of `<Tabs>`
 in `(tabs)/_layout.tsx` - a global floating action, NOT a route and NOT a tab
@@ -81,13 +91,13 @@ not hardcoded).
 
 ## Quality bar
 
-`bun run type-check` (`tsc --noEmit`) stays green. The iOS production bundle
-(`bunx expo export --platform ios`) is the end-to-end check that `@/*` and the
-route tree resolve. Run: `bun run start` (`expo start`), `ios`, `android`, `web`.
+`pnpm type-check` (`tsc --noEmit`) stays green. The iOS production bundle
+(`pnpm exec expo export --platform ios`) is the end-to-end check that `@/*` and the
+route tree resolve. Run: `pnpm start` (`expo start`), `ios`, `android`, `web`.
 
 ## Unit/component tests (jest)
 
-`bun run test` runs jest (`jest-expo` preset + `@testing-library/react-native`;
+`pnpm test` runs jest (`jest-expo` preset + `@testing-library/react-native`;
 config + `jest.setup.js` at the app root). Because NativeWind v4's JSX wrapping
 and the worklet runtime don't run under jest, `jest.setup.js` mocks
 `react-native-reanimated` (synchronous JS) and `@expo/vector-icons` (async font
@@ -116,7 +126,7 @@ Two rules every agent MUST follow here:
   `apps/mobile` REQUIRES adding (or updating) a Maestro flow covering it. No new
   user-facing behavior ships without an e2e flow.
 - **Run the suite green before `done`.** Before any task here reports done, run
-  `bun run test:e2e` and it must pass. A failing run blocks `done` - fix the app
+  `pnpm test:e2e` and it must pass. A failing run blocks `done` - fix the app
   or the flow; do not skip or weaken the assertion.
 
 **Selectors:** assert/tap by `testID` (Maestro `id`), not text. Conventions:
@@ -128,12 +138,12 @@ on `(tabs)/_layout.tsx`).
 
 1. Boot an iOS simulator and install the matching Expo Go:
    `npx expo-go download ios <sdk>` -> `xcrun simctl install booted <Expo-Go-*.tar.app>`.
-2. Start the dev server in its own terminal: `bun run start` (Metro on :8081).
-3. `bun run test:e2e` (whole suite) or
+2. Start the dev server in its own terminal: `pnpm start` (Metro on :8081).
+3. `pnpm test:e2e` (whole suite) or
    `maestro test .maestro/flows/<file>.yaml` (one flow).
 
 Override the dev-server URL without editing files (e.g. port 8081 is busy):
-`MAESTRO_EXPO_URL='exp://127.0.0.1:<port>' bun run test:e2e`. Prerequisites:
+`MAESTRO_EXPO_URL='exp://127.0.0.1:<port>' pnpm test:e2e`. Prerequisites:
 Java 17+ on `PATH` and the `maestro` CLI (install per maestro.dev); a booted
 simulator with Expo Go; the dev server running. Artifacts land in
 `.maestro/.output/` (gitignored); flow YAML stays committed.

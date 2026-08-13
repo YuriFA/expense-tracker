@@ -176,7 +176,7 @@ declare module '*.css' {
 **Solution**: Clear cache and restart:
 ```bash
 rm -rf node_modules/.cache
-bun start --clear
+pnpm start --clear
 ```
 
 ## Migration Notes
@@ -213,19 +213,19 @@ To verify the setup works:
 
 1. **TypeScript check**:
    ```bash
-   bun run type-check
+   pnpm type-check
    ```
 
 2. **Start development server**:
    ```bash
-   bun start
+   pnpm start
    ```
 
 3. **Test on device/simulator**:
    ```bash
-   bun ios
+   pnpm ios
    # or
-   bun android
+   pnpm android
    ```
 
 ## Related Documentation

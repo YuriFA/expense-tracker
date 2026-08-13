@@ -10,7 +10,7 @@ layout in `apps/web/docs/ARCHITECTURE.md`. Steiger must stay green.
 
 ## Spec-first (contract from `docs/api/openapi.yaml`)
 
-- Never hand-write fetch/types. `bun run gen:api` regenerates
+- Never hand-write fetch/types. `pnpm gen:api` regenerates
   `packages/api/src/schema.ts` via `@expense-tracker/api`; re-run + commit after
   spec changes. The contract, client factory, error mapping, repository
   interfaces, and HTTP impls all live in the package; web only adds Vite base-URL

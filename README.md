@@ -15,12 +15,12 @@ docs/       API reference and product docs
 ```
 
 The Go backend and the JS workspaces (`apps/*`, `packages/*`) are independent
-toolchains. `bun install` only manages the JS side; it ignores `backend/`.
+toolchains. `pnpm install` only manages the JS side; it ignores `backend/`.
 
 ## Prerequisites
 
 - Go 1.26+
-- bun 1.3+ (JS workspaces)
+- pnpm 10+ (JS workspaces)
 - Docker (optional, for containerized backend)
 
 ## Backend
@@ -38,10 +38,10 @@ API runs on `http://localhost:8080`. Local SQLite is created at
 ## Frontend
 
 ```bash
-bun install                # from repo root (installs all workspaces)
+pnpm install               # from repo root (installs all workspaces)
 cd apps/web
-bun run dev                # Vite dev server on :5173
-bun run build              # type-check + production build
+pnpm dev                   # Vite dev server on :5173
+pnpm build                 # type-check + production build
 ```
 
 ## Docker
@@ -56,6 +56,6 @@ docker compose up          # builds backend image from ./backend
   for monorepo tooling. The Go module path is unchanged
   (`github.com/yurifa/expense-tracker-api`) - it is independent of the on-disk
   location.
-- `apps/` holds JS/TS client applications managed as bun workspaces.
+- `apps/` holds JS/TS client applications managed as pnpm workspaces.
 - CI (`.github/workflows`) runs Go with `working-directory: backend` and builds
   the Docker image with `context: backend`.

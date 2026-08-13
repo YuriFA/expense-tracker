@@ -26,25 +26,25 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 ## Project Setup
 
 ```sh
-bun install
+pnpm install
 ```
 
 ### Compile and Hot-Reload for Development
 
 ```sh
-bun dev
+pnpm dev
 ```
 
 ### Type-Check, Compile and Minify for Production
 
 ```sh
-bun run build
+pnpm build
 ```
 
 ### Run Unit Tests with [Vitest](https://vitest.dev/)
 
 ```sh
-bun test:unit
+pnpm test:unit
 ```
 
 ### Run End-to-End Tests with [Playwright](https://playwright.dev)
@@ -54,20 +54,20 @@ bun test:unit
 npx playwright install
 
 # When testing on CI, must build the project first
-bun run build
+pnpm build
 
 # Runs the end-to-end tests
-bun test:e2e
+pnpm test:e2e
 # Runs the tests only on Chromium
-bun test:e2e --project=chromium
+pnpm test:e2e --project=chromium
 # Runs the tests of a specific file
-bun test:e2e tests/example.spec.ts
+pnpm test:e2e tests/example.spec.ts
 # Runs the tests in debug mode
-bun test:e2e --debug
+pnpm test:e2e --debug
 ```
 
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh
-bun lint
+pnpm lint
 ```

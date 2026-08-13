@@ -336,7 +336,7 @@ The mobile app's `app.css` now references the shared tokens with hex values.
 - `apps/mobile/app.css` - Reference shared tokens
 - `apps/mobile/package.json` - Add tokens dependency
 - `apps/mobile/nativewind-env.d.ts` - Add CSS module declaration
-- `bun.lock` - Updated workspace dependencies
+- `pnpm-lock.yaml` - Updated workspace dependencies
 
 ## Verification
 

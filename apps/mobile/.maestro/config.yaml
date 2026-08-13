@@ -1,7 +1,7 @@
 # Maestro workspace config for @expense-tracker/mobile.
 # Docs: https://docs.maestro.dev/
 #
-# Run the whole suite from apps/mobile with `bun run test:e2e`.
+# Run the whole suite from apps/mobile with `pnpm test:e2e`.
 # Only the flows under flows/ are discovered as runnable tests; the shared
 # launch helpers at the workspace root (_launch.js / _launch.yaml) are invoked
 # explicitly via `runFlow` and must not be discovered.
