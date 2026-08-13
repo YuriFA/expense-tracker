@@ -32,9 +32,15 @@ Route files are thin - they only re-export the screen:
 export { DashboardScreen as default } from '@/pages/dashboard'
 ```
 
-**`@/*` → `./src/*`** via tsconfig `paths`; Metro resolves it through the default
-`babel-preset-expo` - **no `babel.config.js`** (one was tried and fails to resolve
-`babel-preset-expo` in the bun `.bun` layout; the project default works).
+**`@/*` → `./src/*`** via tsconfig `paths`; Metro resolves it (no babel path config
+needed). There **is** a `babel.config.js` - it is required for NativeWind v4
+(`jsxImportSource: "nativewind"` + the `nativewind/babel` preset drive
+`className` -> style resolution; without them NativeWind styling is a no-op).
+`babel-preset-expo` (SDK 57) auto-adds the `react-native-worklets/plugin` when
+worklets/reanimated is installed, so do NOT list it explicitly. Under jest
+(`JEST_WORKER_ID`) the config drops NativeWind and compiles plain React JSX
+(`className` is an ignored prop, `react-native-reanimated` is mocked in
+`jest.setup.js`) - see the unit-testing section below.
 
 ## Routes
 
@@ -66,6 +72,18 @@ login, authed redirected away from login) is **not yet ported**.
 `bun run type-check` (`tsc --noEmit`) stays green. The iOS production bundle
 (`bunx expo export --platform ios`) is the end-to-end check that `@/*` and the
 route tree resolve. Run: `bun run start` (`expo start`), `ios`, `android`, `web`.
+
+## Unit/component tests (jest)
+
+`bun run test` runs jest (`jest-expo` preset + `@testing-library/react-native`;
+config + `jest.setup.js` at the app root). Because NativeWind v4's JSX wrapping
+and the worklet runtime don't run under jest, `jest.setup.js` mocks
+`react-native-reanimated` (synchronous JS) and `@expo/vector-icons` (async font
+load), and `babel.config.js` skips NativeWind under `JEST_WORKER_ID` - so assert
+**observable behavior** (a11y state, callbacks, testID presence), never animation
+frames. Co-locate `*.test.tsx` next to the component (twin of `apps/web`).
+Components using `useSafeAreaInsets`/`useTheme` need `SafeAreaProvider` (with
+`initialMetrics`) + `ThemeProvider` in the test render.
 
 ## Testing / e2e (Maestro)
 

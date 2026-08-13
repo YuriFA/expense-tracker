@@ -36,7 +36,7 @@ export function DashboardScreen() {
   const formattedBalance = `$${(totalBalance / 100).toFixed(2)}`
 
   return (
-    <Screen>
+    <Screen testID="screen-dashboard">
       <Stack gap="md" className="p-4">
         {/* Header */}
         <Text variant="h1">Dashboard</Text>
