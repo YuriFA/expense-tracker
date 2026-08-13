@@ -1,7 +1,7 @@
 module.exports = function (api) {
   api.cache(true)
 
-  // `babel-preset-expo` (SDK 57) auto-adds the `react-native-worklets/plugin`
+  // `babel-preset-expo` (SDK 54) auto-adds the `react-native-worklets/plugin`
   // when worklets/reanimated is installed (see babel-preset-expo/configs/expo.js),
   // so we do NOT list it explicitly here. What this config DOES provide that the
   // preset does not is NativeWind v4: the `jsxImportSource: "nativewind"` option

@@ -106,7 +106,7 @@ export default defineConfig({
      * Requires the backend running (docker compose up) on localhost:8080; the
      * Vite dev/preview proxy forwards /api/* to it (same-origin session cookie).
      */
-    command: process.env.CI ? 'bun run preview' : 'bun run dev',
+    command: process.env.CI ? 'pnpm run preview' : 'pnpm run dev',
     port: process.env.CI ? 4173 : 5173,
     reuseExistingServer: !process.env.CI,
   },

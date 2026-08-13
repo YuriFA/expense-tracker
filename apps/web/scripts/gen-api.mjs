@@ -8,6 +8,13 @@ import { dirname, resolve } from 'node:path'
 const here = dirname(fileURLToPath(import.meta.url))
 const apiPkg = resolve(here, '..', '..', '..', 'packages', 'api')
 
+// Invoke the api package's generator directly with node (no package-manager
+// binary on PATH required), replicating its `gen:api` script (`node
+// scripts/gen-api.mjs`) from the workspace root.
 console.log('[gen:api] delegating to @expense-tracker/api')
-execFileSync('bun', ['run', 'gen:api'], { stdio: 'inherit', cwd: apiPkg })
+execFileSync(
+  process.execPath,
+  [resolve(apiPkg, 'scripts', 'gen-api.mjs')],
+  { stdio: 'inherit', cwd: apiPkg },
+)
 console.log('[gen:api] done')
