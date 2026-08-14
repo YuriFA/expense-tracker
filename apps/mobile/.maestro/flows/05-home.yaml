@@ -1,0 +1,74 @@
+# Home screen: period navigation, summary modes, sheets, quick actions.
+#
+# Conventions: assert/tap by testID only. Text asserts are limited to the
+# pre-modal steps: after a native modal (bottom sheet) closes in Expo Go,
+# the main window's text accessibility labels detach until relaunch, so
+# text matching there is unreliable (ids keep working).
+appId: host.exp.Exponent
+tags:
+  - home
+---
+- runFlow: ../_launch.yaml
+- assertVisible:
+    id: screen-dashboard
+
+# Pre-modal: summary renders with the default Expenses mode
+- assertVisible:
+    text: '.*Расходы.*'
+
+# Period navigation: two months back is empty, then return to the current month
+- tapOn:
+    id: home-period-prev
+- tapOn:
+    id: home-period-prev
+- assertVisible:
+    text: В этом месяце расходов нет
+- tapOn:
+    id: home-period-next
+- tapOn:
+    id: home-period-next
+
+# Summary mode switcher (bottom sheet)
+- tapOn:
+    id: home-summary-mode
+- assertVisible:
+    id: home-mode-sheet
+- tapOn:
+    id: home-mode-option-total-balance
+- assertNotVisible:
+    id: home-mode-sheet
+# Prove the mode switched by the active marker, not by (detached) text
+- tapOn:
+    id: home-summary-mode
+- assertVisible:
+    id: home-mode-option-total-balance-active
+- tapOn:
+    id: home-mode-sheet-scrim
+
+# All-expenses sheet lists the period's expenses
+- tapOn:
+    id: home-all-expenses
+- assertVisible:
+    id: home-expenses-sheet
+- assertVisible:
+    id: home-expense-row-tx-taxi
+- tapOn:
+    id: home-expenses-sheet-scrim
+
+# Category-filtered sheet lists only that category's expenses
+- tapOn:
+    id: home-category-cat-taxi
+- assertVisible:
+    id: home-expenses-sheet
+- assertVisible:
+    id: home-expense-row-tx-taxi
+- assertNotVisible:
+    id: home-expense-row-tx-cafe
+- tapOn:
+    id: home-expenses-sheet-scrim
+
+# Quick action placeholder
+- tapOn:
+    id: home-quick-goals
+- assertVisible:
+    id: screen-goals

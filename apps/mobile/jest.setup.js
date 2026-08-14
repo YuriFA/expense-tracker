@@ -29,6 +29,9 @@ jest.mock("react-native-reanimated", () => {
   const Animated = {
     View,
     createAnimatedComponent: (Component) => Component,
+    // Called at module init by @gorhom/bottom-sheet; no-ops under jest.
+    addWhitelistedUIProps: () => {},
+    addWhitelistedNativeProps: () => {},
   }
 
   const useSharedValue = (initial) => ({
@@ -105,5 +108,49 @@ jest.mock("react-native-reanimated", () => {
     Easing,
     interpolate,
     clamp,
+  }
+})
+
+// @gorhom/bottom-sheet renders via reanimated animations and portals, which
+// never run under the hand-rolled reanimated mock above (its animation
+// callbacks are no-ops, so a presented sheet's content never mounts).
+// Stub the library with Modal-semantics equivalents: present/close on the
+// ref, children render while presented, the custom backdrop renders behind.
+// The real library is exercised by the Maestro e2e suite; prop correctness
+// is enforced by the TypeScript types.
+jest.mock("@gorhom/bottom-sheet", () => {
+  const React = require("react")
+  const { Modal, View } = require("react-native")
+
+  const BottomSheetModal = React.forwardRef(function BottomSheetModal(
+    { children, backdropComponent, onDismiss },
+    ref,
+  ) {
+    const [presented, setPresented] = React.useState(false)
+    React.useImperativeHandle(ref, () => ({
+      present: () => setPresented(true),
+      close: () => setPresented(false),
+      dismiss: () => setPresented(false),
+    }))
+    if (!presented) return null
+    const Backdrop = backdropComponent
+    return (
+      <Modal visible transparent animationType="none" onRequestClose={onDismiss}>
+        {Backdrop ? <Backdrop /> : null}
+        <View>{children}</View>
+      </Modal>
+    )
+  })
+
+  const BottomSheetView = ({ children, ...rest }) => <View {...rest}>{children}</View>
+  const BottomSheetScrollView = ({ children, ...rest }) => <View {...rest}>{children}</View>
+
+  return {
+    __esModule: true,
+    BottomSheetModal,
+    BottomSheetView,
+    BottomSheetScrollView,
+    BottomSheetModalProvider: ({ children }) => children,
+    BottomSheetBackdrop: View,
   }
 })

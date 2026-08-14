@@ -1,6 +1,7 @@
 import '../../global.css'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider } from '@/shared/config/theme'
@@ -22,11 +23,16 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <SafeAreaProvider>
-          <StatusBar style="auto" />
-          <Stack>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
+          <BottomSheetModalProvider>
+            <StatusBar style="auto" />
+            <Stack>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              {/* Placeholder destinations for the Home quick actions. */}
+              <Stack.Screen name="income" options={{ headerShown: false }} />
+              <Stack.Screen name="goals" options={{ headerShown: false }} />
+            </Stack>
+          </BottomSheetModalProvider>
         </SafeAreaProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
