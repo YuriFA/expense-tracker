@@ -1,0 +1,117 @@
+# Accounts Specification
+
+## Purpose
+
+The financial accounts a user tracks (e.g. cash, bank cards) with a
+currency, an opening balance, and a manual adjustment, whose current
+balance the system computes from the account's transactions.
+
+## Requirements
+
+### Requirement: Account ownership and scoping
+
+Every account SHALL belong to exactly one user. Reading, updating, or
+deleting another user's account SHALL behave as if the account does not
+exist (not-found), never revealing its data.
+
+#### Scenario: Accessing another user's account
+
+- **WHEN** a user requests an account id that belongs to a different user
+- **THEN** the response is not-found, with no account data revealed
+
+### Requirement: Account creation
+
+A user SHALL be able to create an account with a name, a currency, and
+an opening balance. The supported currencies are USD, EUR, and RUB; a
+request with any other currency SHALL be rejected. Money values are
+minor units (integer, divisor 100) and MAY be negative (e.g. a debt
+card with a negative opening balance). A newly created account has a
+zero manual adjustment until changed.
+
+#### Scenario: Create an account
+
+- **WHEN** the user creates an account named "Cash" in USD with an opening balance of 5000 (i.e. $50.00)
+- **THEN** the account is created and its balance equals 5000 until transactions or adjustments change it
+
+#### Scenario: Unsupported currency
+
+- **WHEN** an account is created with currency GBP
+- **THEN** the request is rejected
+
+### Requirement: Server-computed balance
+
+The account balance SHALL be computed by the system as
+`opening balance + manual adjustment + net transaction contribution`,
+where income adds its amount, expense subtracts it, and a transfer
+subtracts from the source account and adds to the destination account.
+Clients never send the balance; updates to transactions or accounts are
+reflected in the computed balance.
+
+#### Scenario: Balance after transactions
+
+- **WHEN** an account with opening balance 10000 receives an income transaction of 2500 and an expense transaction of 400
+- **THEN** the account's balance is 12100
+
+#### Scenario: Transfer moves value between accounts
+
+- **WHEN** a transfer of 3000 is created from account A to account B
+- **THEN** account A's balance decreases by 3000 and account B's balance increases by 3000
+
+### Requirement: Manual adjustment
+
+A user SHALL be able to set a manual adjustment on an account, which
+acts as a signed correction included in the computed balance (e.g. to
+reconcile a real-world statement). Updating the adjustment replaces its
+previous value; it is not cumulative.
+
+#### Scenario: Reconciliation adjustment
+
+- **WHEN** the user sets a manual adjustment of -750 on an account whose opening balance is 10000 and has no transactions
+- **THEN** the account's balance is 9250
+
+### Requirement: Limited mutability
+
+Updating an account SHALL allow changing only its name and manual
+adjustment. The currency and opening balance SHALL NOT be changeable
+after creation. An update request that changes no fields SHALL be
+rejected.
+
+#### Scenario: Rename an account
+
+- **WHEN** the user renames an account
+- **THEN** the name changes and currency, opening balance, and computed balance semantics are unchanged
+
+### Requirement: Deletion guard
+
+Deleting an account that is referenced by any transaction of the user
+(including as a transfer source or destination) SHALL be rejected with
+an account-in-use error. An account with no referencing transactions
+SHALL be deletable, and its deletion removes it from balances and net
+worth.
+
+#### Scenario: Delete an account with history
+
+- **WHEN** the user deletes an account that has transactions
+- **THEN** the deletion is rejected with an account-in-use error and the account remains
+
+### Requirement: Balances summary and net worth
+
+The system SHALL provide a summary listing each account with its
+computed balance and a net worth figure. Net worth is the arithmetic
+sum of all the user's account balances. The summary contains only the
+requesting user's accounts.
+
+#### Scenario: Net worth across accounts
+
+- **WHEN** the user has two accounts with computed balances 15000 and -2000
+- **THEN** the balances summary lists both accounts and reports a net worth of 13000
+
+### Requirement: Listing
+
+Listing accounts SHALL return all of the requesting user's accounts
+with their computed balances.
+
+#### Scenario: List accounts
+
+- **WHEN** the user requests the account list
+- **THEN** every account they own is returned with its current computed balance, and no other user's accounts appear
