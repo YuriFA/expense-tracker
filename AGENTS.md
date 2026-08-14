@@ -1,6 +1,6 @@
 # Expense Tracker - agent memory
 
-Bun-workspace monorepo for a spec-first expense tracker: a layered **Go API**
+pnpm workspace monorepo for a spec-first expense tracker: a layered **Go API**
 (`backend/`) wired to a **Vue 3** web app (`apps/web/`) and a **React Native
 (Expo)** mobile app (`apps/mobile/`), sharing platform-agnostic TS packages
 (`packages/*`). The OpenAPI contract is the single source of truth tying them
@@ -35,24 +35,27 @@ defaults over minimal shortcuts; avoid speculative abstraction.
 
 ## Shared workspace packages (`packages/*`)
 
-Platform-agnostic TS consumed by every app as `@expense-tracker/{api,money,i18n}`,
+Platform-agnostic TS consumed by every app as `@expense-tracker/{api,money,i18n,tokens}`,
 resolved to source `.ts` via `exports` (no build step; `moduleResolution: bundler`).
 Each has its own `tsconfig.json` + `type-check` and must type-check cleanly alone.
+Each package's source/README is authoritative for its contents; only the cross-cutting
+rules and decisions live here.
 
-- **MUST stay free of DOM/Vue/browser-only APIs.** Only the fetch-family
+- **MUST stay free of DOM/Vue/browser-only/RN APIs.** Only the fetch-family
   (`fetch`/`Request`/`Response`/`Headers`) is allowed (works in browser/Node/RN).
-- **`@expense-tracker/api`** (deps: `money`): generated schema (`src/schema.ts`),
-  `createApiClient({ baseUrl, fetch })` factory (apps supply base URL - no
-  `window`), error mapping + `setUnauthorizedHandler`, `Repository<T,C,U>`
-  interface + per-entity contracts (the DI seam), HTTP impls, domain models
-  (account/category/transaction), and generic helpers (`generateId`, `normalize`,
-  `isIsoDateTime`, `CalendarDay`).
-- **`@expense-tracker/money`** (leaf): minor-units money (dinero.js),
-  locale-aware `formatMoney`, currency list, unit conversion, balance calculator
-  (generic over a minimal account shape - no domain dep).
-- **`@expense-tracker/i18n`** (leaf): EN/RU bundles, `MessageSchema`, locale
-  config, localized default-categories seed. `mapCategory(s)` take an injected
-  `Translator` (vue-i18n `t` on web, react-i18next on mobile).
+- **`api`** (deps: `money`): the contract layer - generated schema,
+  `createApiClient({ baseUrl, fetch })` (apps supply the base URL - no `window`),
+  error mapping keyed on `code` + `setUnauthorizedHandler`, and the
+  `Repository<T,C,U>` DI seam. Apps implement the repository interface; the
+  package never imports app code.
+- **`money`** (leaf): dinero.js minor-units money. Its balance calculator is
+  generic over a minimal account shape (no domain dep).
+- **`i18n`** (leaf): EN/RU bundles + `MessageSchema`. `mapCategory(s)` take an
+  injected `Translator` (vue-i18n `t` on web, react-i18next on mobile) - no app
+  coupling.
+- **`tokens`**: shared design tokens - the single source of truth for
+  design-system values, exported as CSS (web/Tailwind v4, oklch) and RN (hex).
+  Both apps consume it.
 
 App-local concerns stay OUT of packages: web keeps its vue-i18n instance, Vite
 base-URL resolution, localStorage repos, Vue DI/composables, and Zod schemas;
@@ -63,8 +66,8 @@ mobile keeps its native wiring.
 ```
 backend/        Go API (Gin + sqlc + Postgres)
 apps/web/       Vue 3 + Vite (Feature-Sliced Design)
-apps/mobile/    React Native + Expo (currently a fresh blank project)
-packages/       shared TS: api, money, i18n
+apps/mobile/    React Native + Expo (Feature-Sliced Design + Expo Router)
+packages/       shared TS: api, money, i18n, tokens
 docs/api/       OpenAPI contract (source of truth)
 ```
 
