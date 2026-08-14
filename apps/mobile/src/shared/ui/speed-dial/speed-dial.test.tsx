@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native'
 import { Text } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider } from '@/shared/config/theme'
-import { SpeedDial, type SpeedDialAction } from '../SpeedDial'
+import { SpeedDial, type SpeedDialAction } from '../speed-dial'
 import { DEFAULT_EDGE_MARGIN } from './constants'
 
 // --- Shared fixtures & helpers ------------------------------------------------

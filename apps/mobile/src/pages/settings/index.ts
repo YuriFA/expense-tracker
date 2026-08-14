@@ -1,1 +1,1 @@
-export { SettingsScreen } from './ui/SettingsScreen'
+export { SettingsScreen } from './ui/settings-screen'

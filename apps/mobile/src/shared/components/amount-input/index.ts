@@ -1,2 +1,2 @@
-export { AmountInput } from './AmountInput'
-export type { AmountInputProps } from './AmountInput'
+export { AmountInput } from './amount-input'
+export type { AmountInputProps } from './amount-input'

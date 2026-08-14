@@ -10,7 +10,7 @@ import {
   STAGGER,
   STAGGERED_SEGMENT,
 } from './constants'
-import type { SpeedDialActionViewProps } from './SpeedDial.types'
+import type { SpeedDialActionViewProps } from './speed-dial.types'
 
 /**
  * One row of an expanded SpeedDial (`[label?] (icon)`); the whole row is a

@@ -23,13 +23,13 @@ import {
   totalExpenses,
   type MonthCursor,
 } from '../model/selectors'
-import { QuickActionsRow, type QuickActionId } from './QuickActionsRow'
-import { SummaryCard } from './SummaryCard'
-import { AllExpensesCard } from './AllExpensesCard'
-import { CategorySection } from './CategorySection'
-import { ModeSheet, type SummaryMode } from './ModeSheet'
-import { ExpensesSheet } from './ExpensesSheet'
-import { NewCategorySheet } from './NewCategorySheet'
+import { QuickActionsRow, type QuickActionId } from './quick-actions-row'
+import { SummaryCard } from './summary-card'
+import { AllExpensesCard } from './all-expenses-card'
+import { CategorySection } from './category-section'
+import { ModeSheet, type SummaryMode } from './mode-sheet'
+import { ExpensesSheet } from './expenses-sheet'
+import { NewCategorySheet } from './new-category-sheet'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
 // TODO(i18n): RU strings are hardcoded until react-i18next is wired.

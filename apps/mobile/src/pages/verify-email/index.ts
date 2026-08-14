@@ -1,1 +1,1 @@
-export { VerifyEmailScreen } from './ui/VerifyEmailScreen'
+export { VerifyEmailScreen } from './ui/verify-email-screen'

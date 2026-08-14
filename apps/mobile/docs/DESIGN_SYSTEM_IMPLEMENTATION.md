@@ -3,8 +3,9 @@
 > Note (2026-08): the mobile app has since migrated NativeWind v4 -> Uniwind
 > (Tailwind CSS v4). The current styling setup is CSS-first in `global.css` +
 > `metro.config.js` (`withUniwindConfig`); there is no `tailwind.config.ts` or
-> `nativewind-env.d.ts` anymore. The sections below describe the state at the
-> time of that change.
+> `nativewind-env.d.ts` anymore. Component files have also been renamed to
+> kebab-case (`button/Button.tsx` -> `button/button.tsx`). The sections below
+> describe the state at the time of that change.
 
 ## Completed Implementation
 

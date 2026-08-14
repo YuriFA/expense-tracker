@@ -57,7 +57,7 @@ The bottom tab bar is built on expo-router's **headless** tab components
 4 real tabs + a central spacer; each tab reads focus/press state from
 `useTabTrigger(name)`.
 
-The central `+` is a **SpeedDial** overlay (`shared/ui/SpeedDial`,
+The central `+` is a **SpeedDial** overlay (`shared/ui/speed-dial`,
 `position="center"`) mounted as a **sibling** of `<Tabs>` in `(tabs)/_layout.tsx`
 - a global floating action, NOT a route and NOT a tab (opening it never changes
 the active route). Its Expense/Income/Transfer actions are wired in that layout;
@@ -68,8 +68,9 @@ hardcoded).
 
 ## Conventions
 
-- **Component files are PascalCase** (`DashboardScreen.tsx`) - matches `apps/web`
-  and React Native norms; route/layout files stay lowercase per expo-router.
+- **Component files are kebab-case** (`dashboard-screen.tsx`), like `bottom-sheet/`;
+  the exported component identifiers stay PascalCase (`DashboardScreen`) for JSX.
+  Route/layout files stay lowercase per expo-router.
 - **i18n** will use the shared `@expense-tracker/i18n` bundle via react-i18next
   (mobile keeps its own native wiring, like web keeps vue-i18n). Strings in the
   skeleton are placeholders; tab titles live in `(tabs)/_layout.tsx`.

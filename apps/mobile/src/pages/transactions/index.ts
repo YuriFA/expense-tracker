@@ -1,1 +1,1 @@
-export { TransactionsScreen } from './ui/TransactionsScreen'
+export { TransactionsScreen } from './ui/transactions-screen'

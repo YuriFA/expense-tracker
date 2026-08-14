@@ -12,8 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon } from '../icon'
 import { useTheme } from '@/shared/config/theme'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
-import { SpeedDialAction as SpeedDialActionView } from './SpeedDialAction'
-import type { SpeedDialAction, SpeedDialProps } from './SpeedDial.types'
+import { SpeedDialAction as SpeedDialActionView } from './speed-dial-action'
+import type { SpeedDialAction, SpeedDialProps } from './speed-dial.types'
 import {
   CLOSE_DURATION,
   DEFAULT_BACKDROP_LABEL,
@@ -30,7 +30,7 @@ import {
   REDUCED_MOTION_DURATION,
 } from './constants'
 
-export type { SpeedDialAction, SpeedDialProps, SpeedDialPosition } from './SpeedDial.types'
+export type { SpeedDialAction, SpeedDialProps, SpeedDialPosition } from './speed-dial.types'
 
 const AnimatedView = Animated.View
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
 import { Uniwind } from 'uniwind'
-import { ThemeContext, type Theme } from './ThemeContext'
+import { ThemeContext, type Theme } from './theme-context'
 
 interface ThemeProviderProps {
   children: React.ReactNode

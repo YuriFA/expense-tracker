@@ -19,8 +19,8 @@ an `index.ts` barrel). Styling is Uniwind `className` consuming the design
 tokens (no `.styles.ts` - matches `Button`, `Card`, `IconButton`). Exported
 through the `src/shared/ui/index.ts` barrel.
 
-Files: `SpeedDial.tsx` (state + layering + FAB), `SpeedDialAction.tsx` (one action
-row: label pill + icon circle), `SpeedDial.types.ts`, `constants.ts`, `index.ts`.
+Files: `speed-dial.tsx` (state + layering + FAB), `speed-dial-action.tsx` (one action
+row: label pill + icon circle), `speed-dial.types.ts`, `constants.ts`, `index.ts`.
 
 ### Overlay / backdrop and layering (z-index / stacking)
 
@@ -100,7 +100,7 @@ architecture lets motion be disabled without restructuring.
 <SpeedDial open={open} onOpenChange={setOpen} actions={actions} />
 ```
 
-See `SpeedDial.types.ts` for the full prop list. Mount it as a sibling of your
+See `speed-dial.types.ts` for the full prop list. Mount it as a sibling of your
 scrollable content; pass `bottomOffset` when sitting over a tab bar.
 
 ## testID contract

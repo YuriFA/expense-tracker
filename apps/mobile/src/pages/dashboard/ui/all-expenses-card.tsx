@@ -1,10 +1,10 @@
 import { Pressable, View } from 'react-native'
 import { Card, Icon, Text } from '@/shared/ui'
-import type { LatestExpenseView } from './AllExpensesCard.types'
+import type { LatestExpenseView } from './all-expenses-card.types'
 import { MOCK_CATEGORIES, MOCK_TRANSACTIONS } from '../model/mock-data'
 import { formatAmount, relativeDayLabel } from '../model/format'
 import { expensesInMonth, MonthCursor, toExpenseRow } from '../model/selectors'
-import { ExpensesSheet } from './ExpensesSheet'
+import { ExpensesSheet } from './expenses-sheet'
 import { useRef } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 

@@ -1,1 +1,1 @@
-export { LoginScreen } from './ui/LoginScreen'
+export { LoginScreen } from './ui/login-screen'

@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider } from '@/shared/config/theme'
-import { SpeedDial, type SpeedDialAction } from '../SpeedDial'
+import { SpeedDial, type SpeedDialAction } from '../speed-dial'
 
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 

@@ -1,1 +1,1 @@
-export { ResetPasswordScreen } from './ui/ResetPasswordScreen'
+export { ResetPasswordScreen } from './ui/reset-password-screen'

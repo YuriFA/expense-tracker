@@ -1,1 +1,1 @@
-export { GoalsScreen } from './ui/GoalsScreen'
+export { GoalsScreen } from './ui/goals-screen'

@@ -1,1 +1,1 @@
-export { IncomeScreen } from './ui/IncomeScreen'
+export { IncomeScreen } from './ui/income-screen'

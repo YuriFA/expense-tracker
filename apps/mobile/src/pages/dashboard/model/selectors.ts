@@ -3,7 +3,7 @@
 // values, so they are trivially unit-testable and later swappable for real
 // API responses.
 
-import { ExpenseRowView } from '../ui/ExpensesSheet'
+import { ExpenseRowView } from '../ui/expenses-sheet'
 import { formatAmount, relativeDayLabel } from './format'
 import type { MockCategory, MockTransaction, MockAccount } from './mock-data'
 

@@ -1,1 +1,1 @@
-export { RegisterScreen } from './ui/RegisterScreen'
+export { RegisterScreen } from './ui/register-screen'

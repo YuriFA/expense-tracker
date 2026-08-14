@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { ThemeProvider } from '@/shared/config/theme'
 import { SpeedDial, type SpeedDialAction } from '@/shared/ui'
-import { BottomTabBar, type TabConfig } from './BottomTabBar'
+import { BottomTabBar, type TabConfig } from './bottom-tab-bar'
 import { TabBarHeightProvider, useTabBarHeight } from './tab-bar-height-context'
 
 // --- Mock the headless expo-router tab hook -----------------------------------
