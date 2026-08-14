@@ -9,12 +9,6 @@ together.
 Each area has its own rules in its own `AGENTS.md` (`backend/`, `apps/web/`,
 `apps/mobile/`) - read the one for the area you touch. Code is the source of truth.
 
-## Posture
-
-Implement to completion, not just guide. Make concrete decisions and explain the
-why/tradeoff (in the PR, for the captain's learning). Prefer production-grade
-defaults over minimal shortcuts; avoid speculative abstraction.
-
 ## Cross-cutting invariants (all areas)
 
 - **OpenAPI is the source of truth** at `docs/api/openapi.yaml`. Change the spec
