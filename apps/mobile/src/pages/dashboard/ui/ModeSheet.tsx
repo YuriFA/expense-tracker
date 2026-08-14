@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
-import { BottomSheet, Icon, Row, Stack, Text } from '@/shared/ui'
+import { BottomSheet, Icon, Text } from '@/shared/ui'
 
 export type SummaryMode = 'expenses' | 'monthly-balance' | 'total-balance'
 
@@ -31,7 +31,7 @@ export function ModeSheet(props: ModeSheetProps) {
   return (
     <BottomSheet visible={visible} onClose={onClose} testID="home-mode-sheet">
       <BottomSheetView testID="home-mode-sheet">
-        <Stack gap="md" className="px-4 pb-8 pt-2">
+        <View className="gap-4 px-4 pb-8 pt-2">
           <Text variant="h3" className="mb-2">
             Отображение суммы
           </Text>
@@ -47,25 +47,25 @@ export function ModeSheet(props: ModeSheetProps) {
                 className="active:opacity-70"
                 onPress={() => onSelect(option.id)}
               >
-                <Row align="center" gap="md">
-                  <Stack gap="xs" className="flex-1">
+                <View className="flex-row items-center gap-4">
+                  <View className="flex-1 gap-1">
                     <Text variant="body" className="font-medium text-foreground">
                       {option.label}
                     </Text>
                     <Text variant="caption" className="text-muted-foreground">
                       {option.hint}
                     </Text>
-                  </Stack>
+                  </View>
                   {active ? (
                     <View>
                       <Icon name="checkmark" size={20} color="#7C5CFF" />
                     </View>
                   ) : null}
-                </Row>
+                </View>
               </Pressable>
             )
           })}
-        </Stack>
+        </View>
       </BottomSheetView>
     </BottomSheet>
   )

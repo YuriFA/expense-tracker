@@ -76,13 +76,16 @@ Uses Tailwind's default spacing scale:
 
 ### Primitives
 
-#### Box
-Flexible View wrapper for layout and styling.
+#### Layout (View + NativeWind)
+There are no layout wrapper components - use `View` directly with NativeWind
+classes (`flex-row`, `gap-*`, `items-*`, `justify-*`). Never build class names
+dynamically (`gap-${gap}`): NativeWind compiles only classes it can scan.
 
 ```tsx
-<Box className="p-4 bg-card rounded-lg">
-  <Text>Content</Text>
-</Box>
+<View className="flex-row items-center gap-2">
+  <Text>Left</Text>
+  <Text>Right</Text>
+</View>
 ```
 
 #### Text
@@ -94,29 +97,14 @@ Typography with semantic variants.
 <Text variant="caption">Helper text</Text>
 ```
 
-#### Stack / Row
-Layout containers for vertical and horizontal alignment.
-
-```tsx
-<Stack gap="md" align="center">
-  <Text>Item 1</Text>
-  <Text>Item 2</Text>
-</Stack>
-
-<Row gap="sm" justify="between">
-  <Text>Left</Text>
-  <Text>Right</Text>
-</Row>
-```
-
 #### Screen
 Screen wrapper with safe areas.
 
 ```tsx
 <Screen>
-  <Stack gap="md" className="p-4">
+  <View className="gap-4 p-4">
     <Text variant="h1">Dashboard</Text>
-  </Stack>
+  </View>
 </Screen>
 ```
 

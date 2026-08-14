@@ -1,5 +1,5 @@
-import { Pressable } from 'react-native'
-import { Card, Icon, Row, Stack, Text } from '@/shared/ui'
+import { Pressable, View } from 'react-native'
+import { Card, Icon, Text } from '@/shared/ui'
 import type { LatestExpenseView } from './AllExpensesCard.types'
 
 interface AllExpensesCardProps {
@@ -10,7 +10,7 @@ interface AllExpensesCardProps {
 export function AllExpensesCard({ latest, onOpen }: AllExpensesCardProps) {
   return (
     <Card variant="default" className="bg-emerald-100">
-      <Stack className="gap-2">
+      <View className="gap-2">
         <Text variant="h4">Все расходы</Text>
 
         {latest ? (
@@ -21,25 +21,25 @@ export function AllExpensesCard({ latest, onOpen }: AllExpensesCardProps) {
             className="active:opacity-70"
             onPress={onOpen}
           >
-            <Row align="center" className="gap-4">
-              <Stack className="flex-1 gap-2">
+            <View className="flex-row items-center gap-4">
+              <View className="flex-1 gap-2">
                 <Text variant="body" className="text-muted-foreground">
                   Последний {latest.dayLabel.toLowerCase()}
                   {'\n'}
                   {latest.amountText}, {latest.categoryName}
                 </Text>
-              </Stack>
+              </View>
               <Icon name="chevron-forward" size={18} color="#737373" />
-            </Row>
+            </View>
           </Pressable>
         ) : (
-          <Stack className="gap-2">
+          <View className="gap-2">
             <Text variant="body" className="text-muted-foreground">
               Расходов нет
             </Text>
-          </Stack>
+          </View>
         )}
-      </Stack>
+      </View>
     </Card>
   )
 }

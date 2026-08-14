@@ -1,5 +1,5 @@
-import { Pressable } from 'react-native'
-import { Card, Icon, IconButton, Row, Text } from '@/shared/ui'
+import { Pressable, View } from 'react-native'
+import { Card, Icon, IconButton, Text } from '@/shared/ui'
 
 export interface SummaryCardProps {
   /** Current mode title, e.g. "Расходы". */
@@ -19,7 +19,7 @@ export function SummaryCard(props: SummaryCardProps) {
 
   return (
     <Card>
-      <Row justify="between" align="center" className="mb-2">
+      <View className="flex-row items-center justify-between mb-2">
         <Pressable
           testID="home-summary-mode"
           accessibilityRole="button"
@@ -30,13 +30,13 @@ export function SummaryCard(props: SummaryCardProps) {
           <Text variant="h3">{title}</Text>
           <Icon name="chevron-down" size={18} color="#737373" />
         </Pressable>
-      </Row>
+      </View>
 
-      <Row justify="between" align="center">
+      <View className="flex-row items-center justify-between">
         <Text variant="display" className="text-foreground">
           {amountText}
         </Text>
-        <Row align="center" gap="xs">
+        <View className="flex-row items-center gap-1">
           <IconButton
             icon="chevron-back"
             size="sm"
@@ -53,8 +53,8 @@ export function SummaryCard(props: SummaryCardProps) {
             onPress={onNextPeriod}
             testID="home-period-next"
           />
-        </Row>
-      </Row>
+        </View>
+      </View>
     </Card>
   )
 }

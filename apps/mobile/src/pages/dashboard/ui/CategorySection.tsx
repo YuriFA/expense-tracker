@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native'
-import { Button, Card, Icon, Row, Stack, Text } from '@/shared/ui'
+import { Button, Card, Icon, Text } from '@/shared/ui'
 import { formatAmount } from '../model/format'
 import type { CategorySpend } from '../model/selectors'
 
@@ -16,7 +16,7 @@ export function CategorySection(props: CategorySectionProps) {
 
   return (
     <Card variant="elevated">
-      <Stack className="gap-4">
+      <View className="gap-4">
         <Pressable
           testID="home-new-category"
           accessibilityRole="button"
@@ -24,27 +24,27 @@ export function CategorySection(props: CategorySectionProps) {
           className="active:opacity-70"
           onPress={onNewCategory}
         >
-          <Row align="center" className="gap-2">
+          <View className="flex-row items-center gap-2">
             <Icon name="add-circle" size={32} color="#7C5CFF" />
             <Text variant="body" className="font-medium text-foreground">
               Новая категория
             </Text>
-          </Row>
+          </View>
         </Pressable>
 
         {!hasAnyCategories ? (
-          <Stack className="gap-2">
+          <View className="gap-2">
             <Text variant="body-sm" className="text-muted-foreground">
               Нет категорий
             </Text>
             <Button variant="primary" text="Создать категорию" onPress={onNewCategory} />
-          </Stack>
+          </View>
         ) : rows.length === 0 ? (
           <Text variant="body-sm" className="text-muted-foreground">
             В этом месяце расходов нет
           </Text>
         ) : (
-          <Stack className="gap-2">
+          <View className="gap-2">
             {rows.map(({ category, totalMinor }) => (
               <CategoryRow
                 key={category.id}
@@ -56,9 +56,9 @@ export function CategorySection(props: CategorySectionProps) {
                 onPress={onCategoryPress}
               />
             ))}
-          </Stack>
+          </View>
         )}
-      </Stack>
+      </View>
     </Card>
   )
 }
@@ -83,7 +83,7 @@ function CategoryRow(props: CategoryRowProps) {
       className="active:opacity-70"
       onPress={() => onPress(categoryId)}
     >
-      <Row align="center" className="gap-2">
+      <View className="flex-row items-center gap-2">
         <View
           className="h-10 w-10 items-center justify-center rounded-full"
           style={{ backgroundColor: color }}
@@ -96,7 +96,7 @@ function CategoryRow(props: CategoryRowProps) {
         <Text variant="body" className="font-semibold text-foreground">
           {amountText}
         </Text>
-      </Row>
+      </View>
     </Pressable>
   )
 }

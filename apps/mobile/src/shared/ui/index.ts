@@ -1,12 +1,6 @@
 // Primitives
-export { Box } from './box'
-export type { BoxProps } from './box'
-
 export { Text } from './text'
 export type { TextProps, TextVariant } from './text'
-
-export { Stack, Row } from './stack'
-export type { StackProps, RowProps } from './stack'
 
 export { Pressable } from './pressable'
 export type { PressableProps } from './pressable'

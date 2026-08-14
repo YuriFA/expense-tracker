@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { ScrollView } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Screen, Stack } from '@/shared/ui'
+import { Screen } from '@/shared/ui'
 import {
   MOCK_ACCOUNTS,
   MOCK_CATEGORIES,
@@ -131,7 +131,7 @@ export function DashboardScreen() {
   return (
     <Screen testID="screen-dashboard">
       <ScrollView>
-        <Stack className="p-4 gap-6">
+        <View className="p-4 gap-6">
           <QuickActionsRow onPress={onQuickAction} />
 
           <SummaryCard
@@ -152,7 +152,7 @@ export function DashboardScreen() {
             onNewCategory={() => setSheet({ kind: 'new-category' })}
             onCategoryPress={(categoryId) => setSheet({ kind: 'category', categoryId })}
           />
-        </Stack>
+        </View>
       </ScrollView>
 
       <ModeSheet

@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { View } from 'react-native'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
-import { BottomSheet, Button, Input, Row, Stack, Text } from '@/shared/ui'
+import { BottomSheet, Button, Input, Text } from '@/shared/ui'
 import type { MockCashflowType } from '../model/mock-data'
 
 export interface NewCategorySheetProps {
@@ -35,7 +36,7 @@ export function NewCategorySheet(props: NewCategorySheetProps) {
   return (
     <BottomSheet visible={visible} onClose={close} testID="home-new-category-sheet">
       <BottomSheetView testID="home-new-category-sheet">
-        <Stack gap="md" className="px-4 pb-8 pt-2">
+        <View className="gap-4 px-4 pb-8 pt-2">
           <Text variant="h3" className="mb-2">
             Новая категория
           </Text>
@@ -47,7 +48,7 @@ export function NewCategorySheet(props: NewCategorySheetProps) {
             testID="home-new-category-name"
           />
 
-          <Row gap="sm">
+          <View className="flex-row gap-2">
             <Button
               variant={type === 'expense' ? 'primary' : 'outline'}
               text="Расход"
@@ -62,7 +63,7 @@ export function NewCategorySheet(props: NewCategorySheetProps) {
               onPress={() => setType('income')}
               testID="home-new-category-type-income"
             />
-          </Row>
+          </View>
 
           <Button
             variant="primary"
@@ -71,7 +72,7 @@ export function NewCategorySheet(props: NewCategorySheetProps) {
             onPress={submit}
             testID="home-new-category-submit"
           />
-        </Stack>
+        </View>
       </BottomSheetView>
     </BottomSheet>
   )

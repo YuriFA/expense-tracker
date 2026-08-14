@@ -1,5 +1,4 @@
-import { type ViewProps } from 'react-native'
-import { Box } from '../box'
+import { View, type ViewProps } from 'react-native'
 
 export interface ScreenProps extends Omit<ViewProps, 'children'> {
   className?: string
@@ -11,8 +10,8 @@ export function Screen(props: ScreenProps) {
   const { className, children, ...viewProps } = props
 
   return (
-    <Box className={`flex-1 p-safe bg-background ${className || ''}`} {...viewProps}>
+    <View className={`flex-1 p-safe bg-background ${className || ''}`} {...viewProps}>
       {children}
-    </Box>
+    </View>
   )
 }

@@ -31,13 +31,13 @@ Created foundational components in `shared/ui/`:
 
 | Component | Description | File |
 |-----------|-------------|------|
-| **Box** | Flexible View wrapper for layout | `box/Box.tsx` |
 | **Text** | Typography with semantic variants | `text/Text.tsx` |
-| **Stack** | Vertical layout container | `stack/Stack.tsx` |
-| **Row** | Horizontal layout container | `stack/Row.tsx` |
 | **Pressable** | Interactive element wrapper | `pressable/Pressable.tsx` |
 | **Screen** | Screen container with safe areas | `screen/Screen.tsx` |
 | **Icon** | Icon component using Ionicons | `icon/Icon.tsx` |
+
+Layout is plain `View` + NativeWind classes (`flex-row`, `gap-*`, `items-*`,
+`justify-*`) - there are deliberately no Box/Stack/Row wrappers.
 
 ### Phase 3: Basic Components ✅
 
@@ -66,12 +66,12 @@ Created domain-specific components in `shared/components/`:
 Migrated screens to demonstrate the new Design System:
 
 1. **DashboardScreen** (`pages/dashboard/ui/DashboardScreen.tsx`)
-   - Uses Screen, Text, Card, Stack, Button, TransactionRow
+   - Uses Screen, Text, Card, Button, TransactionRow
    - Displays balance card, quick actions, recent transactions
    - Demonstrates balance formatting and transaction list
 
 2. **LoginScreen** (`pages/login/ui/LoginScreen.tsx`)
-   - Uses Screen, Text, Stack, Input, Button
+   - Uses Screen, Text, Input, Button
    - Email/password form with icons
    - Loading states, social login buttons
    - Sign up link
@@ -96,15 +96,8 @@ packages/tokens/                    # NEW! Shared design tokens
 apps/mobile/src/
 ├── shared/
 │   ├── ui/
-│   │   ├── box/
-│   │   │   ├── Box.tsx
-│   │   │   └── index.ts
 │   │   ├── text/
 │   │   │   ├── Text.tsx
-│   │   │   └── index.ts
-│   │   ├── stack/
-│   │   │   ├── Stack.tsx
-│   │   │   ├── Row.tsx
 │   │   │   └── index.ts
 │   │   ├── pressable/
 │   │   │   ├── Pressable.tsx

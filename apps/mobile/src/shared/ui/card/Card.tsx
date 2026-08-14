@@ -1,8 +1,8 @@
-import { Box, type BoxProps } from '../box'
+import { View, type ViewProps } from 'react-native'
 
 export type CardVariant = 'default' | 'outlined' | 'elevated'
 
-export interface CardProps extends BoxProps {
+export interface CardProps extends ViewProps {
   variant?: CardVariant
 }
 
@@ -13,14 +13,14 @@ const variantStyles: Record<CardVariant, string> = {
 }
 
 export function Card(props: CardProps) {
-  const { variant = 'default', className, style, ...boxProps } = props
+  const { variant = 'default', className, style, ...viewProps } = props
 
   const variantClassName = variantStyles[variant]
 
   return (
-    <Box
+    <View
       className={`${variantClassName} rounded-2xl p-4 ${className || ''}`.trim()}
-      {...boxProps}
+      {...viewProps}
       style={
         variant === 'elevated'
           ? {
