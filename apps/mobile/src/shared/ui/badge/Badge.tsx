@@ -30,16 +30,6 @@ const textSizeStyles: Record<BadgeSize, string> = {
   md: "text-sm",
 }
 
-/**
- * Badge - Small status or category indicator
- *
- * Use for status indicators, categories, or tags.
- * Generic component - don't use for domain-specific badges.
- *
- * @example
- * <Badge variant="success">Completed</Badge>
- * <Badge variant="warning">Pending</Badge>
- */
 export function Badge(props: BadgeProps) {
   const { children, variant = "default", size = "md", className } = props
 

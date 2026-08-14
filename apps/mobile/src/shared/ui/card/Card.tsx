@@ -1,4 +1,3 @@
-import { View } from "react-native"
 import { Box, type BoxProps } from "../box"
 
 export type CardVariant = "default" | "outlined" | "elevated"
@@ -13,18 +12,6 @@ const variantStyles: Record<CardVariant, string> = {
   elevated: "bg-card shadow-md",
 }
 
-/**
- * Card - Container component for related content
- *
- * Use cards to group related information and actions.
- * Commonly used for transactions, accounts, and summary sections.
- *
- * @example
- * <Card variant="outlined">
- *   <Text variant="h3">Balance</Text>
- *   <Text>$1,234.56</Text>
- * </Card>
- */
 export function Card(props: CardProps) {
   const { variant = "default", className, ...boxProps } = props
 

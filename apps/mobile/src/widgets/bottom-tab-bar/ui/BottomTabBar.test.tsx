@@ -189,7 +189,7 @@ describe("BottomTabBar · height reporting", () => {
   })
 })
 
-// --- SpeedDial + tab-bar integration (spec section 31) ------------------------
+// --- SpeedDial + tab-bar integration -------------------------------
 
 function renderIntegration({ defaultOpen = false }: { defaultOpen?: boolean } = {}) {
   const onExpense = jest.fn()

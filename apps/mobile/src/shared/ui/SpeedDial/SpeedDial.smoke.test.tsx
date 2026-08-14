@@ -25,7 +25,7 @@ const fab = () => screen.getByTestId("speed-dial-fab")
 const fabExpanded = () => Boolean(fab().props.accessibilityState?.expanded)
 
 // The shared `progress` value is the single source of truth, so rapid toggling
-// must never throw or desync the observed state (spec section 20).
+// must never throw or desync the observed state.
 describe("SpeedDial · rapid open/close", () => {
   it("survives rapid FAB toggling and ends in the correct state", () => {
     renderWithProviders(<SpeedDial actions={actions} />)

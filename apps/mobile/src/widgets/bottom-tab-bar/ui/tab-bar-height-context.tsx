@@ -1,19 +1,12 @@
 import { createContext, useContext, useState, type ReactNode } from "react"
 
 /**
- * Shares the measured bottom-tab-bar height between the custom `BottomTabBar`
- * (rendered inside the navigator) and the SpeedDial overlay rendered as its
- * sibling in `(tabs)/_layout.tsx`.
- *
- * The navigator's own `useBottomTabBarHeight()` / `BottomTabBarHeightContext`
- * is only provided to *screens* (the navigator holds the state), so a sibling
- * overlay at the layout layer cannot read it. This context lifts the measured
- * height out of the navigator subtree so the overlay can compute its
- * `bottomOffset` without hardcoding the tab-bar height (spec section 20).
- *
- * The `BottomTabBar` also reports the same value to the navigator's
- * `BottomTabBarHeightCallbackContext`, so `useBottomTabBarHeight()` stays
- * accurate inside screens.
+ * Shares the measured bottom-tab-bar height with the SpeedDial overlay, which
+ * is rendered as a sibling of the navigator in `(tabs)/_layout.tsx`. The
+ * navigator's own `useBottomTabBarHeight()` is only provided to *screens* (the
+ * navigator holds the state), so a sibling overlay at the layout layer can't
+ * read it. `BottomTabBar` also reports the same value to the navigator's own
+ * context so `useBottomTabBarHeight()` stays accurate inside screens.
  */
 const TabBarHeightContext = createContext<number>(0)
 const TabBarHeightSetterContext = createContext<((height: number) => void) | undefined>(undefined)

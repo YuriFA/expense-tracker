@@ -3,50 +3,15 @@ import { Text } from "../text"
 import { Icon } from "../icon"
 
 export interface InputProps extends Omit<TextInputProps, "placeholderTextColor"> {
-  /**
-   * Label text
-   */
   label?: string
-  /**
-   * Placeholder text
-   */
   placeholder?: string
-  /**
-   * Error message
-   */
   error?: string
-  /**
-   * Helper text
-   */
   helperText?: string
-  /**
-   * Leading icon name
-   */
   leadingIcon?: string
-  /**
-   * Trailing icon name
-   */
   trailingIcon?: string
-  /**
-   * Container class name
-   */
   containerClassName?: string
 }
 
-/**
- * Input - Text input component
- *
- * Generic text input with label, error, helper text, and icons.
- * Not tied to any form library - use with React Hook Form or similar.
- *
- * @example
- * <Input
- *   label="Email"
- *   placeholder="Enter your email"
- *   error={errors.email?.message}
- *   leadingIcon="mail"
- * />
- */
 export function Input(props: InputProps) {
   const {
     label,

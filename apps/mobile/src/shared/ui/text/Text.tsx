@@ -28,17 +28,6 @@ const variantStyles: Record<TextVariant, string> = {
   button: "text-base font-medium text-foreground",
 }
 
-/**
- * Text - Typography component with semantic variants
- *
- * Provides consistent typography across the app.
- * Always use a variant rather than arbitrary styling for text content.
- *
- * @example
- * <Text variant="h1">Welcome</Text>
- * <Text variant="body">Regular paragraph text</Text>
- * <Text variant="caption">Small helper text</Text>
- */
 export function Text(props: TextProps) {
   const { className, variant = "body", style, ...textProps } = props
 

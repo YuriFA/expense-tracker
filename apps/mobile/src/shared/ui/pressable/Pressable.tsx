@@ -2,31 +2,12 @@ import { Pressable as RNPressable, type PressableProps as RNPressableProps } fro
 
 export interface PressableProps extends RNPressableProps {
   className?: string
-  /**
-   * Hover state (web only, but included for API consistency)
-   */
+  /** Web-only; kept in the API for cross-platform parity. */
   hoverClassName?: string
-  /**
-   * Pressed state style
-   */
   pressedClassName?: string
-  /**
-   * Focused state style
-   */
   focusedClassName?: string
 }
 
-/**
- * Pressable - Interactive element wrapper
- *
- * Use this for any interactive element that isn't a specific component like Button.
- * Handles press, hover, focus states with proper accessibility.
- *
- * @example
- * <Pressable pressedClassName="bg-opacity-80" onPress={handlePress}>
- *   <Text>Click me</Text>
- * </Pressable>
- */
 export function Pressable(props: PressableProps) {
   const {
     className,

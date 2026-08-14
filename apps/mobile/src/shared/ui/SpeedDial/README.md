@@ -9,7 +9,7 @@ primitives (`react-native-reanimated`, `react-native-safe-area-context`, RN
 This component knows nothing about transactions/accounts/categories. It renders
 whatever `actions` it is given.
 
-## Architecture decision (spec section 37)
+## Architecture decision
 
 ### Where it lives
 
@@ -39,8 +39,8 @@ Stacking order inside the overlay (paint order = last on top, reinforced with
 2. **Actions column** - anchored above the FAB, growing upward.
 3. **FAB** - always interactive, topmost.
 
-No `Modal`/portal/BottomSheet is used (the spec forbids them and this keeps
-SpeedDial part of the current screen UI). Because the overlay is absolute within
+No `Modal`/portal/BottomSheet is used - this keeps SpeedDial part of the
+current screen UI. Because the overlay is absolute within
 wherever it is mounted, it correctly floats above sibling cards/headers/list
 content; the mounting point (a screen, or - in the later tab-bar task - the tab
 layout) determines its scope.
@@ -73,14 +73,14 @@ there are **no JS timers / `setTimeout`** anywhere, and no `Animated`/
   purely from one shared value, no per-action timers.
 - **Backdrop**: `interpolate(progress, [0,1], [0, backdropOpacity], CLAMP)`.
 
-**Race safety (spec section 20):** because `progress` is the single source and
+**Race safety:** because `progress` is the single source and
 Reanimated cancels and re-targets an in-flight animation when you assign a new
 target, rapid `open/close/open` simply re-targets `progress` - it cannot leave an
 action hung, the FAB mid-rotation, or a stuck backdrop. The React `open` state
 only gates mounting/`pointerEvents`/accessibility; the *visual* state is always
 the shared value, never React state + timers.
 
-**Reduced motion (spec section 21):** `useReducedMotion()` shortens the timing
+**Reduced motion:** `useReducedMotion()` shortens the timing
 and drops the translate/scale so only a quick opacity transition plays. The
 architecture lets motion be disabled without restructuring.
 

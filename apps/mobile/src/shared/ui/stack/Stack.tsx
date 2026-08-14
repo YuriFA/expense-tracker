@@ -7,15 +7,6 @@ export interface StackProps extends ViewProps {
   justify?: "start" | "center" | "end" | "between" | "around" | "evenly"
 }
 
-/**
- * Stack - Vertical layout container
- *
- * Convenience wrapper for vertical flex layouts.
- * For simple spacing, the gap prop is cleaner than Tailwind classes.
- *
- * @example
- * <Stack gap="md" align="center">...</Stack>
- */
 export function Stack(props: StackProps) {
   const { className, gap, align, justify, style, ...viewProps } = props
 

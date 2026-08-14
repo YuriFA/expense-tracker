@@ -1,10 +1,4 @@
-/**
- * Domain-specific components for Expense Tracker
- *
- * These components are specific to the expense tracker domain
- * and should be moved to appropriate FSD slices (entities, features)
- * when those are fully implemented.
- */
+// Domain-specific - move to entities/ or features/ slices once those exist.
 
 export { AmountInput } from "./amount-input"
 export type { AmountInputProps } from "./amount-input"

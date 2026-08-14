@@ -1,6 +1,4 @@
-import type { ComponentProps } from 'react'
 import { View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui'
 import type { Href } from 'expo-router'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
@@ -13,27 +11,12 @@ import {
   type TabConfig,
 } from '@/widgets/bottom-tab-bar'
 
-type IconName = ComponentProps<typeof Ionicons>['name']
-
 interface TabDef extends TabConfig {
-  /** Absolute route URL this tab switches to; drives the hidden `<TabTrigger>`. */
   href: Href
 }
 
-/**
- * Bottom-tab navigator for the authenticated app surface - the mobile twin of
- * the web top nav (apps/web/src/app/layout/AppNav.vue).
- *
- * Built on expo-router's headless tab components (`expo-router/ui`): the hidden
- * `<TabList>` declares the routes, `<TabSlot>` renders the focused screen, and
- * the custom `<BottomTabBar>` renders the visible buttons (reading focus/press
- * state via `useTabTrigger`). This keeps the whole tab surface first-party
- * expo-router, with no `@react-navigation/bottom-tabs` `BottomTabBarProps`
- * plumbing.
- *
- * TODO(i18n): swap the hardcoded `label`s for the shared `@expense-tracker/i18n`
- * bundle (`nav.dashboard` etc.) once react-i18next is wired in shared/i18n.
- */
+// TODO(i18n): replace the hardcoded `label`s with the shared
+// @expense-tracker/i18n bundle once react-i18next is wired in shared/i18n.
 const TABS: readonly TabDef[] = [
   { name: 'index', href: '/', label: 'Dashboard', testId: 'tab-dashboard', icon: 'grid-outline' },
   { name: 'transactions', href: '/transactions', label: 'Transactions', testId: 'tab-transactions', icon: 'swap-horizontal-outline' },
@@ -41,13 +24,9 @@ const TABS: readonly TabDef[] = [
   { name: 'settings', href: '/settings', label: 'Settings', testId: 'tab-settings', icon: 'settings-outline' },
 ] as const
 
-/**
- * Central SpeedDial actions. The create-transaction flows do not exist yet, so
- * the callbacks are placeholders - they close the dial (handled by SpeedDial)
- * and leave a TODO for navigation. Wiring navigation HERE (the layout that owns
- * routing), not in `shared/ui/SpeedDial` or `BottomTabBar`, keeps the shared
- * SpeedDial domain-free (spec sections 21-23).
- */
+// Placeholder actions - the create-transaction flows don't exist yet. Navigation
+// is wired here (the layout owns routing), not in SpeedDial or BottomTabBar, to
+// keep the shared SpeedDial domain-free.
 function useTransactionActions(iconColor: string): SpeedDialAction[] {
   return [
     {
@@ -88,43 +67,23 @@ export default function TabsLayout() {
   )
 }
 
-/**
- * Renders the headless tab navigator and the SpeedDial overlay as siblings.
- *
- * Layering decision (spec section 9, Variant B): the SpeedDial is a fullscreen
- * overlay mounted as a SIBLING of `<Tabs>`, not inside the tab bar. Its single
- * `absoluteFill` backdrop must cover screen content, and the tab-bar slot is
- * only ~80px tall, so mounting inside it would clip the scrim. Rendered after
- * `<Tabs>`, the overlay paints above the bar: FAB + actions are topmost, the
- * dimmed scrim blocks the whole surface (including the bar) when open, and
- * tapping the scrim closes the menu (spec section 25, option A). The FAB is
- * centered (SpeedDial `position="center"`) and straddles the bar's top edge via
- * `bottomOffset = measuredBarHeight - FAB_SIZE/2` - no hardcoded bar height
- * (spec sections 12, 19, 20). Opening the SpeedDial never changes the active
- * tab: it is a floating action control, not a route (spec sections 2, 4).
- */
+// The SpeedDial is a fullscreen overlay mounted as a SIBLING of <Tabs>, not
+// inside the tab bar: its scrim must cover the whole screen (the bar slot is
+// only ~80px), and rendered after <Tabs> it paints above the bar. The FAB is
+// centered and straddles the bar's top edge via bottomOffset, so opening it
+// never changes the active tab - it's a floating action, not a route.
 function TabsSurface() {
   const { resolvedTheme } = useTheme()
   const tabBarHeight = useTabBarHeight()
   const actions = useTransactionActions(colorsRN[resolvedTheme]['primary-foreground'])
 
-  // Straddle the bar's top edge: FAB center at the bar top -> its bottom edge is
-  // half the FAB above it. `tabBarHeight` already includes the safe-area padding,
-  // so no separate inset is needed. Falls back to SpeedDial's safe-area default
-  // until the bar has laid out.
+  // Straddle the bar's top edge: FAB center at the bar top. tabBarHeight includes
+  // the safe-area padding, so no separate inset is needed. Falls back to the
+  // SpeedDial's safe-area default until the bar has laid out.
   const fabBottomOffset = tabBarHeight > 0 ? tabBarHeight - FAB_SIZE / 2 : undefined
 
   return (
     <View style={{ flex: 1 }}>
-      {/*
-        Headless expo-router tabs (`expo-router/ui`):
-          - <TabList> declares the tab routes (hidden; its <TabTrigger> children
-            define the route set and build the name -> route trigger map).
-          - <BottomTabBar> renders the visible buttons; each reads its focus and
-            press handler from `useTabTrigger(name)`, referencing the tabs above.
-          - <TabSlot> renders the focused screen.
-        See https://docs.expo.dev/router/advanced/custom-tabs/.
-      */}
       <Tabs>
         <TabSlot />
         <BottomTabBar tabs={TABS} />

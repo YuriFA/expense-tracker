@@ -17,14 +17,11 @@ import {
 import type { SpeedDialActionViewProps } from "./SpeedDial.types"
 
 /**
- * SpeedDialAction - one row of an expanded SpeedDial (`[label?]  (icon)`).
- *
- * The whole row is a single interactive `Pressable` (label + icon are one hit
- * target, per spec section 14). Its appear/disappear (opacity, translateY,
- * scale) is derived from the shared `progress` value with a per-index stagger,
- * so rapid open/close cannot leave it hung - there is no per-action timer. The
- * React `open` prop only gates pointer events / accessibility; the shared value
- * drives the visuals. Internal to SpeedDial; exported for direct unit testing.
+ * One row of an expanded SpeedDial (`[label?] (icon)`); the whole row is a
+ * single Pressable. Its appear/disappear is derived from the shared `progress`
+ * value with a per-index stagger, so rapid open/close can't leave it hung (no
+ * per-action timer). The React `open` prop only gates pointer events / a11y
+ * while the shared value drives the visuals.
  */
 export function SpeedDialAction(props: SpeedDialActionViewProps) {
   const { action, index, progress, spacing, position, testID, open } = props

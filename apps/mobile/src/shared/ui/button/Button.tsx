@@ -1,7 +1,6 @@
 import { Pressable } from "../pressable"
 import { Text } from "../text"
 import type { PressableProps } from "../pressable"
-import type { TextProps } from "../text"
 import { ActivityIndicator } from "react-native"
 
 export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "destructive"
@@ -11,13 +10,7 @@ export interface ButtonProps extends Omit<PressableProps, "children"> {
   children?: React.ReactNode
   variant?: ButtonVariant
   size?: ButtonSize
-  /**
-   * Show loading state
-   */
   loading?: boolean
-  /**
-   * Text content (optional, can also use children)
-   */
   text?: string
 }
 
@@ -45,20 +38,6 @@ const sizeStyles: Record<ButtonSize, { container: string; text: string }> = {
 
 const disabledOpacity = 0.5
 
-/**
- * Button - Interactive button component
- *
- * Primary call-to-action component with variants for different contexts.
- * Supports loading, disabled, and pressed states.
- *
- * @example
- * <Button variant="primary" onPress={handlePress}>
- *   Save
- * </Button>
- * <Button variant="outline" size="sm">
- *   Cancel
- * </Button>
- */
 export function Button(props: ButtonProps) {
   const {
     children,

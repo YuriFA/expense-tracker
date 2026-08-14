@@ -7,15 +7,6 @@ export interface RowProps extends ViewProps {
   justify?: "start" | "center" | "end" | "between" | "around" | "evenly"
 }
 
-/**
- * Row - Horizontal layout container
- *
- * Convenience wrapper for horizontal flex layouts.
- * For simple spacing, the gap prop is cleaner than Tailwind classes.
- *
- * @example
- * <Row gap="sm" align="center">...</Row>
- */
 export function Row(props: RowProps) {
   const { className, gap, align, justify, style, ...viewProps } = props
 

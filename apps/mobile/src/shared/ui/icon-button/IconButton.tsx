@@ -1,27 +1,13 @@
 import { Pressable } from "../pressable"
 import { Icon } from "../icon"
 import type { PressableProps } from "../pressable"
-import { View } from "react-native"
 
 export type IconButtonSize = "sm" | "md" | "lg"
 
 export interface IconButtonProps extends Omit<PressableProps, "children"> {
-  /**
-   * Icon name from Ionicons
-   */
   icon: string
-  /**
-   * Size of the button
-   * @default "md"
-   */
   size?: IconButtonSize
-  /**
-   * Icon color class
-   */
   color?: string
-  /**
-   * Accessibility label (required for icon buttons)
-   */
   accessibilityLabel: string
 }
 
@@ -37,16 +23,6 @@ const iconSizes: Record<IconButtonSize, number> = {
   lg: 28,
 }
 
-/**
- * IconButton - Button with an icon
- *
- * Use for icon-only actions like edit, delete, close, back, etc.
- * Always provide a meaningful accessibilityLabel.
- *
- * @example
- * <IconButton icon="close" accessibilityLabel="Close" onPress={handleClose} />
- * <IconButton icon="create" accessibilityLabel="Edit" color="text-primary" />
- */
 export function IconButton(props: IconButtonProps) {
   const {
     icon,

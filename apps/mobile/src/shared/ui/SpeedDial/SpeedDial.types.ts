@@ -1,22 +1,14 @@
 import type { SharedValue } from "react-native-reanimated"
 
-/** Where the FAB anchors horizontally. */
 export type SpeedDialPosition = "bottom-right" | "bottom-left" | "center"
 
-/**
- * A single action rendered inside the SpeedDial. The component is generic -
- * `id`, `icon`, `onPress` and optional `label` are all the caller's concern.
- */
 export interface SpeedDialAction {
   /** Stable unique id; used to build the action testID: `{base}-action-{id}`. */
   id: string
-  /** Icon node shown in the action's circular button. */
   icon: React.ReactNode
   /** Invoked on press (the menu closes first; never awaited). */
   onPress: () => void
-  /** Optional label pill shown beside the icon. */
   label?: string
-  /** Visually disabled and non-interactive; keeps a correct a11y state. */
   disabled?: boolean
   /**
    * Explicit accessibility label. Falls back to `label` when omitted.
@@ -73,10 +65,8 @@ export interface SpeedDialProps {
   backdrop?: boolean
   /** Peak scrim opacity. @default 0.5 */
   backdropOpacity?: number
-  /** Vertical gap between stacked actions, in px. */
   actionSpacing?: number
 
-  /** Disable the whole SpeedDial - the FAB will not open. */
   disabled?: boolean
 
   /** Base testID. Derives `{base}-fab`, `{base}-backdrop`, `{base}-action-{id}`. @default "speed-dial" */

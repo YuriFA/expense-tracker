@@ -23,9 +23,7 @@ const FAB_SLOT_WIDTH = FAB_SIZE + 8
 export interface TabConfig {
   /** Matches the `name` of the `<TabTrigger>` that defines this route. */
   name: string
-  /** Label shown under the icon. */
   label: string
-  /** Ionicons glyph. */
   icon: IconName
   /** Stable testID for Maestro e2e (convention: `tab-<name>`). */
   testId: string
@@ -76,21 +74,13 @@ function TabButton({
 }
 
 /**
- * BottomTabBar - the mobile bottom navigation, built on expo-router's headless
- * tab components (`expo-router/ui`). Renders the real tab buttons (icons,
- * labels, active/inactive tint, accessibility) with a central reserved slot for
- * the SpeedDial FAB.
- *
- * Pure composition + styling only: press/focus/navigation come from
- * `useTabTrigger`, and the actual tab routes are declared by the layout's
- * hidden `<TabList>`. This bar contains NO SpeedDial and NO transaction/domain
- * logic - those live in `(tabs)/_layout.tsx`, the consumer that owns routing.
- *
- * Colors come from design tokens (never hardcoded). The measured height is
- * reported to this widget's height context so the sibling SpeedDial overlay can
- * compute its `bottomOffset` without hardcoding the bar height. Safe-area insets
- * are read directly from `react-native-safe-area-context` (the headless API,
- * unlike the react-navigation `tabBar` prop, does not hand them to us).
+ * Bottom navigation built on expo-router's headless tab components.
+ * Press/focus and navigation come from `useTabTrigger`; the tab routes
+ * themselves are declared by the layout's hidden `<TabList>`. This bar holds NO
+ * SpeedDial and NO transaction/domain logic - those live in
+ * `(tabs)/_layout.tsx`. Colors come from design tokens; the measured height is
+ * reported via context so the sibling SpeedDial can compute its `bottomOffset`
+ * without hardcoding it.
  */
 export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
   const setTabBarHeight = useTabBarHeightSetter()

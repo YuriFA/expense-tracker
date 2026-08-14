@@ -1,5 +1,5 @@
 import { View } from "react-native"
-import { Card, Text, Badge, Icon, type CardProps } from "@/shared/ui"
+import { Card, Text, Badge, type CardProps } from "@/shared/ui"
 
 export interface Transaction {
   id: string
@@ -12,43 +12,12 @@ export interface Transaction {
 
 export interface TransactionRowProps extends Omit<CardProps, "children"> {
   transaction: Transaction
-  /**
-   * Format amount as currency
-   * @default "$"
-   */
   currencySymbol?: string
-  /**
-   * Show category badge
-   * @default true
-   */
   showCategory?: boolean
-  /**
-   * Press handler
-   */
   onPress?: () => void
 }
 
-/**
- * TransactionRow - Display a transaction in a list
- *
- * Domain-specific component for displaying transaction items.
- * Shows amount, description, category, date, and type.
- *
- * TODO: Move to entities/transaction/ui when the entity slice is created.
- *
- * @example
- * <TransactionRow
- *   transaction={{
- *     id: "1",
- *     amount: 4550,
- *     description: "Grocery shopping",
- *     category: "Food",
- *     date: "2024-01-15",
- *     type: "expense"
- *   }}
- *   onPress={handlePress}
- * />
- */
+// TODO: move to entities/transaction/ui once the entity slice exists.
 export function TransactionRow(props: TransactionRowProps) {
   const {
     transaction,
@@ -61,15 +30,12 @@ export function TransactionRow(props: TransactionRowProps) {
 
   const { amount, description, category, date, type } = transaction
 
-  // Format amount (convert cents to major units)
   const formattedAmount = Math.abs(amount / 100).toFixed(2)
   const amountSign = type === "expense" ? "-" : "+"
   const amountText = `${amountSign}${currencySymbol}${formattedAmount}`
 
-  // Determine badge variant based on type
   const badgeVariant = type === "expense" ? "destructive" : "success"
 
-  // Format date (simple format for now)
   const formattedDate = new Date(date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
