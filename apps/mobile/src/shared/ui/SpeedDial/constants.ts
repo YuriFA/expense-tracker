@@ -1,4 +1,4 @@
-import { Easing } from "react-native-reanimated"
+import { Easing } from 'react-native-reanimated'
 
 /**
  * Internal dimensions for the SpeedDial.
@@ -38,9 +38,9 @@ export const ACTION_SCALE_MIN = 0.8
 /** Default scrim opacity. Overridable via the `backdropOpacity` prop. */
 export const DEFAULT_BACKDROP_OPACITY = 0.5
 
-export const DEFAULT_TEST_ID = "speed-dial"
+export const DEFAULT_TEST_ID = 'speed-dial'
 
 /** Domain-free default accessibility labels. */
-export const DEFAULT_LABEL = "More actions"
-export const DEFAULT_CLOSE_LABEL = "Close actions"
-export const DEFAULT_BACKDROP_LABEL = "Close menu"
+export const DEFAULT_LABEL = 'More actions'
+export const DEFAULT_CLOSE_LABEL = 'Close actions'
+export const DEFAULT_BACKDROP_LABEL = 'Close menu'

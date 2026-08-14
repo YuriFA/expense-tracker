@@ -1,11 +1,7 @@
-import { memo } from "react"
-import { Pressable, View } from "react-native"
-import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedStyle,
-} from "react-native-reanimated"
-import { Text } from "../text"
+import { memo } from 'react'
+import { Pressable, View } from 'react-native'
+import Animated, { Extrapolation, interpolate, useAnimatedStyle } from 'react-native-reanimated'
+import { Text } from '../text'
 import {
   ACTION_ICON_SIZE,
   ACTION_TARGET,
@@ -13,8 +9,8 @@ import {
   ACTION_SCALE_MIN,
   STAGGER,
   STAGGERED_SEGMENT,
-} from "./constants"
-import type { SpeedDialActionViewProps } from "./SpeedDial.types"
+} from './constants'
+import type { SpeedDialActionViewProps } from './SpeedDial.types'
 
 /**
  * One row of an expanded SpeedDial (`[label?] (icon)`); the whole row is a
@@ -25,7 +21,7 @@ import type { SpeedDialActionViewProps } from "./SpeedDial.types"
  */
 export function SpeedDialAction(props: SpeedDialActionViewProps) {
   const { action, index, progress, spacing, position, testID, open } = props
-  const isRight = position === "bottom-right"
+  const isRight = position === 'bottom-right'
 
   const appearStyle = useAnimatedStyle(() => {
     const start = index * STAGGER
@@ -55,9 +51,9 @@ export function SpeedDialAction(props: SpeedDialActionViewProps) {
     <Animated.View
       style={[props.reducedMotion ? reducedStyle : appearStyle, { marginBottom: spacing }]}
       // Hidden from accessibility & non-interactive while collapsed.
-      pointerEvents={open ? "auto" : "none"}
+      pointerEvents={open ? 'auto' : 'none'}
       accessibilityElementsHidden={!open}
-      importantForAccessibility={open ? "yes" : "no-hide-descendants"}
+      importantForAccessibility={open ? 'yes' : 'no-hide-descendants'}
     >
       <Pressable
         testID={testID}
@@ -66,7 +62,7 @@ export function SpeedDialAction(props: SpeedDialActionViewProps) {
         accessibilityRole="button"
         accessibilityLabel={a11yLabel}
         accessibilityState={{ disabled: Boolean(action.disabled) }}
-        className={`flex-row items-center ${isRight ? "flex-row-reverse" : ""}`}
+        className={`flex-row items-center ${isRight ? 'flex-row-reverse' : ''}`}
         style={({ pressed }) => [
           { gap: 8, opacity: action.disabled ? 0.5 : 1 },
           pressed && { opacity: 0.85 },
@@ -78,16 +74,16 @@ export function SpeedDialAction(props: SpeedDialActionViewProps) {
             style={{
               width: ACTION_TARGET,
               height: ACTION_TARGET,
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             <View
               style={{
                 width: ACTION_ICON_SIZE,
                 height: ACTION_ICON_SIZE,
-                alignItems: "center",
-                justifyContent: "center",
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               {action.icon}

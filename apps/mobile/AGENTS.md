@@ -76,7 +76,12 @@ hardcoded).
 
 ## Quality bar
 
-`pnpm type-check` (`tsc --noEmit`) stays green. The iOS production bundle
+`pnpm type-check` (`tsc --noEmit`), `pnpm lint` (`oxlint . --fix`), and
+`pnpm format` (`oxfmt src/`) stay green - the twin of `apps/web`'s oxlint/oxfmt
+setup. Configs are `.oxlintrc.json` / `.oxfmtrc.json` (plugins swap `vue` for
+`react` and `vitest` for `jest`; same `correctness: error` bar, same
+`semi: false` / `singleQuote: true` style). There is **no eslint** on mobile
+today - oxlint is the only linter. The iOS production bundle
 (`pnpm exec expo export --platform ios`) is the end-to-end check that `@/*` and the
 route tree resolve. Run: `pnpm start` (`expo start`), `ios`, `android`, `web`.
 

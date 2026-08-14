@@ -1,6 +1,6 @@
-import type { SharedValue } from "react-native-reanimated"
+import type { SharedValue } from 'react-native-reanimated'
 
-export type SpeedDialPosition = "bottom-right" | "bottom-left" | "center"
+export type SpeedDialPosition = 'bottom-right' | 'bottom-left' | 'center'
 
 export interface SpeedDialAction {
   /** Stable unique id; used to build the action testID: `{base}-action-{id}`. */

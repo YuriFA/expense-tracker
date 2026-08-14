@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react"
-import { Pressable, StyleSheet, View, type ViewStyle } from "react-native"
+import { useCallback, useEffect, useState } from 'react'
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native'
 import Animated, {
   Extrapolation,
   interpolate,
@@ -7,13 +7,13 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withTiming,
-} from "react-native-reanimated"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { Icon } from "../icon"
-import { useTheme } from "@/shared/config/theme"
-import { colors as colorsRN } from "@expense-tracker/tokens/react-native"
-import { SpeedDialAction as SpeedDialActionView } from "./SpeedDialAction"
-import type { SpeedDialAction, SpeedDialProps } from "./SpeedDial.types"
+} from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Icon } from '../icon'
+import { useTheme } from '@/shared/config/theme'
+import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
+import { SpeedDialAction as SpeedDialActionView } from './SpeedDialAction'
+import type { SpeedDialAction, SpeedDialProps } from './SpeedDial.types'
 import {
   CLOSE_DURATION,
   DEFAULT_BACKDROP_LABEL,
@@ -28,9 +28,9 @@ import {
   OPEN_DURATION,
   REDUCED_EASE,
   REDUCED_MOTION_DURATION,
-} from "./constants"
+} from './constants'
 
-export type { SpeedDialAction, SpeedDialProps, SpeedDialPosition } from "./SpeedDial.types"
+export type { SpeedDialAction, SpeedDialProps, SpeedDialPosition } from './SpeedDial.types'
 
 const AnimatedView = Animated.View
 
@@ -56,7 +56,7 @@ export function SpeedDial(props: SpeedDialProps) {
     closeIcon,
     label = DEFAULT_LABEL,
     closeLabel = DEFAULT_CLOSE_LABEL,
-    position = "bottom-right",
+    position = 'bottom-right',
     bottomOffset,
     horizontalOffset,
     backdrop = true,
@@ -91,8 +91,8 @@ export function SpeedDial(props: SpeedDialProps) {
   }, [open, reducedMotion, progress])
 
   const insets = useSafeAreaInsets()
-  const isRight = position === "bottom-right"
-  const isCenter = position === "center"
+  const isRight = position === 'bottom-right'
+  const isCenter = position === 'center'
   const resolvedBottomOffset = bottomOffset ?? insets.bottom + DEFAULT_EDGE_MARGIN
   // Anchors the corner variants only; `center` spans the full width and
   // self-centers, so this value is unused when `position="center"`.
@@ -100,7 +100,7 @@ export function SpeedDial(props: SpeedDialProps) {
     horizontalOffset ?? (isRight ? insets.right : insets.left) + DEFAULT_EDGE_MARGIN
 
   const { resolvedTheme } = useTheme()
-  const fabIconColor = colorsRN[resolvedTheme]["primary-foreground"]
+  const fabIconColor = colorsRN[resolvedTheme]['primary-foreground']
 
   const toggle = useCallback(() => {
     if (disabled) return
@@ -134,21 +134,21 @@ export function SpeedDial(props: SpeedDialProps) {
       <View
         pointerEvents="box-none"
         style={{
-          position: "absolute",
+          position: 'absolute',
           bottom: resolvedBottomOffset,
           ...(isCenter
-            ? { left: 0, right: 0, alignItems: "center" }
+            ? { left: 0, right: 0, alignItems: 'center' }
             : isRight
-              ? { right: resolvedHorizontalOffset, alignItems: "flex-end" }
-              : { left: resolvedHorizontalOffset, alignItems: "flex-start" }),
+              ? { right: resolvedHorizontalOffset, alignItems: 'flex-end' }
+              : { left: resolvedHorizontalOffset, alignItems: 'flex-start' }),
         }}
       >
         {/* Actions grow upward; column-reverse keeps action[0] nearest the FAB. */}
         <View
           pointerEvents="box-none"
           style={{
-            flexDirection: "column-reverse",
-            alignItems: isCenter ? "center" : isRight ? "flex-end" : "flex-start",
+            flexDirection: 'column-reverse',
+            alignItems: isCenter ? 'center' : isRight ? 'flex-end' : 'flex-start',
           }}
         >
           {actions.map((action, index) => (
@@ -184,12 +184,7 @@ export function SpeedDial(props: SpeedDialProps) {
             pressed && { opacity: 0.9, transform: [{ scale: 0.95 }] },
           ]}
         >
-          <FabIcon
-            progress={progress}
-            icon={icon}
-            closeIcon={closeIcon}
-            color={fabIconColor}
-          />
+          <FabIcon progress={progress} icon={icon} closeIcon={closeIcon} color={fabIconColor} />
         </Pressable>
       </View>
     </View>
@@ -221,15 +216,19 @@ function Backdrop({
     <Pressable
       testID={testID}
       onPress={onClose}
-      pointerEvents={open ? "auto" : "none"}
+      pointerEvents={open ? 'auto' : 'none'}
       accessibilityRole="button"
       accessibilityLabel={DEFAULT_BACKDROP_LABEL}
       accessibilityHint="Closes the action menu"
       accessibilityElementsHidden={!open}
-      importantForAccessibility={open ? "auto" : "no-hide-descendants"}
+      importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
       style={StyleSheet.absoluteFill}
     >
-      <AnimatedView pointerEvents="none" style={[StyleSheet.absoluteFill, style]} className="bg-black" />
+      <AnimatedView
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, style]}
+        className="bg-black"
+      />
     </Pressable>
   )
 }
@@ -265,15 +264,17 @@ function FabIcon({
   const box: ViewStyle = {
     width: FAB_ICON_SIZE,
     height: FAB_ICON_SIZE,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   }
 
   if (icon != null && closeIcon != null) {
     return (
       <View style={{ width: FAB_ICON_SIZE, height: FAB_ICON_SIZE }}>
         <AnimatedView style={[StyleSheet.absoluteFill, box, closedLayerStyle]}>{icon}</AnimatedView>
-        <AnimatedView style={[StyleSheet.absoluteFill, box, openLayerStyle]}>{closeIcon}</AnimatedView>
+        <AnimatedView style={[StyleSheet.absoluteFill, box, openLayerStyle]}>
+          {closeIcon}
+        </AnimatedView>
       </View>
     )
   }

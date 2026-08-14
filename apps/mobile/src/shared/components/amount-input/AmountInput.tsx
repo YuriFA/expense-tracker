@@ -1,7 +1,10 @@
-import { TextInput, type TextInputProps, View } from "react-native"
-import { Text } from "@/shared/ui"
+import { TextInput, type TextInputProps, View } from 'react-native'
+import { Text } from '@/shared/ui'
 
-export interface AmountInputProps extends Omit<TextInputProps, "value" | "onChangeText" | "keyboardType"> {
+export interface AmountInputProps extends Omit<
+  TextInputProps,
+  'value' | 'onChangeText' | 'keyboardType'
+> {
   /** Amount in minor units (cents). */
   value: number
   onValueChange: (amount: number) => void
@@ -22,8 +25,8 @@ export function AmountInput(props: AmountInputProps) {
   const {
     value,
     onValueChange,
-    currencySymbol = "$",
-    locale = "en-US",
+    currencySymbol = '$',
+    locale = 'en-US',
     precision = 2,
     label,
     placeholder,
@@ -35,10 +38,10 @@ export function AmountInput(props: AmountInputProps) {
     ...textInputProps
   } = props
 
-  const decimalSeparator = locale === "en-US" ? "." : ","
+  const decimalSeparator = locale === 'en-US' ? '.' : ','
 
   const formatAmount = (amount: number): string => {
-    if (amount === 0) return ""
+    if (amount === 0) return ''
     const majorUnits = amount / Math.pow(10, precision)
     return majorUnits.toFixed(precision)
   }
@@ -46,7 +49,7 @@ export function AmountInput(props: AmountInputProps) {
   const parseAmount = (text: string): number => {
     if (!text) return 0
 
-    const normalizedText = text.replace(decimalSeparator, ".")
+    const normalizedText = text.replace(decimalSeparator, '.')
     const majorUnits = parseFloat(normalizedText)
 
     if (isNaN(majorUnits)) return 0
@@ -61,9 +64,12 @@ export function AmountInput(props: AmountInputProps) {
     }
 
     const validChars = `0123456789${decimalSeparator}`
-    const filtered = text.split("").filter(c => validChars.includes(c)).join("")
+    const filtered = text
+      .split('')
+      .filter((c) => validChars.includes(c))
+      .join('')
 
-    const separatorCount = (filtered.match(new RegExp(`\\${decimalSeparator}`, "g")) || []).length
+    const separatorCount = (filtered.match(new RegExp(`\\${decimalSeparator}`, 'g')) || []).length
     if (separatorCount > 1) return
 
     const parsed = parseAmount(filtered)
@@ -74,24 +80,26 @@ export function AmountInput(props: AmountInputProps) {
 
   const displayValue = formatAmount(value)
   const hasError = Boolean(error)
-  const borderColor = hasError ? "border-destructive" : "border-border"
+  const borderColor = hasError ? 'border-destructive' : 'border-border'
 
   return (
     <View className="gap-1.5">
       {label && (
-        <Text variant="label" className={hasError ? "text-destructive" : ""}>
+        <Text variant="label" className={hasError ? 'text-destructive' : ''}>
           {label}
         </Text>
       )}
 
-      <View className="flex-row items-center bg-card border border-border rounded-lg overflow-hidden">
+      <View
+        className={`flex-row items-center bg-card border ${borderColor} rounded-lg overflow-hidden`}
+      >
         <Text variant="body" className="text-muted-foreground px-4 py-3">
           {currencySymbol}
         </Text>
 
         <TextInput
           className="flex-1 text-foreground px-2 py-3"
-          placeholder={placeholder || "0.00"}
+          placeholder={placeholder || '0.00'}
           keyboardType="decimal-pad"
           value={displayValue}
           onChangeText={handleChange}

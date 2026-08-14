@@ -1,10 +1,9 @@
-import { useState } from "react"
-import { Screen, Text, Stack, Input, Button, IconButton } from "@/shared"
-import { Icon } from "@/shared/ui"
+import { useState } from 'react'
+import { Screen, Text, Stack, Input, Button } from '@/shared'
 
 export function LoginScreen() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async () => {
@@ -47,12 +46,7 @@ export function LoginScreen() {
             secureTextEntry
           />
 
-          <Button
-            variant="primary"
-            text="Sign In"
-            onPress={handleLogin}
-            loading={isLoading}
-          />
+          <Button variant="primary" text="Sign In" onPress={handleLogin} loading={isLoading} />
         </Stack>
 
         {/* Divider with "or" */}

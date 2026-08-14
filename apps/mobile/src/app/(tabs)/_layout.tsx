@@ -19,9 +19,27 @@ interface TabDef extends TabConfig {
 // @expense-tracker/i18n bundle once react-i18next is wired in shared/i18n.
 const TABS: readonly TabDef[] = [
   { name: 'index', href: '/', label: 'Dashboard', testId: 'tab-dashboard', icon: 'grid-outline' },
-  { name: 'transactions', href: '/transactions', label: 'Transactions', testId: 'tab-transactions', icon: 'swap-horizontal-outline' },
-  { name: 'accounts', href: '/accounts', label: 'Accounts', testId: 'tab-accounts', icon: 'wallet-outline' },
-  { name: 'settings', href: '/settings', label: 'Settings', testId: 'tab-settings', icon: 'settings-outline' },
+  {
+    name: 'transactions',
+    href: '/transactions',
+    label: 'Transactions',
+    testId: 'tab-transactions',
+    icon: 'swap-horizontal-outline',
+  },
+  {
+    name: 'accounts',
+    href: '/accounts',
+    label: 'Accounts',
+    testId: 'tab-accounts',
+    icon: 'wallet-outline',
+  },
+  {
+    name: 'settings',
+    href: '/settings',
+    label: 'Settings',
+    testId: 'tab-settings',
+    icon: 'settings-outline',
+  },
 ] as const
 
 // Placeholder actions - the create-transaction flows don't exist yet. Navigation

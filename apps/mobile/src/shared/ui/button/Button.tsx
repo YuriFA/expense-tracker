@@ -1,12 +1,12 @@
-import { Pressable } from "../pressable"
-import { Text } from "../text"
-import type { PressableProps } from "../pressable"
-import { ActivityIndicator } from "react-native"
+import { Pressable } from '../pressable'
+import { Text } from '../text'
+import type { PressableProps } from '../pressable'
+import { ActivityIndicator } from 'react-native'
 
-export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "destructive"
-export type ButtonSize = "sm" | "md" | "lg"
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
-export interface ButtonProps extends Omit<PressableProps, "children"> {
+export interface ButtonProps extends Omit<PressableProps, 'children'> {
   children?: React.ReactNode
   variant?: ButtonVariant
   size?: ButtonSize
@@ -15,25 +15,25 @@ export interface ButtonProps extends Omit<PressableProps, "children"> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: "bg-primary",
-  secondary: "bg-secondary",
-  outline: "bg-transparent border border-border",
-  ghost: "bg-transparent",
-  destructive: "bg-destructive",
+  primary: 'bg-primary',
+  secondary: 'bg-secondary',
+  outline: 'bg-transparent border border-border',
+  ghost: 'bg-transparent',
+  destructive: 'bg-destructive',
 }
 
 const textVariantStyles: Record<ButtonVariant, string> = {
-  primary: "text-primary-foreground",
-  secondary: "text-secondary-foreground",
-  outline: "text-foreground",
-  ghost: "text-foreground",
-  destructive: "text-destructive-foreground",
+  primary: 'text-primary-foreground',
+  secondary: 'text-secondary-foreground',
+  outline: 'text-foreground',
+  ghost: 'text-foreground',
+  destructive: 'text-destructive-foreground',
 }
 
 const sizeStyles: Record<ButtonSize, { container: string; text: string }> = {
-  sm: { container: "px-3 py-1.5 rounded-md", text: "text-sm" },
-  md: { container: "px-4 py-2 rounded-lg", text: "text-base" },
-  lg: { container: "px-6 py-3 rounded-lg", text: "text-lg" },
+  sm: { container: 'px-3 py-1.5 rounded-md', text: 'text-sm' },
+  md: { container: 'px-4 py-2 rounded-lg', text: 'text-base' },
+  lg: { container: 'px-6 py-3 rounded-lg', text: 'text-lg' },
 }
 
 const disabledOpacity = 0.5
@@ -41,8 +41,8 @@ const disabledOpacity = 0.5
 export function Button(props: ButtonProps) {
   const {
     children,
-    variant = "primary",
-    size = "md",
+    variant = 'primary',
+    size = 'md',
     loading = false,
     text,
     disabled,
@@ -58,7 +58,7 @@ export function Button(props: ButtonProps) {
 
   return (
     <Pressable
-      className={`${variantClassName} ${sizeContainer} ${className || ""}`.trim()}
+      className={`${variantClassName} ${sizeContainer} ${className || ''}`.trim()}
       style={(state) => {
         const baseStyle: any = {}
         if (isDisabled) baseStyle.opacity = disabledOpacity
@@ -77,10 +77,7 @@ export function Button(props: ButtonProps) {
       {loading ? (
         <ActivityIndicator color={textVariantClassName} />
       ) : text ? (
-        <Text
-          variant="button"
-          className={`${textVariantClassName} ${sizeText}`.trim()}
-        >
+        <Text variant="button" className={`${textVariantClassName} ${sizeText}`.trim()}>
           {text}
         </Text>
       ) : (

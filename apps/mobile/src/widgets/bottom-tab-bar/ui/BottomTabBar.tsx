@@ -1,14 +1,14 @@
-import type { ComponentProps } from "react"
-import { Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useTabTrigger } from "expo-router/ui"
-import { colors as colorsRN } from "@expense-tracker/tokens/react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useTheme } from "@/shared/config/theme"
-import { FAB_SIZE, Text } from "@/shared/ui"
-import { useTabBarHeightSetter } from "./tab-bar-height-context"
+import type { ComponentProps } from 'react'
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useTabTrigger } from 'expo-router/ui'
+import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTheme } from '@/shared/config/theme'
+import { FAB_SIZE, Text } from '@/shared/ui'
+import { useTabBarHeightSetter } from './tab-bar-height-context'
 
-type IconName = ComponentProps<typeof Ionicons>["name"]
+type IconName = ComponentProps<typeof Ionicons>['name']
 
 const TAB_ICON_SIZE = 24
 const TAB_LABEL_FONT_SIZE = 10
@@ -89,7 +89,7 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
   const insets = useSafeAreaInsets()
 
   const activeColor = themeColors.primary
-  const inactiveColor = themeColors["muted-foreground"]
+  const inactiveColor = themeColors['muted-foreground']
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setTabBarHeight(event.nativeEvent.layout.height)
@@ -117,8 +117,8 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
     <View
       onLayout={handleLayout}
       style={{
-        flexDirection: "row",
-        alignItems: "center",
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: themeColors.card,
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: themeColors.border,
@@ -138,8 +138,8 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
 const styles = StyleSheet.create({
   tab: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 6,
     gap: 2,
   },

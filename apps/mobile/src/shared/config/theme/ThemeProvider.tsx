@@ -1,22 +1,22 @@
-import { useEffect, useState } from "react"
-import { useColorScheme } from "react-native"
-import { ThemeContext, type Theme } from "./ThemeContext"
+import { useEffect, useState } from 'react'
+import { useColorScheme } from 'react-native'
+import { ThemeContext, type Theme } from './ThemeContext'
 
 interface ThemeProviderProps {
   children: React.ReactNode
   defaultTheme?: Theme
 }
 
-export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme()
   const [theme, setTheme] = useState<Theme>(defaultTheme)
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(
-    defaultTheme === "system" ? (systemColorScheme === "dark" ? "dark" : "light") : defaultTheme
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(
+    defaultTheme === 'system' ? (systemColorScheme === 'dark' ? 'dark' : 'light') : defaultTheme,
   )
 
   useEffect(() => {
-    if (theme === "system") {
-      setResolvedTheme(systemColorScheme === "dark" ? "dark" : "light")
+    if (theme === 'system') {
+      setResolvedTheme(systemColorScheme === 'dark' ? 'dark' : 'light')
     } else {
       setResolvedTheme(theme)
     }
@@ -24,9 +24,9 @@ export function ThemeProvider({ children, defaultTheme = "system" }: ThemeProvid
 
   // Apply theme class to root element
   useEffect(() => {
-    if (typeof document !== "undefined") {
+    if (typeof document !== 'undefined') {
       const root = document.documentElement
-      root.classList.remove("light", "dark")
+      root.classList.remove('light', 'dark')
       root.classList.add(resolvedTheme)
     }
   }, [resolvedTheme])

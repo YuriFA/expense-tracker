@@ -25,7 +25,7 @@ row: label pill + icon circle), `SpeedDial.types.ts`, `constants.ts`, `index.ts`
 ### Overlay / backdrop and layering (z-index / stacking)
 
 SpeedDial renders **one self-contained absolute overlay** and must be mounted as
-a **sibling of the screen's scrollable content** (never *inside* a `ScrollView` /
+a **sibling of the screen's scrollable content** (never _inside_ a `ScrollView` /
 `FlatList` / `FlashList`, otherwise it would scroll with the list). The overlay is
 `position: 'absolute'`, top/left/right/bottom = 0, and uses
 `pointerEvents="box-none"` so empty areas pass touches through to the content
@@ -68,7 +68,7 @@ there are **no JS timers / `setTimeout`** anywhere, and no `Animated`/
   (a `+` rotated 45deg is an `x`). When both a custom `icon` and `closeIcon` are
   provided, the two layers cross-fade instead.
 - **Staggered actions**: each action's opacity / translateY / scale is derived
-  from the *same* `progress` via `interpolate(progress, [i*STAGGER, i*STAGGER+SEGMENT], [0,1], CLAMP)`.
+  from the _same_ `progress` via `interpolate(progress, [i*STAGGER, i*STAGGER+SEGMENT], [0,1], CLAMP)`.
   This produces a per-index delay on expand and a coherent reverse on collapse -
   purely from one shared value, no per-action timers.
 - **Backdrop**: `interpolate(progress, [0,1], [0, backdropOpacity], CLAMP)`.
@@ -77,7 +77,7 @@ there are **no JS timers / `setTimeout`** anywhere, and no `Animated`/
 Reanimated cancels and re-targets an in-flight animation when you assign a new
 target, rapid `open/close/open` simply re-targets `progress` - it cannot leave an
 action hung, the FAB mid-rotation, or a stuck backdrop. The React `open` state
-only gates mounting/`pointerEvents`/accessibility; the *visual* state is always
+only gates mounting/`pointerEvents`/accessibility; the _visual_ state is always
 the shared value, never React state + timers.
 
 **Reduced motion:** `useReducedMotion()` shortens the timing

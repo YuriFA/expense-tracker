@@ -95,6 +95,12 @@ importers:
       jest-expo:
         specifier: ~54.0.17
         version: 54.0.17(@babel/core@7.29.7)(expo@54.0.36)(jest@29.7.0(@types/node@24.13.3))(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      oxfmt:
+        specifier: ^0.45.0
+        version: 0.45.0
+      oxlint:
+        specifier: ~1.60.0
+        version: 1.60.0
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19(yaml@2.9.0)

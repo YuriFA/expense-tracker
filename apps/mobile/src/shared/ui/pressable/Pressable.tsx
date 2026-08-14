@@ -1,4 +1,4 @@
-import { Pressable as RNPressable, type PressableProps as RNPressableProps } from "react-native"
+import { Pressable as RNPressable, type PressableProps as RNPressableProps } from 'react-native'
 
 export interface PressableProps extends RNPressableProps {
   className?: string
@@ -11,9 +11,11 @@ export interface PressableProps extends RNPressableProps {
 export function Pressable(props: PressableProps) {
   const {
     className,
-    hoverClassName,
+    // Web-only props kept for cross-platform parity; stripped here so they
+    // never reach the native component.
+    hoverClassName: _hoverClassName,
     pressedClassName,
-    focusedClassName,
+    focusedClassName: _focusedClassName,
     style,
     children,
     ...pressableProps

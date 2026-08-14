@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, useState, type ReactNode } from 'react'
 
 /**
  * Shares the measured bottom-tab-bar height with the SpeedDial overlay, which
@@ -29,7 +29,7 @@ export function useTabBarHeight(): number {
 export function useTabBarHeightSetter(): (height: number) => void {
   const setter = useContext(TabBarHeightSetterContext)
   if (!setter) {
-    throw new Error("useTabBarHeightSetter must be used within <TabBarHeightProvider>")
+    throw new Error('useTabBarHeightSetter must be used within <TabBarHeightProvider>')
   }
   return setter
 }

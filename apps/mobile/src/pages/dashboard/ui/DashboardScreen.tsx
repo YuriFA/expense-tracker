@@ -1,38 +1,35 @@
-import { Screen, Text, Card, Stack, Button, TransactionRow, type Transaction } from "@/shared"
+import { Screen, Text, Card, Stack, Button, TransactionRow, type Transaction } from '@/shared'
 
 // Mock data for demonstration
 const mockTransactions: Transaction[] = [
   {
-    id: "1",
+    id: '1',
     amount: -4550,
-    description: "Grocery shopping",
-    category: "Food",
-    date: "2024-01-15",
-    type: "expense",
+    description: 'Grocery shopping',
+    category: 'Food',
+    date: '2024-01-15',
+    type: 'expense',
   },
   {
-    id: "2",
+    id: '2',
     amount: 500000,
-    description: "Salary",
-    category: "Income",
-    date: "2024-01-14",
-    type: "income",
+    description: 'Salary',
+    category: 'Income',
+    date: '2024-01-14',
+    type: 'income',
   },
   {
-    id: "3",
+    id: '3',
     amount: -1250,
-    description: "Coffee",
-    category: "Food",
-    date: "2024-01-14",
-    type: "expense",
+    description: 'Coffee',
+    category: 'Food',
+    date: '2024-01-14',
+    type: 'expense',
   },
 ]
 
 export function DashboardScreen() {
-  const totalBalance = mockTransactions.reduce(
-    (sum, t) => sum + t.amount,
-    0
-  )
+  const totalBalance = mockTransactions.reduce((sum, t) => sum + t.amount, 0)
   const formattedBalance = `$${(totalBalance / 100).toFixed(2)}`
 
   return (
@@ -69,10 +66,7 @@ export function DashboardScreen() {
           <Text variant="h3">Recent Transactions</Text>
           <Stack gap="sm">
             {mockTransactions.map((transaction) => (
-              <TransactionRow
-                key={transaction.id}
-                transaction={transaction}
-              />
+              <TransactionRow key={transaction.id} transaction={transaction} />
             ))}
           </Stack>
         </Stack>
