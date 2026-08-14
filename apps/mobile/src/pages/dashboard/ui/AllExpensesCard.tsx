@@ -1,25 +1,17 @@
-import { Pressable, View } from 'react-native'
+import { Pressable } from 'react-native'
 import { Card, Icon, Row, Stack, Text } from '@/shared/ui'
 import type { LatestExpenseView } from './AllExpensesCard.types'
 
-export interface AllExpensesCardProps {
+interface AllExpensesCardProps {
   latest: LatestExpenseView | null
   onOpen: () => void
 }
 
-/**
- * "Все расходы" card: previews the most recent expense of the selected
- * period and opens the period's expense list (bottom sheet) on tap.
- */
-export function AllExpensesCard(props: AllExpensesCardProps) {
-  const { latest, onOpen } = props
-
+export function AllExpensesCard({ latest, onOpen }: AllExpensesCardProps) {
   return (
-    <Card variant="default">
-      <Stack gap="sm">
-        <Text variant="body-sm" className="text-muted-foreground">
-          Все расходы
-        </Text>
+    <Card variant="default" className="bg-emerald-100">
+      <Stack className="gap-2">
+        <Text variant="h4">Все расходы</Text>
 
         {latest ? (
           <Pressable
@@ -29,31 +21,21 @@ export function AllExpensesCard(props: AllExpensesCardProps) {
             className="active:opacity-70"
             onPress={onOpen}
           >
-            <Row align="center" gap="md">
-              <View
-                className="h-10 w-10 items-center justify-center rounded-full"
-                style={{ backgroundColor: latest.categoryColor }}
-              >
-                <Icon name={latest.categoryIcon} size={20} color="#FFFFFF" />
-              </View>
-              <Stack gap="xs" className="flex-1">
-                <Text variant="caption" className="text-muted-foreground">
-                  Последний · {latest.dayLabel}
-                </Text>
-                <Text variant="body" className="font-semibold">
-                  {latest.amountText} · {latest.categoryName}
+            <Row align="center" className="gap-4">
+              <Stack className="flex-1 gap-2">
+                <Text variant="body" className="text-muted-foreground">
+                  Последний {latest.dayLabel.toLowerCase()}
+                  {'\n'}
+                  {latest.amountText}, {latest.categoryName}
                 </Text>
               </Stack>
               <Icon name="chevron-forward" size={18} color="#737373" />
             </Row>
           </Pressable>
         ) : (
-          <Stack gap="xs">
+          <Stack className="gap-2">
             <Text variant="body" className="text-muted-foreground">
-              В этом месяце расходов нет
-            </Text>
-            <Text variant="caption" className="text-muted-foreground">
-              Нажмите «+», чтобы добавить расход
+              Расходов нет
             </Text>
           </Stack>
         )}

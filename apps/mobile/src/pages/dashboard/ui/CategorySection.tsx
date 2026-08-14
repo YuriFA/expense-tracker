@@ -11,17 +11,12 @@ export interface CategorySectionProps {
   onCategoryPress: (categoryId: string) => void
 }
 
-/**
- * White rounded block: the "Новая категория" entry first, then the period's
- * expense totals per category, ordered by amount descending. Selecting a
- * category opens its filtered expense list (bottom sheet).
- */
 export function CategorySection(props: CategorySectionProps) {
   const { rows, hasAnyCategories, onNewCategory, onCategoryPress } = props
 
   return (
-    <Card variant="default">
-      <Stack gap="md">
+    <Card variant="elevated">
+      <Stack className="gap-4">
         <Pressable
           testID="home-new-category"
           accessibilityRole="button"
@@ -29,8 +24,8 @@ export function CategorySection(props: CategorySectionProps) {
           className="active:opacity-70"
           onPress={onNewCategory}
         >
-          <Row align="center" gap="sm">
-            <Icon name="add-circle" size={22} color="#7C5CFF" />
+          <Row align="center" className="gap-2">
+            <Icon name="add-circle" size={32} color="#7C5CFF" />
             <Text variant="body" className="font-medium text-foreground">
               Новая категория
             </Text>
@@ -38,7 +33,7 @@ export function CategorySection(props: CategorySectionProps) {
         </Pressable>
 
         {!hasAnyCategories ? (
-          <Stack gap="sm">
+          <Stack className="gap-2">
             <Text variant="body-sm" className="text-muted-foreground">
               Нет категорий
             </Text>
@@ -49,7 +44,7 @@ export function CategorySection(props: CategorySectionProps) {
             В этом месяце расходов нет
           </Text>
         ) : (
-          <Stack gap="md">
+          <Stack className="gap-2">
             {rows.map(({ category, totalMinor }) => (
               <CategoryRow
                 key={category.id}
@@ -88,7 +83,7 @@ function CategoryRow(props: CategoryRowProps) {
       className="active:opacity-70"
       onPress={() => onPress(categoryId)}
     >
-      <Row align="center" gap="md">
+      <Row align="center" className="gap-2">
         <View
           className="h-10 w-10 items-center justify-center rounded-full"
           style={{ backgroundColor: color }}

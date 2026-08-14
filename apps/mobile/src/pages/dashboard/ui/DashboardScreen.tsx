@@ -131,7 +131,7 @@ export function DashboardScreen() {
   return (
     <Screen testID="screen-dashboard">
       <ScrollView>
-        <Stack gap="md" className="p-4">
+        <Stack className="p-4 gap-6">
           <QuickActionsRow onPress={onQuickAction} />
 
           <SummaryCard

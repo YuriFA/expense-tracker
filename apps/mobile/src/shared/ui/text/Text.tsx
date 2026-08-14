@@ -5,6 +5,7 @@ export type TextVariant =
   | 'h1'
   | 'h2'
   | 'h3'
+  | 'h4'
   | 'body'
   | 'body-sm'
   | 'caption'
@@ -21,6 +22,7 @@ const variantStyles: Record<TextVariant, string> = {
   h1: 'text-4xl font-bold text-foreground',
   h2: 'text-3xl font-semibold text-foreground',
   h3: 'text-2xl font-semibold text-foreground',
+  h4: 'text-xl font-semibold text-foreground',
   body: 'text-base text-foreground',
   'body-sm': 'text-sm text-foreground',
   caption: 'text-xs text-muted-foreground',

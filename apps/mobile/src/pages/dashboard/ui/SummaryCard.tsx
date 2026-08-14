@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native'
+import { Pressable } from 'react-native'
 import { Card, Icon, IconButton, Row, Text } from '@/shared/ui'
 
 export interface SummaryCardProps {
@@ -18,7 +18,7 @@ export function SummaryCard(props: SummaryCardProps) {
     props
 
   return (
-    <Card variant="elevated">
+    <Card>
       <Row justify="between" align="center" className="mb-2">
         <Pressable
           testID="home-summary-mode"
@@ -30,7 +30,12 @@ export function SummaryCard(props: SummaryCardProps) {
           <Text variant="h3">{title}</Text>
           <Icon name="chevron-down" size={18} color="#737373" />
         </Pressable>
+      </Row>
 
+      <Row justify="between" align="center">
+        <Text variant="display" className="text-foreground">
+          {amountText}
+        </Text>
         <Row align="center" gap="xs">
           <IconButton
             icon="chevron-back"
@@ -50,12 +55,6 @@ export function SummaryCard(props: SummaryCardProps) {
           />
         </Row>
       </Row>
-
-      <View>
-        <Text variant="display" className="text-foreground">
-          {amountText}
-        </Text>
-      </View>
     </Card>
   )
 }

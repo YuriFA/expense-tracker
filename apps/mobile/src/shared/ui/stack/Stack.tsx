@@ -2,7 +2,7 @@ import { View, type ViewProps } from 'react-native'
 
 export interface StackProps extends ViewProps {
   className?: string
-  gap?: number | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+  gap?: number
   align?: 'start' | 'center' | 'end' | 'stretch'
   justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'
 }
