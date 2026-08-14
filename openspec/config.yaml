@@ -1,46 +1,58 @@
 schema: spec-driven
+
 githubCopilot:
   cloudAgent: true
 
-# Project context: the full product/architecture map lives in docs/PROJECT.md.
-# Read that file IN FULL before creating any artifact (proposal, specs,
-# design, tasks). The digest below repeats only the hardest invariants.
+# Project context (injected into all artifact instructions).
+# Keep compact: only stable, global facts needed for almost any OpenSpec task.
+# Per-area working rules live in AGENTS.md files; domain behavior lives in
+# openspec/specs/; open decisions in docs/assumptions.md.
 context: |
-  Project context lives in docs/PROJECT.md — READ IT IN FULL before
-  creating any artifact. It contains the product map, domain model,
-  architecture, per-area status (facts), assumptions not yet decided,
-  known debt, and key commands.
-  Hard invariants (full detail in docs/PROJECT.md):
-  - docs/api/openapi.yaml is the single source of truth. Change the spec
-    FIRST, then regenerate (make gen in backend; pnpm gen:api in
-    packages/api or apps/web). Never hand-edit generated files.
-  - Money is int64 minor units (divisor 100) end-to-end. Never
-    float/decimal.
-  - Auth is a stateful session cookie (session_id). Do NOT introduce JWT.
-  - Errors carry a machine code + human message; clients map by code,
-    not HTTP status.
-  - IDs are UUID v4; timestamps are UTC.
-  - Shared packages (packages/*) stay platform-agnostic: fetch-family
-    APIs only, no DOM/Vue/RN imports.
+  PRODUCT:
+  Expense Tracker — personal finance app. Users manage accounts
+  (USD/EUR/RUB), per-user categories, and income/expense/transfer
+  transactions; the backend computes account balances and net worth.
+  Domain entities: User, Account, Category, Transaction.
+  One backend serves two clients of the same product: a Vue 3 web app
+  and a React Native (Expo) mobile app.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  REPOSITORY:
+  backend/       Go API (Gin + sqlc + Postgres)
+  apps/web/      Vue 3 + Vite (Feature-Sliced Design)
+  apps/mobile/   React Native + Expo (FSD + Expo Router)
+  packages/      shared platform-agnostic TS: api, money, i18n, tokens
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  STATUS (brief): backend and web are complete and tested; the web app
+  uses the existing API. Mobile is in active development but not yet
+  integrated with the backend (UI shell only).
+
+  ARCHITECTURE:
+  - docs/api/openapi.yaml is the source of truth for the HTTP API
+    contract ONLY — not for product/domain behavior as a whole. Backend
+    server code and TS API types are generated from it; never hand-edit
+    generated files. Regeneration commands live in the AGENTS.md files.
+  - openspec/specs/ describe current product/domain behavior;
+    openspec/changes/ hold proposed changes.
+  - Shared packages stay platform-agnostic (fetch-family APIs only; no
+    DOM/Vue/RN imports in packages/*).
+
+  GLOBAL INVARIANTS:
+  - Money is int64 minor units (divisor 100); never float/decimal.
+  - Timestamps are UTC; IDs are UUID v4.
+  - Auth is a stateful session cookie (session_id); no JWT.
+  - API errors carry a machine-readable code + human-readable message;
+    clients switch on the code, not the HTTP status.
+  - All user data is scoped to its owner; cross-user access is rejected.
+
+  PRODUCT/AI RULE:
+  - Do NOT treat TODOs, code comments, stale docs, roadmap items, or UI
+    placeholders as implemented behavior.
+  - If product behavior is not defined, do not invent it: record it as
+    an explicit product decision in an OpenSpec change.
+  - Do not mistake a technical implementation for a product requirement.
+
+  Deeper info: AGENTS.md files (root + backend/, apps/web/, apps/mobile/)
+  for HOW to work in the repo; openspec/specs/ for domain behavior;
+  docs/API.md for API policy; docs/architecture/overview.md for the
+  architecture map; docs/assumptions.md for open decisions;
+  docs/technical-debt.md for known problems; docs/roadmap/ for future work.
