@@ -1,29 +1,22 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
-import { BottomSheet, Button, Input, Text } from '@/shared/ui'
+import { BottomSheet, Button, Input } from '@/shared/ui'
 import type { MockCashflowType } from '../model/mock-data'
+import { BottomSheetBody, BottomSheetHeader, BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
 export interface NewCategorySheetProps {
-  visible: boolean
+  ref: React.Ref<BottomSheetRef>
   onSubmit: (name: string, type: MockCashflowType) => void
-  onClose: () => void
 }
 
 /**
  * Minimal create-category form (mock): name + type. Icon and color get
  * neutral defaults - the real form lands with the API integration.
  */
-export function NewCategorySheet(props: NewCategorySheetProps) {
-  const { visible, onSubmit, onClose } = props
+export function NewCategorySheet({ ref, onSubmit }: NewCategorySheetProps) {
   const [name, setName] = useState('')
   const [type, setType] = useState<MockCashflowType>('expense')
-
-  const close = () => {
-    setName('')
-    setType('expense')
-    onClose()
-  }
 
   const submit = () => {
     const trimmed = name.trim()
@@ -34,12 +27,10 @@ export function NewCategorySheet(props: NewCategorySheetProps) {
   }
 
   return (
-    <BottomSheet visible={visible} onClose={close} testID="home-new-category-sheet">
+    <BottomSheet ref={ref} testID="home-new-category-sheet">
       <BottomSheetView testID="home-new-category-sheet">
-        <View className="gap-4 px-4 pb-8 pt-2">
-          <Text variant="h3" className="mb-2">
-            Новая категория
-          </Text>
+        <BottomSheetHeader title="Новая категория" />
+        <BottomSheetBody className="gap-4">
           <Input
             label="Название"
             placeholder="Например, Транспорт"
@@ -72,7 +63,7 @@ export function NewCategorySheet(props: NewCategorySheetProps) {
             onPress={submit}
             testID="home-new-category-submit"
           />
-        </View>
+        </BottomSheetBody>
       </BottomSheetView>
     </BottomSheet>
   )

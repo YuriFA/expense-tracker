@@ -1,6 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen } from '@testing-library/react-native'
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider } from '@/shared/config/theme'
 import { CategorySection } from './CategorySection'
@@ -15,6 +14,7 @@ import {
   totalBalance,
   totalExpenses,
 } from '../model/selectors'
+import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
 
@@ -26,7 +26,7 @@ function renderWithProviders(ui: React.ReactNode) {
       initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
     >
       <ThemeProvider>
-        <BottomSheetModalProvider>{ui}</BottomSheetModalProvider>
+        <BottomSheetProvider>{ui}</BottomSheetProvider>
       </ThemeProvider>
     </SafeAreaProvider>,
   )

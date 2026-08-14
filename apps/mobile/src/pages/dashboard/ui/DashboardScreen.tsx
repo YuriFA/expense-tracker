@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Screen } from '@/shared/ui'
@@ -30,6 +30,7 @@ import { CategorySection } from './CategorySection'
 import { ModeSheet, type SummaryMode } from './ModeSheet'
 import { ExpensesSheet } from './ExpensesSheet'
 import { NewCategorySheet } from './NewCategorySheet'
+import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
 // TODO(i18n): RU strings are hardcoded until react-i18next is wired.
 const MODE_TITLES: Record<SummaryMode, string> = {
@@ -38,22 +39,16 @@ const MODE_TITLES: Record<SummaryMode, string> = {
   'total-balance': 'Баланс общий',
 }
 
-type SheetState =
-  | { kind: 'none' }
-  | { kind: 'mode' }
-  | { kind: 'expenses' }
-  | { kind: 'category'; categoryId: string }
-  | { kind: 'new-category' }
-
 export function DashboardScreen() {
   const router = useRouter()
 
   const [cursor, setCursor] = useState<MonthCursor>(() => currentMonth())
   const [mode, setMode] = useState<SummaryMode>('expenses')
   const [categories, setCategories] = useState<MockCategory[]>(MOCK_CATEGORIES)
-  const [sheet, setSheet] = useState<SheetState>({ kind: 'none' })
-
-  const closeSheet = () => setSheet({ kind: 'none' })
+  const [categoryExpensesId, setCategoryExpensesId] = useState<string | undefined>(undefined)
+  const newCategorySheetRef = useRef<BottomSheetRef>(null)
+  const expensesSheetRef = useRef<BottomSheetRef>(null)
+  const modeSheetRef = useRef<BottomSheetRef>(null)
 
   // Period is a page-global filter: it drives every period-dependent section.
   const canGoNext = !isCurrentOrFutureMonth(cursor)
@@ -71,14 +66,14 @@ export function DashboardScreen() {
 
   const rows = categoryBreakdown(MOCK_TRANSACTIONS, categories, cursor)
 
-  const sheetCategory =
-    sheet.kind === 'category' ? categories.find((c) => c.id === sheet.categoryId) : undefined
-  const sheetRows =
-    sheet.kind === 'category'
-      ? expensesInMonth(MOCK_TRANSACTIONS, cursor)
-          .filter((t) => t.categoryId === sheet.categoryId)
-          .map((t) => toExpenseRow(t, categories))
-      : expensesInMonth(MOCK_TRANSACTIONS, cursor).map((t) => toExpenseRow(t, categories))
+  const sheetCategory = categoryExpensesId
+    ? categories.find((c) => c.id === categoryExpensesId)
+    : undefined
+  const sheetRows = categoryExpensesId
+    ? expensesInMonth(MOCK_TRANSACTIONS, cursor)
+        .filter((t) => t.categoryId === categoryExpensesId)
+        .map((t) => toExpenseRow(t, categories))
+    : expensesInMonth(MOCK_TRANSACTIONS, cursor).map((t) => toExpenseRow(t, categories))
 
   const onQuickAction = (id: QuickActionId) => {
     if (id === 'accounts') router.push('/accounts')
@@ -91,7 +86,7 @@ export function DashboardScreen() {
       ...prev,
       { id: `cat-${Date.now()}`, name, type, icon: 'pricetag-outline', color: '#6366F1' },
     ])
-    closeSheet()
+    newCategorySheetRef.current?.dismiss()
   }
 
   return (
@@ -105,7 +100,7 @@ export function DashboardScreen() {
             amountText={amountText}
             periodLabel={monthRangeLabel(cursor.year, cursor.month)}
             canGoNext={canGoNext}
-            onOpenModes={() => setSheet({ kind: 'mode' })}
+            onOpenModes={() => modeSheetRef.current?.present()}
             onPrevPeriod={goPrev}
             onNextPeriod={goNext}
           />
@@ -115,35 +110,32 @@ export function DashboardScreen() {
           <CategorySection
             rows={rows}
             hasAnyCategories={categories.length > 0}
-            onNewCategory={() => setSheet({ kind: 'new-category' })}
-            onCategoryPress={(categoryId) => setSheet({ kind: 'category', categoryId })}
+            onNewCategory={() => newCategorySheetRef.current?.present()}
+            onCategoryPress={(categoryId) => {
+              setCategoryExpensesId(categoryId)
+              expensesSheetRef.current?.present()
+            }}
           />
         </View>
       </ScrollView>
 
       <ModeSheet
-        visible={sheet.kind === 'mode'}
+        ref={modeSheetRef}
         activeMode={mode}
         onSelect={(nextMode) => {
           setMode(nextMode)
-          closeSheet()
+          modeSheetRef.current?.dismiss()
         }}
-        onClose={closeSheet}
       />
 
       <ExpensesSheet
-        visible={sheet.kind === 'expenses' || sheet.kind === 'category'}
-        title={sheet.kind === 'category' ? (sheetCategory?.name ?? 'Категория') : 'Все расходы'}
+        ref={expensesSheetRef}
+        title={categoryExpensesId ? (sheetCategory?.name ?? 'Категория') : 'Все расходы'}
         rows={sheetRows}
         emptyText="В этом месяце расходов нет"
-        onClose={closeSheet}
       />
 
-      <NewCategorySheet
-        visible={sheet.kind === 'new-category'}
-        onSubmit={addCategory}
-        onClose={closeSheet}
-      />
+      <NewCategorySheet ref={newCategorySheetRef} onSubmit={addCategory} />
     </Screen>
   )
 }

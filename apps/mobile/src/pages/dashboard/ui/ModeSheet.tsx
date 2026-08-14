@@ -1,6 +1,7 @@
 import { Pressable, View } from 'react-native'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
 import { BottomSheet, Icon, Text } from '@/shared/ui'
+import { BottomSheetBody, BottomSheetHeader, BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
 export type SummaryMode = 'expenses' | 'monthly-balance' | 'total-balance'
 
@@ -18,23 +19,19 @@ const OPTIONS: ReadonlyArray<ModeOption> = [
 ]
 
 export interface ModeSheetProps {
-  visible: boolean
+  ref: React.Ref<BottomSheetRef>
   activeMode: SummaryMode
   onSelect: (mode: SummaryMode) => void
-  onClose: () => void
 }
 
 /** Summary mode switcher: Расходы / Баланс за месяц / Баланс общий. */
-export function ModeSheet(props: ModeSheetProps) {
-  const { visible, activeMode, onSelect, onClose } = props
-
+export function ModeSheet({ ref, activeMode, onSelect }: ModeSheetProps) {
   return (
-    <BottomSheet visible={visible} onClose={onClose} testID="home-mode-sheet">
+    <BottomSheet ref={ref} testID="home-mode-sheet">
       <BottomSheetView testID="home-mode-sheet">
-        <View className="gap-4 px-4 pb-8 pt-2">
-          <Text variant="h3" className="mb-2">
-            Отображение суммы
-          </Text>
+        <BottomSheetHeader title="Отображение суммы" />
+
+        <BottomSheetBody className="gap-4">
           {OPTIONS.map((option) => {
             const active = option.id === activeMode
             return (
@@ -65,7 +62,7 @@ export function ModeSheet(props: ModeSheetProps) {
               </Pressable>
             )
           })}
-        </View>
+        </BottomSheetBody>
       </BottomSheetView>
     </BottomSheet>
   )

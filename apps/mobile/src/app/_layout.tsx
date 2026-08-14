@@ -2,11 +2,11 @@ import '../../global.css'
 import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Uniwind } from 'uniwind'
 import { ThemeProvider } from '@/shared/config/theme'
+import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 
 /**
  * Feeds safe-area insets into Uniwind so `*-safe` utilities (e.g. Screen's
@@ -40,7 +40,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <BottomSheetModalProvider>
+        <BottomSheetProvider>
           <StatusBar style="auto" />
           <UniwindInsetsBridge />
           <Stack>
@@ -50,7 +50,7 @@ export default function RootLayout() {
             <Stack.Screen name="income" options={{ headerShown: false }} />
             <Stack.Screen name="goals" options={{ headerShown: false }} />
           </Stack>
-        </BottomSheetModalProvider>
+        </BottomSheetProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   )

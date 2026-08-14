@@ -1,6 +1,13 @@
 import { View } from 'react-native'
-import { BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet'
-import { BottomSheet, Icon, Text } from '@/shared/ui'
+import { Icon, Text } from '@/shared/ui'
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+  BottomSheetRef,
+  BottomSheetScrollView,
+  BottomSheetView,
+} from '@/shared/ui/bottom-sheet'
 
 export interface ExpenseRowView {
   id: string
@@ -13,33 +20,28 @@ export interface ExpenseRowView {
 }
 
 export interface ExpensesSheetProps {
-  visible: boolean
+  ref: React.Ref<BottomSheetRef>
   title: string
   rows: ExpenseRowView[]
   emptyText: string
-  onClose: () => void
 }
 
-export function ExpensesSheet({ visible, title, rows, emptyText, onClose }: ExpensesSheetProps) {
+export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProps) {
   return (
-    <BottomSheet visible={visible} onClose={onClose} testID="home-expenses-sheet">
+    <BottomSheet ref={ref} testID="home-expenses-sheet">
+      <BottomSheetHeader title={title} />
+
       {rows.length === 0 ? (
         <BottomSheetView testID="home-expenses-sheet">
-          <View className="px-4 pb-8 pt-2">
-            <Text variant="h3" className="mb-4">
-              {title}
-            </Text>
-            <Text variant="body-sm" className="text-muted-foreground">
+          <BottomSheetBody>
+            <Text variant="body" className="text-muted-foreground">
               {emptyText}
             </Text>
-          </View>
+          </BottomSheetBody>
         </BottomSheetView>
       ) : (
         <BottomSheetScrollView testID="home-expenses-sheet">
-          <View className="gap-4 px-4 pb-8 pt-2">
-            <Text variant="h3" className="mb-2">
-              {title}
-            </Text>
+          <BottomSheetBody className="gap-4">
             {rows.map((row) => (
               <View
                 key={row.id}
@@ -65,7 +67,7 @@ export function ExpensesSheet({ visible, title, rows, emptyText, onClose }: Expe
                 </Text>
               </View>
             ))}
-          </View>
+          </BottomSheetBody>
         </BottomSheetScrollView>
       )}
     </BottomSheet>

@@ -5,14 +5,15 @@ import { MOCK_CATEGORIES, MOCK_TRANSACTIONS } from '../model/mock-data'
 import { formatAmount, relativeDayLabel } from '../model/format'
 import { expensesInMonth, MonthCursor, toExpenseRow } from '../model/selectors'
 import { ExpensesSheet } from './ExpensesSheet'
-import { useState } from 'react'
+import { useRef } from 'react'
+import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
 interface AllExpensesCardProps {
   cursor: MonthCursor
 }
 
 export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
-  const [open, setOpen] = useState(false)
+  const expensesSheetRef = useRef<BottomSheetRef>(null)
   const lastTransaction = MOCK_TRANSACTIONS[MOCK_TRANSACTIONS.length - 1]
   const category = MOCK_CATEGORIES.find((c) => c.id === lastTransaction.categoryId)
   const latest: LatestExpenseView = {
@@ -35,7 +36,7 @@ export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
         accessibilityLabel={`Все расходы, последний ${latest.categoryName}`}
         className="active:opacity-70"
         onPress={() => {
-          setOpen(true)
+          expensesSheetRef.current?.present()
         }}
       >
         <Card variant="default" className="bg-emerald-100">
@@ -65,11 +66,10 @@ export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
       </Pressable>
 
       <ExpensesSheet
-        visible={open}
+        ref={expensesSheetRef}
         title="Все расходы"
         rows={sheetRows}
         emptyText="В этом месяце расходов нет"
-        onClose={() => setOpen(false)}
       />
     </>
   )
