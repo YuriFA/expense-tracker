@@ -34,8 +34,9 @@ migrations). `make gen-check` is the CI drift gate. Both generated trees are com
 
 ## Auth (stateful sessions, no JWT)
 
-- Reuse `internal/auth` primitives (bcrypt, `crypto/rand` session tokens, SHA-256
-  token hashing, modulo-bias-free OTP). Never roll your own crypto.
+- Reuse `internal/auth` primitives (bcrypt, `crypto/rand` session tokens,
+  SHA-256 hashing for password-reset tokens, modulo-bias-free OTP). Never
+  roll your own crypto.
 - Fresh session id per login (session-fixation defense); sliding expiration;
   password reset revokes all sessions. The mailer is a stub interface
   (`service.Mailer`) - real email delivery is out of scope.
