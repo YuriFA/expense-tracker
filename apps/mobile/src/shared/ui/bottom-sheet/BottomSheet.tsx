@@ -58,5 +58,5 @@ export function BottomSheet(props: BottomSheetProps) {
 }
 
 const scrimStyles = StyleSheet.create({
-  fill: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+  fill: { backgroundColor: 'rgba(0, 0, 0, 0.2)' },
 })

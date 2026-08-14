@@ -14,21 +14,13 @@ export interface ExpenseRowView {
 
 export interface ExpensesSheetProps {
   visible: boolean
-  /** Sheet title: "Все расходы" or the category name. */
   title: string
   rows: ExpenseRowView[]
   emptyText: string
   onClose: () => void
 }
 
-/**
- * Read-only expense list for the selected period (optionally per
- * category). The list is the sheet's direct scrollable content so the
- * sheet sizes and scrolls it correctly (gorhom requirement).
- */
-export function ExpensesSheet(props: ExpensesSheetProps) {
-  const { visible, title, rows, emptyText, onClose } = props
-
+export function ExpensesSheet({ visible, title, rows, emptyText, onClose }: ExpensesSheetProps) {
   return (
     <BottomSheet visible={visible} onClose={onClose} testID="home-expenses-sheet">
       {rows.length === 0 ? (

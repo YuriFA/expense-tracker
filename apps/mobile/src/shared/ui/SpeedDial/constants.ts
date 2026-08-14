@@ -5,7 +5,7 @@ import { Easing } from 'react-native-reanimated'
  *
  * These are component-specific layout numbers (like IconButton's icon sizes),
  * NOT design tokens - the token system covers colors / spacing / radius /
- * typography, not "FAB size". Colors and radii are still consumed as NativeWind
+ * typography, not "FAB size". Colors and radii are still consumed as Uniwind
  * classes that resolve the design tokens.
  */
 export const FAB_SIZE = 56

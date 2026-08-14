@@ -1,9 +1,28 @@
 import '../../global.css'
+import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Uniwind } from 'uniwind'
 import { ThemeProvider } from '@/shared/config/theme'
+
+/**
+ * Feeds safe-area insets into Uniwind so `*-safe` utilities (e.g. Screen's
+ * `p-safe`) resolve with real values. react-native-safe-area-context@5.6 has
+ * no SafeAreaListener yet, so bridge from useSafeAreaInsets instead - the
+ * SafeAreaProvider itself is mounted by expo-router's ExpoRoot above us.
+ */
+function UniwindInsetsBridge() {
+  const insets = useSafeAreaInsets()
+
+  useEffect(() => {
+    Uniwind.updateInsets(insets)
+  }, [insets])
+
+  return null
+}
 
 /**
  * Root layout: app-wide providers and the top-level navigator.
@@ -23,6 +42,7 @@ export default function RootLayout() {
       <ThemeProvider>
         <BottomSheetModalProvider>
           <StatusBar style="auto" />
+          <UniwindInsetsBridge />
           <Stack>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

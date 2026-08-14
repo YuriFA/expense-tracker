@@ -1,5 +1,11 @@
 # Design System Implementation Summary
 
+> Note (2026-08): the mobile app has since migrated NativeWind v4 -> Uniwind
+> (Tailwind CSS v4). The current styling setup is CSS-first in `global.css` +
+> `metro.config.js` (`withUniwindConfig`); there is no `tailwind.config.ts` or
+> `nativewind-env.d.ts` anymore. The sections below describe the state at the
+> time of that change.
+
 ## Completed Implementation
 
 ### Phase 1: Foundation ✅

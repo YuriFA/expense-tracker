@@ -324,7 +324,7 @@ placeholder destinations.
 This document does not define:
 
 - React Native component architecture;
-- NativeWind implementation;
+- NativeWind/Uniwind implementation;
 - state-management approach;
 - API endpoints;
 - backend data model;

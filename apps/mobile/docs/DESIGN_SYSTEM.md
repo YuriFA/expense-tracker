@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Design System provides a unified visual language and component library for the Expense Tracker mobile app. It's built on React Native, Expo, NativeWind v4, and TypeScript.
+The Design System provides a unified visual language and component library for the Expense Tracker mobile app. It's built on React Native, Expo, Uniwind (Tailwind CSS v4), and TypeScript.
 
 ### Key Principles
 
@@ -76,10 +76,10 @@ Uses Tailwind's default spacing scale:
 
 ### Primitives
 
-#### Layout (View + NativeWind)
-There are no layout wrapper components - use `View` directly with NativeWind
+#### Layout (View + Uniwind)
+There are no layout wrapper components - use `View` directly with Uniwind
 classes (`flex-row`, `gap-*`, `items-*`, `justify-*`). Never build class names
-dynamically (`gap-${gap}`): NativeWind compiles only classes it can scan.
+dynamically (`gap-${gap}`): Uniwind compiles only classes it can scan.
 
 ```tsx
 <View className="flex-row items-center gap-2">
@@ -365,14 +365,15 @@ export function MyComponent(props: MyComponentProps) {
 }
 ```
 
-## NativeWind v4 Setup
+## Uniwind Setup
 
-The app uses NativeWind v4 for styling. Configuration:
+The app uses Uniwind (Tailwind CSS v4, CSS-first config) for styling:
 
-1. **`tailwind.config.ts`** - Tailwind configuration with theme extension
-2. **`app.css`** - CSS custom properties for design tokens
-3. **Import in `_layout.tsx`** - CSS imported at app root
-4. **`ThemeProvider`** - Wraps app for theme switching
+1. **`global.css`** - Tailwind imports + design tokens (`@theme` and per-theme
+   `@variant light`/`dark` color variables); no `tailwind.config.*` exists
+2. **`metro.config.js`** - `withUniwindConfig` (`cssEntryFile`, `polyfills.rem: 14`)
+3. **Import in `_layout.tsx`** - `global.css` imported at app root
+4. **`ThemeProvider`** - Drives `Uniwind.setTheme()` for theme switching
 
 ## Color Tokens Source
 
@@ -382,7 +383,7 @@ The web app uses oklch color space, converted to hex for React Native.
 To update colors:
 1. Update `apps/web/src/style.css`
 2. Convert oklch values to hex
-3. Update `apps/mobile/app.css`
+3. Update `apps/mobile/global.css`
 
 ## Icon System
 
@@ -412,7 +413,7 @@ Common icon names:
 - Place domain components in `shared/ui`
 - Create abstractions without clear value
 - Duplicate native controls (DatePicker, Switch, Slider)
-- Mix styling systems (NativeWind + StyleSheet) without reason
+- Mix styling systems (Uniwind + StyleSheet) without reason
 
 ## Future Work
 

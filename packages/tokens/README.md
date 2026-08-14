@@ -36,7 +36,7 @@ Then use Tailwind classes that reference the tokens:
 </template>
 ```
 
-### Mobile (React Native + NativeWind)
+### Mobile (React Native + Uniwind)
 
 Import the React Native compatible tokens:
 
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
 })
 ```
 
-Or use with NativeWind className (tokens already defined in app.css):
+Or use with Uniwind className (tokens already defined in apps/mobile/global.css):
 
 ```tsx
 <View className="bg-background text-foreground p-4 rounded-lg">

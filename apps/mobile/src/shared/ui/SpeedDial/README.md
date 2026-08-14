@@ -4,7 +4,7 @@ A generic, domain-free expandable floating action button. Tap the main FAB to
 expand a vertical stack of action buttons over a dimmed backdrop; tap the FAB
 again, the backdrop, or any action to collapse it. Built only from low-level
 primitives (`react-native-reanimated`, `react-native-safe-area-context`, RN
-`Pressable`/`View`, NativeWind) - no Paper/Base/etc. FAB menu library.
+`Pressable`/`View`, Uniwind) - no Paper/Base/etc. FAB menu library.
 
 This component knows nothing about transactions/accounts/categories. It renders
 whatever `actions` it is given.
@@ -15,7 +15,7 @@ whatever `actions` it is given.
 
 `src/shared/ui/SpeedDial/`, mirroring the existing `shared/ui` convention exactly
 (one PascalCase component file per concern, a `*.types.ts`, a `constants.ts`, and
-an `index.ts` barrel). Styling is NativeWind `className` consuming the design
+an `index.ts` barrel). Styling is Uniwind `className` consuming the design
 tokens (no `.styles.ts` - matches `Button`, `Card`, `IconButton`). Exported
 through the `src/shared/ui/index.ts` barrel.
 

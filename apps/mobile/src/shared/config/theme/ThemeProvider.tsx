@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
+import { Uniwind } from 'uniwind'
 import { ThemeContext, type Theme } from './ThemeContext'
 
 interface ThemeProviderProps {
@@ -22,14 +23,12 @@ export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProvid
     }
   }, [theme, systemColorScheme])
 
-  // Apply theme class to root element
+  // Drive Uniwind's theme ('light'/'dark' are built in, 'system' follows the
+  // OS). This replaces the old document.documentElement class toggle and makes
+  // setTheme work on native, not just web.
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const root = document.documentElement
-      root.classList.remove('light', 'dark')
-      root.classList.add(resolvedTheme)
-    }
-  }, [resolvedTheme])
+    Uniwind.setTheme(theme)
+  }, [theme])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>

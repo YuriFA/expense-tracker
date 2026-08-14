@@ -8,18 +8,17 @@ import {
   MOCK_TRANSACTIONS,
   type MockCashflowType,
   type MockCategory,
-  type MockTransaction,
 } from '../model/mock-data'
-import { formatAmount, monthRangeLabel, relativeDayLabel } from '../model/format'
+import { formatAmount, monthRangeLabel } from '../model/format'
 import {
   categoryBreakdown,
   currentMonth,
   expensesInMonth,
   isCurrentOrFutureMonth,
-  latestExpense,
   monthlyBalance,
   nextMonth,
   previousMonth,
+  toExpenseRow,
   totalBalance,
   totalExpenses,
   type MonthCursor,
@@ -27,10 +26,9 @@ import {
 import { QuickActionsRow, type QuickActionId } from './QuickActionsRow'
 import { SummaryCard } from './SummaryCard'
 import { AllExpensesCard } from './AllExpensesCard'
-import type { LatestExpenseView } from './AllExpensesCard.types'
 import { CategorySection } from './CategorySection'
 import { ModeSheet, type SummaryMode } from './ModeSheet'
-import { ExpensesSheet, type ExpenseRowView } from './ExpensesSheet'
+import { ExpensesSheet } from './ExpensesSheet'
 import { NewCategorySheet } from './NewCategorySheet'
 
 // TODO(i18n): RU strings are hardcoded until react-i18next is wired.
@@ -47,24 +45,6 @@ type SheetState =
   | { kind: 'category'; categoryId: string }
   | { kind: 'new-category' }
 
-function toExpenseRow(tx: MockTransaction, categories: MockCategory[]): ExpenseRowView {
-  const category = categories.find((c) => c.id === tx.categoryId)
-  return {
-    id: tx.id,
-    description: tx.description,
-    categoryName: category?.name ?? 'Без категории',
-    categoryIcon: category?.icon ?? 'pricetag-outline',
-    categoryColor: category?.color ?? '#A3A3A3',
-    dayLabel: relativeDayLabel(tx.occurredAt),
-    amountText: formatAmount(tx.amountMinor),
-  }
-}
-
-/**
- * Home screen (Dashboard tab) on in-memory mock data - the UI-first step of
- * docs/product/mobile-home.md. Product behavior lives there; this is the
- * layout + local state that renders it.
- */
 export function DashboardScreen() {
   const router = useRouter()
 
@@ -90,20 +70,6 @@ export function DashboardScreen() {
         : formatAmount(totalBalance(MOCK_ACCOUNTS, MOCK_TRANSACTIONS))
 
   const rows = categoryBreakdown(MOCK_TRANSACTIONS, categories, cursor)
-
-  const latest = latestExpense(MOCK_TRANSACTIONS, cursor)
-  const latestView: LatestExpenseView | null = latest
-    ? (() => {
-        const category = categories.find((c) => c.id === latest.categoryId)
-        return {
-          amountText: formatAmount(latest.amountMinor),
-          categoryName: category?.name ?? 'Без категории',
-          categoryIcon: category?.icon ?? 'pricetag-outline',
-          categoryColor: category?.color ?? '#A3A3A3',
-          dayLabel: relativeDayLabel(latest.occurredAt),
-        }
-      })()
-    : null
 
   const sheetCategory =
     sheet.kind === 'category' ? categories.find((c) => c.id === sheet.categoryId) : undefined
@@ -131,7 +97,7 @@ export function DashboardScreen() {
   return (
     <Screen testID="screen-dashboard">
       <ScrollView>
-        <View className="p-4 gap-6">
+        <View className="p-6 gap-6">
           <QuickActionsRow onPress={onQuickAction} />
 
           <SummaryCard
@@ -144,7 +110,7 @@ export function DashboardScreen() {
             onNextPeriod={goNext}
           />
 
-          <AllExpensesCard latest={latestView} onOpen={() => setSheet({ kind: 'expenses' })} />
+          <AllExpensesCard cursor={cursor} />
 
           <CategorySection
             rows={rows}

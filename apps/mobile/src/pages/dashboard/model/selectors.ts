@@ -3,6 +3,8 @@
 // values, so they are trivially unit-testable and later swappable for real
 // API responses.
 
+import { ExpenseRowView } from '../ui/ExpensesSheet'
+import { formatAmount, relativeDayLabel } from './format'
 import type { MockCategory, MockTransaction, MockAccount } from './mock-data'
 
 /** Month coordinate; `month` is 0-11 like Date. */
@@ -47,6 +49,19 @@ export function transactionsInMonth(
 
 export function expensesInMonth(txs: MockTransaction[], cursor: MonthCursor): MockTransaction[] {
   return transactionsInMonth(txs, cursor).filter((t) => t.type === 'expense')
+}
+
+export function toExpenseRow(tx: MockTransaction, categories: MockCategory[]): ExpenseRowView {
+  const category = categories.find((c) => c.id === tx.categoryId)
+  return {
+    id: tx.id,
+    description: tx.description,
+    categoryName: category?.name ?? 'Без категории',
+    categoryIcon: category?.icon ?? 'pricetag-outline',
+    categoryColor: category?.color ?? '#A3A3A3',
+    dayLabel: relativeDayLabel(tx.occurredAt),
+    amountText: formatAmount(tx.amountMinor),
+  }
 }
 
 export function totalExpenses(txs: MockTransaction[], cursor: MonthCursor): number {

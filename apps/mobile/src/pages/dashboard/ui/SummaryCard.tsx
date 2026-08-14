@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native'
-import { Card, Icon, IconButton, Text } from '@/shared/ui'
+import { Icon, IconButton, Text } from '@/shared/ui'
 
 export interface SummaryCardProps {
   /** Current mode title, e.g. "Расходы". */
@@ -18,7 +18,7 @@ export function SummaryCard(props: SummaryCardProps) {
     props
 
   return (
-    <Card>
+    <View>
       <View className="flex-row items-center justify-between mb-2">
         <Pressable
           testID="home-summary-mode"
@@ -55,6 +55,6 @@ export function SummaryCard(props: SummaryCardProps) {
           />
         </View>
       </View>
-    </Card>
+    </View>
   )
 }

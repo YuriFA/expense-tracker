@@ -33,14 +33,17 @@ export { DashboardScreen as default } from '@/pages/dashboard'
 ```
 
 **`@/*` → `./src/*`** via tsconfig `paths`; Metro resolves it (no babel path config
-needed). There **is** a `babel.config.js` - it is required for NativeWind v4
-(`jsxImportSource: "nativewind"` + the `nativewind/babel` preset drive
-`className` -> style resolution; without them NativeWind styling is a no-op).
-`babel-preset-expo` (SDK 54) auto-adds the `react-native-worklets/plugin` when
-worklets/reanimated is installed, so do NOT list it explicitly. Under jest
-(`JEST_WORKER_ID`) the config drops NativeWind and compiles plain React JSX
-(`className` is an ignored prop, `react-native-reanimated` is mocked in
-`jest.setup.js`) - see the unit-testing section below.
+needed). Styling is **Uniwind** (Tailwind CSS v4, CSS-first): all theme config
+lives in `global.css` (`@theme` + per-theme `@variant light/dark` variables) -
+there is no `tailwind.config.*`. `className` -> style resolution runs in Metro
+(`withUniwindConfig` in `metro.config.js`, with `polyfills.rem: 14` to keep
+NativeWind-era spacing); no babel preset/plugin is involved, so `babel.config.js`
+is just `babel-preset-expo` (which auto-adds `react-native-worklets/plugin` when
+reanimated is installed - do NOT list it explicitly). `uniwind-types.d.ts` is
+generated (CLI `uniwind generate-artifacts --css ./global.css` or any metro run)
+and committed - keep it in tsconfig `include`. Under jest `className` is a plain
+ignored prop (`react-native-reanimated` is mocked in `jest.setup.js`) - see the
+unit-testing section below.
 
 ## Routes & tab bar
 
@@ -88,14 +91,15 @@ route tree resolve. Run: `pnpm start` (`expo start`), `ios`, `android`, `web`.
 ## Unit/component tests (jest)
 
 `pnpm test` runs jest (`jest-expo` preset + `@testing-library/react-native`;
-config + `jest.setup.js` at the app root). Because NativeWind v4's JSX wrapping
-and the worklet runtime don't run under jest, `jest.setup.js` mocks
-`react-native-reanimated` (synchronous JS) and `@expo/vector-icons` (async font
-load), and `babel.config.js` skips NativeWind under `JEST_WORKER_ID` - so assert
-**observable behavior** (a11y state, callbacks, testID presence), never animation
-frames. Co-locate `*.test.tsx` next to the component (twin of `apps/web`).
-Components using `useSafeAreaInsets`/`useTheme` need `SafeAreaProvider` (with
-`initialMetrics`) + `ThemeProvider` in the test render.
+config + `jest.setup.js` at the app root). Because Uniwind's style resolution
+runs in Metro and the worklet runtime doesn't run under jest,
+`jest.setup.js` mocks `react-native-reanimated` (synchronous JS) and
+`@expo/vector-icons` (async font load); `jest.config.js` adds `uniwind`
+(and `culori`) to the babel transform allowlist - so assert **observable
+behavior** (a11y state, callbacks, testID presence), never animation frames or
+computed `className` styles. Co-locate `*.test.tsx` next to the component (twin
+of `apps/web`). Components using `useSafeAreaInsets`/`useTheme` need
+`SafeAreaProvider` (with `initialMetrics`) + `ThemeProvider` in the test render.
 
 ## Testing / e2e (Maestro)
 

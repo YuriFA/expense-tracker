@@ -6,9 +6,10 @@
 const preset = require('jest-expo/jest-preset')
 const transformIgnorePatterns = preset.transformIgnorePatterns.map((pattern) =>
   typeof pattern === 'string' && pattern.includes('node_modules/(?!(')
-    ? // dinero.js ships ESM-only; without transforming it, jest cannot
-      // require it from the (CJS-transformed) @expense-tracker/money source.
-      pattern.replace('node_modules/(?!(', 'node_modules/(?!(dinero\\.js|')
+    ? // dinero.js ships ESM-only; uniwind resolves to TS source under the
+      // `react-native` export condition (culori is its ESM-only dependency);
+      // without transforming them, jest cannot require them.
+      pattern.replace('node_modules/(?!(', 'node_modules/(?!(dinero\\.js|uniwind|culori|')
     : pattern,
 )
 

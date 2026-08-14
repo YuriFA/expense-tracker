@@ -10,7 +10,7 @@ export function Screen(props: ScreenProps) {
   const { className, children, ...viewProps } = props
 
   return (
-    <View className={`flex-1 p-safe bg-background ${className || ''}`} {...viewProps}>
+    <View className={`flex-1 p-safe ${className || ''}`} {...viewProps}>
       {children}
     </View>
   )

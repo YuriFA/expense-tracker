@@ -248,7 +248,7 @@ Use in components:
 </template>
 ```
 
-### Mobile App (React Native + NativeWind)
+### Mobile App (React Native + Uniwind)
 
 **Option 1: StyleSheet with tokens**
 ```tsx
@@ -265,9 +265,9 @@ const styles = StyleSheet.create({
 })
 ```
 
-**Option 2: NativeWind className (tokens in app.css)**
+**Option 2: Uniwind className (tokens in global.css)**
 ```tsx
-// Tokens already defined in app.css via @theme
+// Tokens already defined in global.css
 <View className="bg-background text-foreground p-4">
   <Text className="text-h1">Title</Text>
 </View>
@@ -335,7 +335,7 @@ The mobile app's `app.css` now references the shared tokens with hex values.
 - `apps/web/package.json` - Add tokens dependency
 - `apps/mobile/app.css` - Reference shared tokens
 - `apps/mobile/package.json` - Add tokens dependency
-- `apps/mobile/nativewind-env.d.ts` - Add CSS module declaration
+- `apps/mobile/css.env.d.ts` - Add CSS module declaration
 - `pnpm-lock.yaml` - Updated workspace dependencies
 
 ## Verification

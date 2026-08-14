@@ -1,9 +1,8 @@
 import type { ComponentProps } from 'react'
-import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native'
+import { Pressable, View, type LayoutChangeEvent } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTabTrigger } from 'expo-router/ui'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/shared/config/theme'
 import { FAB_SIZE, Text } from '@/shared/ui'
 import { useTabBarHeightSetter } from './tab-bar-height-context'
@@ -11,7 +10,6 @@ import { useTabBarHeightSetter } from './tab-bar-height-context'
 type IconName = ComponentProps<typeof Ionicons>['name']
 
 const TAB_ICON_SIZE = 24
-const TAB_LABEL_FONT_SIZE = 10
 // Central gap reserved for the floating SpeedDial FAB so no tab sits under it.
 const FAB_SLOT_WIDTH = FAB_SIZE + 8
 
@@ -65,10 +63,12 @@ function TabButton({
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
       accessibilityLabel={`${label}, tab, ${index + 1} of ${total}`}
-      style={styles.tab}
+      className="flex-1 items-center justify-center py-2 gap-1"
     >
-      <Ionicons name={icon} size={TAB_ICON_SIZE} color={color} />
-      <Text style={[styles.label, { color }]}>{label}</Text>
+      <Ionicons  name={icon} size={TAB_ICON_SIZE} color={color} />
+      <Text variant="caption" style={{ color }}>
+        {label}
+      </Text>
     </Pressable>
   )
 }
@@ -86,7 +86,6 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
   const setTabBarHeight = useTabBarHeightSetter()
   const { resolvedTheme } = useTheme()
   const themeColors = colorsRN[resolvedTheme]
-  const insets = useSafeAreaInsets()
 
   const activeColor = themeColors.primary
   const inactiveColor = themeColors['muted-foreground']
@@ -114,36 +113,13 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
     ))
 
   return (
-    <View
-      onLayout={handleLayout}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: themeColors.card,
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: themeColors.border,
-        paddingBottom: insets.bottom,
-        paddingLeft: insets.left,
-        paddingRight: insets.right,
-      }}
-    >
-      {renderButtons(tabs.slice(0, splitAt), 0)}
-      {/* Central slot reserved for the SpeedDial FAB (rendered as a sibling overlay). */}
-      <View style={{ width: FAB_SLOT_WIDTH }} testID="tab-bar-fab-slot" />
-      {renderButtons(tabs.slice(splitAt), splitAt)}
+    <View className="pb-safe px-safe" onLayout={handleLayout}>
+      <View className="flex flex-row border border-border bg-background mx-2 rounded-3xl">
+        {renderButtons(tabs.slice(0, splitAt), 0)}
+        {/* Central slot reserved for the SpeedDial FAB (rendered as a sibling overlay). */}
+        <View style={{ width: FAB_SLOT_WIDTH }} testID="tab-bar-fab-slot" />
+        {renderButtons(tabs.slice(splitAt), splitAt)}
+      </View>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    gap: 2,
-  },
-  label: {
-    fontSize: TAB_LABEL_FONT_SIZE,
-  },
-})
