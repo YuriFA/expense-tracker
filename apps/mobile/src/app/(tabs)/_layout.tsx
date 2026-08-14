@@ -98,10 +98,10 @@ function TabsSurface() {
   // Straddle the bar's top edge: FAB center at the bar top. tabBarHeight includes
   // the safe-area padding, so no separate inset is needed. Falls back to the
   // SpeedDial's safe-area default until the bar has laid out.
-  const fabBottomOffset = tabBarHeight > 0 ? tabBarHeight - FAB_SIZE / 2 : undefined
+  const fabBottomOffset = tabBarHeight > 0 ? tabBarHeight - FAB_SIZE / 1.3 : undefined
 
   return (
-    <View style={{ flex: 1 }}>
+    <View className="flex-1 bg-[#fafafa]">
       <Tabs>
         <TabSlot />
         <BottomTabBar tabs={TABS} />

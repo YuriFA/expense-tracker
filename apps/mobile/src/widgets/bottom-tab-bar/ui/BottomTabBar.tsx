@@ -6,10 +6,11 @@ import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { useTheme } from '@/shared/config/theme'
 import { FAB_SIZE, Text } from '@/shared/ui'
 import { useTabBarHeightSetter } from './tab-bar-height-context'
+import { cn } from '@/shared/lib/utils'
 
 type IconName = ComponentProps<typeof Ionicons>['name']
 
-const TAB_ICON_SIZE = 24
+const TAB_ICON_SIZE = 20
 // Central gap reserved for the floating SpeedDial FAB so no tab sits under it.
 const FAB_SLOT_WIDTH = FAB_SIZE + 8
 
@@ -58,14 +59,16 @@ function TabButton({
   return (
     <Pressable
       testID={testId}
-      onPress={triggerProps.onPress}
-      onLongPress={triggerProps.onLongPress}
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
       accessibilityLabel={`${label}, tab, ${index + 1} of ${total}`}
-      className="flex-1 items-center justify-center py-2 gap-1"
+      className={cn('flex-1 items-center justify-center py-2 gap-1 rounded-3xl', {
+        'bg-gray-200': focused,
+      })}
+      onPress={triggerProps.onPress}
+      onLongPress={triggerProps.onLongPress}
     >
-      <Ionicons  name={icon} size={TAB_ICON_SIZE} color={color} />
+      <Ionicons name={icon} size={TAB_ICON_SIZE} color={color} />
       <Text variant="caption" style={{ color }}>
         {label}
       </Text>
@@ -114,7 +117,7 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
 
   return (
     <View className="pb-safe px-safe" onLayout={handleLayout}>
-      <View className="flex flex-row border border-border bg-background mx-2 rounded-3xl">
+      <View className="flex flex-row border border-border bg-background mx-2 rounded-4xl p-1">
         {renderButtons(tabs.slice(0, splitAt), 0)}
         {/* Central slot reserved for the SpeedDial FAB (rendered as a sibling overlay). */}
         <View style={{ width: FAB_SLOT_WIDTH }} testID="tab-bar-fab-slot" />
