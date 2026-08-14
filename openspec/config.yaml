@@ -2,14 +2,26 @@ schema: spec-driven
 githubCopilot:
   cloudAgent: true
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Project context: the full product/architecture map lives in docs/PROJECT.md.
+# Read that file IN FULL before creating any artifact (proposal, specs,
+# design, tasks). The digest below repeats only the hardest invariants.
+context: |
+  Project context lives in docs/PROJECT.md — READ IT IN FULL before
+  creating any artifact. It contains the product map, domain model,
+  architecture, per-area status (facts), assumptions not yet decided,
+  known debt, and key commands.
+  Hard invariants (full detail in docs/PROJECT.md):
+  - docs/api/openapi.yaml is the single source of truth. Change the spec
+    FIRST, then regenerate (make gen in backend; pnpm gen:api in
+    packages/api or apps/web). Never hand-edit generated files.
+  - Money is int64 minor units (divisor 100) end-to-end. Never
+    float/decimal.
+  - Auth is a stateful session cookie (session_id). Do NOT introduce JWT.
+  - Errors carry a machine code + human message; clients map by code,
+    not HTTP status.
+  - IDs are UUID v4; timestamps are UTC.
+  - Shared packages (packages/*) stay platform-agnostic: fetch-family
+    APIs only, no DOM/Vue/RN imports.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
