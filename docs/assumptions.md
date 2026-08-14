@@ -7,6 +7,13 @@ do not build on it as if it were a requirement, and do not invent the
 missing behavior. When one of these becomes real work, record the
 decision in the OpenSpec change that implements it and prune it here.
 
+- **Multi-currency aggregation is undefined; target model is decided.**
+  The API has no exchange rates and its balances endpoint sums across
+  currencies as-is. Product direction (decided for the mobile Home
+  screen, `docs/product/mobile-home.md`): v1 assumes the user's
+  accounts are in a single currency; the intended model is conversion
+  into a primary currency once an exchange-rate subsystem exists
+  (future work, unbuilt).
 - **Mobile auth is undesigned.** How the RN client stores the session
   cookie is open, and the backend's CSRF posture (SameSite=Lax + CORS
   allowlist) does not protect a native client. Needs a spec change
