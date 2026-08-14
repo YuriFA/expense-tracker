@@ -29,6 +29,13 @@ export type BottomSheetProps = Omit<
   snapPoints?: Array<string | number>
 
   /**
+   * Whether dragging the sheet down dismisses it.
+   *
+   * @default true
+   */
+  enablePanDownToClose?: boolean
+
+  /**
    * Whether tapping the backdrop dismisses the sheet.
    *
    * @default true
@@ -36,17 +43,18 @@ export type BottomSheetProps = Omit<
   enableBackdropPress?: boolean
 
   /**
-   * Whether dragging the sheet down dismisses it.
+   * Whether the sheet should dynamically adjust its height based on its content.
    *
-   * @default true
+   * @default false
    */
-  enablePanDownToClose?: boolean
+  enableDynamicSizing?: boolean
 }
 
 export const BottomSheet = ({
   snapPoints = ['50%'],
-  enableBackdropPress = true,
   enablePanDownToClose = true,
+  enableDynamicSizing = false,
+  enableBackdropPress = true,
   children,
   ref,
   ...props
@@ -94,15 +102,9 @@ export const BottomSheet = ({
     <BottomSheetModal
       ref={bottomSheetRef}
       snapPoints={memoizedSnapPoints}
-      enableDynamicSizing={false}
+      enableDynamicSizing={enableDynamicSizing}
       enablePanDownToClose={enablePanDownToClose}
       backdropComponent={renderBackdrop}
-      handleIndicatorStyle={{
-        backgroundColor: 'black',
-      }}
-      backgroundStyle={{
-        backgroundColor: 'white',
-      }}
       {...props}
     >
       {children}

@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import { useRouter } from 'expo-router'
 import { Screen } from '@/shared/ui'
 import {
   MOCK_ACCOUNTS,
@@ -23,11 +22,11 @@ import {
   totalExpenses,
   type MonthCursor,
 } from '../model/selectors'
-import { QuickActionsRow, type QuickActionId } from './quick-actions-row'
+import { QuickActionsRow } from './quick-actions-row'
 import { SummaryCard } from './summary-card'
 import { AllExpensesCard } from './all-expenses-card'
 import { CategorySection } from './category-section'
-import { ModeSheet, type SummaryMode } from './mode-sheet'
+import { type SummaryMode } from './mode-sheet'
 import { ExpensesSheet } from './expenses-sheet'
 import { NewCategorySheet } from './new-category-sheet'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
@@ -40,15 +39,12 @@ const MODE_TITLES: Record<SummaryMode, string> = {
 }
 
 export function DashboardScreen() {
-  const router = useRouter()
-
   const [cursor, setCursor] = useState<MonthCursor>(() => currentMonth())
   const [mode, setMode] = useState<SummaryMode>('expenses')
   const [categories, setCategories] = useState<MockCategory[]>(MOCK_CATEGORIES)
   const [categoryExpensesId, setCategoryExpensesId] = useState<string | undefined>(undefined)
   const newCategorySheetRef = useRef<BottomSheetRef>(null)
   const expensesSheetRef = useRef<BottomSheetRef>(null)
-  const modeSheetRef = useRef<BottomSheetRef>(null)
 
   // Period is a page-global filter: it drives every period-dependent section.
   const canGoNext = !isCurrentOrFutureMonth(cursor)
@@ -75,12 +71,6 @@ export function DashboardScreen() {
         .map((t) => toExpenseRow(t, categories))
     : expensesInMonth(MOCK_TRANSACTIONS, cursor).map((t) => toExpenseRow(t, categories))
 
-  const onQuickAction = (id: QuickActionId) => {
-    if (id === 'accounts') router.push('/accounts')
-    else if (id === 'income') router.push('/income')
-    else router.push('/goals')
-  }
-
   const addCategory = (name: string, type: MockCashflowType) => {
     setCategories((prev) => [
       ...prev,
@@ -93,14 +83,15 @@ export function DashboardScreen() {
     <Screen testID="screen-dashboard">
       <ScrollView>
         <View className="p-6 gap-6">
-          <QuickActionsRow onPress={onQuickAction} />
+          <QuickActionsRow />
 
           <SummaryCard
+            mode={mode}
             title={MODE_TITLES[mode]}
             amountText={amountText}
             periodLabel={monthRangeLabel(cursor.year, cursor.month)}
             canGoNext={canGoNext}
-            onOpenModes={() => modeSheetRef.current?.present()}
+            onModeChange={setMode}
             onPrevPeriod={goPrev}
             onNextPeriod={goNext}
           />
@@ -119,18 +110,9 @@ export function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <ModeSheet
-        ref={modeSheetRef}
-        activeMode={mode}
-        onSelect={(nextMode) => {
-          setMode(nextMode)
-          modeSheetRef.current?.dismiss()
-        }}
-      />
-
       <ExpensesSheet
         ref={expensesSheetRef}
-        title={categoryExpensesId ? (sheetCategory?.name ?? 'Категория') : 'Все расходы'}
+        title={sheetCategory?.name ?? 'Категория'}
         rows={sheetRows}
         emptyText="В этом месяце расходов нет"
       />

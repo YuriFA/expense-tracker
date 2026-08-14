@@ -28,7 +28,7 @@ export interface ExpensesSheetProps {
 
 export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProps) {
   return (
-    <BottomSheet ref={ref} testID="home-expenses-sheet">
+    <BottomSheet ref={ref} snapPoints={['90%']} testID="home-expenses-sheet">
       <BottomSheetHeader title={title} />
 
       {rows.length === 0 ? (
