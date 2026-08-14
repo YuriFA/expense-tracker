@@ -66,11 +66,14 @@ login, authed redirected away from login) is **not yet ported**.
 | `(tabs)/settings.tsx` | `/settings` | Settings |
 | `(auth)/{login,register,verify-email,reset-password}.tsx` | `/...` | - |
 
-**Bottom tab bar** is a custom `widgets/bottom-tab-bar/` (consumes
-`@react-navigation/bottom-tabs` `BottomTabBarProps`), not the default. It renders the 4
-real tabs + a central spacer; the central `+` is a **SpeedDial** overlay
-(`shared/ui/SpeedDial`, `position="center"`) mounted as a **sibling** of `<Tabs>`
-in `(tabs)/_layout.tsx` - a global floating action, NOT a route and NOT a tab
+**Bottom tab bar** uses expo-router's headless tab components
+(`expo-router/ui`: `Tabs`/`TabSlot`/`TabList`/`TabTrigger`), not the default. The
+hidden `<TabList>` declares the routes, `<TabSlot>` renders the focused screen,
+and the custom `widgets/bottom-tab-bar/` renders the 4 real tabs + a central
+spacer; each tab button reads its focus/press state from `useTabTrigger(name)`.
+The central `+` is a **SpeedDial** overlay (`shared/ui/SpeedDial`,
+`position="center"`) mounted as a **sibling** of `<Tabs>` in
+`(tabs)/_layout.tsx` - a global floating action, NOT a route and NOT a tab
 (opening it never changes the active route). Actions (Expense/Income/Transfer)
 are wired in that layout; their create-transaction flows don't exist yet
 (placeholder callbacks). The active tab tint comes from the `primary` token.

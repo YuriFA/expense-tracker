@@ -1,4 +1,5 @@
 export { BottomTabBar } from "./ui/BottomTabBar"
+export type { TabConfig } from "./ui/BottomTabBar"
 export {
   TabBarHeightProvider,
   useTabBarHeight,

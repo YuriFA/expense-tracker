@@ -1,7 +1,8 @@
 import type { ComponentProps } from 'react'
 import { View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { Tabs } from 'expo-router'
+import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui'
+import type { Href } from 'expo-router'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { useTheme } from '@/shared/config/theme'
 import { FAB_SIZE, Icon, SpeedDial, type SpeedDialAction } from '@/shared/ui'
@@ -9,22 +10,35 @@ import {
   BottomTabBar,
   TabBarHeightProvider,
   useTabBarHeight,
+  type TabConfig,
 } from '@/widgets/bottom-tab-bar'
 
 type IconName = ComponentProps<typeof Ionicons>['name']
+
+interface TabDef extends TabConfig {
+  /** Absolute route URL this tab switches to; drives the hidden `<TabTrigger>`. */
+  href: Href
+}
 
 /**
  * Bottom-tab navigator for the authenticated app surface - the mobile twin of
  * the web top nav (apps/web/src/app/layout/AppNav.vue).
  *
- * TODO(i18n): swap the hardcoded `title`s for the shared `@expense-tracker/i18n`
+ * Built on expo-router's headless tab components (`expo-router/ui`): the hidden
+ * `<TabList>` declares the routes, `<TabSlot>` renders the focused screen, and
+ * the custom `<BottomTabBar>` renders the visible buttons (reading focus/press
+ * state via `useTabTrigger`). This keeps the whole tab surface first-party
+ * expo-router, with no `@react-navigation/bottom-tabs` `BottomTabBarProps`
+ * plumbing.
+ *
+ * TODO(i18n): swap the hardcoded `label`s for the shared `@expense-tracker/i18n`
  * bundle (`nav.dashboard` etc.) once react-i18next is wired in shared/i18n.
  */
-const TABS = [
-  { name: 'index', title: 'Dashboard', testId: 'tab-dashboard', icon: 'grid-outline' as IconName },
-  { name: 'transactions', title: 'Transactions', testId: 'tab-transactions', icon: 'swap-horizontal-outline' as IconName },
-  { name: 'accounts', title: 'Accounts', testId: 'tab-accounts', icon: 'wallet-outline' as IconName },
-  { name: 'settings', title: 'Settings', testId: 'tab-settings', icon: 'settings-outline' as IconName },
+const TABS: readonly TabDef[] = [
+  { name: 'index', href: '/', label: 'Dashboard', testId: 'tab-dashboard', icon: 'grid-outline' },
+  { name: 'transactions', href: '/transactions', label: 'Transactions', testId: 'tab-transactions', icon: 'swap-horizontal-outline' },
+  { name: 'accounts', href: '/accounts', label: 'Accounts', testId: 'tab-accounts', icon: 'wallet-outline' },
+  { name: 'settings', href: '/settings', label: 'Settings', testId: 'tab-settings', icon: 'settings-outline' },
 ] as const
 
 /**
@@ -75,13 +89,13 @@ export default function TabsLayout() {
 }
 
 /**
- * Renders the tab navigator and the SpeedDial overlay as siblings.
+ * Renders the headless tab navigator and the SpeedDial overlay as siblings.
  *
  * Layering decision (spec section 9, Variant B): the SpeedDial is a fullscreen
- * overlay mounted as a SIBLING of <Tabs>, not inside the tab bar. Its single
+ * overlay mounted as a SIBLING of `<Tabs>`, not inside the tab bar. Its single
  * `absoluteFill` backdrop must cover screen content, and the tab-bar slot is
  * only ~80px tall, so mounting inside it would clip the scrim. Rendered after
- * <Tabs>, the overlay paints above the bar: FAB + actions are topmost, the
+ * `<Tabs>`, the overlay paints above the bar: FAB + actions are topmost, the
  * dimmed scrim blocks the whole surface (including the bar) when open, and
  * tapping the scrim closes the menu (spec section 25, option A). The FAB is
  * centered (SpeedDial `position="center"`) and straddles the bar's top edge via
@@ -102,21 +116,23 @@ function TabsSurface() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Tabs
-        tabBar={(props) => <BottomTabBar {...props} />}
-        screenOptions={{ headerTitleAlign: 'center' }}
-      >
-        {TABS.map((tab) => (
-          <Tabs.Screen
-            key={tab.name}
-            name={tab.name}
-            options={{
-              title: tab.title,
-              tabBarButtonTestID: tab.testId,
-              tabBarIcon: ({ color }) => <Ionicons name={tab.icon} size={24} color={color} />,
-            }}
-          />
-        ))}
+      {/*
+        Headless expo-router tabs (`expo-router/ui`):
+          - <TabList> declares the tab routes (hidden; its <TabTrigger> children
+            define the route set and build the name -> route trigger map).
+          - <BottomTabBar> renders the visible buttons; each reads its focus and
+            press handler from `useTabTrigger(name)`, referencing the tabs above.
+          - <TabSlot> renders the focused screen.
+        See https://docs.expo.dev/router/advanced/custom-tabs/.
+      */}
+      <Tabs>
+        <TabSlot />
+        <BottomTabBar tabs={TABS} />
+        <TabList style={{ display: 'none' }}>
+          {TABS.map((tab) => (
+            <TabTrigger key={tab.name} name={tab.name} href={tab.href} />
+          ))}
+        </TabList>
       </Tabs>
 
       <SpeedDial

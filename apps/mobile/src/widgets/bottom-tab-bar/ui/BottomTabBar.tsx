@@ -1,9 +1,14 @@
+import type { ComponentProps } from "react"
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native"
-import type { BottomTabBarProps } from "expo-router/js-tabs"
+import { Ionicons } from "@expo/vector-icons"
+import { useTabTrigger } from "expo-router/ui"
 import { colors as colorsRN } from "@expense-tracker/tokens/react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTheme } from "@/shared/config/theme"
 import { FAB_SIZE, Text } from "@/shared/ui"
 import { useTabBarHeightSetter } from "./tab-bar-height-context"
+
+type IconName = ComponentProps<typeof Ionicons>["name"]
 
 const TAB_ICON_SIZE = 24
 const TAB_LABEL_FONT_SIZE = 10
@@ -11,79 +16,112 @@ const TAB_LABEL_FONT_SIZE = 10
 const FAB_SLOT_WIDTH = FAB_SIZE + 8
 
 /**
- * BottomTabBar - the mobile bottom navigation, composed of the real tab routes
- * with a central reserved slot for the SpeedDial FAB.
+ * A tab the layout wants rendered in the bar. `name` must match the `name` of
+ * the `<TabTrigger>` the layout declares (hidden) inside its `<TabList>` - the
+ * bar references tabs by name via `useTabTrigger`.
+ */
+export interface TabConfig {
+  /** Matches the `name` of the `<TabTrigger>` that defines this route. */
+  name: string
+  /** Label shown under the icon. */
+  label: string
+  /** Ionicons glyph. */
+  icon: IconName
+  /** Stable testID for Maestro e2e (convention: `tab-<name>`). */
+  testId: string
+}
+
+interface TabButtonProps extends TabConfig {
+  activeColor: string
+  inactiveColor: string
+  /** 0-based position across the whole bar, used for the a11y label. */
+  index: number
+  total: number
+}
+
+/**
+ * A single tab button. Press / focus / navigation state comes from the headless
+ * expo-router tab context via `useTabTrigger(name)` - no manual `tabPress`
+ * emission, no react-navigation descriptor plumbing. `name` references the
+ * `<TabTrigger>` declared (hidden) in the layout's `<TabList>`.
+ */
+function TabButton({
+  name,
+  label,
+  icon,
+  testId,
+  activeColor,
+  inactiveColor,
+  index,
+  total,
+}: TabButtonProps) {
+  const { triggerProps } = useTabTrigger({ name })
+  const focused = triggerProps.isFocused
+  const color = focused ? activeColor : inactiveColor
+
+  return (
+    <Pressable
+      testID={testId}
+      onPress={triggerProps.onPress}
+      onLongPress={triggerProps.onLongPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: focused }}
+      accessibilityLabel={`${label}, tab, ${index + 1} of ${total}`}
+      style={styles.tab}
+    >
+      <Ionicons name={icon} size={TAB_ICON_SIZE} color={color} />
+      <Text style={[styles.label, { color }]}>{label}</Text>
+    </Pressable>
+  )
+}
+
+/**
+ * BottomTabBar - the mobile bottom navigation, built on expo-router's headless
+ * tab components (`expo-router/ui`). Renders the real tab buttons (icons,
+ * labels, active/inactive tint, accessibility) with a central reserved slot for
+ * the SpeedDial FAB.
  *
- * Pure composition + navigation only: it renders the tab buttons (icons,
- * labels, active/inactive state, accessibility, navigation) and reserves the
- * central space for the FAB. It contains NO SpeedDial and NO transaction/domain
- * logic - those live in `(tabs)/_layout.tsx`, the consumer that owns navigation
- * (spec sections 7, 21-23). The FAB itself is rendered as a sibling overlay by
- * the layout, not here.
+ * Pure composition + styling only: press/focus/navigation come from
+ * `useTabTrigger`, and the actual tab routes are declared by the layout's
+ * hidden `<TabList>`. This bar contains NO SpeedDial and NO transaction/domain
+ * logic - those live in `(tabs)/_layout.tsx`, the consumer that owns routing.
  *
  * Colors come from design tokens (never hardcoded). The measured height is
  * reported to this widget's height context so the sibling SpeedDial overlay can
- * compute its `bottomOffset` without hardcoding the bar height. (The navigator's
- * own `useBottomTabBarHeight()`, read inside screens, keeps using its built-in
- * estimate - close enough for the skeleton; wiring the navigator callback would
- * require importing expo-router's runtime, which is not jest-safe here.)
+ * compute its `bottomOffset` without hardcoding the bar height. Safe-area insets
+ * are read directly from `react-native-safe-area-context` (the headless API,
+ * unlike the react-navigation `tabBar` prop, does not hand them to us).
  */
-export function BottomTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
+export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
   const setTabBarHeight = useTabBarHeightSetter()
   const { resolvedTheme } = useTheme()
   const themeColors = colorsRN[resolvedTheme]
+  const insets = useSafeAreaInsets()
 
-  const focusedDescriptor = descriptors[state.routes[state.index]?.key]
-  const focusedOptions = focusedDescriptor?.options ?? {}
-  const activeColor = focusedOptions.tabBarActiveTintColor ?? themeColors.primary
-  const inactiveColor = focusedOptions.tabBarInactiveTintColor ?? themeColors["muted-foreground"]
+  const activeColor = themeColors.primary
+  const inactiveColor = themeColors["muted-foreground"]
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setTabBarHeight(event.nativeEvent.layout.height)
   }
 
   // Split the routes around a central FAB slot: first half left, slot, then rest.
-  const splitAt = Math.ceil(state.routes.length / 2)
+  const splitAt = Math.ceil(tabs.length / 2)
 
-  const renderTab = (route: (typeof state.routes)[number], globalIndex: number) => {
-    const { options } = descriptors[route.key]
-    const focused = state.index === globalIndex
-    const color = focused ? activeColor : inactiveColor
-    const label = typeof options.tabBarLabel === "string" ? options.tabBarLabel : options.title
-    const icon = options.tabBarIcon?.({ focused, color, size: TAB_ICON_SIZE })
-
-    const onPress = () => {
-      const event = navigation.emit({
-        type: "tabPress",
-        target: route.key,
-        canPreventDefault: true,
-      })
-      if (!focused && !event.defaultPrevented) {
-        navigation.navigate(route.name, route.params)
-      }
-    }
-    const onLongPress = () => {
-      navigation.emit({ type: "tabLongPress", target: route.key })
-    }
-
-    return (
-      <Pressable
-        key={route.key}
-        testID={options.tabBarButtonTestID}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: focused }}
-        accessibilityLabel={
-          label ? `${label}, tab, ${globalIndex + 1} of ${state.routes.length}` : undefined
-        }
-        style={styles.tab}
-      >
-        {icon ?? null}
-        {label ? <Text style={[styles.label, { color }]}>{label}</Text> : null}
-      </Pressable>
-    )
-  }
+  const renderButtons = (slice: readonly TabConfig[], offset: number) =>
+    slice.map((tab, i) => (
+      <TabButton
+        key={tab.name}
+        name={tab.name}
+        label={tab.label}
+        icon={tab.icon}
+        testId={tab.testId}
+        activeColor={activeColor}
+        inactiveColor={inactiveColor}
+        index={offset + i}
+        total={tabs.length}
+      />
+    ))
 
   return (
     <View
@@ -99,10 +137,10 @@ export function BottomTabBar({ state, descriptors, navigation, insets }: BottomT
         paddingRight: insets.right,
       }}
     >
-      {state.routes.slice(0, splitAt).map((route, i) => renderTab(route, i))}
+      {renderButtons(tabs.slice(0, splitAt), 0)}
       {/* Central slot reserved for the SpeedDial FAB (rendered as a sibling overlay). */}
       <View style={{ width: FAB_SLOT_WIDTH }} testID="tab-bar-fab-slot" />
-      {state.routes.slice(splitAt).map((route, i) => renderTab(route, i + splitAt))}
+      {renderButtons(tabs.slice(splitAt), splitAt)}
     </View>
   )
 }

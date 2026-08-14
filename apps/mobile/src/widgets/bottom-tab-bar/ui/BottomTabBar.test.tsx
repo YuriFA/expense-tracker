@@ -1,97 +1,92 @@
 import { describe, expect, it, jest } from "@jest/globals"
-import type { ReactNode } from "react"
 import { fireEvent, render, screen } from "@testing-library/react-native"
-import { Text } from "react-native"
+import { StyleSheet, Text } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context"
-import type { BottomTabBarProps } from "expo-router/js-tabs"
+import { colors as colorsRN } from "@expense-tracker/tokens/react-native"
 import { ThemeProvider } from "@/shared/config/theme"
 import { SpeedDial, type SpeedDialAction } from "@/shared/ui"
-import { BottomTabBar } from "./BottomTabBar"
+import { BottomTabBar, type TabConfig } from "./BottomTabBar"
 import { TabBarHeightProvider, useTabBarHeight } from "./tab-bar-height-context"
+
+// --- Mock the headless expo-router tab hook -----------------------------------
+
+/**
+ * `useTabTrigger` is expo-router's framework hook (reads the navigator + trigger
+ * map contexts). For this unit test of the bar's *rendering* we stub it to
+ * control `isFocused` per name and capture press handlers. Real navigation
+ * (press -> route switch) is covered by the Maestro e2e (02-tab-navigation),
+ * which is the right place for it - expo-router's route resolution does not run
+ * under jest.
+ */
+jest.mock("expo-router/ui", () => ({
+  useTabTrigger: jest.fn(),
+}))
+
+interface TriggerProps {
+  isFocused: boolean
+  onPress: jest.Mock
+  onLongPress: jest.Mock
+}
+
+const useTabTriggerMock = (jest.requireMock("expo-router/ui") as {
+  useTabTrigger: jest.Mock
+}).useTabTrigger as unknown as jest.Mock<
+  (options: { name: string }) => { triggerProps: TriggerProps }
+>
 
 // --- Fixtures & helpers -------------------------------------------------------
 
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
-const ACTIVE = "#ff0000"
-const INACTIVE = "#999999"
+// Default resolved theme under jest is "light" (useColorScheme() -> null).
+const ACTIVE = colorsRN.light.primary
+const INACTIVE = colorsRN.light["muted-foreground"]
 
-type TabBarIconFn = jest.Mock<(args: { focused: boolean; color: string; size: number }) => ReactNode>
+const TABS: readonly TabConfig[] = [
+  { name: "index", label: "Dashboard", testId: "tab-dashboard", icon: "grid-outline" },
+  { name: "transactions", label: "Transactions", testId: "tab-transactions", icon: "swap-horizontal-outline" },
+  { name: "accounts", label: "Accounts", testId: "tab-accounts", icon: "wallet-outline" },
+  { name: "settings", label: "Settings", testId: "tab-settings", icon: "settings-outline" },
+]
 
-const TAB_DEFS = [
-  { key: "index", name: "index", title: "Dashboard", testId: "tab-dashboard" },
-  { key: "transactions", name: "transactions", title: "Transactions", testId: "tab-transactions" },
-  { key: "accounts", name: "accounts", title: "Accounts", testId: "tab-accounts" },
-  { key: "settings", name: "settings", title: "Settings", testId: "tab-settings" },
-] as const
-
-interface FakeProps extends Omit<BottomTabBarProps, "state" | "descriptors" | "navigation"> {
-  state: { index: number; routes: { key: string; name: string; params?: unknown }[] }
-  descriptors: Record<
-    string,
-    {
-      options: {
-        title: string
-        tabBarButtonTestID: string
-        tabBarIcon: TabBarIconFn
-        tabBarActiveTintColor?: string
-        tabBarInactiveTintColor?: string
-      }
-    }
-  >
-  navigation: { emit: jest.Mock; navigate: jest.Mock }
-  iconFns: TabBarIconFn[]
-}
-
-/** Builds BottomTabBarProps for 4 tabs, plus per-tab icon spies (to assert color). */
-function makeProps(focusedIndex = 0): FakeProps {
-  const iconFns = TAB_DEFS.map(
-    (d) =>
-      jest.fn(
-        ({ color }: { focused: boolean; color: string; size: number }) => (
-          <Text>{`${d.testId}:${color}`}</Text>
-        ),
-      ) as TabBarIconFn,
-  )
-  const descriptors = {} as FakeProps["descriptors"]
-  TAB_DEFS.forEach((d, i) => {
-    descriptors[d.key] = {
-      options: {
-        title: d.title,
-        tabBarButtonTestID: d.testId,
-        tabBarIcon: iconFns[i],
-        tabBarActiveTintColor: ACTIVE,
-        tabBarInactiveTintColor: INACTIVE,
+/**
+ * Drives the mocked `useTabTrigger`: returns `isFocused` based on `focusedName`
+ * and stable per-name press spies. Returns the spies so a test can assert the
+ * bar wired the framework handler through to the Pressable.
+ */
+function focusOn(focusedName: string) {
+  const onPress: Record<string, jest.Mock> = {}
+  const onLongPress: Record<string, jest.Mock> = {}
+  useTabTriggerMock.mockImplementation(({ name }: { name: string }) => {
+    onPress[name] ??= jest.fn()
+    onLongPress[name] ??= jest.fn()
+    return {
+      triggerProps: {
+        isFocused: name === focusedName,
+        onPress: onPress[name],
+        onLongPress: onLongPress[name],
       },
     }
   })
-  return {
-    state: {
-      index: focusedIndex,
-      routes: TAB_DEFS.map((d) => ({ key: d.key, name: d.name, params: undefined })),
-    },
-    descriptors,
-    navigation: {
-      emit: jest.fn(() => ({ defaultPrevented: false })),
-      navigate: jest.fn(),
-    },
-    insets: ZERO_INSETS,
-    iconFns,
-  }
+  return { onPress, onLongPress }
 }
 
-function renderBar(props: FakeProps) {
+function renderBar() {
   return render(
     <SafeAreaProvider
       initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
     >
       <ThemeProvider>
         <TabBarHeightProvider>
-          <BottomTabBar {...(props as unknown as BottomTabBarProps)} />
+          <BottomTabBar tabs={TABS} />
         </TabBarHeightProvider>
       </ThemeProvider>
     </SafeAreaProvider>,
   )
 }
+
+/** Color applied to a tab's label Text (the focused/unfocused tint). */
+const labelColor = (label: string) =>
+  StyleSheet.flatten(screen.getByText(label).props.style).color
 
 /** Walks up from the FAB slot to the root View that carries `onLayout`. */
 const rootView = () => {
@@ -107,32 +102,31 @@ const rootView = () => {
 
 describe("BottomTabBar · tabs", () => {
   it("renders all four tab testIDs", () => {
-    renderBar(makeProps())
+    focusOn("index")
+    renderBar()
     for (const id of ["tab-dashboard", "tab-transactions", "tab-accounts", "tab-settings"]) {
       expect(screen.getByTestId(id)).toBeTruthy()
     }
   })
 
   it("reserves a central slot for the FAB between the tab groups", () => {
-    renderBar(makeProps())
+    focusOn("index")
+    renderBar()
     expect(screen.getByTestId("tab-bar-fab-slot")).toBeTruthy()
   })
 
-  it("passes the active tint to the focused tab's icon and inactive to the rest", () => {
-    const props = makeProps(1) // Transactions focused
-    renderBar(props)
-    expect(props.iconFns[1]).toHaveBeenCalledWith(
-      expect.objectContaining({ focused: true, color: ACTIVE, size: 24 }),
-    )
-    for (const i of [0, 2, 3]) {
-      expect(props.iconFns[i]).toHaveBeenCalledWith(
-        expect.objectContaining({ focused: false, color: INACTIVE }),
-      )
+  it("tints the focused tab with the active token and the rest with inactive", () => {
+    focusOn("transactions") // Transactions focused
+    renderBar()
+    expect(labelColor("Transactions")).toBe(ACTIVE)
+    for (const label of ["Dashboard", "Accounts", "Settings"]) {
+      expect(labelColor(label)).toBe(INACTIVE)
     }
   })
 
   it("labels each tab and marks the focused one selected for accessibility", () => {
-    renderBar(makeProps(0))
+    focusOn("index")
+    renderBar()
     const dashboard = screen.getByTestId("tab-dashboard")
     expect(dashboard.props.accessibilityRole).toBe("tab")
     expect(dashboard.props.accessibilityState).toEqual({ selected: true })
@@ -143,38 +137,34 @@ describe("BottomTabBar · tabs", () => {
   })
 })
 
-describe("BottomTabBar · navigation", () => {
-  it("emits tabPress and navigates when an inactive tab is tapped", () => {
-    const props = makeProps(0)
-    renderBar(props)
+describe("BottomTabBar · navigation wiring", () => {
+  it("delegates a tab tap to the useTabTrigger onPress handler", () => {
+    const { onPress } = focusOn("index")
+    renderBar()
     fireEvent.press(screen.getByTestId("tab-transactions"))
-    expect(props.navigation.emit).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "tabPress", target: "transactions", canPreventDefault: true }),
-    )
-    expect(props.navigation.navigate).toHaveBeenCalledWith("transactions", undefined)
+    expect(onPress.transactions).toHaveBeenCalledTimes(1)
   })
 
-  it("does not navigate when the already-focused tab is tapped", () => {
-    const props = makeProps(0)
-    renderBar(props)
-    fireEvent.press(screen.getByTestId("tab-dashboard"))
-    expect(props.navigation.emit).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "tabPress", target: "index" }),
-    )
-    expect(props.navigation.navigate).not.toHaveBeenCalled()
-  })
-
-  it("respects a prevented tabPress (does not navigate)", () => {
-    const props = makeProps(0)
-    props.navigation.emit = jest.fn(() => ({ defaultPrevented: true }))
-    renderBar(props)
+  it("does not fire another tab's handler when a different tab is tapped", () => {
+    const { onPress } = focusOn("index")
+    renderBar()
     fireEvent.press(screen.getByTestId("tab-accounts"))
-    expect(props.navigation.navigate).not.toHaveBeenCalled()
+    expect(onPress.accounts).toHaveBeenCalledTimes(1)
+    expect(onPress.index).not.toHaveBeenCalled()
+    expect(onPress.settings).not.toHaveBeenCalled()
+  })
+
+  it("wires the long-press handler through", () => {
+    const { onLongPress } = focusOn("index")
+    renderBar()
+    fireEvent(screen.getByTestId("tab-settings"), "longPress")
+    expect(onLongPress.settings).toHaveBeenCalledTimes(1)
   })
 })
 
 describe("BottomTabBar · height reporting", () => {
   it("reports its measured height so the overlay can position the FAB", () => {
+    focusOn("index")
     function HeightReader() {
       const h = useTabBarHeight()
       return <Text testID="height-reader">{h}</Text>
@@ -185,7 +175,7 @@ describe("BottomTabBar · height reporting", () => {
       >
         <ThemeProvider>
           <TabBarHeightProvider>
-            <BottomTabBar {...(makeProps() as unknown as BottomTabBarProps)} />
+            <BottomTabBar tabs={TABS} />
             <HeightReader />
           </TabBarHeightProvider>
         </ThemeProvider>
@@ -210,14 +200,14 @@ function renderIntegration({ defaultOpen = false }: { defaultOpen?: boolean } = 
     { id: "income", label: "Income", icon: <Text>i</Text>, onPress: onIncome },
     { id: "transfer", label: "Transfer", icon: <Text>t</Text>, onPress: onTransfer },
   ]
-  const props = makeProps(0)
+  const handlers = focusOn("index")
   const utils = render(
     <SafeAreaProvider
       initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
     >
       <ThemeProvider>
         <TabBarHeightProvider>
-          <BottomTabBar {...(props as unknown as BottomTabBarProps)} />
+          <BottomTabBar tabs={TABS} />
           <SpeedDial
             position="center"
             bottomOffset={55}
@@ -232,7 +222,7 @@ function renderIntegration({ defaultOpen = false }: { defaultOpen?: boolean } = 
   )
   const fab = () => screen.getByTestId("speed-dial-fab")
   const fabExpanded = () => Boolean(fab().props.accessibilityState?.expanded)
-  return { ...utils, props, fab, fabExpanded, onExpense, onIncome, onTransfer }
+  return { ...utils, handlers, fab, fabExpanded, onExpense, onIncome, onTransfer }
 }
 
 describe("SpeedDial + BottomTabBar integration", () => {
@@ -266,10 +256,10 @@ describe("SpeedDial + BottomTabBar integration", () => {
     expect(fabExpanded()).toBe(false)
   })
 
-  it("tapping a tab still navigates while the SpeedDial is present (closed)", () => {
-    const { props, fabExpanded } = renderIntegration()
+  it("tapping a tab still fires its press handler while the SpeedDial is present (closed)", () => {
+    const { handlers, fabExpanded } = renderIntegration()
     fireEvent.press(screen.getByTestId("tab-transactions"))
-    expect(props.navigation.navigate).toHaveBeenCalledWith("transactions", undefined)
+    expect(handlers.onPress.transactions).toHaveBeenCalledTimes(1)
     // Opening/closing the SpeedDial never changes the active tab.
     expect(fabExpanded()).toBe(false)
   })
