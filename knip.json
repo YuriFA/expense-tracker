@@ -1,0 +1,35 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/web": {
+      "entry": ["src/app/router/index.ts", "src/**/*.test.ts", "e2e/**/*.ts", "steiger.config.ts"],
+      "project": [
+        "src/**/*.{ts,vue}",
+        "src/**/*.css",
+        "!src/**/*.test.ts",
+        "!src/__tests__/helpers/**",
+        "!src/**/*.d.ts"
+      ],
+      "ignoreIssues": {
+        "src/shared/ui/**/index.ts": ["exports", "types"]
+      },
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "apps/mobile": {
+      "entry": [".maestro/_launch.js"],
+      "ignoreBinaries": ["maestro"],
+      "ignoreDependencies": ["expo-updates", "expo-system-ui"],
+      "ignoreIssues": {
+        "src/shared/ui/**": ["exports", "types"]
+      }
+    },
+    "packages/api": {
+      "ignoreIssues": {
+        "src/schema.ts": ["exports", "types"]
+      }
+    },
+    "packages/tokens": {
+      "ignoreDependencies": ["tailwindcss"]
+    }
+  }
+}

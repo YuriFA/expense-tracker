@@ -89,7 +89,9 @@ hardcoded).
 setup. Configs are `.oxlintrc.json` / `.oxfmtrc.json` (plugins swap `vue` for
 `react` and `vitest` for `jest`; same `correctness: error` bar, same
 `semi: false` / `singleQuote: true` style). There is **no eslint** on mobile
-today - oxlint is the only linter. The iOS production bundle
+today - oxlint is the only linter. `pnpm knip` from the **workspace root**
+covers mobile (config in the root `knip.json`; Expo plugin traces `src/app/**`
+routes, `.maestro/_launch.js` is a knip entry). The iOS production bundle
 (`pnpm exec expo export --platform ios`) is the end-to-end check that `@/*` and the
 route tree resolve. Run: `pnpm start` (`expo start`), `ios`, `android`, `web`.
 

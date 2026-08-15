@@ -55,6 +55,14 @@ App-local concerns stay OUT of packages: web keeps its vue-i18n instance, Vite
 base-URL resolution, localStorage repos, Vue DI/composables, and Zod schemas;
 mobile keeps its native wiring.
 
+## Monorepo tooling
+
+`pnpm knip` (workspace root) checks every workspace (`apps/*`, `packages/*`)
+for unused files, dependencies, and exports. Single config: the root
+`knip.json` `workspaces` object (knip 6 takes the workspace list from
+`pnpm-workspace.yaml` and does NOT auto-load per-package knip configs - keep
+all settings in the root file).
+
 ## Repo layout
 
 ```

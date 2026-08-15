@@ -33,6 +33,7 @@ layout in `apps/web/docs/ARCHITECTURE.md`. Steiger must stay green.
 
 ## Quality bar
 
-`vue-tsc --noEmit` (script `type-check`), `oxlint`, `eslint`, `knip`, `steiger`,
-and the i18n strict lint all green. E2E (`apps/web/e2e`, Playwright `test:e2e`)
-drives the real backend.
+`vue-tsc --noEmit` (script `type-check`), `oxlint`, `eslint`, `steiger`,
+and the i18n strict lint all green. `knip` runs repo-wide from the workspace
+root (`pnpm knip`, config in the root `knip.json`). E2E (`apps/web/e2e`,
+Playwright `test:e2e`) drives the real backend.

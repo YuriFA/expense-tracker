@@ -17,7 +17,7 @@ export function currentMonth(now: Date = new Date()): MonthCursor {
   return { year: now.getFullYear(), month: now.getMonth() }
 }
 
-export function isSameMonth(occurredAt: string, cursor: MonthCursor): boolean {
+function isSameMonth(occurredAt: string, cursor: MonthCursor): boolean {
   const d = new Date(occurredAt)
   return d.getFullYear() === cursor.year && d.getMonth() === cursor.month
 }

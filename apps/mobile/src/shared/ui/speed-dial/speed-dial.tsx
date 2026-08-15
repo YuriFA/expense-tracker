@@ -28,8 +28,6 @@ import {
   OPEN_DURATION,
 } from './constants'
 
-export type { SpeedDialActionItem as SpeedDialAction } from './speed-dial.types'
-
 const AnimatedView = Animated.View
 
 /**

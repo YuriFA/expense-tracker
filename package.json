@@ -2,5 +2,11 @@
   "name": "expense-tracker",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.28.1"
+  "packageManager": "pnpm@10.28.1",
+  "scripts": {
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "knip": "^6.32.2"
+  }
 }

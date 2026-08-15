@@ -5,7 +5,7 @@
 
 import { formatMoney, type CurrencyCode } from '@expense-tracker/money'
 
-export const MOCK_CURRENCY: CurrencyCode = 'RUB'
+const MOCK_CURRENCY: CurrencyCode = 'RUB'
 const RU_LOCALE = 'ru'
 
 /**

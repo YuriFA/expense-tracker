@@ -3,7 +3,7 @@ import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { useRouter } from 'expo-router'
 
-export type QuickActionId = 'accounts' | 'income' | 'goals'
+type QuickActionId = 'accounts' | 'income' | 'goals'
 
 export function QuickActionsRow() {
   const router = useRouter()

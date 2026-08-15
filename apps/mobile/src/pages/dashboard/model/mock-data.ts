@@ -6,7 +6,7 @@
 // replaced by real repositories, not extended.
 
 export type MockCashflowType = 'income' | 'expense'
-export type MockTransactionType = MockCashflowType | 'transfer'
+type MockTransactionType = MockCashflowType | 'transfer'
 
 export interface MockCategory {
   id: string

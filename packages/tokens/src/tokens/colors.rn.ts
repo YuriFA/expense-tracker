@@ -60,4 +60,3 @@ export const colorsRN = {
   },
 } as const
 
-export type ColorTokenRN = keyof typeof colorsRN.light

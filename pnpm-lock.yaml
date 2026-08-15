@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      knip:
+        specifier: ^6.32.2
+        version: 6.32.2
 
   apps/mobile:
     dependencies:
@@ -74,9 +78,6 @@ importers:
       '@babel/core':
         specifier: ^7.20.0
         version: 7.29.7
-      '@babel/plugin-transform-react-jsx':
-        specifier: ^7.29.0
-        version: 7.29.7(@babel/core@7.29.7)
       '@babel/runtime':
         specifier: ^7.27.0
         version: 7.29.7
@@ -92,9 +93,6 @@ importers:
       '@types/react':
         specifier: ~19.1.0
         version: 19.1.17
-      babel-jest:
-        specifier: ^29.7.0
-        version: 29.7.0(@babel/core@7.29.7)
       babel-preset-expo:
         specifier: ~54.0.0
         version: 54.0.12(@babel/core@7.29.7)(@babel/runtime@7.29.7)(expo@54.0.36)(react-refresh@0.14.2)
@@ -249,9 +247,6 @@ importers:
       jsdom:
         specifier: ^29.0.2
         version: 29.1.1
-      knip:
-        specifier: ^6.24.0
-        version: 6.32.2
       npm-run-all2:
         specifier: ^9.0.3
         version: 9.0.3
