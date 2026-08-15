@@ -47,7 +47,7 @@ export function SummaryCard({ cursor, onPrevPeriod, onNextPeriod }: SummaryCardP
             onPress={() => modeSheetRef.current?.present()}
           >
             <Text variant="display">{title}</Text>
-            <Icon name="chevron-down" size={24} color="#737373" />
+            <Icon name="chevron-down" size={24} colorClassName="accent-muted-foreground" />
           </Pressable>
         </View>
 

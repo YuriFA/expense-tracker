@@ -2,9 +2,8 @@ import type { ComponentProps } from 'react'
 import { Pressable, View, type LayoutChangeEvent } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTabTrigger } from 'expo-router/ui'
-import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
-import { useTheme } from '@/shared/config/theme'
 import { FAB_SIZE } from '@/shared/ui/speed-dial'
+import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { useTabBarHeightSetter } from './tab-bar-height-context'
 import { cn } from '@/shared/lib/utils'
@@ -30,8 +29,6 @@ export interface TabConfig {
 }
 
 interface TabButtonProps extends TabConfig {
-  activeColor: string
-  inactiveColor: string
   /** 0-based position across the whole bar, used for the a11y label. */
   index: number
   total: number
@@ -43,19 +40,9 @@ interface TabButtonProps extends TabConfig {
  * emission, no react-navigation descriptor plumbing. `name` references the
  * `<TabTrigger>` declared (hidden) in the layout's `<TabList>`.
  */
-function TabButton({
-  name,
-  label,
-  icon,
-  testId,
-  activeColor,
-  inactiveColor,
-  index,
-  total,
-}: TabButtonProps) {
+function TabButton({ name, label, icon, testId, index, total }: TabButtonProps) {
   const { triggerProps } = useTabTrigger({ name })
   const focused = triggerProps.isFocused
-  const color = focused ? activeColor : inactiveColor
 
   return (
     <Pressable
@@ -64,13 +51,17 @@ function TabButton({
       accessibilityState={{ selected: focused }}
       accessibilityLabel={`${label}, tab, ${index + 1} of ${total}`}
       className={cn('flex-1 items-center justify-center py-2 gap-1 rounded-3xl', {
-        'bg-gray-200': focused,
+        'bg-muted': focused,
       })}
       onPress={triggerProps.onPress}
       onLongPress={triggerProps.onLongPress}
     >
-      <Ionicons name={icon} size={TAB_ICON_SIZE} color={color} />
-      <Text variant="caption" style={{ color }}>
+      <Icon
+        name={icon}
+        size={TAB_ICON_SIZE}
+        colorClassName={focused ? 'accent-primary' : 'accent-muted-foreground'}
+      />
+      <Text variant="caption" className={focused ? 'text-primary' : 'text-muted-foreground'}>
         {label}
       </Text>
     </Pressable>
@@ -82,17 +73,12 @@ function TabButton({
  * Press/focus and navigation come from `useTabTrigger`; the tab routes
  * themselves are declared by the layout's hidden `<TabList>`. This bar holds NO
  * SpeedDial and NO transaction/domain logic - those live in
- * `(tabs)/_layout.tsx`. Colors come from design tokens; the measured height is
- * reported via context so the sibling SpeedDial can compute its `bottomOffset`
- * without hardcoding it.
+ * `(tabs)/_layout.tsx`. Colors come from design-token classes (theme-aware);
+ * the measured height is reported via context so the sibling SpeedDial can
+ * compute its `bottomOffset` without hardcoding it.
  */
 export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
   const setTabBarHeight = useTabBarHeightSetter()
-  const { resolvedTheme } = useTheme()
-  const themeColors = colorsRN[resolvedTheme]
-
-  const activeColor = themeColors.primary
-  const inactiveColor = themeColors['muted-foreground']
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setTabBarHeight(event.nativeEvent.layout.height)
@@ -103,17 +89,7 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
 
   const renderButtons = (slice: readonly TabConfig[], offset: number) =>
     slice.map((tab, i) => (
-      <TabButton
-        key={tab.name}
-        name={tab.name}
-        label={tab.label}
-        icon={tab.icon}
-        testId={tab.testId}
-        activeColor={activeColor}
-        inactiveColor={inactiveColor}
-        index={offset + i}
-        total={tabs.length}
-      />
+      <TabButton key={tab.name} {...tab} index={offset + i} total={tabs.length} />
     ))
 
   return (

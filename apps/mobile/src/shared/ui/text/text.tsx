@@ -34,11 +34,5 @@ const variantStyles: Record<TextVariant, string> = {
 export function Text({ className, variant = 'body', style, ...textProps }: TextProps) {
   const variantClassName = variantStyles[variant]
 
-  return (
-    <RNText
-      className={cn(variantClassName, className)}
-      style={style}
-      {...textProps}
-    />
-  )
+  return <RNText className={cn(variantClassName, className)} style={style} {...textProps} />
 }

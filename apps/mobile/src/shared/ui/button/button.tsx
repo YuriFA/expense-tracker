@@ -31,6 +31,16 @@ const textVariantStyles: Record<ButtonVariant, string> = {
   destructive: 'text-destructive-foreground',
 }
 
+// ActivityIndicator's `color` is a non-style prop: it needs the accent- form
+// of the same token classes via `colorClassName`.
+const indicatorVariantStyles: Record<ButtonVariant, string> = {
+  primary: 'accent-primary-foreground',
+  secondary: 'accent-secondary-foreground',
+  outline: 'accent-foreground',
+  ghost: 'accent-foreground',
+  destructive: 'accent-destructive-foreground',
+}
+
 const sizeStyles: Record<ButtonSize, { container: string; text: string }> = {
   sm: { container: 'px-3 py-1.5 rounded-md', text: 'text-sm' },
   md: { container: 'px-4 py-2 rounded-lg', text: 'text-base' },
@@ -51,7 +61,7 @@ export function Button({
   ...pressableProps
 }: ButtonProps) {
   const variantClassName = variantStyles[variant]
-  const textVariantClassName = textVariantStyles[variant]
+  const indicatorVariantClassName = indicatorVariantStyles[variant]
   const { container: sizeContainer, text: sizeText } = sizeStyles[size]
   const isDisabled = disabled || loading
 
@@ -74,9 +84,9 @@ export function Button({
       {...pressableProps}
     >
       {loading ? (
-        <ActivityIndicator color={textVariantClassName} />
+        <ActivityIndicator colorClassName={indicatorVariantClassName} />
       ) : text ? (
-        <Text variant="button" className={cn(textVariantClassName, sizeText)}>
+        <Text variant="button" className={cn(textVariantStyles[variant], sizeText)}>
           {text}
         </Text>
       ) : (

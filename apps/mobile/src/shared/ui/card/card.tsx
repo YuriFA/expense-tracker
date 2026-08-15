@@ -10,27 +10,12 @@ export interface CardProps extends ViewProps {
 const variantStyles: Record<CardVariant, string> = {
   default: 'bg-card',
   outlined: 'bg-card border border-border',
-  elevated: 'bg-card',
+  // `shadow-card` is the soft-brutalist offset contour defined in global.css.
+  elevated: 'bg-card shadow-card',
 }
 
-export function Card({ variant = 'default', className, style, ...viewProps }: CardProps) {
+export function Card({ variant = 'default', className, ...viewProps }: CardProps) {
   const variantClassName = variantStyles[variant]
 
-  return (
-    <View
-      className={cn(variantClassName, 'rounded-2xl p-4', className)}
-      {...viewProps}
-      style={
-        variant === 'elevated'
-          ? {
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -1 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 2,
-            }
-          : style
-      }
-    />
-  )
+  return <View className={cn(variantClassName, 'rounded-2xl p-4', className)} {...viewProps} />
 }

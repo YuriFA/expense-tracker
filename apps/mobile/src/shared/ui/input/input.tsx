@@ -26,8 +26,6 @@ export function Input({
 }: InputProps) {
   const hasError = Boolean(error)
   const borderColor = hasError ? 'border-destructive' : 'border-border'
-  const textColor = 'text-foreground'
-  const placeholderColor = 'text-muted-foreground'
 
   return (
     <View className={cn('gap-1.5', containerClassName)}>
@@ -42,15 +40,15 @@ export function Input({
           <Icon
             name={leadingIcon}
             size={20}
-            color={hasError ? 'text-destructive' : 'text-muted-foreground'}
+            colorClassName={hasError ? 'accent-destructive' : 'accent-muted-foreground'}
             className="mr-3"
           />
         )}
 
         <TextInput
-          className={cn('flex-1 bg-card border rounded-lg px-4 py-3', borderColor, textColor)}
+          className={cn('flex-1 bg-card border rounded-lg px-4 py-3 text-foreground', borderColor)}
           placeholder={placeholder || (label ? `Enter ${label.toLowerCase()}` : '')}
-          placeholderTextColor={placeholderColor}
+          placeholderTextColorClassName="accent-muted-foreground"
           style={style}
           {...textInputProps}
         />
@@ -59,7 +57,7 @@ export function Input({
           <Icon
             name={trailingIcon}
             size={20}
-            color={hasError ? 'text-destructive' : 'text-muted-foreground'}
+            colorClassName={hasError ? 'accent-destructive' : 'accent-muted-foreground'}
             className="ml-3"
           />
         )}

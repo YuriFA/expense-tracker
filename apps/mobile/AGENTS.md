@@ -37,14 +37,23 @@ export { DashboardScreen as default } from '@/pages/dashboard'
 **`@/*` → `./src/*`** via tsconfig `paths`; Metro resolves it (no babel path config
 needed). Styling is **Uniwind** (Tailwind CSS v4, CSS-first): all theme config
 lives in `global.css` (`@theme` + per-theme `@variant light/dark` variables) -
-there is no `tailwind.config.*`. `className` -> style resolution runs in Metro
+there is no `tailwind.config.*`. The semantic color block in `global.css` is
+GENERATED from `packages/tokens` (`pnpm --filter @expense-tracker/tokens
+gen:mobile-theme`, drift gate `gen:mobile-theme:check`) - edit tokens, not the
+generated block. Every color must be a token: a class (`bg-card`), an `accent-*`
+class on a `{prop}ClassName` prop for non-style color props (`Icon
+colorClassName="accent-primary"`), or a value imported from
+`@expense-tracker/tokens/react-native` for dynamic data colors; raw hex/rgb in
+`src/` fails the `design-tokens-guard` jest test. `className` -> style resolution
+runs in Metro
 (`withUniwindConfig` in `metro.config.js`, with `polyfills.rem: 14` to keep
 NativeWind-era spacing); no babel preset/plugin is involved, so `babel.config.js`
 is just `babel-preset-expo` (which auto-adds `react-native-worklets/plugin` when
 reanimated is installed - do NOT list it explicitly). `uniwind-types.d.ts` is
 generated (CLI `uniwind generate-artifacts --css ./global.css` or any metro run)
 and committed - keep it in tsconfig `include`. Under jest `className` is a plain
-ignored prop (`react-native-reanimated` is mocked in `jest.setup.js`) - see the
+ignored prop (`react-native-reanimated` and `withUniwind` are mocked in
+`jest.setup.js`) - see the
 unit-testing section below.
 
 ## Routes & tab bar
@@ -105,8 +114,9 @@ runs in Metro and the worklet runtime doesn't run under jest,
 (and `culori`) to the babel transform allowlist - so assert **observable
 behavior** (a11y state, callbacks, testID presence), never animation frames or
 computed `className` styles. Co-locate `*.test.tsx` next to the component (twin
-of `apps/web`). Components using `useSafeAreaInsets`/`useTheme` need
-`SafeAreaProvider` (with `initialMetrics`) + `ThemeProvider` in the test render.
+of `apps/web`). Components using `useSafeAreaInsets` need `SafeAreaProvider`
+(with `initialMetrics`) in the test render; `ThemeProvider` in the wrapper is
+still the convention for screens.
 
 ## Testing / e2e (Maestro)
 

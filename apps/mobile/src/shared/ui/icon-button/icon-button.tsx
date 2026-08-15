@@ -8,6 +8,9 @@ export type IconButtonSize = 'sm' | 'md' | 'lg'
 export interface IconButtonProps extends Omit<PressableProps, 'children'> {
   icon: string
   size?: IconButtonSize
+  /** Design-token color as an `accent-…` class. @default 'accent-foreground' */
+  colorClassName?: string
+  /** Raw color string - only for dynamic data colors. */
   color?: string
   accessibilityLabel: string
 }
@@ -27,7 +30,8 @@ const iconSizes: Record<IconButtonSize, number> = {
 export function IconButton({
   icon,
   size = 'md',
-  color = 'text-foreground',
+  color,
+  colorClassName = 'accent-foreground',
   accessibilityLabel,
   disabled,
   className,
@@ -47,7 +51,7 @@ export function IconButton({
       accessibilityState={{ disabled: disabled ?? false }}
       {...pressableProps}
     >
-      <Icon name={icon} size={iconSize} color={color} />
+      <Icon name={icon} size={iconSize} color={color} colorClassName={colorClassName} />
     </Pressable>
   )
 }

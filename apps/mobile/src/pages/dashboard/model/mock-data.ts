@@ -5,6 +5,12 @@
 // before the previous one is empty (empty-state demo). Throwaway by design:
 // replaced by real repositories, not extended.
 
+import { colors } from '@expense-tracker/tokens/react-native'
+
+// Category colors reference the brand accent palette (same value in light and
+// dark). Real category colors will arrive from the API later.
+const BRAND = colors.light
+
 export type MockCashflowType = 'income' | 'expense'
 type MockTransactionType = MockCashflowType | 'transfer'
 
@@ -70,11 +76,17 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
 ]
 
 export const MOCK_CATEGORIES: MockCategory[] = [
-  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7C5CFF' },
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#A78BFA' },
-  { id: 'cat-pets', name: 'Животные', type: 'expense', icon: 'paw', color: '#F97316' },
-  { id: 'cat-groceries', name: 'Продукты', type: 'expense', icon: 'cart', color: '#22C55E' },
-  { id: 'cat-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: '#16A34A' },
+  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: BRAND['brand-violet'] },
+  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: BRAND['brand-lilac'] },
+  { id: 'cat-pets', name: 'Животные', type: 'expense', icon: 'paw', color: BRAND['brand-orange'] },
+  {
+    id: 'cat-groceries',
+    name: 'Продукты',
+    type: 'expense',
+    icon: 'cart',
+    color: BRAND['brand-green'],
+  },
+  { id: 'cat-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: BRAND['brand-leaf'] },
 ]
 
 export const MOCK_TRANSACTIONS: MockTransaction[] = [

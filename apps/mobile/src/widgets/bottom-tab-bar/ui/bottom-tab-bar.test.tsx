@@ -1,8 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen } from '@testing-library/react-native'
-import { StyleSheet, Text } from 'react-native'
+import { Text } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { ThemeProvider } from '@/shared/config/theme'
 import { SpeedDial, type SpeedDialAction } from '@/shared/ui/speed-dial'
 import { BottomTabBar, type TabConfig } from './bottom-tab-bar'
@@ -39,9 +38,10 @@ const useTabTriggerMock = (
 // --- Fixtures & helpers -------------------------------------------------------
 
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
-// Default resolved theme under jest is "light" (useColorScheme() -> null).
-const ACTIVE = colorsRN.light.primary
-const INACTIVE = colorsRN.light['muted-foreground']
+// Token classes the tab tint is expressed with (className is NOT resolved to
+// style under jest - see babel.config.js - so tests assert on the class list).
+const ACTIVE = 'text-primary'
+const INACTIVE = 'text-muted-foreground'
 
 const TABS: readonly TabConfig[] = [
   { name: 'index', label: 'Dashboard', testId: 'tab-dashboard', icon: 'grid-outline' },
@@ -91,8 +91,8 @@ function renderBar() {
   )
 }
 
-/** Color applied to a tab's label Text (the focused/unfocused tint). */
-const labelColor = (label: string) => StyleSheet.flatten(screen.getByText(label).props.style).color
+/** Token class applied to a tab's label Text (the focused/unfocused tint). */
+const labelClassName = (label: string) => String(screen.getByText(label).props.className)
 
 /** Walks up from the FAB slot to the root View that carries `onLayout`. */
 const rootView = () => {
@@ -124,9 +124,9 @@ describe('BottomTabBar · tabs', () => {
   it('tints the focused tab with the active token and the rest with inactive', () => {
     focusOn('transactions') // Transactions focused
     renderBar()
-    expect(labelColor('Transactions')).toBe(ACTIVE)
+    expect(labelClassName('Transactions')).toContain(ACTIVE)
     for (const label of ['Dashboard', 'Accounts', 'Settings']) {
-      expect(labelColor(label)).toBe(INACTIVE)
+      expect(labelClassName(label)).toContain(INACTIVE)
     }
   })
 

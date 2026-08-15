@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, type ViewProps } from 'react-native'
+import { Text, View, type ViewProps } from 'react-native'
 
 interface ScreenPlaceholderProps extends ViewProps {
   /** Screen heading. */
@@ -15,30 +15,11 @@ interface ScreenPlaceholderProps extends ViewProps {
  * Each screen passes a stable lowercase-kebab `testID` (e.g. `screen-dashboard`)
  * via the spread props; the Maestro e2e flows assert on it.
  */
-export function ScreenPlaceholder({ title, hint, style, ...rest }: ScreenPlaceholderProps) {
+export function ScreenPlaceholder({ title, hint, ...rest }: ScreenPlaceholderProps) {
   return (
-    <View style={[styles.container, style]} {...rest}>
-      <Text style={styles.title}>{title}</Text>
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+    <View className="flex-1 items-center justify-center gap-2 p-6" {...rest}>
+      <Text className="text-xl font-semibold text-foreground">{title}</Text>
+      {hint ? <Text className="text-sm text-center text-muted-foreground">{hint}</Text> : null}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  hint: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-})

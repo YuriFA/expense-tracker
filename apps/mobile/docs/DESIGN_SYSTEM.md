@@ -30,19 +30,52 @@ src/
 
 ### Colors
 
-Semantic colors mapped from web design system:
+Palette direction: **Pastel Playful Fintech with Soft-Brutalist influences** -
+warm paper background, ink lines/borders, indigo primary, pastel lavender
+fills, and a vivid brand accent palette. The single source of truth is
+`packages/tokens` (`src/tokens/colors.rn.ts` holds the hex values); the theme
+block in `apps/mobile/global.css` is GENERATED from it - never edit by hand:
+
+```bash
+pnpm --filter @expense-tracker/tokens gen:mobile-theme         # regenerate
+pnpm --filter @expense-tracker/tokens gen:mobile-theme:check   # drift gate
+```
+
+Semantic tokens (subset; full set in `packages/tokens/src/tokens/colors.rn.ts`):
 
 | Token | Light Mode | Dark Mode | Usage |
 |-------|-----------|-----------|-------|
-| `--color-background` | #ffffff | #1a1a1a | Page background |
-| `--color-foreground` | #1a1a1a | #fafafa | Primary text |
-| `--color-primary` | #2d2d2d | #e5e5e5 | Primary actions |
-| `--color-secondary` | #f5f5f5 | #404040 | Secondary actions |
-| `--color-muted` | #f5f5f5 | #404040 | Subtle backgrounds |
+| `--color-background` | #faf7f2 | #16151c | Page background (warm paper) |
+| `--color-foreground` | #1b1927 | #f4f2fa | Primary text (ink) |
+| `--color-card` | #ffffff | #211f2b | Card surfaces |
+| `--color-primary` | #6366f1 | #818cf8 | Primary actions (indigo) |
+| `--color-secondary` | #e9e4fb | #2c2a3e | Secondary actions (pastel lavender) |
+| `--color-muted` | #f0ede6 | #26242f | Subtle backgrounds (warm sand) |
 | `--color-destructive` | #dc2626 | #ef4444 | Destructive actions |
-| `--color-border` | #e5e5e5 | rgba(255,255,255,0.1) | Borders |
+| `--color-border` | #1b1927 | #57526b | Borders (ink line - soft-brutalist) |
 | `--color-success` | #16a34a | #22c55e | Success states |
 | `--color-warning` | #ea580c | #f97316 | Warning states |
+
+Brand accent palette (vivid pops, same value in both themes) for quick-action
+chips and category colors: `brand-indigo` #6366f1, `brand-violet` #7c5cff,
+`brand-lilac` #a78bfa, `brand-orange` #f97316, `brand-green` #22c55e,
+`brand-leaf` #16a34a.
+
+**Color usage rules** (enforced by the `design-tokens-guard` jest test - no
+raw hex/rgb/hsl literals anywhere in `src/`):
+
+- Style-object properties → token classes: `bg-card`, `text-foreground`,
+  `border-border`, `bg-success/10`, `shadow-card` (soft-brutalist offset
+  contour defined in `global.css`).
+- Non-style color props (`Icon color`, `ActivityIndicator color`,
+  `TextInput placeholderTextColor`, ...) need the `accent-` prefix via the
+  `{prop}ClassName` prop: `<Icon colorClassName="accent-primary" />`,
+  `placeholderTextColorClassName="accent-muted-foreground"`. A plain
+  `text-*`/`bg-*` class does NOT reach these props.
+- Dynamic data colors (e.g. a category color that will come from the API) may
+  use a raw `color`/`style={{ backgroundColor }}` value - import it from
+  `@expense-tracker/tokens/react-native` or take it from the data.
+- Theme-reactive values needed in JS: `useCSSVariable('--color-muted-foreground')`.
 
 ### Typography
 
@@ -109,11 +142,12 @@ Screen wrapper with safe areas.
 ```
 
 #### Icon
-Icon component using Ionicons.
+Icon component using Ionicons, wrapped with `withUniwind` for className support.
 
 ```tsx
 <Icon name="search" size={20} />
-<Icon name="chevron-back" color="text-primary" />
+<Icon name="chevron-back" colorClassName="accent-primary" />
+<Icon name="car" color={category.color} /> {/* dynamic data color only */}
 ```
 
 ### Interactive Components
@@ -228,20 +262,16 @@ Display a transaction in a list.
 
 ## Theme Switching
 
-The app supports light/dark themes. Theme is managed via `ThemeProvider`.
+The app supports light/dark themes. `ThemeProvider` drives
+`Uniwind.setTheme()` (default `system`); components follow the active theme
+automatically via token classes - they never read theme values from a context.
+A runtime switcher UI (settings) can grow a context on top of the provider
+later.
 
 ```tsx
-import { useTheme } from "@/shared/config/theme"
+import { ThemeProvider } from "@/shared/config/theme"
 
-function MyComponent() {
-  const { theme, setTheme, resolvedTheme } = useTheme()
-
-  return (
-    <Button onPress={() => setTheme("dark)}>
-      Toggle theme
-    </Button>
-  )
-}
+<ThemeProvider defaultTheme="system">{/* app */}</ThemeProvider>
 ```
 
 ## FSD Rules
@@ -377,13 +407,14 @@ The app uses Uniwind (Tailwind CSS v4, CSS-first config) for styling:
 
 ## Color Tokens Source
 
-Colors are adapted from `apps/web/src/style.css` (web app).
-The web app uses oklch color space, converted to hex for React Native.
+The single source of truth is `packages/tokens`:
+- `src/tokens/colors.rn.ts` - hex values (React Native)
+- `src/tokens/colors.ts` / `src/index.css` - oklch values (web)
 
-To update colors:
-1. Update `apps/web/src/style.css`
-2. Convert oklch values to hex
-3. Update `apps/mobile/global.css`
+To change a color:
+1. Update `packages/tokens/src/tokens/colors.rn.ts` (+ the oklch twins)
+2. Run `pnpm --filter @expense-tracker/tokens gen:mobile-theme`
+3. Sync `apps/web/src/style.css` (it re-declares the semantic values)
 
 ## Icon System
 
@@ -402,6 +433,7 @@ Common icon names:
 ### Do
 
 - Use semantic tokens: `className="bg-primary"`
+- Use `accent-*` classes via `{prop}ClassName` for non-style color props
 - Place components in correct FSD slice
 - Support accessibility
 - Type your props
@@ -409,7 +441,11 @@ Common icon names:
 
 ### Don't
 
-- Hardcode colors: `className="bg-[#2563EB]"`
+- Hardcode colors: `className="bg-[#2563EB]"`, `color="#7C5CFF"`
+- Pass `text-*` classes to raw color props (`color={'text-primary'}`) - the
+  accent- prefix is required there
+- Read theme hex values in components (`colorsRN[resolvedTheme]...`) - use
+  token classes or `useCSSVariable` instead
 - Place domain components in `shared/ui`
 - Create abstractions without clear value
 - Duplicate native controls (DatePicker, Switch, Slider)
@@ -423,6 +459,7 @@ Common icon names:
 - [ ] Add Toast/Snackbar component
 - [ ] Add Dialog/Modal component
 - [ ] Add Checkbox/Switch components (native primitives)
-- [ ] Create shared design tokens package
+- [x] Create shared design tokens package (`packages/tokens`)
+- [x] Generate the mobile theme from the tokens package (`gen:mobile-theme`)
 - [ ] Add component examples/Storybook
 - [ ] Implement animation system

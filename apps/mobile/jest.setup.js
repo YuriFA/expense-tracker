@@ -23,6 +23,15 @@ jest.mock("@expo/vector-icons", () => {
   }
 })
 
+// Under jest there is no compiled CSS, so Uniwind's withUniwind HOC cannot
+// resolve `accent-*` classes to colors and warns about it. Tests never assert
+// resolved colors (className stays a plain ignored prop), so make the HOC an
+// identity pass-through and keep the rest of the real module.
+jest.mock("uniwind", () => ({
+  ...jest.requireActual("uniwind"),
+  withUniwind: (Component) => Component,
+}))
+
 jest.mock("react-native-reanimated", () => {
   const { View } = require("react-native")
 

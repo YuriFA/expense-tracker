@@ -2,6 +2,7 @@ import { Pressable, View } from 'react-native'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { useRouter } from 'expo-router'
+import { cn } from '@/shared/lib/utils'
 
 type QuickActionId = 'accounts' | 'income' | 'goals'
 
@@ -9,32 +10,34 @@ export function QuickActionsRow() {
   const router = useRouter()
 
   // TODO(i18n): RU labels are hardcoded until react-i18next is wired.
+  // Chip colors are brand accent tokens - vivid pops from the shared palette
+  // (not warning/success: these are navigation shortcuts, not outcomes).
   const ACTIONS: ReadonlyArray<{
     id: QuickActionId
     label: string
     icon: string
-    color: string
+    chipClassName: string
     onPress: () => void
   }> = [
     {
       id: 'accounts',
       label: 'Счета',
       icon: 'card',
-      color: '#6366F1',
+      chipClassName: 'bg-brand-indigo',
       onPress: () => router.push('/accounts'),
     },
     {
       id: 'income',
       label: 'Доходы',
       icon: 'trending-up',
-      color: '#F97316',
+      chipClassName: 'bg-brand-orange',
       onPress: () => router.push('/income'),
     },
     {
       id: 'goals',
       label: 'Цели',
       icon: 'flag',
-      color: '#22C55E',
+      chipClassName: 'bg-brand-green',
       onPress: () => router.push('/goals'),
     },
   ]
@@ -51,10 +54,12 @@ export function QuickActionsRow() {
           onPress={action.onPress}
         >
           <View
-            className="h-16 w-16 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: action.color }}
+            className={cn(
+              'h-16 w-16 items-center justify-center rounded-2xl',
+              action.chipClassName,
+            )}
           >
-            <Icon name={action.icon} size={24} color="#FFFFFF" />
+            <Icon name={action.icon} size={24} colorClassName="accent-white" />
           </View>
           <Text variant="body-sm">{action.label}</Text>
         </Pressable>

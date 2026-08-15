@@ -1,8 +1,6 @@
 import { View } from 'react-native'
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui'
 import type { Href } from 'expo-router'
-import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
-import { useTheme } from '@/shared/config/theme'
 import { Icon } from '@/shared/ui/icon'
 import { FAB_SIZE, SpeedDial, type SpeedDialAction } from '@/shared/ui/speed-dial'
 import {
@@ -45,14 +43,15 @@ const TABS: readonly TabDef[] = [
 
 // Placeholder actions - the create-transaction flows don't exist yet. Navigation
 // is wired here (the layout owns routing), not in SpeedDial or BottomTabBar, to
-// keep the shared SpeedDial domain-free.
-function useTransactionActions(iconColor: string): SpeedDialAction[] {
+// keep the shared SpeedDial domain-free. Colors are semantic tokens: an expense
+// action is destructive, an income action is a success.
+function useTransactionActions(): SpeedDialAction[] {
   return [
     {
       id: 'transfer',
       label: 'Transfer',
       accessibilityLabel: 'Add transfer',
-      icon: <Icon name="swap-horizontal" size={24} color={iconColor} />,
+      icon: <Icon name="swap-horizontal" size={24} colorClassName="accent-primary-foreground" />,
       size: 48,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-transfer flow.
@@ -62,8 +61,8 @@ function useTransactionActions(iconColor: string): SpeedDialAction[] {
       id: 'expense',
       label: 'Expense',
       accessibilityLabel: 'Add expense',
-      icon: <Icon name="remove" size={32} color={iconColor} />,
-      className: 'bg-[#f44336]',
+      icon: <Icon name="remove" size={32} colorClassName="accent-destructive-foreground" />,
+      className: 'bg-destructive',
       size: 64,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-expense flow.
@@ -73,8 +72,8 @@ function useTransactionActions(iconColor: string): SpeedDialAction[] {
       id: 'income',
       label: 'Income',
       accessibilityLabel: 'Add income',
-      icon: <Icon name="add" size={24} color={iconColor} />,
-      className: 'bg-[#4caf50]',
+      icon: <Icon name="add" size={24} colorClassName="accent-success-foreground" />,
+      className: 'bg-success',
       size: 48,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-income flow.
@@ -97,9 +96,8 @@ export default function TabsLayout() {
 // centered and straddles the bar's top edge via bottomOffset, so opening it
 // never changes the active tab - it's a floating action, not a route.
 function TabsSurface() {
-  const { resolvedTheme } = useTheme()
   const tabBarHeight = useTabBarHeight()
-  const actions = useTransactionActions(colorsRN[resolvedTheme]['primary-foreground'])
+  const actions = useTransactionActions()
 
   // Straddle the bar's top edge: FAB center at the bar top. tabBarHeight includes
   // the safe-area padding, so no separate inset is needed. Falls back to the
@@ -107,7 +105,7 @@ function TabsSurface() {
   const fabBottomOffset = tabBarHeight > 0 ? tabBarHeight - FAB_SIZE / 1.3 : undefined
 
   return (
-    <View className="flex-1 bg-[#fafafa]">
+    <View className="flex-1 bg-background">
       <Tabs>
         <TabSlot />
         <BottomTabBar tabs={TABS} />

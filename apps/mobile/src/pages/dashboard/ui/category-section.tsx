@@ -51,8 +51,8 @@ export function CategorySection({ cursor }: CategorySectionProps) {
             }}
           >
             <View className="flex-row items-center gap-2">
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-gray-300">
-                <Icon name="add" size={24} color="#000000" />
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-muted">
+                <Icon name="add" size={24} colorClassName="accent-foreground" />
               </View>
               <Text variant="body" className="font-medium text-foreground">
                 Новая категория

@@ -1,7 +1,14 @@
 /**
  * React Native color tokens (hex format)
  *
- * Converted from oklch values for React Native compatibility
+ * Palette direction: Pastel Playful Fintech with Soft-Brutalist influences -
+ * warm paper background, ink lines, indigo brand primary, pastel lavender
+ * fills, and a vivid "brand" accent palette for category/action colors.
+ *
+ * Converted from oklch values for React Native compatibility. Keep in sync
+ * with colors.ts (oklch) and index.css (web); apps/mobile/global.css is
+ * GENERATED from this file (pnpm --filter @expense-tracker/tokens
+ * gen:mobile-theme) - never edit it by hand.
  */
 
 export const colorsRN = {
@@ -11,52 +18,63 @@ export const colorsRN = {
 
   // Semantic colors - light mode
   light: {
-    background: "#FFFFFF",
-    foreground: "#1A1A1A",
+    background: "#FAF7F2",
+    foreground: "#1B1927",
     card: "#FFFFFF",
-    "card-foreground": "#1A1A1A",
-    primary: "#2D2D2D",
-    "primary-foreground": "#FAFAFA",
-    secondary: "#F5F5F5",
-    "secondary-foreground": "#2D2D2D",
-    muted: "#F5F5F5",
-    "muted-foreground": "#737373",
-    accent: "#F5F5F5",
-    "accent-foreground": "#2D2D2D",
+    "card-foreground": "#1B1927",
+    primary: "#6366F1",
+    "primary-foreground": "#FFFFFF",
+    secondary: "#E9E4FB",
+    "secondary-foreground": "#312E58",
+    muted: "#F0EDE6",
+    "muted-foreground": "#6E6B7C",
+    accent: "#E4DDFE",
+    "accent-foreground": "#312E58",
+    "brand-indigo": "#6366F1",
+    "brand-violet": "#7C5CFF",
+    "brand-lilac": "#A78BFA",
+    "brand-orange": "#F97316",
+    "brand-green": "#22C55E",
+    "brand-leaf": "#16A34A",
     destructive: "#DC2626",
-    "destructive-foreground": "#FAFAFA",
-    border: "#E5E5E5",
-    input: "#E5E5E5",
-    ring: "#A3A3A3",
+    "destructive-foreground": "#FFFFFF",
+    border: "#1B1927",
+    input: "#1B1927",
+    ring: "#6366F1",
     success: "#16A34A",
-    "success-foreground": "#FAFAFA",
+    "success-foreground": "#FFFFFF",
     warning: "#EA580C",
-    "warning-foreground": "#FAFAFA",
+    "warning-foreground": "#FFFFFF",
   },
 
   // Semantic colors - dark mode
   dark: {
-    background: "#1A1A1A",
-    foreground: "#FAFAFA",
-    card: "#2D2D2D",
-    "card-foreground": "#FAFAFA",
-    primary: "#E5E5E5",
-    "primary-foreground": "#2D2D2D",
-    secondary: "#404040",
-    "secondary-foreground": "#FAFAFA",
-    muted: "#404040",
-    "muted-foreground": "#A3A3A3",
-    accent: "#404040",
-    "accent-foreground": "#FAFAFA",
+    background: "#16151C",
+    foreground: "#F4F2FA",
+    card: "#211F2B",
+    "card-foreground": "#F4F2FA",
+    primary: "#818CF8",
+    "primary-foreground": "#16151C",
+    secondary: "#2C2A3E",
+    "secondary-foreground": "#DDD8F6",
+    muted: "#26242F",
+    "muted-foreground": "#A5A3B2",
+    accent: "#312E45",
+    "accent-foreground": "#DDD8F6",
+    "brand-indigo": "#6366F1",
+    "brand-violet": "#7C5CFF",
+    "brand-lilac": "#A78BFA",
+    "brand-orange": "#F97316",
+    "brand-green": "#22C55E",
+    "brand-leaf": "#16A34A",
     destructive: "#EF4444",
-    "destructive-foreground": "#FAFAFA",
-    border: "rgba(255, 255, 255, 0.1)",
-    input: "rgba(255, 255, 255, 0.15)",
-    ring: "#737373",
+    "destructive-foreground": "#FFFFFF",
+    border: "#57526B",
+    input: "#57526B",
+    ring: "#818CF8",
     success: "#22C55E",
-    "success-foreground": "#1A1A1A",
+    "success-foreground": "#16151C",
     warning: "#F97316",
-    "warning-foreground": "#1A1A1A",
+    "warning-foreground": "#16151C",
   },
 } as const
-

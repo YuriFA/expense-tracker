@@ -310,7 +310,11 @@ importers:
         specifier: ~6.0.0
         version: 6.0.3
 
-  packages/tokens: {}
+  packages/tokens:
+    devDependencies:
+      jiti:
+        specifier: ^2.6.0
+        version: 2.7.0
 
 packages:
 

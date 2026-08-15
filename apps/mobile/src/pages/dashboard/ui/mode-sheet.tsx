@@ -61,7 +61,7 @@ export function ModeSheet({ ref, activeMode, onSelect }: ModeSheetProps) {
                   </View>
                   {active ? (
                     <View>
-                      <Icon name="checkmark" size={20} color="#7C5CFF" />
+                      <Icon name="checkmark" size={20} colorClassName="accent-primary" />
                     </View>
                   ) : null}
                 </View>

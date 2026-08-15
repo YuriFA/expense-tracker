@@ -38,24 +38,9 @@ Then use Tailwind classes that reference the tokens:
 
 ### Mobile (React Native + Uniwind)
 
-Import the React Native compatible tokens:
-
-```tsx
-import { colors, spacing, typography } from "@expense-tracker/tokens/react-native"
-
-// Use in StyleSheet or inline styles
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.light.background,
-    padding: spacing[4],
-  },
-  title: {
-    ...typography.h1,
-  },
-})
-```
-
-Or use with Uniwind className (tokens already defined in apps/mobile/global.css):
+The preferred path is Uniwind `className` with token utilities - `apps/mobile/global.css`
+is GENERATED from this package (see `pnpm --filter @expense-tracker/tokens gen:mobile-theme`),
+so every token below is available as `bg-*` / `text-*` / `accent-*` classes:
 
 ```tsx
 <View className="bg-background text-foreground p-4 rounded-lg">
@@ -63,9 +48,22 @@ Or use with Uniwind className (tokens already defined in apps/mobile/global.css)
 </View>
 ```
 
+Import the React Native hex tokens only for values that must be plain strings
+(dynamic data colors, reanimated worklets):
+
+```tsx
+import { colors } from "@expense-tracker/tokens/react-native"
+
+colors.light["brand-violet"]
+```
+
 ## Available Tokens
 
 ### Colors
+
+Palette direction: Pastel Playful Fintech with Soft-Brutalist influences -
+warm paper background, ink lines/borders, indigo primary, pastel lavender
+fills, plus a vivid brand accent palette.
 
 Semantic color tokens for light and dark themes:
 
@@ -75,10 +73,13 @@ Semantic color tokens for light and dark themes:
 - `secondary`, `secondary-foreground`
 - `muted`, `muted-foreground`
 - `accent`, `accent-foreground`
+- `brand-indigo`, `brand-violet`, `brand-lilac`, `brand-orange`, `brand-green`, `brand-leaf`
 - `destructive`, `destructive-foreground`
 - `border`, `input`, `ring`
 - `success`, `success-foreground`
 - `warning`, `warning-foreground`
+
+## Available Tokens
 
 ```typescript
 import { colors } from "@expense-tracker/tokens"
@@ -136,19 +137,21 @@ borderRadius.lg         // "var(--radius)"
 
 ### Mobile (React Native)
 - **Format**: Hex color strings (React Native compatible)
-- **Output**: JavaScript objects for StyleSheet or inline styles
+- **Output**: JavaScript objects, plus the GENERATED Uniwind theme in `apps/mobile/global.css`
 - **File**: `src/react-native.ts`
+- **Generator**: `pnpm --filter @expense-tracker/tokens gen:mobile-theme`
+  (drift check: `gen:mobile-theme:check`) - never edit the generated block by hand
 
 ## Adding New Tokens
 
-1. **Define the token** in `src/tokens/*.ts`:
+1. **Define the token** in `src/tokens/*.ts` (oklch):
    ```typescript
    export const myNewToken = {
      value: "oklch(0.5 0.1 200)",
    } as const
    ```
 
-2. **Add React Native version** in `src/tokens/*.rn.ts`:
+2. **Add React Native version** in `src/tokens/*.rn.ts` (hex):
    ```typescript
    export const myNewTokenRN = {
      value: "#FF5733",
@@ -160,7 +163,9 @@ borderRadius.lg         // "var(--radius)"
    - `src/react-native.ts` - for mobile (hex format)
    - `src/index.css` - for web (CSS custom properties)
 
-4. **Update documentation** in this README.
+4. **Regenerate the mobile theme**: `pnpm --filter @expense-tracker/tokens gen:mobile-theme`
+
+5. **Update documentation** in this README.
 
 ## Version History
 

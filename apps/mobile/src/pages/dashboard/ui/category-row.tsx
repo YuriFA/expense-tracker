@@ -33,7 +33,7 @@ export function CategoryRow({
           className="h-10 w-10 items-center justify-center rounded-full"
           style={{ backgroundColor: color }}
         >
-          <Icon name={icon} size={20} color="#FFFFFF" />
+          <Icon name={icon} size={20} colorClassName="accent-white" />
         </View>
         <Text variant="body" className="flex-1 text-foreground">
           {name}

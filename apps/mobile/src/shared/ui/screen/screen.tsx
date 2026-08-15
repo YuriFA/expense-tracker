@@ -4,7 +4,6 @@ import { cn } from '@/shared/lib/utils'
 export interface ScreenProps extends Omit<ViewProps, 'children'> {
   className?: string
   children: React.ReactNode
-  backgroundColor?: string
 }
 
 export function Screen({ className, children, ...viewProps }: ScreenProps) {

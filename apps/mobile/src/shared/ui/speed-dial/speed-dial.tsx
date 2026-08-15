@@ -9,8 +9,6 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon } from '../icon'
-import { useTheme } from '@/shared/config/theme'
-import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { SpeedDialAction as SpeedDialActionView } from './speed-dial-action'
 import type { SpeedDialActionItem } from './speed-dial.types'
 import {
@@ -77,9 +75,6 @@ export function SpeedDial({
   const insets = useSafeAreaInsets()
   const resolvedBottomOffset = bottomOffset ?? insets.bottom + DEFAULT_EDGE_MARGIN
 
-  const { resolvedTheme } = useTheme()
-  const fabIconColor = colorsRN[resolvedTheme]['primary-foreground']
-
   const toggle = useCallback(() => {
     setOpen(!open)
   }, [open, setOpen])
@@ -144,7 +139,7 @@ export function SpeedDial({
             pressed && { opacity: 0.9, transform: [{ scale: 0.95 }] },
           ]}
         >
-          <FabIcon progress={progress} color={fabIconColor} />
+          <FabIcon progress={progress} />
         </Pressable>
       </View>
     </View>
@@ -200,13 +195,7 @@ function Backdrop({
  * The FAB icon: an `add` glyph that rotates 0->45deg on open (a `+` rotated
  * 45deg is an `x`).
  */
-function FabIcon({
-  progress,
-  color,
-}: {
-  progress: ReturnType<typeof useSharedValue<number>>
-  color: string
-}) {
+function FabIcon({ progress }: { progress: ReturnType<typeof useSharedValue<number>> }) {
   const rotateStyle = useAnimatedStyle(() => ({
     transform: [
       { rotate: `${interpolate(progress.value, [0, 1], [0, 45], Extrapolation.CLAMP)}deg` },
@@ -215,7 +204,7 @@ function FabIcon({
 
   return (
     <AnimatedView style={rotateStyle}>
-      <Icon name="add" size={FAB_ICON_SIZE} color={color} />
+      <Icon name="add" size={FAB_ICON_SIZE} colorClassName="accent-primary-foreground" />
     </AnimatedView>
   )
 }

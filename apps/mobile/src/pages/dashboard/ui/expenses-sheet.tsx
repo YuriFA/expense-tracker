@@ -1,4 +1,5 @@
 import { View } from 'react-native'
+import { useCSSVariable } from 'uniwind'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import {
@@ -15,7 +16,8 @@ export interface ExpenseRowView {
   description: string
   categoryName: string
   categoryIcon: string
-  categoryColor: string
+  /** Data color (from the category); falls back to a theme token at render. */
+  categoryColor: string | undefined
   dayLabel: string
   amountText: string
 }
@@ -28,6 +30,10 @@ export interface ExpensesSheetProps {
 }
 
 export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProps) {
+  // Presentation default for rows without a category: the theme's
+  // muted-foreground token, resolved from the active Uniwind theme.
+  const fallbackColor = useCSSVariable('--color-muted-foreground') as string | undefined
+
   return (
     <BottomSheet ref={ref} snapPoints={['90%']} testID="home-expenses-sheet">
       <BottomSheetHeader title={title} />
@@ -51,9 +57,9 @@ export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProp
               >
                 <View
                   className="h-10 w-10 items-center justify-center rounded-full"
-                  style={{ backgroundColor: row.categoryColor }}
+                  style={{ backgroundColor: row.categoryColor ?? fallbackColor }}
                 >
-                  <Icon name={row.categoryIcon} size={20} color="#FFFFFF" />
+                  <Icon name={row.categoryIcon} size={20} colorClassName="accent-white" />
                 </View>
                 <View className="flex-1 gap-1">
                   <Text variant="body" className="text-foreground">

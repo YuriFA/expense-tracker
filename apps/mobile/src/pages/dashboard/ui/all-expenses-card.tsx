@@ -21,8 +21,6 @@ export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
   const latest: LatestExpenseView = {
     amountText: formatAmount(lastTransaction.amountMinor),
     categoryName: category?.name ?? 'Без категории',
-    categoryIcon: category?.icon ?? 'pricetag-outline',
-    categoryColor: category?.color ?? '#A3A3A3',
     dayLabel: relativeDayLabel(lastTransaction.occurredAt),
   }
 
@@ -41,7 +39,7 @@ export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
           expensesSheetRef.current?.present()
         }}
       >
-        <Card variant="elevated" className="bg-emerald-100">
+        <Card variant="elevated" className="bg-success/10">
           <View className="gap-2">
             <Text variant="h4">Все расходы</Text>
 
@@ -54,7 +52,7 @@ export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
                     {latest.amountText}, {latest.categoryName}
                   </Text>
                 </View>
-                <Icon name="chevron-forward" size={18} color="#737373" />
+                <Icon name="chevron-forward" size={18} colorClassName="accent-muted-foreground" />
               </View>
             ) : (
               <View className="gap-2">

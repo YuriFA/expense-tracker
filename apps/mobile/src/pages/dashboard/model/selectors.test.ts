@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
+import { colors } from '@expense-tracker/tokens/react-native'
 import type { MockAccount, MockCategory, MockTransaction } from './mock-data'
 import {
   accountBalances,
@@ -16,11 +17,12 @@ import {
 // Deterministic fixtures (the real mocks are date-relative for the demo).
 const CURSOR = { year: 2026, month: 7 } // August 2026
 const inAugust = (day: number) => `2026-08-${String(day).padStart(2, '0')}T12:00`
+const fixtureColor = colors.light['brand-violet']
 
 const categories: MockCategory[] = [
-  { id: 'c-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#000000' },
-  { id: 'c-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#000000' },
-  { id: 'c-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: '#000000' },
+  { id: 'c-taxi', name: 'Такси', type: 'expense', icon: 'car', color: fixtureColor },
+  { id: 'c-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: fixtureColor },
+  { id: 'c-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: fixtureColor },
 ]
 
 const accounts: MockAccount[] = [

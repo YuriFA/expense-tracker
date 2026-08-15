@@ -10,5 +10,12 @@
   },
   "files": [
     "src"
-  ]
+  ],
+  "scripts": {
+    "gen:mobile-theme": "node scripts/generate-mobile-theme.mjs",
+    "gen:mobile-theme:check": "node scripts/generate-mobile-theme.mjs --check"
+  },
+  "devDependencies": {
+    "jiti": "^2.6.0"
+  }
 }
