@@ -22,7 +22,6 @@ export function Card({ variant = 'default', className, style, ...viewProps }: Ca
       style={
         variant === 'elevated'
           ? {
-              backgroundColor: '#fff',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: -1 },
               shadowOpacity: 0.1,
