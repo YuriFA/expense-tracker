@@ -116,7 +116,6 @@ function TabsSurface() {
       </Tabs>
 
       <SpeedDial
-        position="center"
         bottomOffset={fabBottomOffset}
         actions={actions}
         label="Add transaction"

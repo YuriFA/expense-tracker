@@ -197,7 +197,7 @@ describe('BottomTabBar · height reporting', () => {
 
 // --- SpeedDial + tab-bar integration -------------------------------
 
-function renderIntegration({ defaultOpen = false }: { defaultOpen?: boolean } = {}) {
+function renderIntegration() {
   const onExpense = jest.fn()
   const onIncome = jest.fn()
   const onTransfer = jest.fn()
@@ -215,9 +215,7 @@ function renderIntegration({ defaultOpen = false }: { defaultOpen?: boolean } = 
         <TabBarHeightProvider>
           <BottomTabBar tabs={TABS} />
           <SpeedDial
-            position="center"
             bottomOffset={55}
-            defaultOpen={defaultOpen}
             actions={actions}
             label="Add transaction"
             closeLabel="Close transaction actions"
@@ -232,11 +230,12 @@ function renderIntegration({ defaultOpen = false }: { defaultOpen?: boolean } = 
 }
 
 describe('SpeedDial + BottomTabBar integration', () => {
-  it('closed: FAB is visible, actions and backdrop hidden', () => {
+  it('closed: FAB is visible, actions and the scrim unreachable', () => {
     const { fab, fabExpanded } = renderIntegration()
     expect(fab()).toBeTruthy()
     expect(fabExpanded()).toBe(false)
-    // Actions and the scrim are hidden (and non-interactive) while closed.
+    // Actions and the scrim are hidden from accessibility while closed (RNTL
+    // queries skip a11y-hidden elements), so nothing but the FAB is reachable.
     expect(screen.queryByTestId('speed-dial-action-expense')).toBeNull()
     expect(screen.queryByTestId('speed-dial-backdrop')).toBeNull()
   })
@@ -257,7 +256,8 @@ describe('SpeedDial + BottomTabBar integration', () => {
   })
 
   it('pressing the backdrop closes the menu', () => {
-    const { fabExpanded } = renderIntegration({ defaultOpen: true })
+    const { fab, fabExpanded } = renderIntegration()
+    fireEvent.press(fab())
     fireEvent.press(screen.getByTestId('speed-dial-backdrop'))
     expect(fabExpanded()).toBe(false)
   })

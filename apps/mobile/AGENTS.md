@@ -57,10 +57,12 @@ The bottom tab bar is built on expo-router's **headless** tab components
 4 real tabs + a central spacer; each tab reads focus/press state from
 `useTabTrigger(name)`.
 
-The central `+` is a **SpeedDial** overlay (`shared/ui/speed-dial`,
-`position="center"`) mounted as a **sibling** of `<Tabs>` in `(tabs)/_layout.tsx`
-- a global floating action, NOT a route and NOT a tab (opening it never changes
-the active route). Its Expense/Income/Transfer actions are wired in that layout;
+The central `+` is a **SpeedDial** overlay (`shared/ui/speed-dial`) mounted as a
+**sibling** of `<Tabs>` in `(tabs)/_layout.tsx` - a global floating action, NOT
+a route and NOT a tab (opening it never changes the active route). SpeedDial is
+purpose-built for this single use case: fully uncontrolled (internal open
+state), always centered, fixed `speed-dial-*` testIDs (Maestro relies on them).
+Its Expense/Income/Transfer actions are wired in that layout;
 the create-transaction flows don't exist yet (placeholder callbacks). The FAB
 straddles the bar's top edge via `bottomOffset = measuredBarHeight - FAB_SIZE/2`
 (height shared via `widgets/bottom-tab-bar` `TabBarHeightProvider`, not

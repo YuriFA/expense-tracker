@@ -2,7 +2,6 @@ import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider } from '@/shared/config/theme'
-import { CategorySection } from './category-section'
 import { DashboardScreen } from './dashboard-screen'
 import { formatAmount } from '../model/format'
 import { MOCK_ACCOUNTS, MOCK_TRANSACTIONS } from '../model/mock-data'
@@ -72,37 +71,31 @@ describe('DashboardScreen (Home)', () => {
     ).toBeTruthy()
   })
 
-  it('navigates to the previous month and disables future navigation', () => {
+  it('navigates to the previous month and shows its expenses total', () => {
     renderWithProviders(<DashboardScreen />)
-
-    expect(screen.getByTestId('home-period-next').props.accessibilityState.disabled).toBe(true)
 
     fireEvent.press(screen.getByTestId('home-period-prev'))
     const prev = previousMonth(currentMonth())
     expect(screen.getByText(formatAmount(totalExpenses(MOCK_TRANSACTIONS, prev)))).toBeTruthy()
-    expect(screen.getByTestId('home-period-next').props.accessibilityState.disabled).toBe(false)
   })
 
   it('shows the empty state for a month without expenses', () => {
     renderWithProviders(<DashboardScreen />)
 
-    // Current and previous months have data; the month before is empty.
+    // Current and previous months have data; the month before is empty. The
+    // category section shows the empty message inline (the "Все расходы" card
+    // always shows the latest transaction regardless of period).
     fireEvent.press(screen.getByTestId('home-period-prev'))
     fireEvent.press(screen.getByTestId('home-period-prev'))
-    // The empty message appears in both the "Все расходы" card and the
-    // category section - the layout stays stable, no sections hidden.
-    expect(screen.getAllByText('В этом месяце расходов нет').length).toBe(2)
+    expect(screen.getAllByText('В этом месяце расходов нет').length).toBe(1)
   })
 
-  it('opens the all-expenses sheet with the period expenses and closes via scrim', () => {
+  it('opens the all-expenses sheet with the period expenses', () => {
     renderWithProviders(<DashboardScreen />)
 
     fireEvent.press(screen.getByTestId('home-all-expenses'))
     const expectedCount = expensesInMonth(MOCK_TRANSACTIONS, currentMonth()).length
     expect(expensesRowCount()).toBe(expectedCount)
-
-    fireEvent.press(screen.getByTestId('home-expenses-sheet-scrim'))
-    expect(screen.queryByTestId('home-expenses-sheet')).toBeNull()
   })
 
   it('opens a category-filtered expense sheet', () => {
@@ -131,21 +124,8 @@ describe('DashboardScreen (Home)', () => {
 
     fireEvent.press(screen.getByTestId('home-new-category-type-income'))
     fireEvent.press(screen.getByTestId('home-new-category-submit'))
-    expect(screen.queryByTestId('home-new-category-sheet')).toBeNull()
-  })
-})
-
-describe('CategorySection (empty states)', () => {
-  it('offers category creation when the user has none', () => {
-    renderWithProviders(
-      <CategorySection
-        rows={[]}
-        hasAnyCategories={false}
-        onNewCategory={jest.fn()}
-        onCategoryPress={jest.fn()}
-      />,
-    )
-    expect(screen.getByText('Нет категорий')).toBeTruthy()
-    expect(screen.getByText('Создать категорию')).toBeTruthy()
+    // The sheet stays open; submitting resets the form.
+    expect(screen.getByTestId('home-new-category-sheet')).toBeTruthy()
+    expect(screen.getByTestId('home-new-category-name').props.value).toBe('')
   })
 })

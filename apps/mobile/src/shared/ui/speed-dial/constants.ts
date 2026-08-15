@@ -20,6 +20,9 @@ export const OPEN_DURATION = 220
 export const CLOSE_DURATION = 180
 export const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1) // easeOutQuint-ish
 
+/** Gap between the action row and the FAB, and per-action margin in the row. */
+export const ACTION_SPACING = 12
+
 /**
  * Per-action stagger, expressed as fractions of the [0,1] `progress` shared
  * value so the whole sequence is driven by a single source of truth (no timers).

@@ -42,8 +42,11 @@ tags:
     id: home-summary-mode
 - assertVisible:
     id: home-mode-option-total-balance-active
+# Dismiss via the sheet backdrop. The shared BottomSheet (@gorhom) exposes no
+# scrim testID; tapping just above the sheet hits the real backdrop, which
+# closes on press (enableBackdropPress). Same trick closes the sheets below.
 - tapOn:
-    id: home-mode-sheet-scrim
+    point: 50%, 8%
 
 # All-expenses sheet lists the period's expenses
 - tapOn:
@@ -53,7 +56,7 @@ tags:
 - assertVisible:
     id: home-expense-row-tx-taxi
 - tapOn:
-    id: home-expenses-sheet-scrim
+    point: 50%, 8%
 
 # Category-filtered sheet lists only that category's expenses
 - tapOn:
@@ -65,7 +68,7 @@ tags:
 - assertNotVisible:
     id: home-expense-row-tx-cafe
 - tapOn:
-    id: home-expenses-sheet-scrim
+    point: 50%, 8%
 
 # Quick action placeholder
 - tapOn:

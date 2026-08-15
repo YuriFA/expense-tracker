@@ -8,15 +8,13 @@ import Animated, {
 import { Text } from '../text'
 import { ACTION_TRANSLATE, ACTION_SCALE_MIN, STAGGER, STAGGERED_SEGMENT } from './constants'
 import { Pressable } from '../pressable'
-import { cn } from '@/shared/lib/utils'
-import { SpeedDialActionItem, SpeedDialPosition } from './speed-dial.types'
+import { SpeedDialActionItem } from './speed-dial.types'
 
 interface SpeedDialActionViewProps {
   action: SpeedDialActionItem
   index: number
   progress: SharedValue<number>
   spacing: number
-  position: SpeedDialPosition
   testID: string
   /** React open state - gates pointer events / a11y (the shared value drives visuals). */
   open: boolean
@@ -27,12 +25,9 @@ export function SpeedDialAction({
   index,
   progress,
   spacing,
-  position,
   testID,
   open,
 }: SpeedDialActionViewProps) {
-  const isRight = position === 'bottom-right'
-
   const appearStyle = useAnimatedStyle(() => {
     const start = index * STAGGER
     const end = start + STAGGERED_SEGMENT
@@ -47,7 +42,6 @@ export function SpeedDialAction({
   })
 
   const a11yLabel = action.accessibilityLabel ?? action.label ?? action.id
-  const isInteractive = open && !action.disabled
   const size = action.size ?? 48
 
   return (
@@ -60,12 +54,11 @@ export function SpeedDialAction({
     >
       <Pressable
         testID={testID}
-        disabled={!isInteractive}
+        disabled={!open}
         accessibilityRole="button"
         accessibilityLabel={a11yLabel}
-        accessibilityState={{ disabled: Boolean(action.disabled) }}
-        className={cn('flex flex-col items-center gap-2', isRight ? 'flex-row-reverse' : '')}
-        onPress={isInteractive ? action.onPress : undefined}
+        className="flex flex-col items-center gap-2"
+        onPress={action.onPress}
       >
         <View
           className="items-center justify-center rounded-full bg-primary"
