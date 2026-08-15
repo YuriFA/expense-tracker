@@ -1,5 +1,7 @@
 import { Pressable, View } from 'react-native'
-import { Icon, IconButton, Text } from '@/shared/ui'
+import { Icon } from '@/shared/ui/icon'
+import { IconButton } from '@/shared/ui/icon-button'
+import { Text } from '@/shared/ui/text'
 import { useRef, useState } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { ModeSheet, type SummaryMode } from './mode-sheet'

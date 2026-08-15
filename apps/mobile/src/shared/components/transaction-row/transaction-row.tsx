@@ -1,5 +1,7 @@
 import { View } from 'react-native'
-import { Card, Text, Badge, type CardProps } from '@/shared/ui'
+import { Badge } from '@/shared/ui/badge'
+import { Card, type CardProps } from '@/shared/ui/card'
+import { Text } from '@/shared/ui/text'
 
 export interface Transaction {
   id: string

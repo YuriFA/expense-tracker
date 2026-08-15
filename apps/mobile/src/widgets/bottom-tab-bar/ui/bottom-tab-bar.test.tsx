@@ -4,7 +4,7 @@ import { StyleSheet, Text } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { ThemeProvider } from '@/shared/config/theme'
-import { SpeedDial, type SpeedDialAction } from '@/shared/ui'
+import { SpeedDial, type SpeedDialAction } from '@/shared/ui/speed-dial'
 import { BottomTabBar, type TabConfig } from './bottom-tab-bar'
 import { TabBarHeightProvider, useTabBarHeight } from './tab-bar-height-context'
 

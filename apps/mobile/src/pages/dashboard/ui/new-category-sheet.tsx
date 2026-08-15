@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
-import { BottomSheet, Button, Input } from '@/shared/ui'
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+  BottomSheetRef,
+} from '@/shared/ui/bottom-sheet'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
 import type { MockCashflowType } from '../model/mock-data'
-import { BottomSheetBody, BottomSheetHeader, BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
 export interface NewCategorySheetProps {
   ref: React.Ref<BottomSheetRef>

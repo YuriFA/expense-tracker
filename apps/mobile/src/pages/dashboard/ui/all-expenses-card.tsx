@@ -1,5 +1,7 @@
 import { Pressable, View } from 'react-native'
-import { Card, Icon, Text } from '@/shared/ui'
+import { Card } from '@/shared/ui/card'
+import { Icon } from '@/shared/ui/icon'
+import { Text } from '@/shared/ui/text'
 import type { LatestExpenseView } from './all-expenses-card.types'
 import { MOCK_CATEGORIES, MOCK_TRANSACTIONS } from '../model/mock-data'
 import { formatAmount, relativeDayLabel } from '../model/format'

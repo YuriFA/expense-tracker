@@ -3,7 +3,8 @@ import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui'
 import type { Href } from 'expo-router'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { useTheme } from '@/shared/config/theme'
-import { FAB_SIZE, Icon, SpeedDial, SpeedDialAction } from '@/shared/ui'
+import { Icon } from '@/shared/ui/icon'
+import { FAB_SIZE, SpeedDial, type SpeedDialAction } from '@/shared/ui/speed-dial'
 import {
   BottomTabBar,
   TabBarHeightProvider,

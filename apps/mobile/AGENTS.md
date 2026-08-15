@@ -26,6 +26,8 @@ src/
 **Import direction is strictly downward**, identical to web:
 `app → pages → features → entities → shared`. Each slice exports through an
 `index.ts` barrel; cross-imports between slices of the same layer are forbidden.
+There is deliberately NO segment-level `shared/ui/index.ts` aggregate - import
+each component from its slice (`@/shared/ui/button`, `@/shared/ui/text`, ...).
 Route files are thin - they only re-export the screen:
 
 ```ts

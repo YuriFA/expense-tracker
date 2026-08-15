@@ -1,7 +1,13 @@
 import { Pressable, View } from 'react-native'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
-import { BottomSheet, Icon, Text } from '@/shared/ui'
-import { BottomSheetBody, BottomSheetHeader, BottomSheetRef } from '@/shared/ui/bottom-sheet'
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+  BottomSheetRef,
+} from '@/shared/ui/bottom-sheet'
+import { Icon } from '@/shared/ui/icon'
+import { Text } from '@/shared/ui/text'
 
 export type SummaryMode = 'expenses' | 'monthly-balance' | 'total-balance'
 

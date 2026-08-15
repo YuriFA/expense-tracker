@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import { Screen } from '@/shared/ui'
+import { Screen } from '@/shared/ui/screen'
 import { currentMonth, nextMonth, previousMonth, type MonthCursor } from '../model/selectors'
 import { QuickActionsRow } from './quick-actions-row'
 import { SummaryCard } from './summary-card'

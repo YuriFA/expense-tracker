@@ -1,5 +1,5 @@
 import { TextInput, type TextInputProps, View } from 'react-native'
-import { Text } from '@/shared/ui'
+import { Text } from '@/shared/ui/text'
 
 export interface AmountInputProps extends Omit<
   TextInputProps,

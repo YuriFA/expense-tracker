@@ -1,4 +1,7 @@
-import { Text, Screen, Input, Button } from '@/shared/ui'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Screen } from '@/shared/ui/screen'
+import { Text } from '@/shared/ui/text'
 import { useState } from 'react'
 import { View } from 'react-native'
 

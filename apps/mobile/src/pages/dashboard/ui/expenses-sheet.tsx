@@ -1,5 +1,6 @@
 import { View } from 'react-native'
-import { Icon, Text } from '@/shared/ui'
+import { Icon } from '@/shared/ui/icon'
+import { Text } from '@/shared/ui/text'
 import {
   BottomSheet,
   BottomSheetBody,
