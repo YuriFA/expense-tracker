@@ -1,6 +1,7 @@
 import { TextInput, type TextInputProps, View } from 'react-native'
 import { Text } from '../text'
 import { Icon } from '../icon'
+import { cn } from '@/shared/lib/utils'
 
 export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'> {
   label?: string
@@ -29,7 +30,7 @@ export function Input({
   const placeholderColor = 'text-muted-foreground'
 
   return (
-    <View className={`gap-1.5 ${containerClassName || ''}`}>
+    <View className={cn('gap-1.5', containerClassName)}>
       {label && (
         <Text variant="label" className={hasError ? 'text-destructive' : ''}>
           {label}
@@ -47,7 +48,7 @@ export function Input({
         )}
 
         <TextInput
-          className={`flex-1 bg-card border ${borderColor} rounded-lg px-4 py-3 ${textColor}`}
+          className={cn('flex-1 bg-card border rounded-lg px-4 py-3', borderColor, textColor)}
           placeholder={placeholder || (label ? `Enter ${label.toLowerCase()}` : '')}
           placeholderTextColor={placeholderColor}
           style={style}

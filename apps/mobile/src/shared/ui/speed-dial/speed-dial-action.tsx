@@ -9,6 +9,7 @@ import { Text } from '../text'
 import { ACTION_TRANSLATE, ACTION_SCALE_MIN, STAGGER, STAGGERED_SEGMENT } from './constants'
 import { Pressable } from '../pressable'
 import { SpeedDialActionItem } from './speed-dial.types'
+import { cn } from '@/shared/lib/utils'
 
 interface SpeedDialActionViewProps {
   action: SpeedDialActionItem
@@ -61,7 +62,7 @@ export function SpeedDialAction({
         onPress={action.onPress}
       >
         <View
-          className="items-center justify-center rounded-full bg-primary"
+          className={cn('items-center justify-center rounded-full bg-primary', action.className)}
           style={{ width: size, height: size }}
         >
           {action.icon}

@@ -1,4 +1,5 @@
 import { View, type ViewProps } from 'react-native'
+import { cn } from '@/shared/lib/utils'
 
 export interface ScreenProps extends Omit<ViewProps, 'children'> {
   className?: string
@@ -8,7 +9,7 @@ export interface ScreenProps extends Omit<ViewProps, 'children'> {
 
 export function Screen({ className, children, ...viewProps }: ScreenProps) {
   return (
-    <View className={`flex-1 p-safe ${className || ''}`} {...viewProps}>
+    <View className={cn('flex-1 p-safe', className)} {...viewProps}>
       {children}
     </View>
   )

@@ -113,7 +113,6 @@ export function SpeedDial({
           alignItems: 'center',
         }}
       >
-        {/* Actions in a horizontal row above the FAB. */}
         <View pointerEvents="box-none" className="flex flex-row items-center gap-8">
           {actions.map((action, index) => (
             <SpeedDialActionView

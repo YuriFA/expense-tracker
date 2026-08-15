@@ -52,7 +52,7 @@ function useTransactionActions(iconColor: string): SpeedDialAction[] {
       id: 'transfer',
       label: 'Transfer',
       accessibilityLabel: 'Add transfer',
-      icon: <Icon name="swap-horizontal" size={22} color={iconColor} />,
+      icon: <Icon name="swap-horizontal" size={24} color={iconColor} />,
       size: 48,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-transfer flow.
@@ -62,7 +62,8 @@ function useTransactionActions(iconColor: string): SpeedDialAction[] {
       id: 'expense',
       label: 'Expense',
       accessibilityLabel: 'Add expense',
-      icon: <Icon name="remove" size={22} color={iconColor} />,
+      icon: <Icon name="remove" size={32} color={iconColor} />,
+      className: 'bg-[#f44336]',
       size: 64,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-expense flow.
@@ -72,7 +73,8 @@ function useTransactionActions(iconColor: string): SpeedDialAction[] {
       id: 'income',
       label: 'Income',
       accessibilityLabel: 'Add income',
-      icon: <Icon name="add" size={22} color={iconColor} />,
+      icon: <Icon name="add" size={24} color={iconColor} />,
+      className: 'bg-[#4caf50]',
       size: 48,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-income flow.

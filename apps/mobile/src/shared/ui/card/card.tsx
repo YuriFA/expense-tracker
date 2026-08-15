@@ -1,4 +1,5 @@
 import { View, type ViewProps } from 'react-native'
+import { cn } from '@/shared/lib/utils'
 
 export type CardVariant = 'default' | 'outlined' | 'elevated'
 
@@ -17,7 +18,7 @@ export function Card({ variant = 'default', className, style, ...viewProps }: Ca
 
   return (
     <View
-      className={`${variantClassName} rounded-2xl p-4 ${className || ''}`.trim()}
+      className={cn(variantClassName, 'rounded-2xl p-4', className)}
       {...viewProps}
       style={
         variant === 'elevated'

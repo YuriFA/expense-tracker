@@ -3,7 +3,6 @@ export interface SpeedDialActionItem {
   id: string
   icon: React.ReactNode
   /** Invoked on press (the menu closes first; never awaited). */
-  onPress: () => void
   label?: string
   /**
    * Explicit accessibility label. Falls back to `label` when omitted.
@@ -11,4 +10,6 @@ export interface SpeedDialActionItem {
    */
   accessibilityLabel?: string
   size?: number
+  className?: string
+  onPress: () => void
 }

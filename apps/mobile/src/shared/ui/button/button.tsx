@@ -2,6 +2,7 @@ import { Pressable } from '../pressable'
 import { Text } from '../text'
 import type { PressableProps } from '../pressable'
 import { ActivityIndicator } from 'react-native'
+import { cn } from '@/shared/lib/utils'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive'
 export type ButtonSize = 'sm' | 'md' | 'lg'
@@ -56,7 +57,7 @@ export function Button({
 
   return (
     <Pressable
-      className={`${variantClassName} ${sizeContainer} ${className || ''}`.trim()}
+      className={cn(variantClassName, sizeContainer, className)}
       style={(state) => {
         const baseStyle: any = {}
         if (isDisabled) baseStyle.opacity = disabledOpacity
@@ -75,7 +76,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={textVariantClassName} />
       ) : text ? (
-        <Text variant="button" className={`${textVariantClassName} ${sizeText}`.trim()}>
+        <Text variant="button" className={cn(textVariantClassName, sizeText)}>
           {text}
         </Text>
       ) : (

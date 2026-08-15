@@ -1,4 +1,5 @@
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native'
+import { cn } from '@/shared/lib/utils'
 
 export type TextVariant =
   | 'display'
@@ -35,7 +36,7 @@ export function Text({ className, variant = 'body', style, ...textProps }: TextP
 
   return (
     <RNText
-      className={`${variantClassName} ${className || ''}`.trim()}
+      className={cn(variantClassName, className)}
       style={style}
       {...textProps}
     />
