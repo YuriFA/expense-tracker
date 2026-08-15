@@ -18,16 +18,14 @@ export interface TransactionRowProps extends Omit<CardProps, 'children'> {
 }
 
 // TODO: move to entities/transaction/ui once the entity slice exists.
-export function TransactionRow(props: TransactionRowProps) {
-  const {
-    transaction,
-    currencySymbol = '$',
-    showCategory = true,
-    onPress,
-    className,
-    ...cardProps
-  } = props
-
+export function TransactionRow({
+  transaction,
+  currencySymbol = '$',
+  showCategory = true,
+  onPress,
+  className,
+  ...cardProps
+}: TransactionRowProps) {
   const { amount, description, category, date, type } = transaction
 
   const formattedAmount = Math.abs(amount / 100).toFixed(2)

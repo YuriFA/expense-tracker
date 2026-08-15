@@ -30,9 +30,7 @@ const variantStyles: Record<TextVariant, string> = {
   button: 'text-base font-medium text-foreground',
 }
 
-export function Text(props: TextProps) {
-  const { className, variant = 'body', style, ...textProps } = props
-
+export function Text({ className, variant = 'body', style, ...textProps }: TextProps) {
   const variantClassName = variantStyles[variant]
 
   return (

@@ -5,9 +5,7 @@ export interface DividerProps {
   className?: string
 }
 
-export function Divider(props: DividerProps) {
-  const { orientation = 'horizontal', className } = props
-
+export function Divider({ orientation = 'horizontal', className }: DividerProps) {
   if (orientation === 'vertical') {
     return <View className={`w-px bg-border ${className || ''}`.trim()} />
   }

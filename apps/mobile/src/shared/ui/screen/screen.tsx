@@ -6,9 +6,7 @@ export interface ScreenProps extends Omit<ViewProps, 'children'> {
   backgroundColor?: string
 }
 
-export function Screen(props: ScreenProps) {
-  const { className, children, ...viewProps } = props
-
+export function Screen({ className, children, ...viewProps }: ScreenProps) {
   return (
     <View className={`flex-1 p-safe ${className || ''}`} {...viewProps}>
       {children}

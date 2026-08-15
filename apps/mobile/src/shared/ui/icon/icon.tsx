@@ -8,9 +8,7 @@ export interface CustomIconProps extends Omit<IconProps<string>, 'name'> {
   color?: string | undefined
 }
 
-export function Icon(props: CustomIconProps) {
-  const { name, size = 24, color, style, ...iconProps } = props
-
+export function Icon({ name, size = 24, color, style, ...iconProps }: CustomIconProps) {
   return (
     <Ionicons name={name as any} size={size} color={color as any} style={style} {...iconProps} />
   )

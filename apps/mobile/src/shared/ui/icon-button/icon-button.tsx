@@ -24,17 +24,15 @@ const iconSizes: Record<IconButtonSize, number> = {
   lg: 28,
 }
 
-export function IconButton(props: IconButtonProps) {
-  const {
-    icon,
-    size = 'md',
-    color = 'text-foreground',
-    accessibilityLabel,
-    disabled,
-    className,
-    ...pressableProps
-  } = props
-
+export function IconButton({
+  icon,
+  size = 'md',
+  color = 'text-foreground',
+  accessibilityLabel,
+  disabled,
+  className,
+  ...pressableProps
+}: IconButtonProps) {
   const sizeClassName = sizeStyles[size]
   const iconSize = iconSizes[size]
 

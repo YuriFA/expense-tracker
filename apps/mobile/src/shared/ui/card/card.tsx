@@ -12,9 +12,7 @@ const variantStyles: Record<CardVariant, string> = {
   elevated: 'bg-card',
 }
 
-export function Card(props: CardProps) {
-  const { variant = 'default', className, style, ...viewProps } = props
-
+export function Card({ variant = 'default', className, style, ...viewProps }: CardProps) {
   const variantClassName = variantStyles[variant]
 
   return (

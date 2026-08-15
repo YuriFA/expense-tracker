@@ -8,19 +8,17 @@ export interface PressableProps extends RNPressableProps {
   focusedClassName?: string
 }
 
-export function Pressable(props: PressableProps) {
-  const {
-    className,
-    // Web-only props kept for cross-platform parity; stripped here so they
-    // never reach the native component.
-    hoverClassName: _hoverClassName,
-    pressedClassName,
-    focusedClassName: _focusedClassName,
-    style,
-    children,
-    ...pressableProps
-  } = props
-
+export function Pressable({
+  className,
+  // Web-only props kept for cross-platform parity; stripped here so they
+  // never reach the native component.
+  hoverClassName: _hoverClassName,
+  pressedClassName,
+  focusedClassName: _focusedClassName,
+  style,
+  children,
+  ...pressableProps
+}: PressableProps) {
   return (
     <RNPressable
       className={className}

@@ -31,9 +31,7 @@ const sizeStyles: Record<BadgeSize, string> = {
   md: 'px-2.5 py-1 rounded-md',
 }
 
-export function Badge(props: BadgeProps) {
-  const { children, variant = 'default', size = 'md', className } = props
-
+export function Badge({ children, variant = 'default', size = 'md', className }: BadgeProps) {
   const { bg: bgClassName, text: textClassName } = variantStyles[variant]
   const sizeClassName = sizeStyles[size]
 

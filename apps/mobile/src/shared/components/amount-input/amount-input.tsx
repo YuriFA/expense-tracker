@@ -21,23 +21,21 @@ export interface AmountInputProps extends Omit<
 
 // TODO: move to entities/transaction/ui or features/transaction/ui once those
 // FSD slices exist.
-export function AmountInput(props: AmountInputProps) {
-  const {
-    value,
-    onValueChange,
-    currencySymbol = '$',
-    locale = 'en-US',
-    precision = 2,
-    label,
-    placeholder,
-    error,
-    helperText,
-    min = 0,
-    max = Number.MAX_SAFE_INTEGER,
-    style,
-    ...textInputProps
-  } = props
-
+export function AmountInput({
+  value,
+  onValueChange,
+  currencySymbol = '$',
+  locale = 'en-US',
+  precision = 2,
+  label,
+  placeholder,
+  error,
+  helperText,
+  min = 0,
+  max = Number.MAX_SAFE_INTEGER,
+  style,
+  ...textInputProps
+}: AmountInputProps) {
   const decimalSeparator = locale === 'en-US' ? '.' : ','
 
   const formatAmount = (amount: number): string => {

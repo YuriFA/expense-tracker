@@ -12,19 +12,17 @@ export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'>
   containerClassName?: string
 }
 
-export function Input(props: InputProps) {
-  const {
-    label,
-    placeholder,
-    error,
-    helperText,
-    leadingIcon,
-    trailingIcon,
-    containerClassName,
-    style,
-    ...textInputProps
-  } = props
-
+export function Input({
+  label,
+  placeholder,
+  error,
+  helperText,
+  leadingIcon,
+  trailingIcon,
+  containerClassName,
+  style,
+  ...textInputProps
+}: InputProps) {
   const hasError = Boolean(error)
   const borderColor = hasError ? 'border-destructive' : 'border-border'
   const textColor = 'text-foreground'

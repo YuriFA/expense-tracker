@@ -38,19 +38,17 @@ const sizeStyles: Record<ButtonSize, { container: string; text: string }> = {
 
 const disabledOpacity = 0.5
 
-export function Button(props: ButtonProps) {
-  const {
-    children,
-    variant = 'primary',
-    size = 'md',
-    loading = false,
-    text,
-    disabled,
-    style,
-    className,
-    ...pressableProps
-  } = props
-
+export function Button({
+  children,
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  text,
+  disabled,
+  style,
+  className,
+  ...pressableProps
+}: ButtonProps) {
   const variantClassName = variantStyles[variant]
   const textVariantClassName = textVariantStyles[variant]
   const { container: sizeContainer, text: sizeText } = sizeStyles[size]
