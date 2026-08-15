@@ -43,7 +43,6 @@ export function SpeedDialAction({
   })
 
   const a11yLabel = action.accessibilityLabel ?? action.label ?? action.id
-  const size = action.size ?? 48
 
   return (
     <Animated.View
@@ -63,7 +62,6 @@ export function SpeedDialAction({
       >
         <View
           className={cn('items-center justify-center rounded-full bg-primary', action.className)}
-          style={{ width: size, height: size }}
         >
           {action.icon}
         </View>

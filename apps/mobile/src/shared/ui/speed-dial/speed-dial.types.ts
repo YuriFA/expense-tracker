@@ -9,7 +9,6 @@ export interface SpeedDialActionItem {
    * Required in practice when there is no `label` (icon-only action).
    */
   accessibilityLabel?: string
-  size?: number
   className?: string
   onPress: () => void
 }

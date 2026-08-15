@@ -31,9 +31,7 @@ export function CategoryRow({
       onPress={() => onPress(categoryId)}
     >
       <View className="flex-row items-center gap-2 py-1">
-        <View
-          className={cn('h-10 w-10 items-center justify-center rounded-full', colorClassName)}
-        >
+        <View className={cn('h-10 w-10 items-center justify-center rounded-full', colorClassName)}>
           <Icon name={icon} size={20} colorClassName="accent-white" />
         </View>
         <Text variant="body" className="flex-1 text-foreground">
