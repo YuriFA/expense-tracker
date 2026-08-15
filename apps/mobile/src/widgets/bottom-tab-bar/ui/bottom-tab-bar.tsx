@@ -90,7 +90,7 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
 
   return (
     <View className="pb-safe px-safe" onLayout={handleLayout}>
-      <View className="flex flex-row bg-card mx-2 rounded-4xl p-1.5">
+      <View className="flex flex-row bg-card mx-4 rounded-4xl p-1.5">
         {renderButtons(tabs.slice(0, splitAt), 0)}
         {/* Central slot reserved for the SpeedDial FAB (rendered as a sibling overlay). */}
         <View style={{ width: FAB_SLOT_WIDTH }} testID="tab-bar-fab-slot" />

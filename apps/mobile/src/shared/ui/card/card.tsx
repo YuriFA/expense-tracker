@@ -17,5 +17,5 @@ const variantStyles: Record<CardVariant, string> = {
 export function Card({ variant = 'default', className, ...viewProps }: CardProps) {
   const variantClassName = variantStyles[variant]
 
-  return <View className={cn(variantClassName, 'rounded-2xl p-4', className)} {...viewProps} />
+  return <View className={cn(variantClassName, 'rounded-3xl p-4', className)} {...viewProps} />
 }

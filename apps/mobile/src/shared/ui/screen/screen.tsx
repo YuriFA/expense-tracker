@@ -8,7 +8,7 @@ export interface ScreenProps extends Omit<ViewProps, 'children'> {
 
 export function Screen({ className, children, ...viewProps }: ScreenProps) {
   return (
-    <View className={cn('flex-1 p-safe', className)} {...viewProps}>
+    <View className={cn('flex-1 pt-safe', className)} {...viewProps}>
       {children}
     </View>
   )
