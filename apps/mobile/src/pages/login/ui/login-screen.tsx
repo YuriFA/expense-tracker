@@ -1,6 +1,6 @@
+import { Text, Screen, Input, Button } from '@/shared/ui'
 import { useState } from 'react'
 import { View } from 'react-native'
-import { Screen, Text, Input, Button } from '@/shared'
 
 export function LoginScreen() {
   const [email, setEmail] = useState('')

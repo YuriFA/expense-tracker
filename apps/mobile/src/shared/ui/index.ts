@@ -31,7 +31,7 @@ export { Divider } from './divider'
 export type { DividerProps } from './divider'
 
 export { SpeedDial, FAB_SIZE } from './speed-dial'
-export type { SpeedDialProps, SpeedDialAction, SpeedDialPosition } from './speed-dial'
+export type { SpeedDialAction, SpeedDialPosition } from './speed-dial'
 
 export { BottomSheet } from './bottom-sheet'
 export type { BottomSheetProps } from './bottom-sheet'

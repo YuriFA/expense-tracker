@@ -39,7 +39,7 @@ export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
           expensesSheetRef.current?.present()
         }}
       >
-        <Card variant="default" className="bg-emerald-100">
+        <Card variant="elevated" className="bg-emerald-100">
           <View className="gap-2">
             <Text variant="h4">Все расходы</Text>
 

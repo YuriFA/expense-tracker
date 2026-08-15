@@ -3,7 +3,7 @@ import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui'
 import type { Href } from 'expo-router'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { useTheme } from '@/shared/config/theme'
-import { FAB_SIZE, Icon, SpeedDial, type SpeedDialAction } from '@/shared/ui'
+import { FAB_SIZE, Icon, SpeedDial, SpeedDialAction } from '@/shared/ui'
 import {
   BottomTabBar,
   TabBarHeightProvider,
@@ -48,10 +48,21 @@ const TABS: readonly TabDef[] = [
 function useTransactionActions(iconColor: string): SpeedDialAction[] {
   return [
     {
+      id: 'transfer',
+      label: 'Transfer',
+      accessibilityLabel: 'Add transfer',
+      icon: <Icon name="swap-horizontal" size={22} color={iconColor} />,
+      size: 48,
+      onPress: () => {
+        // TODO(create-transaction): navigate to the create-transfer flow.
+      },
+    },
+    {
       id: 'expense',
       label: 'Expense',
       accessibilityLabel: 'Add expense',
       icon: <Icon name="remove" size={22} color={iconColor} />,
+      size: 64,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-expense flow.
       },
@@ -61,17 +72,9 @@ function useTransactionActions(iconColor: string): SpeedDialAction[] {
       label: 'Income',
       accessibilityLabel: 'Add income',
       icon: <Icon name="add" size={22} color={iconColor} />,
+      size: 48,
       onPress: () => {
         // TODO(create-transaction): navigate to the create-income flow.
-      },
-    },
-    {
-      id: 'transfer',
-      label: 'Transfer',
-      accessibilityLabel: 'Add transfer',
-      icon: <Icon name="swap-horizontal" size={22} color={iconColor} />,
-      onPress: () => {
-        // TODO(create-transaction): navigate to the create-transfer flow.
       },
     },
   ]

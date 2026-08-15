@@ -4,7 +4,6 @@ import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
@@ -13,7 +12,7 @@ import { Icon } from '../icon'
 import { useTheme } from '@/shared/config/theme'
 import { colors as colorsRN } from '@expense-tracker/tokens/react-native'
 import { SpeedDialAction as SpeedDialActionView } from './speed-dial-action'
-import type { SpeedDialAction, SpeedDialProps } from './speed-dial.types'
+import type { SpeedDialActionItem, SpeedDialPosition } from './speed-dial.types'
 import {
   CLOSE_DURATION,
   DEFAULT_BACKDROP_LABEL,
@@ -26,69 +25,88 @@ import {
   FAB_ICON_SIZE,
   FAB_SIZE,
   OPEN_DURATION,
-  REDUCED_EASE,
-  REDUCED_MOTION_DURATION,
 } from './constants'
 
-export type { SpeedDialAction, SpeedDialProps, SpeedDialPosition } from './speed-dial.types'
+export type { SpeedDialActionItem as SpeedDialAction, SpeedDialPosition } from './speed-dial.types'
 
 const AnimatedView = Animated.View
 
-/**
- * SpeedDial - generic expandable floating action button.
- *
- * Renders a circular FAB that expands a vertical stack of actions over a dimmed
- * backdrop. Controlled (`open`/`onOpenChange`) or uncontrolled
- * (`defaultOpen`). All animation is driven by a single Reanimated shared value
- * (`progress`), so rapid open/close is race-free (no JS timers). See README.md
- * for the full architecture decision.
- *
- * Mount as a sibling of your scrollable content (not inside a ScrollView). Pass
- * `bottomOffset` when mounting over a bottom tab bar.
- */
-export function SpeedDial(props: SpeedDialProps) {
-  const {
-    actions,
-    open: openProp,
-    defaultOpen = false,
-    onOpenChange,
-    icon,
-    closeIcon,
-    label = DEFAULT_LABEL,
-    closeLabel = DEFAULT_CLOSE_LABEL,
-    position = 'bottom-right',
-    bottomOffset,
-    horizontalOffset,
-    backdrop = true,
-    backdropOpacity = DEFAULT_BACKDROP_OPACITY,
-    actionSpacing = 12,
-    disabled = false,
-    testID = DEFAULT_TEST_ID,
-  } = props
+interface SpeedDialProps {
+  /** Actions to render, bottom-most (nearest the FAB) first. */
+  actions: SpeedDialActionItem[]
 
-  // --- Controlled / uncontrolled open state (single API) ---
-  const isControlled = openProp !== undefined
-  const [uncontrolledOpen, setUncontrolledOpen] = useState<boolean>(defaultOpen)
-  const open = isControlled ? openProp : uncontrolledOpen
-  const setOpen = useCallback(
-    (next: boolean) => {
-      if (!isControlled) setUncontrolledOpen(next)
-      onOpenChange?.(next)
-    },
-    [isControlled, onOpenChange],
-  )
+  /** Custom closed-state icon for the FAB. Defaults to an `add` glyph. */
+  icon?: React.ReactNode
+  /**
+   * Custom open-state icon. When both `icon` and `closeIcon` are provided the
+   * two cross-fade; otherwise the single icon rotates 0->45deg on open.
+   */
+  closeIcon?: React.ReactNode
+  /** FAB accessibility label when closed. @default "More actions" */
+  label?: string
+  /** FAB accessibility label when open. @default "Close actions" */
+  closeLabel?: string
+
+  /**
+   * Horizontal anchoring. `bottom-right` / `bottom-left` pin the FAB to a corner
+   * via `horizontalOffset`; `center` spans the full width and self-centers the
+   * FAB and action column (used for a central tab-bar FAB). @default "bottom-right"
+   */
+  position?: SpeedDialPosition
+  /**
+   * Distance from the viewport's bottom edge to the FAB's bottom edge.
+   * Defaults to the safe-area bottom inset + edge margin. When mounting over a
+   * bottom tab bar pass the measured tab-bar height (already including its
+   * safe-area padding) minus the desired overlap, e.g. `tabBarHeight - FAB_SIZE/2`
+   * to straddle the bar's top edge - the component never hardcodes the tab-bar
+   * height. Ignored for `horizontalOffset` when `position="center"`.
+   */
+  bottomOffset?: number
+  /**
+   * Distance from the near horizontal edge. Defaults to safe-area inset + margin.
+   * Ignored when `position="center"` (the FAB self-centers).
+   */
+  horizontalOffset?: number
+
+  /** Show the dimmed scrim. @default true */
+  backdrop?: boolean
+  /** Peak scrim opacity. @default 0.5 */
+  backdropOpacity?: number
+  actionSpacing?: number
+
+  disabled?: boolean
+
+  /** Base testID. Derives `{base}-fab`, `{base}-backdrop`, `{base}-action-{id}`. @default "speed-dial" */
+  testID?: string
+}
+
+export function SpeedDial({
+  actions,
+  icon,
+  closeIcon,
+  label = DEFAULT_LABEL,
+  closeLabel = DEFAULT_CLOSE_LABEL,
+  position = 'bottom-right',
+  bottomOffset,
+  horizontalOffset,
+  backdrop = true,
+  backdropOpacity = DEFAULT_BACKDROP_OPACITY,
+  actionSpacing = 12,
+  disabled = false,
+  testID = DEFAULT_TEST_ID,
+}: SpeedDialProps) {
+  const [open, setOpen] = useState<boolean>(false)
 
   // --- Single source of animation truth ---
   const progress = useSharedValue(open ? 1 : 0)
-  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const target = open ? 1 : 0
     progress.value = withTiming(target, {
-      duration: reducedMotion ? REDUCED_MOTION_DURATION : open ? OPEN_DURATION : CLOSE_DURATION,
-      easing: reducedMotion ? REDUCED_EASE : EASE_OUT,
+      duration: open ? OPEN_DURATION : CLOSE_DURATION,
+      easing: EASE_OUT,
     })
-  }, [open, reducedMotion, progress])
+  }, [open, progress])
 
   const insets = useSafeAreaInsets()
   const isRight = position === 'bottom-right'
@@ -108,9 +126,7 @@ export function SpeedDial(props: SpeedDialProps) {
   }, [disabled, open, setOpen])
 
   const handleActionPress = useCallback(
-    (action: SpeedDialAction) => {
-      // Close first, then invoke the callback (never awaited) so navigation
-      // triggered by the callback never runs under an open overlay.
+    (action: SpeedDialActionItem) => {
       setOpen(false)
       action.onPress()
     },
@@ -144,13 +160,7 @@ export function SpeedDial(props: SpeedDialProps) {
         }}
       >
         {/* Actions grow upward; column-reverse keeps action[0] nearest the FAB. */}
-        <View
-          pointerEvents="box-none"
-          style={{
-            flexDirection: 'column-reverse',
-            alignItems: isCenter ? 'center' : isRight ? 'flex-end' : 'flex-start',
-          }}
-        >
+        <View pointerEvents="box-none" className="flex flex-row items-center gap-8">
           {actions.map((action, index) => (
             <SpeedDialActionView
               key={action.id}
@@ -160,7 +170,6 @@ export function SpeedDial(props: SpeedDialProps) {
               spacing={actionSpacing}
               position={position}
               testID={`${testID}-action-${action.id}`}
-              reducedMotion={reducedMotion}
               open={open}
             />
           ))}
@@ -215,7 +224,6 @@ function Backdrop({
   return (
     <Pressable
       testID={testID}
-      onPress={onClose}
       pointerEvents={open ? 'auto' : 'none'}
       accessibilityRole="button"
       accessibilityLabel={DEFAULT_BACKDROP_LABEL}
@@ -223,11 +231,12 @@ function Backdrop({
       accessibilityElementsHidden={!open}
       importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
       style={StyleSheet.absoluteFill}
+      onPress={onClose}
     >
       <AnimatedView
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, style]}
-        className="bg-black"
+        className="bg-white"
       />
     </Pressable>
   )

@@ -1,33 +1,37 @@
 import { Pressable, View } from 'react-native'
 import { Icon, IconButton, Text } from '@/shared/ui'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { ModeSheet, type SummaryMode } from './mode-sheet'
+import { formatAmount, monthRangeLabel } from '../model/format'
+import { MonthCursor, monthlyBalance, totalBalance, totalExpenses } from '../model/selectors'
+import { MOCK_ACCOUNTS, MOCK_TRANSACTIONS } from '../model/mock-data'
 
 export interface SummaryCardProps {
-  mode: SummaryMode
-  /** Current mode title, e.g. "Расходы". */
-  title: string
-  amountText: string
-  periodLabel: string
-  /** Next-month navigation is unavailable at the current month. */
-  canGoNext: boolean
-  onModeChange: (mode: SummaryMode) => void
+  cursor: MonthCursor
   onPrevPeriod: () => void
   onNextPeriod: () => void
 }
 
-export function SummaryCard({
-  mode,
-  title,
-  amountText,
-  periodLabel,
-  canGoNext,
-  onModeChange,
-  onPrevPeriod,
-  onNextPeriod,
-}: SummaryCardProps) {
+export function SummaryCard({ cursor, onPrevPeriod, onNextPeriod }: SummaryCardProps) {
   const modeSheetRef = useRef<BottomSheetRef>(null)
+  const [mode, setMode] = useState<SummaryMode>('expenses')
+
+  // TODO(i18n): RU strings are hardcoded until react-i18next is wired.
+  const MODE_TITLES: Record<SummaryMode, string> = {
+    expenses: 'Расходы',
+    'monthly-balance': 'Баланс за месяц',
+    'total-balance': 'Баланс общий',
+  }
+  const title = MODE_TITLES[mode]
+
+  const periodLabel = monthRangeLabel(cursor.year, cursor.month)
+  const amountText =
+    mode === 'expenses'
+      ? formatAmount(totalExpenses(MOCK_TRANSACTIONS, cursor))
+      : mode === 'monthly-balance'
+        ? formatAmount(monthlyBalance(MOCK_TRANSACTIONS, cursor))
+        : formatAmount(totalBalance(MOCK_ACCOUNTS, MOCK_TRANSACTIONS))
 
   return (
     <>
@@ -51,20 +55,21 @@ export function SummaryCard({
           </Text>
           <View className="flex-row items-center gap-1">
             <IconButton
+              testID="home-period-prev"
               icon="chevron-back"
               size="sm"
               accessibilityLabel="Предыдущий месяц"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               onPress={onPrevPeriod}
-              testID="home-period-prev"
             />
             <Text variant="caption">{periodLabel}</Text>
             <IconButton
+              testID="home-period-next"
               icon="chevron-forward"
               size="sm"
               accessibilityLabel="Следующий месяц"
-              disabled={!canGoNext}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               onPress={onNextPeriod}
-              testID="home-period-next"
             />
           </View>
         </View>
@@ -74,7 +79,7 @@ export function SummaryCard({
         ref={modeSheetRef}
         activeMode={mode}
         onSelect={(nextMode) => {
-          onModeChange(nextMode)
+          setMode(nextMode)
           modeSheetRef.current?.dismiss()
         }}
       />

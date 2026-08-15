@@ -1,6 +1,7 @@
 import { Pressable } from '../pressable'
 import { Icon } from '../icon'
 import type { PressableProps } from '../pressable'
+import { cn } from '@/shared/lib/utils'
 
 export type IconButtonSize = 'sm' | 'md' | 'lg'
 
@@ -30,7 +31,6 @@ export function IconButton(props: IconButtonProps) {
     color = 'text-foreground',
     accessibilityLabel,
     disabled,
-    style,
     className,
     ...pressableProps
   } = props
@@ -40,17 +40,9 @@ export function IconButton(props: IconButtonProps) {
 
   return (
     <Pressable
-      className={`${sizeClassName} ${className || ''}`.trim()}
-      style={(state) => {
-        const baseStyle: any = {}
-        if (disabled) baseStyle.opacity = 0.5
-        else if (state.pressed) baseStyle.opacity = 0.7
-        if (style) {
-          if (typeof style === 'function') return [baseStyle, style(state)]
-          return [baseStyle, style]
-        }
-        return baseStyle
-      }}
+      className={cn(sizeClassName, className, 'active:opacity-70', {
+        'opacity-50': disabled,
+      })}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
