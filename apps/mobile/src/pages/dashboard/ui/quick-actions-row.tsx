@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native'
-import { Icon } from '@/shared/ui/icon'
+import { Icon, type IconName } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { useRouter } from 'expo-router'
 import { cn } from '@/shared/lib/utils'
@@ -15,7 +15,7 @@ export function QuickActionsRow() {
   const ACTIONS: ReadonlyArray<{
     id: QuickActionId
     label: string
-    icon: string
+    icon: IconName
     chipClassName: string
     onPress: () => void
   }> = [

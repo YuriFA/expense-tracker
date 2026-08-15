@@ -35,17 +35,17 @@ export { DashboardScreen as default } from '@/pages/dashboard'
 ```
 
 **`@/*` → `./src/*`** via tsconfig `paths`; Metro resolves it (no babel path config
-needed). Styling is **Uniwind** (Tailwind CSS v4, CSS-first): all theme config
-lives in `global.css` (`@theme` + per-theme `@variant light/dark` variables) -
-there is no `tailwind.config.*`. The semantic color block in `global.css` is
-GENERATED from `packages/tokens` (`pnpm --filter @expense-tracker/tokens
-gen:mobile-theme`, drift gate `gen:mobile-theme:check`) - edit tokens, not the
-generated block. Every color must be a token: a class (`bg-card`), an `accent-*`
-class on a `{prop}ClassName` prop for non-style color props (`Icon
-colorClassName="accent-primary"`), or a value imported from
-`@expense-tracker/tokens/react-native` for dynamic data colors; raw hex/rgb in
-`src/` fails the `design-tokens-guard` jest test. `className` -> style resolution
-runs in Metro
+needed). Styling is **Uniwind** (Tailwind CSS v4, CSS-first) - there is no
+`tailwind.config.*`. `global.css` is a THIN entry: framework imports
+(`tailwindcss`, `uniwind`) plus `@import '@expense-tracker/tokens/mobile'`,
+which carries all design tokens (the mobile copy of the shared palette; the
+web copy is `packages/tokens/src/index.css` - keep the two in sync by hand,
+same sRGB hex, no oklch/conversion). Every color must
+be a token: a class (`bg-card`), an `accent-*` class on a `{prop}ClassName` prop
+for non-style color props (`Icon colorClassName="accent-primary"`), or a
+COMPLETE class string stored in data (e.g. a mock category's
+`'bg-brand-violet'`); raw hex/rgb in `src/` fails the `design-tokens-guard`
+jest test. `className` -> style resolution runs in Metro
 (`withUniwindConfig` in `metro.config.js`, with `polyfills.rem: 14` to keep
 NativeWind-era spacing); no babel preset/plugin is involved, so `babel.config.js`
 is just `babel-preset-expo` (which auto-adds `react-native-worklets/plugin` when

@@ -1,6 +1,6 @@
 import { TextInput, type TextInputProps, View } from 'react-native'
 import { Text } from '../text'
-import { Icon } from '../icon'
+import { Icon, type IconName } from '../icon'
 import { cn } from '@/shared/lib/utils'
 
 export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'> {
@@ -8,8 +8,8 @@ export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'>
   placeholder?: string
   error?: string
   helperText?: string
-  leadingIcon?: string
-  trailingIcon?: string
+  leadingIcon?: IconName
+  trailingIcon?: IconName
   containerClassName?: string
 }
 

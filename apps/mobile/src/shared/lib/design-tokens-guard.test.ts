@@ -6,10 +6,9 @@ import path from 'node:path'
  * Design-token guard: app source must not contain raw color literals.
  *
  * Every color comes from a token - a Uniwind class (`bg-primary`), an
- * `accent-*` class on a `{prop}ClassName` prop, or (for dynamic data colors)
- * a value imported from `@expense-tracker/tokens/react-native`. The token
- * VALUES themselves live in packages/tokens and the generated block of
- * apps/mobile/global.css, outside this scan.
+ * `accent-*` class on a `{prop}ClassName` prop, or a COMPLETE class string
+ * stored in data (e.g. a mock category's 'bg-brand-violet'). The token VALUES
+ * themselves live in apps/mobile/global.css, outside this scan.
  */
 const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g
 

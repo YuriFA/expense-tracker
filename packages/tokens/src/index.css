@@ -1,6 +1,15 @@
 /**
- * Design tokens as CSS custom properties
- * For web usage with Tailwind CSS v4
+ * Design tokens (web copy) - CSS custom properties for Tailwind CSS v4.
+ *
+ * Consumed by apps/web via `@import '@expense-tracker/tokens/css'`. This is
+ * the WEB source of truth for the shared semantic palette. The MOBILE copy
+ * lives in apps/mobile/global.css (Uniwind `@variant light/dark` blocks -
+ * React Native cannot use `.dark` class selectors). Keep the two in sync by
+ * hand: same sRGB hex values, no oklch/color conversion.
+ *
+ * Palette direction: Pastel Playful Fintech with Soft-Brutalist influences -
+ * warm paper background, ink lines, indigo brand primary, pastel lavender
+ * fills, and a vivid "brand" accent palette.
  */
 
 @import "tailwindcss";
@@ -42,66 +51,66 @@
   --radius: 0.625rem;
 
   /* Light theme */
-  --background: oklch(0.977 0.007 80.721);
-  --foreground: oklch(0.223 0.027 290.565);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.223 0.027 290.565);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.223 0.027 290.565);
-  --primary: oklch(0.585 0.204 277.117);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.93 0.031 295.747);
-  --secondary-foreground: oklch(0.326 0.073 284.845);
-  --muted: oklch(0.946 0.01 87.472);
-  --muted-foreground: oklch(0.536 0.026 293.582);
-  --accent: oklch(0.913 0.045 295.214);
-  --accent-foreground: oklch(0.326 0.073 284.845);
-  --brand-indigo: oklch(0.585 0.204 277.117);
-  --brand-violet: oklch(0.599 0.23 286.205);
-  --brand-lilac: oklch(0.709 0.159 293.541);
-  --brand-orange: oklch(0.705 0.187 47.604);
-  --brand-green: oklch(0.723 0.192 149.579);
-  --brand-leaf: oklch(0.627 0.17 149.214);
-  --destructive: oklch(0.577 0.215 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.223 0.027 290.565);
-  --input: oklch(0.223 0.027 290.565);
-  --ring: oklch(0.585 0.204 277.117);
-  --success: oklch(0.627 0.17 149.214);
-  --success-foreground: oklch(1 0 0);
-  --warning: oklch(0.646 0.194 41.116);
-  --warning-foreground: oklch(1 0 0);
+  --background: #faf7f2;
+  --foreground: #1b1927;
+  --card: #ffffff;
+  --card-foreground: #1b1927;
+  --popover: #ffffff;
+  --popover-foreground: #1b1927;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #e9e4fb;
+  --secondary-foreground: #312e58;
+  --muted: #f0ede6;
+  --muted-foreground: #6e6b7c;
+  --accent: #e4ddfe;
+  --accent-foreground: #312e58;
+  --brand-indigo: #6366f1;
+  --brand-violet: #7c5cff;
+  --brand-lilac: #a78bfa;
+  --brand-orange: #f97316;
+  --brand-green: #22c55e;
+  --brand-leaf: #16a34a;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #1b1927;
+  --input: #1b1927;
+  --ring: #6366f1;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #ea580c;
+  --warning-foreground: #ffffff;
 }
 
 .dark {
   /* Dark theme */
-  --background: oklch(0.2 0.014 291.638);
-  --foreground: oklch(0.965 0.011 297.626);
-  --card: oklch(0.247 0.023 292.293);
-  --card-foreground: oklch(0.965 0.011 297.626);
-  --popover: oklch(0.247 0.023 292.293);
-  --popover-foreground: oklch(0.965 0.011 297.626);
-  --primary: oklch(0.68 0.158 276.935);
-  --primary-foreground: oklch(0.2 0.014 291.638);
-  --secondary: oklch(0.296 0.036 288.574);
-  --secondary-foreground: oklch(0.895 0.041 293.199);
-  --muted: oklch(0.267 0.02 293.304);
-  --muted-foreground: oklch(0.722 0.022 291.976);
-  --accent: oklch(0.315 0.041 289.817);
-  --accent-foreground: oklch(0.895 0.041 293.199);
-  --brand-indigo: oklch(0.585 0.204 277.117);
-  --brand-violet: oklch(0.599 0.23 286.205);
-  --brand-lilac: oklch(0.709 0.159 293.541);
-  --brand-orange: oklch(0.705 0.187 47.604);
-  --brand-green: oklch(0.723 0.192 149.579);
-  --brand-leaf: oklch(0.627 0.17 149.214);
-  --destructive: oklch(0.637 0.208 25.331);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.453 0.041 293.881);
-  --input: oklch(0.453 0.041 293.881);
-  --ring: oklch(0.68 0.158 276.935);
-  --success: oklch(0.723 0.192 149.579);
-  --success-foreground: oklch(0.2 0.014 291.638);
-  --warning: oklch(0.705 0.187 47.604);
-  --warning-foreground: oklch(0.2 0.014 291.638);
+  --background: #16151c;
+  --foreground: #f4f2fa;
+  --card: #211f2b;
+  --card-foreground: #f4f2fa;
+  --popover: #211f2b;
+  --popover-foreground: #f4f2fa;
+  --primary: #818cf8;
+  --primary-foreground: #16151c;
+  --secondary: #2c2a3e;
+  --secondary-foreground: #ddd8f6;
+  --muted: #26242f;
+  --muted-foreground: #a5a3b2;
+  --accent: #312e45;
+  --accent-foreground: #ddd8f6;
+  --brand-indigo: #6366f1;
+  --brand-violet: #7c5cff;
+  --brand-lilac: #a78bfa;
+  --brand-orange: #f97316;
+  --brand-green: #22c55e;
+  --brand-leaf: #16a34a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #57526b;
+  --input: #57526b;
+  --ring: #818cf8;
+  --success: #22c55e;
+  --success-foreground: #16151c;
+  --warning: #f97316;
+  --warning-foreground: #16151c;
 }

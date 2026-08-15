@@ -51,8 +51,9 @@ function useTransactionActions(): SpeedDialAction[] {
       id: 'transfer',
       label: 'Transfer',
       accessibilityLabel: 'Add transfer',
-      icon: <Icon name="swap-horizontal" size={24} colorClassName="accent-primary-foreground" />,
+      icon: <Icon name="swap-horizontal" size={24} colorClassName="accent-primary" />,
       size: 48,
+      className: 'bg-brand-aliceblue',
       onPress: () => {
         // TODO(create-transaction): navigate to the create-transfer flow.
       },

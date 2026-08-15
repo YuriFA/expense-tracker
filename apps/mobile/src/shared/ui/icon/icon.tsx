@@ -1,5 +1,5 @@
+import type { ComponentProps } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import type { IconProps } from '@expo/vector-icons/build/createIconSet'
 import { withUniwind } from 'uniwind'
 
 // Ionicons is a third-party component, so wrapping it with withUniwind is the
@@ -8,9 +8,13 @@ import { withUniwind } from 'uniwind'
 // the `color` prop to `colorClassName` with the `accent-` prefix.
 const StyledIonicons = withUniwind(Ionicons)
 
-// Available icon names: https://icons.expo.fyi/
-export interface CustomIconProps extends Omit<IconProps<string>, 'name' | 'color'> {
-  name: string
+/**
+ * Strict union of valid Ionicons glyph names - a typo in `name` fails at
+ * compile time. Browse available icons: https://icons.expo.fyi/
+ */
+export type IconName = ComponentProps<typeof Ionicons>['name']
+
+export interface CustomIconProps extends Omit<ComponentProps<typeof Ionicons>, 'color'> {
   size?: number
   className?: string
   /**
@@ -35,9 +39,9 @@ export function Icon({
 }: CustomIconProps) {
   return (
     <StyledIonicons
-      name={name as any}
+      name={name}
       size={size}
-      color={color as any}
+      color={color}
       colorClassName={colorClassName}
       className={className}
       {...iconProps}

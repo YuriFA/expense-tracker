@@ -1,13 +1,15 @@
 import { Text } from '@/shared/ui/text'
-import { Icon } from '@/shared/ui/icon'
+import { Icon, type IconName } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
 import { View } from 'react-native'
+import { cn } from '@/shared/lib/utils'
 
 interface CategoryRowProps {
   categoryId: string
   name: string
-  icon: string
-  color: string
+  icon: IconName
+  /** Complete chip class from the category data (e.g. 'bg-brand-violet'). */
+  colorClassName: string
   amountText: string
   onPress: (categoryId: string) => void
 }
@@ -16,7 +18,7 @@ export function CategoryRow({
   categoryId,
   name,
   icon,
-  color,
+  colorClassName,
   amountText,
   onPress,
 }: CategoryRowProps) {
@@ -30,8 +32,7 @@ export function CategoryRow({
     >
       <View className="flex-row items-center gap-2 py-1">
         <View
-          className="h-10 w-10 items-center justify-center rounded-full"
-          style={{ backgroundColor: color }}
+          className={cn('h-10 w-10 items-center justify-center rounded-full', colorClassName)}
         >
           <Icon name={icon} size={20} colorClassName="accent-white" />
         </View>

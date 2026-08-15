@@ -32,14 +32,9 @@ src/
 
 Palette direction: **Pastel Playful Fintech with Soft-Brutalist influences** -
 warm paper background, ink lines/borders, indigo primary, pastel lavender
-fills, and a vivid brand accent palette. The single source of truth is
-`packages/tokens` (`src/tokens/colors.rn.ts` holds the hex values); the theme
-block in `apps/mobile/global.css` is GENERATED from it - never edit by hand:
-
-```bash
-pnpm --filter @expense-tracker/tokens gen:mobile-theme         # regenerate
-pnpm --filter @expense-tracker/tokens gen:mobile-theme:check   # drift gate
-```
+fills, and a vivid brand accent palette. The tokens live in
+`packages/tokens/src/mobile.css`, imported by `global.css` (see
+"Color Tokens Source" below).
 
 Semantic tokens (subset; full set in `packages/tokens/src/tokens/colors.rn.ts`):
 
@@ -72,10 +67,13 @@ raw hex/rgb/hsl literals anywhere in `src/`):
   `{prop}ClassName` prop: `<Icon colorClassName="accent-primary" />`,
   `placeholderTextColorClassName="accent-muted-foreground"`. A plain
   `text-*`/`bg-*` class does NOT reach these props.
-- Dynamic data colors (e.g. a category color that will come from the API) may
-  use a raw `color`/`style={{ backgroundColor }}` value - import it from
-  `@expense-tracker/tokens/react-native` or take it from the data.
-- Theme-reactive values needed in JS: `useCSSVariable('--color-muted-foreground')`.
+- Data-driven colors: store a COMPLETE class string in the data (e.g. a mock
+  category's `'bg-brand-violet'`) so Tailwind's build-time scanner sees it.
+  When the real API sends hex strings, switch that one surface to
+  `style={{ backgroundColor }}` (the only sanctioned raw-color escape hatch).
+- A raw value is genuinely needed in JS (reanimated worklets, gradients,
+  chart configs)? Use `useCSSVariable('--color-primary')` (reactive) /
+  `Uniwind.getCSSVariable(...)` (one-shot) - never hardcode hex.
 
 ### Typography
 
@@ -399,22 +397,27 @@ export function MyComponent(props: MyComponentProps) {
 
 The app uses Uniwind (Tailwind CSS v4, CSS-first config) for styling:
 
-1. **`global.css`** - Tailwind imports + design tokens (`@theme` and per-theme
-   `@variant light`/`dark` color variables); no `tailwind.config.*` exists
+1. **`global.css`** - thin entry: Tailwind/Uniwind imports +
+   `@import '@expense-tracker/tokens/mobile'` (all tokens); no
+   `tailwind.config.*` exists
 2. **`metro.config.js`** - `withUniwindConfig` (`cssEntryFile`, `polyfills.rem: 14`)
 3. **Import in `_layout.tsx`** - `global.css` imported at app root
 4. **`ThemeProvider`** - Drives `Uniwind.setTheme()` for theme switching
 
 ## Color Tokens Source
 
-The single source of truth is `packages/tokens`:
-- `src/tokens/colors.rn.ts` - hex values (React Native)
-- `src/tokens/colors.ts` / `src/index.css` - oklch values (web)
+All token values live in `packages/tokens` - two hand-maintained copies of the
+same sRGB hex palette (dark-mode mechanics differ per platform, so one literal
+file cannot serve both):
 
-To change a color:
-1. Update `packages/tokens/src/tokens/colors.rn.ts` (+ the oklch twins)
-2. Run `pnpm --filter @expense-tracker/tokens gen:mobile-theme`
-3. Sync `apps/web/src/style.css` (it re-declares the semantic values)
+- **Mobile**: `packages/tokens/src/mobile.css` (Uniwind `@variant light/dark`),
+  imported by the thin entry `apps/mobile/global.css`
+- **Web**: `packages/tokens/src/index.css` (`:root`/`.dark`), imported by
+  `apps/web/src/style.css`, which only adds web-only extras
+
+To change a color: edit BOTH files with the same hex string. No oklch, no
+conversion - the copies sit side by side and must stay diff-able at a glance.
+App CSS entries must not re-declare token values.
 
 ## Icon System
 
@@ -459,7 +462,6 @@ Common icon names:
 - [ ] Add Toast/Snackbar component
 - [ ] Add Dialog/Modal component
 - [ ] Add Checkbox/Switch components (native primitives)
-- [x] Create shared design tokens package (`packages/tokens`)
-- [x] Generate the mobile theme from the tokens package (`gen:mobile-theme`)
+- [x] Create shared design tokens package (`packages/tokens`, css-only web copy)
 - [ ] Add component examples/Storybook
 - [ ] Implement animation system

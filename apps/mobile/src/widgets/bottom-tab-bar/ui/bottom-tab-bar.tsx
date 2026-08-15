@@ -1,14 +1,10 @@
-import type { ComponentProps } from 'react'
 import { Pressable, View, type LayoutChangeEvent } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { useTabTrigger } from 'expo-router/ui'
 import { FAB_SIZE } from '@/shared/ui/speed-dial'
-import { Icon } from '@/shared/ui/icon'
+import { Icon, type IconName } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { useTabBarHeightSetter } from './tab-bar-height-context'
 import { cn } from '@/shared/lib/utils'
-
-type IconName = ComponentProps<typeof Ionicons>['name']
 
 const TAB_ICON_SIZE = 20
 // Central gap reserved for the floating SpeedDial FAB so no tab sits under it.
@@ -94,7 +90,7 @@ export function BottomTabBar({ tabs }: { tabs: readonly TabConfig[] }) {
 
   return (
     <View className="pb-safe px-safe" onLayout={handleLayout}>
-      <View className="flex flex-row bg-background mx-2 rounded-4xl p-1.5">
+      <View className="flex flex-row bg-card mx-2 rounded-4xl p-1.5">
         {renderButtons(tabs.slice(0, splitAt), 0)}
         {/* Central slot reserved for the SpeedDial FAB (rendered as a sibling overlay). */}
         <View style={{ width: FAB_SLOT_WIDTH }} testID="tab-bar-fab-slot" />

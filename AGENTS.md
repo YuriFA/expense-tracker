@@ -29,7 +29,7 @@ Each area has its own rules in its own `AGENTS.md` (`backend/`, `apps/web/`,
 
 ## Shared workspace packages (`packages/*`)
 
-Platform-agnostic TS consumed by every app as `@expense-tracker/{api,money,i18n,tokens}`,
+Platform-agnostic TS consumed by every app as `@expense-tracker/{api,money,i18n}`,
 resolved to source `.ts` via `exports` (no build step; `moduleResolution: bundler`).
 Each has its own `tsconfig.json` + `type-check` and must type-check cleanly alone.
 Each package's source/README is authoritative for its contents; only the cross-cutting
@@ -47,9 +47,10 @@ rules and decisions live here.
 - **`i18n`** (leaf): EN/RU bundles + `MessageSchema`. `mapCategory(s)` take an
   injected `Translator` (vue-i18n `t` on web, react-i18next on mobile) - no app
   coupling.
-- **`tokens`**: shared design tokens - the single source of truth for
-  design-system values, exported as CSS (web/Tailwind v4, oklch) and RN (hex).
-  Both apps consume it.
+- **`tokens`** (css-only): the home of the shared design-token palette - two
+  platform copies in `src/` (`index.css` for web via `/css`, `mobile.css` for
+  Uniwind via `/mobile`), same sRGB hex values kept in sync by hand. App CSS
+  entries stay thin and must not re-declare token values.
 
 App-local concerns stay OUT of packages: web keeps its vue-i18n instance, Vite
 base-URL resolution, localStorage repos, Vue DI/composables, and Zod schemas;
@@ -69,7 +70,7 @@ all settings in the root file).
 backend/        Go API (Gin + sqlc + Postgres)
 apps/web/       Vue 3 + Vite (Feature-Sliced Design)
 apps/mobile/    React Native + Expo (Feature-Sliced Design + Expo Router)
-packages/       shared TS: api, money, i18n, tokens
+packages/       shared TS: api, money, i18n; shared css: tokens
 docs/api/       OpenAPI contract (source of truth)
 ```
 

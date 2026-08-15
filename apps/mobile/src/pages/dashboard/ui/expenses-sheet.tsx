@@ -1,7 +1,7 @@
 import { View } from 'react-native'
-import { useCSSVariable } from 'uniwind'
-import { Icon } from '@/shared/ui/icon'
+import { Icon, type IconName } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
+import { cn } from '@/shared/lib/utils'
 import {
   BottomSheet,
   BottomSheetBody,
@@ -15,9 +15,9 @@ export interface ExpenseRowView {
   id: string
   description: string
   categoryName: string
-  categoryIcon: string
-  /** Data color (from the category); falls back to a theme token at render. */
-  categoryColor: string | undefined
+  categoryIcon: IconName
+  /** Complete chip class from the category data; falls back to `bg-muted`. */
+  categoryColorClassName: string | undefined
   dayLabel: string
   amountText: string
 }
@@ -30,10 +30,6 @@ export interface ExpensesSheetProps {
 }
 
 export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProps) {
-  // Presentation default for rows without a category: the theme's
-  // muted-foreground token, resolved from the active Uniwind theme.
-  const fallbackColor = useCSSVariable('--color-muted-foreground') as string | undefined
-
   return (
     <BottomSheet ref={ref} snapPoints={['90%']} testID="home-expenses-sheet">
       <BottomSheetHeader title={title} />
@@ -56,8 +52,10 @@ export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProp
                 testID={`home-expense-row-${row.id}`}
               >
                 <View
-                  className="h-10 w-10 items-center justify-center rounded-full"
-                  style={{ backgroundColor: row.categoryColor ?? fallbackColor }}
+                  className={cn(
+                    'h-10 w-10 items-center justify-center rounded-full',
+                    row.categoryColorClassName ?? 'bg-muted',
+                  )}
                 >
                   <Icon name={row.categoryIcon} size={20} colorClassName="accent-white" />
                 </View>

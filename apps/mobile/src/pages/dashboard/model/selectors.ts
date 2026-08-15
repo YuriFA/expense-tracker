@@ -59,8 +59,8 @@ export function toExpenseRow(tx: MockTransaction, categories: MockCategory[]): E
     categoryName: category?.name ?? 'Без категории',
     categoryIcon: category?.icon ?? 'pricetag-outline',
     // No fallback here: the view layer owns the presentation default (a
-    // theme-aware token), keeping this pure function free of theme knowledge.
-    categoryColor: category?.color,
+    // theme-aware token class), keeping this pure function free of theming.
+    categoryColorClassName: category?.colorClassName,
     dayLabel: relativeDayLabel(tx.occurredAt),
     amountText: formatAmount(tx.amountMinor),
   }

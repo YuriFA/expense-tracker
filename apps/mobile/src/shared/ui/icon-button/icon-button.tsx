@@ -1,12 +1,12 @@
 import { Pressable } from '../pressable'
-import { Icon } from '../icon'
+import { Icon, type IconName } from '../icon'
 import type { PressableProps } from '../pressable'
 import { cn } from '@/shared/lib/utils'
 
 export type IconButtonSize = 'sm' | 'md' | 'lg'
 
 export interface IconButtonProps extends Omit<PressableProps, 'children'> {
-  icon: string
+  icon: IconName
   size?: IconButtonSize
   /** Design-token color as an `accent-…` class. @default 'accent-foreground' */
   colorClassName?: string

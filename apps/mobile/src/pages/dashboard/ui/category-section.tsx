@@ -79,7 +79,7 @@ export function CategorySection({ cursor }: CategorySectionProps) {
                   categoryId={category.id}
                   name={category.name}
                   icon={category.icon}
-                  color={category.color}
+                  colorClassName={category.colorClassName}
                   amountText={formatAmount(totalMinor)}
                   onPress={() => {
                     setCategoryExpensesId(category.id)

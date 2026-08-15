@@ -5,11 +5,7 @@
 // before the previous one is empty (empty-state demo). Throwaway by design:
 // replaced by real repositories, not extended.
 
-import { colors } from '@expense-tracker/tokens/react-native'
-
-// Category colors reference the brand accent palette (same value in light and
-// dark). Real category colors will arrive from the API later.
-const BRAND = colors.light
+import type { IconName } from '@/shared/ui/icon'
 
 export type MockCashflowType = 'income' | 'expense'
 type MockTransactionType = MockCashflowType | 'transfer'
@@ -18,9 +14,15 @@ export interface MockCategory {
   id: string
   name: string
   type: MockCashflowType
-  /** Ionicons glyph name. */
-  icon: string
-  color: string
+  /** Ionicons glyph name (strictly typed - typos fail at compile time). */
+  icon: IconName
+  /**
+   * Brand accent as a COMPLETE class string ('bg-brand-violet') so Tailwind's
+   * build-time scanner sees it (never construct classes dynamically). The
+   * real API will send hex colors instead - the chip views will then switch
+   * to `style={{ backgroundColor }}`.
+   */
+  colorClassName: string
 }
 
 export interface MockTransaction {
@@ -76,17 +78,41 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
 ]
 
 export const MOCK_CATEGORIES: MockCategory[] = [
-  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: BRAND['brand-violet'] },
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: BRAND['brand-lilac'] },
-  { id: 'cat-pets', name: 'Животные', type: 'expense', icon: 'paw', color: BRAND['brand-orange'] },
+  {
+    id: 'cat-taxi',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    colorClassName: 'bg-brand-violet',
+  },
+  {
+    id: 'cat-cafe',
+    name: 'Кафе',
+    type: 'expense',
+    icon: 'cafe',
+    colorClassName: 'bg-brand-lilac',
+  },
+  {
+    id: 'cat-pets',
+    name: 'Животные',
+    type: 'expense',
+    icon: 'paw',
+    colorClassName: 'bg-brand-orange',
+  },
   {
     id: 'cat-groceries',
     name: 'Продукты',
     type: 'expense',
     icon: 'cart',
-    color: BRAND['brand-green'],
+    colorClassName: 'bg-brand-green',
   },
-  { id: 'cat-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: BRAND['brand-leaf'] },
+  {
+    id: 'cat-salary',
+    name: 'Зарплата',
+    type: 'income',
+    icon: 'cash',
+    colorClassName: 'bg-brand-leaf',
+  },
 ]
 
 export const MOCK_TRANSACTIONS: MockTransaction[] = [
