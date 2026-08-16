@@ -6,19 +6,23 @@ package http
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
 	"github.com/yurifa/expense-tracker-api/internal/domain"
+	"github.com/yurifa/expense-tracker-api/internal/logger"
 	"github.com/yurifa/expense-tracker-api/internal/service"
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/httpctx"
 )
 
-// Server implements api.StrictServerInterface. It holds the services and the
-// session config (needed to set/clear cookies on login/logout).
+// Server implements api.StrictServerInterface. It holds the services, the
+// session config (needed to set/clear cookies on login/logout), and a logger
+// for request telemetry (sync metrics events).
 type Server struct {
 	cfg        *config.HTTPServer
+	log        *slog.Logger
 	accounts   *service.AccountService
 	categories *service.CategoryService
 	txn        *service.TransactionService
@@ -29,6 +33,7 @@ type Server struct {
 
 func NewServer(
 	cfg *config.HTTPServer,
+	log *slog.Logger,
 	accounts *service.AccountService,
 	categories *service.CategoryService,
 	txn *service.TransactionService,
@@ -38,6 +43,7 @@ func NewServer(
 ) *Server {
 	return &Server{
 		cfg:      cfg,
+		log:      logger.WithComponent(log, "http"),
 		accounts: accounts, categories: categories, txn: txn,
 		auth: auth, sessions: sessions, sync: sync,
 	}

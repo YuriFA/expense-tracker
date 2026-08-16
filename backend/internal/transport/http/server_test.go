@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -28,7 +29,11 @@ func TestMain(m *testing.M) {
 
 func newTestEngine(t *testing.T) *gin.Engine {
 	t.Helper()
-	log := logger.NewDiscardLogger()
+	return newTestEngineWithLogger(t, logger.NewDiscardLogger())
+}
+
+func newTestEngineWithLogger(t *testing.T, log *slog.Logger) *gin.Engine {
+	t.Helper()
 	store := fakes.New()
 	authSvc := service.NewAuthService(
 		store,
@@ -45,6 +50,7 @@ func newTestEngine(t *testing.T) *gin.Engine {
 
 	server := httptransport.NewServer(
 		testHTTPConfig(),
+		log,
 		accountSvc,
 		categorySvc,
 		txnSvc,

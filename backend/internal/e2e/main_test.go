@@ -121,7 +121,16 @@ func testMain(m *testing.M) int {
 	sessionSvc := service.NewSessionService(e2eRepo)
 	syncSvc := service.NewSyncService(e2eRepo)
 
-	server := httptransport.NewServer(testCfg(), accountSvc, categorySvc, txnSvc, authSvc, sessionSvc, syncSvc)
+	server := httptransport.NewServer(
+		testCfg(),
+		discardLogger(),
+		accountSvc,
+		categorySvc,
+		txnSvc,
+		authSvc,
+		sessionSvc,
+		syncSvc,
+	)
 	e2eEngine = httptransport.NewEngine(testCfg(), discardLogger(), server, e2eRepo, e2eRepo, e2eRepo)
 
 	return m.Run()

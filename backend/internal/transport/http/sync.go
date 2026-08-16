@@ -3,9 +3,11 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/yurifa/expense-tracker-api/internal/api"
 	"github.com/yurifa/expense-tracker-api/internal/domain"
+	"github.com/yurifa/expense-tracker-api/internal/transport/http/httpctx"
 )
 
 // SyncPush applies a batch of client operations; the endpoint always answers
@@ -42,6 +44,18 @@ func (s *Server) SyncPush(
 		return nil, err
 	}
 
+	m := summarizePushResults(results)
+	s.log.InfoContext(ctx, "sync push metrics",
+		slog.String("user_id", user.ID.String()),
+		slog.String("request_id", httpctx.RequestID(ginCtx(ctx))),
+		slog.Int("operations", m.operations),
+		slog.Int("applied", m.applied),
+		slog.Int("conflicts", m.conflicts),
+		slog.Int("errors", m.errors),
+		slog.Float64("conflict_rate", m.conflictRate()),
+		slog.Any("conflict_codes", m.conflictCodes),
+	)
+
 	out := make([]api.SyncPushResult, 0, len(results))
 	for _, r := range results {
 		out = append(out, toAPISyncPushResult(r))
@@ -67,7 +81,11 @@ func (s *Server) SyncPull(
 	}
 
 	changes := make([]api.SyncChange, 0, len(page.Changes))
+	tombstones := 0
 	for _, c := range page.Changes {
+		if c.Action == domain.SyncChangeTombstone {
+			tombstones++
+		}
 		change := api.SyncChange{
 			Seq:     c.Seq,
 			Entity:  api.SyncEntity(c.Entity),
@@ -88,7 +106,52 @@ func (s *Server) SyncPull(
 		}
 		changes = append(changes, change)
 	}
+	s.log.InfoContext(ctx, "sync pull metrics",
+		slog.String("user_id", user.ID.String()),
+		slog.String("request_id", httpctx.RequestID(ginCtx(ctx))),
+		slog.Int64("cursor", afterSeq),
+		slog.Int("changes", len(page.Changes)),
+		slog.Int("tombstones", tombstones),
+		slog.Bool("caught_up", page.NextCursor == nil),
+	)
 	return api.SyncPull200JSONResponse{Changes: changes, NextCursor: page.NextCursor}, nil
+}
+
+// pushMetrics summarizes one push batch for the sync metrics feed: per-status
+// counts, the share of operations that conflicted, and the conflict-code
+// breakdown (conflict-rate monitoring keys off these events).
+type pushMetrics struct {
+	operations    int
+	applied       int
+	conflicts     int
+	errors        int
+	conflictCodes map[string]int
+}
+
+func summarizePushResults(results []domain.SyncPushResult) pushMetrics {
+	m := pushMetrics{operations: len(results), conflictCodes: make(map[string]int)}
+	for _, r := range results {
+		switch r.Status {
+		case domain.SyncStatusApplied:
+			m.applied++
+		case domain.SyncStatusConflict:
+			m.conflicts++
+			if r.Code != "" {
+				m.conflictCodes[r.Code]++
+			}
+		case domain.SyncStatusError:
+			m.errors++
+		}
+	}
+	return m
+}
+
+// conflictRate is the share of pushed operations that came back as conflicts.
+func (m pushMetrics) conflictRate() float64 {
+	if m.operations == 0 {
+		return 0
+	}
+	return float64(m.conflicts) / float64(m.operations)
 }
 
 func toAPISyncPushResult(r domain.SyncPushResult) api.SyncPushResult {
