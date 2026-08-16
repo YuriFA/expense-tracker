@@ -24,3 +24,6 @@ http_server:
   failure_rate_limit:
     max_attempts: 5
     lockout_duration: 15m
+retention:
+  tombstone_window: 2160h
+  interval: 1h

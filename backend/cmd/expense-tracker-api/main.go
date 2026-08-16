@@ -12,6 +12,7 @@ import (
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
 	"github.com/yurifa/expense-tracker-api/internal/jobs/cleanup"
+	"github.com/yurifa/expense-tracker-api/internal/jobs/retention"
 	"github.com/yurifa/expense-tracker-api/internal/logger"
 	"github.com/yurifa/expense-tracker-api/internal/repository/postgres"
 	"github.com/yurifa/expense-tracker-api/internal/service"
@@ -71,6 +72,13 @@ func run(cfg *config.Config, log *slog.Logger) error {
 		_ = cleanupJob.Run(bgCtx)
 	}()
 
+	retentionJob := retention.New(repo, log, cfg.Retention.TombstoneWindow, cfg.Retention.Interval)
+	retentionDone := make(chan struct{})
+	go func() {
+		defer close(retentionDone)
+		_ = retentionJob.Run(bgCtx)
+	}()
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
@@ -84,6 +92,7 @@ func run(cfg *config.Config, log *slog.Logger) error {
 
 	cancel()
 	<-jobDone
+	<-retentionDone
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.WriteTimeout)
 	defer shutdownCancel()
@@ -115,7 +124,16 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 	sessionSvc := service.NewSessionService(repo)
 	syncSvc := service.NewSyncService(repo)
 
-	server := httptransport.NewServer(&cfg.HTTPServer, accountSvc, categorySvc, txnSvc, authSvc, sessionSvc, syncSvc)
+	server := httptransport.NewServer(
+		&cfg.HTTPServer,
+		log,
+		accountSvc,
+		categorySvc,
+		txnSvc,
+		authSvc,
+		sessionSvc,
+		syncSvc,
+	)
 	router := httptransport.NewEngine(&cfg.HTTPServer, log, server, repo, repo, repo)
 
 	return &http.Server{

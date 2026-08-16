@@ -11,9 +11,17 @@ import (
 type Config struct {
 	HTTPServer `yaml:"http_server"`
 
-	Env         string         `yaml:"env"          env:"ENV"          env-required:"true"`
-	DatabaseURL string         `yaml:"database_url" env:"DATABASE_URL" env-required:"true"`
-	Database    DatabaseConfig `yaml:"database"`
+	Env         string          `yaml:"env"          env:"ENV"          env-required:"true"`
+	DatabaseURL string          `yaml:"database_url" env:"DATABASE_URL" env-required:"true"`
+	Database    DatabaseConfig  `yaml:"database"`
+	Retention   RetentionConfig `yaml:"retention"`
+}
+
+// RetentionConfig tunes the tombstone retention job: soft-deleted rows older
+// than TombstoneWindow are hard-deleted; the change_log is never pruned.
+type RetentionConfig struct {
+	TombstoneWindow time.Duration `yaml:"tombstone_window" env:"RETENTION_TOMBSTONE_WINDOW" env-default:"2160h"` // 90 days
+	Interval        time.Duration `yaml:"interval"         env:"RETENTION_INTERVAL"         env-default:"1h"`
 }
 
 // DatabaseConfig tunes the pgxpool connection pool.
@@ -42,8 +50,8 @@ type FailureRateLimit struct {
 }
 
 type SessionConfig struct {
-	TTL        time.Duration `yaml:"ttl"                env:"SESSION_TTL"                env-default:"24h"`
-	CookieName string        `yaml:"cookie_name"        env:"SESSION_COOKIE_NAME"        env-default:"session_id"`
+	TTL        time.Duration `yaml:"ttl"         env:"SESSION_TTL"         env-default:"24h"`
+	CookieName string        `yaml:"cookie_name" env:"SESSION_COOKIE_NAME" env-default:"session_id"`
 	// No env-default on purpose: cleanenv applies env-default to any
 	// zero-value field, so `secure: false` in a yaml file (e.g. the plain-HTTP
 	// local config) would be silently overridden back to true. Environments

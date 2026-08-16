@@ -142,6 +142,16 @@ type IdempotencyRepository interface {
 	DeleteExpiredIdempotencyKeys(ctx context.Context) (int64, error)
 }
 
+// TombstoneRetention backs the retention job: hard-deleting soft-deleted
+// rows once they are older than the retention cutoff. The change_log is NOT
+// touched - pulls keep serving the tombstones - and callers must delete
+// transactions before categories/accounts (the referencing FKs go first).
+type TombstoneRetention interface {
+	DeleteTombstonedTransactionsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedCategoriesBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedAccountsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+}
+
 // EmailVerificationRepository owns OTP verification (atomic consume flow).
 type EmailVerificationRepository interface {
 	CreateEmailVerificationCode(ctx context.Context, userID uuid.UUID, code string, expiresAt time.Time) error

@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -48,6 +49,15 @@ type Querier interface {
 	DeleteSession(ctx context.Context, id string) (int64, error)
 	DeleteSessionsByUser(ctx context.Context, userID uuid.UUID) (int64, error)
 	DeleteSessionsByUserExcept(ctx context.Context, arg DeleteSessionsByUserExceptParams) (int64, error)
+	DeleteTombstonedAccountsBefore(ctx context.Context, deletedAt *time.Time) (int64, error)
+	DeleteTombstonedCategoriesBefore(ctx context.Context, deletedAt *time.Time) (int64, error)
+	// Tombstone retention: hard-delete rows that have been soft-deleted longer
+	// than the retention window. change_log entries are kept on purpose - pulls
+	// serve tombstones from the log alone, so devices offline during the window
+	// still converge to the deleted state. Transactions go first: their FKs
+	// reference accounts/categories, so those rows can only go once no
+	// tombstoned transaction still points at them.
+	DeleteTombstonedTransactionsBefore(ctx context.Context, deletedAt *time.Time) (int64, error)
 	ExtendSession(ctx context.Context, arg ExtendSessionParams) (int64, error)
 	GetAccount(ctx context.Context, arg GetAccountParams) (GetAccountRow, error)
 	// Includes tombstoned rows; used by sync push (serverState / idempotent
