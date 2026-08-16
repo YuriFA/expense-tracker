@@ -170,15 +170,20 @@ export function ConflictCenter() {
           + 'Удаление применено; изменение можно восстановить как новую запись.`
           : `${entityName}${subject ? ` «${subject}»` : ''} удалён на другом устройстве, '
           + 'поэтому локальное изменение отменено. Его можно восстановить как новую запись.`
-        Alert.alert('Запись удалена', message, [
-          {
-            text: 'Восстановить как новую',
-            onPress: () => {
-              void restoreAsNew(conflict)
+        Alert.alert(
+          'Запись удалена',
+          message,
+          [
+            {
+              text: 'Восстановить как новую',
+              onPress: () => {
+                void restoreAsNew(conflict)
+              },
             },
-          },
-          { text: 'Понятно', onPress: () => resolve('dismiss', conflict) },
-        ], { cancelable: false })
+            { text: 'Понятно', onPress: () => resolve('dismiss', conflict) },
+          ],
+          { cancelable: false },
+        )
         return
       }
 
