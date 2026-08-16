@@ -12,7 +12,7 @@
     "lint": "oxlint . --fix",
     "format": "oxfmt src/",
     "test": "jest",
-    "test:e2e": "maestro test .maestro",
+    "test:e2e": "./scripts/e2e/run-maestro-ios.sh",
     "db:generate": "drizzle-kit generate && node scripts/inline-migrations.mjs"
   },
   "dependencies": {

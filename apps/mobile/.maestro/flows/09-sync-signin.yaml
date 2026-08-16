@@ -4,9 +4,11 @@
 # nothing to show).
 #
 # Prerequisites: the backend on :8080, the test user provisioned (see
-# _launch.js for the curl), and the dev server started with
+# _launch.js for the curl), the dev server started with
 # EXPO_PUBLIC_API_URL=http://localhost:8080 (localhost works from the iOS
-# simulator). Override credentials with MAESTRO_TEST_EMAIL/PASSWORD.
+# simulator), and the simulator pasteboard primed with the test password
+# (scripts/e2e/run-maestro-ios.sh does it via `xcrun simctl pbcopy`).
+# Override credentials with MAESTRO_TEST_EMAIL/PASSWORD.
 appId: com.anonymous.mobile
 ---
 - runFlow: ../_launch.yaml
@@ -26,11 +28,20 @@ appId: com.anonymous.mobile
     id: login-email-input
 - eraseText
 - inputText: ${output.testEmail}
-- tapOn:
+# inputText AND Maestro's pasteText both mis-deliver text into this real
+# secure field (iOS 18.6 / dev build: 0-3 of 17 chars land), and setClipboard
+# fills only Maestro's internal clipboard - it never reaches the iOS
+# pasteboard. The reliable route is the native context-menu Paste: the e2e
+# runner primes the simulator pasteboard with MAESTRO_TEST_PASSWORD via
+# `xcrun simctl pbcopy` right before maestro starts (see
+# scripts/e2e/run-maestro-ios.sh), and nothing else in the suite touches the
+# pasteboard.
+- longPressOn:
     id: login-password-input
-- eraseText
-- inputText: ${output.testPassword}
-# iOS offers to save the password once a secure field is filled; dismiss it.
+- tapOn:
+    text: Paste
+# iOS offers to save the password once the secure field is filled; dismiss it
+# here and again after the submit (whichever moment it appears).
 - runFlow:
     when:
       visible: 'Save Password'
@@ -48,11 +59,21 @@ appId: com.anonymous.mobile
       visible: 'Save Password'
     commands:
       - tapOn: 'Not Now'
-# A successful login returns to the previous screen (Settings).
+# The screen shown right after a successful login is nondeterministic:
+# router.back() sometimes returns to Settings and sometimes lands on the
+# Dashboard (an expo-router quirk with the dev-client deep-link launch -
+# reported separately). So wait for the tab bar (it only appears once the
+# login screen has popped, i.e. the login succeeded) and switch explicitly.
+- extendedWaitUntil:
+    visible:
+      id: tab-settings
+    timeout: 20000
+- tapOn:
+    id: tab-settings
 - extendedWaitUntil:
     visible:
       id: screen-settings
-    timeout: 20000
+    timeout: 15000
 - assertVisible:
     id: settings-user-email
 - scrollUntilVisible:
