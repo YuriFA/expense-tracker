@@ -160,21 +160,25 @@ export function ConflictCenter() {
       const subject = conflictSubject(conflict)
 
       if (conflict.kind === 'deleted') {
-        Alert.alert(
-          'Запись удалена',
-          `${entityName}${subject ? ` «${subject}»` : ''} удалён на другом устройстве, '
-          + 'поэтому локальное изменение отменено. Его можно восстановить как новую запись.`,
-          [
-            {
-              text: 'Восстановить как новую',
-              onPress: () => {
-                void restoreAsNew(conflict)
-              },
+        // Direction of the delete-vs-edit conflict: a live serverState means
+        // the record was deleted HERE and edited elsewhere (delete-wins
+        // re-pushes the tombstone); a tombstoned serverState means it was
+        // deleted elsewhere and edited here.
+        const deletedLocally = conflict.serverState?.deleted === false
+        const message = deletedLocally
+          ? `${entityName}${subject ? ` «${subject}»` : ''} удалён на этом устройстве и изменён на другом. '
+          + 'Удаление применено; изменение можно восстановить как новую запись.`
+          : `${entityName}${subject ? ` «${subject}»` : ''} удалён на другом устройстве, '
+          + 'поэтому локальное изменение отменено. Его можно восстановить как новую запись.`
+        Alert.alert('Запись удалена', message, [
+          {
+            text: 'Восстановить как новую',
+            onPress: () => {
+              void restoreAsNew(conflict)
             },
-            { text: 'Понятно', onPress: () => resolve('dismiss', conflict) },
-          ],
-          { cancelable: false },
-        )
+          },
+          { text: 'Понятно', onPress: () => resolve('dismiss', conflict) },
+        ], { cancelable: false })
         return
       }
 

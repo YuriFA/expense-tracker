@@ -46,6 +46,8 @@ import {
 } from '@/shared/lib/db/schema'
 import {
   applyDeleteWins,
+  applyLocalDeleteWins,
+  dropOperationsFor,
   findUnresolvedConflict,
   firstPendingOpId,
   recordConflict,
@@ -209,7 +211,11 @@ export function createSyncEngine(options: SyncEngineOptions) {
         if (seenRecords.has(key)) continue
         seenRecords.add(key)
 
-        if (findUnresolvedConflict(tx, op.entity, op.entityId)) continue
+        // Only a 'version' conflict blocks the record: it waits for the
+        // user's keep/take choice. 'deleted' conflicts are informational -
+        // delete-wins already applied and a pending delete (local-delete vs
+        // remote-edit) must still reach the server.
+        if (findUnresolvedConflict(tx, op.entity, op.entityId)?.kind === 'version') continue
 
         const row = readEntityRow(tx, op.entity, op.entityId)
         if (!row) {
@@ -479,12 +485,42 @@ export function createSyncEngine(options: SyncEngineOptions) {
 
     // DIRTY: never overwrite unconfirmed local changes.
     if (change.action === 'tombstone') {
+      if (row.deletedAt !== null) {
+        // Delete-vs-delete: both sides deleted - converge silently (the
+        // pending local delete is redundant, the server is already there)
+        // and notify nobody, matching the idempotent delete semantics.
+        updateEntityRow(tx, change.entity, change.id, {
+          version: change.version,
+          serverVersion: change.version,
+        })
+        dropOperationsFor(tx, change.entity, change.id)
+        return
+      }
+      // Remote delete vs local edit: delete-wins applies immediately; the
+      // lost edit is preserved in the conflict record for restore-as-new.
       applyDeleteWins(tx, {
         entity: change.entity,
         entityId: change.id,
         opId: firstPendingOpId(tx, change.entity, change.id),
         baseVersion: row.serverVersion,
         serverVersion: change.version,
+      })
+    } else if (row.deletedAt !== null) {
+      // Local delete vs remote edit: delete-wins by default in this direction
+      // too - the tombstone is re-based onto the remote edit and re-pushed,
+      // the lost remote edit is preserved for restore-as-new.
+      applyLocalDeleteWins(tx, {
+        entity: change.entity,
+        entityId: change.id,
+        opId: firstPendingOpId(tx, change.entity, change.id),
+        baseVersion: row.serverVersion,
+        serverVersion: change.version,
+        lostEdit: change.data ?? null,
+        serverState: {
+          version: change.version,
+          deleted: false,
+          ...(change.data ? { data: change.data } : {}),
+        },
       })
     } else {
       recordConflict(tx, {

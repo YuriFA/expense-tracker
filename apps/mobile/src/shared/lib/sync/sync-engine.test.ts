@@ -285,6 +285,48 @@ describe('sync engine: push phase', () => {
     expect(server.records.size).toBe(0)
   })
 
+  it('delete during an in-flight create ends tombstoned on the server (no lost delete)', async () => {
+    // The create is in flight when the user deletes. The server may already
+    // hold the record, so the delete must survive as a queued tombstone and
+    // land after the create - the unborn shortcut must not wipe it.
+    const gate: { release: (() => void) | null } = { release: null }
+    let firstPush = true
+    const gatedTransport: SyncTransport = {
+      push: (operations) =>
+        new Promise((resolve) => {
+          server.pushCalls.push(operations)
+          const results = operations.map((op) => server.apply(op))
+          if (firstPush) {
+            firstPush = false
+            gate.release = () => resolve(results)
+          } else {
+            resolve(results)
+          }
+        }),
+      pull: (cursor) => server.pull(cursor),
+    }
+
+    const category = await categoryRepo.create(CATEGORY)
+    const createOpId = outboxRows()[0].opId
+    const runPromise = makeEngine(gatedTransport).run({ force: true })
+    await new Promise((resolve) => setImmediate(resolve))
+
+    await categoryRepo.remove(category.id) // delete BEFORE the create confirms
+    gate.release?.()
+    await runPromise
+
+    // Push 1: the frozen create (same opId). Push 2: the delete re-based onto
+    // the confirmed version. The server ends tombstoned, the record CLEAN.
+    expect(server.pushCalls).toHaveLength(2)
+    expect(server.pushCalls[0][0]).toMatchObject({ opId: createOpId, action: 'upsert' })
+    expect(server.pushCalls[1][0]).toMatchObject({ action: 'delete', id: category.id })
+    expect(server.pushCalls[1][0].baseVersion).toBe(1)
+    expect(server.records.get(`category:${category.id}`)?.deleted).toBe(true)
+    expect(categoryRow(category.id)?.deletedAt).not.toBeNull()
+    expect(categoryRow(category.id)).toMatchObject({ version: 2, serverVersion: 2 })
+    expect(outboxRows()).toHaveLength(0)
+  })
+
   it('continues the chain after an in-flight ancestor confirms (follower re-bases)', async () => {
     // A gated transport lets the test mutate locally while the first push is
     // in flight - the spec's "edit during in-flight push" scenario. Follower
@@ -541,6 +583,78 @@ describe('sync engine: pull phase', () => {
     expect(outboxRows()).toHaveLength(0)
     expect(listUnresolvedConflicts(db)).toHaveLength(1)
     expect(listUnresolvedConflicts(db)[0].kind).toBe('deleted')
+  })
+
+  it('local delete vs remote edit: delete-wins re-pushes the tombstone, edit stays restorable', async () => {
+    const category = await categoryRepo.create(CATEGORY)
+    await engine.run({ force: true }) // confirmed on the server (v1)
+    await categoryRepo.remove(category.id) // local delete pending (base 1)
+    server.mutate('category', category.id, { name: 'Серверная правка' }) // remote edit (v2)
+
+    // Pull delivers the edit while the local delete is stuck (backoff).
+    const pullOnlyTransport: SyncTransport = {
+      push: async () => [],
+      pull: (cursor) => server.pull(cursor),
+    }
+    await makeEngine(pullOnlyTransport).run({ force: true })
+
+    // Delete-wins in this direction too: the tombstone is re-based onto the
+    // remote edit with ONE delete operation against v2 (it must reach the
+    // server, not just apply locally), and the lost remote edit is preserved.
+    expect(categoryRow(category.id)?.deletedAt).not.toBeNull()
+    expect(categoryRow(category.id)).toMatchObject({ version: 3, serverVersion: 2 })
+    const ops = outboxRows()
+    expect(ops).toHaveLength(1)
+    expect(ops[0]).toMatchObject({ op: 'delete', entityId: category.id, baseVersion: 2 })
+    const [conflict] = listUnresolvedConflicts(db)
+    expect(conflict.kind).toBe('deleted')
+    expect((conflict.localState as { name?: string }).name).toBe('Серверная правка')
+
+    // The informational conflict does not block the re-push: the server ends
+    // tombstoned and the record CLEAN.
+    await engine.run({ force: true })
+    expect(server.records.get(`category:${category.id}`)?.deleted).toBe(true)
+    expect(categoryRow(category.id)).toMatchObject({ version: 3, serverVersion: 3 })
+    expect(outboxRows()).toHaveLength(0)
+
+    // Restore-as-new recovers the lost remote edit under a fresh id.
+    const restored = await categoryRepo.create({
+      name: (conflict.localState as { name: string }).name,
+      type: 'expense',
+      icon: 'car',
+      color: '#7c5cff',
+    })
+    markConflictResolved(db, conflict.id)
+    await engine.run({ force: true })
+    expect(restored.id).not.toBe(category.id)
+    expect(await categoryRepo.getById(restored.id)).toMatchObject({ name: 'Серверная правка' })
+    expect(server.records.get(`category:${restored.id}`)?.data).toMatchObject({
+      name: 'Серверная правка',
+    })
+    expect(listUnresolvedConflicts(db)).toHaveLength(0)
+  })
+
+  it('delete-vs-delete converges silently without notifying the user', async () => {
+    const category = await categoryRepo.create(CATEGORY)
+    await engine.run({ force: true })
+    await categoryRepo.remove(category.id) // local delete pending
+    server.deleteRecord('category', category.id) // the other device deleted it too
+
+    const pullOnlyTransport: SyncTransport = {
+      push: async () => [],
+      pull: (cursor) => server.pull(cursor),
+    }
+    await makeEngine(pullOnlyTransport).run({ force: true })
+
+    // Idempotent delete: CLEAN at the server's tombstone version, no pending
+    // operation, and no conflict record - nobody is notified.
+    expect(categoryRow(category.id)).toMatchObject({
+      deletedAt: expect.any(String),
+      version: 2,
+      serverVersion: 2,
+    })
+    expect(outboxRows()).toHaveLength(0)
+    expect(listUnresolvedConflicts(db)).toHaveLength(0)
   })
 
   it('a pulled tombstone on a CLEAN record just applies', async () => {

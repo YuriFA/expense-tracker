@@ -219,7 +219,11 @@ function updateEntityRow(
 }
 
 /** Drops every pending operation of one record (resolution bookkeeping). */
-function dropOperationsFor(tx: LocalTransaction, entity: SyncEntity, entityId: string): void {
+export function dropOperationsFor(
+  tx: LocalTransaction,
+  entity: SyncEntity,
+  entityId: string,
+): void {
   tx.delete(syncOutbox)
     .where(and(eq(syncOutbox.entity, entity), eq(syncOutbox.entityId, entityId)))
     .run()
@@ -273,6 +277,53 @@ export function applyDeleteWins(
     kind: 'deleted',
     localState,
     serverState: { version: input.serverVersion, deleted: true },
+  })
+}
+
+/**
+ * The mirrored delete-vs-edit direction: the record was deleted locally (a
+ * pending delete operation) and edited on the server. Delete-wins still
+ * applies by default, but here the tombstone must REACH the server: the local
+ * row is re-based onto the remote edit's version and ONE fresh delete
+ * operation is enqueued against it. The lost REMOTE edit is preserved as the
+ * conflict's local state (what `restoreAsNew` recovers); the notification is
+ * informational - it never blocks the re-push.
+ */
+export function applyLocalDeleteWins(
+  tx: LocalTransaction,
+  input: {
+    entity: SyncEntity
+    entityId: string
+    opId: string | null
+    baseVersion: number
+    serverVersion: number
+    /** The lost remote edit's payload (restore-as-new source). */
+    lostEdit: unknown
+    serverState: ConflictServerState
+  },
+): void {
+  const row = readEntityRow(tx, input.entity, input.entityId)
+  updateEntityRow(tx, input.entity, input.entityId, {
+    serverVersion: input.serverVersion,
+    version: Math.max(row?.version ?? 0, input.serverVersion + 1),
+  })
+  dropOperationsFor(tx, input.entity, input.entityId)
+  enqueueOperation(tx, {
+    entity: input.entity,
+    entityId: input.entityId,
+    op: 'delete',
+    payload: null,
+    baseVersion: input.serverVersion,
+  })
+  recordConflict(tx, {
+    entity: input.entity,
+    entityId: input.entityId,
+    opId: input.opId,
+    kind: 'deleted',
+    baseVersion: input.baseVersion,
+    serverVersion: input.serverVersion,
+    localState: input.lostEdit,
+    serverState: input.serverState,
   })
 }
 
