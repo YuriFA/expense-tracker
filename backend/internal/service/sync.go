@@ -97,8 +97,8 @@ func applySyncOperation(
 ) (domain.SyncPushResult, error) {
 	// Persistent idempotency: an already-applied opId replays its stored
 	// result without side effects (retry after a lost response, duplicate
-	// delivery across batches).
-	if previous, err := t.GetAppliedOperation(ctx, op.OpID); err != nil {
+	// delivery across batches), scoped to this user's applied operations.
+	if previous, err := t.GetAppliedOperation(ctx, userID, op.OpID); err != nil {
 		return domain.SyncPushResult{}, err
 	} else if previous != nil {
 		return previous.Result, nil

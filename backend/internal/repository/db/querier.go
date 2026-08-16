@@ -55,7 +55,7 @@ type Querier interface {
 	GetAccountAny(ctx context.Context, arg GetAccountAnyParams) (GetAccountAnyRow, error)
 	GetAccountBalances(ctx context.Context, userID uuid.UUID) ([]GetAccountBalancesRow, error)
 	GetAccounts(ctx context.Context, userID uuid.UUID) ([]GetAccountsRow, error)
-	GetAppliedOperation(ctx context.Context, opID uuid.UUID) (AppliedOperation, error)
+	GetAppliedOperation(ctx context.Context, arg GetAppliedOperationParams) (AppliedOperation, error)
 	GetCategories(ctx context.Context, arg GetCategoriesParams) ([]GetCategoriesRow, error)
 	GetCategory(ctx context.Context, arg GetCategoryParams) (GetCategoryRow, error)
 	// Includes tombstoned rows (sync push + conflict classification).

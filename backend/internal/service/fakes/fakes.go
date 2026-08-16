@@ -950,10 +950,10 @@ func (s *Store) currentState(userID uuid.UUID, entity string, id uuid.UUID) any 
 	return nil
 }
 
-func (t *fakeSyncTx) GetAppliedOperation(_ context.Context, opID uuid.UUID) (*domain.AppliedOperation, error) {
+func (t *fakeSyncTx) GetAppliedOperation(_ context.Context, userID, opID uuid.UUID) (*domain.AppliedOperation, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
-	if op, ok := t.store.appliedOps[opID]; ok {
+	if op, ok := t.store.appliedOps[opID]; ok && op.UserID == userID {
 		c := *op
 		return &c, nil
 	}

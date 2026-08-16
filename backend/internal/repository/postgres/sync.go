@@ -36,10 +36,10 @@ func (r *Repository) WithinUserTx(ctx context.Context, userID uuid.UUID, fn func
 
 // --- applied_operations -----------------------------------------------------
 
-func (t *syncTx) GetAppliedOperation(ctx context.Context, opID uuid.UUID) (*domain.AppliedOperation, error) {
+func (t *syncTx) GetAppliedOperation(ctx context.Context, userID, opID uuid.UUID) (*domain.AppliedOperation, error) {
 	const op = "repository.postgres.syncTx.GetAppliedOperation"
 
-	row, err := t.q.GetAppliedOperation(ctx, opID)
+	row, err := t.q.GetAppliedOperation(ctx, db.GetAppliedOperationParams{UserID: userID, OpID: opID})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil //nolint:nilnil // (nil, nil) is the documented "never created" signal

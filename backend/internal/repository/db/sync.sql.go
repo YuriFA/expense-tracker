@@ -41,11 +41,16 @@ func (q *Queries) AppendChangeLog(ctx context.Context, arg AppendChangeLogParams
 const getAppliedOperation = `-- name: GetAppliedOperation :one
 SELECT op_id, user_id, entity, entity_id, result, applied_at
 FROM applied_operations
-WHERE op_id = $1
+WHERE op_id = $1 AND user_id = $2
 `
 
-func (q *Queries) GetAppliedOperation(ctx context.Context, opID uuid.UUID) (AppliedOperation, error) {
-	row := q.db.QueryRow(ctx, getAppliedOperation, opID)
+type GetAppliedOperationParams struct {
+	OpID   uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) GetAppliedOperation(ctx context.Context, arg GetAppliedOperationParams) (AppliedOperation, error) {
+	row := q.db.QueryRow(ctx, getAppliedOperation, arg.OpID, arg.UserID)
 	var i AppliedOperation
 	err := row.Scan(
 		&i.OpID,

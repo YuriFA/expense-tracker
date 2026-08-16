@@ -81,7 +81,7 @@ type TransactionRepository interface {
 // user's change-log advisory lock), so a whole push batch commits atomically
 // and its change_log rows order with commit visibility.
 type SyncTx interface {
-	GetAppliedOperation(ctx context.Context, opID uuid.UUID) (*domain.AppliedOperation, error)
+	GetAppliedOperation(ctx context.Context, userID, opID uuid.UUID) (*domain.AppliedOperation, error)
 	InsertAppliedOperation(ctx context.Context, op domain.AppliedOperation) error
 
 	// Reads including tombstones (nil, nil when the id was never created).

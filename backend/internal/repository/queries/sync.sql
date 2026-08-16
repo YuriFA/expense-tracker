@@ -17,7 +17,7 @@ RETURNING seq;
 -- name: GetAppliedOperation :one
 SELECT op_id, user_id, entity, entity_id, result, applied_at
 FROM applied_operations
-WHERE op_id = $1;
+WHERE op_id = @op_id AND user_id = @user_id;
 
 -- name: InsertAppliedOperation :exec
 INSERT INTO applied_operations (op_id, user_id, entity, entity_id, result)
