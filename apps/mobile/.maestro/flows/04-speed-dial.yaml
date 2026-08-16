@@ -15,7 +15,7 @@
 # Visibility note: the SpeedDial backdrop is a full-screen overlay that Maestro
 # reports as not-visible while closed (it becomes visible when the dial opens),
 # so asserting it toggles is a reliable closed/open signal - not a weakened one.
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 ---
 - runFlow: ../_launch.yaml
 

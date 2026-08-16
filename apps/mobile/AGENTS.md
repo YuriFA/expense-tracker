@@ -163,7 +163,7 @@ Flows live in `.maestro/flows/*.yaml`; shared launch logic is `.maestro/_launch.
 
 New flow template:
 ```yaml
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 ---
 - runFlow: ../_launch.yaml
 - tapOn:
@@ -174,9 +174,11 @@ appId: host.exp.Exponent
 
 Before reporting a task done, `pnpm test:e2e` must pass — a failing run blocks `done`; don't skip or weaken assertions to make the suite green.
 
-## Expo Go limitations
+## Dev build target (was: Expo Go)
 
-Target: Expo Go on iOS. Flows deep-link into the running dev server (`host.exp.Exponent`). Known limitation: typing into Bottom Sheet inputs is unstable under Expo Go (inputs can be missing from the modal a11y tree, keyboard-lift geometry is unstable) — tracked as `TODO(sheet-e2e)`; don't silently remove or weaken this. When a feature needs native modules unavailable in Expo Go (MMKV, SQLite native behavior, custom modules), move to a dev build: add `ios.bundleIdentifier` + Android `package`, produce the dev build, and switch `_launch.yaml` from Expo Go `openLink` to `launchApp`.
+Target: a local iOS dev build (`com.anonymous.mobile` + `expo-dev-client`). The suite moved off Expo Go when background sync landed — `expo-background-fetch`/`expo-task-manager` OS scheduling is not guaranteed inside Expo Go. Produce/update the dev build with `pnpm ios` (`npx expo run:ios`; `ios/`/`android/` are gitignored and config-synced from `app.json`, incl. the `expo-background-fetch` plugin's `UIBackgroundModes`). Metro must be running (default 8081): flows deep-link the dev client into it via `exp+expensetracker://expo-development-client/?url=…` (see `_launch.yaml`/`_launch.js`, overridable via `MAESTRO_EXPO_URL`).
+
+Known limitation carried over: typing into Bottom Sheet inputs is unstable (inputs can be missing from the modal a11y tree, keyboard-lift geometry is unstable) — tracked as `TODO(sheet-e2e)`; don't silently remove or weaken this.
 
 ## Quality bar
 
@@ -209,7 +211,6 @@ If a requirement conflicts with an existing architecture rule, stop and explain 
 ## Current not-yet-built decisions
 
 - i18n wiring (`shared/i18n` + react-i18next) and localized tab/screen titles; RU strings hardcoded with `TODO(i18n)` markers until then.
-- Phase 4 of `mobile-offline-first` (optional): background sync via dev build, backend tombstone retention, sync metrics.
 
 ## Session + sync (landed)
 
@@ -221,6 +222,7 @@ Offline-first sync per the `mobile-offline-first` change:
 - Conflicts are persistent rows (`shared/lib/sync/conflicts.ts` + `sync_conflicts`). `ConflictCenter` handles edit-vs-edit conflicts; delete-vs-edit uses delete-wins immediately and preserves the edit for restore-as-new-record.
 - Status UI: `widgets/sync-status`. Backend URL: `EXPO_PUBLIC_API_URL`.
 - Sync integration tests require `SYNC_INTEGRATION_API=<url> pnpm test sync-integration`.
+- **Background sync** (dev build only): `shared/lib/sync/background-sync.ts` registers an `expo-background-fetch` task (15-min advisory interval) that runs one engine cycle headlessly over the same db + api client; anonymous devices skip it entirely. Best-effort by design — foreground triggers stay primary (correctness never depends on background runs).
 
 ## Local data layer (landed)
 

@@ -1,10 +1,13 @@
 # Reaches an (auth) screen. The skeleton has no session gate and no in-app link
-# into (auth), so the flow drives the route the same way Expo Router deep links
-# do: through the dev-server URL (${output.url} is set by _launch.yaml).
-appId: host.exp.Exponent
+# into (auth), so the flow drives the route the way deep links do: through the
+# app scheme (expensetracker, from app.json) once the dev build is running.
+appId: com.anonymous.mobile
 ---
 - runFlow: ../_launch.yaml
-- openLink: ${output.url}/--/login
+- openLink: expensetracker://login
+- tapOn:
+    text: Open
+    optional: true
 - extendedWaitUntil:
     visible:
       id: screen-login

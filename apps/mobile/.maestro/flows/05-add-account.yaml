@@ -10,7 +10,7 @@
 # accessible elements (buttons/chips) to the accessibility tree, so the text
 # inputs are focused by POINT (measured sheet geometry) instead of id.
 # Success is asserted behaviorally: the sheet closes and the row appears.
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 tags:
   - accounts
 ---

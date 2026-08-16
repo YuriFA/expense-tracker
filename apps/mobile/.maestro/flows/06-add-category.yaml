@@ -9,7 +9,7 @@
 # The name input is focused by POINT (see 05-add-account for why); success
 # is proven behaviorally: submitting the SAME name again must surface the
 # unique-name error alert, which only happens if the first create persisted.
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 tags:
   - categories
 ---

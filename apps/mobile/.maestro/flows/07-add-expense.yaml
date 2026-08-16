@@ -9,7 +9,7 @@
 #
 # The amount input is focused by POINT (see 05-add-account for why);
 # account/category chips are accessible elements and use ids.
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 tags:
   - transactions
 ---

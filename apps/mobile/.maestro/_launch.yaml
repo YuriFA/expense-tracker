@@ -1,23 +1,37 @@
 # Shared launch subflow. Imported by every flow via `runFlow: ../_launch.yaml`.
 #
-# Targets Expo Go (appId host.exp.Exponent): it deep-links into the running
-# dev server instead of launching a standalone app, so the suite needs no native
-# build while the app only uses modules shipped with Expo Go. The dev-server URL
-# is resolved by _launch.js (overridable via the MAESTRO_EXPO_URL env var).
+# Targets the iOS dev build (appId com.anonymous.mobile, expo-dev-client):
+# background sync needs expo-background-fetch/expo-task-manager scheduling,
+# which Expo Go does not guarantee, so the e2e suite moved off Expo Go (see
+# apps/mobile/AGENTS.md "E2E / Maestro"). The launch deep-links the dev client
+# into the running Metro dev server (URL resolved by _launch.js, overridable
+# via the MAESTRO_EXPO_URL env var), so the suite needs no bundled JS.
 #
 # killApp first so every flow starts from the initial route (Dashboard)
 # regardless of where a previous flow left the navigator.
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 ---
 - runScript: _launch.js
-- killApp: host.exp.Exponent
+- killApp: com.anonymous.mobile
 - openLink: ${output.url}
-# iOS shows "Open in 'Expo Go'?" the first time a scheme opens Expo Go.
+# iOS asks "Open in <app>?" before opening a custom scheme; the optional tap
+# no-ops when the dialog is absent (text conditions match exactly, so the
+# dialog title itself cannot be used as the condition).
+- tapOn:
+    text: Open
+    optional: true
+# The dev build may surface its one-time intro ("Continue") and/or open the
+# developer menu ("Close", xmark) over the app on first launches.
 - runFlow:
     when:
-      visible: 'Open in'
+      visible: 'Continue'
     commands:
-      - tapOn: Open
+      - tapOn: Continue
+- runFlow:
+    when:
+      visible: 'Close'
+    commands:
+      - tapOn: Close
 - extendedWaitUntil:
     visible:
       id: screen-dashboard

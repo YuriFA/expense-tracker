@@ -25,6 +25,7 @@ import { AppState, type AppStateStatus } from 'react-native'
 import { apiClient } from '@/shared/api/client'
 import { useAuth } from '@/entities/session/model/use-auth'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
+import { registerBackgroundSync } from './background-sync'
 import {
   createApiTransport,
   createSyncEngine,
@@ -67,6 +68,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   const [engineState, setEngineState] = useState<SyncEngineState>(() => engine.getState())
   useEffect(() => engine.subscribe(() => setEngineState(engine.getState())), [engine])
+
+  // OS-scheduled background-fetch trigger (dev build only): best-effort
+  // catch-up while the app sits in the background; correctness never depends
+  // on it (the triggers below stay primary). Idempotent, fire-and-forget.
+  useEffect(() => {
+    registerBackgroundSync()
+  }, [])
 
   // The engine only runs while authenticated; logging in resumes + kicks it
   // (this is also the initial sync right after the ownership check passes).

@@ -1,5 +1,5 @@
 # Smoke: the app launches in Expo Go and the Dashboard renders.
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 tags:
   - smoke
 ---

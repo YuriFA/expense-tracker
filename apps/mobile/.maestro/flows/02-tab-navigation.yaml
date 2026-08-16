@@ -1,5 +1,5 @@
 # Smoke: bottom-tab navigation across every tab and back.
-appId: host.exp.Exponent
+appId: com.anonymous.mobile
 tags:
   - smoke
 ---
