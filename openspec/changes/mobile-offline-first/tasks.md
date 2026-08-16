@@ -20,17 +20,18 @@
 - [x] 2.3 Wire `NewCategorySheet` to `useCreateCategory`: name, type toggle, icon picker, color picker; validation and RU error surfacing
 - [x] 2.4 Build accounts screen: list with balances, create form (name, currency USD/EUR/RUB, opening balance in major units → minor via money helpers), delete with in-use guard messaging
 - [x] 2.5 Build the three speed-dial transaction flows (expense, income, transfer) with API-mirroring guards (category type match, distinct transfer accounts, amount ≥ 1 minor unit) and a minimal month list on the transactions tab
-- [ ] 2.6 Phase-1 acceptance: `pnpm type-check`, `lint`, jest, `pnpm knip` green; Maestro flows (add category, add account, add expense via speed dial, month/mode switching) pass in Expo Go
+- [x] 2.6 Phase-1 acceptance: `pnpm type-check`, `lint`, jest, `pnpm knip` green; Maestro flows (add category, add account, add expense via speed dial, month/mode switching) pass in Expo Go
+  - Accepted exception (user decision, 2026-08-16): static checks + 4/8 flows green; the data-creating flows 05–08 stay `TODO(sheet-e2e)` known-failing — stabilizing sheet-input typing needs @gorhom keyboard-handling work (keyboardBehavior has no `'none'` in v5), deferred as a separate task.
 
 ## 3. Phase 2 — Contract and backend sync support
 
-- [ ] 3.1 Update `docs/api/openapi.yaml` first: optional client `id` on the three create requests; `version` on Category/Account schemas and update requests; tombstone-aware listings; `POST /api/sync/push` + `GET /api/sync/pull` with per-item results and `SYNC_VERSION_CONFLICT`/`SYNC_ALREADY_EXISTS` codes; pass redocly lint
-- [ ] 3.2 Backend migrations: `change_log` (monotonic seq under advisory lock), `applied_operations`, `deleted_at` soft deletes + `version` on categories/accounts; audit every sqlc list/summary query for `deleted_at IS NULL`
-- [ ] 3.3 Backend service layer: every mutation writes entity + `change_log` (+ `applied_operations` for sync pushes) in one DB transaction; idempotent create semantics per spec (absent→create / same opId→replay / other opId→`SYNC_ALREADY_EXISTS`)
-- [ ] 3.4 Backend `/api/sync/push` and `/api/sync/pull` handlers: per-item CAS results with `serverState` on conflict; cursor pull in seq order with pagination; Go unit/integration tests covering replay, conflict, partial batch, tombstones
-- [ ] 3.5 Make registration seeding opt-in (default off, web signup keeps it on until its own product decision)
-- [ ] 3.6 Regenerate and extend `packages/api`: `pnpm gen:api`; sync client functions/types; extend `mapApiError` (`SYNC_VERSION_CONFLICT` → `VersionConflictError`, `SYNC_ALREADY_EXISTS` → `AlreadyExistsError`); verify `CreateTransactionPayload` accepts client id; package type-check green
-- [ ] 3.7 Verify web is unaffected: existing web e2e/test suites green against the updated backend (additive contract)
+- [x] 3.1 Update `docs/api/openapi.yaml` first: optional client `id` on the three create requests; `version` on Category/Account schemas and update requests; tombstone-aware listings; `POST /api/sync/push` + `GET /api/sync/pull` with per-item results and `SYNC_VERSION_CONFLICT`/`SYNC_ALREADY_EXISTS` codes; pass redocly lint
+- [x] 3.2 Backend migrations: `change_log` (monotonic seq under advisory lock), `applied_operations`, `deleted_at` soft deletes + `version` on categories/accounts; audit every sqlc list/summary query for `deleted_at IS NULL`
+- [x] 3.3 Backend service layer: every mutation writes entity + `change_log` (+ `applied_operations` for sync pushes) in one DB transaction; idempotent create semantics per spec (absent→create / same opId→replay / other opId→`SYNC_ALREADY_EXISTS`)
+- [x] 3.4 Backend `/api/sync/push` and `/api/sync/pull` handlers: per-item CAS results with `serverState` on conflict; cursor pull in seq order with pagination; Go unit/integration tests covering replay, conflict, partial batch, tombstones
+- [x] 3.5 Make registration seeding opt-in (default off, web signup keeps it on until its own product decision)
+- [x] 3.6 Regenerate and extend `packages/api`: `pnpm gen:api`; sync client functions/types; extend `mapApiError` (`SYNC_VERSION_CONFLICT` → `VersionConflictError`, `SYNC_ALREADY_EXISTS` → `AlreadyExistsError`); verify `CreateTransactionPayload` accepts client id; package type-check green
+- [x] 3.7 Verify web is unaffected: existing web e2e/test suites green against the updated backend (additive contract)
 
 ## 4. Phase 3 — SyncEngine on mobile
 
