@@ -180,6 +180,30 @@ describe('local account repository', () => {
     await expect(accountRepo.remove(account.id)).rejects.toBeInstanceOf(NotFoundError)
   })
 
+  it('keeps an in-flight create when deleting before its confirmation', async () => {
+    const account = await accountRepo.create({ name: 'Карта', currency: 'RUB', openingBalance: 0 })
+    const [createOp] = db.select().from(syncOutbox).all()
+    db.update(syncOutbox)
+      .set({ sentAt: new Date().toISOString() })
+      .where(eq(syncOutbox.opId, createOp.opId))
+      .run()
+
+    await accountRepo.remove(account.id)
+
+    // serverVersion is still 0, but the create may already be applied on the
+    // server: the delete goes through the tombstone flow, never the unborn
+    // wipe (which would silently drop the delete and resurrect the record).
+    const row = db.select().from(accounts).where(eq(accounts.id, account.id)).get()
+    expect(row?.deletedAt).not.toBeNull()
+    const ops = db.select().from(syncOutbox).all()
+    expect(ops).toHaveLength(2)
+    expect(ops.some((op) => op.opId === createOp.opId)).toBe(true)
+    expect(ops.find((op) => op.op === 'delete')).toMatchObject({
+      entityId: account.id,
+      baseVersion: 0,
+    })
+  })
+
   it('updates only name and manualAdjustment and bumps the local revision', async () => {
     const account = await accountRepo.create({
       name: 'Карта',

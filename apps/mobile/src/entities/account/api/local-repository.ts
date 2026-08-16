@@ -22,7 +22,7 @@ import {
   type UpdateAccountPayload,
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '@/shared/lib/db/database'
-import { enqueueOperation, removeOperationsFor } from '@/shared/lib/db/outbox'
+import { enqueueOperation, hasSentOperations, removeOperationsFor } from '@/shared/lib/db/outbox'
 import { accounts, transactions, type AccountRow } from '@/shared/lib/db/schema'
 import { generateId } from '@/shared/lib/generate-id'
 
@@ -220,11 +220,15 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
           })
         }
 
-        if (row.serverVersion === 0) {
-          // Unborn record: vanishes together with its queued operations.
+        if (row.serverVersion === 0 && !hasSentOperations(tx, 'account', id)) {
+          // Unborn record (no operation ever left the device): it vanishes
+          // together with its queued operations.
           tx.delete(accounts).where(eq(accounts.id, id)).run()
           removeOperationsFor(tx, 'account', id)
         } else {
+          // serverVersion 0 with a SENT create means the server may already
+          // hold the record (in flight / lost response): the delete must
+          // travel as a tombstone after the create, never be wiped.
           const next = { ...row, deletedAt: new Date().toISOString(), version: row.version + 1 }
           tx.update(accounts).set(next).where(eq(accounts.id, id)).run()
           enqueueOperation(tx, {

@@ -20,7 +20,7 @@ import {
   type UpdateCategoryPayload,
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '@/shared/lib/db/database'
-import { enqueueOperation, removeOperationsFor } from '@/shared/lib/db/outbox'
+import { enqueueOperation, hasSentOperations, removeOperationsFor } from '@/shared/lib/db/outbox'
 import { categories, transactions, type CategoryRow } from '@/shared/lib/db/schema'
 import { generateId } from '@/shared/lib/generate-id'
 
@@ -187,12 +187,15 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
           })
         }
 
-        if (row.serverVersion === 0) {
-          // Unborn record (never confirmed by the server): it vanishes and
-          // its queued operations go with it - nothing is ever pushed.
+        if (row.serverVersion === 0 && !hasSentOperations(tx, 'category', id)) {
+          // Unborn record (no operation ever left the device): it vanishes
+          // and its queued operations go with it - nothing is ever pushed.
           tx.delete(categories).where(eq(categories.id, id)).run()
           removeOperationsFor(tx, 'category', id)
         } else {
+          // serverVersion 0 with a SENT create means the server may already
+          // hold the record (in flight / lost response): the delete must
+          // travel as a tombstone after the create, never be wiped.
           const next = { ...row, deletedAt: new Date().toISOString(), version: row.version + 1 }
           tx.update(categories).set(next).where(eq(categories.id, id)).run()
           enqueueOperation(tx, {

@@ -6,7 +6,7 @@
 // talks to the network. The phase-1 local repository already writes the
 // outbox so the later engine plugs in without schema or repository changes.
 
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import type { LocalTransaction } from './database'
 import {
   accounts,
@@ -68,6 +68,31 @@ export function removeOperationsFor(
 
 export function pendingOperations(tx: LocalTransaction): SyncOutboxRow[] {
   return tx.select().from(syncOutbox).orderBy(asc(syncOutbox.createdAt), asc(syncOutbox.opId)).all()
+}
+
+/**
+ * True when at least one operation of the record has already been sent (in
+ * flight or awaiting retry). The server may hold the record even though the
+ * local `serverVersion` is still 0 (create applied with a lost response), so
+ * a delete must go through the tombstone flow instead of the unborn wipe.
+ */
+export function hasSentOperations(
+  tx: LocalTransaction,
+  entity: SyncEntity,
+  entityId: string,
+): boolean {
+  const sent = tx
+    .select({ opId: syncOutbox.opId })
+    .from(syncOutbox)
+    .where(
+      and(
+        eq(syncOutbox.entity, entity),
+        eq(syncOutbox.entityId, entityId),
+        isNotNull(syncOutbox.sentAt),
+      ),
+    )
+    .get()
+  return sent !== undefined
 }
 
 /** A push confirmation: the server applied `opId` and returned `version`. */

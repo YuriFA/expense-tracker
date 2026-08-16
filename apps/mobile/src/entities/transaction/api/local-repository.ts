@@ -22,7 +22,7 @@ import {
   type UpdateTransactionPayload,
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '@/shared/lib/db/database'
-import { enqueueOperation, removeOperationsFor } from '@/shared/lib/db/outbox'
+import { enqueueOperation, hasSentOperations, removeOperationsFor } from '@/shared/lib/db/outbox'
 import { accounts, categories, transactions, type TransactionRow } from '@/shared/lib/db/schema'
 import { generateId } from '@/shared/lib/generate-id'
 
@@ -360,11 +360,15 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
         const row = tx.select().from(transactions).where(eq(transactions.id, id)).get()
         if (!row || row.deletedAt) throw new NotFoundError('Transaction not found')
 
-        if (row.serverVersion === 0) {
-          // Unborn record: vanishes together with its queued operations.
+        if (row.serverVersion === 0 && !hasSentOperations(tx, 'transaction', id)) {
+          // Unborn record (no operation ever left the device): it vanishes
+          // together with its queued operations.
           tx.delete(transactions).where(eq(transactions.id, id)).run()
           removeOperationsFor(tx, 'transaction', id)
         } else {
+          // serverVersion 0 with a SENT create means the server may already
+          // hold the record (in flight / lost response): the delete must
+          // travel as a tombstone after the create, never be wiped.
           const next = { ...row, deletedAt: new Date().toISOString(), version: row.version + 1 }
           tx.update(transactions).set(next).where(eq(transactions.id, id)).run()
           enqueueOperation(tx, {

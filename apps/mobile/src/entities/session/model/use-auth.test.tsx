@@ -100,6 +100,71 @@ describe('AuthProvider', () => {
     expect(hook.result.current.status).toBe('anonymous')
   })
 
+  it('restore of a foreign session goes through the gate, never straight to authenticated', async () => {
+    setOwnerUserId(db, USER_A.id)
+    await db.insert(categories).values({
+      id: 'cat-foreign',
+      name: 'Локальная',
+      type: 'expense',
+      icon: 'car',
+      color: '#7c5cff',
+      version: 1,
+      serverVersion: 0,
+      deletedAt: null,
+      createdAt: new Date().toISOString(),
+    })
+    sessionApi.getCurrentUser.mockResolvedValue(USER_B)
+
+    const hook = renderHook(() => useAuth(), { wrapper: makeWrapper() })
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledTimes(1))
+
+    // The interrupted ownership choice must be answered first: B is NOT
+    // authenticated, so the sync engine can never push A's data to B.
+    expect(hook.result.current.status).toBe('restoring')
+    expect(hook.result.current.isAuthenticated).toBe(false)
+
+    const cancel = alertButtons.find((b) => b.text === 'Отмена')
+    expect(cancel).toBeDefined()
+    await act(async () => {
+      cancel?.onPress?.()
+    })
+    await waitFor(() => expect(hook.result.current.status).toBe('anonymous'))
+
+    expect(sessionApi.logout).toHaveBeenCalled()
+    expect(getOwnerUserId(db)).toBe(USER_A.id)
+    expect(db.select().from(categories).all()).toHaveLength(1)
+  })
+
+  it('restore of a foreign session completes after clearing local data', async () => {
+    setOwnerUserId(db, USER_A.id)
+    await db.insert(categories).values({
+      id: 'cat-wipe',
+      name: 'Локальная',
+      type: 'expense',
+      icon: 'car',
+      color: '#7c5cff',
+      version: 1,
+      serverVersion: 0,
+      deletedAt: null,
+      createdAt: new Date().toISOString(),
+    })
+    sessionApi.getCurrentUser.mockResolvedValue(USER_B)
+
+    const hook = renderHook(() => useAuth(), { wrapper: makeWrapper() })
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledTimes(1))
+
+    const clear = alertButtons.find((b) => b.text === 'Удалить данные')
+    expect(clear).toBeDefined()
+    await act(async () => {
+      clear?.onPress?.()
+    })
+    await waitFor(() => expect(hook.result.current.status).toBe('authenticated'))
+
+    expect(hook.result.current.user?.id).toBe(USER_B.id)
+    expect(db.select().from(categories).all()).toHaveLength(0)
+    expect(getOwnerUserId(db)).toBe(USER_B.id)
+  })
+
   it('first login on unowned data binds the owner without a dialog', async () => {
     sessionApi.login.mockResolvedValue(USER_A)
     const hook = await renderAuth()

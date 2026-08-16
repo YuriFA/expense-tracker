@@ -193,4 +193,24 @@ describe('outbox: unborn records', () => {
     expect(db.transaction((tx) => pendingOperations(tx))).toHaveLength(0)
     expect(categoryRow(db, category.id)).toBeUndefined()
   })
+
+  it('delete while the create is in flight keeps both operations (tombstone flow)', async () => {
+    const repo = createLocalCategoryRepository(db)
+    const category = await repo.create(PAYLOAD)
+    const [createOp] = db.transaction((tx) => pendingOperations(tx))
+    markSent(db, createOp.opId) // in flight: the server may already hold the create
+
+    await repo.remove(category.id)
+
+    // The record is tombstoned, not vanished: the frozen create stays
+    // retryable under its opId, and the delete travels after it.
+    const row = categoryRow(db, category.id)
+    expect(row?.deletedAt).not.toBeNull()
+    expect(row?.version).toBe(2)
+    const ops = db.transaction((tx) => pendingOperations(tx))
+    expect(ops).toHaveLength(2)
+    expect(ops[0].opId).toBe(createOp.opId)
+    expect(ops[0].sentAt).not.toBeNull()
+    expect(ops[1]).toMatchObject({ op: 'delete', entityId: category.id, baseVersion: 0 })
+  })
 })

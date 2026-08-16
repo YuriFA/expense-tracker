@@ -331,4 +331,28 @@ describe('local transaction repository: query and pagination', () => {
     expect(ops[0].op).toBe('delete')
     expect(ops[0].baseVersion).toBe(4)
   })
+
+  it('keeps an in-flight create when deleting before its confirmation', async () => {
+    const transaction = await transactionRepo.create(cashflowPayload())
+    const [createOp] = db.select().from(syncOutbox).all()
+    db.update(syncOutbox)
+      .set({ sentAt: new Date().toISOString() })
+      .where(eq(syncOutbox.opId, createOp.opId))
+      .run()
+
+    await transactionRepo.remove(transaction.id)
+
+    // serverVersion is still 0, but the create may already be applied on the
+    // server: the delete goes through the tombstone flow, never the unborn
+    // wipe (which would silently drop the delete and resurrect the record).
+    const row = db.select().from(transactions).where(eq(transactions.id, transaction.id)).get()
+    expect(row?.deletedAt).not.toBeNull()
+    const ops = db.select().from(syncOutbox).all()
+    expect(ops).toHaveLength(2)
+    expect(ops.some((op) => op.opId === createOp.opId)).toBe(true)
+    expect(ops.find((op) => op.op === 'delete')).toMatchObject({
+      entityId: transaction.id,
+      baseVersion: 0,
+    })
+  })
 })

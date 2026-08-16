@@ -44,34 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const statusRef = useRef(status)
   statusRef.current = status
 
-  // Restore the session from RN's cookie store once per app run. A 401 means
-  // "not signed in" and lands us in anonymous mode - the app stays fully
-  // usable on local data.
-  useEffect(() => {
-    let cancelled = false
-    sessionApi
-      .getCurrentUser()
-      .then((restored) => {
-        if (cancelled) return
-        setUser(restored)
-        if (!getOwnerUserId(db)) setOwnerUserId(db, restored.id)
-        setStatus('authenticated')
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return
-        if (error instanceof UnauthorizedError) {
-          setStatus('anonymous')
-          return
-        }
-        // Network/backend unavailable at startup: offline-first means the
-        // anonymous shell, not a blocking error screen.
-        setStatus('anonymous')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [db])
-
   // Register the shared 401 interceptor: expired sessions clear auth state
   // (the sync engine pauses itself on UnauthorizedError and resumes after the
   // next successful login).
@@ -139,6 +111,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }),
     [completeAuthentication, db, queryClient],
   )
+
+  // Restore the session from RN's cookie store once per app run. A 401 means
+  // "not signed in" and lands us in anonymous mode - the app stays fully
+  // usable on local data. A restored session for a DIFFERENT user than the
+  // local owner goes through the same ownership gate as login: the
+  // interrupted clear-or-cancel choice must be answered before the app (and
+  // with it the sync engine) may act as that user.
+  useEffect(() => {
+    let cancelled = false
+    sessionApi
+      .getCurrentUser()
+      .then((restored) => {
+        if (cancelled) return
+        const owner = getOwnerUserId(db)
+        if (!owner || owner === restored.id) {
+          completeAuthentication(restored)
+          return
+        }
+        void passOwnershipGate(restored).then((result) => {
+          // Cancelled: the gate already logged the foreign session out; the
+          // app continues anonymously with the owner's local data intact.
+          if (!result.ok) setStatus('anonymous')
+        })
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        if (error instanceof UnauthorizedError) {
+          setStatus('anonymous')
+          return
+        }
+        // Network/backend unavailable at startup: offline-first means the
+        // anonymous shell, not a blocking error screen.
+        setStatus('anonymous')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [completeAuthentication, db, passOwnershipGate])
 
   const login = useCallback(
     async (email: string, password: string): Promise<AuthResult> => {
