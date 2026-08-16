@@ -20,6 +20,7 @@ const ACCOUNTS = [
     currency: 'RUB' as const,
     openingBalance: 150_000,
     manualAdjustment: 0,
+    version: 1,
   },
   {
     id: 'acc-2',
@@ -27,6 +28,7 @@ const ACCOUNTS = [
     currency: 'USD' as const,
     openingBalance: 5_000,
     manualAdjustment: 1_000,
+    version: 1,
   },
 ]
 

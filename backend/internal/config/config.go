@@ -42,9 +42,13 @@ type FailureRateLimit struct {
 }
 
 type SessionConfig struct {
-	TTL               time.Duration `yaml:"ttl"                env:"SESSION_TTL"                env-default:"24h"`
-	CookieName        string        `yaml:"cookie_name"        env:"SESSION_COOKIE_NAME"        env-default:"session_id"`
-	Secure            bool          `yaml:"secure"             env:"SESSION_SECURE"             env-default:"true"`
+	TTL        time.Duration `yaml:"ttl"                env:"SESSION_TTL"                env-default:"24h"`
+	CookieName string        `yaml:"cookie_name"        env:"SESSION_COOKIE_NAME"        env-default:"session_id"`
+	// No env-default on purpose: cleanenv applies env-default to any
+	// zero-value field, so `secure: false` in a yaml file (e.g. the plain-HTTP
+	// local config) would be silently overridden back to true. Environments
+	// MUST set `secure` explicitly (prod.yaml: true; local.yaml: false).
+	Secure            bool          `yaml:"secure"             env:"SESSION_SECURE"`
 	SameSite          string        `yaml:"same_site"          env:"SESSION_SAME_SITE"          env-default:"Lax"`
 	SlidingExpiration bool          `yaml:"sliding_expiration" env:"SESSION_SLIDING_EXPIRATION" env-default:"true"`
 	CleanupInterval   time.Duration `yaml:"cleanup_interval"   env:"SESSION_CLEANUP_INTERVAL"   env-default:"6h"`

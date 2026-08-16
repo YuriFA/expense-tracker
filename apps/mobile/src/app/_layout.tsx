@@ -10,14 +10,18 @@ import { View } from 'react-native'
 import { ThemeProvider } from '@/shared/config/theme'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 import { Text } from '@/shared/ui/text'
+import { DatabaseProvider } from '@/shared/lib/db/database-context'
 import { openLocalDatabase } from '@/shared/lib/db/database'
 import { connectQueryFocusManager, createQueryClient } from '@/shared/lib/query/query-client'
+import { AuthProvider } from '@/entities/session'
 import { createLocalAccountRepository } from '@/entities/account/api/local-repository'
 import { AccountRepositoryProvider } from '@/entities/account/api/repository'
 import { createLocalCategoryRepository } from '@/entities/category/api/local-repository'
 import { CategoryRepositoryProvider } from '@/entities/category/api/repository'
 import { createLocalTransactionRepository } from '@/entities/transaction/api/local-repository'
 import { TransactionRepositoryProvider } from '@/entities/transaction/api/repository'
+import { SyncProvider } from '@/shared/lib/sync/sync-provider'
+import { ConflictCenter } from '@/features/sync-conflicts'
 
 /**
  * Feeds safe-area insets into Uniwind so `*-safe` utilities (e.g. Screen's
@@ -35,24 +39,19 @@ function UniwindInsetsBridge() {
   return null
 }
 
-interface LocalRepositories {
-  accounts: ReturnType<typeof createLocalAccountRepository>
-  categories: ReturnType<typeof createLocalCategoryRepository>
-  transactions: ReturnType<typeof createLocalTransactionRepository>
-}
-
 /**
  * App-level data wiring: opens (and migrates) the local SQLite database,
- * exposes the three repositories through their contexts, and mounts the
- * TanStack Query client. Children render only after the database is ready;
- * until then the screen stays empty for the brief local open (~ms).
- *
- * TODO(auth): add the session gate - render `(auth)` for unauthenticated
- * users and `(tabs)` once authenticated, mirroring the web router guard at
- * apps/web/src/app/router.
+ * exposes it and the three repositories through their contexts, and mounts
+ * the TanStack Query client plus the offline-first plumbing: the auth/session
+ * provider (with the ownership gate), the sync engine with its opportunistic
+ * triggers, and the global conflict-resolution host. Children render only
+ * after the database is ready; until then the screen stays empty for the
+ * brief local open (~ms).
  */
 function AppDataProviders({ children }: { children: React.ReactNode }) {
-  const [repositories, setRepositories] = useState<LocalRepositories | null>(null)
+  const [database, setDatabase] = useState<Awaited<ReturnType<typeof openLocalDatabase>> | null>(
+    null,
+  )
   const [error, setError] = useState<Error | null>(null)
   const [queryClient] = useState(createQueryClient)
 
@@ -60,12 +59,7 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
     let cancelled = false
     openLocalDatabase()
       .then((db) => {
-        if (cancelled) return
-        setRepositories({
-          accounts: createLocalAccountRepository(db),
-          categories: createLocalCategoryRepository(db),
-          transactions: createLocalTransactionRepository(db),
-        })
+        if (!cancelled) setDatabase(db)
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(cause instanceof Error ? cause : new Error(String(cause)))
@@ -90,18 +84,25 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!repositories) return null
+  if (!database) return null
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AccountRepositoryProvider repository={repositories.accounts}>
-        <CategoryRepositoryProvider repository={repositories.categories}>
-          <TransactionRepositoryProvider repository={repositories.transactions}>
-            {children}
-          </TransactionRepositoryProvider>
-        </CategoryRepositoryProvider>
-      </AccountRepositoryProvider>
-    </QueryClientProvider>
+    <DatabaseProvider database={database}>
+      <QueryClientProvider client={queryClient}>
+        <AccountRepositoryProvider repository={createLocalAccountRepository(database)}>
+          <CategoryRepositoryProvider repository={createLocalCategoryRepository(database)}>
+            <TransactionRepositoryProvider repository={createLocalTransactionRepository(database)}>
+              <AuthProvider>
+                <SyncProvider>
+                  <ConflictCenter />
+                  {children}
+                </SyncProvider>
+              </AuthProvider>
+            </TransactionRepositoryProvider>
+          </CategoryRepositoryProvider>
+        </AccountRepositoryProvider>
+      </QueryClientProvider>
+    </DatabaseProvider>
   )
 }
 

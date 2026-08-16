@@ -35,12 +35,16 @@
 
 ## 4. Phase 3 — SyncEngine on mobile
 
-- [ ] 4.1 Engine core in `shared/lib/sync/`: cycle `push → resolve conflicts → pull`; batch push of coalesced groups (full state, first op's base/opId, `sent_at` freeze for retries); remove exactly the confirmed opIds; apply confirmation transitions per design D5 (`server_version := response.version` per confirmed op; `version := server_version` when no pending ops remain — the coalesced realignment); chain continuation after an in-flight ancestor confirms; pull applies upserts to CLEAN records only, advances the stored cursor
-- [ ] 4.2 Persistent conflicts: write `sync_conflicts` from push 409s and pull-newer-on-dirty; resolution UI (edit×edit dialog: keep mine → re-push on current server version / take theirs → apply serverState and drop ops); delete×edit notification with default delete-wins and restore-as-new-record
-- [ ] 4.3 Initial sync + ownership: `sync_meta.owner_user_id` check at login (same/empty → push-all + pull from cursor 0; different owner → block and offer clear-or-cancel); logout keeps local data
-- [ ] 4.4 Triggers and resilience: NetInfo reconnect, app start/foreground, post-mutation debounce, manual refresh; 401 mid-run pauses and resumes after re-login without queue loss; retry backoff via outbox `attempts`
-- [ ] 4.5 Sync status UI: badge for pending outbox count and unresolved conflicts
-- [ ] 4.6 Integration tests against the real backend with backend-stopped offline scenarios: offline create/edit/delete → reconnect → convergence; duplicate push; delete×edit; restart with open conflicts; Maestro sync flows pass in Expo Go
+- [x] 4.1 Engine core in `shared/lib/sync/`: cycle `push → resolve conflicts → pull`; batch push of coalesced groups (full state, first op's base/opId, `sent_at` freeze for retries); remove exactly the confirmed opIds; apply confirmation transitions per design D5 (`server_version := response.version` per confirmed op; `version := server_version` when no pending ops remain — the coalesced realignment); chain continuation after an in-flight ancestor confirms; pull applies upserts to CLEAN records only, advances the stored cursor
+  - Pull phase skips a run whose push phase failed on transport (lost-response case): the server replays frozen opIds on the next run first, so our own applied changes never echo back as pull-newer-on-dirty conflicts.
+- [x] 4.2 Persistent conflicts: write `sync_conflicts` from push 409s and pull-newer-on-dirty; resolution UI (edit×edit dialog: keep mine → re-push on current server version / take theirs → apply serverState and drop ops); delete×edit notification with default delete-wins and restore-as-new-record
+- [x] 4.3 Initial sync + ownership: `sync_meta.owner_user_id` check at login (same/empty → push-all + pull from cursor 0; different owner → block and offer clear-or-cancel); logout keeps local data
+  - `entities/session` built (session-api, AuthProvider with ownership gate + 401 hook); login/register screens and the Settings auth section wired; no forced auth gate — the app stays fully usable anonymously per the sync-protocol spec.
+- [x] 4.4 Triggers and resilience: NetInfo reconnect, app start/foreground, post-mutation debounce, manual refresh; 401 mid-run pauses and resumes after re-login without queue loss; retry backoff via outbox `attempts`
+- [x] 4.5 Sync status UI: badge for pending outbox count and unresolved conflicts
+- [x] 4.6 Integration tests against the real backend with backend-stopped offline scenarios: offline create/edit/delete → reconnect → convergence; duplicate push; delete×edit; restart with open conflicts; Maestro sync flows pass in Expo Go
+  - Jest integration suite (`shared/lib/sync/backend-integration.test.ts`) runs only with `SYNC_INTEGRATION_API` set (skipped by default); it exposed and fixed two phase-2 backend bugs: `toAPICategory` never mapped `version` (REST responses reported 0), and `session.secure` env-default clobbered the yaml's `secure: false` (Secure cookies are never sent over plain-HTTP local dev — broke RN sync auth). Maestro flow `09-sync-signin` (backend + provisioned user) green; the known-failing sheet flows 05–08 are unchanged (`TODO(sheet-e2e)`).
+  - Phase-2 type debt cleared to reach a green `type-check`: local account/category repositories + mocks now carry the `version` CAS exactly like transactions (per the phase-2 contract), with fixtures updated.
 
 ## 5. Phase 4 — Optional hardening (not blocking)
 

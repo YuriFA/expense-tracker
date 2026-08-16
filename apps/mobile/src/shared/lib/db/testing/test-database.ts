@@ -59,9 +59,12 @@ function createNodeSqliteClient(raw: DatabaseSync) {
   return client
 }
 
-/** Opens an in-memory database with the app schema migrated. */
-export async function createTestDatabase(): Promise<LocalDatabase> {
-  const raw = new DatabaseSync(':memory:')
+/**
+ * Opens a database with the app schema migrated. Defaults to in-memory;
+ * pass a file path for restart-persistence scenarios (engine reopen etc.).
+ */
+export async function createTestDatabase(path = ':memory:'): Promise<LocalDatabase> {
+  const raw = new DatabaseSync(path)
   // The adapter implements the driver's runtime surface; the type comes from
   // expo-sqlite and is satisfied structurally only through this cast.
   const client = createNodeSqliteClient(raw) as unknown as Parameters<typeof drizzle>[0]

@@ -1,5 +1,6 @@
 import {
   NotFoundError,
+  VersionConflictError,
   type Category,
   type CategoryRepository,
   type CreateCategoryPayload,
@@ -28,7 +29,7 @@ export function createMockCategoryRepository(initial: Category[] = []): MockCate
     },
     async create(payload: CreateCategoryPayload) {
       calls.create += 1
-      const category: Category = { ...payload, id: payload.id ?? `cat-${nextId++}` }
+      const category: Category = { ...payload, id: payload.id ?? `cat-${nextId++}`, version: 1 }
       items.push(category)
       return { ...category }
     },
@@ -36,7 +37,13 @@ export function createMockCategoryRepository(initial: Category[] = []): MockCate
       calls.update += 1
       const index = items.findIndex((category) => category.id === id)
       if (index === -1) throw new NotFoundError('Category not found')
-      items[index] = { ...items[index], ...payload }
+      if (payload.version !== items[index].version) {
+        throw new VersionConflictError('Category was modified concurrently', {
+          apiCode: 'CATEGORY_VERSION_CONFLICT',
+        })
+      }
+      const { version: _cas, ...fields } = payload
+      items[index] = { ...items[index], ...fields, version: items[index].version + 1 }
       return { ...items[index] }
     },
     async remove(id) {

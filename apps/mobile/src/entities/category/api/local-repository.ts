@@ -13,6 +13,7 @@ import {
   InvalidPayloadError,
   NotFoundError,
   ReferentialIntegrityError,
+  VersionConflictError,
   type Category,
   type CategoryRepository,
   type CreateCategoryPayload,
@@ -30,6 +31,7 @@ function toCategory(row: CategoryRow): Category {
     type: row.type as Category['type'],
     icon: row.icon,
     color: row.color,
+    version: row.version,
     ...(row.slug ? { slug: row.slug } : {}),
   }
 }
@@ -134,6 +136,13 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
       return db.transaction((tx) => {
         const row = tx.select().from(categories).where(eq(categories.id, id)).get()
         if (!row || row.deletedAt) throw new NotFoundError('Category not found')
+
+        // Optimistic concurrency: PATCH carries the version the caller read.
+        if (payload.version !== row.version) {
+          throw new VersionConflictError('Category was modified concurrently', {
+            apiCode: 'CATEGORY_VERSION_CONFLICT',
+          })
+        }
 
         const name = payload.name !== undefined ? payload.name.trim() : row.name
         if (name !== row.name && hasDuplicateName(tx, name, id)) {

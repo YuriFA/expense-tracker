@@ -33,11 +33,7 @@
       "ignoreBinaries": [
         "maestro"
       ],
-      "ignoreDependencies": [
-        "expo-updates",
-        "expo-system-ui",
-        "@react-native-community/netinfo"
-      ],
+      "ignoreDependencies": ["expo-updates", "expo-system-ui"],
       "ignoreIssues": {
         "src/shared/ui/**": [
           "exports",

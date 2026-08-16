@@ -14,7 +14,7 @@ import { TransactionsScreen } from './transactions-screen'
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
 const CATEGORIES: Category[] = [
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa' },
+  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa', version: 1 },
 ]
 
 const TRANSACTIONS: Transaction[] = [

@@ -106,7 +106,10 @@ describe('local account repository', () => {
     expect(balances.get(card.id)).toBe(115_000) // 100k + 30k - 10k - 5k
     expect(balances.get(cash.id)).toBe(5_000)
 
-    const manual = await accountRepo.update(card.id, { manualAdjustment: 2_500 })
+    const manual = await accountRepo.update(card.id, {
+      manualAdjustment: 2_500,
+      version: card.version,
+    })
     expect(manual.balance).toBe(117_500)
   })
 
@@ -171,7 +174,7 @@ describe('local account repository', () => {
     expect(row?.deletedAt).not.toBeNull()
     expect(db.select().from(syncOutbox).all()).toHaveLength(1)
 
-    await expect(accountRepo.update(account.id, { name: 'X' })).rejects.toMatchObject({
+    await expect(accountRepo.update(account.id, { name: 'X', version: 1 })).rejects.toMatchObject({
       code: 'not-found',
     })
     await expect(accountRepo.remove(account.id)).rejects.toBeInstanceOf(NotFoundError)
@@ -183,7 +186,10 @@ describe('local account repository', () => {
       currency: 'RUB',
       openingBalance: 1_000,
     })
-    const updated = await accountRepo.update(account.id, { name: 'Новая карта' })
+    const updated = await accountRepo.update(account.id, {
+      name: 'Новая карта',
+      version: account.version,
+    })
     expect(updated.name).toBe('Новая карта')
     expect(updated.currency).toBe('RUB')
 
@@ -191,6 +197,8 @@ describe('local account repository', () => {
     expect(row?.version).toBe(2)
     expect(row?.serverVersion).toBe(0)
 
-    await expect(accountRepo.update(account.id, {})).rejects.toBeInstanceOf(InvalidPayloadError)
+    await expect(accountRepo.update(account.id, { version: 1 })).rejects.toBeInstanceOf(
+      InvalidPayloadError,
+    )
   })
 })

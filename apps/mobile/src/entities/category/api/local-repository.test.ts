@@ -59,7 +59,9 @@ describe('local category repository', () => {
     expect((duplicate as AlreadyExistsError).apiCode).toBe('CATEGORY_ALREADY_EXISTS')
 
     const other = await repo.create({ ...PAYLOAD, name: 'Зарплата', type: 'income' })
-    const renamed = await repo.update(other.id, { name: 'Такси' }).catch((error) => error)
+    const renamed = await repo
+      .update(other.id, { name: 'Такси', version: other.version })
+      .catch((error) => error)
     expect(renamed).toBeInstanceOf(AlreadyExistsError)
   })
 
@@ -96,7 +98,7 @@ describe('local category repository', () => {
     const category = await repo.create(PAYLOAD)
     await repo.remove(category.id)
 
-    await expect(repo.update(category.id, { name: 'X' })).rejects.toMatchObject({
+    await expect(repo.update(category.id, { name: 'X', version: 1 })).rejects.toMatchObject({
       code: 'not-found',
     })
     await expect(repo.remove(category.id)).rejects.toMatchObject({ code: 'not-found' })
@@ -132,7 +134,11 @@ describe('local category repository', () => {
     const repo = createLocalCategoryRepository(db)
     const category = await repo.create(PAYLOAD)
 
-    const updated = await repo.update(category.id, { name: 'Транспорт', icon: 'bus' })
+    const updated = await repo.update(category.id, {
+      name: 'Транспорт',
+      icon: 'bus',
+      version: category.version,
+    })
     expect(updated.name).toBe('Транспорт')
     expect(updated.icon).toBe('bus')
     expect(updated.type).toBe('expense')
@@ -146,7 +152,9 @@ describe('local category repository', () => {
   it('rejects an empty update with invalid-payload', async () => {
     const repo = createLocalCategoryRepository(db)
     const category = await repo.create(PAYLOAD)
-    await expect(repo.update(category.id, {})).rejects.toBeInstanceOf(InvalidPayloadError)
+    await expect(repo.update(category.id, { version: 1 })).rejects.toBeInstanceOf(
+      InvalidPayloadError,
+    )
   })
 
   it('rolls back both the record change and the queued operation when the outbox write dies', async () => {

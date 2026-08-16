@@ -1,0 +1,83 @@
+# Sync smoke (Expo Go + a real backend): sign in from Settings, land back on
+# the Dashboard with the sync status badge visible (authenticated + synced),
+# then sign out and confirm the badge disappears (anonymous = offline-first,
+# nothing to show).
+#
+# Prerequisites: the backend on :8080, the test user provisioned (see
+# _launch.js for the curl), and the dev server started with
+# EXPO_PUBLIC_API_URL=http://localhost:8080 (localhost works from the iOS
+# simulator). Override credentials with MAESTRO_TEST_EMAIL/PASSWORD.
+appId: host.exp.Exponent
+---
+- runFlow: ../_launch.yaml
+- tapOn:
+    id: tab-settings
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 15000
+- tapOn:
+    id: settings-login-button
+- extendedWaitUntil:
+    visible:
+      id: screen-login
+    timeout: 15000
+- tapOn:
+    id: login-email-input
+- inputText: ${output.testEmail}
+- tapOn:
+    id: login-password-input
+- inputText: ${output.testPassword}
+# iOS offers to save the password once a secure field is filled; dismiss it.
+- runFlow:
+    when:
+      visible: 'Save Password'
+    commands:
+      - tapOn: 'Not Now'
+# Dismiss the keyboard by tapping the (non-interactive) screen header.
+- tapOn:
+    text: 'С возвращением'
+- tapOn:
+    id: login-submit-button
+# The save-password sheet can appear either while typing or right after the
+# submit; dismiss it both times.
+- runFlow:
+    when:
+      visible: 'Save Password'
+    commands:
+      - tapOn: 'Not Now'
+# A successful login returns to the previous screen (Settings).
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 20000
+- assertVisible:
+    id: settings-user-email
+- scrollUntilVisible:
+    element:
+      id: settings-sync-section
+    direction: DOWN
+- assertVisible:
+    id: settings-sync-section
+- takeScreenshot: sync-signed-in
+- tapOn:
+    id: tab-dashboard
+- extendedWaitUntil:
+    visible:
+      id: sync-status-badge
+    timeout: 20000
+- takeScreenshot: sync-badge
+- tapOn:
+    id: tab-settings
+- tapOn:
+    id: settings-logout-button
+# After logout the app is anonymous again: no badge on the Dashboard.
+- extendedWaitUntil:
+    visible:
+      id: settings-login-button
+    timeout: 20000
+- tapOn:
+    id: tab-dashboard
+- assertNotVisible:
+    id: sync-status-badge
+- takeScreenshot: sync-anonymous

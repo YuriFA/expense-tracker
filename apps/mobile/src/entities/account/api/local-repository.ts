@@ -14,6 +14,7 @@ import {
   InvalidPayloadError,
   NotFoundError,
   ReferentialIntegrityError,
+  VersionConflictError,
   type Account,
   type AccountWithBalance,
   type AccountRepository,
@@ -34,6 +35,7 @@ function toAccount(row: Omit<AccountRow, 'balance'> & { balance?: number }): Acc
     currency: row.currency as Account['currency'],
     openingBalance: row.openingBalance,
     manualAdjustment: row.manualAdjustment,
+    version: row.version,
   }
 }
 
@@ -56,11 +58,12 @@ interface AccountBalanceRow {
   currency: string
   opening_balance: number
   manual_adjustment: number
+  version: number
   balance: number
 }
 
 const balanceSelect = sql`
-  select a.id, a.name, a.currency, a.opening_balance, a.manual_adjustment,
+  select a.id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.version,
     a.opening_balance + a.manual_adjustment + coalesce(c.total, 0) as balance
   from accounts a
   left join ${contributions} c on c.account_id = a.id
@@ -73,6 +76,7 @@ function toAccountWithBalance(row: AccountBalanceRow): AccountWithBalance {
     currency: row.currency as Account['currency'],
     openingBalance: row.opening_balance,
     manualAdjustment: row.manual_adjustment,
+    version: row.version,
     balance: row.balance,
   }
 }
@@ -170,6 +174,13 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
       return db.transaction((tx) => {
         const row = tx.select().from(accounts).where(eq(accounts.id, id)).get()
         if (!row || row.deletedAt) throw new NotFoundError('Account not found')
+
+        // Optimistic concurrency: PATCH carries the version the caller read.
+        if (payload.version !== row.version) {
+          throw new VersionConflictError('Account was modified concurrently', {
+            apiCode: 'ACCOUNT_VERSION_CONFLICT',
+          })
+        }
 
         const next: AccountRow = {
           ...row,

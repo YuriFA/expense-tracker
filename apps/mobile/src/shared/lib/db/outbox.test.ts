@@ -31,6 +31,18 @@ function readCategory(db: LocalDatabase) {
   }
 }
 
+/** Rename through the public API: reads the current version (CAS token) the
+ * way a real caller does, then updates - keeps the outbox tests focused on
+ * the queue mechanics rather than the update payload shape. */
+async function rename(
+  repo: ReturnType<typeof createLocalCategoryRepository>,
+  id: string,
+  name: string,
+) {
+  const current = await repo.getById(id)
+  return repo.update(id, { name, version: current?.version ?? 0 })
+}
+
 function confirm(db: LocalDatabase, confirmations: readonly PushConfirmation[]) {
   db.transaction((tx) => applyPushConfirmations(tx, confirmations))
 }
@@ -64,8 +76,8 @@ describe('outbox: pending operation per mutation', () => {
   it('creates exactly one operation per mutation with baseVersion = serverVersion', async () => {
     const repo = createLocalCategoryRepository(db)
     const category = await repo.create(PAYLOAD)
-    await repo.update(category.id, { name: 'Такси 2' })
-    await repo.update(category.id, { name: 'Такси 3' })
+    await rename(repo, category.id, 'Такси 2')
+    await rename(repo, category.id, 'Такси 3')
 
     const ops = db.transaction((tx) => pendingOperations(tx))
     expect(ops).toHaveLength(3)
@@ -78,8 +90,8 @@ describe('outbox: pending operation per mutation', () => {
     const repo = createLocalCategoryRepository(db)
     const category = await repo.create(PAYLOAD)
     seedConfirmedAt5(db, category.id)
-    await repo.update(category.id, { name: 'Такси 2' })
-    await repo.update(category.id, { name: 'Такси 3' })
+    await rename(repo, category.id, 'Такси 2')
+    await rename(repo, category.id, 'Такси 3')
 
     const row = categoryRow(db, category.id)
     expect(row?.version).toBe(7)
@@ -93,9 +105,9 @@ describe('outbox: base revision is captured at creation', () => {
     const category = await repo.create(PAYLOAD)
     seedConfirmedAt5(db, category.id)
 
-    await repo.update(category.id, { name: 'Такси 2' }) // operation A, base 5
-    await repo.update(category.id, { name: 'Такси 3' }) // raises local to 7
-    await repo.update(category.id, { name: 'Такси 4' })
+    await rename(repo, category.id, 'Такси 2') // operation A, base 5
+    await rename(repo, category.id, 'Такси 3') // raises local to 7
+    await rename(repo, category.id, 'Такси 4')
 
     const ops = db.transaction((tx) => pendingOperations(tx))
     expect(ops).toHaveLength(3)
@@ -109,11 +121,11 @@ describe('outbox: confirmations (design D5)', () => {
     const category = await repo.create(PAYLOAD)
     seedConfirmedAt5(db, category.id)
 
-    await repo.update(category.id, { name: 'Такси 2' }) // operation A (base 5)
+    await rename(repo, category.id, 'Такси 2') // operation A (base 5)
     const [operationA] = db.transaction((tx) => pendingOperations(tx))
     markSent(db, operationA.opId) // engine froze A for the in-flight request
 
-    await repo.update(category.id, { name: 'Такси 3' }) // operation B (base 5)
+    await rename(repo, category.id, 'Такси 3') // operation B (base 5)
     expect(db.transaction((tx) => pendingOperations(tx))).toHaveLength(2)
 
     confirm(db, [{ opId: operationA.opId, version: 6 }])
@@ -131,7 +143,7 @@ describe('outbox: confirmations (design D5)', () => {
     const category = await repo.create(PAYLOAD)
     seedConfirmedAt5(db, category.id)
 
-    await repo.update(category.id, { name: 'Такси 2' })
+    await rename(repo, category.id, 'Такси 2')
     const [operation] = db.transaction((tx) => pendingOperations(tx))
 
     confirm(db, [{ opId: operation.opId, version: 6 }])
@@ -147,9 +159,9 @@ describe('outbox: confirmations (design D5)', () => {
     const category = await repo.create(PAYLOAD)
     seedConfirmedAt5(db, category.id)
 
-    await repo.update(category.id, { name: 'Такси 2' })
-    await repo.update(category.id, { name: 'Такси 3' })
-    await repo.update(category.id, { name: 'Такси 4' })
+    await rename(repo, category.id, 'Такси 2')
+    await rename(repo, category.id, 'Такси 3')
+    await rename(repo, category.id, 'Такси 4')
     expect(categoryRow(db, category.id)?.version).toBe(8)
 
     // The three unsent operations coalesce into one: first opId, first base,

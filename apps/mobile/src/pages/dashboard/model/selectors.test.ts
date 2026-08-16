@@ -17,9 +17,9 @@ const CURSOR = { year: 2026, month: 7 } // August 2026
 const inAugust = (day: number) => `2026-08-${String(day).padStart(2, '0')}T12:00:00.000Z`
 
 const categories: Category[] = [
-  { id: 'c-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff' },
-  { id: 'c-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa' },
-  { id: 'c-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: '#16a34a' },
+  { id: 'c-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', version: 1 },
+  { id: 'c-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa', version: 1 },
+  { id: 'c-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: '#16a34a', version: 1 },
 ]
 
 const accounts: AccountWithBalance[] = [
@@ -29,6 +29,7 @@ const accounts: AccountWithBalance[] = [
     currency: 'RUB',
     openingBalance: 100_000,
     manualAdjustment: 0,
+    version: 1,
     balance: 250_000,
   },
   {
@@ -37,6 +38,7 @@ const accounts: AccountWithBalance[] = [
     currency: 'RUB',
     openingBalance: 200_000,
     manualAdjustment: 50_000,
+    version: 1,
     balance: 150_000,
   },
 ]

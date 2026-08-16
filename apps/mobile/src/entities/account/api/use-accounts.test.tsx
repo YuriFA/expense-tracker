@@ -23,7 +23,14 @@ function createWrapper(
 describe('account hooks', () => {
   it('useAccounts and useAccount read through the repository', async () => {
     const repository = createMockAccountRepository([
-      { id: 'acc-1', name: 'Карта', currency: 'RUB', openingBalance: 1_000, manualAdjustment: 0 },
+      {
+        id: 'acc-1',
+        name: 'Карта',
+        currency: 'RUB',
+        openingBalance: 1_000,
+        manualAdjustment: 0,
+        version: 1,
+      },
     ])
     const queryClient = createQueryClient()
     const wrapper = createWrapper(repository, queryClient)
@@ -59,7 +66,14 @@ describe('account hooks', () => {
 
   it('useDeleteAccount invalidates the list', async () => {
     const repository = createMockAccountRepository([
-      { id: 'acc-1', name: 'Карта', currency: 'RUB', openingBalance: 0, manualAdjustment: 0 },
+      {
+        id: 'acc-1',
+        name: 'Карта',
+        currency: 'RUB',
+        openingBalance: 0,
+        manualAdjustment: 0,
+        version: 1,
+      },
     ])
     const queryClient = createQueryClient()
     const wrapper = createWrapper(repository, queryClient)

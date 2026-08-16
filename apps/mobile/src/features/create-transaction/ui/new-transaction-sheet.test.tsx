@@ -24,6 +24,7 @@ const ACCOUNTS = [
     currency: 'RUB' as const,
     openingBalance: 0,
     manualAdjustment: 0,
+    version: 1,
   },
   {
     id: 'acc-rub-2',
@@ -31,6 +32,7 @@ const ACCOUNTS = [
     currency: 'RUB' as const,
     openingBalance: 0,
     manualAdjustment: 0,
+    version: 1,
   },
   {
     id: 'acc-usd',
@@ -38,12 +40,27 @@ const ACCOUNTS = [
     currency: 'USD' as const,
     openingBalance: 0,
     manualAdjustment: 0,
+    version: 1,
   },
 ]
 
 const CATEGORIES = [
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense' as const, icon: 'cafe', color: '#a78bfa' },
-  { id: 'cat-salary', name: 'Зарплата', type: 'income' as const, icon: 'cash', color: '#16a34a' },
+  {
+    id: 'cat-cafe',
+    name: 'Кафе',
+    type: 'expense' as const,
+    icon: 'cafe',
+    color: '#a78bfa',
+    version: 1,
+  },
+  {
+    id: 'cat-salary',
+    name: 'Зарплата',
+    type: 'income' as const,
+    icon: 'cash',
+    color: '#16a34a',
+    version: 1,
+  },
 ]
 
 async function renderSheet(kind: 'expense' | 'income' | 'transfer') {

@@ -4,6 +4,7 @@
 
 import {
   NotFoundError,
+  VersionConflictError,
   type Account,
   type AccountRepository,
   type CreateAccountPayload,
@@ -43,6 +44,7 @@ export function createMockAccountRepository(initial: Account[] = []): MockAccoun
         ...payload,
         id: payload.id ?? `acc-${nextId++}`,
         manualAdjustment: 0,
+        version: 1,
       }
       items.push(account)
       return { ...account, balance: account.openingBalance }
@@ -51,7 +53,13 @@ export function createMockAccountRepository(initial: Account[] = []): MockAccoun
       calls.update += 1
       const index = items.findIndex((account) => account.id === id)
       if (index === -1) throw new NotFoundError('Account not found')
-      items[index] = { ...items[index], ...payload }
+      if (payload.version !== items[index].version) {
+        throw new VersionConflictError('Account was modified concurrently', {
+          apiCode: 'ACCOUNT_VERSION_CONFLICT',
+        })
+      }
+      const { version: _cas, ...fields } = payload
+      items[index] = { ...items[index], ...fields, version: items[index].version + 1 }
       const updated = items[index]
       return { ...updated, balance: updated.openingBalance + updated.manualAdjustment }
     },

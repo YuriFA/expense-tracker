@@ -150,6 +150,12 @@ on `(tabs)/_layout.tsx`).
 1. Boot an iOS simulator and install the matching Expo Go:
    `npx expo-go download ios <sdk>` -> `xcrun simctl install booted <Expo-Go-*.tar.app>`.
 2. Start the dev server in its own terminal: `pnpm start` (Metro on :8081).
+   For the sync flow (09) the dev server must carry the backend URL and the
+   Go API + postgres must be up (see backend/AGENTS.md): start Metro with
+   `EXPO_PUBLIC_API_URL=http://localhost:8080 pnpm start` and provision the
+   test user once (`curl -X POST :8080/api/auth/register -H 'Content-Type:
+   application/json' -d '{"email":"maestro-sync@example.com","password":
+   "maestro-password-1"}'`; the flow uses these defaults via `_launch.js`).
 3. `pnpm test:e2e` (whole suite) or
    `maestro test .maestro/flows/<file>.yaml` (one flow).
 
@@ -181,13 +187,43 @@ the `openLink` Expo-Go path to `launchApp: <bundleId>`.
 
 Open decisions before the next real feature:
 
-- **Session gate** in `src/app/_layout.tsx` (port the web router guard;
-  needs `entities/session` + an unauthorized interceptor).
 - **i18n wiring** (`shared/i18n` + react-i18next) and localized tab/screen
   titles; RU strings are hardcoded with `TODO(i18n)` markers until then.
-- **Sync engine** (phase 3 of the `mobile-offline-first` change): the
-  outbox/conflict tables and version columns already exist; only the engine
-  is missing. `@react-native-community/netinfo` is installed for it.
+- Phase 4 of the `mobile-offline-first` change (optional): background sync
+  via dev build, backend tombstone retention, sync metrics.
+
+## Session + sync (landed, phase 3)
+
+Offline-first sync per the `mobile-offline-first` change:
+
+- **Session**: `entities/session` (session-api over `shared/api/client`,
+  `AuthProvider`/`useAuth`). Auth is NOT gated - the app is fully usable
+  anonymously; Settings exposes sign-in/out. The root `_layout` mounts
+  `AuthProvider` inside the repository providers. The ownership gate at
+  login (`sync_meta.owner_user_id`, design D9): same/empty owner binds and
+  initial-syncs; a different owner must clear local data or cancel. Logout
+  keeps local data.
+- **Engine**: `shared/lib/sync/sync-engine.ts` - cycle push -> conflicts ->
+  pull, per-record op chains (follower ops re-base onto the ancestor's
+  confirmed server version), `sentAt` freeze + `attempts` backoff (5s ->
+  15min), 401 pause/resume. The pull phase is SKIPPED when the push phase
+  failed on transport: our own server-applied changes would otherwise echo
+  back as pull-newer-on-dirty conflicts (lost-response case). Triggers live
+  in `shared/lib/sync/sync-provider.tsx` (NetInfo reconnect, foreground,
+  post-mutation debounce over the mutation cache, manual via badge/settings).
+- **Conflicts** are persistent rows (`shared/lib/sync/conflicts.ts` +
+  `sync_conflicts`): edit-vs-edit resolves via the `ConflictCenter` dialogs
+  (keep mine = rebase + re-push / take theirs = apply + drop ops); delete-
+  vs-edit applies delete-wins immediately and preserves the edit for
+  restore-as-new-record. Status UI: `widgets/sync-status` badge (hidden
+  while anonymous) + the Settings sync section.
+- **Backend URL**: `EXPO_PUBLIC_API_URL` (default `http://localhost:8080`,
+  works from the iOS simulator). Metro inlines it at bundle time - restart
+  the dev server after changing it. The session cookie relies on RN's shared
+  cookie store; the backend must NOT mark it `Secure` for plain-HTTP dev
+  (see backend/AGENTS.md).
+- Sync integration tests run only with `SYNC_INTEGRATION_API=<url> pnpm test
+  sync-integration` (skipped by default; needs the Go API + postgres).
 
 ## Local data layer (landed)
 

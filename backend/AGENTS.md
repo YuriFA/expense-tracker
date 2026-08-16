@@ -40,6 +40,10 @@ migrations). `make gen-check` is the CI drift gate. Both generated trees are com
 - Fresh session id per login (session-fixation defense); sliding expiration;
   password reset revokes all sessions. The mailer is a stub interface
   (`service.Mailer`) - real email delivery is out of scope.
+- `session.secure` has NO env-default on purpose (config.go): cleanenv applies
+  env-defaults to zero-value fields, which silently flips an explicit
+  `secure: false` (plain-HTTP local dev; RN/iOS won't send Secure cookies
+  over http) back to true. Every yaml sets it explicitly.
 
 ## Cross-cutting
 

@@ -4,6 +4,7 @@ import { Screen } from '@/shared/ui/screen'
 import { useAccounts } from '@/entities/account/model/use-accounts'
 import { useCategories } from '@/entities/category/model/use-categories'
 import { useTransactions } from '@/entities/transaction/model/use-transactions'
+import { SyncStatusBadge } from '@/widgets/sync-status'
 import { currentMonth, nextMonth, previousMonth, type MonthCursor } from '../model/selectors'
 import { QuickActionsRow } from './quick-actions-row'
 import { SummaryCard } from './summary-card'
@@ -27,6 +28,7 @@ export function DashboardScreen() {
     <Screen testID="screen-dashboard">
       <ScrollView>
         <View className="p-6 gap-6">
+          <SyncStatusBadge />
           <QuickActionsRow />
           <SummaryCard
             cursor={cursor}

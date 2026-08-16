@@ -70,6 +70,7 @@ func toAPICategory(c domain.Category) api.Category {
 		Color:     c.Color,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
+		Version:   c.Version,
 	}
 }
 

@@ -1,80 +1,96 @@
+import { useState } from 'react'
+import { View } from 'react-native'
+import { router } from 'expo-router'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Screen } from '@/shared/ui/screen'
 import { Text } from '@/shared/ui/text'
-import { useState } from 'react'
-import { View } from 'react-native'
+import { useAuth } from '@/entities/session'
+import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 
 export function LoginScreen() {
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      setError('Введите email и пароль')
+      return
+    }
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+    setError(null)
+    try {
+      const result = await login(email.trim(), password)
+      if (result.ok) router.back()
+      // A cancelled ownership takeover stays on this screen by design.
+    } catch (cause) {
+      setError(getRepositoryErrorText(cause))
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
     <Screen testID="screen-login">
       <View className="gap-6 p-6 justify-center">
-        {/* Header */}
         <View className="gap-2">
-          <Text variant="h1">Welcome back</Text>
+          <Text variant="h1">С возвращением</Text>
           <Text variant="body" className="text-muted-foreground">
-            Sign in to your account
+            Войдите, чтобы синхронизировать данные
           </Text>
         </View>
 
-        {/* Form */}
         <View className="gap-4">
           <Input
             label="Email"
-            placeholder="Enter your email"
+            placeholder="Введите email"
             value={email}
             onChangeText={setEmail}
             leadingIcon="mail"
             keyboardType="email-address"
             autoCapitalize="none"
+            testID="login-email-input"
           />
 
           <Input
-            label="Password"
-            placeholder="Enter your password"
+            label="Пароль"
+            placeholder="Введите пароль"
             value={password}
             onChangeText={setPassword}
             leadingIcon="lock-closed"
             secureTextEntry
+            testID="login-password-input"
           />
 
-          <Button variant="primary" text="Sign In" onPress={handleLogin} loading={isLoading} />
-        </View>
-
-        {/* Divider with "or" */}
-        <View className="gap-4 items-center">
-          <View className="flex-row items-center gap-4 w-full">
-            <View className="flex-1 h-px bg-border" />
-            <Text variant="caption" className="text-muted-foreground">
-              or continue with
+          {error ? (
+            <Text variant="body-sm" className="text-destructive" testID="login-error-text">
+              {error}
             </Text>
-            <View className="flex-1 h-px bg-border" />
-          </View>
+          ) : null}
 
-          <View className="flex-row gap-4">
-            <Button variant="outline" text="Google" />
-            <Button variant="outline" text="Apple" />
-          </View>
+          <Button
+            variant="primary"
+            text="Войти"
+            onPress={handleLogin}
+            loading={isLoading}
+            testID="login-submit-button"
+          />
         </View>
 
-        {/* Sign up link */}
         <View className="flex-row items-center gap-2 self-center">
           <Text variant="body-sm" className="text-muted-foreground">
-            Don't have an account?
+            Нет аккаунта?
           </Text>
-          <Button variant="ghost" text="Sign up" size="sm" />
+          <Button
+            variant="ghost"
+            text="Зарегистрироваться"
+            size="sm"
+            onPress={() => router.replace('/register')}
+            testID="login-to-register-button"
+          />
         </View>
       </View>
     </Screen>

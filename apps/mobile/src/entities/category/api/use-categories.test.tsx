@@ -24,8 +24,22 @@ function createWrapper(
 describe('category hooks', () => {
   it('useCategories reads through the repository and filters by type', async () => {
     const repository = createMockCategoryRepository([
-      { id: 'cat-1', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff' },
-      { id: 'cat-2', name: 'Зарплата', type: 'income', icon: 'cash', color: '#16a34a' },
+      {
+        id: 'cat-1',
+        name: 'Такси',
+        type: 'expense',
+        icon: 'car',
+        color: '#7c5cff',
+        version: 1,
+      },
+      {
+        id: 'cat-2',
+        name: 'Зарплата',
+        type: 'income',
+        icon: 'cash',
+        color: '#16a34a',
+        version: 1,
+      },
     ])
     const queryClient = createQueryClient()
 

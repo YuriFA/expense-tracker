@@ -24,6 +24,11 @@ import {
 } from '../model/selectors'
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
+// The badge mounts sync/auth infrastructure the screen test does not provide;
+// it has its own test in the widget slice.
+jest.mock('@/widgets/sync-status', () => ({
+  SyncStatusBadge: () => null,
+}))
 
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
@@ -53,6 +58,7 @@ const ACCOUNTS: Account[] = [
     currency: 'RUB',
     openingBalance: 500_000,
     manualAdjustment: 0,
+    version: 1,
   },
   {
     id: 'acc-card',
@@ -60,13 +66,21 @@ const ACCOUNTS: Account[] = [
     currency: 'RUB',
     openingBalance: 3_200_000,
     manualAdjustment: 200_000,
+    version: 1,
   },
 ]
 
 const CATEGORIES: Category[] = [
-  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff' },
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa' },
-  { id: 'cat-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: '#16a34a' },
+  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', version: 1 },
+  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa', version: 1 },
+  {
+    id: 'cat-salary',
+    name: 'Зарплата',
+    type: 'income',
+    icon: 'cash',
+    color: '#16a34a',
+    version: 1,
+  },
 ]
 
 const TRANSACTIONS: Transaction[] = [
