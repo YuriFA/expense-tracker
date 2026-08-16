@@ -48,6 +48,7 @@
 
 ## 5. Phase 4 — Optional hardening (not blocking)
 
-- [ ] 5.1 Opportunistic background sync via dev build + BGTaskScheduler/expo-background-fetch (dev build + repoint `.maestro/_launch.yaml` per AGENTS.md)
-- [ ] 5.2 Tombstone retention job on the backend (default 90 days; decide per design Open Questions)
-- [ ] 5.3 Sync metrics/logging dashboard feed and conflict-rate monitoring
+- [x] 5.1 Opportunistic background sync via dev build + BGTaskScheduler/expo-background-fetch (dev build + repoint `.maestro/_launch.yaml` per AGENTS.md)
+  - Accepted exception (user decision, 2026-08-16): implementation verified (jest suite for the task wiring; registration succeeds on the rebuilt dev build — 0 failures in Metro logs; Maestro repointed to the dev build, flows 01–04 green). Flow 09-sync-signin stays red: Maestro `inputText` into the iOS secure field is unstable on the dev build (wrong/empty password → 401, while the same credentials succeed via curl). Deferred as a separate e2e-stability task; flows 05–08 remain known-failing `TODO(sheet-e2e)`.
+- [x] 5.2 Tombstone retention job on the backend (default 90 days; decide per design Open Questions)
+- [x] 5.3 Sync metrics/logging dashboard feed and conflict-rate monitoring

@@ -251,6 +251,11 @@ Phases ship independently; each is deployable and rollback-safe:
 
 - Tombstone retention window (default suggestion 90 days) — decide in
   phase 2; does not affect client behavior.
+  - Decided (phase 4): 90 days (`retention.tombstone_window`, env
+    `RETENTION_TOMBSTONE_WINDOW`), swept hourly. The change_log is never
+    pruned — pulls serve tombstones from the log alone, so devices offline
+    through the whole window still converge; hard-deleted rows only make
+    their older upsert entries pull as nil-data (skipped by the client).
 - RN cookie persistence behavior per platform — verify in phase 3; both
   outcomes have a plan (rely on native store vs persist explicitly).
 - Auto-merge policy for identically-named categories across devices —
