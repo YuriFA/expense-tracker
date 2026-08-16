@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/yurifa/expense-tracker-api/internal/domain"
+	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
 // Store is an in-memory fake implementing every repository interface. It
@@ -28,8 +29,15 @@ type Store struct {
 	categories   map[uuid.UUID]*domain.Category
 	transactions map[uuid.UUID]*domain.Transaction
 
-	// catUnique enforces UNIQUE(user_id, name).
+	// catUnique enforces UNIQUE(user_id, name) among LIVE categories.
 	catUnique map[string]struct{} // "userID|name"
+
+	// Sync plumbing: an in-memory change log (monotonic seq) and applied
+	// operations, mirroring the Postgres tables closely enough to exercise
+	// the sync service rules in hermetic tests.
+	changeLog  []changeEntry
+	nextSeq    int64
+	appliedOps map[uuid.UUID]*domain.AppliedOperation
 
 	// idempotency: keyed by "userID|key"
 	idemKeys map[string]*domain.IdempotencyKey
@@ -40,6 +48,15 @@ type Store struct {
 	verifyExists map[uuid.UUID]bool
 	resetAge     map[uuid.UUID]int
 	resetExists  map[uuid.UUID]bool
+}
+
+type changeEntry struct {
+	seq     int64
+	userID  uuid.UUID
+	entity  string
+	id      uuid.UUID
+	action  string
+	version int
 }
 
 type verifyCode struct {
@@ -65,6 +82,7 @@ func New() *Store {
 		categories:   make(map[uuid.UUID]*domain.Category),
 		transactions: make(map[uuid.UUID]*domain.Transaction),
 		catUnique:    make(map[string]struct{}),
+		appliedOps:   make(map[uuid.UUID]*domain.AppliedOperation),
 		idemKeys:     make(map[string]*domain.IdempotencyKey),
 		verifyCodes:  make(map[uuid.UUID]*verifyCode),
 		resetTokens:  make(map[string]*resetToken),
@@ -97,19 +115,23 @@ func (s *Store) RegisterUser(_ context.Context, params domain.RegisterUserParams
 	}
 	s.users[u.ID] = u
 	s.emails[u.Email] = u.ID
-	for _, c := range domain.DefaultCategories {
-		cat := &domain.Category{
-			ID:        uuid.New(),
-			UserID:    u.ID,
-			Name:      c.Name,
-			Type:      c.Type,
-			Icon:      c.Icon,
-			Color:     c.Color,
-			CreatedAt: now,
-			UpdatedAt: now,
+	if params.SeedCategories {
+		for _, c := range domain.DefaultCategories {
+			cat := &domain.Category{
+				ID:        uuid.New(),
+				UserID:    u.ID,
+				Name:      c.Name,
+				Type:      c.Type,
+				Icon:      c.Icon,
+				Color:     c.Color,
+				CreatedAt: now,
+				UpdatedAt: now,
+				Version:   1,
+			}
+			s.categories[cat.ID] = cat
+			s.catUnique[u.ID.String()+"|"+c.Name] = struct{}{}
+			s.appendChange(u.ID, domain.SyncEntityCategory, cat.ID, domain.SyncChangeUpsert, cat.Version)
 		}
-		s.categories[cat.ID] = cat
-		s.catUnique[u.ID.String()+"|"+c.Name] = struct{}{}
 	}
 	return cloneUser(u), nil
 }
@@ -241,13 +263,21 @@ func (s *Store) DeleteSessionsByUser(_ context.Context, userID uuid.UUID) (int64
 func (s *Store) CreateAccount(_ context.Context, params domain.CreateAccountParams) (*domain.Account, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	id := params.ID
+	if id == uuid.Nil {
+		id = uuid.New()
+	}
+	if _, exists := s.accounts[id]; exists {
+		return nil, domain.ErrAccountAlreadyExists
+	}
 	now := time.Now().UTC()
 	a := &domain.Account{
-		ID: uuid.New(), UserID: params.UserID, Name: params.Name, Currency: params.Currency,
+		ID: id, UserID: params.UserID, Name: params.Name, Currency: params.Currency,
 		OpeningBalance: params.OpeningBalance, ManualAdjustment: 0,
-		Balance: params.OpeningBalance, CreatedAt: now, UpdatedAt: now,
+		Balance: params.OpeningBalance, CreatedAt: now, UpdatedAt: now, Version: 1,
 	}
 	s.accounts[a.ID] = a
+	s.appendChange(params.UserID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
 	c := *a
 	return &c, nil
 }
@@ -255,7 +285,7 @@ func (s *Store) CreateAccount(_ context.Context, params domain.CreateAccountPara
 func (s *Store) recomputeBalance(a *domain.Account) int64 {
 	bal := a.OpeningBalance + a.ManualAdjustment
 	for _, t := range s.transactions {
-		if t.UserID != a.UserID {
+		if t.UserID != a.UserID || t.Deleted() {
 			continue
 		}
 		switch t.Type {
@@ -287,8 +317,11 @@ func (s *Store) UpdateAccount(
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
-	if !ok || a.UserID != userID {
+	if !ok || a.UserID != userID || a.Deleted() {
 		return nil, domain.ErrAccountNotFound
+	}
+	if a.Version != params.Version {
+		return nil, domain.ErrAccountVersionConflict
 	}
 	if params.Name != nil {
 		a.Name = *params.Name
@@ -297,7 +330,9 @@ func (s *Store) UpdateAccount(
 		a.ManualAdjustment = *params.ManualAdjustment
 	}
 	a.UpdatedAt = time.Now().UTC()
+	a.Version++
 	a.Balance = s.recomputeBalance(a)
+	s.appendChange(userID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
 	c := *a
 	return &c, nil
 }
@@ -325,7 +360,7 @@ func (s *Store) GetAccount(_ context.Context, userID, id uuid.UUID) (*domain.Acc
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
-	if !ok || a.UserID != userID {
+	if !ok || a.UserID != userID || a.Deleted() {
 		return nil, domain.ErrAccountNotFound
 	}
 	a.Balance = s.recomputeBalance(a)
@@ -338,7 +373,7 @@ func (s *Store) GetAccounts(_ context.Context, userID uuid.UUID) ([]domain.Accou
 	defer s.mu.Unlock()
 	var out []domain.Account
 	for _, a := range s.accounts {
-		if a.UserID == userID {
+		if a.UserID == userID && !a.Deleted() {
 			a.Balance = s.recomputeBalance(a)
 			out = append(out, *a)
 		}
@@ -351,7 +386,7 @@ func (s *Store) GetAccountBalances(_ context.Context, userID uuid.UUID) ([]domai
 	defer s.mu.Unlock()
 	var out []domain.AccountBalance
 	for _, a := range s.accounts {
-		if a.UserID == userID {
+		if a.UserID == userID && !a.Deleted() {
 			out = append(
 				out,
 				domain.AccountBalance{
@@ -402,8 +437,11 @@ func (s *Store) UpdateCategory(
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
-	if !ok || c.UserID != userID {
+	if !ok || c.UserID != userID || c.Deleted() {
 		return nil, domain.ErrCategoryNotFound
+	}
+	if c.Version != params.Version {
+		return nil, domain.ErrCategoryVersionConflict
 	}
 	if params.Name != nil {
 		if _, exists := s.catUnique[catUniqueKey(userID, *params.Name)]; exists && c.Name != *params.Name {
@@ -423,6 +461,8 @@ func (s *Store) UpdateCategory(
 		c.Color = *params.Color
 	}
 	c.UpdatedAt = time.Now().UTC()
+	c.Version++
+	s.appendChange(userID, domain.SyncEntityCategory, c.ID, domain.SyncChangeUpsert, c.Version)
 	cc := *c
 	return &cc, nil
 }
@@ -448,7 +488,7 @@ func (s *Store) GetCategory(_ context.Context, userID, id uuid.UUID) (*domain.Ca
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
-	if !ok || c.UserID != userID {
+	if !ok || c.UserID != userID || c.Deleted() {
 		return nil, domain.ErrCategoryNotFound
 	}
 	cc := *c
@@ -464,7 +504,7 @@ func (s *Store) GetCategories(
 	defer s.mu.Unlock()
 	var out []domain.Category
 	for _, c := range s.categories {
-		if c.UserID != userID {
+		if c.UserID != userID || c.Deleted() {
 			continue
 		}
 		if params.Type != nil && c.Type != *params.Type {
@@ -483,9 +523,16 @@ func (s *Store) CreateTransaction(
 ) (*domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	id := params.ID
+	if id == uuid.Nil {
+		id = uuid.New()
+	}
+	if _, exists := s.transactions[id]; exists {
+		return nil, domain.ErrTransactionAlreadyExists
+	}
 	now := time.Now().UTC()
 	t := &domain.Transaction{
-		ID:            uuid.New(),
+		ID:            id,
 		UserID:        params.UserID,
 		Type:          params.Type,
 		Amount:        params.Amount,
@@ -500,6 +547,7 @@ func (s *Store) CreateTransaction(
 		ToAccountID:   params.ToAccountID,
 	}
 	s.transactions[t.ID] = t
+	s.appendChange(params.UserID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeUpsert, t.Version)
 	c := *t
 	return &c, nil
 }
@@ -512,7 +560,7 @@ func (s *Store) UpdateTransaction(
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
-	if !ok || t.UserID != userID {
+	if !ok || t.UserID != userID || t.Deleted() {
 		return nil, domain.ErrTransactionNotFound
 	}
 	if t.Version != params.Version {
@@ -541,6 +589,7 @@ func (s *Store) UpdateTransaction(
 	}
 	t.Version++
 	t.UpdatedAt = time.Now().UTC()
+	s.appendChange(userID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeUpsert, t.Version)
 	c := *t
 	return &c, nil
 }
@@ -560,7 +609,7 @@ func (s *Store) GetTransaction(_ context.Context, userID, id uuid.UUID) (*domain
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
-	if !ok || t.UserID != userID {
+	if !ok || t.UserID != userID || t.Deleted() {
 		return nil, domain.ErrTransactionNotFound
 	}
 	c := *t
@@ -576,7 +625,7 @@ func (s *Store) GetTransactions(
 	defer s.mu.Unlock()
 	var out []domain.Transaction
 	for _, t := range s.transactions {
-		if t.UserID == userID && transactionMatchesFilters(*t, params) {
+		if t.UserID == userID && !t.Deleted() && transactionMatchesFilters(*t, params) {
 			out = append(out, *t)
 		}
 	}
@@ -829,3 +878,347 @@ func (s *Store) LatestPasswordResetTokenAgeSeconds(_ context.Context, userID uui
 
 // silence unused import in some build configs.
 var _ = pgx.ErrNoRows
+
+// --- SyncRepository / SyncTx ----------------------------------------------
+
+// appendChange records a change-log entry (seq is monotonic). Caller must
+// hold s.mu.
+func (s *Store) appendChange(userID uuid.UUID, entity string, id uuid.UUID, action string, version int) {
+	s.nextSeq++
+	s.changeLog = append(s.changeLog, changeEntry{
+		seq: s.nextSeq, userID: userID, entity: entity, id: id, action: action, version: version,
+	})
+}
+
+// fakeSyncTx implements repository.SyncTx over the in-memory store. Methods
+// lock individually; there is no rollback on mid-batch errors (the Postgres
+// batch transaction covers that; hermetic tests only exercise the rules).
+type fakeSyncTx struct {
+	store *Store
+}
+
+var _ repository.SyncTx = (*fakeSyncTx)(nil)
+
+func (s *Store) WithinUserTx(_ context.Context, _ uuid.UUID, fn func(t repository.SyncTx) error) error {
+	return fn(&fakeSyncTx{store: s})
+}
+
+func (s *Store) PullChanges(
+	_ context.Context,
+	userID uuid.UUID,
+	afterSeq int64,
+	limit int,
+) ([]domain.SyncChange, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []domain.SyncChange
+	for _, e := range s.changeLog {
+		if e.userID != userID || e.seq <= afterSeq {
+			continue
+		}
+		if len(out) == limit {
+			break
+		}
+		change := domain.SyncChange{
+			Seq: e.seq, Entity: e.entity, ID: e.id, Action: e.action, Version: e.version,
+		}
+		if e.action == domain.SyncChangeUpsert {
+			change.Data = s.currentState(e.userID, e.entity, e.id)
+		}
+		out = append(out, change)
+	}
+	return out, nil
+}
+
+// currentState returns the record's full state for pull data (nil when the
+// record no longer exists).
+func (s *Store) currentState(userID uuid.UUID, entity string, id uuid.UUID) any {
+	switch entity {
+	case domain.SyncEntityAccount:
+		if a, ok := s.accounts[id]; ok && a.UserID == userID {
+			return a.FullState()
+		}
+	case domain.SyncEntityCategory:
+		if c, ok := s.categories[id]; ok && c.UserID == userID {
+			return c.FullState()
+		}
+	case domain.SyncEntityTransaction:
+		if t, ok := s.transactions[id]; ok && t.UserID == userID {
+			return t.FullState()
+		}
+	}
+	return nil
+}
+
+func (t *fakeSyncTx) GetAppliedOperation(_ context.Context, opID uuid.UUID) (*domain.AppliedOperation, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	if op, ok := t.store.appliedOps[opID]; ok {
+		c := *op
+		return &c, nil
+	}
+	return nil, nil //nolint:nilnil // (nil, nil) = never applied
+}
+
+func (t *fakeSyncTx) InsertAppliedOperation(_ context.Context, op domain.AppliedOperation) error {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	c := op
+	t.store.appliedOps[op.OpID] = &c
+	return nil
+}
+
+func (t *fakeSyncTx) GetAccountAny(_ context.Context, userID, id uuid.UUID) (*domain.Account, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	a, ok := t.store.accounts[id]
+	if !ok || a.UserID != userID {
+		return nil, nil //nolint:nilnil // (nil, nil) = never created
+	}
+	c := *a
+	return &c, nil
+}
+
+func (t *fakeSyncTx) GetCategoryAny(_ context.Context, userID, id uuid.UUID) (*domain.Category, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	c, ok := t.store.categories[id]
+	if !ok || c.UserID != userID {
+		return nil, nil //nolint:nilnil // (nil, nil) = never created
+	}
+	cc := *c
+	return &cc, nil
+}
+
+func (t *fakeSyncTx) GetTransactionAny(_ context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	tx, ok := t.store.transactions[id]
+	if !ok || tx.UserID != userID {
+		return nil, nil //nolint:nilnil // (nil, nil) = never created
+	}
+	c := *tx
+	return &c, nil
+}
+
+func (t *fakeSyncTx) LiveAccountExists(_ context.Context, userID, id uuid.UUID) (bool, error) {
+	a, _ := t.GetAccountAny(context.Background(), userID, id)
+	return a != nil && !a.Deleted(), nil
+}
+
+func (t *fakeSyncTx) LiveCategory(_ context.Context, userID, id uuid.UUID) (*domain.Category, error) {
+	c, _ := t.GetCategoryAny(context.Background(), userID, id)
+	if c == nil || c.Deleted() {
+		return nil, domain.ErrCategoryNotFound
+	}
+	return c, nil
+}
+
+func (t *fakeSyncTx) CategoryNameTaken(
+	_ context.Context,
+	userID uuid.UUID,
+	name string,
+	exceptID uuid.UUID,
+) (bool, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	for _, c := range t.store.categories {
+		if c.UserID == userID && !c.Deleted() && c.Name == name && c.ID != exceptID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (t *fakeSyncTx) HasLiveTransactionsForAccount(_ context.Context, userID, accountID uuid.UUID) (bool, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	for _, tx := range t.store.transactions {
+		if tx.Deleted() || tx.UserID != userID {
+			continue
+		}
+		if (tx.AccountID != nil && *tx.AccountID == accountID) ||
+			(tx.FromAccountID != nil && *tx.FromAccountID == accountID) ||
+			(tx.ToAccountID != nil && *tx.ToAccountID == accountID) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (t *fakeSyncTx) HasLiveTransactionsForCategory(_ context.Context, userID, categoryID uuid.UUID) (bool, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	for _, tx := range t.store.transactions {
+		if !tx.Deleted() && tx.UserID == userID && tx.CategoryID != nil && *tx.CategoryID == categoryID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (t *fakeSyncTx) CreateAccount(_ context.Context, params domain.CreateAccountParams) (*domain.Account, error) {
+	return t.store.CreateAccount(context.Background(), params)
+}
+
+func (t *fakeSyncTx) ReplaceAccount(
+	_ context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.AccountFullState,
+) (*domain.Account, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	a, ok := t.store.accounts[id]
+	if !ok || a.UserID != userID {
+		return nil, domain.ErrAccountNotFound
+	}
+	if a.Deleted() {
+		return nil, domain.ErrRecordDeleted
+	}
+	if a.Version != baseVersion {
+		return nil, domain.ErrAccountVersionConflict
+	}
+	a.Name = st.Name
+	a.Currency = st.Currency
+	a.OpeningBalance = st.OpeningBalance
+	a.ManualAdjustment = st.ManualAdjustment
+	a.UpdatedAt = time.Now().UTC()
+	a.Version++
+	a.Balance = t.store.recomputeBalance(a)
+	t.store.appendChange(userID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
+	c := *a
+	return &c, nil
+}
+
+func (t *fakeSyncTx) TombstoneAccount(_ context.Context, userID, id uuid.UUID) (*domain.Account, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	a, ok := t.store.accounts[id]
+	if !ok || a.UserID != userID {
+		return nil, domain.ErrAccountNotFound
+	}
+	if a.Deleted() {
+		c := *a
+		return &c, nil // idempotent
+	}
+	now := time.Now().UTC()
+	a.DeletedAt = &now
+	a.Version++
+	t.store.appendChange(userID, domain.SyncEntityAccount, a.ID, domain.SyncChangeTombstone, a.Version)
+	c := *a
+	return &c, nil
+}
+
+func (t *fakeSyncTx) CreateCategory(_ context.Context, params domain.CreateCategoryParams) (*domain.Category, error) {
+	return t.store.CreateCategory(context.Background(), params)
+}
+
+func (t *fakeSyncTx) ReplaceCategory(
+	_ context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.CategoryFullState,
+) (*domain.Category, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	c, ok := t.store.categories[id]
+	if !ok || c.UserID != userID {
+		return nil, domain.ErrCategoryNotFound
+	}
+	if c.Deleted() {
+		return nil, domain.ErrRecordDeleted
+	}
+	if c.Version != baseVersion {
+		return nil, domain.ErrCategoryVersionConflict
+	}
+	delete(t.store.catUnique, catUniqueKey(userID, c.Name))
+	c.Name = st.Name
+	c.Type = st.Type
+	c.Icon = st.Icon
+	c.Color = st.Color
+	c.UpdatedAt = time.Now().UTC()
+	c.Version++
+	t.store.catUnique[catUniqueKey(userID, c.Name)] = struct{}{}
+	t.store.appendChange(userID, domain.SyncEntityCategory, c.ID, domain.SyncChangeUpsert, c.Version)
+	cc := *c
+	return &cc, nil
+}
+
+func (t *fakeSyncTx) TombstoneCategory(_ context.Context, userID, id uuid.UUID) (*domain.Category, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	c, ok := t.store.categories[id]
+	if !ok || c.UserID != userID {
+		return nil, domain.ErrCategoryNotFound
+	}
+	if c.Deleted() {
+		cc := *c
+		return &cc, nil // idempotent
+	}
+	delete(t.store.catUnique, catUniqueKey(userID, c.Name))
+	now := time.Now().UTC()
+	c.DeletedAt = &now
+	c.Version++
+	t.store.appendChange(userID, domain.SyncEntityCategory, c.ID, domain.SyncChangeTombstone, c.Version)
+	cc := *c
+	return &cc, nil
+}
+
+func (t *fakeSyncTx) CreateTransaction(
+	_ context.Context,
+	params domain.CreateTransactionParams,
+) (*domain.Transaction, error) {
+	return t.store.CreateTransaction(context.Background(), params)
+}
+
+func (t *fakeSyncTx) ReplaceTransaction(
+	_ context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.TransactionFullState,
+) (*domain.Transaction, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	tx, ok := t.store.transactions[id]
+	if !ok || tx.UserID != userID {
+		return nil, domain.ErrTransactionNotFound
+	}
+	if tx.Deleted() {
+		return nil, domain.ErrRecordDeleted
+	}
+	if tx.Version != baseVersion {
+		return nil, domain.ErrTransactionVersionConflict
+	}
+	tx.Amount = st.Amount
+	tx.Description = st.Description
+	tx.OccurredAt = st.OccurredAt
+	tx.AccountID = st.AccountID
+	tx.CategoryID = st.CategoryID
+	tx.FromAccountID = st.FromAccountID
+	tx.ToAccountID = st.ToAccountID
+	tx.Version++
+	tx.UpdatedAt = time.Now().UTC()
+	t.store.appendChange(userID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeUpsert, tx.Version)
+	c := *tx
+	return &c, nil
+}
+
+func (t *fakeSyncTx) TombstoneTransaction(_ context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	tx, ok := t.store.transactions[id]
+	if !ok || tx.UserID != userID {
+		return nil, domain.ErrTransactionNotFound
+	}
+	if tx.Deleted() {
+		c := *tx
+		return &c, nil // idempotent
+	}
+	now := time.Now().UTC()
+	tx.DeletedAt = &now
+	tx.Version++
+	t.store.appendChange(userID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeTombstone, tx.Version)
+	c := *tx
+	return &c, nil
+}

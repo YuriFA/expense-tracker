@@ -7,8 +7,8 @@ import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositor
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const categories: Category[] = [
-  { id: 'cincome', name: 'Salary', type: 'income', icon: '💰', color: '#00FF00', slug: 'salary' },
-  { id: 'cexpense', name: 'Food', type: 'expense', icon: '🍔', color: '#FF0000', slug: 'food' },
+  { id: 'cincome', name: 'Salary', type: 'income', icon: '💰', color: '#00FF00', slug: 'salary', version: 1 },
+  { id: 'cexpense', name: 'Food', type: 'expense', icon: '🍔', color: '#FF0000', slug: 'food', version: 1 },
 ]
 
 const baseProps = {

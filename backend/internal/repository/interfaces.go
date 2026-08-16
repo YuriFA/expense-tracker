@@ -76,6 +76,59 @@ type TransactionRepository interface {
 	) ([]domain.Transaction, error)
 }
 
+// SyncTx is the unit-of-work handed to SyncRepository.WithinUserTx: every
+// method operates on the SAME open database transaction (which holds the
+// user's change-log advisory lock), so a whole push batch commits atomically
+// and its change_log rows order with commit visibility.
+type SyncTx interface {
+	GetAppliedOperation(ctx context.Context, opID uuid.UUID) (*domain.AppliedOperation, error)
+	InsertAppliedOperation(ctx context.Context, op domain.AppliedOperation) error
+
+	// Reads including tombstones (nil, nil when the id was never created).
+	GetAccountAny(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error)
+	GetCategoryAny(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
+	GetTransactionAny(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
+
+	// Live-only reads for reference validation.
+	LiveAccountExists(ctx context.Context, userID, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
+	CategoryNameTaken(ctx context.Context, userID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
+	HasLiveTransactionsForAccount(ctx context.Context, userID, accountID uuid.UUID) (bool, error)
+	HasLiveTransactionsForCategory(ctx context.Context, userID, categoryID uuid.UUID) (bool, error)
+
+	// Writes; each appends its change_log row on the same transaction. The
+	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
+	// the classified domain sentinel on failure (Err*VersionConflict,
+	// ErrRecordDeleted, Err*NotFound).
+	CreateAccount(ctx context.Context, params domain.CreateAccountParams) (*domain.Account, error)
+	ReplaceAccount(
+		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.AccountFullState,
+	) (*domain.Account, error)
+	TombstoneAccount(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error)
+	CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error)
+	ReplaceCategory(
+		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.CategoryFullState,
+	) (*domain.Category, error)
+	TombstoneCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
+	CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error)
+	ReplaceTransaction(
+		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.TransactionFullState,
+	) (*domain.Transaction, error)
+	TombstoneTransaction(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
+}
+
+// SyncRepository backs /api/sync: batched pushes (one transaction per batch)
+// and the cursor pull.
+type SyncRepository interface {
+	// WithinUserTx opens the per-batch transaction, takes the user's
+	// change-log advisory lock, runs fn, and commits iff fn succeeds.
+	WithinUserTx(ctx context.Context, userID uuid.UUID, fn func(t SyncTx) error) error
+	// PullChanges returns up to limit changes with seq > afterSeq in seq
+	// order. The caller derives nextCursor (last seq when the page is full,
+	// nil when caught up).
+	PullChanges(ctx context.Context, userID uuid.UUID, afterSeq int64, limit int) ([]domain.SyncChange, error)
+}
+
 // IdempotencyRepository caches POST /api/transactions responses for replay.
 type IdempotencyRepository interface {
 	CreateIdempotencyKey(ctx context.Context, params domain.CreateIdempotencyKeyParams) (*domain.IdempotencyKey, error)

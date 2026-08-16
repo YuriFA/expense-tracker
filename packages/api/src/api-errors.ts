@@ -34,8 +34,19 @@ const BUSINESS_RULE_CODES = new Set(['SAME_ACCOUNT_TRANSFER', 'CATEGORY_TYPE_MIS
 
 const ALREADY_EXISTS_CODES = new Set([
   'CATEGORY_ALREADY_EXISTS',
+  'ACCOUNT_ALREADY_EXISTS',
+  'TRANSACTION_ALREADY_EXISTS',
+  'SYNC_ALREADY_EXISTS',
   'USER_ALREADY_EXISTS',
   'EMAIL_ALREADY_VERIFIED',
+])
+
+// Optimistic-concurrency CAS conflicts (REST PATCH + sync push surfaces).
+const VERSION_CONFLICT_CODES = new Set([
+  'TRANSACTION_VERSION_CONFLICT',
+  'ACCOUNT_VERSION_CONFLICT',
+  'CATEGORY_VERSION_CONFLICT',
+  'SYNC_VERSION_CONFLICT',
 ])
 
 // Decode the backend's `Retry-After` header (seconds) for throttled responses.
@@ -70,8 +81,13 @@ export function mapApiError(
     return new RateLimitedError(message, { apiCode: code, retryAfter })
   }
 
-  if (code === 'TRANSACTION_VERSION_CONFLICT') {
+  if (code && VERSION_CONFLICT_CODES.has(code)) {
     return new VersionConflictError(message, { apiCode: code })
+  }
+
+  // A pushed record was deleted on the server (delete-wins default).
+  if (code === 'SYNC_DELETED_CONFLICT') {
+    return new ConflictError(message, { apiCode: code })
   }
 
   if (code && IN_USE_CODES.has(code)) {

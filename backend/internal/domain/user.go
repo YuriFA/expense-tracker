@@ -28,8 +28,11 @@ type User struct {
 	UpdatedAt    time.Time
 }
 
-// RegisterUserParams is the input to create a new user (and their seed data).
+// RegisterUserParams is the input to create a new user (and, when seeding is
+// explicitly enabled for this registration, the starter categories - default
+// off per the mobile product's empty-start decision).
 type RegisterUserParams struct {
-	Email        string
-	PasswordHash string
+	Email          string
+	PasswordHash   string
+	SeedCategories bool
 }

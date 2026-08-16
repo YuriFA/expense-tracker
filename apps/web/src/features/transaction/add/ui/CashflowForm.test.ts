@@ -9,6 +9,7 @@ import { createMockTransactionRepository } from '@/__tests__/helpers/mock-reposi
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const account: AccountWithBalance = {
+  version: 1,
   id: 'a1',
   name: 'Main',
   currency: 'USD',
@@ -18,6 +19,7 @@ const account: AccountWithBalance = {
 }
 
 const incomeCategory: Category = {
+  version: 1,
   id: 'cincome',
   name: 'Salary',
   type: 'income',
@@ -27,6 +29,7 @@ const incomeCategory: Category = {
 }
 
 const expenseCategory: Category = {
+  version: 1,
   id: 'cexpense',
   name: 'Food',
   type: 'expense',

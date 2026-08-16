@@ -16,6 +16,7 @@ import {
   createLocalStorageAdapter,
   NotFoundError,
   ReferentialIntegrityError,
+  VersionConflictError,
 } from '@/shared/lib/data'
 
 const accountsStorage = createLocalStorageAdapter<Account[]>(STORAGE_KEYS.accounts, [], {
@@ -55,6 +56,7 @@ export function createLocalStorageAccountRepository(deps: {
         ...payload,
         id: payload.id ?? generateId(),
         manualAdjustment: 0,
+        version: 1,
       }
       const accounts = accountsStorage.get()
       accounts.push(account)
@@ -68,10 +70,17 @@ export function createLocalStorageAccountRepository(deps: {
       if (!target) {
         throw new NotFoundError('Account not found')
       }
+      if (payload.version !== target.version) {
+        throw new VersionConflictError('Account was modified concurrently', {
+          apiCode: 'ACCOUNT_VERSION_CONFLICT',
+        })
+      }
 
+      const { version: _cas, ...fields } = payload
       const transactions = await deps.getAllTransactions()
-      const updated = Object.assign({}, target, payload, {
-        balance: getComputedAccountBalance({ ...target, ...payload }, transactions),
+      const updated = Object.assign({}, target, fields, {
+        version: target.version + 1,
+        balance: getComputedAccountBalance({ ...target, ...fields }, transactions),
       })
       accountsStorage.set(accounts.map((a) => (a.id === id ? updated : a)))
       return updated

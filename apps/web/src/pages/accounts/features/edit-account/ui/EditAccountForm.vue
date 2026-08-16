@@ -46,6 +46,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       payload: {
         name: data.name,
         manualAdjustment: toMinorUnits(data.manualAdjustment),
+        version: account.version,
       },
     })
     notification.success(t('editAccount.success'))

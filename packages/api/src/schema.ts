@@ -218,8 +218,9 @@ export interface paths {
         };
         /**
          * Список транзакций (cursor pagination)
-         * @description Возвращает страницу в порядке occurredAt DESC, id DESC. Листание через
-         *     opaque cursor (nextCursor); page size через limit (default 50, max 100).
+         * @description Возвращает страницу не удалённых (не tombstoned) транзакций в порядке
+         *     occurredAt DESC, id DESC. Листание через opaque cursor (nextCursor);
+         *     page size через limit (default 50, max 100).
          */
         get: operations["listTransactions"];
         put?: never;
@@ -249,7 +250,12 @@ export interface paths {
         get: operations["getTransaction"];
         put?: never;
         post?: never;
-        /** Удалить транзакцию */
+        /**
+         * Удалить транзакцию
+         * @description Удаление мягкое (tombstone): транзакция исчезает из листингов и
+         *     перестаёт влиять на балансы, но сохраняется для синхронизации
+         *     устройств.
+         */
         delete: operations["deleteTransaction"];
         options?: never;
         head?: never;
@@ -268,7 +274,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Список счетов (с balance) */
+        /**
+         * Список счетов (с balance)
+         * @description Все не удалённые (не tombstoned) счета текущего user.
+         */
         get: operations["listAccounts"];
         put?: never;
         /** Создать счёт */
@@ -311,7 +320,9 @@ export interface paths {
         post?: never;
         /**
          * Удалить счёт
-         * @description 409 если есть привязанные transactions.
+         * @description 409 если есть привязанные transactions. Удаление мягкое (tombstone):
+         *     счёт исчезает из листингов, сводки балансов и net worth, но сохраняется
+         *     для синхронизации устройств.
          */
         delete: operations["deleteAccount"];
         options?: never;
@@ -327,7 +338,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Список категорий */
+        /**
+         * Список категорий
+         * @description Все не удалённые (не tombstoned) категории текущего user.
+         */
         get: operations["listCategories"];
         put?: never;
         /** Создать категорию */
@@ -353,13 +367,78 @@ export interface paths {
         post?: never;
         /**
          * Удалить категорию
-         * @description 409 если есть привязанные transactions.
+         * @description 409 если есть привязанные transactions. Удаление мягкое (tombstone):
+         *     категория исчезает из листингов, но сохраняется для синхронизации
+         *     устройств.
          */
         delete: operations["deleteCategory"];
         options?: never;
         head?: never;
         /** Обновить категорию */
         patch: operations["updateCategory"];
+        trace?: never;
+    };
+    "/api/sync/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Push пакета клиентских операций
+         * @description Применяет пакет операций offline-first клиента. Каждая операция
+         *     обрабатывается независимо (частичный успех не откатывает применённые
+         *     элементы) и получает свой результат:
+         *
+         *     - `applied` — операция применена, `version` = новая серверная версия
+         *       записи;
+         *     - `conflict` — CAS-конфликт (`SYNC_VERSION_CONFLICT` при несовпадении
+         *       `baseVersion`, `SYNC_ALREADY_EXISTS` когда запись с таким id уже
+         *       существует и пришёл другой `opId`, `SYNC_DELETED_CONFLICT` когда
+         *       запись на сервере удалена), `serverState` = текущее состояние записи;
+         *     - `error` — нарушение бизнес-правил (например `CATEGORY_IN_USE`,
+         *       `INVALID_REFS`, `CATEGORY_ALREADY_EXISTS`).
+         *
+         *     Идемпотентность постоянна: повторная доставка уже применённого `opId`
+         *     (в том числе в другом батче/сессии) возвращает сохранённый результат
+         *     без побочных эффектов. Update применяется только если текущая версия
+         *     записи на сервере равна `baseVersion`. Create (`baseVersion = 0`):
+         *     записи нет → создать; есть + тот же `opId` → replay сохранённого
+         *     результата; есть + другой `opId` → `SYNC_ALREADY_EXISTS` без
+         *     перезаписи. Delete уже удалённой записи идемпотентен (`applied`).
+         */
+        post: operations["syncPush"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sync/pull": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Инкрементальный pull изменений по курсору
+         * @description Возвращает изменения user из change-log с `seq` строго больше
+         *     `cursor`, в порядке `seq` (upsert + tombstone, с серверной `version`
+         *     каждой записи), плюс `nextCursor` — курсор следующей страницы или
+         *     `null`, когда клиент догнал сервер. Пагинация через `limit`; клиент
+         *     продолжает с сохранённого курсора ровно с того места, где остановился.
+         */
+        get: operations["syncPull"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -417,6 +496,13 @@ export interface components {
             version: number;
         };
         TransactionCreateRequest: {
+            /**
+             * Format: uuid
+             * @description Опциональный клиентский id (UUID v4): offline-first клиенты
+             *     генерируют его локально, сервер использует его как id записи.
+             *     Дубликат для user → 409 `TRANSACTION_ALREADY_EXISTS`.
+             */
+            id?: string;
             /** @enum {string} */
             type: "income" | "expense" | "transfer";
             /** Format: int64 */
@@ -519,6 +605,11 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /**
+             * Format: int
+             * @description Версия счёта (optimistic concurrency).
+             */
+            version: number;
         };
         AccountBalance: {
             /** Format: uuid */
@@ -537,14 +628,26 @@ export interface components {
             netWorth: number;
         };
         AccountCreateRequest: {
+            /**
+             * Format: uuid
+             * @description Опциональный клиентский id (UUID v4). Дубликат для user →
+             *     409 `ACCOUNT_ALREADY_EXISTS`.
+             */
+            id?: string;
             name: string;
             /** @enum {string} */
             currency: "USD" | "EUR" | "RUB";
             /** Format: int64 */
             openingBalance: number;
         };
-        /** @description Все поля optional. */
+        /**
+         * @description Все поля кроме `version` optional. `version` — optimistic concurrency
+         *     (аналогично транзакциям): при параллельном изменении → 409
+         *     `ACCOUNT_VERSION_CONFLICT`.
+         */
         AccountUpdateRequest: {
+            /** Format: int */
+            version: number;
             name?: string;
             /** Format: int64 */
             manualAdjustment?: number;
@@ -563,21 +666,168 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /**
+             * Format: int
+             * @description Версия категории (optimistic concurrency).
+             */
+            version: number;
         };
         CategoryCreateRequest: {
+            /**
+             * Format: uuid
+             * @description Опциональный клиентский id (UUID v4). Дубликат для user →
+             *     409 `CATEGORY_ALREADY_EXISTS`.
+             */
+            id?: string;
             name: string;
             /** @enum {string} */
             type: "income" | "expense";
             icon: string;
             color: string;
         };
-        /** @description Все поля optional. */
+        /**
+         * @description Все поля кроме `version` optional. `version` — optimistic concurrency:
+         *     при параллельном изменении → 409 `CATEGORY_VERSION_CONFLICT`.
+         */
         CategoryUpdateRequest: {
+            /** Format: int */
+            version: number;
             name?: string;
             /** @enum {string} */
             type?: "income" | "expense";
             icon?: string;
             color?: string;
+        };
+        /** @description Полное состояние счёта в sync-операции (upsert). */
+        AccountSyncData: {
+            name: string;
+            /** @enum {string} */
+            currency: "USD" | "EUR" | "RUB";
+            /** Format: int64 */
+            openingBalance: number;
+            /** Format: int64 */
+            manualAdjustment: number;
+        };
+        /** @description Полное состояние категории в sync-операции (upsert). */
+        CategorySyncData: {
+            name: string;
+            /** @enum {string} */
+            type: "income" | "expense";
+            icon: string;
+            color: string;
+        };
+        /**
+         * @description Полное состояние транзакции в sync-операции (upsert). Cashflow
+         *     (income/expense) несёт `accountId`+`categoryId`, transfer —
+         *     `fromAccountId`+`toAccountId`.
+         */
+        TransactionSyncData: {
+            /** @enum {string} */
+            type: "income" | "expense" | "transfer";
+            /** Format: int64 */
+            amount: number;
+            description: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: uuid */
+            accountId?: string | null;
+            /** Format: uuid */
+            categoryId?: string | null;
+            /** Format: uuid */
+            fromAccountId?: string | null;
+            /** Format: uuid */
+            toAccountId?: string | null;
+        };
+        /** @enum {string} */
+        SyncEntity: "account" | "category" | "transaction";
+        /**
+         * @description Одна клиентская операция. `baseVersion` — серверная версия, на которой
+         *     операция основана (0 = запись ещё не существует на сервере). Для
+         *     upsert `data` содержит полное состояние записи; для delete `data`
+         *     отсутствует.
+         */
+        SyncOperation: {
+            /**
+             * Format: uuid
+             * @description Клиентский id операции; ключ постоянной идемпотентности.
+             */
+            opId: string;
+            entity: components["schemas"]["SyncEntity"];
+            /** @enum {string} */
+            action: "upsert" | "delete";
+            /**
+             * Format: uuid
+             * @description Id записи (клиентский UUID v4 для baseVersion = 0).
+             */
+            id: string;
+            /** Format: int */
+            baseVersion: number;
+            /** @description Полное состояние записи; обязательно для upsert. */
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"];
+        };
+        SyncPushRequest: {
+            operations: components["schemas"]["SyncOperation"][];
+        };
+        /** @description Текущее состояние записи на сервере (в конфликте). */
+        SyncServerState: {
+            /** Format: int */
+            version: number;
+            /** @description true — запись tombstoned на сервере. */
+            deleted: boolean;
+            /** @description Присутствует для не удалённой записи. */
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"];
+        };
+        /** @description Результат одной операции; HTTP ответ — всегда 200. */
+        SyncPushResult: {
+            /** Format: uuid */
+            opId: string;
+            /** @enum {string} */
+            status: "applied" | "conflict" | "error";
+            /**
+             * Format: int
+             * @description Новая серверная версия записи (для status = applied).
+             */
+            version?: number;
+            /**
+             * @description Machine-readable код (для conflict/error): `SYNC_VERSION_CONFLICT`,
+             *     `SYNC_ALREADY_EXISTS`, `SYNC_DELETED_CONFLICT` либо коды
+             *     бизнес-правил (`CATEGORY_IN_USE`, `INVALID_REFS`, ...).
+             */
+            code?: string;
+            /** @description Human-readable сообщение (для conflict/error). */
+            message?: string;
+            serverState?: components["schemas"]["SyncServerState"];
+        };
+        SyncPushResponse: {
+            results: components["schemas"]["SyncPushResult"][];
+        };
+        /** @description Одна запись change-log для pull. */
+        SyncChange: {
+            /**
+             * Format: int64
+             * @description Монотонный порядок изменения.
+             */
+            seq: number;
+            entity: components["schemas"]["SyncEntity"];
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            action: "upsert" | "tombstone";
+            /**
+             * Format: int
+             * @description Серверная версия записи после изменения.
+             */
+            version: number;
+            /** @description Полное состояние записи; присутствует для upsert. */
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"];
+        };
+        SyncPullResponse: {
+            changes: components["schemas"]["SyncChange"][];
+            /**
+             * Format: int64
+             * @description Курсор следующей страницы; null — клиент догнал сервер.
+             */
+            nextCursor: number | null;
         };
     };
     responses: {
@@ -737,6 +987,36 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Счет с таким id уже есть у user (клиентский id-дубликат). */
+        AccountAlreadyExists: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "ACCOUNT_ALREADY_EXISTS",
+                 *       "message": "account already exists"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Конфликт в версии счета (optimistic concurrency). */
+        AccountVersionConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "ACCOUNT_VERSION_CONFLICT",
+                 *       "message": "account version conflict"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         TransactionId: string;
@@ -774,6 +1054,13 @@ export interface operations {
                      * @example strong-password
                      */
                     password: string;
+                    /**
+                     * @description Явно включить посев стартового набора категорий (24) для
+                     *     этой регистрации. По умолчанию off — новый пользователь
+                     *     начинает с пустым списком категорий.
+                     * @default false
+                     */
+                    seedCategories?: boolean;
                 };
             };
         };
@@ -1214,11 +1501,7 @@ export interface operations {
             };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
-            /**
-             * @description Idempotency конфликт:
-             *     - тот же ключ + другой body (mismatch)
-             *     - тот же ключ пока предыдущий запрос ещё в полёте (pending)
-             */
+            /** @description Либо idempotency-конфликт, либо дубликат клиентского `id`. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1381,6 +1664,7 @@ export interface operations {
             };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
+            409: components["responses"]["AccountAlreadyExists"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1482,6 +1766,7 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["AccountNotFound"];
+            409: components["responses"]["AccountVersionConflict"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1613,7 +1898,73 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["CategoryNotFound"];
-            409: components["responses"]["CategoryAlreadyExists"];
+            /**
+             * @description Либо имя уже занята (`CATEGORY_ALREADY_EXISTS`), либо конфликт
+             *     версии (`CATEGORY_VERSION_CONFLICT`).
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    syncPush: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncPushRequest"];
+            };
+        };
+        responses: {
+            /** @description Per-item результаты в порядке операций запроса. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncPushResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    syncPull: {
+        parameters: {
+            query?: {
+                /** @description Последний полученный seq (0 = с начала истории). */
+                cursor?: number;
+                /** @description Page size (default 100, max 500). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Страница изменений + nextCursor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncPullResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
             500: components["responses"]["InternalError"];
         };
     };

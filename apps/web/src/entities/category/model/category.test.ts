@@ -7,6 +7,7 @@ import {
 } from './category'
 
 const validCategory: Category = {
+  version: 1,
   id: 'c1',
   name: 'Food',
   type: 'expense',

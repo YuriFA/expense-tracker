@@ -6,6 +6,7 @@ import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositori
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const createdAccount: AccountWithBalance = {
+  version: 1,
   id: 'a1',
   name: 'Main',
   currency: 'USD',

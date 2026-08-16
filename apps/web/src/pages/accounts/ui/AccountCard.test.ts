@@ -5,6 +5,7 @@ import type { AccountWithBalance } from '@/entities/account'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const accountFixture: AccountWithBalance = {
+  version: 1,
   id: 'a1',
   name: 'Main',
   currency: 'USD',

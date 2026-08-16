@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageAccountRepository } from './local-storage-repository'
 
 const accountFixture: Account = {
+  version: 1,
   id: 'a1',
   name: 'Main',
   currency: 'USD',
@@ -114,7 +115,7 @@ describe('account localStorage repository', () => {
   describe('update', () => {
     it('throws when account does not exist', async () => {
       const repo = createRepository()
-      await expect(repo.update('missing', { name: 'New' })).rejects.toThrow(/not found/)
+      await expect(repo.update('missing', { name: 'New', version: 1 })).rejects.toThrow(/not found/)
     })
 
     it('updates fields and recalculates balance', async () => {
@@ -122,7 +123,7 @@ describe('account localStorage repository', () => {
       const repo = createRepository({
         getAllTransactions: vi.fn<() => Promise<TransactionImpact[]>>().mockResolvedValue([incomeTransaction]),
       })
-      const result = await repo.update('a1', { name: 'Updated', manualAdjustment: 50 })
+      const result = await repo.update('a1', { name: 'Updated', manualAdjustment: 50, version: 1 })
       expect(result.name).toBe('Updated')
       expect(result.manualAdjustment).toBe(50)
       expect(result.balance).toBe(1150)

@@ -22,7 +22,7 @@ func (r *Repository) CreateIdempotencyKey(
 		ExpiresAt:      params.ExpiresAt,
 	})
 	if err != nil {
-		if pgConstraintViolation(err, pgCodeUniqueViolation) {
+		if pgUniqueViolation(err) {
 			return nil, domain.ErrIdempotencyKeyInUse
 		}
 		return nil, opWrap(op, err)

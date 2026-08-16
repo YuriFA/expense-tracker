@@ -1,4 +1,4 @@
-import { asNonEmptyString, asString, isRecord } from '../lib/normalize'
+import { asInteger, asNonEmptyString, asString, isRecord } from '../lib/normalize'
 
 export type CategoryType = 'income' | 'expense'
 
@@ -8,6 +8,8 @@ export interface Category {
   type: CategoryType
   icon: string
   color: string
+  /** Optimistic-concurrency revision (bumped on every server update). */
+  version: number
   /** Present only for the bundled default categories (localStorage mode); the
    * backend does not return a slug. */
   slug?: string
@@ -26,9 +28,10 @@ export const normalizeCategory = (value: unknown): Category | null => {
   const type = isCategoryType(value.type) ? value.type : null
   const icon = asString(value.icon)
   const color = asString(value.color)
+  const version = asInteger(value.version)
   const slug = asString(value.slug)
 
-  if (!id || !name || !type || !icon || !color) {
+  if (!id || !name || !type || !icon || !color || version === null) {
     return null
   }
 
@@ -38,6 +41,7 @@ export const normalizeCategory = (value: unknown): Category | null => {
     type,
     icon,
     color,
+    version,
     ...(slug ? { slug } : {}),
   }
 }

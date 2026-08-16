@@ -92,6 +92,22 @@ export { createHTTPAccountRepository } from './http/account'
 export { createHTTPCategoryRepository } from './http/category'
 export { createHTTPTransactionRepository } from './http/transaction'
 
+// --- Sync endpoint client (offline-first push/pull) -------------------------
+export {
+  pushSyncOperations,
+  pullSyncChanges,
+  type SyncEntityKind,
+  type AccountSyncData,
+  type CategorySyncData,
+  type TransactionSyncData,
+  type SyncOperationData,
+  type SyncPushOperation,
+  type SyncPushResultItem,
+  type SyncServerState,
+  type SyncChangeItem,
+  type SyncPullPage,
+} from './http/sync'
+
 // --- Shared generic helpers (also used by app-local repositories) ----------
 export { generateId } from './lib/generate-id'
 export {

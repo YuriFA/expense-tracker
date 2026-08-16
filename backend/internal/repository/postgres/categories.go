@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -9,23 +10,57 @@ import (
 	db "github.com/yurifa/expense-tracker-api/internal/repository/db"
 )
 
+// Every mutation runs inside withinLockedTx (entity write + change_log append
+// in one committed transaction). Deletes are tombstones guarded by the in-use
+// check; the live-name uniqueness is enforced by the partial unique index.
+
 func (r *Repository) CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error) {
 	const op = "repository.postgres.CreateCategory"
 
-	row, err := r.q.CreateCategory(ctx, db.CreateCategoryParams{
-		UserID: params.UserID,
-		Name:   params.Name,
-		Type:   string(params.Type),
-		Icon:   params.Icon,
-		Color:  params.Color,
+	id := newEntityID(params.ID)
+	var row db.CreateCategoryRow
+	err := r.withinLockedTx(ctx, params.UserID, func(q *db.Queries) error {
+		var err error
+		row, err = q.CreateCategory(ctx, db.CreateCategoryParams{
+			ID:     id,
+			UserID: params.UserID,
+			Name:   params.Name,
+			Type:   string(params.Type),
+			Icon:   params.Icon,
+			Color:  params.Color,
+		})
+		if err != nil {
+			if pgUniqueViolation(err) {
+				// Either the live-name partial index or the PK (client id
+				// duplicate); both are the same already-exists error.
+				return domain.ErrCategoryAlreadyExists
+			}
+			return err
+		}
+		return appendChangeLog(
+			ctx,
+			q,
+			params.UserID,
+			row.ID,
+			domain.SyncEntityCategory,
+			domain.SyncChangeUpsert,
+			int(row.Version),
+		)
 	})
 	if err != nil {
-		if pgConstraintViolation(err, pgCodeUniqueViolation) {
-			return nil, domain.ErrCategoryAlreadyExists
-		}
 		return nil, opWrap(op, err)
 	}
-	return categoryFromRow(row), nil
+	return categoryFromFields(
+		row.ID,
+		row.UserID,
+		row.Name,
+		row.Type,
+		row.Icon,
+		row.Color,
+		row.CreatedAt,
+		row.UpdatedAt,
+		int(row.Version),
+	), nil
 }
 
 func (r *Repository) UpdateCategory(
@@ -41,40 +76,90 @@ func (r *Repository) UpdateCategory(
 		typ = &s
 	}
 
-	row, err := r.q.UpdateCategory(ctx, db.UpdateCategoryParams{
-		ID:     id,
-		UserID: userID,
-		Name:   params.Name,
-		Type:   typ,
-		Icon:   params.Icon,
-		Color:  params.Color,
+	var row db.UpdateCategoryRow
+	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+		var err error
+		row, err = q.UpdateCategory(ctx, db.UpdateCategoryParams{
+			ID:      id,
+			UserID:  userID,
+			Name:    params.Name,
+			Type:    typ,
+			Icon:    params.Icon,
+			Color:   params.Color,
+			Version: int32(params.Version), //nolint:gosec // optimistic version is a small positive int
+		})
+		if err != nil {
+			if pgUniqueViolation(err) {
+				return domain.ErrCategoryAlreadyExists
+			}
+			if errNoRows(err) {
+				return classifyCategoryWrite(ctx, q, userID, id)
+			}
+			return err
+		}
+		return appendChangeLog(
+			ctx,
+			q,
+			userID,
+			row.ID,
+			domain.SyncEntityCategory,
+			domain.SyncChangeUpsert,
+			int(row.Version),
+		)
 	})
 	if err != nil {
-		if pgConstraintViolation(err, pgCodeUniqueViolation) {
-			return nil, domain.ErrCategoryAlreadyExists
-		}
-		if errNoRows(err) {
-			return nil, domain.ErrCategoryNotFound
-		}
 		return nil, opWrap(op, err)
 	}
-	return categoryFromRow(row), nil
+	return categoryFromFields(
+		row.ID,
+		row.UserID,
+		row.Name,
+		row.Type,
+		row.Icon,
+		row.Color,
+		row.CreatedAt,
+		row.UpdatedAt,
+		int(row.Version),
+	), nil
 }
 
 func (r *Repository) DeleteCategory(ctx context.Context, userID, id uuid.UUID) error {
 	const op = "repository.postgres.DeleteCategory"
 
-	n, err := r.q.DeleteCategory(ctx, db.DeleteCategoryParams{ID: id, UserID: userID})
-	if err != nil {
-		if pgConstraintViolation(err, pgCodeFKViolation) {
+	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+		inUse, err := q.HasLiveTransactionsForCategory(ctx, db.HasLiveTransactionsForCategoryParams{
+			UserID:     userID,
+			CategoryID: &id,
+		})
+		if err != nil {
+			return err
+		}
+		if inUse {
 			return domain.ErrCategoryHasTransactions
 		}
+		version, err := q.SoftDeleteCategory(ctx, db.SoftDeleteCategoryParams{ID: id, UserID: userID})
+		if err != nil {
+			if errNoRows(err) {
+				return classifyCategoryWrite(ctx, q, userID, id)
+			}
+			return err
+		}
+		return appendChangeLog(ctx, q, userID, id, domain.SyncEntityCategory, domain.SyncChangeTombstone, int(version))
+	})
+	if err != nil {
 		return opWrap(op, err)
 	}
-	if n == 0 {
+	return nil
+}
+
+// classifyCategoryWrite distinguishes the zero-row outcomes of a CAS write for
+// the REST surface (deleted == not found; live mismatch == version conflict).
+func classifyCategoryWrite(ctx context.Context, q *db.Queries, userID, id uuid.UUID) error {
+	row, err := q.GetCategoryAny(ctx, db.GetCategoryAnyParams{ID: id, UserID: userID})
+	if err != nil || row.DeletedAt != nil {
 		return domain.ErrCategoryNotFound
 	}
-	return nil
+	return domain.ErrCategoryVersionConflict
 }
 
 func (r *Repository) GetCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error) {
@@ -87,7 +172,17 @@ func (r *Repository) GetCategory(ctx context.Context, userID, id uuid.UUID) (*do
 		}
 		return nil, opWrap(op, err)
 	}
-	return categoryFromRow(row), nil
+	return categoryFromFields(
+		row.ID,
+		row.UserID,
+		row.Name,
+		row.Type,
+		row.Icon,
+		row.Color,
+		row.CreatedAt,
+		row.UpdatedAt,
+		int(row.Version),
+	), nil
 }
 
 func (r *Repository) GetCategories(
@@ -109,20 +204,32 @@ func (r *Repository) GetCategories(
 	}
 	out := make([]domain.Category, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, *categoryFromRow(row))
+		out = append(
+			out,
+			*categoryFromFields(row.ID, row.UserID, row.Name, row.Type, row.Icon, row.Color, row.CreatedAt, row.UpdatedAt, int(row.Version)),
+		)
 	}
 	return out, nil
 }
 
-func categoryFromRow(row db.Category) *domain.Category {
+// categoryFromFields assembles a domain.Category; the category queries return
+// structurally-identical generated Row types, so the construction is
+// centralized here.
+func categoryFromFields(
+	id, userID uuid.UUID,
+	name, typ, icon, color string,
+	createdAt, updatedAt time.Time,
+	version int,
+) *domain.Category {
 	return &domain.Category{
-		ID:        row.ID,
-		UserID:    row.UserID,
-		Name:      row.Name,
-		Type:      domain.TransactionType(row.Type),
-		Icon:      row.Icon,
-		Color:     row.Color,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
+		ID:        id,
+		UserID:    userID,
+		Name:      name,
+		Type:      domain.TransactionType(typ),
+		Icon:      icon,
+		Color:     color,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+		Version:   version,
 	}
 }

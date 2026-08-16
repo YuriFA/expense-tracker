@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/yurifa/expense-tracker-api/internal/api"
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 	"github.com/yurifa/expense-tracker-api/internal/service"
@@ -53,7 +55,13 @@ func (s *Server) CreateTransaction(
 ) (api.CreateTransactionResponseObject, error) {
 	user := s.currentUser(ctx)
 
+	var id uuid.UUID
+	if req.Body.Id != nil {
+		id = *req.Body.Id
+	}
+
 	params := domain.CreateTransactionParams{
+		ID:            id,
 		UserID:        user.ID,
 		Type:          domain.TransactionType(req.Body.Type),
 		Amount:        req.Body.Amount,

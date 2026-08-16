@@ -7,6 +7,7 @@ import {
   createLocalStorageAdapter,
   NotFoundError,
   ReferentialIntegrityError,
+  VersionConflictError,
 } from '@/shared/lib/data'
 import { DEFAULT_CATEGORIES } from '../model/defaults'
 
@@ -15,22 +16,27 @@ const categoriesStorage = createLocalStorageAdapter<Category[]>(STORAGE_KEYS.cat
   write: serializeCategoriesStorage,
 })
 
+// Bundled defaults are immutable fixtures; they carry version 1 like any
+// seeded server record.
+function withDefaults(): Category[] {
+  return [...DEFAULT_CATEGORIES.map((c) => ({ ...c, version: 1 })), ...categoriesStorage.get()]
+}
+
 export function createLocalStorageCategoryRepository(deps: {
   hasTransactionsForCategory: (categoryId: string) => Promise<boolean>
 }): CategoryRepository {
   return {
     async getAll() {
-      return [...DEFAULT_CATEGORIES, ...categoriesStorage.get()]
+      return withDefaults()
     },
     async getById(id: string) {
-      return (
-        [...DEFAULT_CATEGORIES, ...categoriesStorage.get()].find((item) => item.id === id) ?? null
-      )
+      return withDefaults().find((item) => item.id === id) ?? null
     },
     async create(payload: CreateCategoryPayload) {
       const category: Category = {
         ...payload,
         id: payload.id ?? generateId(),
+        version: 1,
       }
       const categories = categoriesStorage.get()
       categories.push(category)
@@ -44,8 +50,14 @@ export function createLocalStorageCategoryRepository(deps: {
       if (!target) {
         throw new NotFoundError('Category not found')
       }
+      if (payload.version !== target.version) {
+        throw new VersionConflictError('Category was modified concurrently', {
+          apiCode: 'CATEGORY_VERSION_CONFLICT',
+        })
+      }
 
-      return Object.assign(target, payload)
+      const { version: _cas, ...fields } = payload
+      return Object.assign(target, fields, { version: target.version + 1 })
     },
     async remove(id) {
       if (await deps.hasTransactionsForCategory(id)) {

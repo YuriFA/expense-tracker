@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/yurifa/expense-tracker-api/internal/api"
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 )
@@ -28,7 +30,12 @@ func (s *Server) CreateAccount(
 	req api.CreateAccountRequestObject,
 ) (api.CreateAccountResponseObject, error) {
 	user := s.currentUser(ctx)
+	var id uuid.UUID
+	if req.Body.Id != nil {
+		id = *req.Body.Id
+	}
 	a, err := s.accounts.Create(ctx, user.ID, domain.CreateAccountParams{
+		ID:             id,
 		Name:           req.Body.Name,
 		Currency:       string(req.Body.Currency),
 		OpeningBalance: req.Body.OpeningBalance,
@@ -94,6 +101,7 @@ func (s *Server) UpdateAccount(
 	a, err := s.accounts.Update(ctx, user.ID, req.Id, domain.UpdateAccountParams{
 		Name:             name,
 		ManualAdjustment: manual,
+		Version:          req.Body.Version,
 	})
 	if err != nil {
 		return nil, err

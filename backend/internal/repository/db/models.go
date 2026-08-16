@@ -19,11 +19,22 @@ type Account struct {
 	Currency         string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+	DeletedAt        *time.Time
+	Version          int32
 }
 
 type AccountContribution struct {
 	AccountID *uuid.UUID
 	Signed    interface{}
+}
+
+type AppliedOperation struct {
+	OpID      uuid.UUID
+	UserID    uuid.UUID
+	Entity    string
+	EntityID  uuid.UUID
+	Result    []byte
+	AppliedAt time.Time
 }
 
 type Category struct {
@@ -35,6 +46,18 @@ type Category struct {
 	Color     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	DeletedAt *time.Time
+	Version   int32
+}
+
+type ChangeLog struct {
+	Seq       int64
+	UserID    uuid.UUID
+	Entity    string
+	EntityID  uuid.UUID
+	Action    string
+	Version   int32
+	CreatedAt time.Time
 }
 
 type EmailVerificationCode struct {
@@ -89,6 +112,7 @@ type Transaction struct {
 	CategoryID    *uuid.UUID
 	FromAccountID *uuid.UUID
 	ToAccountID   *uuid.UUID
+	DeletedAt     *time.Time
 }
 
 type User struct {

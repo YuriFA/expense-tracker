@@ -4,6 +4,7 @@ import { STORAGE_KEYS } from '@/shared/config/storage-keys'
 import { createLocalStorageCategoryRepository } from './local-storage-repository'
 
 const categoryFixture: Category = {
+  version: 1,
   id: 'c1',
   name: 'Food',
   type: 'expense',
@@ -103,13 +104,13 @@ describe('category localStorage repository', () => {
   describe('update', () => {
     it('throws when category does not exist', async () => {
       const repo = createRepository()
-      await expect(repo.update('missing', { name: 'New' })).rejects.toThrow(/not found/)
+      await expect(repo.update('missing', { name: 'New', version: 1 })).rejects.toThrow(/not found/)
     })
 
     it('updates fields in place', async () => {
       seedCategories([categoryFixture])
       const repo = createRepository()
-      const result = await repo.update('c1', { name: 'Updated' })
+      const result = await repo.update('c1', { name: 'Updated', version: 1 })
       expect(result.name).toBe('Updated')
     })
   })

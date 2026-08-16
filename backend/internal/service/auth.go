@@ -61,9 +61,15 @@ type AuthSession struct {
 	SessionID string
 }
 
-// Register creates a user (with the 24 default categories), issues a
-// verification code (best-effort via the mailer), and starts a session.
-func (s *AuthService) Register(ctx context.Context, email, password string) (*AuthSession, error) {
+// Register creates a user (seeding the starter categories only when
+// seedCategories is explicitly enabled for this registration - default off),
+// issues a verification code (best-effort via the mailer), and starts a
+// session.
+func (s *AuthService) Register(
+	ctx context.Context,
+	email, password string,
+	seedCategories bool,
+) (*AuthSession, error) {
 	const op = "service.auth.Register"
 
 	passwordHash, err := auth.HashPassword(password)
@@ -71,7 +77,11 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (*Au
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	user, err := s.users.RegisterUser(ctx, domain.RegisterUserParams{Email: email, PasswordHash: passwordHash})
+	user, err := s.users.RegisterUser(ctx, domain.RegisterUserParams{
+		Email:          email,
+		PasswordHash:   passwordHash,
+		SeedCategories: seedCategories,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

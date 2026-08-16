@@ -7,6 +7,8 @@ export type Account = {
   currency: CurrencyCode
   openingBalance: number
   manualAdjustment: number
+  /** Optimistic-concurrency revision (bumped on every server update). */
+  version: number
 }
 
 export type AccountWithBalance = Account & {
@@ -23,8 +25,16 @@ export const normalizeAccount = (value: unknown): Account | null => {
   const currency = isCurrencyCode(value.currency) ? value.currency : null
   const openingBalance = asInteger(value.openingBalance)
   const manualAdjustment = asInteger(value.manualAdjustment)
+  const version = asInteger(value.version)
 
-  if (!id || name === null || currency === null || openingBalance === null || manualAdjustment === null) {
+  if (
+    !id ||
+    name === null ||
+    currency === null ||
+    openingBalance === null ||
+    manualAdjustment === null ||
+    version === null
+  ) {
     return null
   }
 
@@ -34,6 +44,7 @@ export const normalizeAccount = (value: unknown): Account | null => {
     currency,
     openingBalance,
     manualAdjustment,
+    version,
   }
 }
 

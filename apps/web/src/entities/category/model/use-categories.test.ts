@@ -14,6 +14,7 @@ import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositor
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const categoryFixture: Category = {
+  version: 1,
   id: 'c1',
   name: 'Food',
   type: 'expense',
@@ -108,8 +109,8 @@ describe('useUpdateCategory', () => {
     const { result } = mountWithComposable(() => useUpdateCategory(), {
       repositories: { categories: repo },
     })
-    await result.mutateAsync({ id: 'c1', payload: { name: 'Updated' } })
-    expect(repo.update).toHaveBeenCalledWith('c1', { name: 'Updated' })
+    await result.mutateAsync({ id: 'c1', payload: { name: 'Updated', version: 1 } })
+    expect(repo.update).toHaveBeenCalledWith('c1', { name: 'Updated', version: 1 })
   })
 
   it('optimistically patches category in list and detail caches', async () => {
@@ -122,7 +123,7 @@ describe('useUpdateCategory', () => {
       return { mutation: useUpdateCategory(), queryCache }
     }, { repositories: { categories: repo } })
 
-    await result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated' } })
+    await result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated', version: 1 } })
     await flushPromises()
 
     expect(result.queryCache.getQueryData<Category[]>(['categories'])?.[0]?.name).toBe('Updated')
@@ -139,7 +140,7 @@ describe('useUpdateCategory', () => {
     }, { repositories: { categories: repo } })
 
     await expect(
-      result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated' } }),
+      result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated', version: 1 } }),
     ).rejects.toThrow('boom')
     await flushPromises()
 

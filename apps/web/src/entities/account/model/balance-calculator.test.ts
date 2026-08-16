@@ -8,6 +8,7 @@ import {
 } from './balance-calculator'
 
 const accountFixture: Account = {
+  version: 1,
   id: 'a1',
   name: 'Main',
   currency: 'USD',
@@ -140,6 +141,7 @@ describe('getAccountsBalances', () => {
 describe('getComputedAccountBalance', () => {
   it('returns opening + manual + sum of impacts', () => {
     const account: Account = {
+      version: 1,
       id: 'a1',
       name: 'Main',
       currency: 'USD',

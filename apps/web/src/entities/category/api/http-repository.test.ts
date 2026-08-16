@@ -6,6 +6,7 @@ import { createHTTPCategoryRepository } from './http-repository'
 type ApiCategory = components['schemas']['Category']
 
 const apiCategory: ApiCategory = {
+  version: 1,
   id: 'c1',
   userId: 'u1',
   name: 'Food',
@@ -47,7 +48,7 @@ describe('category HTTP repository', () => {
       const repo = createHTTPCategoryRepository()
       const result = await repo.getAll()
       expect(result).toEqual([
-        { id: 'c1', name: 'Food', type: 'expense', icon: 'utensils', color: '#FF0000' },
+        { id: 'c1', name: 'Food', type: 'expense', icon: 'utensils', color: '#FF0000', version: 1 },
       ])
       const call = inspect(fetchSpy.mock.calls[0])
       expect(call.url.pathname).toBe('/api/categories')
@@ -96,13 +97,13 @@ describe('category HTTP repository', () => {
     it('calls PATCH (not PUT) /categories/{id} with JSON body', async () => {
       fetchSpy.mockResolvedValueOnce(jsonResponse(200, { ...apiCategory, name: 'Groceries' }))
       const repo = createHTTPCategoryRepository()
-      const result = await repo.update('c1', { name: 'Groceries' })
+      const result = await repo.update('c1', { name: 'Groceries', version: 1 })
       expect(result.name).toBe('Groceries')
       const call = inspect(fetchSpy.mock.calls[0])
       expect(call.url.pathname).toBe('/api/categories/c1')
       expect(call.method).toBe('PATCH')
       const body = await (fetchSpy.mock.calls[0]![0] as Request).clone().json()
-      expect(body).toEqual({ name: 'Groceries' })
+      expect(body).toEqual({ name: 'Groceries', version: 1 })
     })
   })
 

@@ -11,41 +11,61 @@ import (
 )
 
 type Querier interface {
+	AppendChangeLog(ctx context.Context, arg AppendChangeLogParams) (int64, error)
+	// Live-name uniqueness pre-check (race-free under the per-user change-log
+	// advisory lock); used by the sync path where a constraint violation would
+	// abort the shared batch transaction.
+	CategoryNameTaken(ctx context.Context, arg CategoryNameTakenParams) (bool, error)
 	// accounts. Every query scopes by user_id (IDOR-safe: a cross-user access
 	// returns "not found", never the row). Balance is computed via the
-	// account_contributions view (opening + manual + sum(signed)).
+	// account_contributions view (opening + manual + sum(signed)). Deletes are
+	// soft (deleted_at tombstone); every read path that feeds listings/summaries
+	// filters tombstones, while the *Any reads (sync + conflict classification)
+	// include them.
+	// id is the optional client-generated id (offline-first clients).
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (CreateAccountRow, error)
-	// categories (per-user, unique name within user). Scoped by user_id everywhere.
-	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
+	// categories (per-user, unique name among LIVE rows only - the partial unique
+	// index ignores tombstones so a deleted name can be recreated). Scoped by
+	// user_id everywhere; deletes are soft (deleted_at tombstone).
+	// id is the optional client-generated id (offline-first clients).
+	CreateCategory(ctx context.Context, arg CreateCategoryParams) (CreateCategoryRow, error)
 	// idempotency keys (POST /api/transactions idempotency cache).
 	// user_id is a uuid; the idempotency_key value is a client string.
 	CreateIdempotencyKey(ctx context.Context, arg CreateIdempotencyKeyParams) (IdempotencyKey, error)
 	// sessions (stateful auth). id is a hex token, NOT a uuid.
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
-	// transactions. Scoped by user_id everywhere (IDOR protection).
+	// transactions. Scoped by user_id everywhere (IDOR protection). Deletes are
+	// soft (deleted_at tombstone): balances (via the account_contributions view)
+	// and listings filter tombstones; the *Any reads include them for sync.
 	//
 	// The keyset-cursor index transactions(user_id, occurred_at DESC, id DESC)
 	// serves ListTransactions directly.
-	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
-	DeleteAccount(ctx context.Context, arg DeleteAccountParams) (int64, error)
-	DeleteCategory(ctx context.Context, arg DeleteCategoryParams) (int64, error)
+	// id is the optional client-generated id (offline-first clients).
+	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (CreateTransactionRow, error)
 	DeleteExpiredIdempotencyKeys(ctx context.Context) (int64, error)
 	DeleteExpiredSessions(ctx context.Context) (int64, error)
 	DeleteIdempotencyKey(ctx context.Context, arg DeleteIdempotencyKeyParams) (int64, error)
 	DeleteSession(ctx context.Context, id string) (int64, error)
 	DeleteSessionsByUser(ctx context.Context, userID uuid.UUID) (int64, error)
 	DeleteSessionsByUserExcept(ctx context.Context, arg DeleteSessionsByUserExceptParams) (int64, error)
-	DeleteTransaction(ctx context.Context, arg DeleteTransactionParams) (int64, error)
 	ExtendSession(ctx context.Context, arg ExtendSessionParams) (int64, error)
 	GetAccount(ctx context.Context, arg GetAccountParams) (GetAccountRow, error)
+	// Includes tombstoned rows; used by sync push (serverState / idempotent
+	// delete) and REST conflict classification.
+	GetAccountAny(ctx context.Context, arg GetAccountAnyParams) (GetAccountAnyRow, error)
 	GetAccountBalances(ctx context.Context, userID uuid.UUID) ([]GetAccountBalancesRow, error)
 	GetAccounts(ctx context.Context, userID uuid.UUID) ([]GetAccountsRow, error)
-	GetCategories(ctx context.Context, arg GetCategoriesParams) ([]Category, error)
-	GetCategory(ctx context.Context, arg GetCategoryParams) (Category, error)
+	GetAppliedOperation(ctx context.Context, opID uuid.UUID) (AppliedOperation, error)
+	GetCategories(ctx context.Context, arg GetCategoriesParams) ([]GetCategoriesRow, error)
+	GetCategory(ctx context.Context, arg GetCategoryParams) (GetCategoryRow, error)
+	// Includes tombstoned rows (sync push + conflict classification).
+	GetCategoryAny(ctx context.Context, arg GetCategoryAnyParams) (GetCategoryAnyRow, error)
 	GetIdempotencyByUserAndKey(ctx context.Context, arg GetIdempotencyByUserAndKeyParams) (IdempotencyKey, error)
 	GetSessionByID(ctx context.Context, id string) (Session, error)
 	GetSessionsByUser(ctx context.Context, userID uuid.UUID) ([]Session, error)
-	GetTransaction(ctx context.Context, arg GetTransactionParams) (Transaction, error)
+	GetTransaction(ctx context.Context, arg GetTransactionParams) (GetTransactionRow, error)
+	// Includes tombstoned rows (sync push + conflict classification).
+	GetTransactionAny(ctx context.Context, arg GetTransactionAnyParams) (Transaction, error)
 	// users
 	//
 	// Note: user_id scoping is not needed on the user table itself (the PK is the
@@ -53,6 +73,11 @@ type Querier interface {
 	// scope every query by user_id (IDOR protection - see their query files).
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow, error)
+	// In-use guard for deletion: any non-deleted transaction referencing the
+	// account (as cashflow account or transfer endpoint) blocks the tombstone.
+	HasLiveTransactionsForAccount(ctx context.Context, arg HasLiveTransactionsForAccountParams) (bool, error)
+	HasLiveTransactionsForCategory(ctx context.Context, arg HasLiveTransactionsForCategoryParams) (bool, error)
+	InsertAppliedOperation(ctx context.Context, arg InsertAppliedOperationParams) error
 	LatestPasswordResetTokenAgeSeconds(ctx context.Context, userID uuid.UUID) (int32, error)
 	// email verification + password reset throttling helpers.
 	// Each returns the age in seconds of the most recently issued code/token for a
@@ -62,16 +87,47 @@ type Querier interface {
 	// applied only when its narg is non-NULL. The account filter matches a
 	// transaction if ANY of its account refs (account_id / from / to) equals it,
 	// preserving the original OR-across-refs semantics.
-	ListTransactions(ctx context.Context, arg ListTransactionsParams) ([]Transaction, error)
+	ListTransactions(ctx context.Context, arg ListTransactionsParams) ([]ListTransactionsRow, error)
+	// Sync plumbing: the per-user change-log advisory lock, change_log appends
+	// (one row per committed mutation, written in the SAME transaction),
+	// applied_operations idempotency, and the cursor pull.
+	// Serializes a user's change_log writes for the rest of the transaction: seq
+	// values are allocated while the lock is held and the lock releases only at
+	// commit, so seq order equals commit-visibility order (no skipped changes for
+	// a stored cursor). hashtextextended maps the user id to a bigint lock key.
+	LockUserChanges(ctx context.Context, userID string) error
+	// Cursor pull: everything for the user strictly after after_seq, in seq
+	// order, paginated. The caller fetches current entity state for upsert rows.
+	PullChangeLog(ctx context.Context, arg PullChangeLogParams) ([]PullChangeLogRow, error)
 	SetEmailVerified(ctx context.Context, id uuid.UUID) (int64, error)
-	// COALESCE keeps a column unchanged when its narg is NULL (PATCH semantics).
+	// Tombstone (never a hard DELETE): excluded from listings, retained for sync.
+	SoftDeleteAccount(ctx context.Context, arg SoftDeleteAccountParams) (int32, error)
+	SoftDeleteCategory(ctx context.Context, arg SoftDeleteCategoryParams) (int32, error)
+	SoftDeleteTransaction(ctx context.Context, arg SoftDeleteTransactionParams) (int32, error)
+	// Batch fetch for pull data (current state of records named by change rows).
+	SyncAccountsByIDs(ctx context.Context, arg SyncAccountsByIDsParams) ([]SyncAccountsByIDsRow, error)
+	SyncCategoriesByIDs(ctx context.Context, arg SyncCategoriesByIDsParams) ([]SyncCategoriesByIDsRow, error)
+	// Full-state CAS upsert from a sync push: applies only on the exact base
+	// version of a live row; version increments by one.
+	SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccountParams) (SyncReplaceAccountRow, error)
+	// Full-state CAS upsert from a sync push.
+	SyncReplaceCategory(ctx context.Context, arg SyncReplaceCategoryParams) (SyncReplaceCategoryRow, error)
+	// Full-state CAS upsert from a sync push. Type is immutable.
+	SyncReplaceTransaction(ctx context.Context, arg SyncReplaceTransactionParams) (SyncReplaceTransactionRow, error)
+	SyncTransactionsByIDs(ctx context.Context, arg SyncTransactionsByIDsParams) ([]Transaction, error)
+	// Optimistic concurrency: the WHERE clause includes version = @version (and
+	// liveness) so a concurrent update yields zero rows. COALESCE keeps a column
+	// unchanged when its narg is NULL (PATCH semantics).
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) (UpdateAccountRow, error)
-	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
+	// Optimistic concurrency: the WHERE clause includes version = @version (and
+	// liveness) so a concurrent update yields zero rows. PATCH fields use
+	// COALESCE for nil = keep.
+	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (UpdateCategoryRow, error)
 	UpdateIdempotencyKey(ctx context.Context, arg UpdateIdempotencyKeyParams) (IdempotencyKey, error)
-	// Optimistic concurrency: the WHERE clause includes version = @version so a
-	// concurrent update yields zero rows (-> not found / version conflict).
+	// Optimistic concurrency: the WHERE clause includes version = @version (and
+	// liveness) so a concurrent update yields zero rows (-> version conflict).
 	// version is incremented atomically; PATCH fields use COALESCE for nil = keep.
-	UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) (Transaction, error)
+	UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) (UpdateTransactionRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

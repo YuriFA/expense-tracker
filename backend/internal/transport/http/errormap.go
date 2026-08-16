@@ -83,6 +83,26 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeCategoryAlreadyExists,
 		"category already exists",
 	},
+	domain.ErrAccountAlreadyExists: {
+		http.StatusConflict,
+		httperr.ErrCodeAccountAlreadyExists,
+		"account already exists",
+	},
+	domain.ErrTransactionAlreadyExists: {
+		http.StatusConflict,
+		httperr.ErrCodeTransactionAlreadyExists,
+		"transaction already exists",
+	},
+	domain.ErrAccountVersionConflict: {
+		http.StatusConflict,
+		httperr.ErrCodeAccountVersionConflict,
+		"account was modified by another request, please refetch and retry",
+	},
+	domain.ErrCategoryVersionConflict: {
+		http.StatusConflict,
+		httperr.ErrCodeCategoryVersionConflict,
+		"category was modified by another request, please refetch and retry",
+	},
 	domain.ErrTransactionVersionConflict: {
 		http.StatusConflict,
 		httperr.ErrCodeTransactionVersionConflict,

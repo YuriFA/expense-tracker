@@ -24,6 +24,7 @@ type Server struct {
 	txn        *service.TransactionService
 	auth       *service.AuthService
 	sessions   *service.SessionService
+	sync       *service.SyncService
 }
 
 func NewServer(
@@ -33,11 +34,12 @@ func NewServer(
 	txn *service.TransactionService,
 	auth *service.AuthService,
 	sessions *service.SessionService,
+	sync *service.SyncService,
 ) *Server {
 	return &Server{
 		cfg:      cfg,
 		accounts: accounts, categories: categories, txn: txn,
-		auth: auth, sessions: sessions,
+		auth: auth, sessions: sessions, sync: sync,
 	}
 }
 

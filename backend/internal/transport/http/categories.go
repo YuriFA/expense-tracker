@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/yurifa/expense-tracker-api/internal/api"
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 )
@@ -33,7 +35,12 @@ func (s *Server) CreateCategory(
 	req api.CreateCategoryRequestObject,
 ) (api.CreateCategoryResponseObject, error) {
 	user := s.currentUser(ctx)
+	var id uuid.UUID
+	if req.Body.Id != nil {
+		id = *req.Body.Id
+	}
 	c, err := s.categories.Create(ctx, user.ID, domain.CreateCategoryParams{
+		ID:    id,
 		Name:  req.Body.Name,
 		Type:  domain.TransactionType(req.Body.Type),
 		Icon:  req.Body.Icon,
@@ -81,7 +88,7 @@ func (s *Server) UpdateCategory(
 		typ = &t
 	}
 	c, err := s.categories.Update(ctx, user.ID, req.Id, domain.UpdateCategoryParams{
-		Name: name, Type: typ, Icon: icon, Color: color,
+		Name: name, Type: typ, Icon: icon, Color: color, Version: req.Body.Version,
 	})
 	if err != nil {
 		return nil, err

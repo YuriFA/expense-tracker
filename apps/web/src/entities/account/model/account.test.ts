@@ -7,6 +7,7 @@ import {
 } from './account'
 
 const accountFixture: Account = {
+  version: 1,
   id: 'a1',
   name: 'Main',
   currency: 'USD',
@@ -16,7 +17,7 @@ const accountFixture: Account = {
 
 describe('normalizeAccount', () => {
   it('returns account for valid input', () => {
-    const input = { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 100, manualAdjustment: 0 }
+    const input = { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 100, manualAdjustment: 0, version: 1 }
     expect(normalizeAccount(input)).toEqual(input)
   })
 
@@ -80,7 +81,7 @@ describe('normalizeAccount', () => {
 describe('parseAccountsStorage', () => {
   it('returns parsed accounts for valid JSON array', () => {
     const input = JSON.stringify([
-      { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 100, manualAdjustment: 0 },
+      { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 100, manualAdjustment: 0, version: 1 },
     ])
     const result = parseAccountsStorage(input)
     expect(result).toHaveLength(1)
@@ -100,7 +101,7 @@ describe('parseAccountsStorage', () => {
 
   it('skips invalid items but keeps valid ones', () => {
     const input = JSON.stringify([
-      { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 100, manualAdjustment: 0 },
+      { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 100, manualAdjustment: 0, version: 1 },
       { id: '', name: 'Invalid' }, // missing required fields
       null,
       'not-an-account',

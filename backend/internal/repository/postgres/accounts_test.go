@@ -28,13 +28,23 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 
 	// Manual adjustment shifts balance.
 	adj := int64(-2500)
-	updated, err := testRepo.UpdateAccount(ctx, user.ID, created.ID, domain.UpdateAccountParams{ManualAdjustment: &adj})
+	updated, err := testRepo.UpdateAccount(
+		ctx,
+		user.ID,
+		created.ID,
+		domain.UpdateAccountParams{ManualAdjustment: &adj, Version: created.Version},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, int64(7500), updated.Balance)
 
 	// Rename keeps balance.
 	name := "Wallet Pro"
-	updated, err = testRepo.UpdateAccount(ctx, user.ID, created.ID, domain.UpdateAccountParams{Name: &name})
+	updated, err = testRepo.UpdateAccount(
+		ctx,
+		user.ID,
+		created.ID,
+		domain.UpdateAccountParams{Name: &name, Version: updated.Version},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, "Wallet Pro", updated.Name)
 	assert.Equal(t, int64(7500), updated.Balance)

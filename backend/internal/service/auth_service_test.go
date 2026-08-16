@@ -19,14 +19,14 @@ func TestAuth_RegisterAndLogin(t *testing.T) {
 	ctx := context.Background()
 
 	// Register starts a session (returns a fresh session id).
-	sess, err := authSvc.Register(ctx, "alice@example.com", "supersecret")
+	sess, err := authSvc.Register(ctx, "alice@example.com", "supersecret", false)
 	require.NoError(t, err)
 	assert.Equal(t, "alice@example.com", sess.User.Email)
 	assert.NotEmpty(t, sess.SessionID)
 	assert.False(t, sess.User.EmailVerified, "freshly registered user is not verified")
 
 	// Duplicate email -> already exists.
-	_, err = authSvc.Register(ctx, "alice@example.com", "other")
+	_, err = authSvc.Register(ctx, "alice@example.com", "other", false)
 	require.ErrorIs(t, err, domain.ErrUserAlreadyExists)
 
 	// Login with correct password.
@@ -154,7 +154,7 @@ func TestSessionService_ListAndRevoke(t *testing.T) {
 	ctx := context.Background()
 
 	// Register creates a session.
-	sess, err := authSvc.Register(ctx, "sess@example.com", "supersecret")
+	sess, err := authSvc.Register(ctx, "sess@example.com", "supersecret", false)
 	require.NoError(t, err)
 
 	// Start a second session.

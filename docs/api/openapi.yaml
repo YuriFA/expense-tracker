@@ -27,11 +27,31 @@ info:
 
     ## Optimistic Concurrency для PATCH
 
-    `PATCH /api/transactions/{id}` поддерживает optimistic concurrency через
+    `PATCH /api/transactions/{id}`, `PATCH /api/accounts/{id}` и
+    `PATCH /api/categories/{id}` поддерживают optimistic concurrency через
     обязательное поле `version` в теле запроса. Клиент получает `version` из
-    `GET /api/transactions/{id}` или из ответа на `POST /api/transactions` и
-    отправляет его обратно при PATCH. Если запись была изменена параллельно —
-    сервер возвращает `409 Conflict` с кодом `TRANSACTION_VERSION_CONFLICT`.
+    GET-ответа или из ответа на POST и отправляет его обратно при PATCH. Если
+    запись была изменена параллельно — сервер возвращает `409 Conflict` с кодом
+    `TRANSACTION_VERSION_CONFLICT` / `ACCOUNT_VERSION_CONFLICT` /
+    `CATEGORY_VERSION_CONFLICT`.
+
+    ## Клиентские ID и мягкие удаления
+
+    Все три create-запроса принимают опциональный клиентский `id` (UUID v4):
+    offline-first клиенты генерируют id локально. Создание с уже существующим
+    для user `id` отклоняется already-exists ошибкой, существующая запись не
+    перезаписывается. Удаления мягкие (tombstone): запись помечается
+    `deleted_at`, исчезает из листингов и сводок, но сохраняется для
+    синхронизации устройств.
+
+    ## Синхронизация
+
+    `POST /api/sync/push` применяет пакет клиентских операций с per-item
+    результатами (applied / conflict / error) и постоянной идемпотентностью по
+    `opId`. `GET /api/sync/pull` отдаёт изменения из change-log по курсору
+    (seq), включая tombstone-записи. Коды `SYNC_VERSION_CONFLICT`,
+    `SYNC_ALREADY_EXISTS` и `SYNC_DELETED_CONFLICT` живут внутри per-item
+    результатов (HTTP 200), а не в ErrorResponse endpoint-уровня.
 
 servers:
   - url: http://localhost:8080
@@ -48,6 +68,8 @@ tags:
     description: Категории транзакций (per-user)
   - name: Transactions
     description: Операции с транзакциями (income / expense / transfer)
+  - name: Sync
+    description: Синхронизация offline-first клиентов (push/pull с change-log)
 
 security:
   - sessionCookie: []
@@ -82,6 +104,13 @@ paths:
                   maxLength: 72
                   description: Plaintext (хешируется на сервере).
                   example: strong-password
+                seedCategories:
+                  type: boolean
+                  default: false
+                  description: |
+                    Явно включить посев стартового набора категорий (24) для
+                    этой регистрации. По умолчанию off — новый пользователь
+                    начинает с пустым списком категорий.
       responses:
         "201":
           description: Пользователь создан, сессия установлена.
@@ -428,8 +457,9 @@ paths:
       operationId: listTransactions
       summary: Список транзакций (cursor pagination)
       description: |
-        Возвращает страницу в порядке occurredAt DESC, id DESC. Листание через
-        opaque cursor (nextCursor); page size через limit (default 50, max 100).
+        Возвращает страницу не удалённых (не tombstoned) транзакций в порядке
+        occurredAt DESC, id DESC. Листание через opaque cursor (nextCursor);
+        page size через limit (default 50, max 100).
       parameters:
         - name: type
           in: query
@@ -542,9 +572,7 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           description: |
-            Idempotency конфликт:
-            - тот же ключ + другой body (mismatch)
-            - тот же ключ пока предыдущий запрос ещё в полёте (pending)
+            Либо idempotency-конфликт, либо дубликат клиентского `id`.
           content:
             application/json:
               schema:
@@ -558,6 +586,10 @@ paths:
                   value:
                     code: IDEMPOTENCY_KEY_IN_USE
                     message: idempotency key already used
+                duplicateId:
+                  value:
+                    code: TRANSACTION_ALREADY_EXISTS
+                    message: transaction already exists
         "422":
           description: |
             Бизнес-правило нарушено — ссылки не найдены или type-mismatch.
@@ -656,6 +688,10 @@ paths:
       tags: [Transactions]
       operationId: deleteTransaction
       summary: Удалить транзакцию
+      description: |
+        Удаление мягкое (tombstone): транзакция исчезает из листингов и
+        перестаёт влиять на балансы, но сохраняется для синхронизации
+        устройств.
       responses:
         "204":
           description: Удалено.
@@ -671,6 +707,7 @@ paths:
       tags: [Accounts]
       operationId: listAccounts
       summary: Список счетов (с balance)
+      description: Все не удалённые (не tombstoned) счета текущего user.
       responses:
         "200":
           description: Счета текущего user с вычисленным balance.
@@ -705,6 +742,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/AccountAlreadyExists"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -768,13 +807,18 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/AccountNotFound"
+        "409":
+          $ref: "#/components/responses/AccountVersionConflict"
         "500":
           $ref: "#/components/responses/InternalError"
     delete:
       tags: [Accounts]
       operationId: deleteAccount
       summary: Удалить счёт
-      description: 409 если есть привязанные transactions.
+      description: |
+        409 если есть привязанные transactions. Удаление мягкое (tombstone):
+        счёт исчезает из листингов, сводки балансов и net worth, но сохраняется
+        для синхронизации устройств.
       responses:
         "204":
           description: Удалено.
@@ -792,6 +836,7 @@ paths:
       tags: [Categories]
       operationId: listCategories
       summary: Список категорий
+      description: Все не удалённые (не tombstoned) категории текущего user.
       parameters:
         - name: type
           in: query
@@ -881,14 +926,32 @@ paths:
         "404":
           $ref: "#/components/responses/CategoryNotFound"
         "409":
-          $ref: "#/components/responses/CategoryAlreadyExists"
+          description: |
+            Либо имя уже занята (`CATEGORY_ALREADY_EXISTS`), либо конфликт
+            версии (`CATEGORY_VERSION_CONFLICT`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                alreadyExists:
+                  value:
+                    code: CATEGORY_ALREADY_EXISTS
+                    message: category already exists
+                versionConflict:
+                  value:
+                    code: CATEGORY_VERSION_CONFLICT
+                    message: category version conflict
         "500":
           $ref: "#/components/responses/InternalError"
     delete:
       tags: [Categories]
       operationId: deleteCategory
       summary: Удалить категорию
-      description: 409 если есть привязанные transactions.
+      description: |
+        409 если есть привязанные transactions. Удаление мягкое (tombstone):
+        категория исчезает из листингов, но сохраняется для синхронизации
+        устройств.
       responses:
         "204":
           description: Удалено.
@@ -898,6 +961,94 @@ paths:
           $ref: "#/components/responses/CategoryNotFound"
         "409":
           $ref: "#/components/responses/CategoryInUse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/sync/push:
+    post:
+      tags: [Sync]
+      operationId: syncPush
+      summary: Push пакета клиентских операций
+      description: |
+        Применяет пакет операций offline-first клиента. Каждая операция
+        обрабатывается независимо (частичный успех не откатывает применённые
+        элементы) и получает свой результат:
+
+        - `applied` — операция применена, `version` = новая серверная версия
+          записи;
+        - `conflict` — CAS-конфликт (`SYNC_VERSION_CONFLICT` при несовпадении
+          `baseVersion`, `SYNC_ALREADY_EXISTS` когда запись с таким id уже
+          существует и пришёл другой `opId`, `SYNC_DELETED_CONFLICT` когда
+          запись на сервере удалена), `serverState` = текущее состояние записи;
+        - `error` — нарушение бизнес-правил (например `CATEGORY_IN_USE`,
+          `INVALID_REFS`, `CATEGORY_ALREADY_EXISTS`).
+
+        Идемпотентность постоянна: повторная доставка уже применённого `opId`
+        (в том числе в другом батче/сессии) возвращает сохранённый результат
+        без побочных эффектов. Update применяется только если текущая версия
+        записи на сервере равна `baseVersion`. Create (`baseVersion = 0`):
+        записи нет → создать; есть + тот же `opId` → replay сохранённого
+        результата; есть + другой `opId` → `SYNC_ALREADY_EXISTS` без
+        перезаписи. Delete уже удалённой записи идемпотентен (`applied`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncPushRequest"
+      responses:
+        "200":
+          description: Per-item результаты в порядке операций запроса.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncPushResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/sync/pull:
+    get:
+      tags: [Sync]
+      operationId: syncPull
+      summary: Инкрементальный pull изменений по курсору
+      description: |
+        Возвращает изменения user из change-log с `seq` строго больше
+        `cursor`, в порядке `seq` (upsert + tombstone, с серверной `version`
+        каждой записи), плюс `nextCursor` — курсор следующей страницы или
+        `null`, когда клиент догнал сервер. Пагинация через `limit`; клиент
+        продолжает с сохранённого курсора ровно с того места, где остановился.
+      parameters:
+        - name: cursor
+          in: query
+          description: Последний полученный seq (0 = с начала истории).
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Page size (default 100, max 500).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Страница изменений + nextCursor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncPullResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -1055,6 +1206,24 @@ components:
           example:
             code: CATEGORY_ALREADY_EXISTS
             message: category already exists
+    AccountAlreadyExists:
+      description: Счет с таким id уже есть у user (клиентский id-дубликат).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCOUNT_ALREADY_EXISTS
+            message: account already exists
+    AccountVersionConflict:
+      description: Конфликт в версии счета (optimistic concurrency).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: ACCOUNT_VERSION_CONFLICT
+            message: account version conflict
 
   schemas:
     User:
@@ -1145,6 +1314,13 @@ components:
       type: object
       required: [type, amount, occurredAt]
       properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Опциональный клиентский id (UUID v4): offline-first клиенты
+            генерируют его локально, сервер использует его как id записи.
+            Дубликат для user → 409 `TRANSACTION_ALREADY_EXISTS`.
         type:
           type: string
           enum: [income, expense, transfer]
@@ -1291,7 +1467,11 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, userId, name, currency, openingBalance, manualAdjustment, balance, createdAt, updatedAt]
+        version:
+          type: integer
+          format: int
+          description: Версия счёта (optimistic concurrency).
+      required: [id, userId, name, currency, openingBalance, manualAdjustment, balance, createdAt, updatedAt, version]
 
     AccountBalance:
       type: object
@@ -1328,6 +1508,12 @@ components:
       type: object
       required: [name, currency, openingBalance]
       properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Опциональный клиентский id (UUID v4). Дубликат для user →
+            409 `ACCOUNT_ALREADY_EXISTS`.
         name:
           type: string
         currency:
@@ -1339,14 +1525,22 @@ components:
 
     AccountUpdateRequest:
       type: object
-      description: Все поля optional.
+      description: |
+        Все поля кроме `version` optional. `version` — optimistic concurrency
+        (аналогично транзакциям): при параллельном изменении → 409
+        `ACCOUNT_VERSION_CONFLICT`.
       properties:
+        version:
+          type: integer
+          format: int
+          minimum: 1
         name:
           type: string
           minLength: 3
         manualAdjustment:
           type: integer
           format: int64
+      required: [version]
 
     Category:
       type: object
@@ -1372,12 +1566,22 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, userId, name, type, icon, color, createdAt, updatedAt]
+        version:
+          type: integer
+          format: int
+          description: Версия категории (optimistic concurrency).
+      required: [id, userId, name, type, icon, color, createdAt, updatedAt, version]
 
     CategoryCreateRequest:
       type: object
       required: [name, type, icon, color]
       properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Опциональный клиентский id (UUID v4). Дубликат для user →
+            409 `CATEGORY_ALREADY_EXISTS`.
         name:
           type: string
         type:
@@ -1390,8 +1594,14 @@ components:
 
     CategoryUpdateRequest:
       type: object
-      description: Все поля optional.
+      description: |
+        Все поля кроме `version` optional. `version` — optimistic concurrency:
+        при параллельном изменении → 409 `CATEGORY_VERSION_CONFLICT`.
       properties:
+        version:
+          type: integer
+          format: int
+          minimum: 1
         name:
           type: string
           minLength: 1
@@ -1404,3 +1614,217 @@ components:
         color:
           type: string
           minLength: 1
+      required: [version]
+
+    AccountSyncData:
+      type: object
+      description: Полное состояние счёта в sync-операции (upsert).
+      required: [name, currency, openingBalance, manualAdjustment]
+      properties:
+        name:
+          type: string
+        currency:
+          type: string
+          enum: [USD, EUR, RUB]
+        openingBalance:
+          type: integer
+          format: int64
+        manualAdjustment:
+          type: integer
+          format: int64
+
+    CategorySyncData:
+      type: object
+      description: Полное состояние категории в sync-операции (upsert).
+      required: [name, type, icon, color]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [income, expense]
+        icon:
+          type: string
+        color:
+          type: string
+
+    TransactionSyncData:
+      type: object
+      description: |
+        Полное состояние транзакции в sync-операции (upsert). Cashflow
+        (income/expense) несёт `accountId`+`categoryId`, transfer —
+        `fromAccountId`+`toAccountId`.
+      required: [type, amount, description, occurredAt]
+      properties:
+        type:
+          type: string
+          enum: [income, expense, transfer]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        description:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+        fromAccountId:
+          type: string
+          format: uuid
+          nullable: true
+        toAccountId:
+          type: string
+          format: uuid
+          nullable: true
+
+    SyncEntity:
+      type: string
+      enum: [account, category, transaction]
+
+    SyncOperation:
+      type: object
+      description: |
+        Одна клиентская операция. `baseVersion` — серверная версия, на которой
+        операция основана (0 = запись ещё не существует на сервере). Для
+        upsert `data` содержит полное состояние записи; для delete `data`
+        отсутствует.
+      required: [opId, entity, action, id, baseVersion]
+      properties:
+        opId:
+          type: string
+          format: uuid
+          description: Клиентский id операции; ключ постоянной идемпотентности.
+        entity:
+          $ref: "#/components/schemas/SyncEntity"
+        action:
+          type: string
+          enum: [upsert, delete]
+        id:
+          type: string
+          format: uuid
+          description: Id записи (клиентский UUID v4 для baseVersion = 0).
+        baseVersion:
+          type: integer
+          format: int
+          minimum: 0
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/AccountSyncData"
+            - $ref: "#/components/schemas/CategorySyncData"
+            - $ref: "#/components/schemas/TransactionSyncData"
+          description: Полное состояние записи; обязательно для upsert.
+
+    SyncPushRequest:
+      type: object
+      required: [operations]
+      properties:
+        operations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/SyncOperation"
+
+    SyncServerState:
+      type: object
+      description: Текущее состояние записи на сервере (в конфликте).
+      required: [version, deleted]
+      properties:
+        version:
+          type: integer
+          format: int
+        deleted:
+          type: boolean
+          description: true — запись tombstoned на сервере.
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/AccountSyncData"
+            - $ref: "#/components/schemas/CategorySyncData"
+            - $ref: "#/components/schemas/TransactionSyncData"
+          description: Присутствует для не удалённой записи.
+
+    SyncPushResult:
+      type: object
+      description: Результат одной операции; HTTP ответ — всегда 200.
+      required: [opId, status]
+      properties:
+        opId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [applied, conflict, error]
+        version:
+          type: integer
+          format: int
+          description: Новая серверная версия записи (для status = applied).
+        code:
+          type: string
+          description: |
+            Machine-readable код (для conflict/error): `SYNC_VERSION_CONFLICT`,
+            `SYNC_ALREADY_EXISTS`, `SYNC_DELETED_CONFLICT` либо коды
+            бизнес-правил (`CATEGORY_IN_USE`, `INVALID_REFS`, ...).
+        message:
+          type: string
+          description: Human-readable сообщение (для conflict/error).
+        serverState:
+          $ref: "#/components/schemas/SyncServerState"
+
+    SyncPushResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncPushResult"
+
+    SyncChange:
+      type: object
+      description: Одна запись change-log для pull.
+      required: [seq, entity, id, action, version]
+      properties:
+        seq:
+          type: integer
+          format: int64
+          description: Монотонный порядок изменения.
+        entity:
+          $ref: "#/components/schemas/SyncEntity"
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [upsert, tombstone]
+        version:
+          type: integer
+          format: int
+          description: Серверная версия записи после изменения.
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/AccountSyncData"
+            - $ref: "#/components/schemas/CategorySyncData"
+            - $ref: "#/components/schemas/TransactionSyncData"
+          description: Полное состояние записи; присутствует для upsert.
+
+    SyncPullResponse:
+      type: object
+      required: [changes, nextCursor]
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncChange"
+        nextCursor:
+          type: integer
+          format: int64
+          nullable: true
+          description: Курсор следующей страницы; null — клиент догнал сервер.

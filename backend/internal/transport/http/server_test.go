@@ -43,7 +43,15 @@ func newTestEngine(t *testing.T) *gin.Engine {
 	txnSvc := service.NewTransactionService(store, store, store)
 	sessionSvc := service.NewSessionService(store)
 
-	server := httptransport.NewServer(testHTTPConfig(), accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
+	server := httptransport.NewServer(
+		testHTTPConfig(),
+		accountSvc,
+		categorySvc,
+		txnSvc,
+		authSvc,
+		sessionSvc,
+		service.NewSyncService(store),
+	)
 	engine := httptransport.NewEngine(testHTTPConfig(), log, server, store, store, store)
 	return engine
 }
@@ -116,10 +124,12 @@ func TestTransport_RegisterLoginCreateFlow(t *testing.T) {
 	client := newClient(t, engine)
 
 	// Register -> 201 + session cookie.
+	// The web signup keeps seeding enabled (product decision); this flow is
+	// its twin, so the register call opts in explicitly.
 	rec := client.do(
 		"POST",
 		"/api/auth/register",
-		map[string]string{"email": "flow@example.com", "password": "supersecret1"},
+		map[string]any{"email": "flow@example.com", "password": "supersecret1", "seedCategories": true},
 		nil,
 	)
 	require.Equal(t, 201, rec.Code, rec.Body.String())

@@ -8,6 +8,7 @@ import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositori
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const accountFixture: AccountWithBalance = {
+  version: 1,
   id: 'a1',
   name: 'Main',
   currency: 'USD',
@@ -99,8 +100,8 @@ describe('useUpdateAccount', () => {
     const { result } = mountWithComposable(() => useUpdateAccount(), {
       repositories: { accounts: repo },
     })
-    await result.mutateAsync({ id: 'a1', payload: { name: 'Updated' } })
-    expect(repo.update).toHaveBeenCalledWith('a1', { name: 'Updated' })
+    await result.mutateAsync({ id: 'a1', payload: { name: 'Updated', version: 1 } })
+    expect(repo.update).toHaveBeenCalledWith('a1', { name: 'Updated', version: 1 })
   })
 
   it('optimistically patches account name in list and detail caches', async () => {
@@ -113,7 +114,7 @@ describe('useUpdateAccount', () => {
       return { mutation: useUpdateAccount(), queryCache }
     }, { repositories: { accounts: repo } })
 
-    await result.mutation.mutateAsync({ id: 'a1', payload: { name: 'Updated' } })
+    await result.mutation.mutateAsync({ id: 'a1', payload: { name: 'Updated', version: 1 } })
     await flushPromises()
 
     expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.[0]?.name).toBe('Updated')
@@ -136,7 +137,7 @@ describe('useUpdateAccount', () => {
       return { mutation: useUpdateAccount(), queryCache }
     }, { repositories: { accounts: repo } })
 
-    await result.mutation.mutateAsync({ id: 'a1', payload: { manualAdjustment: 500 } })
+    await result.mutation.mutateAsync({ id: 'a1', payload: { manualAdjustment: 500, version: 1 } })
     await flushPromises()
 
     // Cache stays untouched optimistically; rely on invalidate + refetch

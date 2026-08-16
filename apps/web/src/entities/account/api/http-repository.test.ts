@@ -6,6 +6,7 @@ import { createHTTPAccountRepository } from './http-repository'
 type ApiAccount = components['schemas']['Account']
 
 const apiAccount: ApiAccount = {
+  version: 1,
   id: 'a1',
   userId: 'u1',
   name: 'Main',
@@ -91,13 +92,13 @@ describe('account HTTP repository', () => {
     it('calls PATCH (not PUT) /accounts/{id} with JSON body', async () => {
       fetchSpy.mockResolvedValueOnce(jsonResponse(200, { ...apiAccount, name: 'Updated' }))
       const repo = createHTTPAccountRepository()
-      const result = await repo.update('a1', { name: 'Updated', manualAdjustment: 50 })
+      const result = await repo.update('a1', { name: 'Updated', manualAdjustment: 50, version: 1 })
       expect(result.name).toBe('Updated')
       const call = inspect(fetchSpy.mock.calls[0])
       expect(call.url.pathname).toBe('/api/accounts/a1')
       expect(call.method).toBe('PATCH')
       const body = await (fetchSpy.mock.calls[0]![0] as Request).clone().json()
-      expect(body).toEqual({ name: 'Updated', manualAdjustment: 50 })
+      expect(body).toEqual({ name: 'Updated', manualAdjustment: 50, version: 1 })
     })
   })
 

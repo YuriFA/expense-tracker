@@ -14,8 +14,8 @@ import (
 
 const createAccount = `-- name: CreateAccount :one
 
-INSERT INTO accounts (user_id, name, currency, opening_balance, manual_adjustment)
-VALUES ($1, $2, $3, $4, 0)
+INSERT INTO accounts (id, user_id, name, currency, opening_balance, manual_adjustment)
+VALUES ($1, $2, $3, $4, $5, 0)
 RETURNING
     id,
     user_id,
@@ -25,10 +25,12 @@ RETURNING
     manual_adjustment,
     (opening_balance + manual_adjustment)::bigint AS balance,
     created_at,
-    updated_at
+    updated_at,
+    version
 `
 
 type CreateAccountParams struct {
+	ID             uuid.UUID
 	UserID         uuid.UUID
 	Name           string
 	Currency       string
@@ -45,13 +47,19 @@ type CreateAccountRow struct {
 	Balance          int64
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+	Version          int32
 }
 
 // accounts. Every query scopes by user_id (IDOR-safe: a cross-user access
 // returns "not found", never the row). Balance is computed via the
-// account_contributions view (opening + manual + sum(signed)).
+// account_contributions view (opening + manual + sum(signed)). Deletes are
+// soft (deleted_at tombstone); every read path that feeds listings/summaries
+// filters tombstones, while the *Any reads (sync + conflict classification)
+// include them.
+// id is the optional client-generated id (offline-first clients).
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (CreateAccountRow, error) {
 	row := q.db.QueryRow(ctx, createAccount,
+		arg.ID,
 		arg.UserID,
 		arg.Name,
 		arg.Currency,
@@ -68,25 +76,9 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (C
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
-}
-
-const deleteAccount = `-- name: DeleteAccount :execrows
-DELETE FROM accounts WHERE id = $1 AND user_id = $2
-`
-
-type DeleteAccountParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
-}
-
-func (q *Queries) DeleteAccount(ctx context.Context, arg DeleteAccountParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteAccount, arg.ID, arg.UserID)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }
 
 const getAccount = `-- name: GetAccount :one
@@ -99,11 +91,12 @@ SELECT
     a.manual_adjustment,
     (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance,
     a.created_at,
-    a.updated_at
+    a.updated_at,
+    a.version
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.id = $1 AND a.user_id = $2
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at
+WHERE a.id = $1 AND a.user_id = $2 AND a.deleted_at IS NULL
+GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at, a.version
 `
 
 type GetAccountParams struct {
@@ -121,6 +114,7 @@ type GetAccountRow struct {
 	Balance          int64
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+	Version          int32
 }
 
 func (q *Queries) GetAccount(ctx context.Context, arg GetAccountParams) (GetAccountRow, error) {
@@ -136,6 +130,66 @@ func (q *Queries) GetAccount(ctx context.Context, arg GetAccountParams) (GetAcco
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
+const getAccountAny = `-- name: GetAccountAny :one
+SELECT
+    id,
+    user_id,
+    name,
+    currency,
+    opening_balance,
+    manual_adjustment,
+    (opening_balance + manual_adjustment + COALESCE(
+        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
+    ))::bigint AS balance,
+    created_at,
+    updated_at,
+    version,
+    deleted_at
+FROM accounts
+WHERE id = $1 AND user_id = $2
+`
+
+type GetAccountAnyParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+type GetAccountAnyRow struct {
+	ID               uuid.UUID
+	UserID           uuid.UUID
+	Name             string
+	Currency         string
+	OpeningBalance   int64
+	ManualAdjustment int64
+	Balance          int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	Version          int32
+	DeletedAt        *time.Time
+}
+
+// Includes tombstoned rows; used by sync push (serverState / idempotent
+// delete) and REST conflict classification.
+func (q *Queries) GetAccountAny(ctx context.Context, arg GetAccountAnyParams) (GetAccountAnyRow, error) {
+	row := q.db.QueryRow(ctx, getAccountAny, arg.ID, arg.UserID)
+	var i GetAccountAnyRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Currency,
+		&i.OpeningBalance,
+		&i.ManualAdjustment,
+		&i.Balance,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -149,7 +203,7 @@ SELECT
     (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.user_id = $1
+WHERE a.user_id = $1 AND a.deleted_at IS NULL
 GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment
 ORDER BY a.created_at, a.id
 `
@@ -198,11 +252,12 @@ SELECT
     a.manual_adjustment,
     (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance,
     a.created_at,
-    a.updated_at
+    a.updated_at,
+    a.version
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.user_id = $1
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at
+WHERE a.user_id = $1 AND a.deleted_at IS NULL
+GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at, a.version
 ORDER BY a.created_at, a.id
 `
 
@@ -216,6 +271,7 @@ type GetAccountsRow struct {
 	Balance          int64
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+	Version          int32
 }
 
 func (q *Queries) GetAccounts(ctx context.Context, userID uuid.UUID) ([]GetAccountsRow, error) {
@@ -237,6 +293,7 @@ func (q *Queries) GetAccounts(ctx context.Context, userID uuid.UUID) ([]GetAccou
 			&i.Balance,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -248,13 +305,126 @@ func (q *Queries) GetAccounts(ctx context.Context, userID uuid.UUID) ([]GetAccou
 	return items, nil
 }
 
-const updateAccount = `-- name: UpdateAccount :one
+const hasLiveTransactionsForAccount = `-- name: HasLiveTransactionsForAccount :one
+SELECT EXISTS(
+    SELECT 1
+    FROM transactions
+    WHERE user_id = $1
+      AND deleted_at IS NULL
+      AND (account_id = $2 OR from_account_id = $2 OR to_account_id = $2)
+) AS in_use
+`
+
+type HasLiveTransactionsForAccountParams struct {
+	UserID    uuid.UUID
+	AccountID *uuid.UUID
+}
+
+// In-use guard for deletion: any non-deleted transaction referencing the
+// account (as cashflow account or transfer endpoint) blocks the tombstone.
+func (q *Queries) HasLiveTransactionsForAccount(ctx context.Context, arg HasLiveTransactionsForAccountParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasLiveTransactionsForAccount, arg.UserID, arg.AccountID)
+	var in_use bool
+	err := row.Scan(&in_use)
+	return in_use, err
+}
+
+const softDeleteAccount = `-- name: SoftDeleteAccount :one
+UPDATE accounts
+SET deleted_at = now(), version = version + 1, updated_at = now()
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+RETURNING version
+`
+
+type SoftDeleteAccountParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+// Tombstone (never a hard DELETE): excluded from listings, retained for sync.
+func (q *Queries) SoftDeleteAccount(ctx context.Context, arg SoftDeleteAccountParams) (int32, error) {
+	row := q.db.QueryRow(ctx, softDeleteAccount, arg.ID, arg.UserID)
+	var version int32
+	err := row.Scan(&version)
+	return version, err
+}
+
+const syncAccountsByIDs = `-- name: SyncAccountsByIDs :many
+SELECT
+    id,
+    user_id,
+    name,
+    currency,
+    opening_balance,
+    manual_adjustment,
+    created_at,
+    updated_at,
+    version,
+    deleted_at
+FROM accounts
+WHERE user_id = $1 AND id = ANY($2::uuid[])
+`
+
+type SyncAccountsByIDsParams struct {
+	UserID uuid.UUID
+	Ids    []uuid.UUID
+}
+
+type SyncAccountsByIDsRow struct {
+	ID               uuid.UUID
+	UserID           uuid.UUID
+	Name             string
+	Currency         string
+	OpeningBalance   int64
+	ManualAdjustment int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	Version          int32
+	DeletedAt        *time.Time
+}
+
+// Batch fetch for pull data (current state of records named by change rows).
+func (q *Queries) SyncAccountsByIDs(ctx context.Context, arg SyncAccountsByIDsParams) ([]SyncAccountsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, syncAccountsByIDs, arg.UserID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SyncAccountsByIDsRow
+	for rows.Next() {
+		var i SyncAccountsByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Currency,
+			&i.OpeningBalance,
+			&i.ManualAdjustment,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Version,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const syncReplaceAccount = `-- name: SyncReplaceAccount :one
 UPDATE accounts
 SET
-    name              = COALESCE($1, name),
-    manual_adjustment = COALESCE($2, manual_adjustment),
+    name              = $1,
+    currency          = $2,
+    opening_balance   = $3,
+    manual_adjustment = $4,
+    version           = version + 1,
     updated_at        = now()
-WHERE id = $3 AND user_id = $4
+WHERE id = $5 AND user_id = $6 AND deleted_at IS NULL AND version = $7
 RETURNING
     id,
     user_id,
@@ -266,7 +436,82 @@ RETURNING
         (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
     ))::bigint AS balance,
     created_at,
-    updated_at
+    updated_at,
+    version
+`
+
+type SyncReplaceAccountParams struct {
+	Name             string
+	Currency         string
+	OpeningBalance   int64
+	ManualAdjustment int64
+	ID               uuid.UUID
+	UserID           uuid.UUID
+	BaseVersion      int32
+}
+
+type SyncReplaceAccountRow struct {
+	ID               uuid.UUID
+	UserID           uuid.UUID
+	Name             string
+	Currency         string
+	OpeningBalance   int64
+	ManualAdjustment int64
+	Balance          int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	Version          int32
+}
+
+// Full-state CAS upsert from a sync push: applies only on the exact base
+// version of a live row; version increments by one.
+func (q *Queries) SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccountParams) (SyncReplaceAccountRow, error) {
+	row := q.db.QueryRow(ctx, syncReplaceAccount,
+		arg.Name,
+		arg.Currency,
+		arg.OpeningBalance,
+		arg.ManualAdjustment,
+		arg.ID,
+		arg.UserID,
+		arg.BaseVersion,
+	)
+	var i SyncReplaceAccountRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Currency,
+		&i.OpeningBalance,
+		&i.ManualAdjustment,
+		&i.Balance,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
+const updateAccount = `-- name: UpdateAccount :one
+UPDATE accounts
+SET
+    name              = COALESCE($1, name),
+    manual_adjustment = COALESCE($2, manual_adjustment),
+    version           = version + 1,
+    updated_at        = now()
+WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL AND version = $5
+RETURNING
+    id,
+    user_id,
+    name,
+    currency,
+    opening_balance,
+    manual_adjustment,
+    (opening_balance + manual_adjustment + COALESCE(
+        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
+    ))::bigint AS balance,
+    created_at,
+    updated_at,
+    version
 `
 
 type UpdateAccountParams struct {
@@ -274,6 +519,7 @@ type UpdateAccountParams struct {
 	ManualAdjustment *int64
 	ID               uuid.UUID
 	UserID           uuid.UUID
+	Version          int32
 }
 
 type UpdateAccountRow struct {
@@ -286,15 +532,19 @@ type UpdateAccountRow struct {
 	Balance          int64
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+	Version          int32
 }
 
-// COALESCE keeps a column unchanged when its narg is NULL (PATCH semantics).
+// Optimistic concurrency: the WHERE clause includes version = @version (and
+// liveness) so a concurrent update yields zero rows. COALESCE keeps a column
+// unchanged when its narg is NULL (PATCH semantics).
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (UpdateAccountRow, error) {
 	row := q.db.QueryRow(ctx, updateAccount,
 		arg.Name,
 		arg.ManualAdjustment,
 		arg.ID,
 		arg.UserID,
+		arg.Version,
 	)
 	var i UpdateAccountRow
 	err := row.Scan(
@@ -307,6 +557,7 @@ func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (U
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
 }

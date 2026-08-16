@@ -113,8 +113,9 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 		SessionTTL: cfg.SessionConfig.TTL,
 	})
 	sessionSvc := service.NewSessionService(repo)
+	syncSvc := service.NewSyncService(repo)
 
-	server := httptransport.NewServer(&cfg.HTTPServer, accountSvc, categorySvc, txnSvc, authSvc, sessionSvc)
+	server := httptransport.NewServer(&cfg.HTTPServer, accountSvc, categorySvc, txnSvc, authSvc, sessionSvc, syncSvc)
 	router := httptransport.NewEngine(&cfg.HTTPServer, log, server, repo, repo, repo)
 
 	return &http.Server{

@@ -11,7 +11,8 @@ func (s *Server) RegisterUser(
 	ctx context.Context,
 	req api.RegisterUserRequestObject,
 ) (api.RegisterUserResponseObject, error) {
-	res, err := s.auth.Register(ctx, string(req.Body.Email), req.Body.Password)
+	seedCategories := req.Body.SeedCategories != nil && *req.Body.SeedCategories
+	res, err := s.auth.Register(ctx, string(req.Body.Email), req.Body.Password, seedCategories)
 	if err != nil {
 		return nil, err
 	}

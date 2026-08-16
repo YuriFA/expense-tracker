@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -13,27 +14,55 @@ import (
 // the service normally sets an explicit (bounded) limit.
 const defaultListTransactionsLimit = 50
 
+// Every mutation runs inside withinLockedTx (entity write + change_log append
+// in one committed transaction); deletes are tombstones.
+
 func (r *Repository) CreateTransaction(
 	ctx context.Context,
 	params domain.CreateTransactionParams,
 ) (*domain.Transaction, error) {
 	const op = "repository.postgres.CreateTransaction"
 
-	row, err := r.q.CreateTransaction(ctx, db.CreateTransactionParams{
-		UserID:        params.UserID,
-		Type:          string(params.Type),
-		Amount:        params.Amount,
-		Description:   params.Description,
-		OccurredAt:    params.OccurredAt,
-		AccountID:     params.AccountID,
-		CategoryID:    params.CategoryID,
-		FromAccountID: params.FromAccountID,
-		ToAccountID:   params.ToAccountID,
+	id := newEntityID(params.ID)
+	var row db.CreateTransactionRow
+	err := r.withinLockedTx(ctx, params.UserID, func(q *db.Queries) error {
+		var err error
+		row, err = q.CreateTransaction(ctx, db.CreateTransactionParams{
+			ID:            id,
+			UserID:        params.UserID,
+			Type:          string(params.Type),
+			Amount:        params.Amount,
+			Description:   params.Description,
+			OccurredAt:    params.OccurredAt,
+			AccountID:     params.AccountID,
+			CategoryID:    params.CategoryID,
+			FromAccountID: params.FromAccountID,
+			ToAccountID:   params.ToAccountID,
+		})
+		if err != nil {
+			if pgUniqueViolation(err) {
+				return domain.ErrTransactionAlreadyExists
+			}
+			return err
+		}
+		return appendChangeLog(
+			ctx,
+			q,
+			params.UserID,
+			row.ID,
+			domain.SyncEntityTransaction,
+			domain.SyncChangeUpsert,
+			int(row.Version),
+		)
 	})
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
-	return transactionFromRow(row), nil
+	return transactionFromFields(
+		row.ID, row.UserID, row.Type, row.Amount, row.Description, row.OccurredAt,
+		row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.AccountID, row.CategoryID, row.FromAccountID, row.ToAccountID, nil,
+	), nil
 }
 
 func (r *Repository) UpdateTransaction(
@@ -43,42 +72,83 @@ func (r *Repository) UpdateTransaction(
 ) (*domain.Transaction, error) {
 	const op = "repository.postgres.UpdateTransaction"
 
-	row, err := r.q.UpdateTransaction(ctx, db.UpdateTransactionParams{
-		ID:            id,
-		UserID:        userID,
-		Version:       int32(params.Version), //nolint:gosec // optimistic version is a small positive int
-		Amount:        params.Amount,
-		Description:   params.Description,
-		OccurredAt:    params.OccurredAt,
-		AccountID:     params.AccountID,
-		CategoryID:    params.CategoryID,
-		FromAccountID: params.FromAccountID,
-		ToAccountID:   params.ToAccountID,
+	var row db.UpdateTransactionRow
+	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+		var err error
+		row, err = q.UpdateTransaction(ctx, db.UpdateTransactionParams{
+			ID:            id,
+			UserID:        userID,
+			Version:       int32(params.Version), //nolint:gosec // optimistic version is a small positive int
+			Amount:        params.Amount,
+			Description:   params.Description,
+			OccurredAt:    params.OccurredAt,
+			AccountID:     params.AccountID,
+			CategoryID:    params.CategoryID,
+			FromAccountID: params.FromAccountID,
+			ToAccountID:   params.ToAccountID,
+		})
+		if err != nil {
+			if errNoRows(err) {
+				return classifyTransactionWrite(ctx, q, userID, id)
+			}
+			return err
+		}
+		return appendChangeLog(
+			ctx,
+			q,
+			userID,
+			row.ID,
+			domain.SyncEntityTransaction,
+			domain.SyncChangeUpsert,
+			int(row.Version),
+		)
 	})
 	if err != nil {
-		if errNoRows(err) {
-			// GetTransaction (in the service) already verified the row exists; a
-			// zero-row update here means the version no longer matches. The
-			// edge case where the row was deleted between the get and update is
-			// also acceptable as a 409 for this scope.
-			return nil, domain.ErrTransactionVersionConflict
-		}
 		return nil, opWrap(op, err)
 	}
-	return transactionFromRow(row), nil
+	return transactionFromFields(
+		row.ID, row.UserID, row.Type, row.Amount, row.Description, row.OccurredAt,
+		row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.AccountID, row.CategoryID, row.FromAccountID, row.ToAccountID, nil,
+	), nil
 }
 
 func (r *Repository) DeleteTransaction(ctx context.Context, userID, id uuid.UUID) error {
 	const op = "repository.postgres.DeleteTransaction"
 
-	n, err := r.q.DeleteTransaction(ctx, db.DeleteTransactionParams{ID: id, UserID: userID})
+	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+		version, err := q.SoftDeleteTransaction(ctx, db.SoftDeleteTransactionParams{ID: id, UserID: userID})
+		if err != nil {
+			if errNoRows(err) {
+				return classifyTransactionWrite(ctx, q, userID, id)
+			}
+			return err
+		}
+		return appendChangeLog(
+			ctx,
+			q,
+			userID,
+			id,
+			domain.SyncEntityTransaction,
+			domain.SyncChangeTombstone,
+			int(version),
+		)
+	})
 	if err != nil {
 		return opWrap(op, err)
 	}
-	if n == 0 {
+	return nil
+}
+
+// classifyTransactionWrite distinguishes the zero-row outcomes of a CAS write:
+// tombstoned reads as not-found for the REST surface (delete is idempotent at
+// the sync layer instead), a live version mismatch is a version conflict.
+func classifyTransactionWrite(ctx context.Context, q *db.Queries, userID, id uuid.UUID) error {
+	row, err := q.GetTransactionAny(ctx, db.GetTransactionAnyParams{ID: id, UserID: userID})
+	if err != nil || row.DeletedAt != nil {
 		return domain.ErrTransactionNotFound
 	}
-	return nil
+	return domain.ErrTransactionVersionConflict
 }
 
 func (r *Repository) GetTransaction(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
@@ -91,7 +161,11 @@ func (r *Repository) GetTransaction(ctx context.Context, userID, id uuid.UUID) (
 		}
 		return nil, opWrap(op, err)
 	}
-	return transactionFromRow(row), nil
+	return transactionFromFields(
+		row.ID, row.UserID, row.Type, row.Amount, row.Description, row.OccurredAt,
+		row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.AccountID, row.CategoryID, row.FromAccountID, row.ToAccountID, nil,
+	), nil
 }
 
 func (r *Repository) GetTransactions(
@@ -146,25 +220,43 @@ func (r *Repository) GetTransactions(
 	}
 	out := make([]domain.Transaction, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, *transactionFromRow(row))
+		out = append(out, *transactionFromFields(
+			row.ID, row.UserID, row.Type, row.Amount, row.Description, row.OccurredAt,
+			row.CreatedAt, row.UpdatedAt, int(row.Version),
+			row.AccountID, row.CategoryID, row.FromAccountID, row.ToAccountID, nil,
+		))
 	}
 	return out, nil
 }
 
-func transactionFromRow(row db.Transaction) *domain.Transaction {
+// transactionFromFields assembles a domain.Transaction; the transaction
+// queries return structurally-identical generated Row types, so the
+// construction is centralized here. deletedAt is non-nil only for the *Any
+// reads that include tombstones.
+func transactionFromFields(
+	id, userID uuid.UUID,
+	typ string,
+	amount int64,
+	description string,
+	occurredAt, createdAt, updatedAt time.Time,
+	version int,
+	accountID, categoryID, fromAccountID, toAccountID *uuid.UUID,
+	deletedAt *time.Time,
+) *domain.Transaction {
 	return &domain.Transaction{
-		ID:            row.ID,
-		UserID:        row.UserID,
-		Type:          domain.TransactionType(row.Type),
-		Amount:        row.Amount,
-		Description:   row.Description,
-		OccurredAt:    row.OccurredAt,
-		CreatedAt:     row.CreatedAt,
-		UpdatedAt:     row.UpdatedAt,
-		Version:       int(row.Version),
-		AccountID:     row.AccountID,
-		CategoryID:    row.CategoryID,
-		FromAccountID: row.FromAccountID,
-		ToAccountID:   row.ToAccountID,
+		ID:            id,
+		UserID:        userID,
+		Type:          domain.TransactionType(typ),
+		Amount:        amount,
+		Description:   description,
+		OccurredAt:    occurredAt,
+		CreatedAt:     createdAt,
+		UpdatedAt:     updatedAt,
+		Version:       version,
+		AccountID:     accountID,
+		CategoryID:    categoryID,
+		FromAccountID: fromAccountID,
+		ToAccountID:   toAccountID,
+		DeletedAt:     deletedAt,
 	}
 }

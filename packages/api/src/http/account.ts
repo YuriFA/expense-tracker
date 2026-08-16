@@ -19,6 +19,7 @@ function toAccountWithBalance(value: ApiAccount): AccountWithBalance {
     currency: value.currency,
     openingBalance: value.openingBalance,
     manualAdjustment: value.manualAdjustment,
+    version: value.version,
     balance: value.balance,
   }
 }
@@ -71,11 +72,13 @@ function toCreateRequest(payload: CreateAccountPayload): AccountCreateRequest {
     name: payload.name,
     currency: payload.currency,
     openingBalance: payload.openingBalance,
+    ...(payload.id !== undefined ? { id: payload.id } : {}),
   }
 }
 
 function toUpdateRequest(payload: UpdateAccountPayload): AccountUpdateRequest {
   return {
+    version: payload.version,
     ...(payload.name !== undefined ? { name: payload.name } : {}),
     ...(payload.manualAdjustment !== undefined
       ? { manualAdjustment: payload.manualAdjustment }

@@ -7,18 +7,44 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
+const categoryNameTaken = `-- name: CategoryNameTaken :one
+SELECT EXISTS(
+    SELECT 1
+    FROM categories
+    WHERE user_id = $1 AND name = $2 AND deleted_at IS NULL AND id <> $3
+) AS taken
+`
+
+type CategoryNameTakenParams struct {
+	UserID   uuid.UUID
+	Name     string
+	ExceptID uuid.UUID
+}
+
+// Live-name uniqueness pre-check (race-free under the per-user change-log
+// advisory lock); used by the sync path where a constraint violation would
+// abort the shared batch transaction.
+func (q *Queries) CategoryNameTaken(ctx context.Context, arg CategoryNameTakenParams) (bool, error) {
+	row := q.db.QueryRow(ctx, categoryNameTaken, arg.UserID, arg.Name, arg.ExceptID)
+	var taken bool
+	err := row.Scan(&taken)
+	return taken, err
+}
+
 const createCategory = `-- name: CreateCategory :one
 
-INSERT INTO categories (user_id, name, type, icon, color)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, name, type, icon, color, created_at, updated_at
+INSERT INTO categories (id, user_id, name, type, icon, color)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
 `
 
 type CreateCategoryParams struct {
+	ID     uuid.UUID
 	UserID uuid.UUID
 	Name   string
 	Type   string
@@ -26,16 +52,32 @@ type CreateCategoryParams struct {
 	Color  string
 }
 
-// categories (per-user, unique name within user). Scoped by user_id everywhere.
-func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
+type CreateCategoryRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Type      string
+	Icon      string
+	Color     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+}
+
+// categories (per-user, unique name among LIVE rows only - the partial unique
+// index ignores tombstones so a deleted name can be recreated). Scoped by
+// user_id everywhere; deletes are soft (deleted_at tombstone).
+// id is the optional client-generated id (offline-first clients).
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (CreateCategoryRow, error) {
 	row := q.db.QueryRow(ctx, createCategory,
+		arg.ID,
 		arg.UserID,
 		arg.Name,
 		arg.Type,
 		arg.Icon,
 		arg.Color,
 	)
-	var i Category
+	var i CreateCategoryRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -45,32 +87,17 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
 }
 
-const deleteCategory = `-- name: DeleteCategory :execrows
-DELETE FROM categories WHERE id = $1 AND user_id = $2
-`
-
-type DeleteCategoryParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
-}
-
-func (q *Queries) DeleteCategory(ctx context.Context, arg DeleteCategoryParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteCategory, arg.ID, arg.UserID)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}
-
 const getCategories = `-- name: GetCategories :many
-SELECT id, user_id, name, type, icon, color, created_at, updated_at
+SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
 FROM categories
 WHERE
     user_id = $1
+    AND deleted_at IS NULL
     AND ($2::text IS NULL OR type = $2)
 ORDER BY created_at, id
 `
@@ -80,15 +107,27 @@ type GetCategoriesParams struct {
 	Type   *string
 }
 
-func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([]Category, error) {
+type GetCategoriesRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Type      string
+	Icon      string
+	Color     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+}
+
+func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([]GetCategoriesRow, error) {
 	rows, err := q.db.Query(ctx, getCategories, arg.UserID, arg.Type)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Category
+	var items []GetCategoriesRow
 	for rows.Next() {
-		var i Category
+		var i GetCategoriesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -98,6 +137,7 @@ func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([
 			&i.Color,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -110,9 +150,9 @@ func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([
 }
 
 const getCategory = `-- name: GetCategory :one
-SELECT id, user_id, name, type, icon, color, created_at, updated_at
+SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
 FROM categories
-WHERE id = $1 AND user_id = $2
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 `
 
 type GetCategoryParams struct {
@@ -120,9 +160,21 @@ type GetCategoryParams struct {
 	UserID uuid.UUID
 }
 
-func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (Category, error) {
+type GetCategoryRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Type      string
+	Icon      string
+	Color     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+}
+
+func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (GetCategoryRow, error) {
 	row := q.db.QueryRow(ctx, getCategory, arg.ID, arg.UserID)
-	var i Category
+	var i GetCategoryRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -132,6 +184,201 @@ func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (Categ
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
+const getCategoryAny = `-- name: GetCategoryAny :one
+SELECT id, user_id, name, type, icon, color, created_at, updated_at, version, deleted_at
+FROM categories
+WHERE id = $1 AND user_id = $2
+`
+
+type GetCategoryAnyParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+type GetCategoryAnyRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Type      string
+	Icon      string
+	Color     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+	DeletedAt *time.Time
+}
+
+// Includes tombstoned rows (sync push + conflict classification).
+func (q *Queries) GetCategoryAny(ctx context.Context, arg GetCategoryAnyParams) (GetCategoryAnyRow, error) {
+	row := q.db.QueryRow(ctx, getCategoryAny, arg.ID, arg.UserID)
+	var i GetCategoryAnyRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Type,
+		&i.Icon,
+		&i.Color,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const hasLiveTransactionsForCategory = `-- name: HasLiveTransactionsForCategory :one
+SELECT EXISTS(
+    SELECT 1
+    FROM transactions
+    WHERE user_id = $1 AND deleted_at IS NULL AND category_id = $2
+) AS in_use
+`
+
+type HasLiveTransactionsForCategoryParams struct {
+	UserID     uuid.UUID
+	CategoryID *uuid.UUID
+}
+
+func (q *Queries) HasLiveTransactionsForCategory(ctx context.Context, arg HasLiveTransactionsForCategoryParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasLiveTransactionsForCategory, arg.UserID, arg.CategoryID)
+	var in_use bool
+	err := row.Scan(&in_use)
+	return in_use, err
+}
+
+const softDeleteCategory = `-- name: SoftDeleteCategory :one
+UPDATE categories
+SET deleted_at = now(), version = version + 1, updated_at = now()
+WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+RETURNING version
+`
+
+type SoftDeleteCategoryParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) SoftDeleteCategory(ctx context.Context, arg SoftDeleteCategoryParams) (int32, error) {
+	row := q.db.QueryRow(ctx, softDeleteCategory, arg.ID, arg.UserID)
+	var version int32
+	err := row.Scan(&version)
+	return version, err
+}
+
+const syncCategoriesByIDs = `-- name: SyncCategoriesByIDs :many
+SELECT id, user_id, name, type, icon, color, version, deleted_at
+FROM categories
+WHERE user_id = $1 AND id = ANY($2::uuid[])
+`
+
+type SyncCategoriesByIDsParams struct {
+	UserID uuid.UUID
+	Ids    []uuid.UUID
+}
+
+type SyncCategoriesByIDsRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Type      string
+	Icon      string
+	Color     string
+	Version   int32
+	DeletedAt *time.Time
+}
+
+func (q *Queries) SyncCategoriesByIDs(ctx context.Context, arg SyncCategoriesByIDsParams) ([]SyncCategoriesByIDsRow, error) {
+	rows, err := q.db.Query(ctx, syncCategoriesByIDs, arg.UserID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SyncCategoriesByIDsRow
+	for rows.Next() {
+		var i SyncCategoriesByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Type,
+			&i.Icon,
+			&i.Color,
+			&i.Version,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const syncReplaceCategory = `-- name: SyncReplaceCategory :one
+UPDATE categories
+SET
+    name       = $1,
+    type       = $2,
+    icon       = $3,
+    color      = $4,
+    version    = version + 1,
+    updated_at = now()
+WHERE id = $5 AND user_id = $6 AND deleted_at IS NULL AND version = $7
+RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
+`
+
+type SyncReplaceCategoryParams struct {
+	Name        string
+	Type        string
+	Icon        string
+	Color       string
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	BaseVersion int32
+}
+
+type SyncReplaceCategoryRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Type      string
+	Icon      string
+	Color     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+}
+
+// Full-state CAS upsert from a sync push.
+func (q *Queries) SyncReplaceCategory(ctx context.Context, arg SyncReplaceCategoryParams) (SyncReplaceCategoryRow, error) {
+	row := q.db.QueryRow(ctx, syncReplaceCategory,
+		arg.Name,
+		arg.Type,
+		arg.Icon,
+		arg.Color,
+		arg.ID,
+		arg.UserID,
+		arg.BaseVersion,
+	)
+	var i SyncReplaceCategoryRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Type,
+		&i.Icon,
+		&i.Color,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
 }
@@ -143,21 +390,38 @@ SET
     type       = COALESCE($2, type),
     icon       = COALESCE($3, icon),
     color      = COALESCE($4, color),
+    version    = version + 1,
     updated_at = now()
-WHERE id = $5 AND user_id = $6
-RETURNING id, user_id, name, type, icon, color, created_at, updated_at
+WHERE id = $5 AND user_id = $6 AND deleted_at IS NULL AND version = $7
+RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
 `
 
 type UpdateCategoryParams struct {
-	Name   *string
-	Type   *string
-	Icon   *string
-	Color  *string
-	ID     uuid.UUID
-	UserID uuid.UUID
+	Name    *string
+	Type    *string
+	Icon    *string
+	Color   *string
+	ID      uuid.UUID
+	UserID  uuid.UUID
+	Version int32
 }
 
-func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
+type UpdateCategoryRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Type      string
+	Icon      string
+	Color     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+}
+
+// Optimistic concurrency: the WHERE clause includes version = @version (and
+// liveness) so a concurrent update yields zero rows. PATCH fields use
+// COALESCE for nil = keep.
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (UpdateCategoryRow, error) {
 	row := q.db.QueryRow(ctx, updateCategory,
 		arg.Name,
 		arg.Type,
@@ -165,8 +429,9 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 		arg.Color,
 		arg.ID,
 		arg.UserID,
+		arg.Version,
 	)
-	var i Category
+	var i UpdateCategoryRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -176,6 +441,7 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 		&i.Color,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Version,
 	)
 	return i, err
 }

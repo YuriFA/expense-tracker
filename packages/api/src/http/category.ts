@@ -20,6 +20,7 @@ function toCategory(value: ApiCategory): Category {
     type: value.type,
     icon: value.icon,
     color: value.color,
+    version: value.version,
   }
 }
 
@@ -74,11 +75,13 @@ function toCreateRequest(payload: CreateCategoryPayload): CategoryCreateRequest 
     type: payload.type,
     icon: payload.icon,
     color: payload.color,
+    ...(payload.id !== undefined ? { id: payload.id } : {}),
   }
 }
 
 function toUpdateRequest(payload: UpdateCategoryPayload): CategoryUpdateRequest {
   return {
+    version: payload.version,
     ...(payload.name !== undefined ? { name: payload.name } : {}),
     ...(payload.type !== undefined ? { type: payload.type } : {}),
     ...(payload.icon !== undefined ? { icon: payload.icon } : {}),

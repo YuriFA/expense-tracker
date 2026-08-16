@@ -56,6 +56,7 @@ func toAPIAccount(a domain.Account) api.Account {
 		Balance:          a.Balance,
 		CreatedAt:        a.CreatedAt,
 		UpdatedAt:        a.UpdatedAt,
+		Version:          a.Version,
 	}
 }
 

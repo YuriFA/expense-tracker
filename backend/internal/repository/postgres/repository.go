@@ -39,20 +39,15 @@ var (
 	_ repository.PasswordResetRepository     = (*Repository)(nil)
 )
 
-// pgConstraintViolation reports whether err is a Postgres error with the given
-// SQLSTATE (e.g. "23503" foreign_key_violation, "23505" unique_violation).
-func pgConstraintViolation(err error, code string) bool {
+// pgUniqueViolation reports whether err is a Postgres unique_violation (the
+// only constraint class the soft-delete schema can still raise: PK/client-id
+// duplicates and the live-category-name partial index).
+func pgUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == code
-	}
-	return false
+	return errors.As(err, &pgErr) && pgErr.Code == pgCodeUniqueViolation
 }
 
-const (
-	pgCodeUniqueViolation = "23505"
-	pgCodeFKViolation     = "23503"
-)
+const pgCodeUniqueViolation = "23505"
 
 // errNoRows unwraps the pgx "no rows" case.
 func errNoRows(err error) bool {

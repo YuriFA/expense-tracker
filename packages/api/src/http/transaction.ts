@@ -142,6 +142,7 @@ function toCreateRequest(payload: CreateTransactionPayload): TransactionCreateRe
     amount: payload.amount,
     occurredAt: payload.occurredAt,
     description: payload.description ?? '',
+    ...(payload.id !== undefined ? { id: payload.id } : {}),
   }
   if (payload.type === 'transfer') {
     return { ...base, fromAccountId: payload.fromAccountId, toAccountId: payload.toAccountId }

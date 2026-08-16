@@ -1,0 +1,63 @@
+package postgres
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+
+	db "github.com/yurifa/expense-tracker-api/internal/repository/db"
+)
+
+// withinLockedTx runs fn inside ONE database transaction that holds the user's
+// change-log advisory lock from start to commit. Every REST mutation (entity
+// write + change_log append) and every sync push batch goes through here, so
+// a mutation is never committed without its change-log row and a user's
+// change_log seq order equals commit-visibility order.
+func (r *Repository) withinLockedTx(ctx context.Context, userID uuid.UUID, fn func(q *db.Queries) error) error {
+	const op = "repository.postgres.withinLockedTx"
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return opWrap(op, err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := r.q.WithTx(tx)
+	if err := q.LockUserChanges(ctx, userID.String()); err != nil {
+		return opWrap(op, err)
+	}
+	if err := fn(q); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return opWrap(op, err)
+	}
+	return nil
+}
+
+// appendChangeLog writes the change-log row for a committed mutation. Callers
+// MUST be inside withinLockedTx (the advisory lock orders the seq allocation).
+func appendChangeLog(
+	ctx context.Context,
+	q *db.Queries,
+	userID, entityID uuid.UUID,
+	entity, action string,
+	version int,
+) error {
+	_, err := q.AppendChangeLog(ctx, db.AppendChangeLogParams{
+		UserID:   userID,
+		Entity:   entity,
+		EntityID: entityID,
+		Action:   action,
+		Version:  int32(version), //nolint:gosec // entity versions are small positive ints
+	})
+	return err
+}
+
+// newEntityID returns the client-supplied id when present, else a fresh UUID.
+func newEntityID(id uuid.UUID) uuid.UUID {
+	if id == uuid.Nil {
+		return uuid.New()
+	}
+	return id
+}
