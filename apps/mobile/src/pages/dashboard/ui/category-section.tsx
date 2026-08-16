@@ -1,41 +1,42 @@
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Icon } from '@/shared/ui/icon'
+import { Icon, type IconName } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
+import type { Category, Transaction } from '@expense-tracker/api'
 import { formatAmount } from '../model/format'
 import { categoryBreakdown, expensesInMonth, MonthCursor, toExpenseRow } from '../model/selectors'
 import { NewCategorySheet } from './new-category-sheet'
 import { useRef, useState } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { ExpensesSheet } from './expenses-sheet'
-import { MOCK_CATEGORIES, MOCK_TRANSACTIONS } from '../model/mock-data'
 import { CategoryRow } from './category-row'
 import { View } from 'react-native'
 
 export interface CategorySectionProps {
   cursor: MonthCursor
+  transactions: Transaction[]
+  categories: Category[]
 }
 
-export function CategorySection({ cursor }: CategorySectionProps) {
+export function CategorySection({ cursor, transactions, categories }: CategorySectionProps) {
   const expensesSheetRef = useRef<BottomSheetRef>(null)
   const newCategorySheetRef = useRef<BottomSheetRef>(null)
   const [categoryExpensesId, setCategoryExpensesId] = useState<string | undefined>(undefined)
 
-  const hasAnyCategories = MOCK_CATEGORIES.length > 0
+  const hasAnyCategories = categories.length > 0
   const sheetCategory = categoryExpensesId
-    ? MOCK_CATEGORIES.find((c) => c.id === categoryExpensesId)
+    ? categories.find((c) => c.id === categoryExpensesId)
     : undefined
 
-  const rows = categoryBreakdown(MOCK_TRANSACTIONS, MOCK_CATEGORIES, cursor)
+  const rows = categoryBreakdown(transactions, categories, cursor)
   const sheetRows = categoryExpensesId
-    ? expensesInMonth(MOCK_TRANSACTIONS, cursor)
+    ? expensesInMonth(transactions, cursor)
         .filter((t) => t.categoryId === categoryExpensesId)
-        .map((t) => toExpenseRow(t, MOCK_CATEGORIES))
-    : expensesInMonth(MOCK_TRANSACTIONS, cursor).map((t) => toExpenseRow(t, MOCK_CATEGORIES))
+        .map((t) => toExpenseRow(t, categories))
+    : expensesInMonth(transactions, cursor).map((t) => toExpenseRow(t, categories))
 
-  const handleAddCategory = () => {
-    // TODO: Implement adding a new category to the list. This is a placeholder for now.
+  const openNewCategory = () => {
+    newCategorySheetRef.current?.present()
   }
 
   return (
@@ -46,9 +47,7 @@ export function CategorySection({ cursor }: CategorySectionProps) {
             testID="home-new-category"
             accessibilityRole="button"
             accessibilityLabel="Новая категория"
-            onPress={() => {
-              newCategorySheetRef.current?.present()
-            }}
+            onPress={openNewCategory}
           >
             <View className="flex-row items-center gap-2">
               <View className="h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -65,7 +64,9 @@ export function CategorySection({ cursor }: CategorySectionProps) {
               <Text variant="body-sm" className="text-muted-foreground">
                 Нет категорий
               </Text>
-              <Button variant="primary" text="Создать категорию" onPress={handleAddCategory} />
+              <Text variant="body-sm" className="text-muted-foreground">
+                Создайте первую категорию, чтобы записывать расходы
+              </Text>
             </View>
           ) : rows.length === 0 ? (
             <Text variant="body-sm" className="text-muted-foreground">
@@ -78,11 +79,11 @@ export function CategorySection({ cursor }: CategorySectionProps) {
                   key={category.id}
                   categoryId={category.id}
                   name={category.name}
-                  icon={category.icon}
-                  colorClassName={category.colorClassName}
+                  icon={category.icon as IconName}
+                  color={category.color}
                   amountText={formatAmount(totalMinor)}
-                  onPress={() => {
-                    setCategoryExpensesId(category.id)
+                  onPress={(categoryId) => {
+                    setCategoryExpensesId(categoryId)
                     expensesSheetRef.current?.present()
                   }}
                 />
@@ -92,7 +93,7 @@ export function CategorySection({ cursor }: CategorySectionProps) {
         </View>
       </Card>
 
-      <NewCategorySheet ref={newCategorySheetRef} onSubmit={handleAddCategory} />
+      <NewCategorySheet ref={newCategorySheetRef} />
 
       <ExpensesSheet
         ref={expensesSheetRef}

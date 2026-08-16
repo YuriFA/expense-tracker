@@ -2,38 +2,40 @@ import { Pressable, View } from 'react-native'
 import { Card } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
+import type { Category, Transaction } from '@expense-tracker/api'
 import type { LatestExpenseView } from './all-expenses-card.types'
-import { MOCK_CATEGORIES, MOCK_TRANSACTIONS } from '../model/mock-data'
 import { formatAmount, relativeDayLabel } from '../model/format'
-import { expensesInMonth, MonthCursor, toExpenseRow } from '../model/selectors'
+import { expensesInMonth, latestExpense, MonthCursor, toExpenseRow } from '../model/selectors'
 import { ExpensesSheet } from './expenses-sheet'
 import { useRef } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
 interface AllExpensesCardProps {
   cursor: MonthCursor
+  transactions: Transaction[]
+  categories: Category[]
 }
 
-export function AllExpensesCard({ cursor }: AllExpensesCardProps) {
+export function AllExpensesCard({ cursor, transactions, categories }: AllExpensesCardProps) {
   const expensesSheetRef = useRef<BottomSheetRef>(null)
-  const lastTransaction = MOCK_TRANSACTIONS[MOCK_TRANSACTIONS.length - 1]
-  const category = MOCK_CATEGORIES.find((c) => c.id === lastTransaction.categoryId)
-  const latest: LatestExpenseView = {
-    amountText: formatAmount(lastTransaction.amountMinor),
-    categoryName: category?.name ?? 'Без категории',
-    dayLabel: relativeDayLabel(lastTransaction.occurredAt),
-  }
+  const last = latestExpense(transactions, cursor)
+  const lastCategory = last ? categories.find((c) => c.id === last.categoryId) : undefined
+  const latest: LatestExpenseView | null = last
+    ? {
+        amountText: formatAmount(last.amount),
+        categoryName: lastCategory?.name ?? 'Без категории',
+        dayLabel: relativeDayLabel(last.occurredAt),
+      }
+    : null
 
-  const sheetRows = expensesInMonth(MOCK_TRANSACTIONS, cursor).map((t) =>
-    toExpenseRow(t, MOCK_CATEGORIES),
-  )
+  const sheetRows = expensesInMonth(transactions, cursor).map((t) => toExpenseRow(t, categories))
 
   return (
     <>
       <Pressable
         testID="home-all-expenses"
         accessibilityRole="button"
-        accessibilityLabel={`Все расходы, последний ${latest.categoryName}`}
+        accessibilityLabel={`Все расходы${latest ? `, последний ${latest.categoryName}` : ''}`}
         className="active:opacity-70"
         onPress={() => {
           expensesSheetRef.current?.present()

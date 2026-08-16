@@ -16,8 +16,8 @@ export interface ExpenseRowView {
   description: string
   categoryName: string
   categoryIcon: IconName
-  /** Complete chip class from the category data; falls back to `bg-muted`. */
-  categoryColorClassName: string | undefined
+  /** Data color (hex from the category record); falls back to `bg-muted`. */
+  categoryColor: string | undefined
   dayLabel: string
   amountText: string
 }
@@ -54,8 +54,9 @@ export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProp
                 <View
                   className={cn(
                     'h-10 w-10 items-center justify-center rounded-full',
-                    row.categoryColorClassName ?? 'bg-muted',
+                    row.categoryColor ? undefined : 'bg-muted',
                   )}
+                  style={row.categoryColor ? { backgroundColor: row.categoryColor } : undefined}
                 >
                   <Icon name={row.categoryIcon} size={20} colorClassName="accent-white" />
                 </View>

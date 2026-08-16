@@ -1,0 +1,46 @@
+# TODO(sheet-e2e): KNOWN-FAILING - typing into sheet inputs is unstable in
+# Expo Go e2e (inputs invisible to the accessibility tree inside modals +
+# keyboard lift shifting measured tap points; see the TODO in
+# src/shared/ui/bottom-sheet/bottom-sheet.tsx). The covered behavior is
+# unit/component-tested in jest; revisit once sheet inputs become e2e-stable.
+# Dashboard: create a category (name / type / icon / color) through the
+# predefined pickers. Unique names keep the suite re-runnable.
+#
+# The name input is focused by POINT (see 05-add-account for why); success
+# is proven behaviorally: submitting the SAME name again must surface the
+# unique-name error alert, which only happens if the first create persisted.
+appId: host.exp.Exponent
+tags:
+  - categories
+---
+- runFlow: ../_launch.yaml
+- runScript: ../_random.js
+- assertVisible:
+    id: screen-dashboard
+
+- tapOn:
+    id: home-new-category
+- assertVisible:
+    id: home-new-category-sheet
+
+# Name field (75% sheet: first field under the header)
+- tapOn:
+    point: 50%, 33%
+- inputText: 'Транспорт ${output.suffix}'
+- tapOn:
+    id: home-new-category-icon-bus
+- tapOn:
+    id: home-new-category-color-7c5cff
+- tapOn:
+    id: home-new-category-submit
+
+# Same name again -> the unique-name guard fires
+- tapOn:
+    point: 50%, 33%
+- inputText: 'Транспорт ${output.suffix}'
+- tapOn:
+    id: home-new-category-submit
+- assertVisible:
+    id: home-new-category-error
+- tapOn:
+    point: 50%, 8%

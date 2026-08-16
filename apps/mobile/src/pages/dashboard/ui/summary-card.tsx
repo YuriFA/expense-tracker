@@ -3,19 +3,27 @@ import { Icon } from '@/shared/ui/icon'
 import { IconButton } from '@/shared/ui/icon-button'
 import { Text } from '@/shared/ui/text'
 import { useRef, useState } from 'react'
+import type { AccountWithBalance, Transaction } from '@expense-tracker/api'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { ModeSheet, type SummaryMode } from './mode-sheet'
 import { formatAmount, monthRangeLabel } from '../model/format'
 import { MonthCursor, monthlyBalance, totalBalance, totalExpenses } from '../model/selectors'
-import { MOCK_ACCOUNTS, MOCK_TRANSACTIONS } from '../model/mock-data'
 
 export interface SummaryCardProps {
   cursor: MonthCursor
+  accounts: AccountWithBalance[]
+  transactions: Transaction[]
   onPrevPeriod: () => void
   onNextPeriod: () => void
 }
 
-export function SummaryCard({ cursor, onPrevPeriod, onNextPeriod }: SummaryCardProps) {
+export function SummaryCard({
+  cursor,
+  accounts,
+  transactions,
+  onPrevPeriod,
+  onNextPeriod,
+}: SummaryCardProps) {
   const modeSheetRef = useRef<BottomSheetRef>(null)
   const [mode, setMode] = useState<SummaryMode>('expenses')
 
@@ -30,10 +38,10 @@ export function SummaryCard({ cursor, onPrevPeriod, onNextPeriod }: SummaryCardP
   const periodLabel = monthRangeLabel(cursor.year, cursor.month)
   const amountText =
     mode === 'expenses'
-      ? formatAmount(totalExpenses(MOCK_TRANSACTIONS, cursor))
+      ? formatAmount(totalExpenses(transactions, cursor))
       : mode === 'monthly-balance'
-        ? formatAmount(monthlyBalance(MOCK_TRANSACTIONS, cursor))
-        : formatAmount(totalBalance(MOCK_ACCOUNTS, MOCK_TRANSACTIONS))
+        ? formatAmount(monthlyBalance(transactions, cursor))
+        : formatAmount(totalBalance(accounts))
 
   return (
     <>

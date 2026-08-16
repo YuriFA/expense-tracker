@@ -11,6 +11,8 @@ export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'>
   leadingIcon?: IconName
   trailingIcon?: IconName
   containerClassName?: string
+  /** testID for the error text (exposed as an accessibility alert). */
+  errorTestId?: string
 }
 
 export function Input({
@@ -21,6 +23,7 @@ export function Input({
   leadingIcon,
   trailingIcon,
   containerClassName,
+  errorTestId,
   style,
   ...textInputProps
 }: InputProps) {
@@ -64,7 +67,12 @@ export function Input({
       </View>
 
       {error && (
-        <Text variant="caption" className="text-destructive">
+        <Text
+          variant="caption"
+          className="text-destructive"
+          accessibilityRole="alert"
+          testID={errorTestId}
+        >
           {error}
         </Text>
       )}

@@ -1,8 +1,11 @@
+import { useRef, useState } from 'react'
 import { View } from 'react-native'
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui'
 import type { Href } from 'expo-router'
 import { Icon } from '@/shared/ui/icon'
 import { FAB_SIZE, SpeedDial, type SpeedDialAction } from '@/shared/ui/speed-dial'
+import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
+import { NewTransactionSheet, type TransactionFlowKind } from '@/features/create-transaction'
 import {
   BottomTabBar,
   TabBarHeightProvider,
@@ -41,11 +44,9 @@ const TABS: readonly TabDef[] = [
   },
 ] as const
 
-// Placeholder actions - the create-transaction flows don't exist yet. Navigation
-// is wired here (the layout owns routing), not in SpeedDial or BottomTabBar, to
-// keep the shared SpeedDial domain-free. Colors are semantic tokens: an expense
-// action is destructive, an income action is a success.
-function useTransactionActions(): SpeedDialAction[] {
+// The speed dial opens the create-transaction sheet (a global overlay like
+// the dial itself, not a route); the layout owns the open flow state.
+function useTransactionActions(openFlow: (kind: TransactionFlowKind) => void): SpeedDialAction[] {
   return [
     {
       id: 'transfer',
@@ -53,9 +54,7 @@ function useTransactionActions(): SpeedDialAction[] {
       accessibilityLabel: 'Add transfer',
       icon: <Icon name="swap-horizontal" size={24} colorClassName="accent-primary" />,
       className: 'bg-brand-aliceblue size-14',
-      onPress: () => {
-        // TODO(create-transaction): navigate to the create-transfer flow.
-      },
+      onPress: () => openFlow('transfer'),
     },
     {
       id: 'expense',
@@ -63,9 +62,7 @@ function useTransactionActions(): SpeedDialAction[] {
       accessibilityLabel: 'Add expense',
       icon: <Icon name="remove" size={36} colorClassName="accent-destructive-foreground" />,
       className: 'bg-destructive size-20',
-      onPress: () => {
-        // TODO(create-transaction): navigate to the create-expense flow.
-      },
+      onPress: () => openFlow('expense'),
     },
     {
       id: 'income',
@@ -73,9 +70,7 @@ function useTransactionActions(): SpeedDialAction[] {
       accessibilityLabel: 'Add income',
       icon: <Icon name="add" size={24} colorClassName="accent-success-foreground" />,
       className: 'bg-success size-14',
-      onPress: () => {
-        // TODO(create-transaction): navigate to the create-income flow.
-      },
+      onPress: () => openFlow('income'),
     },
   ]
 }
@@ -95,7 +90,14 @@ export default function TabsLayout() {
 // never changes the active tab - it's a floating action, not a route.
 function TabsSurface() {
   const tabBarHeight = useTabBarHeight()
-  const actions = useTransactionActions()
+  const transactionSheetRef = useRef<BottomSheetRef>(null)
+  const [flow, setFlow] = useState<TransactionFlowKind>('expense')
+
+  const openFlow = (kind: TransactionFlowKind) => {
+    setFlow(kind)
+    transactionSheetRef.current?.present()
+  }
+  const actions = useTransactionActions(openFlow)
 
   // Straddle the bar's top edge: FAB center at the bar top. tabBarHeight includes
   // the safe-area padding, so no separate inset is needed. Falls back to the
@@ -120,6 +122,8 @@ function TabsSurface() {
         label="Add transaction"
         closeLabel="Close transaction actions"
       />
+
+      <NewTransactionSheet ref={transactionSheetRef} kind={flow} />
     </View>
   )
 }

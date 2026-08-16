@@ -179,12 +179,27 @@ the `openLink` Expo-Go path to `launchApp: <bundleId>`.
 
 ## Not yet built (re-establish here as it lands)
 
-The app is a skeleton: screens are placeholders, `entities/`, `features/`, and
-most of `shared/` are empty. Open decisions before the first real feature:
+Open decisions before the next real feature:
 
 - **Session gate** in `src/app/_layout.tsx` (port the web router guard;
   needs `entities/session` + an unauthorized interceptor).
-- **Persistence & data fetching.** Not yet built. When it lands, modules
-  outside Expo Go (e.g. react-native-mmkv, SQLite, custom native code) require a
-  **dev build** and flip the Maestro e2e target off Expo Go (see "Testing / e2e").
-- **i18n wiring** (`shared/i18n` + react-i18next) and localized tab/screen titles.
+- **i18n wiring** (`shared/i18n` + react-i18next) and localized tab/screen
+  titles; RU strings are hardcoded with `TODO(i18n)` markers until then.
+- **Sync engine** (phase 3 of the `mobile-offline-first` change): the
+  outbox/conflict tables and version columns already exist; only the engine
+  is missing. `@react-native-community/netinfo` is installed for it.
+
+## Local data layer (landed)
+
+Offline-first foundation per the `mobile-offline-first` change (phase 1):
+`shared/lib/db` (expo-sqlite + drizzle, migrations via `pnpm db:generate`,
+transactional outbox writes, D5 version transitions in `outbox.ts`),
+`entities/*/api/local-repository.ts` (backend-mirroring rules and error
+codes), TanStack Query hooks in `entities/*/model/`, and DI via
+`entities/*/api/repository.tsx` providers mounted in the root `_layout`.
+Repository unit tests run SQLite for real through the `node:sqlite` adapter
+in `shared/lib/db/testing` (never import it from app code). Known e2e gap:
+`TODO(sheet-e2e)` in `shared/ui/bottom-sheet` - typing into sheet inputs is
+unstable under Expo Go Maestro (inputs invisible in modal AX trees +
+keyboard-lift geometry); the data-creating flows in `.maestro/flows/05-08*`
+are annotated known-failing until that lands.

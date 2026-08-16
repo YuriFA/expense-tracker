@@ -8,8 +8,8 @@ interface CategoryRowProps {
   categoryId: string
   name: string
   icon: IconName
-  /** Complete chip class from the category data (e.g. 'bg-brand-violet'). */
-  colorClassName: string
+  /** Data color (hex from the category record); falls back to `bg-muted`. */
+  color: string | undefined
   amountText: string
   onPress: (categoryId: string) => void
 }
@@ -18,7 +18,7 @@ export function CategoryRow({
   categoryId,
   name,
   icon,
-  colorClassName,
+  color,
   amountText,
   onPress,
 }: CategoryRowProps) {
@@ -31,7 +31,13 @@ export function CategoryRow({
       onPress={() => onPress(categoryId)}
     >
       <View className="flex-row items-center gap-2 py-1">
-        <View className={cn('h-10 w-10 items-center justify-center rounded-full', colorClassName)}>
+        <View
+          className={cn(
+            'h-10 w-10 items-center justify-center rounded-full',
+            color ? undefined : 'bg-muted',
+          )}
+          style={color ? { backgroundColor: color } : undefined}
+        >
           <Icon name={icon} size={20} colorClassName="accent-white" />
         </View>
         <Text variant="body" className="flex-1 text-foreground">

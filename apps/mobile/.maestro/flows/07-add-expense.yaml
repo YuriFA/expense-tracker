@@ -1,0 +1,59 @@
+# TODO(sheet-e2e): KNOWN-FAILING - typing into sheet inputs is unstable in
+# Expo Go e2e (inputs invisible to the accessibility tree inside modals +
+# keyboard lift shifting measured tap points; see the TODO in
+# src/shared/ui/bottom-sheet/bottom-sheet.tsx). The covered behavior is
+# unit/component-tested in jest; revisit once sheet inputs become e2e-stable.
+# Speed dial: create an expense end-to-end. Requires an account and an
+# expense category to exist - 05-add-account and 06-add-category create
+# them, so run the suite in order (fresh local database starts empty).
+#
+# The amount input is focused by POINT (see 05-add-account for why);
+# account/category chips are accessible elements and use ids.
+appId: host.exp.Exponent
+tags:
+  - transactions
+---
+- runFlow: ../_launch.yaml
+- assertVisible:
+    id: screen-dashboard
+
+- tapOn:
+    id: speed-dial-fab
+- assertVisible:
+    id: speed-dial-action-expense
+- tapOn:
+    id: speed-dial-action-expense
+- assertVisible:
+    id: new-transaction-sheet
+
+# Amount field (65% sheet: first field under the header)
+- tapOn:
+    point: 50%, 48%
+- inputText: '250.00'
+- hideKeyboard
+- tapOn:
+    id: new-transaction-account-.*
+    index: 0
+- tapOn:
+    id: new-transaction-category-.*
+    index: 0
+- tapOn:
+    id: new-transaction-submit
+
+# The sheet may or may not auto-dismiss (TODO(sheet-dismiss)); close it via
+# the backdrop when still open, then verify the expense on the dashboard.
+- runFlow:
+    when:
+      visible:
+        id: new-transaction-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- tapOn:
+    id: home-all-expenses
+- assertVisible:
+    id: home-expenses-sheet
+- assertVisible:
+    id: home-expense-row-.*
+- tapOn:
+    point: 50%, 8%

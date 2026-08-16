@@ -50,6 +50,12 @@ export type BottomSheetProps = Omit<
   enableDynamicSizing?: boolean
 }
 
+// TODO(sheet-e2e): typing into sheet inputs in Expo Go e2e is unstable:
+// (a) inputs are not exposed to the accessibility tree inside modals (flows
+// tap them by measured POINT), (b) the default `keyboardBehavior:
+// 'interactive'` lifts the sheet while the keyboard is up, shifting those
+// measured points ('none' is not a valid @gorhom v5 value). If this needs
+// stabilizing, consider fixed-position inputs or custom keyboard handling.
 export const BottomSheet = ({
   snapPoints = ['50%'],
   enablePanDownToClose = true,

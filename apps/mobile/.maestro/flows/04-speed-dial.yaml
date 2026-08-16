@@ -8,9 +8,8 @@
 #   1. Closed state - only the FAB is shown.
 #   2. Open / close via the FAB.
 #   3. Backdrop (scrim) dismiss.
-#   4. Action tap collapses the dial. Expense/Income/Transfer are placeholder
-#      callbacks in (tabs)/_layout.tsx until create-transaction screens exist,
-#      so we assert the dial CLOSED after each tap, not a destination screen.
+#   4. Action tap collapses the dial and opens the matching create-transaction
+#      sheet (expense / income / transfer), which is then dismissed.
 #   5. The 4 real tabs still switch screens with the SpeedDial present.
 #
 # Visibility note: the SpeedDial backdrop is a full-screen overlay that Maestro
@@ -83,6 +82,10 @@ appId: host.exp.Exponent
     id: speed-dial-backdrop
 - assertNotVisible:
     id: speed-dial-action-expense
+- assertVisible:
+    id: new-transaction-sheet
+- tapOn:
+    point: 50%, 8%
 # Income
 - tapOn:
     id: speed-dial-fab
@@ -94,6 +97,10 @@ appId: host.exp.Exponent
     id: speed-dial-backdrop
 - assertNotVisible:
     id: speed-dial-action-income
+- assertVisible:
+    id: new-transaction-sheet
+- tapOn:
+    point: 50%, 8%
 # Transfer
 - tapOn:
     id: speed-dial-fab
@@ -105,6 +112,10 @@ appId: host.exp.Exponent
     id: speed-dial-backdrop
 - assertNotVisible:
     id: speed-dial-action-transfer
+- assertVisible:
+    id: new-transaction-sheet
+- tapOn:
+    point: 50%, 8%
 
 # --- 5. Real tabs still switch screens with the SpeedDial present ------------
 # Dial is closed so the scrim passes touches through; tab taps land.

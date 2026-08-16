@@ -2,7 +2,12 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     "apps/web": {
-      "entry": ["src/app/router/index.ts", "src/**/*.test.ts", "e2e/**/*.ts", "steiger.config.ts"],
+      "entry": [
+        "src/app/router/index.ts",
+        "src/**/*.test.ts",
+        "e2e/**/*.ts",
+        "steiger.config.ts"
+      ],
       "project": [
         "src/**/*.{ts,vue}",
         "src/**/*.css",
@@ -11,25 +16,51 @@
         "!src/**/*.d.ts"
       ],
       "ignoreIssues": {
-        "src/shared/ui/**/index.ts": ["exports", "types"]
+        "src/shared/ui/**/index.ts": [
+          "exports",
+          "types"
+        ]
       },
-      "ignoreDependencies": ["tailwindcss"]
+      "ignoreDependencies": [
+        "tailwindcss"
+      ]
     },
     "apps/mobile": {
-      "entry": [".maestro/_launch.js"],
-      "ignoreBinaries": ["maestro"],
-      "ignoreDependencies": ["expo-updates", "expo-system-ui"],
+      "entry": [
+        ".maestro/_launch.js",
+        ".maestro/_random.js"
+      ],
+      "ignoreBinaries": [
+        "maestro"
+      ],
+      "ignoreDependencies": [
+        "expo-updates",
+        "expo-system-ui",
+        "@react-native-community/netinfo"
+      ],
       "ignoreIssues": {
-        "src/shared/ui/**": ["exports", "types"]
+        "src/shared/ui/**": [
+          "exports",
+          "types"
+        ],
+        "src/entities/*/model/use-*.ts": [
+          "exports",
+          "types"
+        ]
       }
     },
     "packages/api": {
       "ignoreIssues": {
-        "src/schema.ts": ["exports", "types"]
+        "src/schema.ts": [
+          "exports",
+          "types"
+        ]
       }
     },
     "packages/tokens": {
-      "ignoreDependencies": ["tailwindcss"]
+      "ignoreDependencies": [
+        "tailwindcss"
+      ]
     }
   }
 }

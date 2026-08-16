@@ -6,11 +6,18 @@ import path from 'node:path'
  * Design-token guard: app source must not contain raw color literals.
  *
  * Every color comes from a token - a Uniwind class (`bg-primary`), an
- * `accent-*` class on a `{prop}ClassName` prop, or a COMPLETE class string
- * stored in data (e.g. a mock category's 'bg-brand-violet'). The token VALUES
- * themselves live in apps/mobile/global.css, outside this scan.
+ * `accent-*` class on a `{prop}ClassName` prop, or an inline style color
+ * from DATA (a category's predefined/API color). The token VALUES
+ * themselves live in packages/tokens (via apps/mobile/global.css), outside
+ * this scan.
  */
 const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g
+
+// The predefined category palette stores brand-token hex VALUES as data -
+// rendered via inline `style={{ backgroundColor }}`, exactly like
+// API-provided colors will be - so it is the one sanctioned place where raw
+// hex appears in src/.
+const RAW_COLOR_EXEMPT_FILES = ['src/entities/category/config/category-appearance.ts']
 
 const SRC_ROOT = path.resolve(__dirname, '../../..')
 
@@ -25,6 +32,7 @@ function collectSourceFiles(dir: string): string[] {
 describe('design tokens guard', () => {
   it('src/** has no raw hex/rgb/hsl color literals (tests excluded)', () => {
     const offenders = collectSourceFiles(SRC_ROOT)
+      .filter((file) => !RAW_COLOR_EXEMPT_FILES.includes(path.relative(SRC_ROOT, file)))
       .map((file) => {
         const hits = readFileSync(file, 'utf8').match(RAW_COLOR)
         return hits ? `${path.relative(SRC_ROOT, file)}: ${hits.join(', ')}` : null

@@ -7,6 +7,12 @@
  * observable behavior (a11y states, callbacks, element presence) - never
  * animation frame values - so a synchronous JS mock is sufficient and faithful.
  */
+jest.mock("expo-crypto", () => ({
+  // The native randomUUID is unavailable under jest; Node's crypto provides
+  // real UUID v4 so repository/outbox tests see production-shaped ids.
+  randomUUID: () => require("node:crypto").randomUUID(),
+}))
+
 jest.mock("@expo/vector-icons", () => {
   const React = require("react")
   const { Text } = require("react-native")

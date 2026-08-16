@@ -1,0 +1,49 @@
+import {
+  NotFoundError,
+  type Category,
+  type CategoryRepository,
+  type CreateCategoryPayload,
+  type UpdateCategoryPayload,
+} from '@expense-tracker/api'
+
+export interface MockCategoryRepository extends CategoryRepository {
+  snapshot(): Category[]
+  calls: { getAll: number; create: number; update: number; remove: number }
+}
+
+export function createMockCategoryRepository(initial: Category[] = []): MockCategoryRepository {
+  let items = [...initial]
+  const calls = { getAll: 0, create: 0, update: 0, remove: 0 }
+  let nextId = 1
+
+  return {
+    calls,
+    snapshot: () => [...items],
+    async getAll() {
+      calls.getAll += 1
+      return [...items]
+    },
+    async getById(id) {
+      return items.find((category) => category.id === id) ?? null
+    },
+    async create(payload: CreateCategoryPayload) {
+      calls.create += 1
+      const category: Category = { ...payload, id: payload.id ?? `cat-${nextId++}` }
+      items.push(category)
+      return { ...category }
+    },
+    async update(id, payload: UpdateCategoryPayload) {
+      calls.update += 1
+      const index = items.findIndex((category) => category.id === id)
+      if (index === -1) throw new NotFoundError('Category not found')
+      items[index] = { ...items[index], ...payload }
+      return { ...items[index] }
+    },
+    async remove(id) {
+      calls.remove += 1
+      const next = items.filter((category) => category.id !== id)
+      if (next.length === items.length) throw new NotFoundError('Category not found')
+      items = next
+    },
+  }
+}
