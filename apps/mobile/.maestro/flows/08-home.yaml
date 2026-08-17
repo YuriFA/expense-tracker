@@ -1,8 +1,3 @@
-# TODO(sheet-e2e): KNOWN-FAILING - typing into sheet inputs is unstable in
-# Expo Go e2e (inputs invisible to the accessibility tree inside modals +
-# keyboard lift shifting measured tap points; see the TODO in
-# src/shared/ui/bottom-sheet/bottom-sheet.tsx). The covered behavior is
-# unit/component-tested in jest; revisit once sheet inputs become e2e-stable.
 # Home screen: period navigation, summary modes, sheets, quick actions.
 #
 # Runs on the REAL local database (mocks are gone): the month/mode switching
@@ -10,9 +5,9 @@
 # account/category/expense created by the earlier flows in the same suite run.
 #
 # Conventions: assert/tap by testID only. Text asserts are limited to the
-# pre-modal steps: after a native modal (bottom sheet) closes in Expo Go,
-# the main window's text accessibility labels detach until relaunch, so
-# text matching there is unreliable (ids keep working).
+# pre-modal steps: after a native modal (bottom sheet) closes, the main
+# window's text accessibility labels can detach until relaunch, so text
+# matching there is unreliable (ids keep working).
 appId: com.anonymous.mobile
 tags:
   - home

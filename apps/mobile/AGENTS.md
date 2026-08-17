@@ -123,6 +123,8 @@ The Bottom Sheet should own presentation concerns (ref, snap points,
 dismissal, header, container layout). The form should own field state,
 validation, submission, and form-level errors.
 
+Text fields inside a sheet MUST use `BottomSheetInput` from `@/shared/ui/bottom-sheet` (not the plain `Input`): @gorhom ignores keyboard-show events until the focused input registers with the sheet's keyboard state, and only `BottomSheetTextInput` does — plain TextInputs leave `keyboardBehavior` inert. The shared `BottomSheet` wrapper also passes `accessible={false}` to @gorhom, whose `accessible` default swallows sheet content (Text/TextInput) from the accessibility tree — Maestro ids and VoiceOver depend on that opt-out. Don't add context auto-detection to `shared/ui/input`; the sheet-aware variant lives with the sheet wrappers.
+
 Don't assume changing the sheet's `kind` or reopening it resets form state automatically — the form must define its own lifecycle explicitly (e.g. `useEffect(() => form.reset(defaultValues), [defaultValues, form])`, or a remount/key strategy when that's clearer). Resetting should be deliberate and tied to the actual flow lifecycle.
 
 ## Component design
@@ -159,7 +161,7 @@ Form tests should cover: invalid input blocks submission; valid input submits th
 
 ## E2E / Maestro
 
-Flows live in `.maestro/flows/*.yaml`; shared launch logic is `.maestro/_launch.yaml` + `.maestro/_launch.js`. Every new user-facing flow requires Maestro coverage — no new user-facing behavior ships without one. Selectors use `testID`/Maestro `id` (lowercase-kebab, e.g. `screen-dashboard`, `tab-dashboard`, `new-transaction-submit`), not visible text.
+Flows live in `.maestro/flows/*.yaml`; shared launch logic is `.maestro/_launch.yaml` + `.maestro/_launch.js`. Every new user-facing flow requires Maestro coverage — no new user-facing behavior ships without one. Selectors use `testID`/Maestro `id` (lowercase-kebab, e.g. `screen-dashboard`, `tab-dashboard`, `new-transaction-submit`), not visible text — including inputs inside bottom sheets.
 
 New flow template:
 ```yaml
@@ -172,13 +174,15 @@ appId: com.anonymous.mobile
     id: <expected-testid>
 ```
 
+Run the suite strictly via `pnpm test:e2e` (`scripts/e2e/run-maestro-ios.sh`), never bare `maestro test`: the script primes the simulator pasteboard with the test password (flow 09's native Paste fails without it), and ad-hoc `maestro test` invocations while another Maestro driver holds the simulator kill the run with "Device became unreachable". For a single flow, prime the pasteboard the same way first and make sure no other Maestro run is active.
+
 Before reporting a task done, `pnpm test:e2e` must pass — a failing run blocks `done`; don't skip or weaken assertions to make the suite green.
 
 ## Dev build target (was: Expo Go)
 
 Target: a local iOS dev build (`com.anonymous.mobile` + `expo-dev-client`). The suite moved off Expo Go when background sync landed — `expo-background-fetch`/`expo-task-manager` OS scheduling is not guaranteed inside Expo Go. Produce/update the dev build with `pnpm ios` (`npx expo run:ios`; `ios/`/`android/` are gitignored and config-synced from `app.json`, incl. the `expo-background-fetch` plugin's `UIBackgroundModes`). Metro must be running (default 8081): flows deep-link the dev client into it via `exp+expensetracker://expo-development-client/?url=…` (see `_launch.yaml`/`_launch.js`, overridable via `MAESTRO_EXPO_URL`).
 
-Known limitation carried over: typing into Bottom Sheet inputs is unstable (inputs can be missing from the modal a11y tree, keyboard-lift geometry is unstable) — tracked as `TODO(sheet-e2e)`; don't silently remove or weaken this.
+Known limitation: sheets do not reliably auto-dismiss after a successful create — tracked as `TODO(sheet-dismiss)`; flows close via a backdrop tap meanwhile. Don't silently remove or weaken this.
 
 ## Quality bar
 
@@ -192,7 +196,7 @@ pnpm test:e2e
 ```
 `pnpm knip` from the workspace root covers mobile. `pnpm exec expo export --platform ios` is an additional end-to-end check on the iOS production bundle.
 
-Known failures documented in this file (for example `TODO(sheet-e2e)`) are
+Known failures documented in this file (for example `TODO(sheet-dismiss)`) are
 not considered regressions. Do not weaken tests to hide them; report them
 explicitly when they prevent a full green run.
 
@@ -235,7 +239,7 @@ entities/*/model/
 ```
 Uses expo-sqlite + Drizzle; migrations via `pnpm db:generate`. Writes to the outbox are transactional. Repository unit tests run SQLite for real through the `node:sqlite` adapter in `shared/lib/db/testing` — never import that adapter from application code.
 
-Known e2e gap: `TODO(sheet-e2e)` in `shared/ui/bottom-sheet`. The data-creating flows in `.maestro/flows/05-08*` are annotated known-failing until Bottom Sheet input automation is stable.
+Sheet-input e2e works: the shared `BottomSheet` exposes content to the accessibility tree and fields use `BottomSheetInput` (see "Forms inside Bottom Sheets"). Remaining known e2e gap: `TODO(sheet-dismiss)` — sheets don't reliably auto-dismiss after a successful create; flows close via a backdrop tap.
 
 ## Important agent behavior
 

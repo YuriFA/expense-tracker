@@ -12,11 +12,11 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
+  BottomSheetInput,
   BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
 import { Icon } from '@/shared/ui/icon'
-import { Input } from '@/shared/ui/input'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
@@ -150,7 +150,7 @@ export function NewTransactionSheet({ ref, kind }: NewTransactionSheetProps) {
       <BottomSheetView testID="new-transaction-sheet">
         <BottomSheetHeader title={KIND_TITLES[kind]} />
         <BottomSheetBody className="gap-4">
-          <Input
+          <BottomSheetInput
             label="Сумма"
             placeholder="0,00"
             value={amount}

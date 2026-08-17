@@ -1,7 +1,19 @@
 import { TextInput, type TextInputProps, View } from 'react-native'
+import type { ComponentType } from 'react'
 import { Text } from '../text'
 import { Icon, type IconName } from '../icon'
 import { cn } from '@/shared/lib/utils'
+
+/**
+ * Props Input renders onto the underlying text input: RN's TextInputProps plus
+ * the Uniwind class props it styles the field with. Custom implementations
+ * passed via `textInputComponent` must be Uniwind-aware (e.g. wrapped with
+ * `withUniwind`) to accept these two props.
+ */
+export type InputComponentProps = TextInputProps & {
+  className?: string
+  placeholderTextColorClassName?: string
+}
 
 export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'> {
   label?: string
@@ -13,6 +25,12 @@ export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'>
   containerClassName?: string
   /** testID for the error text (exposed as an accessibility alert). */
   errorTestId?: string
+  /**
+   * Underlying text input implementation. Inputs rendered inside a bottom
+   * sheet pass the sheet-aware `BottomSheetTextInput` so focus registers with
+   * the sheet's keyboard state; defaults to RN's TextInput.
+   */
+  textInputComponent?: ComponentType<InputComponentProps>
 }
 
 export function Input({
@@ -24,11 +42,13 @@ export function Input({
   trailingIcon,
   containerClassName,
   errorTestId,
+  textInputComponent,
   style,
   ...textInputProps
 }: InputProps) {
   const hasError = Boolean(error)
   const borderColor = hasError ? 'border-destructive' : 'border-border'
+  const TextInputComponent = textInputComponent ?? TextInput
 
   return (
     <View className={cn('gap-1.5', containerClassName)}>
@@ -48,7 +68,7 @@ export function Input({
           />
         )}
 
-        <TextInput
+        <TextInputComponent
           className={cn('flex-1 bg-card border rounded-lg px-4 py-3 text-foreground', borderColor)}
           placeholder={placeholder || (label ? `Enter ${label.toLowerCase()}` : '')}
           placeholderTextColorClassName="accent-muted-foreground"

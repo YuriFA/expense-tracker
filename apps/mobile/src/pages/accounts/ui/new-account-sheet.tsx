@@ -11,10 +11,10 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
+  BottomSheetInput,
   BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
 import { Text } from '@/shared/ui/text'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
@@ -68,7 +68,7 @@ export function NewAccountSheet({ ref }: NewAccountSheetProps) {
       <BottomSheetView testID="accounts-new-sheet">
         <BottomSheetHeader title="Новый счёт" />
         <BottomSheetBody className="gap-4">
-          <Input
+          <BottomSheetInput
             label="Название"
             placeholder="Например, Карта"
             value={name}
@@ -94,7 +94,7 @@ export function NewAccountSheet({ ref }: NewAccountSheetProps) {
             </View>
           </View>
 
-          <Input
+          <BottomSheetInput
             label="Начальный баланс"
             placeholder="0,00"
             value={openingBalance}

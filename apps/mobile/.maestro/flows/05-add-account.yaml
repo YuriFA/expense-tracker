@@ -1,14 +1,9 @@
-# TODO(sheet-e2e): KNOWN-FAILING - typing into sheet inputs is unstable in
-# Expo Go e2e (inputs invisible to the accessibility tree inside modals +
-# keyboard lift shifting measured tap points; see the TODO in
-# src/shared/ui/bottom-sheet/bottom-sheet.tsx). The covered behavior is
-# unit/component-tested in jest; revisit once sheet inputs become e2e-stable.
 # Accounts tab: create an account (name / currency / opening balance in
 # major units) and see it listed with its balance.
 #
-# NOTE on coordinates: inside bottom sheets Expo Go exposes only explicitly
-# accessible elements (buttons/chips) to the accessibility tree, so the text
-# inputs are focused by POINT (measured sheet geometry) instead of id.
+# Sheet inputs are targeted by id: the shared BottomSheet opts out of
+# @gorhom's default accessible container, which used to hide TextInputs from
+# the accessibility tree (see src/shared/ui/bottom-sheet/bottom-sheet.tsx).
 # Success is asserted behaviorally: the sheet closes and the row appears.
 appId: com.anonymous.mobile
 tags:
@@ -26,17 +21,17 @@ tags:
 - assertVisible:
     id: accounts-new-sheet
 
-# Currency first (no keyboard yet), then name and opening balance - all
-# fields sit above the keyboard line on the 75% sheet. The final currency
-# tap dismisses the keyboard so the submit button is reachable.
 - tapOn:
     id: accounts-create-currency-USD
 - tapOn:
-    point: 50%, 27%
+    id: accounts-create-name
 - inputText: 'Карта'
 - tapOn:
-    point: 50%, 45%
+    id: accounts-create-opening-balance
 - inputText: '100.50'
+# Re-tap the (already selected) currency to blur the field and put the
+# keyboard away - Maestro's hideKeyboard cannot dismiss the keyboard over a
+# BottomSheetTextInput inside the sheet.
 - tapOn:
     id: accounts-create-currency-USD
 - tapOn:

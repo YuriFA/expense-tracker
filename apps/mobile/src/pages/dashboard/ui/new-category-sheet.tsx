@@ -7,11 +7,11 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
+  BottomSheetInput,
   BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
 import { Icon } from '@/shared/ui/icon'
-import { Input } from '@/shared/ui/input'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
@@ -69,7 +69,7 @@ export function NewCategorySheet({ ref }: NewCategorySheetProps) {
       <BottomSheetView testID="home-new-category-sheet">
         <BottomSheetHeader title="Новая категория" />
         <BottomSheetBody className="gap-4">
-          <Input
+          <BottomSheetInput
             label="Название"
             placeholder="Например, Транспорт"
             value={name}

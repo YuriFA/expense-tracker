@@ -50,12 +50,13 @@ export type BottomSheetProps = Omit<
   enableDynamicSizing?: boolean
 }
 
-// TODO(sheet-e2e): typing into sheet inputs in Expo Go e2e is unstable:
-// (a) inputs are not exposed to the accessibility tree inside modals (flows
-// tap them by measured POINT), (b) the default `keyboardBehavior:
-// 'interactive'` lifts the sheet while the keyboard is up, shifting those
-// measured points ('none' is not a valid @gorhom v5 value). If this needs
-// stabilizing, consider fixed-position inputs or custom keyboard handling.
+// @gorhom v5 defaults the sheet content wrapper to `accessible` +
+// role 'adjustable' + label 'Bottom Sheet'. On iOS that single accessible
+// container swallows every non-accessible descendant — plain Text and
+// TextInput vanish from the accessibility tree (Maestro ids, VoiceOver),
+// while elements with their own accessibility role (buttons/chips) survive.
+// Opting out exposes the real content; the sheet loses only the
+// VoiceOver "adjustable" snap-point semantic, which no sheet here relies on.
 export const BottomSheet = ({
   snapPoints = ['50%'],
   enablePanDownToClose = true,
@@ -110,6 +111,7 @@ export const BottomSheet = ({
       snapPoints={memoizedSnapPoints}
       enableDynamicSizing={enableDynamicSizing}
       enablePanDownToClose={enablePanDownToClose}
+      accessible={false}
       backdropComponent={renderBackdrop}
       {...props}
     >
