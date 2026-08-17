@@ -283,6 +283,7 @@ export function CreateTransactionForm({
         <Button
           text="Сохранить"
           loading={form.formState.isSubmitting || createTransaction.isPending}
+          disabled={createTransaction.isPending}
           onPress={form.handleSubmit(handleSubmit)}
         />
       </View>
@@ -493,6 +494,7 @@ export function CreateTransactionForm({
         <Button
           text="Сохранить"
           loading={form.formState.isSubmitting || createTransaction.isPending}
+          disabled={createTransaction.isPending}
           onPress={form.handleSubmit(handleSubmit)}
         />
       </View>
@@ -504,6 +506,11 @@ export function CreateTransactionForm({
 The sheet owns its lifecycle. The form owns its state and submission. The
 form does not need to know that it happens to be rendered inside a
 BottomSheet — no sheet refs, snap points, or dismissal logic leak into it.
+
+One wiring consequence: @gorhom mounts a modal's content under the
+`BottomSheetModalProvider` host, not under the screen that opened it, so the
+host must sit INSIDE the app's data providers (repository/query contexts) —
+`src/app/_layout.tsx` does this — or portaled forms lose their contexts.
 Its text fields already use `BottomSheetInput` (see section 2), which is what
 makes the no-changes reuse possible: keyboard handling is a property of the
 input variant, not of the form. Text inputs rendered inside a sheet MUST use
@@ -626,14 +633,25 @@ const handleSubmit = async (values: CreateTransactionFormValues) => {
 }
 ```
 
-Render the form-level error above the submit control, with `role="alert"` so
-it is announced:
+Render the form-level error above the submit control with `FormError`
+(`@/shared/ui/form`) — it renders nothing while its children are empty and
+announces shown messages via `accessibilityRole="alert"`:
 
 ```tsx
-{form.formState.errors.root?.message != null && (
-  <Text role="alert">{form.formState.errors.root?.message}</Text>
-)}
+<FormError testID="create-transaction-error">
+  {form.formState.errors.root?.message}
+</FormError>
 ```
+
+Error testIDs (the pattern every migrated form follows):
+
+- Field errors render in the field's `FormField` as
+  `<form-prefix>-<field>-error` (e.g. `login-email-error`,
+  `new-transaction-amount-error`), next to a `text-destructive` label tint
+  and `invalid` on the input.
+- The form-level (root/server) error reuses the screen's aggregate testID
+  (e.g. `login-error-text`, `accounts-create-error`,
+  `new-transaction-error`) near the submit control.
 
 - `form.setError('root', …)` writes RHF's form-level error slot; field-level
   errors keep coming from the Zod schema via the resolver.

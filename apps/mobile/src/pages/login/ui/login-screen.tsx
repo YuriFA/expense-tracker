@@ -1,36 +1,30 @@
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { router } from 'expo-router'
 import { Button } from '@/shared/ui/button'
-import { FormField, FormLabel } from '@/shared/ui/form'
+import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
 import { Screen } from '@/shared/ui/screen'
 import { Text } from '@/shared/ui/text'
 import { useAuth } from '@/entities/session'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
+import { loginSchema, type LoginFormValues } from '../model/schema'
 
 export function LoginScreen() {
   const { login } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      setError('Введите email и пароль')
-      return
-    }
-    setIsLoading(true)
-    setError(null)
+  const handleSubmit = async ({ email, password }: LoginFormValues) => {
     try {
       const result = await login(email.trim(), password)
       if (result.ok) router.back()
       // A cancelled ownership takeover stays on this screen by design.
     } catch (cause) {
-      setError(getRepositoryErrorText(cause))
-    } finally {
-      setIsLoading(false)
+      form.setError('root', { message: getRepositoryErrorText(cause) })
     }
   }
 
@@ -45,42 +39,61 @@ export function LoginScreen() {
         </View>
 
         <View className="gap-4">
-          <FormField>
-            <FormLabel>Email</FormLabel>
-            <Input
-              placeholder="Введите email"
-              value={email}
-              onChangeText={setEmail}
-              leadingIcon="mail"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              testID="login-email-input"
-            />
-          </FormField>
+          <Controller
+            control={form.control}
+            name="email"
+            render={({ field, fieldState }) => (
+              <FormField>
+                <FormLabel className={fieldState.error ? 'text-destructive' : undefined}>
+                  Email
+                </FormLabel>
+                <Input
+                  placeholder="Введите email"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  leadingIcon="mail"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  invalid={Boolean(fieldState.error)}
+                  testID="login-email-input"
+                />
+                <FormError testID="login-email-error">{fieldState.error?.message}</FormError>
+              </FormField>
+            )}
+          />
 
-          <FormField>
-            <FormLabel>Пароль</FormLabel>
-            <Input
-              placeholder="Введите пароль"
-              value={password}
-              onChangeText={setPassword}
-              leadingIcon="lock-closed"
-              secureTextEntry
-              testID="login-password-input"
-            />
-          </FormField>
+          <Controller
+            control={form.control}
+            name="password"
+            render={({ field, fieldState }) => (
+              <FormField>
+                <FormLabel className={fieldState.error ? 'text-destructive' : undefined}>
+                  Пароль
+                </FormLabel>
+                <Input
+                  placeholder="Введите пароль"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  leadingIcon="lock-closed"
+                  secureTextEntry
+                  invalid={Boolean(fieldState.error)}
+                  testID="login-password-input"
+                />
+                <FormError testID="login-password-error">{fieldState.error?.message}</FormError>
+              </FormField>
+            )}
+          />
 
-          {error ? (
-            <Text variant="body-sm" className="text-destructive" testID="login-error-text">
-              {error}
-            </Text>
-          ) : null}
+          <FormError testID="login-error-text">{form.formState.errors.root?.message}</FormError>
 
           <Button
             variant="primary"
             text="Войти"
-            onPress={handleLogin}
-            loading={isLoading}
+            loading={form.formState.isSubmitting}
+            disabled={form.formState.isSubmitting}
+            onPress={form.handleSubmit(handleSubmit)}
             testID="login-submit-button"
           />
         </View>

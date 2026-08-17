@@ -106,23 +106,35 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
   )
 }
 
+/**
+ * The @gorhom modal host must sit INSIDE the data providers: a sheet's form
+ * component mounts under this host (not under the screen that opened it), so
+ * placing `BottomSheetProvider` above the repositories would cut portaled
+ * forms off from their repository/query contexts (conventions forms.md §3).
+ */
+function AppShellProviders({ children }: { children: React.ReactNode }) {
+  return (
+    <AppDataProviders>
+      <StatusBar style="auto" />
+      <UniwindInsetsBridge />
+      <BottomSheetProvider>{children}</BottomSheetProvider>
+    </AppDataProviders>
+  )
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <BottomSheetProvider>
-          <AppDataProviders>
-            <StatusBar style="auto" />
-            <UniwindInsetsBridge />
-            <Stack>
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              {/* Placeholder destinations for the Home quick actions. */}
-              <Stack.Screen name="income" options={{ headerShown: false }} />
-              <Stack.Screen name="goals" options={{ headerShown: false }} />
-            </Stack>
-          </AppDataProviders>
-        </BottomSheetProvider>
+        <AppShellProviders>
+          <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            {/* Placeholder destinations for the Home quick actions. */}
+            <Stack.Screen name="income" options={{ headerShown: false }} />
+            <Stack.Screen name="goals" options={{ headerShown: false }} />
+          </Stack>
+        </AppShellProviders>
       </ThemeProvider>
     </GestureHandlerRootView>
   )

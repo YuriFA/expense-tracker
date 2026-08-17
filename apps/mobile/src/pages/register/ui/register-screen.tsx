@@ -1,46 +1,30 @@
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
 import { router } from 'expo-router'
 import { Button } from '@/shared/ui/button'
-import { FormField, FormLabel } from '@/shared/ui/form'
+import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
 import { Screen } from '@/shared/ui/screen'
 import { Text } from '@/shared/ui/text'
 import { useAuth } from '@/entities/session'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
-
-const MIN_PASSWORD_LENGTH = 8
+import { MIN_PASSWORD_LENGTH, registerSchema, type RegisterFormValues } from '../model/schema'
 
 export function RegisterScreen() {
   const { register } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { email: '', password: '', confirmPassword: '' },
+  })
 
-  const handleRegister = async () => {
-    if (!email.trim() || !password) {
-      setError('Введите email и пароль')
-      return
-    }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Пароль должен содержать минимум ${MIN_PASSWORD_LENGTH} символов`)
-      return
-    }
-    if (password !== confirmPassword) {
-      setError('Пароли не совпадают')
-      return
-    }
-    setIsLoading(true)
-    setError(null)
+  const handleSubmit = async ({ email, password }: RegisterFormValues) => {
     try {
       const result = await register(email.trim(), password)
       if (result.ok) router.back()
+      // A cancelled ownership takeover stays on this screen by design.
     } catch (cause) {
-      setError(getRepositoryErrorText(cause))
-    } finally {
-      setIsLoading(false)
+      form.setError('root', { message: getRepositoryErrorText(cause) })
     }
   }
 
@@ -55,54 +39,84 @@ export function RegisterScreen() {
         </View>
 
         <View className="gap-4">
-          <FormField>
-            <FormLabel>Email</FormLabel>
-            <Input
-              placeholder="Введите email"
-              value={email}
-              onChangeText={setEmail}
-              leadingIcon="mail"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              testID="register-email-input"
-            />
-          </FormField>
+          <Controller
+            control={form.control}
+            name="email"
+            render={({ field, fieldState }) => (
+              <FormField>
+                <FormLabel className={fieldState.error ? 'text-destructive' : undefined}>
+                  Email
+                </FormLabel>
+                <Input
+                  placeholder="Введите email"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  leadingIcon="mail"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  invalid={Boolean(fieldState.error)}
+                  testID="register-email-input"
+                />
+                <FormError testID="register-email-error">{fieldState.error?.message}</FormError>
+              </FormField>
+            )}
+          />
 
-          <FormField>
-            <FormLabel>Пароль</FormLabel>
-            <Input
-              placeholder={`Минимум ${MIN_PASSWORD_LENGTH} символов`}
-              value={password}
-              onChangeText={setPassword}
-              leadingIcon="lock-closed"
-              secureTextEntry
-              testID="register-password-input"
-            />
-          </FormField>
+          <Controller
+            control={form.control}
+            name="password"
+            render={({ field, fieldState }) => (
+              <FormField>
+                <FormLabel className={fieldState.error ? 'text-destructive' : undefined}>
+                  Пароль
+                </FormLabel>
+                <Input
+                  placeholder={`Минимум ${MIN_PASSWORD_LENGTH} символов`}
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  leadingIcon="lock-closed"
+                  secureTextEntry
+                  invalid={Boolean(fieldState.error)}
+                  testID="register-password-input"
+                />
+                <FormError testID="register-password-error">{fieldState.error?.message}</FormError>
+              </FormField>
+            )}
+          />
 
-          <FormField>
-            <FormLabel>Повторите пароль</FormLabel>
-            <Input
-              placeholder="Введите пароль ещё раз"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              leadingIcon="lock-closed"
-              secureTextEntry
-              testID="register-confirm-input"
-            />
-          </FormField>
+          <Controller
+            control={form.control}
+            name="confirmPassword"
+            render={({ field, fieldState }) => (
+              <FormField>
+                <FormLabel className={fieldState.error ? 'text-destructive' : undefined}>
+                  Повторите пароль
+                </FormLabel>
+                <Input
+                  placeholder="Введите пароль ещё раз"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  leadingIcon="lock-closed"
+                  secureTextEntry
+                  invalid={Boolean(fieldState.error)}
+                  testID="register-confirm-input"
+                />
+                <FormError testID="register-confirm-error">{fieldState.error?.message}</FormError>
+              </FormField>
+            )}
+          />
 
-          {error ? (
-            <Text variant="body-sm" className="text-destructive" testID="register-error-text">
-              {error}
-            </Text>
-          ) : null}
+          <FormError testID="register-error-text">{form.formState.errors.root?.message}</FormError>
 
           <Button
             variant="primary"
             text="Зарегистрироваться"
-            onPress={handleRegister}
-            loading={isLoading}
+            loading={form.formState.isSubmitting}
+            disabled={form.formState.isSubmitting}
+            onPress={form.handleSubmit(handleSubmit)}
             testID="register-submit-button"
           />
         </View>

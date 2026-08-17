@@ -21,6 +21,13 @@ tags:
 - assertVisible:
     id: accounts-new-sheet
 
+# Submit-driven validation: the opening balance (empty here - unparseable)
+# gains the field-level error affordance it lacked before the migration.
+- tapOn:
+    id: accounts-create-submit
+- assertVisible:
+    id: accounts-create-opening-balance-error
+
 - tapOn:
     id: accounts-create-currency-USD
 - tapOn:

@@ -24,6 +24,13 @@ tags:
 - assertVisible:
     id: new-transaction-sheet
 
+# Submit-driven validation: tapping save with an empty amount shows the
+# per-field error instead of a dead disabled button (pending-only disabling).
+- tapOn:
+    id: new-transaction-submit
+- assertVisible:
+    id: new-transaction-amount-error
+
 - tapOn:
     id: new-transaction-account-.*
     index: 0
