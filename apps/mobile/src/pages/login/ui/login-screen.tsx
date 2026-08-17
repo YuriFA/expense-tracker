@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import { router } from 'expo-router'
 import { Button } from '@/shared/ui/button'
+import { FormField, FormLabel } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
 import { Screen } from '@/shared/ui/screen'
 import { Text } from '@/shared/ui/text'
@@ -44,26 +45,30 @@ export function LoginScreen() {
         </View>
 
         <View className="gap-4">
-          <Input
-            label="Email"
-            placeholder="Введите email"
-            value={email}
-            onChangeText={setEmail}
-            leadingIcon="mail"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            testID="login-email-input"
-          />
+          <FormField>
+            <FormLabel>Email</FormLabel>
+            <Input
+              placeholder="Введите email"
+              value={email}
+              onChangeText={setEmail}
+              leadingIcon="mail"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              testID="login-email-input"
+            />
+          </FormField>
 
-          <Input
-            label="Пароль"
-            placeholder="Введите пароль"
-            value={password}
-            onChangeText={setPassword}
-            leadingIcon="lock-closed"
-            secureTextEntry
-            testID="login-password-input"
-          />
+          <FormField>
+            <FormLabel>Пароль</FormLabel>
+            <Input
+              placeholder="Введите пароль"
+              value={password}
+              onChangeText={setPassword}
+              leadingIcon="lock-closed"
+              secureTextEntry
+              testID="login-password-input"
+            />
+          </FormField>
 
           {error ? (
             <Text variant="body-sm" className="text-destructive" testID="login-error-text">

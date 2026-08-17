@@ -11,6 +11,7 @@ import {
   BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
+import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
@@ -69,15 +70,17 @@ export function NewCategorySheet({ ref }: NewCategorySheetProps) {
       <BottomSheetView testID="home-new-category-sheet">
         <BottomSheetHeader title="Новая категория" />
         <BottomSheetBody className="gap-4">
-          <BottomSheetInput
-            label="Название"
-            placeholder="Например, Транспорт"
-            value={name}
-            onChangeText={setName}
-            error={error}
-            errorTestId="home-new-category-error"
-            testID="home-new-category-name"
-          />
+          <FormField>
+            <FormLabel className={error ? 'text-destructive' : undefined}>Название</FormLabel>
+            <BottomSheetInput
+              placeholder="Например, Транспорт"
+              value={name}
+              onChangeText={setName}
+              invalid={Boolean(error)}
+              testID="home-new-category-name"
+            />
+            <FormError testID="home-new-category-error">{error}</FormError>
+          </FormField>
 
           <View className="flex-row gap-2">
             <Button

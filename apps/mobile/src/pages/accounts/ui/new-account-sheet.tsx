@@ -15,6 +15,7 @@ import {
   BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
+import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Text } from '@/shared/ui/text'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
@@ -68,15 +69,17 @@ export function NewAccountSheet({ ref }: NewAccountSheetProps) {
       <BottomSheetView testID="accounts-new-sheet">
         <BottomSheetHeader title="Новый счёт" />
         <BottomSheetBody className="gap-4">
-          <BottomSheetInput
-            label="Название"
-            placeholder="Например, Карта"
-            value={name}
-            onChangeText={setName}
-            error={error}
-            errorTestId="accounts-create-error"
-            testID="accounts-create-name"
-          />
+          <FormField>
+            <FormLabel className={error ? 'text-destructive' : undefined}>Название</FormLabel>
+            <BottomSheetInput
+              placeholder="Например, Карта"
+              value={name}
+              onChangeText={setName}
+              invalid={Boolean(error)}
+              testID="accounts-create-name"
+            />
+            <FormError testID="accounts-create-error">{error}</FormError>
+          </FormField>
 
           <View className="gap-2">
             <Text variant="label">Валюта</Text>
@@ -94,14 +97,16 @@ export function NewAccountSheet({ ref }: NewAccountSheetProps) {
             </View>
           </View>
 
-          <BottomSheetInput
-            label="Начальный баланс"
-            placeholder="0,00"
-            value={openingBalance}
-            onChangeText={setOpeningBalance}
-            keyboardType="decimal-pad"
-            testID="accounts-create-opening-balance"
-          />
+          <FormField>
+            <FormLabel>Начальный баланс</FormLabel>
+            <BottomSheetInput
+              placeholder="0,00"
+              value={openingBalance}
+              onChangeText={setOpeningBalance}
+              keyboardType="decimal-pad"
+              testID="accounts-create-opening-balance"
+            />
+          </FormField>
 
           <Button
             variant="primary"

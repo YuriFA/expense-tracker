@@ -1,6 +1,5 @@
 import { TextInput, type TextInputProps, View } from 'react-native'
 import type { ComponentType } from 'react'
-import { Text } from '../text'
 import { Icon, type IconName } from '../icon'
 import { cn } from '@/shared/lib/utils'
 
@@ -16,15 +15,10 @@ export type InputComponentProps = TextInputProps & {
 }
 
 export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'> {
-  label?: string
-  placeholder?: string
-  error?: string
-  helperText?: string
+  /** Visual invalid state: destructive border and icon tint. The validation message itself is rendered by `FormError`. */
+  invalid?: boolean
   leadingIcon?: IconName
   trailingIcon?: IconName
-  containerClassName?: string
-  /** testID for the error text (exposed as an accessibility alert). */
-  errorTestId?: string
   /**
    * Underlying text input implementation. Inputs rendered inside a bottom
    * sheet pass the sheet-aware `BottomSheetTextInput` so focus registers with
@@ -33,74 +27,40 @@ export interface InputProps extends Omit<TextInputProps, 'placeholderTextColor'>
   textInputComponent?: ComponentType<InputComponentProps>
 }
 
+/**
+ * Text input primitive: the control itself, its intrinsic accessories
+ * (leading/trailing icons), and its visual states. Form presentation — label
+ * and validation message — composes around it via `shared/ui/form`.
+ */
 export function Input({
-  label,
-  placeholder,
-  error,
-  helperText,
+  invalid = false,
   leadingIcon,
   trailingIcon,
-  containerClassName,
-  errorTestId,
   textInputComponent,
   style,
   ...textInputProps
 }: InputProps) {
-  const hasError = Boolean(error)
-  const borderColor = hasError ? 'border-destructive' : 'border-border'
+  const iconColorClassName = invalid ? 'accent-destructive' : 'accent-muted-foreground'
   const TextInputComponent = textInputComponent ?? TextInput
 
   return (
-    <View className={cn('gap-1.5', containerClassName)}>
-      {label && (
-        <Text variant="label" className={hasError ? 'text-destructive' : ''}>
-          {label}
-        </Text>
+    <View className="flex-row items-center">
+      {leadingIcon && (
+        <Icon name={leadingIcon} size={20} colorClassName={iconColorClassName} className="mr-3" />
       )}
 
-      <View className="flex-row items-center">
-        {leadingIcon && (
-          <Icon
-            name={leadingIcon}
-            size={20}
-            colorClassName={hasError ? 'accent-destructive' : 'accent-muted-foreground'}
-            className="mr-3"
-          />
-        )}
+      <TextInputComponent
+        className={cn('flex-1 bg-card border rounded-lg px-4 py-3 text-foreground', {
+          'border-destructive': invalid,
+          'border-border': !invalid,
+        })}
+        placeholderTextColorClassName="accent-muted-foreground"
+        style={style}
+        {...textInputProps}
+      />
 
-        <TextInputComponent
-          className={cn('flex-1 bg-card border rounded-lg px-4 py-3 text-foreground', borderColor)}
-          placeholder={placeholder || (label ? `Enter ${label.toLowerCase()}` : '')}
-          placeholderTextColorClassName="accent-muted-foreground"
-          style={style}
-          {...textInputProps}
-        />
-
-        {trailingIcon && (
-          <Icon
-            name={trailingIcon}
-            size={20}
-            colorClassName={hasError ? 'accent-destructive' : 'accent-muted-foreground'}
-            className="ml-3"
-          />
-        )}
-      </View>
-
-      {error && (
-        <Text
-          variant="caption"
-          className="text-destructive"
-          accessibilityRole="alert"
-          testID={errorTestId}
-        >
-          {error}
-        </Text>
-      )}
-
-      {helperText && !error && (
-        <Text variant="caption" className="text-muted-foreground">
-          {helperText}
-        </Text>
+      {trailingIcon && (
+        <Icon name={trailingIcon} size={20} colorClassName={iconColorClassName} className="ml-3" />
       )}
     </View>
   )

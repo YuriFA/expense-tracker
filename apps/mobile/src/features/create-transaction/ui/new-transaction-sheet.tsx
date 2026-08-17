@@ -16,6 +16,7 @@ import {
   BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
+import { FormField, FormLabel } from '@/shared/ui/form'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
@@ -150,14 +151,16 @@ export function NewTransactionSheet({ ref, kind }: NewTransactionSheetProps) {
       <BottomSheetView testID="new-transaction-sheet">
         <BottomSheetHeader title={KIND_TITLES[kind]} />
         <BottomSheetBody className="gap-4">
-          <BottomSheetInput
-            label="Сумма"
-            placeholder="0,00"
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="decimal-pad"
-            testID="new-transaction-amount"
-          />
+          <FormField>
+            <FormLabel>Сумма</FormLabel>
+            <BottomSheetInput
+              placeholder="0,00"
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+              testID="new-transaction-amount"
+            />
+          </FormField>
 
           {kind === 'transfer' ? (
             <>

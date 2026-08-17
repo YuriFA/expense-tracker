@@ -44,6 +44,7 @@ import { View } from 'react-native'
 
 import { CurrencySelector } from '@/entities/account/ui/currency-selector'
 import { Button } from '@/shared/ui/button'
+import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
 
 import {
@@ -77,13 +78,18 @@ export function CreateAccountForm({ onSuccess }: CreateAccountFormProps) {
         control={form.control}
         name="name"
         render={({ field, fieldState }) => (
-          <Input
-            label="Название"
-            value={field.value}
-            onChangeText={field.onChange}
-            onBlur={field.onBlur}
-            error={fieldState.error?.message}
-          />
+          <FormField>
+            <FormLabel className={fieldState.error ? 'text-destructive' : undefined}>
+              Название
+            </FormLabel>
+            <Input
+              value={field.value}
+              onChangeText={field.onChange}
+              onBlur={field.onBlur}
+              invalid={Boolean(fieldState.error)}
+            />
+            <FormError>{fieldState.error?.message}</FormError>
+          </FormField>
         )}
       />
 
@@ -291,6 +297,7 @@ ui/amount-field.tsx
 import { Controller, useFormContext } from 'react-hook-form'
 
 import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
+import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 
 import type { CreateTransactionFormValues } from '../model/schema'
 
@@ -302,14 +309,17 @@ export function AmountField() {
       control={control}
       name="amount"
       render={({ field, fieldState }) => (
-        <BottomSheetInput
-          label="Сумма"
-          value={field.value}
-          onChangeText={field.onChange}
-          onBlur={field.onBlur}
-          keyboardType="decimal-pad"
-          error={fieldState.error?.message}
-        />
+        <FormField>
+          <FormLabel className={fieldState.error ? 'text-destructive' : undefined}>Сумма</FormLabel>
+          <BottomSheetInput
+            value={field.value}
+            onChangeText={field.onChange}
+            onBlur={field.onBlur}
+            keyboardType="decimal-pad"
+            invalid={Boolean(fieldState.error)}
+          />
+          <FormError>{fieldState.error?.message}</FormError>
+        </FormField>
       )}
     />
   )
