@@ -33,7 +33,14 @@
       "ignoreBinaries": [
         "maestro"
       ],
-      "ignoreDependencies": ["expo-updates", "expo-system-ui"],
+      // adopt-rhf-zod-forms: remove when the first form imports them
+      "ignoreDependencies": [
+        "react-hook-form",
+        "zod",
+        "@hookform/resolvers",
+        "expo-updates",
+        "expo-system-ui"
+      ],
       "ignoreIssues": {
         "src/shared/ui/**": [
           "exports",

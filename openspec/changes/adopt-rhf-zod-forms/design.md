@@ -168,6 +168,25 @@ Until the first form migrates, `react-hook-form`, `zod`, and
 `ignoreDependencies` with a comment referencing this change; the entry is
 removed by the change that first imports them.
 
+### D11. Mutually exclusive form variants: discriminated union, no non-null assertions
+
+A form with several mutually exclusive modes — the transaction
+expense/income/transfer sheet being the canonical case — models its form
+values as `z.discriminatedUnion('kind', [...])` with one `z.object()` per
+mode sharing the discriminator literal, never as a single `z.object()` padded
+with `optional()` fields for every mode's extras. The flattened shape loses
+the invariant "these fields exist together in this mode" and pushes it into
+hand-rolled `canSubmit`/conditional logic. With the discriminated union, the
+resolver's parsed values carry the invariant: narrowing on `values.kind`
+yields the mode-specific fields as plain required values, so mode-specific
+handling must not use non-null assertions (`values.toAccountId!`) or
+defensive re-validation in the handler — the Zod schema and its inferred
+types are the single expression of the invariant. A mode change is a form
+re-initialization with that mode's defaults (D6's explicit reset rule); the
+payload mapper switches on the same discriminator. Applies to new forms and
+to existing multi-mode forms when their migrating change touches them — no
+form is migrated by this change.
+
 ## Risks / Trade-offs
 
 - [Three unused dependencies until the first migration] → Temporary knip

@@ -77,7 +77,9 @@ Do not name an internal handler onPress merely because it is passed to
 
 ## Forms
 
-Forms use React Hook Form + Zod. Don't hand-roll non-trivial forms with independent `useState` per field/error/touched flag — use `useForm({ resolver: zodResolver(schema), defaultValues })` for field values, validation, touched/dirty state, submit state, and field/server errors. Plain `useState` remains right for non-form UI state: open/closed, selected view mode, animation, temporary toggles.
+Forms use React Hook Form + Zod. The stack — `react-hook-form` + `zod` + `@hookform/resolvers` (`zodResolver`) — was formally adopted by the `adopt-rhf-zod-forms` OpenSpec change and is installed in `package.json`. Canonical worked examples (page form, FormProvider composite, Bottom Sheet split, values-vs-payload mapper, server-error pattern) live in `docs/conventions/forms.md` — follow them; don't re-derive the patterns here.
+
+Don't hand-roll non-trivial forms with independent `useState` per field/error/touched flag — use `useForm({ resolver: zodResolver(schema), defaultValues })` for field values, validation, touched/dirty state, submit state, and field/server errors. Plain `useState` remains right for non-form UI state (open/closed, selected view mode, animation, temporary toggles) and for simple isolated controls that are not meaningfully a form (e.g. a search filter).
 
 ### Form schema location
 
@@ -87,9 +89,32 @@ For a page-local form, co-locate the schema with the form when it has no
 meaningful reuse. Infer form value types from the Zod schema instead of
 duplicating them manually unless a separate type is genuinely needed.
 
+### Money fields
+
+Amount fields stay strings in form values (major units, locale decimal
+separator allowed). The Zod schema only checks parseability via
+`parseMajorUnitsToMinor` (`@/shared/lib/money/parse`); the conversion to
+int64 minor units happens in the named values-to-payload mapper at the
+submission boundary — never in the schema, never via `Number()` float math.
+Worked example: `docs/conventions/forms.md` §2 and §4.
+
+### Multi-mode forms
+
+Forms with mutually exclusive modes (e.g. transaction expense/income/transfer)
+model their values as `z.discriminatedUnion('kind', [...])` — one object per
+mode sharing the discriminator — not a single `z.object()` padded with
+`optional()` fields for every mode's extras. The mode invariant is expressed
+by the schema and its inferred types: narrow on the discriminator
+(`values.kind === 'transfer'`) and never use non-null assertions (`!`) or
+defensive re-validation for mode-specific fields. A mode change re-initializes
+the form with that mode's defaults. Worked example:
+`docs/conventions/forms.md` §2.
+
 ### Form submission
 
 `form.handleSubmit(handleSubmit)` can be passed inline to `onPress`, or extracted first as `const handleFormSubmit = form.handleSubmit(handleSubmit)`. Prefer extracting it when the submit handler is reused, passed to another component, or the inline expression makes JSX noisy. Keep the naming distinction clear — `handleSubmit` is the business-logic handler, `handleFormSubmit` is RHF's wrapped version — and don't add another `handlePress` wrapper around `form.handleSubmit(...)` unless there's real additional behavior.
+
+On repository/mutation failure, surface a form-level error via `form.setError('root', { message: getRepositoryErrorText(error) })` from `@/shared/lib/data/repository-errors-ru` (code-keyed, never HTTP-status-keyed) and keep entered values for retry. While a submission is pending, block the submit control (`formState.isSubmitting` / mutation `isPending`) so double taps cannot re-submit. Worked example: `docs/conventions/forms.md` §5.
 
 ### `Controller` and custom fields
 
@@ -104,20 +129,7 @@ Direct field props are fine for small/simple forms. Prefer `FormProvider` + `use
 
 ### Forms inside Bottom Sheets
 
-A Bottom Sheet is a presentation/container component; the form stays a normal, independent form component owning its own `useForm()` — don't put all fields, validation, and submission logic directly into the Bottom Sheet container:
-
-```tsx
-function NewTransactionSheet({ ref, kind }: Props) {
-  return (
-    <BottomSheet ref={ref}>
-      <BottomSheetHeader title="Новая транзакция" />
-      <BottomSheetBody>
-        <NewTransactionForm kind={kind} />
-      </BottomSheetBody>
-    </BottomSheet>
-  )
-}
-```
+A Bottom Sheet is a presentation/container component; the form stays a normal, independent form component owning its own `useForm()` — don't put all fields, validation, and submission logic directly into the Bottom Sheet container. Worked example (container/form split, sheet-aware inputs, reset lifecycle): `docs/conventions/forms.md` §3.
 
 The Bottom Sheet should own presentation concerns (ref, snap points,
 dismissal, header, container layout). The form should own field state,
