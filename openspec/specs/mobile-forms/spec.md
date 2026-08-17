@@ -4,10 +4,9 @@
 
 Defines how user-input forms in the mobile app behave and are structured:
 declarative form state, validation, error surfacing, money parsing, Bottom
-Sheet composition, lifecycle, and testing. These requirements apply to forms
-built on the adopted React Hook Form + Zod standard — new forms, and existing
-forms when the change that next touches them migrates them. Forms not yet
-migrated are out of scope until their migrating change.
+Sheet composition, lifecycle, and testing. These requirements apply to every
+non-trivial form in the mobile app, new and legacy alike, all built on the
+adopted React Hook Form + Zod standard.
 
 ## Requirements
 
