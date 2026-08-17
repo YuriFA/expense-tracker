@@ -23,10 +23,20 @@ ephemeral controls or isolated inputs that are not meaningfully a form (and
 non-form UI state such as open/closed flags or view modes) MAY use local
 React state.
 
+Every non-trivial user-input form in `apps/mobile` SHALL conform to this
+requirement — including the previously hand-rolled login, register,
+account-creation, category-creation, and transaction-creation forms. No form
+is exempt as "not yet migrated"; the migration grandfathering is retired.
+
 #### Scenario: New non-trivial form is built on the standard stack
 
 - **WHEN** a new form with validation or a submission flow is implemented in `apps/mobile`
 - **THEN** its field values, validation, touched/dirty state, submit state, and field/form errors are owned by React Hook Form with a Zod schema, with no per-field/error/touched `useState` form state
+
+#### Scenario: Legacy forms run on the standard stack
+
+- **WHEN** the login, register, account-creation, category-creation, or transaction-creation form is exercised in `apps/mobile`
+- **THEN** its field values, validation, touched/dirty state, submit state, and field/form errors are owned by React Hook Form with a Zod schema, with no per-field/error/touched `useState` form state and no aggregate error string standing in for per-field validation
 
 #### Scenario: Simple controls stay local
 
