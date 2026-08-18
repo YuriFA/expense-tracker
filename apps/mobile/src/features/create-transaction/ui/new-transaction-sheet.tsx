@@ -30,7 +30,8 @@ export function NewTransactionSheet({ ref, kind }: NewTransactionSheetProps) {
     <BottomSheet
       ref={ref}
       testID="new-transaction-sheet"
-      snapPoints={['90%']}
+      snapPoints={[]}
+      enableDynamicSizing
       backgroundStyle={{ borderRadius: 24 }}
     >
       <BottomSheetView style={{ flex: 1 }} testID="new-transaction-sheet">
