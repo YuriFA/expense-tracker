@@ -14,22 +14,34 @@ const amountField = z
     return parsedAmount !== null && parsedAmount >= 1
   }, 'Некорректная сумма')
 
+// The note is free-form and optional; the date is always constructed by the
+// date controls (quick chips or calendar), never free-typed, so it carries no
+// format validation of its own.
+const noteField = z.string()
+const occurredAtField = z.string().min(1)
+
 export const createTransactionSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('expense'),
     amount: amountField,
+    description: noteField,
+    occurredAt: occurredAtField,
     accountId: z.string().min(1, 'Выберите счёт'),
     categoryId: z.string().min(1, 'Выберите категорию'),
   }),
   z.object({
     kind: z.literal('income'),
     amount: amountField,
+    description: noteField,
+    occurredAt: occurredAtField,
     accountId: z.string().min(1, 'Выберите счёт'),
     categoryId: z.string().min(1, 'Выберите категорию'),
   }),
   z.object({
     kind: z.literal('transfer'),
     amount: amountField,
+    description: noteField,
+    occurredAt: occurredAtField,
     fromAccountId: z.string().min(1, 'Выберите счёт списания'),
     toAccountId: z.string().min(1, 'Выберите счёт зачисления'),
   }),
@@ -37,9 +49,17 @@ export const createTransactionSchema = z.discriminatedUnion('kind', [
 
 export type CreateTransactionFormValues = z.infer<typeof createTransactionSchema>
 
-/** One complete variant per flow kind; a mode change re-initializes with it. */
-export const createTransactionDefaultValues = {
-  expense: { kind: 'expense', amount: '', accountId: '', categoryId: '' },
-  income: { kind: 'income', amount: '', accountId: '', categoryId: '' },
-  transfer: { kind: 'transfer', amount: '', fromAccountId: '', toAccountId: '' },
-} satisfies Record<TransactionFlowKind, CreateTransactionFormValues>
+/** One complete variant for a flow kind; call fresh so `occurredAt` is "now". */
+export function createTransactionDefaultValues(
+  kind: TransactionFlowKind,
+): CreateTransactionFormValues {
+  const base = { amount: '', description: '', occurredAt: new Date().toISOString() }
+  switch (kind) {
+    case 'transfer':
+      return { kind, ...base, fromAccountId: '', toAccountId: '' }
+    case 'income':
+      return { kind, ...base, accountId: '', categoryId: '' }
+    case 'expense':
+      return { kind, ...base, accountId: '', categoryId: '' }
+  }
+}

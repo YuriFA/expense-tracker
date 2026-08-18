@@ -1,15 +1,13 @@
 // The speed-dial create-transaction sheet: presentation-only container
-// (ref, snap points, header, dismiss-on-success). The form - union schema,
-// field components, submission - lives in `new-transaction-form.tsx`
-// (conventions forms.md §2/§3).
+// (ref, snap points, dismiss-on-success). The redesigned near-fullscreen
+// layout - account row(s), the amount display, quick categories, the action
+// row, and the custom keypad pinned to the bottom - lives in
+// `new-transaction-form.tsx` (conventions forms.md §2/§3). There is no title
+// header by design: the account row and the amount open the sheet visually,
+// matching the reference. The kind still comes from the speed dial action.
 
 import { BottomSheetView } from '@gorhom/bottom-sheet'
-import {
-  BottomSheet,
-  BottomSheetBody,
-  BottomSheetHeader,
-  BottomSheetRef,
-} from '@/shared/ui/bottom-sheet'
+import { BottomSheet, BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import type { TransactionFlowKind } from '../model/schema'
 import { NewTransactionForm } from './new-transaction-form'
 
@@ -18,12 +16,6 @@ export type { TransactionFlowKind }
 export interface NewTransactionSheetProps {
   ref: React.Ref<BottomSheetRef>
   kind: TransactionFlowKind
-}
-
-const KIND_TITLES: Record<TransactionFlowKind, string> = {
-  expense: 'Новый расход',
-  income: 'Новый доход',
-  transfer: 'Новый перевод',
 }
 
 export function NewTransactionSheet({ ref, kind }: NewTransactionSheetProps) {
@@ -35,12 +27,14 @@ export function NewTransactionSheet({ ref, kind }: NewTransactionSheetProps) {
   }
 
   return (
-    <BottomSheet ref={ref} testID="new-transaction-sheet" snapPoints={['65%']}>
-      <BottomSheetView testID="new-transaction-sheet">
-        <BottomSheetHeader title={KIND_TITLES[kind]} />
-        <BottomSheetBody>
-          <NewTransactionForm kind={kind} onSuccess={handleSuccess} />
-        </BottomSheetBody>
+    <BottomSheet
+      ref={ref}
+      testID="new-transaction-sheet"
+      snapPoints={['90%']}
+      backgroundStyle={{ borderRadius: 24 }}
+    >
+      <BottomSheetView style={{ flex: 1 }} testID="new-transaction-sheet">
+        <NewTransactionForm kind={kind} onSuccess={handleSuccess} />
       </BottomSheetView>
     </BottomSheet>
   )

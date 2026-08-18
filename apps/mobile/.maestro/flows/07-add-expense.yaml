@@ -1,12 +1,15 @@
-# Speed dial: create an expense end-to-end. Requires an account and an
-# expense category to exist - 05-add-account and 06-add-category create
-# them, so run the suite in order (fresh local database starts empty).
+# Speed dial: create an expense end-to-end through the redesigned keypad
+# sheet. Requires an account and an expense category to exist - 05-add-account
+# and 06-add-category create them, so run the suite in order (fresh local
+# database starts empty).
 #
-# Chips are picked BEFORE typing the amount: with the keyboard up the sheet
-# content reflows (interactive keyboard behavior), so tapping chips first
-# keeps every step at settled geometry. The submit button stays visible
-# above the raised keyboard - Maestro's hideKeyboard cannot dismiss a
-# BottomSheetTextInput keyboard, and taps on chips don't blur the field.
+# The amount is entered ONLY through the custom keypad - the amount is not a
+# TextInput, so the system keyboard never appears for it. There is no
+# inputText step and no keyboard-reflow ordering to work around (the old
+# flow's "chips before amount" workaround is obsolete).
+#
+# The submit stays disabled until account, category, and a positive amount
+# are all set (live validation), so the flow fills them before submitting.
 appId: com.anonymous.mobile
 tags:
   - transactions
@@ -23,23 +26,35 @@ tags:
     id: speed-dial-action-expense
 - assertVisible:
     id: new-transaction-sheet
-
-# Submit-driven validation: tapping save with an empty amount shows the
-# per-field error instead of a dead disabled button (pending-only disabling).
-- tapOn:
-    id: new-transaction-submit
 - assertVisible:
-    id: new-transaction-amount-error
+    id: new-transaction-keypad
 
+# Amount through the custom keypad only - never the system keyboard.
 - tapOn:
-    id: new-transaction-account-.*
+    id: new-transaction-key-2
+- tapOn:
+    id: new-transaction-key-5
+- tapOn:
+    id: new-transaction-key-0
+
+# Account through the picker sheet stacked above the transaction sheet.
+- tapOn:
+    id: new-transaction-account
+- assertVisible:
+    id: new-transaction-account-picker-list
+- tapOn:
+    id: new-transaction-account-option-.*
     index: 0
+
+# Category through the full picker opened from the quick bar's menu button.
 - tapOn:
-    id: new-transaction-category-.*
+    id: new-transaction-category-menu
+- assertVisible:
+    id: new-transaction-category-picker-list
+- tapOn:
+    id: new-transaction-category-option-.*
     index: 0
-- tapOn:
-    id: new-transaction-amount
-- inputText: '250.00'
+
 - tapOn:
     id: new-transaction-submit
 

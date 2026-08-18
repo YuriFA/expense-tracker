@@ -48,6 +48,12 @@ export type BottomSheetProps = Omit<
    * @default false
    */
   enableDynamicSizing?: boolean
+
+  /**
+   * Overrides the sheet surface style (e.g. a larger top radius). Leave
+   * undefined to keep @gorhom's default surface.
+   */
+  backgroundStyle?: BottomSheetModalProps['backgroundStyle']
 }
 
 // @gorhom v5 defaults the sheet content wrapper to `accessible` +
@@ -62,6 +68,7 @@ export const BottomSheet = ({
   enablePanDownToClose = true,
   enableDynamicSizing = false,
   enableBackdropPress = true,
+  backgroundStyle,
   children,
   ref,
   ...props
@@ -113,6 +120,7 @@ export const BottomSheet = ({
       enablePanDownToClose={enablePanDownToClose}
       accessible={false}
       backdropComponent={renderBackdrop}
+      backgroundStyle={backgroundStyle}
       {...props}
     >
       {children}

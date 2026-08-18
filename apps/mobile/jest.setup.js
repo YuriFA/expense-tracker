@@ -135,7 +135,7 @@ jest.mock("react-native-reanimated", () => {
 // is enforced by the TypeScript types.
 jest.mock("@gorhom/bottom-sheet", () => {
   const React = require("react")
-  const { Modal, View } = require("react-native")
+  const { Modal, TextInput, View } = require("react-native")
 
   const BottomSheetModal = React.forwardRef(function BottomSheetModal(
     { children, backdropComponent, onDismiss },
@@ -159,12 +159,16 @@ jest.mock("@gorhom/bottom-sheet", () => {
 
   const BottomSheetView = ({ children, ...rest }) => <View {...rest}>{children}</View>
   const BottomSheetScrollView = ({ children, ...rest }) => <View {...rest}>{children}</View>
+  // The sheet-aware input is a plain TextInput under jest; what matters for
+  // tests is that BottomSheetInput renders a real focusable/changeable input.
+  const BottomSheetTextInput = TextInput
 
   return {
     __esModule: true,
     BottomSheetModal,
     BottomSheetView,
     BottomSheetScrollView,
+    BottomSheetTextInput,
     BottomSheetModalProvider: ({ children }) => children,
     BottomSheetBackdrop: View,
   }

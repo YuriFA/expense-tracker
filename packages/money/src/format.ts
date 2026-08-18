@@ -44,6 +44,11 @@ const LOCALE_SHAPES: Record<SupportedShape, LocaleShape> = {
   },
 }
 
+/** Narrow display symbol for a currency (e.g. "₽"); unknown codes fall back to their ISO code. */
+export function currencySymbol(currency: CurrencyCode): string {
+  return CURRENCY_SYMBOLS[currency] ?? currency
+}
+
 /** Resolve a BCP-47 locale string to the closest supported shape (default en). */
 function shapeFor(locale: string): LocaleShape {
   return locale.toLowerCase().startsWith('ru') ? LOCALE_SHAPES.ru : LOCALE_SHAPES.en

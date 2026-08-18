@@ -1,9 +1,9 @@
-// Create-transaction sheet + form behavior. The sheet-level harness
-// exercises the composite through the presented sheet (mode wiring, option
-// filtering, submit payloads, blocking, errors). The full-reset assertion
-// renders the form standalone: on success the container dismisses the
-// sheet, which unmounts the form under the jest @gorhom mock, so post-
-// submit field state is only observable below the container.
+// Create-transaction sheet + form behavior. The sheet-level harness exercises
+// the composite through the presented sheet (picker stacking, keypad-driven
+// amount, live submit validity, payloads, errors). The full-reset assertion
+// renders the form standalone: on success the container dismisses the sheet,
+// which unmounts the form under the jest @gorhom mock, so post-submit field
+// state is only observable below the container.
 
 import { act } from 'react'
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
@@ -159,12 +159,32 @@ function renderForm(kind: 'expense' | 'income' | 'transfer') {
   return transactionRepository
 }
 
-/** The field components mount with the presented sheet, so their account/
- * category queries settle one tick later - await the chips before pressing. */
+/** The amount is entered through keypad key presses - never a text input. */
+function typeAmount(keys: string[]) {
+  for (const key of keys) {
+    fireEvent.press(screen.getByTestId(`new-transaction-key-${key}`))
+  }
+}
+
+/** Selects the account through the stacked picker sheet. */
+async function selectAccount(prefix: string, accountId: string) {
+  fireEvent.press(screen.getByTestId(prefix))
+  fireEvent.press(await screen.findByTestId(`${prefix}-option-${accountId}`))
+}
+
+/** The account/category queries settle one tick after the sheet presents. */
 async function fillExpenseValid() {
-  fireEvent.changeText(screen.getByTestId('new-transaction-amount'), '250,00')
-  fireEvent.press(await screen.findByTestId('new-transaction-account-acc-rub-1'))
+  typeAmount(['1', '2', 'separator', '5'])
+  await selectAccount('new-transaction-account', 'acc-rub-1')
   fireEvent.press(await screen.findByTestId('new-transaction-category-cat-cafe'))
+}
+
+const submitDisabled = () =>
+  screen.getByTestId('new-transaction-submit').props.accessibilityState.disabled as boolean
+
+/** zodResolver validation is async - wait for the live validity to settle. */
+async function expectSubmitEnabled() {
+  await waitFor(() => expect(submitDisabled()).toBe(false))
 }
 
 describe('NewTransactionSheet', () => {
@@ -172,82 +192,164 @@ describe('NewTransactionSheet', () => {
     jest.clearAllMocks()
   })
 
-  it('creates an expense with the chosen account and a type-matched category', async () => {
+  it('opens with a zero amount, no system-keyboard input, and a disabled submit', async () => {
+    await renderSheet('expense')
+
+    expect(screen.getByTestId('new-transaction-amount')).toHaveTextContent('0\u00A0₽')
+    expect(screen.queryByTestId('new-transaction-note-input')).toBeNull()
+    expect(screen.queryByTestId('new-transaction-quick-dates')).toBeNull()
+    expect(submitDisabled()).toBe(true)
+  })
+
+  it('creates an expense with a decimal keypad amount, account, and category', async () => {
     const { transactionRepository: repository } = await renderSheet('expense')
 
-    expect(screen.getByText('Новый расход')).toBeTruthy()
-
     await fillExpenseValid()
+    expect(screen.getByTestId('new-transaction-amount')).toHaveTextContent('12,5\u00A0₽')
+    await expectSubmitEnabled()
+
     fireEvent.press(screen.getByTestId('new-transaction-submit'))
 
     await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
     const [created] = repository.snapshot()
     expect(created).toMatchObject({
       type: 'expense',
-      amount: 25_000,
+      amount: 1_250,
       accountId: 'acc-rub-1',
       categoryId: 'cat-cafe',
       description: '',
     })
+    expect(typeof created.occurredAt).toBe('string')
   })
 
-  it('offers only same-currency, distinct transfer destinations', async () => {
-    await renderSheet('transfer')
+  it('keeps the submit disabled until every required field is set', async () => {
+    const { transactionRepository: repository } = await renderSheet('expense')
 
-    fireEvent.press(await screen.findByTestId('new-transaction-from-acc-rub-1'))
+    // Amount alone is not enough.
+    typeAmount(['2', '5', '0'])
+    expect(submitDisabled()).toBe(true)
 
-    // The other RUB account is offered; the USD one and the source are not.
-    await waitFor(() => expect(screen.getByTestId('new-transaction-to-acc-rub-2')).toBeTruthy())
-    expect(screen.queryByTestId('new-transaction-to-acc-rub-1')).toBeNull()
-    expect(screen.queryByTestId('new-transaction-to-acc-usd')).toBeNull()
-  })
+    // Still missing the category.
+    await selectAccount('new-transaction-account', 'acc-rub-1')
+    expect(submitDisabled()).toBe(true)
 
-  it('blocks a zero amount on submit with the field error visible', async () => {
-    const { transactionRepository: repository } = await renderSheet('income')
+    // A zero amount never unlocks the submit even with everything else set.
+    fireEvent.press(await screen.findByTestId('new-transaction-category-cat-cafe'))
+    typeAmount(['backspace', 'backspace', 'backspace', 'backspace', '0'])
+    await waitFor(() => expect(submitDisabled()).toBe(true))
+    expect(screen.getByTestId('new-transaction-amount')).toHaveTextContent('0\u00A0₽')
 
-    fireEvent.changeText(screen.getByTestId('new-transaction-amount'), '0')
-    fireEvent.press(await screen.findByTestId('new-transaction-account-acc-rub-1'))
-    fireEvent.press(await screen.findByTestId('new-transaction-category-cat-salary'))
-    fireEvent.press(screen.getByTestId('new-transaction-submit'))
-
-    expect(await screen.findByTestId('new-transaction-amount-error')).toHaveTextContent(
-      'Некорректная сумма',
-    )
+    typeAmount(['backspace', '2', '5', '0'])
+    await expectSubmitEnabled()
     expect(repository.snapshot()).toHaveLength(0)
   })
 
-  it('blocks a transfer submit without accounts with the field errors visible', async () => {
+  it('selects transfer accounts through pickers with same-currency destinations', async () => {
     const { transactionRepository: repository } = await renderSheet('transfer')
 
-    fireEvent.changeText(screen.getByTestId('new-transaction-amount'), '100')
+    // The destination stays disabled until the source is picked.
+    expect(screen.getByTestId('new-transaction-to').props.accessibilityState.disabled).toBe(true)
+
+    await selectAccount('new-transaction-from', 'acc-rub-1')
+
+    // The destination picker offers only the other RUB account.
+    expect(screen.getByTestId('new-transaction-to').props.accessibilityState.disabled).toBe(false)
+    fireEvent.press(screen.getByTestId('new-transaction-to'))
+    expect(await screen.findByTestId('new-transaction-to-option-acc-rub-2')).toBeTruthy()
+    expect(screen.queryByTestId('new-transaction-to-option-acc-rub-1')).toBeNull()
+    expect(screen.queryByTestId('new-transaction-to-option-acc-usd')).toBeNull()
+
+    fireEvent.press(screen.getByTestId('new-transaction-to-option-acc-rub-2'))
+    typeAmount(['1', '0', '0'])
+    await expectSubmitEnabled()
     fireEvent.press(screen.getByTestId('new-transaction-submit'))
 
-    expect(await screen.findByTestId('new-transaction-from-error')).toHaveTextContent(
-      'Выберите счёт списания',
-    )
-    expect(repository.snapshot()).toHaveLength(0)
+    await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
+    const [created] = repository.snapshot()
+    expect(created).toMatchObject({
+      type: 'transfer',
+      amount: 10_000,
+      fromAccountId: 'acc-rub-1',
+      toAccountId: 'acc-rub-2',
+    })
   })
 
   it('re-initializes the form when the flow kind changes', async () => {
     const { rerenderKind } = await renderSheet('expense')
 
-    fireEvent.changeText(screen.getByTestId('new-transaction-amount'), '123')
-    fireEvent.press(await screen.findByTestId('new-transaction-account-acc-rub-1'))
-    expect(
-      screen.getByTestId('new-transaction-account-acc-rub-1').props.accessibilityState.selected,
-    ).toBe(true)
+    typeAmount(['1', '2', '3'])
+    await selectAccount('new-transaction-account', 'acc-rub-1')
 
     await rerenderKind('transfer')
 
-    // Typed amount and the old variant's selection are gone; the new
-    // variant's fields render empty (no chip preselected).
-    expect(screen.getByTestId('new-transaction-amount').props.value).toBe('')
-    expect(screen.getByTestId('new-transaction-from-list')).toBeTruthy()
-    expect(screen.queryByTestId('new-transaction-account-list')).toBeNull()
+    expect(screen.getByTestId('new-transaction-amount')).toHaveTextContent('0\u00A0₽')
+    expect(screen.getByTestId('new-transaction-from')).toBeTruthy()
+    expect(screen.queryByTestId('new-transaction-account')).toBeNull()
+    // Both transfer rows show the placeholder after the re-initialization.
+    expect(screen.getAllByText('Выберите счёт')).toHaveLength(2)
+  })
+
+  it('keeps a note across hide/reopen and sends it with the transaction', async () => {
+    const { transactionRepository: repository } = await renderSheet('expense')
+
+    fireEvent.press(screen.getByTestId('new-transaction-note-button'))
+    fireEvent.changeText(screen.getByTestId('new-transaction-note-input'), 'Кофе с коллегами')
+
+    // Hiding collapses the input but keeps the text in form state.
+    fireEvent.press(screen.getByTestId('new-transaction-note-button'))
+    expect(screen.queryByTestId('new-transaction-note-input')).toBeNull()
+    fireEvent.press(screen.getByTestId('new-transaction-note-button'))
+    expect(screen.getByTestId('new-transaction-note-input').props.value).toBe('Кофе с коллегами')
+
+    await fillExpenseValid()
+    await expectSubmitEnabled()
+    fireEvent.press(screen.getByTestId('new-transaction-submit'))
+
+    await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
+    expect(repository.snapshot()[0]).toMatchObject({ description: 'Кофе с коллегами' })
+  })
+
+  it('shifts the date through the quick chips', async () => {
+    const { transactionRepository: repository } = await renderSheet('expense')
+
+    fireEvent.press(screen.getByTestId('new-transaction-date-button'))
+    fireEvent.press(screen.getByTestId('new-transaction-quick-date-1'))
+
+    // The chip is selected and (after collapsing the row) the date control
+    // shows the shifted label - "Вчера" also exists as a chip, so collapse
+    // first to make the label the only match.
     expect(
-      screen.getByTestId('new-transaction-from-acc-rub-1').props.accessibilityState.selected,
-    ).toBe(false)
-    expect(screen.getByText('Сначала выберите счёт списания')).toBeTruthy()
+      screen.getByTestId('new-transaction-quick-date-1').props.accessibilityState.selected,
+    ).toBe(true)
+    fireEvent.press(screen.getByTestId('new-transaction-date-button'))
+    expect(screen.getByText('Вчера')).toBeTruthy()
+
+    await fillExpenseValid()
+    await expectSubmitEnabled()
+    fireEvent.press(screen.getByTestId('new-transaction-submit'))
+
+    await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
+    const occurredAt = new Date(repository.snapshot()[0].occurredAt)
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    expect(occurredAt.getDate()).toBe(yesterday.getDate())
+  })
+
+  it('picks a custom date from the calendar sheet', async () => {
+    await renderSheet('expense')
+
+    fireEvent.press(screen.getByTestId('new-transaction-date-button'))
+    fireEvent.press(screen.getByTestId('new-transaction-quick-date-other'))
+
+    // Today's cell keeps the "Сегодня" label; collapse the quick row so the
+    // label is the only "Сегодня" match.
+    const now = new Date()
+    const pad = (value: number) => String(value).padStart(2, '0')
+    const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    fireEvent.press(screen.getByTestId(`new-transaction-calendar-day-${todayKey}`))
+
+    fireEvent.press(screen.getByTestId('new-transaction-date-button'))
+    expect(screen.getByText('Сегодня')).toBeTruthy()
   })
 
   it('surfaces a repository error at the root slot and keeps the values', async () => {
@@ -258,6 +360,7 @@ describe('NewTransactionSheet', () => {
     await renderSheet('expense', repository)
 
     await fillExpenseValid()
+    await expectSubmitEnabled()
     fireEvent.press(screen.getByTestId('new-transaction-submit'))
 
     await waitFor(() =>
@@ -265,7 +368,7 @@ describe('NewTransactionSheet', () => {
         'Указан неизвестный счёт или категория',
       ),
     )
-    expect(screen.getByTestId('new-transaction-amount').props.value).toBe('250,00')
+    expect(screen.getByTestId('new-transaction-amount')).toHaveTextContent('12,5\u00A0₽')
   })
 
   it('blocks a double submit while the create is pending', async () => {
@@ -277,20 +380,17 @@ describe('NewTransactionSheet', () => {
     await renderSheet('expense', repository)
 
     await fillExpenseValid()
+    await expectSubmitEnabled()
     fireEvent.press(screen.getByTestId('new-transaction-submit'))
 
-    await waitFor(() =>
-      expect(screen.getByTestId('new-transaction-submit').props.accessibilityState.disabled).toBe(
-        true,
-      ),
-    )
+    await waitFor(() => expect(submitDisabled()).toBe(true))
     fireEvent.press(screen.getByTestId('new-transaction-submit'))
     expect(create).toHaveBeenCalledTimes(1)
 
     resolveCreate({
       id: 'tx-new',
       type: 'expense',
-      amount: 25_000,
+      amount: 1_250,
       description: '',
       occurredAt: new Date().toISOString(),
       version: 1,
@@ -305,15 +405,12 @@ describe('NewTransactionForm', () => {
     const repository = renderForm('expense')
 
     await fillExpenseValid()
+    await expectSubmitEnabled()
     fireEvent.press(screen.getByTestId('new-transaction-submit'))
 
     await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
-    expect(screen.getByTestId('new-transaction-amount').props.value).toBe('')
-    expect(
-      screen.getByTestId('new-transaction-account-acc-rub-1').props.accessibilityState.selected,
-    ).toBe(false)
-    expect(
-      screen.getByTestId('new-transaction-category-cat-cafe').props.accessibilityState.selected,
-    ).toBe(false)
+    expect(screen.getByTestId('new-transaction-amount')).toHaveTextContent('0\u00A0₽')
+    expect(screen.getByText('Выберите счёт')).toBeTruthy()
+    await waitFor(() => expect(submitDisabled()).toBe(true))
   })
 })
