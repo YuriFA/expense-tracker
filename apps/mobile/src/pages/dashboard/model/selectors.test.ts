@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals'
 import type { AccountWithBalance, Category, Transaction } from '@expense-tracker/api'
 import { isCurrentOrFutureMonth } from '@/shared/lib/calendar/month'
+import { formatAmount } from '@/shared/lib/format/format'
 import {
   categoryBreakdown,
+  expenseDayGroups,
   latestExpense,
   monthlyBalance,
   nextMonth,
@@ -141,5 +143,66 @@ describe('selectors · category breakdown', () => {
   it('latestExpense picks the most recent expense of the month', () => {
     expect(latestExpense(txs, CURSOR)?.id).toBe('t3')
     expect(latestExpense(txs, { year: 2026, month: 9 })).toBeNull()
+  })
+})
+
+describe('selectors · expense day groups', () => {
+  it('groups the month expenses by day, newest day and row first', () => {
+    const groups = expenseDayGroups(
+      [
+        ...txs,
+        {
+          id: 't6',
+          type: 'expense' as const,
+          amount: 250_000,
+          description: 'Кофе с другом',
+          occurredAt: '2026-08-20T18:00:00.000Z',
+          version: 1,
+          accountId: 'a-cash',
+          categoryId: 'c-cafe',
+        },
+      ],
+      categories,
+      CURSOR,
+    )
+
+    // Days newest first; income/transfer/out-of-month never group.
+    expect(groups.map((g) => g.key)).toEqual(['2026-08-20', '2026-08-10'])
+    // Within a day rows are newest first: 18:00 before 12:00.
+    expect(groups[0].rows.map((r) => r.id)).toEqual(['t6', 't3'])
+    expect(groups[0].title).toBe('20 августа')
+    expect(groups[0].totalText).toBe(formatAmount(100_000 + 250_000))
+    expect(groups[1].rows.map((r) => r.id)).toEqual(['t2'])
+    expect(groups[1].totalText).toBe(formatAmount(400_000))
+  })
+
+  it('is empty for a month without expenses', () => {
+    expect(expenseDayGroups(txs, categories, { year: 2026, month: 4 })).toEqual([])
+  })
+
+  it('rows carry the category view fields with the uncategorized fallback', () => {
+    const groups = expenseDayGroups(
+      [
+        {
+          id: 't-uncat',
+          type: 'expense' as const,
+          amount: 50_000,
+          description: undefined,
+          occurredAt: inAugust(5),
+          version: 1,
+          accountId: 'a-cash',
+          categoryId: 'missing',
+        },
+      ],
+      categories,
+      CURSOR,
+    )
+    expect(groups[0].rows[0]).toMatchObject({
+      id: 't-uncat',
+      categoryName: 'Без категории',
+      categoryIcon: 'pricetag-outline',
+      categoryColor: undefined,
+      amountText: formatAmount(50_000),
+    })
   })
 })

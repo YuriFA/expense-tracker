@@ -1,11 +1,14 @@
-import React, { useImperativeHandle, useMemo, useRef } from 'react'
+import React, { ComponentProps, useImperativeHandle, useMemo, useRef } from 'react'
 
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   type BottomSheetBackdropProps,
-  type BottomSheetModalProps,
 } from '@gorhom/bottom-sheet'
+import { withUniwind } from 'uniwind'
+import { cn } from '@/shared/lib/utils'
+
+const StyledBottomSheetModal = withUniwind<typeof BottomSheetModal<never>>(BottomSheetModal)
 
 export type BottomSheetRef = {
   present: () => void
@@ -16,8 +19,8 @@ export type BottomSheetRef = {
 }
 
 export type BottomSheetProps = Omit<
-  BottomSheetModalProps,
-  'backdropComponent' | 'handleIndicatorStyle' | 'backgroundStyle'
+  ComponentProps<typeof StyledBottomSheetModal>,
+  'ref' | 'backdropComponent' | 'handleIndicatorStyle'
 > & {
   ref?: React.Ref<BottomSheetRef>
   testID?: string
@@ -48,12 +51,6 @@ export type BottomSheetProps = Omit<
    * @default false
    */
   enableDynamicSizing?: boolean
-
-  /**
-   * Overrides the sheet surface style (e.g. a larger top radius). Leave
-   * undefined to keep @gorhom's default surface.
-   */
-  backgroundStyle?: BottomSheetModalProps['backgroundStyle']
 }
 
 // @gorhom v5 defaults the sheet content wrapper to `accessible` +
@@ -68,9 +65,10 @@ export const BottomSheet = ({
   enablePanDownToClose = true,
   enableDynamicSizing = false,
   enableBackdropPress = true,
-  backgroundStyle,
-  children,
   ref,
+  children,
+  className,
+  handleClassName,
   ...props
 }: BottomSheetProps) => {
   const bottomSheetRef = useRef<BottomSheetModal>(null)
@@ -113,18 +111,19 @@ export const BottomSheet = ({
   )
 
   return (
-    <BottomSheetModal
+    <StyledBottomSheetModal
       ref={bottomSheetRef}
       snapPoints={memoizedSnapPoints}
       enableDynamicSizing={enableDynamicSizing}
       enablePanDownToClose={enablePanDownToClose}
       accessible={false}
       backdropComponent={renderBackdrop}
-      backgroundStyle={backgroundStyle}
+      className={cn('rounded-4xl overflow-hidden', className)}
+      handleClassName={cn('py-2', handleClassName)}
       {...props}
     >
       {children}
-    </BottomSheetModal>
+    </StyledBottomSheetModal>
   )
 }
 

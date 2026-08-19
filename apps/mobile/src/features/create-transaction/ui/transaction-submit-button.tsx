@@ -5,10 +5,12 @@ import { cn } from '@/shared/lib/utils'
 
 /** Circular checkmark confirm button from the reference design. */
 export function TransactionSubmitButton({
+  className,
   disabled,
   loading,
   onPress,
 }: {
+  className?: string
   disabled: boolean
   loading: boolean
   onPress: () => void
@@ -23,8 +25,9 @@ export function TransactionSubmitButton({
       accessibilityState={{ disabled: isBlocked }}
       disabled={isBlocked}
       className={cn(
-        'size-14 items-center justify-center rounded-full bg-primary',
+        'size-12 items-center justify-center rounded-full bg-primary',
         isBlocked && 'opacity-40',
+        className,
       )}
       onPress={onPress}
     >

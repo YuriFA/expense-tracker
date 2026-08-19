@@ -38,6 +38,7 @@ export function Input({
   trailingIcon,
   textInputComponent,
   style,
+  className,
   ...textInputProps
 }: InputProps) {
   const iconColorClassName = invalid ? 'accent-destructive' : 'accent-muted-foreground'
@@ -50,10 +51,14 @@ export function Input({
       )}
 
       <TextInputComponent
-        className={cn('flex-1 bg-card border rounded-lg px-4 py-3 text-foreground', {
-          'border-destructive': invalid,
-          'border-border': !invalid,
-        })}
+        className={cn(
+          'flex-1 bg-card border rounded-lg px-4 py-3 text-foreground',
+          {
+            'border-destructive': invalid,
+            'border-border': !invalid,
+          },
+          className,
+        )}
         placeholderTextColorClassName="accent-muted-foreground"
         style={style}
         {...textInputProps}

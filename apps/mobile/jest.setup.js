@@ -130,15 +130,16 @@ jest.mock("react-native-reanimated", () => {
 // never run under the hand-rolled reanimated mock above (its animation
 // callbacks are no-ops, so a presented sheet's content never mounts).
 // Stub the library with Modal-semantics equivalents: present/close on the
-// ref, children render while presented, the custom backdrop renders behind.
-// The real library is exercised by the Maestro e2e suite; prop correctness
-// is enforced by the TypeScript types.
+// ref, children render while presented, the custom backdrop renders behind,
+// and footerComponent (a ComponentType) renders after the children like the
+// real BottomSheetContent does. The real library is exercised by the Maestro
+// e2e suite; prop correctness is enforced by the TypeScript types.
 jest.mock("@gorhom/bottom-sheet", () => {
   const React = require("react")
   const { Modal, TextInput, View } = require("react-native")
 
   const BottomSheetModal = React.forwardRef(function BottomSheetModal(
-    { children, backdropComponent, onDismiss },
+    { children, backdropComponent, footerComponent, onDismiss },
     ref,
   ) {
     const [presented, setPresented] = React.useState(false)
@@ -149,10 +150,14 @@ jest.mock("@gorhom/bottom-sheet", () => {
     }))
     if (!presented) return null
     const Backdrop = backdropComponent
+    const Footer = footerComponent
     return (
       <Modal visible transparent animationType="none" onRequestClose={onDismiss}>
         {Backdrop ? <Backdrop /> : null}
-        <View>{children}</View>
+        <View>
+          {children}
+          {Footer ? <Footer /> : null}
+        </View>
       </Modal>
     )
   })

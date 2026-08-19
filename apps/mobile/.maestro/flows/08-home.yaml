@@ -46,13 +46,23 @@ tags:
 - tapOn:
     point: 50%, 8%
 
-# All-expenses sheet lists the period's expenses (random ids -> regex)
+# All-expenses sheet lists the period's expenses grouped by day (random ids -> regex)
 - tapOn:
     id: home-all-expenses
 - assertVisible:
     id: home-expenses-sheet
 - assertVisible:
     id: home-expense-row-.*
+- assertVisible:
+    id: home-expense-day-.*
+# The footer button stacks the expense-creation sheet on top of the list
+- tapOn:
+    id: home-new-expense-button
+- assertVisible:
+    id: home-new-expense-sheet
+# Close the stacked sheet, then the expenses sheet behind it
+- tapOn:
+    point: 50%, 8%
 - tapOn:
     point: 50%, 8%
 

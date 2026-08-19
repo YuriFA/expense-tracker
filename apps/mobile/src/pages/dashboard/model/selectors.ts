@@ -6,7 +6,7 @@
 import type { AccountWithBalance, Category, Transaction } from '@expense-tracker/api'
 import type { IconName } from '@/shared/ui/icon'
 import { transactionsInMonth, type MonthCursor } from '@/shared/lib/calendar/month'
-import { formatAmount, relativeDayLabel } from '@/shared/lib/format/format'
+import { formatAmount, fullDayLabel, relativeDayLabel } from '@/shared/lib/format/format'
 import { ExpenseRowView } from '../ui/expenses-sheet'
 
 export {
@@ -34,6 +34,65 @@ export function toExpenseRow(tx: Transaction, categories: Category[]): ExpenseRo
     dayLabel: relativeDayLabel(tx.occurredAt),
     amountText: formatAmount(tx.amount),
   }
+}
+
+export interface ExpenseDayGroup {
+  /** Local calendar date "2026-08-17"; stable key for testIDs. */
+  key: string
+  /** "17 августа" */
+  title: string
+  /** "3 123 ₽" — the day's expense total. */
+  totalText: string
+  rows: ExpenseRowView[]
+}
+
+/** Newest first (ties broken by id, matching latestExpense). */
+function byOccurredAtDesc(a: Transaction, b: Transaction): number {
+  if (a.occurredAt !== b.occurredAt) return a.occurredAt < b.occurredAt ? 1 : -1
+  if (a.id !== b.id) return a.id < b.id ? 1 : -1
+  return 0
+}
+
+/**
+ * The month's expenses grouped by local calendar day, newest day first, each
+ * day's rows newest first. Feeds the grouped expenses sheet.
+ */
+export function expenseDayGroups(
+  txs: Transaction[],
+  categories: Category[],
+  cursor: MonthCursor,
+): ExpenseDayGroup[] {
+  const expenses = expensesInMonth(txs, cursor).slice().sort(byOccurredAtDesc)
+
+  const buckets: Array<Omit<ExpenseDayGroup, 'totalText'> & { totalMinor: number }> = []
+  for (const tx of expenses) {
+    const day = new Date(tx.occurredAt)
+    const key = [
+      day.getFullYear(),
+      String(day.getMonth() + 1).padStart(2, '0'),
+      String(day.getDate()).padStart(2, '0'),
+    ].join('-')
+
+    const current = buckets[buckets.length - 1]
+    if (current?.key === key) {
+      current.rows.push(toExpenseRow(tx, categories))
+      current.totalMinor += tx.amount
+    } else {
+      buckets.push({
+        key,
+        title: fullDayLabel(tx.occurredAt),
+        totalMinor: tx.amount,
+        rows: [toExpenseRow(tx, categories)],
+      })
+    }
+  }
+
+  return buckets.map(({ key, title, totalMinor, rows }) => ({
+    key,
+    title,
+    totalText: formatAmount(totalMinor),
+    rows,
+  }))
 }
 
 export function totalExpenses(txs: Transaction[], cursor: MonthCursor): number {

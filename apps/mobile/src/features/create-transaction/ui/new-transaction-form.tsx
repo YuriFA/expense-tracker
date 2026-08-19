@@ -40,6 +40,8 @@ import { DatePickerSheet } from './date-picker-sheet'
 import { DateButton, QuickDateRow } from './date-selector-row'
 import { NoteButton, NoteInput } from './note-field'
 import { TransactionSubmitButton } from './transaction-submit-button'
+import { Pressable } from '@/shared/ui/pressable'
+import { cn } from '@/shared/lib/utils'
 
 function toTransactionPayload(values: CreateTransactionFormValues): CreateTransactionPayload {
   const base = {
@@ -189,7 +191,7 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
   return (
     <FormProvider {...form}>
       <View className="flex-1">
-        <View className="flex-1 gap-5 px-4">
+        <View className="flex-1 gap-4 px-4">
           {kind === 'transfer' ? (
             <View>
               <AccountSelectorRow
@@ -207,21 +209,29 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
               />
             </View>
           ) : (
-            <AccountSelectorRow
-              label="Счёт"
-              account={selectedAccount}
-              onPress={() => accountPickerRef.current?.present()}
+            <Pressable
               testID="new-transaction-account"
-            />
+              accessibilityRole="button"
+              accessibilityLabel={`Счет: ${selectedAccount?.name}`}
+              className="flex-row items-center gap-2 py-3"
+              onPress={() => accountPickerRef.current?.present()}
+            >
+              <Text
+                variant="body"
+                className={cn(selectedAccount ? 'text-foreground' : 'text-muted-foreground')}
+                numberOfLines={1}
+              >
+                {selectedAccount ? selectedAccount.name : 'Выберите счёт'}
+              </Text>
+              <Icon name="chevron-forward" size={16} colorClassName="accent-muted-foreground" />
+            </Pressable>
           )}
 
-          <View className="items-center">
-            <AmountDisplay
-              value={amount}
-              currency={currency}
-              invalid={amount !== '' && Boolean(form.formState.errors.amount)}
-            />
-          </View>
+          <AmountDisplay
+            value={amount}
+            currency={currency}
+            invalid={amount !== '' && Boolean(form.formState.errors.amount)}
+          />
 
           {kind !== 'transfer' ? (
             <View className="gap-2">
@@ -248,7 +258,7 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
           ) : null}
           {noteOpen ? <NoteInput /> : null}
 
-          <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center py-2 border-t border-t-border">
             <NoteButton
               open={noteOpen}
               hasNote={hasNote}
@@ -260,6 +270,7 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
               onToggle={() => setQuickDatesOpen((open) => !open)}
             />
             <TransactionSubmitButton
+              className="ml-auto"
               disabled={!form.formState.isValid}
               loading={form.formState.isSubmitting || createTransaction.isPending}
               onPress={form.handleSubmit(handleSubmit)}

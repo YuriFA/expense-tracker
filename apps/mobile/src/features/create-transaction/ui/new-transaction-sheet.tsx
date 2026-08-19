@@ -6,8 +6,7 @@
 // header by design: the account row and the amount open the sheet visually,
 // matching the reference. The kind still comes from the speed dial action.
 
-import { BottomSheetView } from '@gorhom/bottom-sheet'
-import { BottomSheet, BottomSheetRef } from '@/shared/ui/bottom-sheet'
+import { BottomSheet, BottomSheetRef, BottomSheetView } from '@/shared/ui/bottom-sheet'
 import type { TransactionFlowKind } from '../model/schema'
 import { NewTransactionForm } from './new-transaction-form'
 
@@ -16,9 +15,19 @@ export type { TransactionFlowKind }
 export interface NewTransactionSheetProps {
   ref: React.Ref<BottomSheetRef>
   kind: TransactionFlowKind
+  /**
+   * Override for mounted-twice cases (the global speed-dial instance plus a
+   * local one inside a dashboard sheet): keep testIDs unique per instance.
+   * @default 'new-transaction-sheet'
+   */
+  testID?: string
 }
 
-export function NewTransactionSheet({ ref, kind }: NewTransactionSheetProps) {
+export function NewTransactionSheet({
+  ref,
+  kind,
+  testID = 'new-transaction-sheet',
+}: NewTransactionSheetProps) {
   const handleSuccess = () => {
     // TODO(sheet-dismiss): see the matching TODO in
     // pages/accounts/ui/new-account-sheet.tsx - imperative dismiss after
@@ -29,12 +38,15 @@ export function NewTransactionSheet({ ref, kind }: NewTransactionSheetProps) {
   return (
     <BottomSheet
       ref={ref}
-      testID="new-transaction-sheet"
-      snapPoints={[]}
+      testID={testID}
+      snapPoints={['65%', '73.5%']}
+      stackBehavior="push"
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
       enableDynamicSizing
-      backgroundStyle={{ borderRadius: 24 }}
+      enableBlurKeyboardOnGesture
     >
-      <BottomSheetView style={{ flex: 1 }} testID="new-transaction-sheet">
+      <BottomSheetView testID={testID}>
         <NewTransactionForm kind={kind} onSuccess={handleSuccess} />
       </BottomSheetView>
     </BottomSheet>

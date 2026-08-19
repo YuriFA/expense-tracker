@@ -2,8 +2,8 @@ import { Controller, useFormContext } from 'react-hook-form'
 import { View } from 'react-native'
 import { Icon } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
-import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
 import type { CreateTransactionFormValues } from '../model/schema'
+import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
 
 /**
  * The note's two halves: the toggle button that lives in the sheet's action
@@ -26,7 +26,7 @@ export function NoteButton({
       accessibilityRole="button"
       accessibilityLabel={open ? 'Скрыть заметку' : 'Добавить заметку'}
       accessibilityState={{ expanded: open }}
-      className="h-11 w-11 items-center justify-center"
+      className="size-12 items-center justify-center"
       onPress={onToggle}
     >
       <Icon
@@ -50,11 +50,12 @@ export function NoteInput() {
       name="description"
       render={({ field }) => (
         <BottomSheetInput
+          autoFocus
+          className="pt-4 pb-0 px-2 border-x-0 border-b-0 rounded-none border-t border-t-border"
           testID="new-transaction-note-input"
           placeholder="Заметка"
           value={field.value}
           onChangeText={field.onChange}
-          autoFocus
         />
       )}
     />

@@ -4,8 +4,8 @@ import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import type { Category, Transaction } from '@expense-tracker/api'
 import type { LatestExpenseView } from './all-expenses-card.types'
-import { formatAmount, relativeDayLabel } from '../model/format'
-import { expensesInMonth, latestExpense, MonthCursor, toExpenseRow } from '../model/selectors'
+import { formatAmount, monthRangeLabelShort, relativeDayLabel } from '../model/format'
+import { expenseDayGroups, latestExpense, MonthCursor, totalExpenses } from '../model/selectors'
 import { ExpensesSheet } from './expenses-sheet'
 import { useRef } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
@@ -28,7 +28,10 @@ export function AllExpensesCard({ cursor, transactions, categories }: AllExpense
       }
     : null
 
-  const sheetRows = expensesInMonth(transactions, cursor).map((t) => toExpenseRow(t, categories))
+  const sheetGroups = expenseDayGroups(transactions, categories, cursor)
+  const sheetSubtitle = `${monthRangeLabelShort(cursor.year, cursor.month)}, ${formatAmount(
+    totalExpenses(transactions, cursor),
+  )}`
 
   return (
     <>
@@ -69,8 +72,9 @@ export function AllExpensesCard({ cursor, transactions, categories }: AllExpense
 
       <ExpensesSheet
         ref={expensesSheetRef}
-        title="Все расходы"
-        rows={sheetRows}
+        title="Список расходов"
+        subtitle={sheetSubtitle}
+        groups={sheetGroups}
         emptyText="В этом месяце расходов нет"
       />
     </>

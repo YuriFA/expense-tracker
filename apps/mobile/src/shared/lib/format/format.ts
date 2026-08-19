@@ -34,6 +34,37 @@ const MONTH_ABBR = [
   'ДЕК.',
 ] as const
 
+const MONTH_ABBR_LOWER = [
+  'янв.',
+  'февр.',
+  'мар.',
+  'апр.',
+  'мая',
+  'июн.',
+  'июл.',
+  'авг.',
+  'сен.',
+  'окт.',
+  'ноя.',
+  'дек.',
+] as const
+
+/** Genitive month names for day labels inside period lists: "17 августа". */
+const MONTH_GENITIVE = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+] as const
+
 /** Nominative full month names for calendar headers: "Август". */
 export const MONTH_FULL = [
   'Январь',
@@ -54,6 +85,18 @@ export const MONTH_FULL = [
 export function monthRangeLabel(year: number, month: number): string {
   const lastDay = new Date(year, month + 1, 0).getDate()
   return `1 ${MONTH_ABBR[month]} — ${lastDay} ${MONTH_ABBR[month]}`
+}
+
+/** Lowercase period label for sheet subtitles: "1 авг. - 31 авг.". */
+export function monthRangeLabelShort(year: number, month: number): string {
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  return `1 ${MONTH_ABBR_LOWER[month]} - ${lastDay} ${MONTH_ABBR_LOWER[month]}`
+}
+
+/** Full day label for expense-list group headers: "17 августа". */
+export function fullDayLabel(occurredAt: string): string {
+  const d = new Date(occurredAt)
+  return `${d.getDate()} ${MONTH_GENITIVE[d.getMonth()]}`
 }
 
 /** Whole calendar days between `occurredAt` and `now` (local midnights); negative = future. */

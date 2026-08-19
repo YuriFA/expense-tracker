@@ -8,9 +8,9 @@ import { categoryBreakdown, expensesInMonth, MonthCursor, toExpenseRow } from '.
 import { NewCategorySheet } from './new-category-sheet'
 import { useRef, useState } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
-import { ExpensesSheet } from './expenses-sheet'
 import { CategoryRow } from './category-row'
 import { View } from 'react-native'
+import { CategoryExpensesSheet } from './category-expenses-sheet'
 
 export interface CategorySectionProps {
   cursor: MonthCursor
@@ -95,7 +95,7 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
 
       <NewCategorySheet ref={newCategorySheetRef} />
 
-      <ExpensesSheet
+      <CategoryExpensesSheet
         ref={expensesSheetRef}
         title={sheetCategory?.name ?? 'Категория'}
         rows={sheetRows}

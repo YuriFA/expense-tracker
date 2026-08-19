@@ -13,9 +13,10 @@ import { TransactionRepositoryProvider } from '@/entities/transaction/api/reposi
 import { createMockTransactionRepository } from '@/entities/transaction/model/mock-repository'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 import { DashboardScreen } from './dashboard-screen'
-import { formatAmount } from '../model/format'
+import { formatAmount, monthRangeLabelShort } from '../model/format'
 import {
   currentMonth,
+  expenseDayGroups,
   expensesInMonth,
   monthlyBalance,
   previousMonth,
@@ -249,13 +250,35 @@ describe('DashboardScreen (Home)', () => {
     )
   })
 
-  it('opens the all-expenses sheet with the period expenses', async () => {
+  it('opens the all-expenses sheet with the period expenses grouped by day', async () => {
     renderDashboard()
     await waitFor(() => expect(screen.getByText('Все расходы')).toBeTruthy())
 
     fireEvent.press(screen.getByTestId('home-all-expenses'))
     const expectedCount = expensesInMonth(TRANSACTIONS, currentMonth()).length
     await waitFor(() => expect(expensesRowCount()).toBe(expectedCount))
+
+    // Subtitle: the selected period range plus its expense total.
+    const now = new Date()
+    const expectedSubtitle = `${monthRangeLabelShort(now.getFullYear(), now.getMonth())}, ${formatAmount(
+      totalExpenses(TRANSACTIONS, currentMonth()),
+    )}`
+    expect(screen.getByText(expectedSubtitle)).toBeTruthy()
+
+    // One day header per distinct expense day of the period.
+    expect(screen.queryAllByTestId(/^home-expense-day-/).length).toBe(
+      expenseDayGroups(TRANSACTIONS, CATEGORIES, currentMonth()).length,
+    )
+  })
+
+  it('opens a new-expense sheet from the sheet footer button', async () => {
+    renderDashboard()
+    await waitFor(() => expect(screen.getByText('Все расходы')).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId('home-all-expenses'))
+    await waitFor(() => expect(screen.getByTestId('home-new-expense-button')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('home-new-expense-button'))
+    await waitFor(() => expect(screen.getByTestId('home-new-expense-sheet')).toBeTruthy())
   })
 
   it('opens a category-filtered expense sheet', async () => {

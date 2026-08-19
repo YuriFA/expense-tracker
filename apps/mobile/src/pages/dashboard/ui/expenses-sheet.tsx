@@ -1,4 +1,11 @@
+import { Fragment, useRef } from 'react'
 import { View } from 'react-native'
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
+import { NewTransactionSheet } from '@/features/create-transaction'
 import { Icon, type IconName } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
@@ -10,6 +17,8 @@ import {
   BottomSheetScrollView,
   BottomSheetView,
 } from '@/shared/ui/bottom-sheet'
+import type { ExpenseDayGroup } from '../model/selectors'
+import { ExpenseSheetFooter } from './expense-sheet-footer'
 
 export interface ExpenseRowView {
   id: string
@@ -25,57 +34,127 @@ export interface ExpenseRowView {
 export interface ExpensesSheetProps {
   ref: React.Ref<BottomSheetRef>
   title: string
-  rows: ExpenseRowView[]
+  /** Period + total summary under the title: "1 авг. - 31 авг., 30 325 ₽". */
+  subtitle: string
+  groups: ExpenseDayGroup[]
   emptyText: string
 }
 
-export function ExpensesSheet({ title, rows, emptyText, ref }: ExpensesSheetProps) {
-  return (
-    <BottomSheet ref={ref} snapPoints={['90%']} testID="home-expenses-sheet">
-      <BottomSheetHeader title={title} />
+/** Scroll delta (px) that counts as a deliberate direction change. */
+const SCROLL_DIRECTION_THRESHOLD = 8
+/** How far the footer pill travels when hiding (its height + margin). */
+const FOOTER_HIDE_TRANSLATE = 200
+const FOOTER_ANIMATION_DURATION = 180
 
-      {rows.length === 0 ? (
-        <BottomSheetView testID="home-expenses-sheet">
-          <BottomSheetBody>
-            <Text variant="body" className="text-muted-foreground">
-              {emptyText}
-            </Text>
-          </BottomSheetBody>
-        </BottomSheetView>
-      ) : (
-        <BottomSheetScrollView testID="home-expenses-sheet">
-          <BottomSheetBody className="gap-4">
-            {rows.map((row) => (
-              <View
-                key={row.id}
-                className="flex-row items-center gap-4"
-                testID={`home-expense-row-${row.id}`}
-              >
-                <View
-                  className={cn(
-                    'h-10 w-10 items-center justify-center rounded-full',
-                    row.categoryColor ? undefined : 'bg-muted',
-                  )}
-                  style={row.categoryColor ? { backgroundColor: row.categoryColor } : undefined}
-                >
-                  <Icon name={row.categoryIcon} size={20} colorClassName="accent-white" />
-                </View>
-                <View className="flex-1 gap-1">
-                  <Text variant="body" className="text-foreground">
-                    {row.description}
-                  </Text>
-                  <Text variant="caption" className="text-muted-foreground">
-                    {row.categoryName} · {row.dayLabel}
-                  </Text>
-                </View>
-                <Text variant="body" className="font-semibold text-foreground">
-                  {row.amountText}
-                </Text>
-              </View>
-            ))}
-          </BottomSheetBody>
-        </BottomSheetScrollView>
-      )}
-    </BottomSheet>
+const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
+
+export function ExpensesSheet({ title, subtitle, groups, emptyText, ref }: ExpensesSheetProps) {
+  const newExpenseSheetRef = useRef<BottomSheetRef>(null)
+  const previousScrollY = useSharedValue(0)
+  const buttonTranslationY = useSharedValue(0)
+
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    const currentScrollY = event.contentOffset.y
+
+    if (currentScrollY < 0) return
+
+    const delta = currentScrollY - previousScrollY.value
+
+    if (delta > SCROLL_DIRECTION_THRESHOLD) {
+      buttonTranslationY.value = withTiming(FOOTER_HIDE_TRANSLATE, {
+        duration: FOOTER_ANIMATION_DURATION,
+      })
+    } else if (delta < -SCROLL_DIRECTION_THRESHOLD) {
+      buttonTranslationY.value = withTiming(0, {
+        duration: FOOTER_ANIMATION_DURATION,
+      })
+    }
+
+    previousScrollY.value = currentScrollY
+  })
+
+  const handleNewExpense = () => {
+    newExpenseSheetRef.current?.present()
+  }
+
+  return (
+    <>
+      <BottomSheet
+        ref={ref}
+        snapPoints={['90%']}
+        stackBehavior="push"
+        testID="home-expenses-sheet"
+        footerComponent={(props) => (
+          <ExpenseSheetFooter
+            {...props}
+            buttonTranslationY={buttonTranslationY}
+            onNewExpensePress={handleNewExpense}
+          />
+        )}
+      >
+        {groups.length === 0 ? (
+          <BottomSheetView testID="home-expenses-sheet">
+            <BottomSheetHeader title={title} subtitle={subtitle} />
+            <BottomSheetBody>
+              <Text variant="body" className="text-muted-foreground">
+                {emptyText}
+              </Text>
+            </BottomSheetBody>
+          </BottomSheetView>
+        ) : (
+          <>
+            <BottomSheetHeader title={title} subtitle={subtitle} />
+            <AnimatedBottomSheetScrollView testID="home-expenses-sheet" onScroll={scrollHandler}>
+              <BottomSheetBody className="gap-6 pt-4 pb-32">
+                {groups.map((group) => (
+                  <View key={group.key} className="gap-3" testID={`home-expense-day-${group.key}`}>
+                    <View className="flex-row items-center justify-between">
+                      <Text variant="button" className="font-medium text-foreground">
+                        {group.title}
+                      </Text>
+                      <Text variant="button" className="text-muted-foreground">
+                        {group.totalText}
+                      </Text>
+                    </View>
+
+                    {group.rows.map((row, index) => (
+                      <Fragment key={row.id}>
+                        {index > 0 ? <View className="h-px bg-border/10" /> : null}
+                        <View
+                          className="flex-row items-center gap-4"
+                          testID={`home-expense-row-${row.id}`}
+                        >
+                          <View
+                            className={cn(
+                              'h-10 w-10 items-center justify-center rounded-full',
+                              row.categoryColor ? undefined : 'bg-muted',
+                            )}
+                            style={
+                              row.categoryColor ? { backgroundColor: row.categoryColor } : undefined
+                            }
+                          >
+                            <Icon name={row.categoryIcon} size={20} colorClassName="accent-white" />
+                          </View>
+                          <Text variant="body" className="flex-1 text-foreground">
+                            {row.categoryName}
+                          </Text>
+                          <Text variant="button">{row.amountText}</Text>
+                        </View>
+                      </Fragment>
+                    ))}
+                  </View>
+                ))}
+              </BottomSheetBody>
+            </AnimatedBottomSheetScrollView>
+          </>
+        )}
+      </BottomSheet>
+
+      <NewTransactionSheet
+        ref={newExpenseSheetRef}
+        kind="expense"
+        testID="home-new-expense-sheet"
+      />
+    </>
   )
 }
