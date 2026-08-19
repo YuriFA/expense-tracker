@@ -59,8 +59,8 @@ export function DatePickerSheet({
       testID="new-transaction-date-picker"
       stackBehavior="push"
     >
-      <BottomSheetHeader title={`${monthLabel(view.year, view.month)} ${view.year}`} />
       <BottomSheetView testID="new-transaction-calendar">
+        <BottomSheetHeader title={`${monthLabel(view.year, view.month)} ${view.year}`} />
         <View className="gap-2 px-4 pb-6">
           <View className="flex-row items-center justify-between">
             <Pressable

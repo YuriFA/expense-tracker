@@ -4,44 +4,39 @@
 // TextInput, so no system keyboard for it; the note is the only native input.
 // Amount stays a string in form values; `toTransactionPayload` converts to
 // int64 minor units at the submission boundary (conventions forms.md §2/§4).
-// Picker sheets stack above this one and report selections through setValue -
-// nothing else in the form state is touched by opening or closing them.
+//
+// The root owns only the form lifecycle and submission. Every field section
+// (amount, accounts, category, the action toolbar) subscribes to its own
+// slice of the form through useFormContext - the root holds no useWatch and
+// reads no formState, so edits re-render only the section that shows them.
+// Each picker sheet mounts inside its owning section (always mounted, so
+// conditional reveal rows never unmount an open sheet).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { FormProvider, useForm, useWatch } from 'react-hook-form'
+import { FormProvider, useForm, useFormContext, useFormState } from 'react-hook-form'
 import { View } from 'react-native'
 import type { CreateTransactionPayload } from '@expense-tracker/api'
+import { useAccounts } from '@/entities/account/model/use-accounts'
+import { useCreateTransaction } from '@/entities/transaction/model/use-transactions'
+import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
+import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
 import { FormError } from '@/shared/ui/form'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
-import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
-import { DEFAULT_CURRENCY } from '@/shared/lib/format/format'
-import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
-import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
-import { useAccounts } from '@/entities/account/model/use-accounts'
-import { useCategories } from '@/entities/category/model/use-categories'
-import { useCreateTransaction } from '@/entities/transaction/model/use-transactions'
 import { applyKeypadInput, type KeypadKey } from '../model/amount-keypad'
-import { occurredAtForDaysAgo } from '../model/quick-dates'
 import {
   createTransactionDefaultValues,
   createTransactionSchema,
   type CreateTransactionFormValues,
   type TransactionFlowKind,
 } from '../model/schema'
-import { AccountPickerSheet } from './account-picker-sheet'
-import { AccountSelectorRow } from './account-selector-row'
-import { AmountDisplay } from './amount-display'
+import { AccountField } from './account-field'
+import { AmountField } from './amount-field'
 import { AmountKeypad } from './amount-keypad'
-import { CategoryPickerSheet } from './category-picker-sheet'
-import { CategoryQuickBar } from './category-quick-bar'
-import { DatePickerSheet } from './date-picker-sheet'
-import { DateButton, QuickDateRow } from './date-selector-row'
-import { NoteButton, NoteInput } from './note-field'
-import { TransactionSubmitButton } from './transaction-submit-button'
-import { Pressable } from '@/shared/ui/pressable'
-import { cn } from '@/shared/lib/utils'
+import { CategoryField } from './category-field'
+import { FormActions } from './form-actions'
+import { TransferFields } from './transfer-fields'
 
 function toTransactionPayload(values: CreateTransactionFormValues): CreateTransactionPayload {
   const base = {
@@ -74,6 +69,14 @@ interface NewTransactionFormProps {
   onSuccess: () => void
 }
 
+/** The form-level (root) error slot, isolated so edits don't re-render it. */
+function TransactionRootError() {
+  const { control } = useFormContext<CreateTransactionFormValues>()
+  const { errors } = useFormState({ control })
+
+  return <FormError testID="new-transaction-error">{errors.root?.message}</FormError>
+}
+
 export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps) {
   const form = useForm<CreateTransactionFormValues>({
     resolver: zodResolver(createTransactionSchema),
@@ -83,19 +86,11 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
     mode: 'onChange',
   })
   const createTransaction = useCreateTransaction()
-  const accountsQuery = useAccounts()
-  const accounts = accountsQuery.data ?? []
-  const flowCategories = useCategories(kind === 'transfer' ? undefined : kind).data ?? []
+  const accounts = useAccounts().data ?? []
 
-  const accountPickerRef = useRef<BottomSheetRef>(null)
-  const fromPickerRef = useRef<BottomSheetRef>(null)
-  const toPickerRef = useRef<BottomSheetRef>(null)
-  const categoryPickerRef = useRef<BottomSheetRef>(null)
-  const datePickerRef = useRef<BottomSheetRef>(null)
-
-  // Ephemeral UI state only - the values themselves live in the form.
-  const [noteOpen, setNoteOpen] = useState(false)
-  const [quickDatesOpen, setQuickDatesOpen] = useState(false)
+  // Bumped on every reset; re-mounts the action toolbar so its reveal state
+  // (note input, quick dates) collapses with the fresh form.
+  const [formEpoch, setFormEpoch] = useState(0)
 
   const defaultValues = useMemo(() => createTransactionDefaultValues(kind), [kind])
 
@@ -106,6 +101,7 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
     (values: CreateTransactionFormValues) => {
       form.reset(values)
       void form.trigger()
+      setFormEpoch((epoch) => epoch + 1)
     },
     [form],
   )
@@ -113,66 +109,13 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
   // Re-initialize the form whenever a new flow opens from the speed dial.
   useEffect(() => {
     resetForm(defaultValues)
-    setNoteOpen(false)
-    setQuickDatesOpen(false)
   }, [defaultValues, resetForm])
-
-  // Per-field watches: the union's variant-specific keys are only observable
-  // through their own paths (undefined while the other variant is active).
-  const amount = useWatch({ control: form.control, name: 'amount' }) ?? ''
-  const description = useWatch({ control: form.control, name: 'description' }) ?? ''
-  const occurredAt =
-    useWatch({ control: form.control, name: 'occurredAt' }) ?? defaultValues.occurredAt
-  const accountId = useWatch({ control: form.control, name: 'accountId' }) ?? ''
-  const fromAccountId = useWatch({ control: form.control, name: 'fromAccountId' }) ?? ''
-  const toAccountId = useWatch({ control: form.control, name: 'toAccountId' }) ?? ''
-  const categoryId = useWatch({ control: form.control, name: 'categoryId' }) ?? ''
-  const hasNote = description.trim() !== ''
-
-  // The amount's currency follows the account the money moves from.
-  const currencyAccountId = kind === 'transfer' ? fromAccountId : accountId
-  const currencyAccount = accounts.find((account) => account.id === currencyAccountId)
-  const currency = currencyAccount?.currency ?? DEFAULT_CURRENCY
-
-  const selectedAccount = accounts.find((account) => account.id === accountId)
-  const fromAccount = accounts.find((account) => account.id === fromAccountId)
-  const toAccount = accounts.find((account) => account.id === toAccountId)
-
-  // Destinations stay a UI-level derivation exactly as before: same currency
-  // as the source, distinct from it (the schema cannot see currencies and
-  // must not duplicate the rule).
-  const toCandidates = fromAccount
-    ? accounts.filter(
-        (account) => account.currency === fromAccount.currency && account.id !== fromAccount.id,
-      )
-    : []
-
-  const selectedDate = useMemo(() => new Date(occurredAt), [occurredAt])
 
   const handleAmountKey = (key: KeypadKey) => {
     form.setValue('amount', applyKeypadInput(form.getValues('amount'), key), {
       shouldValidate: true,
     })
   }
-  const handleAccountSelect = (id: string) =>
-    form.setValue('accountId', id, { shouldValidate: true })
-  const handleFromSelect = (id: string) => {
-    form.setValue('fromAccountId', id, { shouldValidate: true })
-    // A destination that no longer matches the new source's currency is
-    // cleared - the candidate rule is re-derived from the new selection.
-    const from = accounts.find((account) => account.id === id)
-    const to = accounts.find((account) => account.id === form.getValues('toAccountId'))
-    if (from && to && to.currency !== from.currency) {
-      form.setValue('toAccountId', '')
-    }
-  }
-  const handleToSelect = (id: string) => form.setValue('toAccountId', id, { shouldValidate: true })
-  const handleCategorySelect = (id: string) =>
-    form.setValue('categoryId', id, { shouldValidate: true })
-  const handleQuickDateSelect = (daysAgo: number) =>
-    form.setValue('occurredAt', occurredAtForDaysAgo(daysAgo), { shouldValidate: true })
-  const handleCalendarSelect = (date: Date) =>
-    form.setValue('occurredAt', date.toISOString(), { shouldValidate: true })
 
   const handleSubmit = async (values: CreateTransactionFormValues) => {
     try {
@@ -180,8 +123,6 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
       // Full reset: the next open starts from the defaults, selections
       // included (the old partial reset deliberately left them behind).
       resetForm(createTransactionDefaultValues(kind))
-      setNoteOpen(false)
-      setQuickDatesOpen(false)
       onSuccess()
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })
@@ -192,90 +133,17 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
     <FormProvider {...form}>
       <View className="flex-1">
         <View className="flex-1 gap-4 px-4">
-          {kind === 'transfer' ? (
-            <View>
-              <AccountSelectorRow
-                label="Откуда"
-                account={fromAccount}
-                onPress={() => fromPickerRef.current?.present()}
-                testID="new-transaction-from"
-              />
-              <AccountSelectorRow
-                label="Куда"
-                account={toAccount}
-                disabled={!fromAccount}
-                onPress={() => toPickerRef.current?.present()}
-                testID="new-transaction-to"
-              />
-            </View>
-          ) : (
-            <Pressable
-              testID="new-transaction-account"
-              accessibilityRole="button"
-              accessibilityLabel={`Счет: ${selectedAccount?.name}`}
-              className="flex-row items-center gap-2 py-3"
-              onPress={() => accountPickerRef.current?.present()}
-            >
-              <Text
-                variant="body"
-                className={cn(selectedAccount ? 'text-foreground' : 'text-muted-foreground')}
-                numberOfLines={1}
-              >
-                {selectedAccount ? selectedAccount.name : 'Выберите счёт'}
-              </Text>
-              <Icon name="chevron-forward" size={16} colorClassName="accent-muted-foreground" />
-            </Pressable>
-          )}
+          {kind === 'transfer' ? <TransferFields /> : <AccountField />}
 
-          <AmountDisplay
-            value={amount}
-            currency={currency}
-            invalid={amount !== '' && Boolean(form.formState.errors.amount)}
+          <AmountField kind={kind} />
+
+          {kind !== 'transfer' ? <CategoryField kind={kind} /> : null}
+
+          <FormActions
+            key={formEpoch}
+            pending={createTransaction.isPending}
+            onSubmit={form.handleSubmit(handleSubmit)}
           />
-
-          {kind !== 'transfer' ? (
-            <View className="gap-2">
-              <CategoryQuickBar
-                categories={flowCategories}
-                selectedId={categoryId}
-                onSelect={handleCategorySelect}
-                onOpenMenu={() => categoryPickerRef.current?.present()}
-              />
-              {flowCategories.length === 0 ? (
-                <Text variant="caption" className="text-muted-foreground">
-                  Нет категорий этого типа - создайте категорию на главном экране
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          {quickDatesOpen ? (
-            <QuickDateRow
-              occurredAt={occurredAt}
-              onSelectDaysAgo={handleQuickDateSelect}
-              onOpenCalendar={() => datePickerRef.current?.present()}
-            />
-          ) : null}
-          {noteOpen ? <NoteInput /> : null}
-
-          <View className="flex-row items-center py-2 border-t border-t-border">
-            <NoteButton
-              open={noteOpen}
-              hasNote={hasNote}
-              onToggle={() => setNoteOpen((open) => !open)}
-            />
-            <DateButton
-              occurredAt={occurredAt}
-              expanded={quickDatesOpen}
-              onToggle={() => setQuickDatesOpen((open) => !open)}
-            />
-            <TransactionSubmitButton
-              className="ml-auto"
-              disabled={!form.formState.isValid}
-              loading={form.formState.isSubmitting || createTransaction.isPending}
-              onPress={form.handleSubmit(handleSubmit)}
-            />
-          </View>
 
           {accounts.length === 0 ? (
             <View className="flex-row items-center gap-2">
@@ -286,54 +154,10 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
             </View>
           ) : null}
 
-          <FormError testID="new-transaction-error">
-            {form.formState.errors.root?.message}
-          </FormError>
+          <TransactionRootError />
         </View>
 
         <AmountKeypad onKey={handleAmountKey} />
-
-        <AccountPickerSheet
-          ref={accountPickerRef}
-          title="Выберите счёт"
-          accounts={accounts}
-          selectedId={accountId}
-          onSelect={handleAccountSelect}
-          testIDPrefix="new-transaction-account"
-        />
-        {kind === 'transfer' ? (
-          <>
-            <AccountPickerSheet
-              ref={fromPickerRef}
-              title="Откуда"
-              accounts={accounts}
-              selectedId={fromAccountId}
-              onSelect={handleFromSelect}
-              testIDPrefix="new-transaction-from"
-            />
-            <AccountPickerSheet
-              ref={toPickerRef}
-              title="Куда"
-              accounts={toCandidates}
-              selectedId={toAccountId}
-              onSelect={handleToSelect}
-              testIDPrefix="new-transaction-to"
-            />
-          </>
-        ) : null}
-        {kind !== 'transfer' ? (
-          <CategoryPickerSheet
-            ref={categoryPickerRef}
-            categories={flowCategories}
-            selectedId={categoryId}
-            onSelect={handleCategorySelect}
-          />
-        ) : null}
-        <DatePickerSheet
-          ref={datePickerRef}
-          selected={selectedDate}
-          onSelect={handleCalendarSelect}
-        />
       </View>
     </FormProvider>
   )

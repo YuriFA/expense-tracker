@@ -1,4 +1,5 @@
-import { Controller, useFormContext } from 'react-hook-form'
+import { memo } from 'react'
+import { Controller, useFormContext, useWatch } from 'react-hook-form'
 import { View } from 'react-native'
 import { Icon } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
@@ -9,7 +10,9 @@ import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
  * The note's two halves: the toggle button that lives in the sheet's action
  * row, and the input it reveals directly above that row (a normal conditional
  * layout - no absolute positioning). The text itself is form state, so it
- * survives hiding and reopening the input; only visibility is local.
+ * survives hiding and reopening the input; only visibility is local. The
+ * button subscribes to the note text on its own - the toolbar around it never
+ * re-renders for a keystroke.
  */
 export function NoteButton({
   open,
@@ -61,3 +64,17 @@ export function NoteInput() {
     />
   )
 }
+
+/** The toolbar's note toggle: derives its filled state from the form alone. */
+export const NoteFieldButton = memo(function NoteFieldButton({
+  open,
+  onToggle,
+}: {
+  open: boolean
+  onToggle: () => void
+}) {
+  const { control } = useFormContext<CreateTransactionFormValues>()
+  const description = useWatch({ control, name: 'description' }) ?? ''
+
+  return <NoteButton open={open} hasNote={description.trim() !== ''} onToggle={onToggle} />
+})
