@@ -4,7 +4,7 @@ import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import type { Category, Transaction } from '@expense-tracker/api'
 import { formatAmount } from '../model/format'
-import { categoryBreakdown, expensesInMonth, MonthCursor, toExpenseRow } from '../model/selectors'
+import { categoryBreakdown, MonthCursor } from '../model/selectors'
 import { NewCategorySheet } from './new-category-sheet'
 import { useRef, useState } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
@@ -29,11 +29,6 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
     : undefined
 
   const rows = categoryBreakdown(transactions, categories, cursor)
-  const sheetRows = categoryExpensesId
-    ? expensesInMonth(transactions, cursor)
-        .filter((t) => t.categoryId === categoryExpensesId)
-        .map((t) => toExpenseRow(t, categories))
-    : expensesInMonth(transactions, cursor).map((t) => toExpenseRow(t, categories))
 
   const openNewCategory = () => {
     newCategorySheetRef.current?.present()
@@ -97,8 +92,10 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
 
       <CategoryExpensesSheet
         ref={expensesSheetRef}
-        title={sheetCategory?.name ?? 'Категория'}
-        rows={sheetRows}
+        category={sheetCategory}
+        transactions={transactions}
+        categories={categories}
+        initialCursor={cursor}
         emptyText="В этом месяце расходов нет"
       />
     </>

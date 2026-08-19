@@ -15,6 +15,8 @@ export type { TransactionFlowKind }
 export interface NewTransactionSheetProps {
   ref: React.Ref<BottomSheetRef>
   kind: TransactionFlowKind
+  /** Preselected category id for expense/income flows (e.g. a category sheet). */
+  defaultCategoryId?: string
   /**
    * Override for mounted-twice cases (the global speed-dial instance plus a
    * local one inside a dashboard sheet): keep testIDs unique per instance.
@@ -26,6 +28,7 @@ export interface NewTransactionSheetProps {
 export function NewTransactionSheet({
   ref,
   kind,
+  defaultCategoryId,
   testID = 'new-transaction-sheet',
 }: NewTransactionSheetProps) {
   const handleSuccess = () => {
@@ -47,7 +50,11 @@ export function NewTransactionSheet({
       enableBlurKeyboardOnGesture
     >
       <BottomSheetView testID={testID}>
-        <NewTransactionForm kind={kind} onSuccess={handleSuccess} />
+        <NewTransactionForm
+          kind={kind}
+          defaultCategoryId={defaultCategoryId}
+          onSuccess={handleSuccess}
+        />
       </BottomSheetView>
     </BottomSheet>
   )

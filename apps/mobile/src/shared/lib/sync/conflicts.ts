@@ -185,10 +185,7 @@ export function getConflictById(db: LocalDatabase, id: string): LocalSyncConflic
 }
 
 export function markConflictResolved(db: LocalDatabase, id: string): void {
-  db.update(syncConflicts)
-    .set({ resolvedAt: nowIso() })
-    .where(eq(syncConflicts.id, id))
-    .run()
+  db.update(syncConflicts).set({ resolvedAt: nowIso() }).where(eq(syncConflicts.id, id)).run()
 }
 
 function updateEntityRow(

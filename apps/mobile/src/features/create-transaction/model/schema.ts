@@ -50,17 +50,23 @@ export const createTransactionSchema = z.discriminatedUnion('kind', [
 
 export type CreateTransactionFormValues = z.infer<typeof createTransactionSchema>
 
-/** One complete variant for a flow kind; call fresh so `occurredAt` is "now". */
+/**
+ * One complete variant for a flow kind; call fresh so `occurredAt` is "now".
+ * `defaultCategoryId` preselects the category for expense/income flows (e.g.
+ * when creating from inside a category's expense sheet); transfers ignore it.
+ */
 export function createTransactionDefaultValues(
   kind: TransactionFlowKind,
+  defaultCategoryId?: string,
 ): CreateTransactionFormValues {
   const base = { amount: '', description: '', occurredAt: nowIso() }
+  const categoryId = defaultCategoryId ?? ''
   switch (kind) {
     case 'transfer':
       return { kind, ...base, fromAccountId: '', toAccountId: '' }
     case 'income':
-      return { kind, ...base, accountId: '', categoryId: '' }
+      return { kind, ...base, accountId: '', categoryId }
     case 'expense':
-      return { kind, ...base, accountId: '', categoryId: '' }
+      return { kind, ...base, accountId: '', categoryId }
   }
 }

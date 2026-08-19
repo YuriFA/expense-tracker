@@ -287,9 +287,9 @@ describe('DashboardScreen (Home)', () => {
 
     await waitFor(() => expect(screen.getByTestId('home-category-cat-taxi')).toBeTruthy())
     fireEvent.press(screen.getByTestId('home-category-cat-taxi'))
-    expect(screen.getByTestId('home-expenses-sheet')).toBeTruthy()
+    expect(screen.getByTestId('category-expenses-sheet')).toBeTruthy()
     await waitFor(() =>
-      expect(expensesRowCount()).toBe(
+      expect(screen.queryAllByTestId(/^category-expense-row-/).length).toBe(
         expensesInMonth(TRANSACTIONS, currentMonth()).filter((t) => t.categoryId === 'cat-taxi')
           .length,
       ),

@@ -66,12 +66,17 @@ tags:
 - tapOn:
     point: 50%, 8%
 
-# Category-filtered sheet opens for a category with spending
+# Category-filtered sheet opens for a category with spending (redesigned:
+# close/edit header, in-sheet month navigator, day-grouped rows)
 - tapOn:
     id: home-category-.*
     index: 0
 - assertVisible:
-    id: home-expenses-sheet
+    id: category-expenses-sheet
+- assertVisible:
+    id: category-expenses-period
+- assertVisible:
+    id: category-expense-row-.*
 - tapOn:
     point: 50%, 8%
 

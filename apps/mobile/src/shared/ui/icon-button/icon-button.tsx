@@ -15,12 +15,6 @@ export interface IconButtonProps extends Omit<PressableProps, 'children'> {
   accessibilityLabel: string
 }
 
-const sizeStyles: Record<IconButtonSize, string> = {
-  sm: 'p-2',
-  md: 'p-3',
-  lg: 'p-4',
-}
-
 const iconSizes: Record<IconButtonSize, number> = {
   sm: 18,
   md: 24,
@@ -37,12 +31,11 @@ export function IconButton({
   className,
   ...pressableProps
 }: IconButtonProps) {
-  const sizeClassName = sizeStyles[size]
   const iconSize = iconSizes[size]
 
   return (
     <Pressable
-      className={cn(sizeClassName, className, 'active:opacity-70', {
+      className={cn(className, 'active:opacity-70', {
         'opacity-50': disabled,
       })}
       disabled={disabled}

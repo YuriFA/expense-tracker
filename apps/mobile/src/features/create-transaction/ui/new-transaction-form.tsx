@@ -66,6 +66,8 @@ function toTransactionPayload(values: CreateTransactionFormValues): CreateTransa
 
 interface NewTransactionFormProps {
   kind: TransactionFlowKind
+  /** Preselected category id for expense/income flows (e.g. a category sheet). */
+  defaultCategoryId?: string
   onSuccess: () => void
 }
 
@@ -77,10 +79,14 @@ function TransactionRootError() {
   return <FormError testID="new-transaction-error">{errors.root?.message}</FormError>
 }
 
-export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps) {
+export function NewTransactionForm({
+  kind,
+  defaultCategoryId,
+  onSuccess,
+}: NewTransactionFormProps) {
   const form = useForm<CreateTransactionFormValues>({
     resolver: zodResolver(createTransactionSchema),
-    defaultValues: createTransactionDefaultValues(kind),
+    defaultValues: createTransactionDefaultValues(kind, defaultCategoryId),
     // Live validity drives the submit button's disabled state (the reference
     // UX): it unlocks only once every required field of the flow is set.
     mode: 'onChange',
@@ -92,7 +98,10 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
   // (note input, quick dates) collapses with the fresh form.
   const [formEpoch, setFormEpoch] = useState(0)
 
-  const defaultValues = useMemo(() => createTransactionDefaultValues(kind), [kind])
+  const defaultValues = useMemo(
+    () => createTransactionDefaultValues(kind, defaultCategoryId),
+    [kind, defaultCategoryId],
+  )
 
   // reset() does not re-run the resolver, so formState.isValid (the submit's
   // disabled source) would keep its pre-reset value until the next edit;
@@ -121,8 +130,9 @@ export function NewTransactionForm({ kind, onSuccess }: NewTransactionFormProps)
     try {
       await createTransaction.mutateAsync(toTransactionPayload(values))
       // Full reset: the next open starts from the defaults, selections
-      // included (the old partial reset deliberately left them behind).
-      resetForm(createTransactionDefaultValues(kind))
+      // included (the old partial reset deliberately left them behind). The
+      // preselected category survives so follow-up creates keep the context.
+      resetForm(createTransactionDefaultValues(kind, defaultCategoryId))
       onSuccess()
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })

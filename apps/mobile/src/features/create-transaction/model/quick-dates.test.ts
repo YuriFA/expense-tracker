@@ -28,7 +28,7 @@ describe('quickDateOptions', () => {
     ])
   })
 
-  it('produces occurredAt keeping now\'s time of day', () => {
+  it("produces occurredAt keeping now's time of day", () => {
     const now = new Date(2026, 7, 19, 15, 30, 10)
     expect(occurredAtForDaysAgo(2, now)).toBe(new Date(2026, 7, 17, 15, 30, 10).toISOString())
   })

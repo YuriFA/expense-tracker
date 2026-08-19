@@ -1,8 +1,10 @@
-// Create-category form behavior: submit-driven name validation, payload
-// with the picked type/icon/color, server errors at the root slot with the
-// name preserved, reset after success, and pending blocking duplicates.
-// The form renders standalone - under jest the @gorhom mock degrades
-// BottomSheetInput to a plain input (no sheet context needed).
+// Category form behavior: submit-driven name validation, payload with the
+// picked type/icon/color, server errors at the root slot with the name
+// preserved, reset after a successful create, and pending blocking
+// duplicates. The edit mode prefills from the record and writes through
+// `update` with the record's version. The form renders standalone - under
+// jest the @gorhom mock degrades BottomSheetInput to a plain input (no sheet
+// context needed).
 
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
@@ -12,17 +14,17 @@ import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
 import { CategoryRepositoryProvider } from '@/entities/category/api/repository'
 import { createMockCategoryRepository } from '@/entities/category/model/mock-repository'
-import { NewCategoryForm } from './new-category-form'
+import { CategoryForm } from './category-form'
 
 type MockRepository = ReturnType<typeof createMockCategoryRepository>
 
-function renderForm(repository?: MockRepository) {
+function renderForm(repository?: MockRepository, category?: Category) {
   const repo = repository ?? createMockCategoryRepository([])
   render(
     <QueryClientProvider client={createQueryClient()}>
       <CategoryRepositoryProvider repository={repo}>
         <ThemeProvider>
-          <NewCategoryForm />
+          <CategoryForm category={category} />
         </ThemeProvider>
       </CategoryRepositoryProvider>
     </QueryClientProvider>,
@@ -37,7 +39,16 @@ function fillValid() {
   fireEvent.press(screen.getByTestId('home-new-category-color-6366f1'))
 }
 
-describe('NewCategoryForm', () => {
+const existingCategory: Category = {
+  id: 'cat-1',
+  name: 'Кафе',
+  type: 'expense',
+  icon: 'restaurant',
+  color: '#f97316',
+  version: 3,
+}
+
+describe('CategoryForm (create)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -131,5 +142,52 @@ describe('NewCategoryForm', () => {
       color: '#6366f1',
       version: 1,
     })
+  })
+})
+
+describe('CategoryForm (edit)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('prefills the fields from the category and updates through the repository', async () => {
+    const repository = renderForm(
+      createMockCategoryRepository([existingCategory]),
+      existingCategory,
+    )
+
+    expect(screen.getByTestId('category-edit-name').props.value).toBe('Кафе')
+    expect(screen.getByTestId('category-edit-submit')).toHaveTextContent('Сохранить')
+
+    fireEvent.changeText(screen.getByTestId('category-edit-name'), 'Кафе и десерты')
+    fireEvent.press(screen.getByTestId('category-edit-submit'))
+
+    await waitFor(() => expect(repository.calls.update).toBe(1))
+    expect(repository.snapshot()[0]).toMatchObject({
+      id: 'cat-1',
+      name: 'Кафе и десерты',
+      type: 'expense',
+      icon: 'restaurant',
+      color: '#f97316',
+      version: 4,
+    })
+    expect(repository.calls.create).toBe(0)
+  })
+
+  it('keeps the entered name when the version conflicts', async () => {
+    const repository = createMockCategoryRepository([existingCategory])
+    // Simulate a concurrent edit: the stored version moves past the form's.
+    await repository.update('cat-1', { name: 'Кафе', version: 3 })
+    renderForm(repository, existingCategory)
+
+    fireEvent.changeText(screen.getByTestId('category-edit-name'), 'Кафе и десерты')
+    fireEvent.press(screen.getByTestId('category-edit-submit'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('category-edit-error')).toHaveTextContent(
+        'Изменено другим действием. Обновите и повторите',
+      ),
+    )
+    expect(screen.getByTestId('category-edit-name').props.value).toBe('Кафе и десерты')
   })
 })

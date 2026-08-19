@@ -1,9 +1,12 @@
-// Create-category form: name, type toggle, icon picker, and color picker
-// (both from the predefined lists), writing through `useCreateCategory`.
+// Category form: name, type toggle, icon picker, and color picker (both from
+// the predefined lists). Create mode writes through `useCreateCategory`; edit
+// mode (a `category` prop) prefills from the record and writes through
+// `useUpdateCategory`, sending the record's version as the CAS token.
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { Pressable, ScrollView, View } from 'react-native'
+import type { Category } from '@expense-tracker/api'
 import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
 import { FormError, FormField, FormLabel } from '@/shared/ui/form'
@@ -12,29 +15,56 @@ import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/entities/category/config/category-appearance'
-import { useCreateCategory } from '@/entities/category/model/use-categories'
+import { useCreateCategory, useUpdateCategory } from '@/entities/category/model/use-categories'
 import {
   newCategoryDefaultValues,
   newCategorySchema,
   type NewCategoryFormValues,
 } from '../model/schema'
 
-interface NewCategoryFormProps {
-  /** Optional container hook; the dashboard sheet stays open on success. */
+interface CategoryFormProps {
+  /** The record to edit; omit for the create flow. */
+  category?: Category
+  /** Optional container hook; the create sheet stays open on success. */
   onSuccess?: () => void
 }
 
-export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
+function categoryInitialValues(category: Category | undefined): NewCategoryFormValues {
+  if (!category) return newCategoryDefaultValues
+  return {
+    name: category.name,
+    type: category.type,
+    icon: category.icon,
+    color: category.color,
+  }
+}
+
+export function CategoryForm({ category, onSuccess }: CategoryFormProps) {
+  const isEdit = category !== undefined
+  // testIDs stay stable per mode: the create and edit sheets are both always
+  // mounted on the dashboard, so each mode needs its own unique prefix.
+  const id = isEdit ? 'category-edit' : 'home-new-category'
+
   const form = useForm<NewCategoryFormValues>({
     resolver: zodResolver(newCategorySchema),
-    defaultValues: newCategoryDefaultValues,
+    defaultValues: categoryInitialValues(category),
   })
   const createCategory = useCreateCategory()
+  const updateCategory = useUpdateCategory()
+  const pending =
+    form.formState.isSubmitting || createCategory.isPending || updateCategory.isPending
 
   const handleSubmit = async (values: NewCategoryFormValues) => {
     try {
-      await createCategory.mutateAsync(values)
-      form.reset(newCategoryDefaultValues)
+      if (isEdit && category) {
+        await updateCategory.mutateAsync({
+          id: category.id,
+          payload: { ...values, version: category.version },
+        })
+      } else {
+        await createCategory.mutateAsync(values)
+        form.reset(newCategoryDefaultValues)
+      }
       onSuccess?.()
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })
@@ -57,9 +87,9 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
               onChangeText={field.onChange}
               onBlur={field.onBlur}
               invalid={Boolean(fieldState.error)}
-              testID="home-new-category-name"
+              testID={`${id}-name`}
             />
-            <FormError testID="home-new-category-name-error">{fieldState.error?.message}</FormError>
+            <FormError testID={`${id}-name-error`}>{fieldState.error?.message}</FormError>
           </FormField>
         )}
       />
@@ -74,14 +104,14 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
               text="Расход"
               className="flex-1"
               onPress={() => field.onChange('expense')}
-              testID="home-new-category-type-expense"
+              testID={`${id}-type-expense`}
             />
             <Button
               variant={field.value === 'income' ? 'primary' : 'outline'}
               text="Доход"
               className="flex-1"
               onPress={() => field.onChange('income')}
-              testID="home-new-category-type-income"
+              testID={`${id}-type-income`}
             />
           </View>
         )}
@@ -93,15 +123,11 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
         render={({ field }) => (
           <View className="gap-2">
             <Text variant="label">Иконка</Text>
-            <ScrollView
-              horizontal
-              testID="home-new-category-icons"
-              contentContainerStyle={{ gap: 8 }}
-            >
+            <ScrollView horizontal testID={`${id}-icons`} contentContainerStyle={{ gap: 8 }}>
               {CATEGORY_ICONS.map((option) => (
                 <Pressable
                   key={option}
-                  testID={`home-new-category-icon-${option}`}
+                  testID={`${id}-icon-${option}`}
                   accessibilityRole="button"
                   accessibilityLabel={`Иконка ${option}`}
                   accessibilityState={{ selected: field.value === option }}
@@ -129,11 +155,11 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
         render={({ field }) => (
           <View className="gap-2">
             <Text variant="label">Цвет</Text>
-            <View className="flex-row flex-wrap gap-2" testID="home-new-category-colors">
+            <View className="flex-row flex-wrap gap-2" testID={`${id}-colors`}>
               {CATEGORY_COLORS.map((option) => (
                 <Pressable
                   key={option}
-                  testID={`home-new-category-color-${option.replace('#', '')}`}
+                  testID={`${id}-color-${option.replace('#', '')}`}
                   accessibilityRole="button"
                   accessibilityLabel={`Цвет ${option}`}
                   accessibilityState={{ selected: field.value === option }}
@@ -154,15 +180,15 @@ export function NewCategoryForm({ onSuccess }: NewCategoryFormProps) {
         )}
       />
 
-      <FormError testID="home-new-category-error">{form.formState.errors.root?.message}</FormError>
+      <FormError testID={`${id}-error`}>{form.formState.errors.root?.message}</FormError>
 
       <Button
         variant="primary"
-        text="Создать"
-        loading={form.formState.isSubmitting || createCategory.isPending}
-        disabled={createCategory.isPending}
+        text={isEdit ? 'Сохранить' : 'Создать'}
+        loading={pending}
+        disabled={pending}
         onPress={form.handleSubmit(handleSubmit)}
-        testID="home-new-category-submit"
+        testID={`${id}-submit`}
       />
     </View>
   )

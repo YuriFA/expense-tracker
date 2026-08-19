@@ -27,7 +27,7 @@ export function expensesInMonth(txs: Transaction[], cursor: MonthCursor): Transa
   return transactionsInMonth(txs, cursor).filter((t) => t.type === 'expense')
 }
 
-export function toExpenseRow(tx: Transaction, categories: Category[]): ExpenseRowView {
+function toExpenseRow(tx: Transaction, categories: Category[]): ExpenseRowView {
   const category = categories.find((c) => c.id === tx.categoryId)
   return {
     id: tx.id,

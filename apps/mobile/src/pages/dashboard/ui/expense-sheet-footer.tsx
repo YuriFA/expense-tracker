@@ -11,12 +11,15 @@ import Animated, { SharedValue } from 'react-native-reanimated'
 interface ExpenseSheetFooterProps extends BottomSheetFooterProps {
   buttonTranslationY?: SharedValue<number>
   onNewExpensePress?: () => void
+  /** @default 'home-new-expense-button' */
+  testID?: string
 }
 
 export const ExpenseSheetFooter = ({
   animatedFooterPosition,
   buttonTranslationY,
   onNewExpensePress,
+  testID = 'home-new-expense-button',
 }: ExpenseSheetFooterProps) => {
   const { bottom: bottomSafeArea } = useSafeAreaInsets()
 
@@ -31,7 +34,7 @@ export const ExpenseSheetFooter = ({
         style={{ transform: [{ translateY: buttonTranslationY || 0 }] }}
       >
         <Pressable
-          testID="home-new-expense-button"
+          testID={testID}
           accessibilityRole="button"
           accessibilityLabel="Новый расход"
           className="flex-row items-center gap-2 rounded-full bg-primary px-6 py-3 shadow-lg"

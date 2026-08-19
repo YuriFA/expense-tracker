@@ -1,0 +1,88 @@
+# Category expense sheet (reference redesign): in-sheet month navigation,
+# the footer "new expense" sheet stacked with the category preselected, and
+# the header pencil opening the category-edit sheet (rename round-trip).
+#
+# Requires an account, a category, and an expense to exist - 05/06/07 create
+# them, so run the suite in order. The rename's persistence is proven by the
+# category-form unit tests; the e2e proves the navigation path and that the
+# submit completes without an error alert.
+appId: com.anonymous.mobile
+tags:
+  - home
+---
+- runFlow: ../_launch.yaml
+- assertVisible:
+    id: screen-dashboard
+
+# Open the redesigned sheet for a category with spending
+- tapOn:
+    id: home-category-.*
+    index: 0
+- assertVisible:
+    id: category-expenses-sheet
+- assertVisible:
+    id: category-expenses-period
+- assertVisible:
+    id: category-expenses-total
+- assertVisible:
+    id: category-expense-row-.*
+
+# In-sheet month navigation stays inside the sheet (no data assumptions:
+# earlier suite runs may have expenses in other months)
+- tapOn:
+    id: category-expenses-prev-month
+- assertVisible:
+    id: category-expenses-period
+- tapOn:
+    id: category-expenses-next-month
+- assertVisible:
+    id: category-expenses-period
+
+# The sort toggle flips the day order (single control exercise)
+- tapOn:
+    id: category-expenses-sort
+- assertVisible:
+    id: category-expenses-sheet
+
+# Footer button stacks the expense-creation sheet on top
+- tapOn:
+    id: category-new-expense-button
+- assertVisible:
+    id: category-new-expense-sheet
+- tapOn:
+    point: 50%, 8%
+
+# Header pencil opens the edit sheet; rename through it
+- tapOn:
+    id: category-expenses-edit
+- assertVisible:
+    id: category-edit-sheet
+- tapOn:
+    id: category-edit-name
+- eraseText
+- inputText: 'Категория e2e'
+- tapOn:
+    id: category-edit-submit
+
+# The sheet may or may not auto-dismiss (TODO(sheet-dismiss)); close via the
+# backdrop when still open, then close the category sheet behind it.
+- runFlow:
+    when:
+      visible:
+        id: category-edit-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- tapOn:
+    point: 50%, 8%
+
+# The close (X) header button is the third way out - reopen and use it
+- tapOn:
+    id: home-category-.*
+    index: 0
+- assertVisible:
+    id: category-expenses-sheet
+- tapOn:
+    id: category-expenses-close
+- assertNotVisible:
+    id: category-expenses-sheet

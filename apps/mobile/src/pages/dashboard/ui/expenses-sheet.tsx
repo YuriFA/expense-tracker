@@ -1,10 +1,6 @@
 import { Fragment, useRef } from 'react'
 import { View } from 'react-native'
-import Animated, {
-  useAnimatedScrollHandler,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import Animated from 'react-native-reanimated'
 import { NewTransactionSheet } from '@/features/create-transaction'
 import { Icon, type IconName } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
@@ -19,6 +15,7 @@ import {
 } from '@/shared/ui/bottom-sheet'
 import type { ExpenseDayGroup } from '../model/selectors'
 import { ExpenseSheetFooter } from './expense-sheet-footer'
+import { useSheetFooterScroll } from './use-sheet-footer-scroll'
 
 export interface ExpenseRowView {
   id: string
@@ -40,38 +37,12 @@ export interface ExpensesSheetProps {
   emptyText: string
 }
 
-/** Scroll delta (px) that counts as a deliberate direction change. */
-const SCROLL_DIRECTION_THRESHOLD = 8
-/** How far the footer pill travels when hiding (its height + margin). */
-const FOOTER_HIDE_TRANSLATE = 200
-const FOOTER_ANIMATION_DURATION = 180
-
+/** Scroll-driven footer visibility shared by the expense sheets. */
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
 
 export function ExpensesSheet({ title, subtitle, groups, emptyText, ref }: ExpensesSheetProps) {
   const newExpenseSheetRef = useRef<BottomSheetRef>(null)
-  const previousScrollY = useSharedValue(0)
-  const buttonTranslationY = useSharedValue(0)
-
-  const scrollHandler = useAnimatedScrollHandler((event) => {
-    const currentScrollY = event.contentOffset.y
-
-    if (currentScrollY < 0) return
-
-    const delta = currentScrollY - previousScrollY.value
-
-    if (delta > SCROLL_DIRECTION_THRESHOLD) {
-      buttonTranslationY.value = withTiming(FOOTER_HIDE_TRANSLATE, {
-        duration: FOOTER_ANIMATION_DURATION,
-      })
-    } else if (delta < -SCROLL_DIRECTION_THRESHOLD) {
-      buttonTranslationY.value = withTiming(0, {
-        duration: FOOTER_ANIMATION_DURATION,
-      })
-    }
-
-    previousScrollY.value = currentScrollY
-  })
+  const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
 
   const handleNewExpense = () => {
     newExpenseSheetRef.current?.present()
