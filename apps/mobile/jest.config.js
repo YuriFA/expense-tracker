@@ -26,6 +26,7 @@ module.exports = {
   moduleNameMapper: {
     "^@expense-tracker/money$": "<rootDir>/../../packages/money/src/index.ts",
     "^@expense-tracker/api$": "<rootDir>/../../packages/api/src/index.ts",
+    "^@expense-tracker/dates$": "<rootDir>/../../packages/dates/src/index.ts",
   },
   maxWorkers: "50%",
 }

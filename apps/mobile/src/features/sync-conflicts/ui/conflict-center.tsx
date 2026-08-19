@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { Alert } from 'react-native'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { nowIso } from '@expense-tracker/dates'
 import type {
   CreateAccountPayload,
   CreateCategoryPayload,
@@ -69,7 +70,7 @@ function asCreateTransactionPayload(state: Record<string, unknown>): CreateTrans
   const base = {
     amount: Number(state.amount ?? 0),
     description: typeof state.description === 'string' ? state.description : '',
-    occurredAt: String(state.occurredAt ?? new Date().toISOString()),
+    occurredAt: String(state.occurredAt ?? nowIso()),
   }
   if (state.type === 'transfer') {
     return {

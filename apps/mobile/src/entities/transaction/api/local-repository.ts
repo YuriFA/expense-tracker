@@ -10,6 +10,7 @@
 // outbox operation in one transaction (design D5/D6).
 
 import { and, desc, eq, gte, isNull, lte, or, type SQL } from 'drizzle-orm'
+import { nowIso } from '@expense-tracker/dates'
 import {
   InvalidPayloadError,
   NotFoundError,
@@ -243,7 +244,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
                 amount: payload.amount,
                 description: payload.description ?? '',
                 occurredAt,
-                updatedAt: new Date().toISOString(),
+                updatedAt: nowIso(),
                 accountId: null,
                 categoryId: null,
                 fromAccountId: payload.fromAccountId,
@@ -258,7 +259,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
                 amount: payload.amount,
                 description: payload.description ?? '',
                 occurredAt,
-                updatedAt: new Date().toISOString(),
+                updatedAt: nowIso(),
                 accountId: payload.accountId,
                 categoryId: payload.categoryId,
                 fromAccountId: null,
@@ -331,7 +332,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
           if (patch.accountId !== undefined) next.accountId = patch.accountId
           if (patch.categoryId !== undefined) next.categoryId = patch.categoryId
         }
-        next.updatedAt = new Date().toISOString()
+        next.updatedAt = nowIso()
         next.version = row.version + 1
 
         validateReferences(
@@ -369,7 +370,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
           // serverVersion 0 with a SENT create means the server may already
           // hold the record (in flight / lost response): the delete must
           // travel as a tombstone after the create, never be wiped.
-          const next = { ...row, deletedAt: new Date().toISOString(), version: row.version + 1 }
+          const next = { ...row, deletedAt: nowIso(), version: row.version + 1 }
           tx.update(transactions).set(next).where(eq(transactions.id, id)).run()
           enqueueOperation(tx, {
             entity: 'transaction',

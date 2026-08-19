@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@expense-tracker/api": "workspace:*",
+    "@expense-tracker/dates": "workspace:*",
     "@expense-tracker/money": "workspace:*",
     "@expense-tracker/tokens": "workspace:*",
     "@expo/vector-icons": "^15.0.2",

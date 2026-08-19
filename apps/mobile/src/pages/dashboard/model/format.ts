@@ -1,8 +1,4 @@
-// Thin re-export: the formatting helpers moved to shared/lib (they are now
-// consumed by the transactions tab as well); dashboard imports keep working.
-export {
-  formatAmount,
-  monthRangeLabel,
-  monthRangeLabelShort,
-  relativeDayLabel,
-} from '@/shared/lib/format/format'
+// Thin re-export: date labels live in @expense-tracker/dates and money
+// formatting in shared/lib/format; dashboard imports keep working.
+export { formatAmount } from '@/shared/lib/format/format'
+export { monthRangeLabel, monthRangeLabelShort, relativeDayLabel } from '@expense-tracker/dates'

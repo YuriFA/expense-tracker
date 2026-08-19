@@ -4,9 +4,15 @@
 // signed transaction impacts), so selectors only aggregate them.
 
 import type { AccountWithBalance, Category, Transaction } from '@expense-tracker/api'
+import {
+  calendarDayKey,
+  fullDayLabel,
+  relativeDayLabel,
+  transactionsInMonth,
+  type MonthCursor,
+} from '@expense-tracker/dates'
 import type { IconName } from '@/shared/ui/icon'
-import { transactionsInMonth, type MonthCursor } from '@/shared/lib/calendar/month'
-import { formatAmount, fullDayLabel, relativeDayLabel } from '@/shared/lib/format/format'
+import { formatAmount } from '@/shared/lib/format/format'
 import { ExpenseRowView } from '../ui/expenses-sheet'
 
 export {
@@ -15,7 +21,7 @@ export {
   previousMonth,
   transactionsInMonth,
   type MonthCursor,
-} from '@/shared/lib/calendar/month'
+} from '@expense-tracker/dates'
 
 export function expensesInMonth(txs: Transaction[], cursor: MonthCursor): Transaction[] {
   return transactionsInMonth(txs, cursor).filter((t) => t.type === 'expense')
@@ -66,12 +72,7 @@ export function expenseDayGroups(
 
   const buckets: Array<Omit<ExpenseDayGroup, 'totalText'> & { totalMinor: number }> = []
   for (const tx of expenses) {
-    const day = new Date(tx.occurredAt)
-    const key = [
-      day.getFullYear(),
-      String(day.getMonth() + 1).padStart(2, '0'),
-      String(day.getDate()).padStart(2, '0'),
-    ].join('-')
+    const key = calendarDayKey(new Date(tx.occurredAt))
 
     const current = buckets[buckets.length - 1]
     if (current?.key === key) {

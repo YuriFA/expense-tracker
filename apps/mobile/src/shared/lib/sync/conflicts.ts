@@ -8,6 +8,7 @@
 // the exact same transitions.
 
 import { and, desc, eq, isNull } from 'drizzle-orm'
+import { nowIso } from '@expense-tracker/dates'
 import type { SyncOperationData } from '@expense-tracker/api'
 import type { LocalDatabase, LocalTransaction } from '@/shared/lib/db/database'
 import { enqueueOperation } from '@/shared/lib/db/outbox'
@@ -143,7 +144,7 @@ export function recordConflict(
   }
 
   const id = generateId()
-  const createdAt = new Date().toISOString()
+  const createdAt = nowIso()
   tx.insert(syncConflicts)
     .values({
       id,
@@ -185,7 +186,7 @@ export function getConflictById(db: LocalDatabase, id: string): LocalSyncConflic
 
 export function markConflictResolved(db: LocalDatabase, id: string): void {
   db.update(syncConflicts)
-    .set({ resolvedAt: new Date().toISOString() })
+    .set({ resolvedAt: nowIso() })
     .where(eq(syncConflicts.id, id))
     .run()
 }
@@ -266,7 +267,7 @@ export function applyDeleteWins(
 
   if (row) {
     updateEntityRow(tx, input.entity, input.entityId, {
-      deletedAt: new Date().toISOString(),
+      deletedAt: nowIso(),
       version: input.serverVersion,
       serverVersion: input.serverVersion,
     })
@@ -344,7 +345,7 @@ export function resolveConflictTakeServer(db: LocalDatabase, conflictId: string)
       if (conflict.serverState.deleted || !conflict.serverState.data) {
         if (entityRow) {
           updateEntityRow(tx, conflict.entity, conflict.entityId, {
-            deletedAt: new Date().toISOString(),
+            deletedAt: nowIso(),
             version: conflict.serverState.version,
             serverVersion: conflict.serverState.version,
           })
@@ -384,7 +385,7 @@ export function resolveConflictTakeServer(db: LocalDatabase, conflictId: string)
 
     dropOperationsFor(tx, conflict.entity, conflict.entityId)
     tx.update(syncConflicts)
-      .set({ resolvedAt: new Date().toISOString() })
+      .set({ resolvedAt: nowIso() })
       .where(eq(syncConflicts.id, conflictId))
       .run()
   })
@@ -423,7 +424,7 @@ export function resolveConflictKeepLocal(db: LocalDatabase, conflictId: string):
     }
 
     tx.update(syncConflicts)
-      .set({ resolvedAt: new Date().toISOString() })
+      .set({ resolvedAt: nowIso() })
       .where(eq(syncConflicts.id, conflictId))
       .run()
   })

@@ -12,12 +12,14 @@ import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import {
   currentMonth,
+  monthRangeLabel,
   nextMonth,
   previousMonth,
+  relativeDayLabel,
   transactionsInMonth,
   type MonthCursor,
-} from '@/shared/lib/calendar/month'
-import { formatAmount, monthRangeLabel, relativeDayLabel } from '@/shared/lib/format/format'
+} from '@expense-tracker/dates'
+import { formatAmount } from '@/shared/lib/format/format'
 import { useCategories } from '@/entities/category/model/use-categories'
 import { useTransactions } from '@/entities/transaction/model/use-transactions'
 

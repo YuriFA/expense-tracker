@@ -2,7 +2,7 @@ import { Pressable, ScrollView } from 'react-native'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
-import { calendarDaysAgo, relativeDayLabel } from '@/shared/lib/format/format'
+import { calendarDaysAgo, relativeDayLabel } from '@expense-tracker/dates'
 import { quickDateOptions } from '../model/quick-dates'
 
 /** The date control in the action row: "Сегодня" / "Вчера" / "14 АВГ.". */

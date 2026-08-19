@@ -29,7 +29,7 @@ Each area has its own rules in its own `AGENTS.md` (`backend/`, `apps/web/`,
 
 ## Shared workspace packages (`packages/*`)
 
-Platform-agnostic TS consumed by every app as `@expense-tracker/{api,money,i18n}`,
+Platform-agnostic TS consumed by every app as `@expense-tracker/{api,dates,money,i18n}`,
 resolved to source `.ts` via `exports` (no build step; `moduleResolution: bundler`).
 Each has its own `tsconfig.json` + `type-check` and must type-check cleanly alone.
 Each package's source/README is authoritative for its contents; only the cross-cutting
@@ -44,6 +44,11 @@ rules and decisions live here.
   package never imports app code.
 - **`money`** (leaf): dinero.js minor-units money. Its balance calculator is
   generic over a minimal account shape (no domain dep).
+- **`dates`** (deps: `date-fns`): the shared date layer - locale-shaped labels
+  (ru/en via date-fns locale data, no Intl), month-cursor navigation,
+  Monday-first month grids, day keys, and `nowIso`/`isoDaysAgo` ISO timestamps.
+  Apps never import `date-fns` directly, only this facade; web's richer
+  `@internationalized/date` adapter stays app-local for now.
 - **`i18n`** (leaf): EN/RU bundles + `MessageSchema`. `mapCategory(s)` take an
   injected `Translator` (vue-i18n `t` on web, react-i18next on mobile) - no app
   coupling.
@@ -70,7 +75,7 @@ all settings in the root file).
 backend/        Go API (Gin + sqlc + Postgres)
 apps/web/       Vue 3 + Vite (Feature-Sliced Design)
 apps/mobile/    React Native + Expo (Feature-Sliced Design + Expo Router)
-packages/       shared TS: api, money, i18n; shared css: tokens
+packages/       shared TS: api, dates, money, i18n; shared css: tokens
 docs/api/       OpenAPI contract (source of truth)
 ```
 

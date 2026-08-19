@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals'
 import type { AccountWithBalance, Category, Transaction } from '@expense-tracker/api'
-import { isCurrentOrFutureMonth } from '@/shared/lib/calendar/month'
+import { isCurrentOrFutureMonth } from '@expense-tracker/dates'
 import { formatAmount } from '@/shared/lib/format/format'
 import {
   categoryBreakdown,

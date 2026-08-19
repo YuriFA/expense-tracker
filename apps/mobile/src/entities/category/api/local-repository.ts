@@ -8,6 +8,7 @@
 // shared machine-readable error codes.
 
 import { and, asc, eq, isNull } from 'drizzle-orm'
+import { nowIso } from '@expense-tracker/dates'
 import {
   AlreadyExistsError,
   InvalidPayloadError,
@@ -105,7 +106,7 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
           version: 1,
           serverVersion: 0,
           deletedAt: null,
-          createdAt: new Date().toISOString(),
+          createdAt: nowIso(),
         }
         tx.insert(categories).values(row).run()
         enqueueOperation(tx, {
@@ -196,7 +197,7 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
           // serverVersion 0 with a SENT create means the server may already
           // hold the record (in flight / lost response): the delete must
           // travel as a tombstone after the create, never be wiped.
-          const next = { ...row, deletedAt: new Date().toISOString(), version: row.version + 1 }
+          const next = { ...row, deletedAt: nowIso(), version: row.version + 1 }
           tx.update(categories).set(next).where(eq(categories.id, id)).run()
           enqueueOperation(tx, {
             entity: 'category',

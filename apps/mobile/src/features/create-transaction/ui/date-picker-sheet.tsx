@@ -4,33 +4,21 @@ import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { Pressable } from '@/shared/ui/pressable'
 import { cn } from '@/shared/lib/utils'
-import { MONTH_FULL } from '@/shared/lib/format/format'
+import {
+  calendarDayKey,
+  monthGrid,
+  monthLabel,
+  nextMonth,
+  previousMonth,
+  weekdayLabels,
+  type MonthCursor,
+} from '@expense-tracker/dates'
 import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetRef,
   BottomSheetView,
 } from '@/shared/ui/bottom-sheet'
-
-const WEEKDAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'] as const
-
-/** Day cells for a month view: null placeholders keep Mondays aligned. */
-function monthCells(year: number, month: number): (number | null)[] {
-  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7 // Monday = 0
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  return [
-    ...Array.from({ length: firstWeekday }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
-  ]
-}
-
-function weeksOf(cells: (number | null)[]): (number | null)[][] {
-  const weeks: (number | null)[][] = []
-  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
-  return weeks
-}
-
-const pad = (value: number) => String(value).padStart(2, '0')
 
 /**
  * Month-grid calendar sheet for the "Другой" quick-date action. Picking a day
@@ -46,7 +34,7 @@ export function DatePickerSheet({
   selected: Date
   onSelect: (date: Date) => void
 }) {
-  const [view, setView] = useState(() => ({
+  const [view, setView] = useState<MonthCursor>(() => ({
     year: selected.getFullYear(),
     month: selected.getMonth(),
   }))
@@ -55,13 +43,7 @@ export function DatePickerSheet({
     view.year === selected.getFullYear() && view.month === selected.getMonth()
 
   const shiftMonth = (delta: 1 | -1) =>
-    setView((current) =>
-      current.month === 0 && delta === -1
-        ? { year: current.year - 1, month: 11 }
-        : current.month === 11 && delta === 1
-          ? { year: current.year + 1, month: 0 }
-          : { ...current, month: current.month + delta },
-    )
+    setView((current) => (delta === -1 ? previousMonth(current) : nextMonth(current)))
 
   const handleDayPress = (day: number) => {
     onSelect(
@@ -77,7 +59,7 @@ export function DatePickerSheet({
       testID="new-transaction-date-picker"
       stackBehavior="push"
     >
-      <BottomSheetHeader title={`${MONTH_FULL[view.month]} ${view.year}`} />
+      <BottomSheetHeader title={`${monthLabel(view.year, view.month)} ${view.year}`} />
       <BottomSheetView testID="new-transaction-calendar">
         <View className="gap-2 px-4 pb-6">
           <View className="flex-row items-center justify-between">
@@ -91,7 +73,7 @@ export function DatePickerSheet({
               <Icon name="chevron-back" size={20} colorClassName="accent-muted-foreground" />
             </Pressable>
             <Text variant="label" className="text-muted-foreground">
-              {WEEKDAYS.join(' ')}
+              {weekdayLabels().join(' ')}
             </Text>
             <Pressable
               testID="new-transaction-calendar-next"
@@ -104,7 +86,7 @@ export function DatePickerSheet({
             </Pressable>
           </View>
 
-          {weeksOf(monthCells(view.year, view.month)).map((week, weekIndex) => (
+          {monthGrid(view.year, view.month).map((week, weekIndex) => (
             <View key={weekIndex} className="flex-row">
               {week.map((day, dayIndex) => {
                 if (day === null) return <View key={dayIndex} className="h-11 flex-1" />
@@ -113,13 +95,13 @@ export function DatePickerSheet({
                   view.year === now.getFullYear() &&
                   view.month === now.getMonth() &&
                   day === now.getDate()
-                const dateKey = `${view.year}-${pad(view.month + 1)}-${pad(day)}`
+                const dateKey = calendarDayKey(new Date(view.year, view.month, day))
                 return (
                   <Pressable
                     key={day}
                     testID={`new-transaction-calendar-day-${dateKey}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`${day} ${MONTH_FULL[view.month]}`}
+                    accessibilityLabel={`${day} ${monthLabel(view.year, view.month)}`}
                     accessibilityState={{ selected: isSelected }}
                     className={cn(
                       'h-11 flex-1 items-center justify-center rounded-full',

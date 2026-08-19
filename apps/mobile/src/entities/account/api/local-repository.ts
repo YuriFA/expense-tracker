@@ -8,6 +8,7 @@
 // against in-use and tombstone records only.
 
 import { and, eq, isNull, or, sql } from 'drizzle-orm'
+import { nowIso } from '@expense-tracker/dates'
 import { isCurrencyCode } from '@expense-tracker/money'
 import {
   AlreadyExistsError,
@@ -144,7 +145,7 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
           version: 1,
           serverVersion: 0,
           deletedAt: null,
-          createdAt: new Date().toISOString(),
+          createdAt: nowIso(),
         }
         tx.insert(accounts).values(row).run()
         enqueueOperation(tx, {
@@ -229,7 +230,7 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
           // serverVersion 0 with a SENT create means the server may already
           // hold the record (in flight / lost response): the delete must
           // travel as a tombstone after the create, never be wiped.
-          const next = { ...row, deletedAt: new Date().toISOString(), version: row.version + 1 }
+          const next = { ...row, deletedAt: nowIso(), version: row.version + 1 }
           tx.update(accounts).set(next).where(eq(accounts.id, id)).run()
           enqueueOperation(tx, {
             entity: 'account',

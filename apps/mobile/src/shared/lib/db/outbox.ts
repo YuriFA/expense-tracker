@@ -7,6 +7,7 @@
 // outbox so the later engine plugs in without schema or repository changes.
 
 import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { nowIso } from '@expense-tracker/dates'
 import type { LocalTransaction } from './database'
 import {
   accounts,
@@ -45,7 +46,7 @@ export function enqueueOperation(tx: LocalTransaction, input: EnqueueOperationIn
       op: input.op,
       payloadJson: JSON.stringify(input.payload),
       baseVersion: input.baseVersion,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso(),
       sentAt: null,
       attempts: 0,
       lastError: null,

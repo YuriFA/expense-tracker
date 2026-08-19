@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Alert, ScrollView, View } from 'react-native'
 import { router } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
+import { dateTimeLabel } from '@expense-tracker/dates'
 import { Screen } from '@/shared/ui/screen'
 import { Text } from '@/shared/ui/text'
 import { Button } from '@/shared/ui/button'
@@ -16,7 +17,7 @@ function formatSyncedAt(iso: string | null): string {
   if (!iso) return 'ещё не выполнялась'
   const time = Date.parse(iso)
   if (Number.isNaN(time)) return 'ещё не выполнялась'
-  return new Date(time).toLocaleString('ru-RU')
+  return dateTimeLabel(new Date(time))
 }
 
 export function SettingsScreen() {

@@ -65,6 +65,9 @@ jest.mock("react-native-reanimated", () => {
   }
   const useAnimatedProps = () => ({})
   const useAnimatedReaction = () => {}
+  // Scroll handlers are JS callbacks invoked on scroll events; hand the
+  // handler back untouched so component logic that reads it stays exercisable.
+  const useAnimatedScrollHandler = (handler) => handler
 
   // Animations resolve instantly to their target.
   const withTiming = (toValue) => toValue
@@ -111,6 +114,7 @@ jest.mock("react-native-reanimated", () => {
     useAnimatedStyle,
     useAnimatedProps,
     useAnimatedReaction,
+    useAnimatedScrollHandler,
     withTiming,
     withSpring,
     withDelay,
@@ -164,6 +168,9 @@ jest.mock("@gorhom/bottom-sheet", () => {
 
   const BottomSheetView = ({ children, ...rest }) => <View {...rest}>{children}</View>
   const BottomSheetScrollView = ({ children, ...rest }) => <View {...rest}>{children}</View>
+  // The real footer pins itself via animatedFooterPosition; a plain View is
+  // enough under jest (content and testIDs still render).
+  const BottomSheetFooter = ({ children, ...rest }) => <View {...rest}>{children}</View>
   // The sheet-aware input is a plain TextInput under jest; what matters for
   // tests is that BottomSheetInput renders a real focusable/changeable input.
   const BottomSheetTextInput = TextInput
@@ -173,6 +180,7 @@ jest.mock("@gorhom/bottom-sheet", () => {
     BottomSheetModal,
     BottomSheetView,
     BottomSheetScrollView,
+    BottomSheetFooter,
     BottomSheetTextInput,
     BottomSheetModalProvider: ({ children }) => children,
     BottomSheetBackdrop: View,

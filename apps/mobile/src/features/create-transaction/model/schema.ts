@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { nowIso } from '@expense-tracker/dates'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
 
 // TODO(i18n): RU validation messages until mobile i18n wiring lands.
@@ -53,7 +54,7 @@ export type CreateTransactionFormValues = z.infer<typeof createTransactionSchema
 export function createTransactionDefaultValues(
   kind: TransactionFlowKind,
 ): CreateTransactionFormValues {
-  const base = { amount: '', description: '', occurredAt: new Date().toISOString() }
+  const base = { amount: '', description: '', occurredAt: nowIso() }
   switch (kind) {
     case 'transfer':
       return { kind, ...base, fromAccountId: '', toAccountId: '' }
