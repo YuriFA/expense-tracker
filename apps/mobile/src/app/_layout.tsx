@@ -127,12 +127,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <AppShellProviders>
-          <Stack>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack screenOptions={{ headerShown: false, gestureEnabled: true }}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
             {/* Placeholder destinations for the Home quick actions. */}
-            <Stack.Screen name="income" options={{ headerShown: false }} />
-            <Stack.Screen name="goals" options={{ headerShown: false }} />
+            <Stack.Screen name="income" />
+            <Stack.Screen name="goals" />
           </Stack>
         </AppShellProviders>
       </ThemeProvider>
