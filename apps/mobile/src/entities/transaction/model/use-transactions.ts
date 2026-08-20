@@ -7,11 +7,15 @@ import type {
 } from '@expense-tracker/api'
 import { useTransactionRepository } from '../api/repository'
 
-export function useTransactions(options: TransactionQuery = {}) {
+export function useTransactions(
+  options: TransactionQuery = {},
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   const repository = useTransactionRepository()
   return useQuery({
     queryKey: ['transactions', options],
     queryFn: () => repository.query(options),
+    enabled,
   })
 }
 

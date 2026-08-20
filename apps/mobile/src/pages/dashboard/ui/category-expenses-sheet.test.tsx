@@ -137,6 +137,9 @@ describe('CategoryExpensesSheet', () => {
     expect(screen.getByTestId('category-expenses-period')).toHaveTextContent(
       monthRangeLabelShort(now.getFullYear(), now.getMonth()),
     )
+    // The sheet's filtered query resolves asynchronously after the category
+    // is selected; the totals and rows follow in the same render.
+    await waitFor(() => expect(screen.getAllByTestId(/^category-expense-row-/)).toHaveLength(2))
     expect(screen.getByTestId('category-expenses-total')).toHaveTextContent(
       `${formatAmount(totalExpenses(taxiTransactions, currentMonth()))} потрачено`,
     )
@@ -161,8 +164,11 @@ describe('CategoryExpensesSheet', () => {
         monthRangeLabelShort(prev.year, prev.month),
       ),
     )
+    // The month switch issues a new filtered query; wait for its rows.
+    await waitFor(() =>
+      expect(screen.getByTestId('category-expense-row-tx-taxi-prev')).toBeTruthy(),
+    )
     expect(screen.getAllByTestId(/^category-expense-row-/)).toHaveLength(1)
-    expect(screen.getByTestId('category-expense-row-tx-taxi-prev')).toBeTruthy()
     expect(screen.getByTestId('category-expenses-total')).toHaveTextContent(
       `${formatAmount(totalExpenses(taxiTransactions, prev))} потрачено`,
     )
@@ -171,6 +177,7 @@ describe('CategoryExpensesSheet', () => {
   it('flips the day order with the sort toggle', async () => {
     renderSection()
     await openTaxiSheet()
+    await waitFor(() => expect(screen.getAllByTestId(/^category-expense-day-/)).toHaveLength(2))
 
     const newestFirst = screen
       .getAllByTestId(/^category-expense-day-/)

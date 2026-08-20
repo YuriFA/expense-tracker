@@ -2,19 +2,23 @@
 // in-sheet month navigator (own cursor - the dashboard month is only the
 // opening state), the period total, a newest/oldest sort toggle, and the
 // expenses grouped by day with per-day totals. The footer pill stacks the
-// expense-creation sheet with this category preselected. All aggregation
-// comes from the dashboard selectors over the loaded transactions - client
-// side, no per-month refetch.
+// expense-creation sheet with this category preselected. Data comes from the
+// sheet's own repository query filtered by category + expense type + a UTC
+// day range covering the in-sheet month; the dashboard selectors then trim
+// that superset to the exact local month, so the sheet's list and total
+// converge with the dashboard's category breakdown.
 //
 // The sheet stays mounted even without a category (it just shows fallback
 // content): present() is called from the category row in the same tick that
 // selects the category, so the ref must already be attached.
 
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
-import type { Category, Transaction } from '@expense-tracker/api'
+import type { Category } from '@expense-tracker/api'
+import { monthToUtcDayRange } from '@expense-tracker/dates'
 import { NewTransactionSheet } from '@/features/create-transaction'
+import { useTransactions } from '@/entities/transaction/model/use-transactions'
 import { Icon } from '@/shared/ui/icon'
 import { IconButton } from '@/shared/ui/icon-button'
 import { Text } from '@/shared/ui/text'
@@ -43,7 +47,6 @@ export interface CategoryExpensesSheetProps {
   ref: React.Ref<BottomSheetRef>
   /** The category whose expenses are listed; falls back to neutral content. */
   category: Category | undefined
-  transactions: Transaction[]
   categories: Category[]
   /** The month the sheet opens on; the in-sheet navigator takes over after. */
   initialCursor: MonthCursor
@@ -62,7 +65,6 @@ function reverseGroups(groups: ExpenseDayGroup[]): ExpenseDayGroup[] {
 
 export function CategoryExpensesSheet({
   category,
-  transactions,
   categories,
   initialCursor,
   emptyText,
@@ -74,15 +76,22 @@ export function CategoryExpensesSheet({
   const editCategorySheetRef = useRef<BottomSheetRef>(null)
   const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
 
-  // Pure client-side derivation: the whole transaction list is already
-  // loaded, so switching months is just a different filter.
-  const categoryTransactions = category
-    ? transactions.filter((tx) => tx.categoryId === category.id)
-    : []
-  const groups = expenseDayGroups(categoryTransactions, categories, cursor)
+  const categoryQuery = useTransactions(
+    { type: 'expense', categoryId: category?.id, ...monthToUtcDayRange(cursor) },
+    { enabled: category !== undefined },
+  )
+
+  // Depends on `categoryQuery.data` (a stable reference per fetch), not a
+  // `?? []` fallback computed at render time.
+  const { groups, totalText } = useMemo(() => {
+    const categoryTransactions = categoryQuery.data ?? []
+    return {
+      groups: expenseDayGroups(categoryTransactions, categories, cursor),
+      totalText: formatAmount(totalExpenses(categoryTransactions, cursor)),
+    }
+  }, [categoryQuery.data, categories, cursor])
   const orderedGroups = sortAscending ? reverseGroups(groups) : groups
   const periodLabel = monthRangeLabelShort(cursor.year, cursor.month)
-  const totalText = formatAmount(totalExpenses(categoryTransactions, cursor))
 
   const handleEdit = () => {
     editCategorySheetRef.current?.present()

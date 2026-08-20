@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
+import { monthToUtcDayRange } from '@expense-tracker/dates'
 import { Screen } from '@/shared/ui/screen'
 import { useAccounts } from '@/entities/account/model/use-accounts'
 import { useCategories } from '@/entities/category/model/use-categories'
@@ -16,7 +17,9 @@ export function DashboardScreen() {
 
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
-  const transactionsQuery = useTransactions()
+  // Month-bounded superset (UTC days covering the local month): children trim
+  // to the exact local month via the shared selectors.
+  const transactionsQuery = useTransactions(monthToUtcDayRange(cursor))
   const accounts = accountsQuery.data ?? []
   const categories = categoriesQuery.data ?? []
   const transactions = transactionsQuery.data ?? []

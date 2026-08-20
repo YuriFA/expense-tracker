@@ -44,3 +44,21 @@ export function transactionsInMonth<T extends { occurredAt: string }>(txs: reado
   const month = cursorDate(cursor)
   return txs.filter((tx) => isSameMonth(new Date(tx.occurredAt), month))
 }
+
+/**
+ * Inclusive UTC calendar days (`YYYY-MM-DD`) covering `cursor`'s local
+ * calendar month — a superset, never exact outside UTC: day filters cannot
+ * express local-month boundaries. Usable as repository `fromDate`/`toDate`
+ * pre-filters; exact local-month membership still comes from
+ * `transactionsInMonth` applied to the fetched superset.
+ */
+export function monthToUtcDayRange(cursor: MonthCursor): { fromDate: string; toDate: string } {
+  const start = cursorDate(cursor)
+  // Last instant of the local month; month+1 and the ms step are safe across
+  // year wraparound (December → January).
+  const end = new Date(cursor.year, cursor.month + 1, 1).getTime() - 1
+  return {
+    fromDate: start.toISOString().slice(0, 10),
+    toDate: new Date(end).toISOString().slice(0, 10),
+  }
+}

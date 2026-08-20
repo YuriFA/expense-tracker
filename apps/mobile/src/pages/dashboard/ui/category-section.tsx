@@ -93,7 +93,6 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
       <CategoryExpensesSheet
         ref={expensesSheetRef}
         category={sheetCategory}
-        transactions={transactions}
         categories={categories}
         initialCursor={cursor}
         emptyText="В этом месяце расходов нет"

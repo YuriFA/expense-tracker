@@ -21,6 +21,7 @@ export {
   currentMonth,
   isCurrentOrFutureMonth,
   monthLabel,
+  monthToUtcDayRange,
   nextMonth,
   previousMonth,
   transactionsInMonth,
