@@ -1,0 +1,133 @@
+# Income screen: reachable via the enabled home quick action; fixed «Доходы»
+# summary with month navigation and NO mode switcher; creates an income
+# category (the sheet defaults to the income type) and an income end-to-end,
+# then verifies the all-incomes list sheet and the category detail sheet.
+#
+# Requires an account to exist - 05-add-account creates it, so run the suite
+# in order on a fresh local database. The income category is created here
+# (unique name keeps the suite re-runnable); no other flow makes one.
+#
+# Conventions: assert/tap by testID only. Text asserts are limited to the
+# pre-modal steps (bottom sheets can detach main-window text labels).
+appId: com.anonymous.mobile
+tags:
+  - income
+---
+- runFlow: ../_launch.yaml
+- runScript: ../_random.js
+- assertVisible:
+    id: screen-dashboard
+
+# The quick action is enabled and opens the income screen
+- tapOn:
+    id: home-quick-income
+- assertVisible:
+    id: screen-income
+
+# Pre-modal: fixed title, and no mode switcher on this screen
+- assertVisible:
+    text: '.*Доходы.*'
+- assertNotVisible:
+    id: income-summary-mode
+
+# Period navigation rescopes every figure
+- tapOn:
+    id: income-period-prev
+- tapOn:
+    id: income-period-next
+
+# Income category through the income screen's sheet - the type defaults to
+# income, so no type-toggle tap is needed. Name + submit; the icon/color
+# pickers keep their defaults (the visible picker window already shows them).
+- tapOn:
+    id: income-new-category
+- assertVisible:
+    id: income-new-category-sheet
+- tapOn:
+    id: income-new-category-name
+- inputText: 'Зарплата ${output.suffix}'
+- tapOn:
+    id: income-new-category-submit
+# Close the create sheet (it stays open on success by design) with a
+# pan-down: the name keyboard stays up after submit and stretches the sheet
+# across the screen, so a backdrop tap has no backdrop to hit - the
+# pan-to-close gesture (enablePanDownToClose) works either way.
+- swipe:
+    start: 50%, 12%
+    end: 50%, 85%
+- assertNotVisible:
+    id: income-new-category-sheet
+
+# Income end-to-end through the list sheet's footer (stacks the income-kind
+# transaction sheet). Submit stays disabled until account + category + amount.
+- tapOn:
+    id: income-all-incomes
+- assertVisible:
+    id: income-incomes-sheet
+- tapOn:
+    id: income-new-income-button
+- assertVisible:
+    id: income-new-income-sheet
+
+- tapOn:
+    id: new-transaction-key-1
+- tapOn:
+    id: new-transaction-key-0
+- tapOn:
+    id: new-transaction-key-0
+- tapOn:
+    id: new-transaction-key-0
+
+- tapOn:
+    id: new-transaction-account
+- assertVisible:
+    id: new-transaction-account-picker-list
+- tapOn:
+    id: new-transaction-account-option-.*
+    index: 0
+
+- tapOn:
+    id: new-transaction-category-menu
+- assertVisible:
+    id: new-transaction-category-picker-list
+- tapOn:
+    id: new-transaction-category-option-.*
+    index: 0
+
+- tapOn:
+    id: new-transaction-submit
+
+# The sheet may or may not auto-dismiss (TODO(sheet-dismiss)); close it via
+# the backdrop when still open, then verify the income in the list sheet.
+- runFlow:
+    when:
+      visible:
+        id: income-new-income-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- assertVisible:
+    id: income-row-.*
+- assertVisible:
+    id: income-day-.*
+- tapOn:
+    point: 50%, 8%
+
+# Category breakdown row opens the income-kind detail sheet
+- tapOn:
+    id: income-category-.*
+    index: 0
+- assertVisible:
+    id: category-incomes-sheet
+- assertVisible:
+    id: category-incomes-period
+- assertVisible:
+    id: category-income-row-.*
+- tapOn:
+    point: 50%, 8%
+
+# Header back button returns to the dashboard
+- tapOn:
+    id: income-back
+- assertVisible:
+    id: screen-dashboard

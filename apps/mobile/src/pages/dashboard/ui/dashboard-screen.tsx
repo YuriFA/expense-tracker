@@ -6,11 +6,16 @@ import { useAccounts } from '@/entities/account/model/use-accounts'
 import { useCategories } from '@/entities/category/model/use-categories'
 import { useTransactions } from '@/entities/transaction/model/use-transactions'
 import { SyncStatusBadge } from '@/widgets/sync-status'
-import { currentMonth, nextMonth, previousMonth, type MonthCursor } from '../model/selectors'
+import {
+  AllCashflowCard,
+  CategorySection,
+  currentMonth,
+  nextMonth,
+  previousMonth,
+  type MonthCursor,
+} from '@/features/cashflow-overview'
+import { DashboardSummaryCard } from './dashboard-summary-card'
 import { QuickActionsRow } from './quick-actions-row'
-import { SummaryCard } from './summary-card'
-import { AllExpensesCard } from './all-expenses-card'
-import { CategorySection } from './category-section'
 
 export function DashboardScreen() {
   const [cursor, setCursor] = useState<MonthCursor>(() => currentMonth())
@@ -33,15 +38,25 @@ export function DashboardScreen() {
         <View className="p-6 gap-6">
           <SyncStatusBadge />
           <QuickActionsRow />
-          <SummaryCard
+          <DashboardSummaryCard
             cursor={cursor}
             accounts={accounts}
             transactions={transactions}
             onPrevPeriod={goPrev}
             onNextPeriod={goNext}
           />
-          <AllExpensesCard cursor={cursor} transactions={transactions} categories={categories} />
-          <CategorySection cursor={cursor} transactions={transactions} categories={categories} />
+          <AllCashflowCard
+            kind="expense"
+            cursor={cursor}
+            transactions={transactions}
+            categories={categories}
+          />
+          <CategorySection
+            kind="expense"
+            cursor={cursor}
+            transactions={transactions}
+            categories={categories}
+          />
         </View>
       </ScrollView>
     </Screen>

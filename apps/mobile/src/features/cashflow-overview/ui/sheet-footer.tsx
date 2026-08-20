@@ -6,21 +6,23 @@ import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import Animated, { SharedValue } from 'react-native-reanimated'
 
-// inherent the `BottomSheetFooterProps` to be able receive
+// Inherent the `BottomSheetFooterProps` to be able to receive
 // `animatedFooterPosition`.
-interface ExpenseSheetFooterProps extends BottomSheetFooterProps {
+interface SheetFooterProps extends BottomSheetFooterProps {
   buttonTranslationY?: SharedValue<number>
-  onNewExpensePress?: () => void
-  /** @default 'home-new-expense-button' */
-  testID?: string
+  onPress?: () => void
+  /** «Новый расход» / «Новый доход» — also the accessibility label. */
+  label: string
+  testID: string
 }
 
-export const ExpenseSheetFooter = ({
+export const SheetFooter = ({
   animatedFooterPosition,
   buttonTranslationY,
-  onNewExpensePress,
-  testID = 'home-new-expense-button',
-}: ExpenseSheetFooterProps) => {
+  onPress,
+  label,
+  testID,
+}: SheetFooterProps) => {
   const { bottom: bottomSafeArea } = useSafeAreaInsets()
 
   return (
@@ -36,13 +38,13 @@ export const ExpenseSheetFooter = ({
         <Pressable
           testID={testID}
           accessibilityRole="button"
-          accessibilityLabel="Новый расход"
+          accessibilityLabel={label}
           className="flex-row items-center gap-2 rounded-full bg-primary px-6 py-3 shadow-lg"
-          onPress={onNewExpensePress}
+          onPress={onPress}
         >
           <Icon name="add" size={18} colorClassName="accent-primary-foreground" />
           <Text variant="button" className="text-primary-foreground">
-            Новый расход
+            {label}
           </Text>
         </Pressable>
       </Animated.View>

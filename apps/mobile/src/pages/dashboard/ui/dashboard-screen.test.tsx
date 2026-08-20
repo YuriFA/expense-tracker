@@ -12,17 +12,17 @@ import { createMockCategoryRepository } from '@/entities/category/model/mock-rep
 import { TransactionRepositoryProvider } from '@/entities/transaction/api/repository'
 import { createMockTransactionRepository } from '@/entities/transaction/model/mock-repository'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
-import { DashboardScreen } from './dashboard-screen'
-import { formatAmount, monthRangeLabelShort } from '../model/format'
+import { formatAmount } from '@/shared/lib/format/format'
+import { monthRangeLabelShort } from '@expense-tracker/dates'
 import {
+  cashflowDayGroups,
+  cashflowInMonth,
   currentMonth,
-  expenseDayGroups,
-  expensesInMonth,
-  monthlyBalance,
   previousMonth,
-  totalBalance,
-  totalExpenses,
-} from '../model/selectors'
+  totalCashflow,
+} from '@/features/cashflow-overview'
+import { DashboardScreen } from './dashboard-screen'
+import { monthlyBalance, totalBalance } from '../model/selectors'
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
 // The badge mounts sync/auth infrastructure the screen test does not provide;
@@ -197,7 +197,7 @@ describe('DashboardScreen (Home)', () => {
     expect(screen.getByTestId('home-quick-goals')).toBeTruthy()
 
     expect(screen.getByText('Расходы')).toBeTruthy()
-    const expected = formatAmount(totalExpenses(TRANSACTIONS, currentMonth()))
+    const expected = formatAmount(totalCashflow(TRANSACTIONS, currentMonth(), 'expense'))
     await waitFor(() => expect(screen.getByText(expected)).toBeTruthy())
     expect(screen.getByTestId('home-new-category')).toBeTruthy()
   })
@@ -234,7 +234,7 @@ describe('DashboardScreen (Home)', () => {
     // The amount also appears in the category breakdown row - at least once.
     await waitFor(() =>
       expect(
-        screen.getAllByText(formatAmount(totalExpenses(TRANSACTIONS, prev))).length,
+        screen.getAllByText(formatAmount(totalCashflow(TRANSACTIONS, prev, 'expense'))).length,
       ).toBeGreaterThanOrEqual(1),
     )
   })
@@ -255,19 +255,19 @@ describe('DashboardScreen (Home)', () => {
     await waitFor(() => expect(screen.getByText('Все расходы')).toBeTruthy())
 
     fireEvent.press(screen.getByTestId('home-all-expenses'))
-    const expectedCount = expensesInMonth(TRANSACTIONS, currentMonth()).length
+    const expectedCount = cashflowInMonth(TRANSACTIONS, currentMonth(), 'expense').length
     await waitFor(() => expect(expensesRowCount()).toBe(expectedCount))
 
     // Subtitle: the selected period range plus its expense total.
     const now = new Date()
     const expectedSubtitle = `${monthRangeLabelShort(now.getFullYear(), now.getMonth())}, ${formatAmount(
-      totalExpenses(TRANSACTIONS, currentMonth()),
+      totalCashflow(TRANSACTIONS, currentMonth(), 'expense'),
     )}`
     expect(screen.getByText(expectedSubtitle)).toBeTruthy()
 
     // One day header per distinct expense day of the period.
     expect(screen.queryAllByTestId(/^home-expense-day-/).length).toBe(
-      expenseDayGroups(TRANSACTIONS, CATEGORIES, currentMonth()).length,
+      cashflowDayGroups(TRANSACTIONS, CATEGORIES, currentMonth(), 'expense').length,
     )
   })
 
@@ -290,8 +290,9 @@ describe('DashboardScreen (Home)', () => {
     expect(screen.getByTestId('category-expenses-sheet')).toBeTruthy()
     await waitFor(() =>
       expect(screen.queryAllByTestId(/^category-expense-row-/).length).toBe(
-        expensesInMonth(TRANSACTIONS, currentMonth()).filter((t) => t.categoryId === 'cat-taxi')
-          .length,
+        cashflowInMonth(TRANSACTIONS, currentMonth(), 'expense').filter(
+          (t) => t.categoryId === 'cat-taxi',
+        ).length,
       ),
     )
   })

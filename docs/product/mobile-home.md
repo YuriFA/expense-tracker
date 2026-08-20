@@ -214,9 +214,12 @@ its layout stable — no sections are hidden or rearranged:
 The Home screen provides quick access to frequently used areas:
 
 - **Accounts** — navigates to the existing Accounts area.
-- **Income** — navigates to a dedicated income screen. That screen is
-  planned but does not exist yet; until it is built, the action leads
-  to a placeholder screen.
+- **Income** — navigates to the dedicated income screen: the month-scoped
+  composition mirrored for income only (fixed "Доходы" summary with the
+  month's income total — no balance modes, the all-incomes card with a
+  day-grouped list sheet, and the per-category income breakdown with a
+  category detail sheet). Data behavior is specified in
+  `openspec/specs/mobile-local-data` ("Income screen data behavior").
 - **Goals** — navigates to a dedicated goals area. Goals are planned
   but not built (no API, no screens); the action leads to a placeholder
   screen until then.

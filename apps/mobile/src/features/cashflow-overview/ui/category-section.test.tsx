@@ -14,7 +14,7 @@ import { currentMonth } from '../model/selectors'
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
 // Empty category repository reaches the "no categories yet" branch.
-function renderSection() {
+function renderSection(kind: 'income' | 'expense' = 'expense') {
   const categoryRepository = createMockCategoryRepository([])
   const transactionRepository = createMockTransactionRepository([])
 
@@ -26,7 +26,12 @@ function renderSection() {
         <CategoryRepositoryProvider repository={categoryRepository}>
           <TransactionRepositoryProvider repository={transactionRepository}>
             <ThemeProvider>
-              <CategorySection cursor={currentMonth()} transactions={[]} categories={[]} />
+              <CategorySection
+                kind={kind}
+                cursor={currentMonth()}
+                transactions={[]}
+                categories={[]}
+              />
             </ThemeProvider>
           </TransactionRepositoryProvider>
         </CategoryRepositoryProvider>
@@ -40,5 +45,12 @@ describe('CategorySection (empty states)', () => {
     renderSection()
     expect(screen.getByText('Нет категорий')).toBeTruthy()
     expect(screen.getByTestId('home-new-category')).toBeTruthy()
+  })
+
+  it('uses the income wording and ids for the income kind', () => {
+    renderSection('income')
+    expect(screen.getByText('Нет категорий')).toBeTruthy()
+    expect(screen.getByText('Создайте первую категорию, чтобы записывать доходы')).toBeTruthy()
+    expect(screen.getByTestId('income-new-category')).toBeTruthy()
   })
 })

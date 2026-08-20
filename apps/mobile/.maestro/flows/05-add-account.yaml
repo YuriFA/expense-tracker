@@ -1,4 +1,5 @@
-# Accounts tab: create an account (name / currency / opening balance in
+# Accounts screen (a stack destination opened from the Home quick action -
+# no longer a tab): create an account (name / currency / opening balance in
 # major units) and see it listed with its balance.
 #
 # Sheet inputs are targeted by id: the shared BottomSheet opts out of
@@ -12,7 +13,7 @@ tags:
 - runFlow: ../_launch.yaml
 - runScript: ../_random.js
 - tapOn:
-    id: tab-accounts
+    id: home-quick-accounts
 - assertVisible:
     id: screen-accounts
 

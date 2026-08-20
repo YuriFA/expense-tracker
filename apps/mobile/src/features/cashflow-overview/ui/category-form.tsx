@@ -6,7 +6,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { Pressable, ScrollView, View } from 'react-native'
-import type { Category } from '@expense-tracker/api'
+import type { Category, CategoryType } from '@expense-tracker/api'
 import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
 import { FormError, FormField, FormLabel } from '@/shared/ui/form'
@@ -27,10 +27,18 @@ interface CategoryFormProps {
   category?: Category
   /** Optional container hook; the create sheet stays open on success. */
   onSuccess?: () => void
+  /** Initial type for the create flow (the toggle stays user-editable). */
+  defaultType?: CategoryType
+  /** testID stem for the create flow's fields; edit always uses `category-edit`. */
+  createTestID?: string
 }
 
-function categoryInitialValues(category: Category | undefined): NewCategoryFormValues {
-  if (!category) return newCategoryDefaultValues
+function categoryInitialValues(
+  category: Category | undefined,
+  defaultType: CategoryType | undefined,
+): NewCategoryFormValues {
+  if (!category)
+    return { ...newCategoryDefaultValues, type: defaultType ?? newCategoryDefaultValues.type }
   return {
     name: category.name,
     type: category.type,
@@ -39,15 +47,21 @@ function categoryInitialValues(category: Category | undefined): NewCategoryFormV
   }
 }
 
-export function CategoryForm({ category, onSuccess }: CategoryFormProps) {
+export function CategoryForm({
+  category,
+  onSuccess,
+  defaultType,
+  createTestID,
+}: CategoryFormProps) {
   const isEdit = category !== undefined
-  // testIDs stay stable per mode: the create and edit sheets are both always
-  // mounted on the dashboard, so each mode needs its own unique prefix.
-  const id = isEdit ? 'category-edit' : 'home-new-category'
+  // testIDs stay stable per mode: the create and edit sheets can both be
+  // mounted on one screen, so each mode needs its own unique prefix.
+  const id = isEdit ? 'category-edit' : (createTestID ?? 'home-new-category')
+  const createDefaults = categoryInitialValues(undefined, defaultType)
 
   const form = useForm<NewCategoryFormValues>({
     resolver: zodResolver(newCategorySchema),
-    defaultValues: categoryInitialValues(category),
+    defaultValues: categoryInitialValues(category, defaultType),
   })
   const createCategory = useCreateCategory()
   const updateCategory = useUpdateCategory()
@@ -63,7 +77,7 @@ export function CategoryForm({ category, onSuccess }: CategoryFormProps) {
         })
       } else {
         await createCategory.mutateAsync(values)
-        form.reset(newCategoryDefaultValues)
+        form.reset(createDefaults)
       }
       onSuccess?.()
     } catch (cause) {

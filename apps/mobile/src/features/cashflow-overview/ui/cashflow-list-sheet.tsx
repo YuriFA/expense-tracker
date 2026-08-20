@@ -13,11 +13,12 @@ import {
   BottomSheetScrollView,
   BottomSheetView,
 } from '@/shared/ui/bottom-sheet'
-import type { ExpenseDayGroup } from '../model/selectors'
-import { ExpenseSheetFooter } from './expense-sheet-footer'
+import type { CashflowDayGroup, CashflowKind } from '../model/selectors'
+import { CASHFLOW_KIND_VIEWS } from './kind'
+import { SheetFooter } from './sheet-footer'
 import { useSheetFooterScroll } from './use-sheet-footer-scroll'
 
-export interface ExpenseRowView {
+export interface CashflowRowView {
   id: string
   description: string
   categoryName: string
@@ -28,24 +29,24 @@ export interface ExpenseRowView {
   amountText: string
 }
 
-export interface ExpensesSheetProps {
+export interface CashflowListSheetProps {
   ref: React.Ref<BottomSheetRef>
-  title: string
+  kind: CashflowKind
   /** Period + total summary under the title: "1 авг. - 31 авг., 30 325 ₽". */
   subtitle: string
-  groups: ExpenseDayGroup[]
-  emptyText: string
+  groups: CashflowDayGroup[]
 }
 
-/** Scroll-driven footer visibility shared by the expense sheets. */
+/** Scroll-driven footer visibility shared by the cashflow sheets. */
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
 
-export function ExpensesSheet({ title, subtitle, groups, emptyText, ref }: ExpensesSheetProps) {
-  const newExpenseSheetRef = useRef<BottomSheetRef>(null)
+export function CashflowListSheet({ kind, subtitle, groups, ref }: CashflowListSheetProps) {
+  const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
+  const newTransactionSheetRef = useRef<BottomSheetRef>(null)
   const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
 
-  const handleNewExpense = () => {
-    newExpenseSheetRef.current?.present()
+  const handleNewTransaction = () => {
+    newTransactionSheetRef.current?.present()
   }
 
   return (
@@ -54,31 +55,33 @@ export function ExpensesSheet({ title, subtitle, groups, emptyText, ref }: Expen
         ref={ref}
         snapPoints={['90%']}
         stackBehavior="push"
-        testID="home-expenses-sheet"
+        testID={ids.listSheet}
         footerComponent={(props) => (
-          <ExpenseSheetFooter
+          <SheetFooter
             {...props}
             buttonTranslationY={buttonTranslationY}
-            onNewExpensePress={handleNewExpense}
+            onPress={handleNewTransaction}
+            label={copy.newTransaction}
+            testID={ids.newTransactionButton}
           />
         )}
       >
         {groups.length === 0 ? (
-          <BottomSheetView testID="home-expenses-sheet">
-            <BottomSheetHeader title={title} subtitle={subtitle} />
+          <BottomSheetView testID={ids.listSheet}>
+            <BottomSheetHeader title={copy.listTitle} subtitle={subtitle} />
             <BottomSheetBody>
               <Text variant="body" className="text-muted-foreground">
-                {emptyText}
+                {copy.monthEmpty}
               </Text>
             </BottomSheetBody>
           </BottomSheetView>
         ) : (
           <>
-            <BottomSheetHeader title={title} subtitle={subtitle} />
-            <AnimatedBottomSheetScrollView testID="home-expenses-sheet" onScroll={scrollHandler}>
+            <BottomSheetHeader title={copy.listTitle} subtitle={subtitle} />
+            <AnimatedBottomSheetScrollView testID={ids.listSheet} onScroll={scrollHandler}>
               <BottomSheetBody className="gap-6 pt-4 pb-32">
                 {groups.map((group) => (
-                  <View key={group.key} className="gap-3" testID={`home-expense-day-${group.key}`}>
+                  <View key={group.key} className="gap-3" testID={`${ids.listDay}-${group.key}`}>
                     <View className="flex-row items-center justify-between">
                       <Text variant="button" className="font-medium text-foreground">
                         {group.title}
@@ -93,7 +96,7 @@ export function ExpensesSheet({ title, subtitle, groups, emptyText, ref }: Expen
                         {index > 0 ? <View className="h-px bg-border/10" /> : null}
                         <View
                           className="flex-row items-center gap-4"
-                          testID={`home-expense-row-${row.id}`}
+                          testID={`${ids.listRow}-${row.id}`}
                         >
                           <View
                             className={cn(
@@ -122,9 +125,9 @@ export function ExpensesSheet({ title, subtitle, groups, emptyText, ref }: Expen
       </BottomSheet>
 
       <NewTransactionSheet
-        ref={newExpenseSheetRef}
-        kind="expense"
-        testID="home-new-expense-sheet"
+        ref={newTransactionSheetRef}
+        kind={kind}
+        testID={ids.newTransactionSheet}
       />
     </>
   )

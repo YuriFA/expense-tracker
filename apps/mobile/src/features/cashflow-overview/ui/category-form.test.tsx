@@ -18,13 +18,17 @@ import { CategoryForm } from './category-form'
 
 type MockRepository = ReturnType<typeof createMockCategoryRepository>
 
-function renderForm(repository?: MockRepository, category?: Category) {
+function renderForm(
+  repository?: MockRepository,
+  category?: Category,
+  props: { defaultType?: 'income' | 'expense' } = {},
+) {
   const repo = repository ?? createMockCategoryRepository([])
   render(
     <QueryClientProvider client={createQueryClient()}>
       <CategoryRepositoryProvider repository={repo}>
         <ThemeProvider>
-          <CategoryForm category={category} />
+          <CategoryForm category={category} {...props} />
         </ThemeProvider>
       </CategoryRepositoryProvider>
     </QueryClientProvider>,
@@ -77,6 +81,16 @@ describe('CategoryForm (create)', () => {
       icon: 'bus',
       color: '#6366f1',
     })
+  })
+
+  it('defaults the create flow to defaultType without touching the toggle', async () => {
+    const repository = renderForm(undefined, undefined, { defaultType: 'income' })
+
+    fireEvent.changeText(screen.getByTestId('home-new-category-name'), 'Фриланс')
+    fireEvent.press(screen.getByTestId('home-new-category-submit'))
+
+    await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
+    expect(repository.snapshot()[0]).toMatchObject({ name: 'Фриланс', type: 'income' })
   })
 
   it('surfaces a repository error at the root slot and keeps the name', async () => {

@@ -80,8 +80,8 @@ tags:
 - tapOn:
     point: 50%, 8%
 
-# Quick action placeholder
-- tapOn:
-    id: home-quick-goals
+# Goals quick action stays a disabled placeholder until the goals area ships
+# (income, by contrast, is wired to its screen - covered by 11-income).
 - assertVisible:
-    id: screen-goals
+    id: home-quick-goals
+    enabled: false

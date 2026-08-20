@@ -3,32 +3,35 @@ import { Icon, type IconName } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import type { Category, Transaction } from '@expense-tracker/api'
-import { formatAmount } from '../model/format'
-import { categoryBreakdown, MonthCursor } from '../model/selectors'
+import { formatAmount } from '@/shared/lib/format/format'
+import { categoryBreakdown, type CashflowKind, type MonthCursor } from '../model/selectors'
+import { CASHFLOW_KIND_VIEWS } from './kind'
 import { NewCategorySheet } from './new-category-sheet'
 import { useRef, useState } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { CategoryRow } from './category-row'
 import { View } from 'react-native'
-import { CategoryExpensesSheet } from './category-expenses-sheet'
+import { CategoryCashflowSheet } from './category-cashflow-sheet'
 
 export interface CategorySectionProps {
+  kind: CashflowKind
   cursor: MonthCursor
   transactions: Transaction[]
   categories: Category[]
 }
 
-export function CategorySection({ cursor, transactions, categories }: CategorySectionProps) {
-  const expensesSheetRef = useRef<BottomSheetRef>(null)
+export function CategorySection({ kind, cursor, transactions, categories }: CategorySectionProps) {
+  const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
+  const categorySheetRef = useRef<BottomSheetRef>(null)
   const newCategorySheetRef = useRef<BottomSheetRef>(null)
-  const [categoryExpensesId, setCategoryExpensesId] = useState<string | undefined>(undefined)
+  const [categoryDetailId, setCategoryDetailId] = useState<string | undefined>(undefined)
 
   const hasAnyCategories = categories.length > 0
-  const sheetCategory = categoryExpensesId
-    ? categories.find((c) => c.id === categoryExpensesId)
+  const sheetCategory = categoryDetailId
+    ? categories.find((c) => c.id === categoryDetailId)
     : undefined
 
-  const rows = categoryBreakdown(transactions, categories, cursor)
+  const rows = categoryBreakdown(transactions, categories, cursor, kind)
 
   const openNewCategory = () => {
     newCategorySheetRef.current?.present()
@@ -38,7 +41,7 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
     <>
       <Card variant="elevated" className="gap-4">
         <Pressable
-          testID="home-new-category"
+          testID={ids.newCategory}
           accessibilityRole="button"
           accessibilityLabel="Новая категория"
           onPress={openNewCategory}
@@ -59,26 +62,27 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
               Нет категорий
             </Text>
             <Text variant="body-sm" className="text-muted-foreground">
-              Создайте первую категорию, чтобы записывать расходы
+              {copy.categoryHint}
             </Text>
           </View>
         ) : rows.length === 0 ? (
           <Text variant="body-sm" className="text-muted-foreground">
-            В этом месяце расходов нет
+            {copy.monthEmpty}
           </Text>
         ) : (
           <View className="gap-4">
             {rows.map(({ category, totalMinor }) => (
               <CategoryRow
                 key={category.id}
+                kind={kind}
                 categoryId={category.id}
                 name={category.name}
                 icon={category.icon as IconName}
                 color={category.color}
                 amountText={formatAmount(totalMinor)}
                 onPress={(categoryId) => {
-                  setCategoryExpensesId(categoryId)
-                  expensesSheetRef.current?.present()
+                  setCategoryDetailId(categoryId)
+                  categorySheetRef.current?.present()
                 }}
               />
             ))}
@@ -86,14 +90,14 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
         )}
       </Card>
 
-      <NewCategorySheet ref={newCategorySheetRef} />
+      <NewCategorySheet ref={newCategorySheetRef} defaultType={kind} testID={ids.newCategoryForm} />
 
-      <CategoryExpensesSheet
-        ref={expensesSheetRef}
+      <CategoryCashflowSheet
+        ref={categorySheetRef}
+        kind={kind}
         category={sheetCategory}
         categories={categories}
         initialCursor={cursor}
-        emptyText="В этом месяце расходов нет"
       />
     </>
   )

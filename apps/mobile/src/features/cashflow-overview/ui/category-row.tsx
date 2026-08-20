@@ -3,8 +3,11 @@ import { Icon, type IconName } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
 import { View } from 'react-native'
 import { cn } from '@/shared/lib/utils'
+import { CASHFLOW_KIND_VIEWS } from './kind'
+import type { CashflowKind } from '../model/selectors'
 
 interface CategoryRowProps {
+  kind: CashflowKind
   categoryId: string
   name: string
   icon: IconName
@@ -15,6 +18,7 @@ interface CategoryRowProps {
 }
 
 export function CategoryRow({
+  kind,
   categoryId,
   name,
   icon,
@@ -22,11 +26,13 @@ export function CategoryRow({
   amountText,
   onPress,
 }: CategoryRowProps) {
+  const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
+
   return (
     <Pressable
-      testID={`home-category-${categoryId}`}
+      testID={`${ids.categoryRow}-${categoryId}`}
       accessibilityRole="button"
-      accessibilityLabel={`Расходы на ${name}`}
+      accessibilityLabel={copy.categoryRowA11yLabel(name)}
       className="active:opacity-70"
       onPress={() => onPress(categoryId)}
     >

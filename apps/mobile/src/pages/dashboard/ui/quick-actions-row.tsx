@@ -32,7 +32,6 @@ export function QuickActionsRow() {
       id: 'income',
       label: 'Доходы',
       icon: 'trending-up',
-      disabled: true, // TODO: wire up income page
       chipClassName: 'bg-brand-orange',
       onPress: () => router.push('/income'),
     },

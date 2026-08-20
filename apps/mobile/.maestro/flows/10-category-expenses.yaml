@@ -76,13 +76,13 @@ tags:
 - tapOn:
     point: 50%, 8%
 
-# The close (X) header button is the third way out - reopen and use it
+# Reopen and close via the backdrop, proving the sheet actually dismissed
 - tapOn:
     id: home-category-.*
     index: 0
 - assertVisible:
     id: category-expenses-sheet
 - tapOn:
-    id: category-expenses-close
+    point: 50%, 8%
 - assertNotVisible:
     id: category-expenses-sheet

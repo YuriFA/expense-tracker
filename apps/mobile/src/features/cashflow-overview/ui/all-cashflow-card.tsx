@@ -2,25 +2,35 @@ import { Pressable, View } from 'react-native'
 import { Card } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
+import { formatAmount } from '@/shared/lib/format/format'
+import { monthRangeLabelShort, relativeDayLabel } from '@expense-tracker/dates'
 import type { Category, Transaction } from '@expense-tracker/api'
-import type { LatestExpenseView } from './all-expenses-card.types'
-import { formatAmount, monthRangeLabelShort, relativeDayLabel } from '../model/format'
-import { expenseDayGroups, latestExpense, MonthCursor, totalExpenses } from '../model/selectors'
-import { ExpensesSheet } from './expenses-sheet'
+import type { LatestCashflowView } from './all-cashflow-card.types'
+import {
+  cashflowDayGroups,
+  latestCashflow,
+  totalCashflow,
+  type CashflowKind,
+  type MonthCursor,
+} from '../model/selectors'
+import { CASHFLOW_KIND_VIEWS } from './kind'
+import { CashflowListSheet } from './cashflow-list-sheet'
 import { useRef } from 'react'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 
-interface AllExpensesCardProps {
+interface AllCashflowCardProps {
+  kind: CashflowKind
   cursor: MonthCursor
   transactions: Transaction[]
   categories: Category[]
 }
 
-export function AllExpensesCard({ cursor, transactions, categories }: AllExpensesCardProps) {
-  const expensesSheetRef = useRef<BottomSheetRef>(null)
-  const last = latestExpense(transactions, cursor)
+export function AllCashflowCard({ kind, cursor, transactions, categories }: AllCashflowCardProps) {
+  const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
+  const listSheetRef = useRef<BottomSheetRef>(null)
+  const last = latestCashflow(transactions, cursor, kind)
   const lastCategory = last ? categories.find((c) => c.id === last.categoryId) : undefined
-  const latest: LatestExpenseView | null = last
+  const latest: LatestCashflowView | null = last
     ? {
         amountText: formatAmount(last.amount),
         categoryName: lastCategory?.name ?? 'Без категории',
@@ -28,25 +38,25 @@ export function AllExpensesCard({ cursor, transactions, categories }: AllExpense
       }
     : null
 
-  const sheetGroups = expenseDayGroups(transactions, categories, cursor)
+  const sheetGroups = cashflowDayGroups(transactions, categories, cursor, kind)
   const sheetSubtitle = `${monthRangeLabelShort(cursor.year, cursor.month)}, ${formatAmount(
-    totalExpenses(transactions, cursor),
+    totalCashflow(transactions, cursor, kind),
   )}`
 
   return (
     <>
       <Pressable
-        testID="home-all-expenses"
+        testID={ids.allCard}
         accessibilityRole="button"
-        accessibilityLabel={`Все расходы${latest ? `, последний ${latest.categoryName}` : ''}`}
+        accessibilityLabel={`${copy.allTitle}${latest ? `, последний ${latest.categoryName}` : ''}`}
         className="active:opacity-70"
         onPress={() => {
-          expensesSheetRef.current?.present()
+          listSheetRef.current?.present()
         }}
       >
         <Card variant="elevated" className="bg-success/10">
           <View className="gap-2">
-            <Text variant="h4">Все расходы</Text>
+            <Text variant="h4">{copy.allTitle}</Text>
 
             {latest ? (
               <View className="flex-row items-center gap-4">
@@ -62,7 +72,7 @@ export function AllExpensesCard({ cursor, transactions, categories }: AllExpense
             ) : (
               <View className="gap-2">
                 <Text variant="body" className="text-muted-foreground">
-                  Расходов нет
+                  {copy.allEmpty}
                 </Text>
               </View>
             )}
@@ -70,12 +80,11 @@ export function AllExpensesCard({ cursor, transactions, categories }: AllExpense
         </Card>
       </Pressable>
 
-      <ExpensesSheet
-        ref={expensesSheetRef}
-        title="Список расходов"
+      <CashflowListSheet
+        ref={listSheetRef}
+        kind={kind}
         subtitle={sheetSubtitle}
         groups={sheetGroups}
-        emptyText="В этом месяце расходов нет"
       />
     </>
   )

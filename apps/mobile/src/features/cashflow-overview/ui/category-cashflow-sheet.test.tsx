@@ -1,9 +1,10 @@
-// Category expense sheet behavior over the CategorySection harness (it owns
-// the sheet's open flow): the opened month renders its period, total, and
-// day-grouped rows for the category only; the in-sheet month navigator
+// Category cashflow sheet behavior over the CategorySection harness (it
+// owns the sheet's open flow): the opened month renders its period, total,
+// and day-grouped rows for the category only; the in-sheet month navigator
 // switches periods; the sort toggle flips the day order; an empty month
 // shows the empty state; the footer and header actions present the
-// expense-creation and category-edit sheets.
+// transaction-creation and category-edit sheets. The expense kind keeps
+// the dashboard's ids and wording; the income kind mirrors them.
 
 import { describe, expect, it } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
@@ -20,8 +21,9 @@ import { TransactionRepositoryProvider } from '@/entities/transaction/api/reposi
 import { createMockTransactionRepository } from '@/entities/transaction/model/mock-repository'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 import { CategorySection } from './category-section'
-import { formatAmount, monthRangeLabelShort } from '../model/format'
-import { currentMonth, previousMonth, totalExpenses } from '../model/selectors'
+import { formatAmount } from '@/shared/lib/format/format'
+import { monthRangeLabelShort } from '@expense-tracker/dates'
+import { currentMonth, previousMonth, totalCashflow } from '../model/selectors'
 
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
@@ -106,6 +108,7 @@ function renderSection() {
               <ThemeProvider>
                 <BottomSheetProvider>
                   <CategorySection
+                    kind="expense"
                     cursor={currentMonth()}
                     transactions={TRANSACTIONS}
                     categories={CATEGORIES}
@@ -128,7 +131,7 @@ async function openTaxiSheet() {
 
 const taxiTransactions = TRANSACTIONS.filter((tx) => tx.categoryId === 'cat-taxi')
 
-describe('CategoryExpensesSheet', () => {
+describe('CategoryCashflowSheet (expense kind)', () => {
   it('renders the period, total, and day groups for the category', async () => {
     renderSection()
     await openTaxiSheet()
@@ -141,7 +144,7 @@ describe('CategoryExpensesSheet', () => {
     // is selected; the totals and rows follow in the same render.
     await waitFor(() => expect(screen.getAllByTestId(/^category-expense-row-/)).toHaveLength(2))
     expect(screen.getByTestId('category-expenses-total')).toHaveTextContent(
-      `${formatAmount(totalExpenses(taxiTransactions, currentMonth()))} потрачено`,
+      `${formatAmount(totalCashflow(taxiTransactions, currentMonth(), 'expense'))} потрачено`,
     )
 
     // Only this category's expenses of the selected month, one group per day.
@@ -170,7 +173,7 @@ describe('CategoryExpensesSheet', () => {
     )
     expect(screen.getAllByTestId(/^category-expense-row-/)).toHaveLength(1)
     expect(screen.getByTestId('category-expenses-total')).toHaveTextContent(
-      `${formatAmount(totalExpenses(taxiTransactions, prev))} потрачено`,
+      `${formatAmount(totalCashflow(taxiTransactions, prev, 'expense'))} потрачено`,
     )
   })
 
@@ -216,5 +219,114 @@ describe('CategoryExpensesSheet', () => {
     fireEvent.press(screen.getByTestId('category-expenses-edit'))
     await waitFor(() => expect(screen.getByTestId('category-edit-sheet')).toBeTruthy())
     expect(screen.getByDisplayValue('Такси')).toBeTruthy()
+  })
+})
+
+// --- Income kind: same harness shape, income categories/transactions, and
+// the income wording and ids -------------------------------------------------
+
+const INCOME_CATEGORIES: Category[] = [
+  {
+    id: 'cat-salary',
+    name: 'Зарплата',
+    type: 'income',
+    icon: 'cash',
+    color: '#16a34a',
+    version: 1,
+  },
+]
+
+const INCOME_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'tx-salary-1',
+    type: 'income',
+    amount: 1_500_000,
+    description: 'Аванс',
+    occurredAt: dayThisMonth(5),
+    version: 1,
+    accountId: 'acc-card',
+    categoryId: 'cat-salary',
+  },
+  {
+    id: 'tx-salary-prev',
+    type: 'income',
+    amount: 1_500_000,
+    description: 'Зарплата за прошлый месяц',
+    occurredAt: dayPrevMonth(10),
+    version: 1,
+    accountId: 'acc-card',
+    categoryId: 'cat-salary',
+  },
+  {
+    id: 'tx-taxi-noise',
+    type: 'expense',
+    amount: 400_000,
+    description: 'Такси',
+    occurredAt: dayThisMonth(6),
+    version: 1,
+    accountId: 'acc-card',
+    categoryId: 'cat-taxi',
+  },
+]
+
+function renderIncomeSection() {
+  render(
+    <SafeAreaProvider
+      initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
+    >
+      <QueryClientProvider client={createQueryClient()}>
+        <AccountRepositoryProvider repository={createMockAccountRepository([])}>
+          <CategoryRepositoryProvider repository={createMockCategoryRepository(INCOME_CATEGORIES)}>
+            <TransactionRepositoryProvider
+              repository={createMockTransactionRepository(INCOME_TRANSACTIONS)}
+            >
+              <ThemeProvider>
+                <BottomSheetProvider>
+                  <CategorySection
+                    kind="income"
+                    cursor={currentMonth()}
+                    transactions={INCOME_TRANSACTIONS}
+                    categories={INCOME_CATEGORIES}
+                  />
+                </BottomSheetProvider>
+              </ThemeProvider>
+            </TransactionRepositoryProvider>
+          </CategoryRepositoryProvider>
+        </AccountRepositoryProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>,
+  )
+}
+
+describe('CategoryCashflowSheet (income kind)', () => {
+  it('shows the income breakdown, wording, and ids; expenses never appear', async () => {
+    renderIncomeSection()
+
+    await waitFor(() => expect(screen.getByTestId('income-category-cat-salary')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('income-category-cat-salary'))
+    expect(screen.getByTestId('category-incomes-sheet')).toBeTruthy()
+
+    await waitFor(() => expect(screen.getAllByTestId(/^category-income-row-/)).toHaveLength(1))
+    expect(screen.getByTestId('category-incomes-total')).toHaveTextContent(
+      `${formatAmount(1_500_000)} получено`,
+    )
+    expect(screen.getByText('Все доходы')).toBeTruthy()
+    expect(screen.queryByTestId('category-income-row-tx-taxi-noise')).toBeNull()
+    expect(screen.queryByTestId('category-income-row-tx-salary-prev')).toBeNull()
+
+    fireEvent.press(screen.getByTestId('category-new-income-button'))
+    await waitFor(() => expect(screen.getByTestId('category-new-income-sheet')).toBeTruthy())
+  })
+
+  it('shows the income empty state for a month without incomes', async () => {
+    renderIncomeSection()
+
+    await waitFor(() => expect(screen.getByTestId('income-category-cat-salary')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('income-category-cat-salary'))
+    fireEvent.press(screen.getByTestId('category-incomes-prev-month'))
+    fireEvent.press(screen.getByTestId('category-incomes-prev-month'))
+
+    await waitFor(() => expect(screen.getByText('В этом месяце доходов нет')).toBeTruthy())
+    expect(screen.queryAllByTestId(/^category-income-row-/)).toHaveLength(0)
   })
 })

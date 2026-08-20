@@ -1,8 +1,7 @@
-// Scroll-driven footer visibility for the expense sheets: scrolling down
-// deliberately hides the "new expense" pill, scrolling back up reveals it.
-// Extracted from expenses-sheet.tsx once the category sheet needed the same
-// behavior; returns an animated scroll handler plus the shared translateY
-// the footer renders with.
+// Scroll-driven footer visibility for the cashflow list sheets: scrolling
+// down deliberately hides the "new transaction" pill, scrolling back up
+// reveals it. Returns an animated scroll handler plus the shared
+// translateY the footer renders with.
 
 import { useAnimatedScrollHandler, useSharedValue, withTiming } from 'react-native-reanimated'
 

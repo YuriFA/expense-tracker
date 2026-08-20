@@ -120,13 +120,13 @@ appId: com.anonymous.mobile
 # --- 5. Real tabs still switch screens with the SpeedDial present ------------
 # Dial is closed so the scrim passes touches through; tab taps land.
 - tapOn:
-    id: tab-transactions
+    id: tab-plans
 - assertVisible:
-    id: screen-transactions
+    id: screen-plans
 - tapOn:
-    id: tab-accounts
+    id: tab-analytics
 - assertVisible:
-    id: screen-accounts
+    id: screen-analytics
 - tapOn:
     id: tab-settings
 - assertVisible:

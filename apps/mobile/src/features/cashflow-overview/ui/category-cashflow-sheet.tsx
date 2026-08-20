@@ -1,12 +1,12 @@
-// Category expense sheet (reference redesign): close/edit header, an
-// in-sheet month navigator (own cursor - the dashboard month is only the
+// Category cashflow sheet (reference redesign): close/edit header, an
+// in-sheet month navigator (own cursor - the screen month is only the
 // opening state), the period total, a newest/oldest sort toggle, and the
-// expenses grouped by day with per-day totals. The footer pill stacks the
-// expense-creation sheet with this category preselected. Data comes from the
-// sheet's own repository query filtered by category + expense type + a UTC
-// day range covering the in-sheet month; the dashboard selectors then trim
-// that superset to the exact local month, so the sheet's list and total
-// converge with the dashboard's category breakdown.
+// kind's transactions grouped by day with per-day totals. The footer pill
+// stacks the transaction-creation sheet with this category preselected.
+// Data comes from the sheet's own repository query filtered by category +
+// kind + a UTC day range covering the in-sheet month; the selectors then
+// trim that superset to the exact local month, so the sheet's list and
+// total converge with the screen's category breakdown.
 //
 // The sheet stays mounted even without a category (it just shows fallback
 // content): present() is called from the category row in the same tick that
@@ -16,7 +16,7 @@ import { Fragment, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import type { Category } from '@expense-tracker/api'
-import { monthToUtcDayRange } from '@expense-tracker/dates'
+import { monthRangeLabelShort, monthToUtcDayRange } from '@expense-tracker/dates'
 import { NewTransactionSheet } from '@/features/create-transaction'
 import { useTransactions } from '@/entities/transaction/model/use-transactions'
 import { Icon } from '@/shared/ui/icon'
@@ -30,54 +30,57 @@ import {
   BottomSheetRef,
   BottomSheetScrollView,
 } from '@/shared/ui/bottom-sheet'
-import { formatAmount, monthRangeLabelShort } from '../model/format'
+import { formatAmount } from '@/shared/lib/format/format'
 import {
-  expenseDayGroups,
+  cashflowDayGroups,
   nextMonth,
   previousMonth,
-  totalExpenses,
-  type ExpenseDayGroup,
+  totalCashflow,
+  type CashflowDayGroup,
+  type CashflowKind,
   type MonthCursor,
 } from '../model/selectors'
+import { CASHFLOW_KIND_VIEWS } from './kind'
 import { EditCategorySheet } from './edit-category-sheet'
-import { ExpenseSheetFooter } from './expense-sheet-footer'
+import { SheetFooter } from './sheet-footer'
 import { useSheetFooterScroll } from './use-sheet-footer-scroll'
 
-export interface CategoryExpensesSheetProps {
+export interface CategoryCashflowSheetProps {
   ref: React.Ref<BottomSheetRef>
-  /** The category whose expenses are listed; falls back to neutral content. */
+  kind: CashflowKind
+  /** The category whose transactions are listed; falls back to neutral content. */
   category: Category | undefined
   categories: Category[]
   /** The month the sheet opens on; the in-sheet navigator takes over after. */
   initialCursor: MonthCursor
-  emptyText: string
 }
 
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
 
 /** Newest-first groups flipped to oldest-first, rows included. */
-function reverseGroups(groups: ExpenseDayGroup[]): ExpenseDayGroup[] {
+function reverseGroups(groups: CashflowDayGroup[]): CashflowDayGroup[] {
   return groups
     .slice()
     .reverse()
     .map((group) => ({ ...group, rows: group.rows.slice().reverse() }))
 }
 
-export function CategoryExpensesSheet({
+export function CategoryCashflowSheet({
+  kind,
   category,
   categories,
   initialCursor,
-  emptyText,
   ref,
-}: CategoryExpensesSheetProps) {
+}: CategoryCashflowSheetProps) {
+  const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
   const [cursor, setCursor] = useState(initialCursor)
   const [sortAscending, setSortAscending] = useState(false)
-  const newExpenseSheetRef = useRef<BottomSheetRef>(null)
+  const newTransactionSheetRef = useRef<BottomSheetRef>(null)
   const editCategorySheetRef = useRef<BottomSheetRef>(null)
   const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
 
   const categoryQuery = useTransactions(
-    { type: 'expense', categoryId: category?.id, ...monthToUtcDayRange(cursor) },
+    { type: kind, categoryId: category?.id, ...monthToUtcDayRange(cursor) },
     { enabled: category !== undefined },
   )
 
@@ -86,10 +89,10 @@ export function CategoryExpensesSheet({
   const { groups, totalText } = useMemo(() => {
     const categoryTransactions = categoryQuery.data ?? []
     return {
-      groups: expenseDayGroups(categoryTransactions, categories, cursor),
-      totalText: formatAmount(totalExpenses(categoryTransactions, cursor)),
+      groups: cashflowDayGroups(categoryTransactions, categories, cursor, kind),
+      totalText: formatAmount(totalCashflow(categoryTransactions, cursor, kind)),
     }
-  }, [categoryQuery.data, categories, cursor])
+  }, [categoryQuery.data, categories, cursor, kind])
   const orderedGroups = sortAscending ? reverseGroups(groups) : groups
   const periodLabel = monthRangeLabelShort(cursor.year, cursor.month)
 
@@ -97,11 +100,11 @@ export function CategoryExpensesSheet({
     editCategorySheetRef.current?.present()
   }
 
-  const handleNewExpense = () => {
-    newExpenseSheetRef.current?.present()
+  const handleNewTransaction = () => {
+    newTransactionSheetRef.current?.present()
   }
 
-  // Every presentation starts at the dashboard's month: the in-sheet
+  // Every presentation starts at the screen's month: the in-sheet
   // navigation is ephemeral per open, not a lasting selection.
   const handleSheetChange = (index: number) => {
     if (index >= 0) setCursor(initialCursor)
@@ -113,14 +116,15 @@ export function CategoryExpensesSheet({
         ref={ref}
         snapPoints={['90%']}
         stackBehavior="push"
-        testID="category-expenses-sheet"
+        testID={ids.categorySheet}
         onChange={handleSheetChange}
         footerComponent={(props) => (
-          <ExpenseSheetFooter
+          <SheetFooter
             {...props}
-            testID="category-new-expense-button"
+            testID={ids.categoryNewTransactionButton}
             buttonTranslationY={buttonTranslationY}
-            onNewExpensePress={handleNewExpense}
+            onPress={handleNewTransaction}
+            label={copy.newTransaction}
           />
         )}
       >
@@ -131,7 +135,7 @@ export function CategoryExpensesSheet({
               icon="create-outline"
               size="md"
               accessibilityLabel="Редактировать категорию"
-              testID="category-expenses-edit"
+              testID={ids.categoryEdit}
               onPress={handleEdit}
             />
           }
@@ -142,13 +146,13 @@ export function CategoryExpensesSheet({
             icon="chevron-back"
             size="sm"
             accessibilityLabel="Предыдущий месяц"
-            testID="category-expenses-prev-month"
+            testID={ids.categoryPrevMonth}
             onPress={() => setCursor((current) => previousMonth(current))}
           />
           <Text
             variant="body-sm"
             className="font-medium text-foreground"
-            testID="category-expenses-period"
+            testID={ids.categoryPeriod}
           >
             {periodLabel}
           </Text>
@@ -156,42 +160,38 @@ export function CategoryExpensesSheet({
             icon="chevron-forward"
             size="sm"
             accessibilityLabel="Следующий месяц"
-            testID="category-expenses-next-month"
+            testID={ids.categoryNextMonth}
             onPress={() => setCursor((current) => nextMonth(current))}
           />
         </View>
 
-        <AnimatedBottomSheetScrollView testID="category-expenses-sheet" onScroll={scrollHandler}>
+        <AnimatedBottomSheetScrollView testID={ids.categorySheet} onScroll={scrollHandler}>
           <BottomSheetBody className="gap-6 pt-2 pb-32">
             {/* TODO(i18n): RU wording until mobile i18n wiring lands. */}
-            <Text variant="caption" testID="category-expenses-total">
-              {totalText} потрачено
+            <Text variant="caption" testID={ids.categoryTotal}>
+              {totalText} {copy.totalWord}
             </Text>
 
             <View className="flex-row items-center justify-between">
               <Text variant="button" className="font-medium text-foreground">
-                Все расходы
+                {copy.allTitle}
               </Text>
               <IconButton
                 icon={sortAscending ? 'arrow-up' : 'arrow-down'}
                 size="sm"
                 accessibilityLabel={sortAscending ? 'Сначала старые' : 'Сначала новые'}
-                testID="category-expenses-sort"
+                testID={ids.categorySort}
                 onPress={() => setSortAscending((value) => !value)}
               />
             </View>
 
             {orderedGroups.length === 0 ? (
               <Text variant="body" className="text-muted-foreground">
-                {emptyText}
+                {copy.monthEmpty}
               </Text>
             ) : (
               orderedGroups.map((group) => (
-                <View
-                  key={group.key}
-                  className="gap-3"
-                  testID={`category-expense-day-${group.key}`}
-                >
+                <View key={group.key} className="gap-3" testID={`${ids.categoryDay}-${group.key}`}>
                   <View className="flex-row items-center justify-between">
                     <Text variant="button" className="font-medium text-foreground">
                       {group.title}
@@ -206,7 +206,7 @@ export function CategoryExpensesSheet({
                       {index > 0 ? <View className="h-px bg-border/10" /> : null}
                       <View
                         className="flex-row items-center gap-4"
-                        testID={`category-expense-row-${row.id}`}
+                        testID={`${ids.categoryRowItem}-${row.id}`}
                       >
                         <View
                           className={cn(
@@ -234,10 +234,10 @@ export function CategoryExpensesSheet({
       </BottomSheet>
 
       <NewTransactionSheet
-        ref={newExpenseSheetRef}
-        kind="expense"
+        ref={newTransactionSheetRef}
+        kind={kind}
         defaultCategoryId={category?.id}
-        testID="category-new-expense-sheet"
+        testID={ids.categoryNewTransactionSheet}
       />
 
       <EditCategorySheet ref={editCategorySheetRef} category={category} />
