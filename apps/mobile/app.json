@@ -35,15 +35,14 @@
       "expo-sqlite",
       "expo-dev-client",
       "expo-background-fetch",
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/with-dev-menu-fab"
     ],
     "experiments": {
       "tsconfigPaths": true
     },
     "extra": {
-      "router": {
-        "disableSynchronousScreensUpdates": true
-      },
+      "router": {},
       "eas": {
         "projectId": "4b7d1861-8eaf-4f55-8999-bf985139356d"
       }
