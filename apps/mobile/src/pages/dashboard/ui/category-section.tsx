@@ -36,56 +36,54 @@ export function CategorySection({ cursor, transactions, categories }: CategorySe
 
   return (
     <>
-      <Card variant="elevated">
-        <View className="gap-4">
-          <Pressable
-            testID="home-new-category"
-            accessibilityRole="button"
-            accessibilityLabel="Новая категория"
-            onPress={openNewCategory}
-          >
-            <View className="flex-row items-center gap-2">
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-muted">
-                <Icon name="add" size={24} colorClassName="accent-foreground" />
-              </View>
-              <Text variant="body" className="font-medium text-foreground">
-                Новая категория
-              </Text>
+      <Card variant="elevated" className="gap-4">
+        <Pressable
+          testID="home-new-category"
+          accessibilityRole="button"
+          accessibilityLabel="Новая категория"
+          onPress={openNewCategory}
+        >
+          <View className="flex-row items-center gap-2">
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-muted">
+              <Icon name="add" size={24} colorClassName="accent-foreground" />
             </View>
-          </Pressable>
-
-          {!hasAnyCategories ? (
-            <View className="gap-2">
-              <Text variant="body-sm" className="text-muted-foreground">
-                Нет категорий
-              </Text>
-              <Text variant="body-sm" className="text-muted-foreground">
-                Создайте первую категорию, чтобы записывать расходы
-              </Text>
-            </View>
-          ) : rows.length === 0 ? (
-            <Text variant="body-sm" className="text-muted-foreground">
-              В этом месяце расходов нет
+            <Text variant="body" className="font-medium text-foreground">
+              Новая категория
             </Text>
-          ) : (
-            <View className="gap-6">
-              {rows.map(({ category, totalMinor }) => (
-                <CategoryRow
-                  key={category.id}
-                  categoryId={category.id}
-                  name={category.name}
-                  icon={category.icon as IconName}
-                  color={category.color}
-                  amountText={formatAmount(totalMinor)}
-                  onPress={(categoryId) => {
-                    setCategoryExpensesId(categoryId)
-                    expensesSheetRef.current?.present()
-                  }}
-                />
-              ))}
-            </View>
-          )}
-        </View>
+          </View>
+        </Pressable>
+
+        {!hasAnyCategories ? (
+          <View className="gap-2">
+            <Text variant="body" className="text-muted-foreground">
+              Нет категорий
+            </Text>
+            <Text variant="body-sm" className="text-muted-foreground">
+              Создайте первую категорию, чтобы записывать расходы
+            </Text>
+          </View>
+        ) : rows.length === 0 ? (
+          <Text variant="body-sm" className="text-muted-foreground">
+            В этом месяце расходов нет
+          </Text>
+        ) : (
+          <View className="gap-4">
+            {rows.map(({ category, totalMinor }) => (
+              <CategoryRow
+                key={category.id}
+                categoryId={category.id}
+                name={category.name}
+                icon={category.icon as IconName}
+                color={category.color}
+                amountText={formatAmount(totalMinor)}
+                onPress={(categoryId) => {
+                  setCategoryExpensesId(categoryId)
+                  expensesSheetRef.current?.present()
+                }}
+              />
+            ))}
+          </View>
+        )}
       </Card>
 
       <NewCategorySheet ref={newCategorySheetRef} />

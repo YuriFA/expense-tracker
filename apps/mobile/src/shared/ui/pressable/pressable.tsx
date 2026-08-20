@@ -7,7 +7,10 @@ export interface PressableProps extends RNPressableProps {
 
 export function Pressable({ className, children, ...pressableProps }: PressableProps) {
   return (
-    <RNPressable className={cn('active:opacity-70', className)} {...pressableProps}>
+    <RNPressable
+      className={cn('active:opacity-70 disabled:opacity-50', className)}
+      {...pressableProps}
+    >
       {children}
     </RNPressable>
   )
