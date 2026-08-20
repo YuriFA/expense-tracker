@@ -46,7 +46,7 @@ function TabButton({ name, label, icon, testId, index, total }: TabButtonProps) 
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
       accessibilityLabel={`${label}, tab, ${index + 1} of ${total}`}
-      className={cn('flex-1 items-center justify-center py-2 gap-1 rounded-3xl', {
+      className={cn('flex-1 items-center justify-center py-2 gap-0.5 rounded-3xl', {
         'bg-muted': focused,
       })}
       onPress={triggerProps.onPress}
@@ -57,7 +57,10 @@ function TabButton({ name, label, icon, testId, index, total }: TabButtonProps) 
         size={TAB_ICON_SIZE}
         colorClassName={focused ? 'accent-primary' : 'accent-muted-foreground'}
       />
-      <Text variant="caption" className={focused ? 'text-primary' : 'text-muted-foreground'}>
+      <Text
+        variant="caption"
+        className={cn('font-medium', focused ? 'text-primary' : 'text-muted-foreground')}
+      >
         {label}
       </Text>
     </Pressable>
