@@ -2,7 +2,7 @@
 // mirroring the backend: unique names per user, in-use deletion guard,
 // tombstones, and atomic mutation+outbox writes.
 
-import { beforeEach, describe, expect, it } from '@jest/globals'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { eq, sql } from 'drizzle-orm'
 import {
   AlreadyExistsError,

@@ -1,6 +1,6 @@
 # Mobile (`apps/mobile/`) — agent memory
 
-React Native + Expo (SDK 54 / RN 0.81 / React 19.1). Workspace member `@expense-tracker/mobile`, twin of `apps/web` — shares the domain model and `@expense-tracker/{api,money,i18n}` packages. Project-wide invariants live in the root `AGENTS.md`.
+React Native + Expo (SDK 57 / RN 0.86 / React 19.2 / TS 6). Workspace member `@expense-tracker/mobile`, twin of `apps/web` — shares the domain model and `@expense-tracker/{api,money,i18n}` packages. Project-wide invariants live in the root `AGENTS.md`.
 
 ## Architecture: FSD + Expo Router
 
@@ -193,6 +193,10 @@ Before reporting a task done, `pnpm test:e2e` must pass — a failing run blocks
 ## Dev build target (was: Expo Go)
 
 Target: a local iOS dev build (`com.anonymous.mobile` + `expo-dev-client`). The suite moved off Expo Go when background sync landed — `expo-background-fetch`/`expo-task-manager` OS scheduling is not guaranteed inside Expo Go. Produce/update the dev build with `pnpm ios` (`npx expo run:ios`; `ios/`/`android/` are gitignored and config-synced from `app.json`, incl. the `expo-background-fetch` plugin's `UIBackgroundModes`). Metro must be running (default 8081): flows deep-link the dev client into it via `exp+expensetracker://expo-development-client/?url=…` (see `_launch.yaml`/`_launch.js`, overridable via `MAESTRO_EXPO_URL`).
+
+### Known upstream regression (SDK 57 dev build): dead tap zone in the top-right corner
+
+On the SDK 57 **debug** dev build, any tap in the top-right corner of the screen (roughly x > 80%, y < 15%, i.e. the status-bar/nav-bar right region) kills the RN UI silently: the UI-thread keeps logging (`UIManagerBinding: instanceHandle is null … topWillDisappear will be dropped`), the expo dev-launcher window takes over, and the accessibility tree empties. Reproduced on iOS 18.6 and 26.5 simulators; was NOT present on SDK 54; NOT present in Release-configuration builds (`npx expo run:ios --configuration Release` — flows 05 and 10 pass there end-to-end). Suspects: expo-router 57's forked native-stack / react-native-screens 4.26 debug touch handling. `app.json` sets `extra.router.disableSynchronousScreensUpdates: true` — that flag fixed the same-family screen-transition deaths (flow 09 was red without it) and shrank the zone, but taps at the very top edge still kill the debug app. Affected e2e flows (known red in debug only): `05-add-account` (its `accounts-add` header button sits in the zone) and `10-category-expenses` (the edit pencil in the 90% sheet header) — run those two against a Release build to verify real regressions. Re-test when bumping expo-router/react-native-screens patches; don't "fix" by moving UI under the status bar.
 
 Known limitation: sheets do not reliably auto-dismiss after a successful create — tracked as `TODO(sheet-dismiss)`; flows close via a backdrop tap meanwhile. Don't silently remove or weaken this.
 

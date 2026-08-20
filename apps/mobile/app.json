@@ -22,8 +22,6 @@
       "package": "com.anonymous.mobile",
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.WAKE_LOCK"
       ]
     },
@@ -36,13 +34,16 @@
       "expo-font",
       "expo-sqlite",
       "expo-dev-client",
-      "expo-background-fetch"
+      "expo-background-fetch",
+      "expo-status-bar"
     ],
     "experiments": {
       "tsconfigPaths": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "disableSynchronousScreensUpdates": true
+      },
       "eas": {
         "projectId": "4b7d1861-8eaf-4f55-8999-bf985139356d"
       }
