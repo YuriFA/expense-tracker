@@ -57,6 +57,6 @@ context: |
 
   Deeper info: AGENTS.md files (root + backend/, apps/web/, apps/mobile/)
   for HOW to work in the repo; openspec/specs/ for domain behavior;
-  docs/API.md for API policy; docs/architecture/overview.md for the
-  architecture map; docs/assumptions.md for open decisions;
-  docs/technical-debt.md for known problems; docs/roadmap/ for future work.
+  docs/architecture/overview.md for the architecture map;
+  docs/assumptions.md for open decisions; docs/technical-debt.md for
+  known problems.

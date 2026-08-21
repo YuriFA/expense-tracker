@@ -1,9 +1,9 @@
 # Technical Debt & Gotchas
 
 Known, accepted-but-unresolved debts (audited 2026-08-20). Not a backlog —
-concrete work items belong in `docs/roadmap/` or an issue tracker; future
-work that is merely undecided lives in `docs/assumptions.md`. Fixed or
-stale entries are removed, not archived.
+concrete work items belong in an issue tracker or an OpenSpec change;
+future work that is merely undecided lives in `docs/assumptions.md`. Fixed
+or stale entries are removed, not archived.
 
 ## Workspace / CI
 

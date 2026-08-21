@@ -10,17 +10,19 @@ true today).
 Reading conventions:
 
 - Unmarked statements are **observed** facts.
-- **[INTENT-DIVERGENT]** — code differs from documented intent (AGENTS.md /
-  openspec); the divergence itself is an observed fact, restated in the
-  summary at the end.
+- **[INTENT-DIVERGENT]** — code differs from documented intent (ADRs,
+  invariants, openspec, AGENTS.md working rules); the divergence itself is
+  an observed fact, restated in the summary at the end.
 - **[INTENDED]** — documented intent that the code confirms.
 - **[UNKNOWN]** — a rule or rationale that cannot be established from code,
   tests, OpenSpec, or existing documentation. It is not assumed.
 
-Intent lives in the `AGENTS.md` files (root + per area); capability specs in
-`openspec/specs/` (accounts, categories, transactions, sync-protocol,
-mobile-forms, mobile-local-data); undecided items in `docs/assumptions.md`;
-known problems in `docs/technical-debt.md`.
+Architectural decisions live in `docs/adr/` and
+`docs/architecture/invariants.md`; capability specs in `openspec/specs/`
+(accounts, categories, transactions, sync-protocol, mobile-forms,
+mobile-local-data); agent working rules in the `AGENTS.md` files (root +
+per area); undecided items in `docs/assumptions.md`; known problems in
+`docs/technical-debt.md`.
 
 ## System map
 
@@ -96,8 +98,8 @@ transport/http (gin)  →  service  →  repository (interfaces)  ←  repositor
   sliding-expiry handling) and `IdempotencyRepository` (idempotency
   middleware, `middleware/idempotency.go:48`); wired in `NewEngine`
   (`server.go:30-32`). Any new middleware → repository dependency requires
-  a separate architectural decision (rule recorded in `backend/AGENTS.md`,
-  invariant #17 in `invariants.md`). Accepted consequence: the
+  a separate architectural decision (invariant #17 in `invariants.md`).
+  Accepted consequence: the
   sliding-expiry policy stays in transport middleware without dedicated
   unit tests (covered only indirectly via e2e).
 - Repository/service boundary (decided 2026-08-20): repository must not
@@ -112,7 +114,7 @@ transport/http (gin)  →  service  →  repository (interfaces)  ←  repositor
   `domain.MaxVerificationAttempts`) are **registered deviations** — business
   policy inside repository transactions, migration deferred by decision (no
   UoW seam introduced for now; revisit as new tasks exercise the boundary).
-  Rule recorded in `backend/AGENTS.md`, invariant #18 in `invariants.md`.
+  Rule recorded in invariant #18 in `invariants.md`.
 
 ### Data flow (representative: `POST /api/transactions`)
 
@@ -187,8 +189,8 @@ Ownership: every resource query filters `user_id` (verified across
 `queries/{accounts,categories,transactions,idempotency,sync,retention}.sql`);
 the userID originates only from the auth middleware context. Cross-user
 access returns not-found; IDOR behavior is asserted by integration tests.
-Sanctioned unscoped exceptions (clarified 2026-08-20, recorded in
-`backend/AGENTS.md`; invariant #5 unchanged): `users` lookups by unique
+Sanctioned unscoped exceptions (clarified 2026-08-20; invariant #5
+unchanged): `users` lookups by unique
 identity — login + auth middleware, the PK is the identity
 (`queries/users.sql:3-5`); capability-keyed auth rows — `sessions` by
 token, `password_reset_tokens` by token hash, where possessing the secret
@@ -215,9 +217,9 @@ to status+code in **one place** — `writeDomainError`
 `HandlerErrorFunc`. Middleware (auth 401s, validation 400s, idempotency,
 rate-limit 429) writes responses directly but shares the same shape via
 `httperr.Write`. Request-shape validation comes from the embedded spec at
-the engine level (400 `VALIDATION_FAILED`). Observed gap: the spec models
-`ValidationErrorResponse`/`FieldError`, and `httperr` has writers for them,
-but they are never populated — validation responses carry no field detail.
+the engine level (400 `VALIDATION_FAILED`); validation responses use the
+plain `ErrorResponse` shape with no field-level details (the former
+`ValidationErrorResponse`/`FieldError` models were removed — finding A4).
 
 ### Testing
 
@@ -225,9 +227,8 @@ Pyramid: unit tests for crypto primitives and services (against in-memory
 `service/fakes`), transport tests with httptest + fakes, job-loop tests;
 integration tests against a real `postgres:17` testcontainers container
 (repository suites incl. IDOR and optimistic-concurrency, e2e auth + sync
-flows); `go test -race ./...` runs in CI. Root `AGENTS.md` states a
-`time.Local = time.UTC` test convention [INTENT-DIVERGENT]: no backend test
-sets `time.Local`; tests compare with `time.Equal`/RFC3339 instead.
+flows); `go test -race ./...` runs in CI. The observable UTC rule is
+`time.Now().UTC()` + `time.Equal`/RFC3339 comparisons in tests.
 Coverage gaps (observed): idempotency and rate-limit middleware, `config`,
 `logger`, and no category-specific repository suite.
 
@@ -259,13 +260,14 @@ only `globalThis.fetch` and injected `fetch`.
   `nowIso`/`isoDaysAgo`. Consumed only by mobile today; decided end-state
   (2026-08-20): both apps use this package as the canonical date layer —
   web's app-local adapter is temporary, extend the package API when web
-  needs more. Default product locale is RU (decided; `i18n` en→ru change
-  pending implementation).
+  needs more. Product default locale is RU — a decided direction pending
+  implementation (canonical record: `docs/assumptions.md`).
 - **`i18n`** (leaf) — EN/RU bundles, `MessageSchema` (EN is source of
   truth), `mapCategory(s)` with an injected `Translator`, 24 seed-category
   slug→key mappings. **Consumed only by web**; mobile does not install it
-  (see Mobile section). Default product locale RU (decided 2026-08-20;
-  `DEFAULT_LOCALE` en→ru pending).
+  (see Mobile section). Product default locale RU — decided direction
+  pending implementation: `DEFAULT_LOCALE` is still en today (canonical
+  record: `docs/assumptions.md`).
 - **`tokens`** (leaf, css-only) — two copies kept in sync **by machine**:
   `src/index.css` (web) and `src/mobile.css` (mobile, Uniwind); the mobile
   palette is canonical (decided 2026-08-20). Synced 2026-08-20 (light
@@ -276,14 +278,14 @@ only `globalThis.fetch` and injected `fetch`.
 tsconfig note: strict standalone configs in every TS package, all with
 `noUncheckedIndexedAccess` (i18n gained it 2026-08-20, type-checks clean).
 `tokens` has no tsconfig by design — it is css-only and exempt from the
-rule (root `AGENTS.md`, decided 2026-08-20); its palette is guarded by the
+rule (decided 2026-08-20); its palette is guarded by the
 mobile `design-tokens-guard` and `design-tokens-sync` tests.
 
 ## Web (`apps/web/`)
 
 Vue 3 + Vite, Feature-Sliced Design: `app/ pages/ features/ entities/
 shared/` (no `widgets/` layer). Layer rules are enforced by Steiger
-(`steiger.config.ts`, runs in `lint`) — local only, not CI. Online-first
+(`steiger.config.ts`, run via `pnpm exec steiger`) — local only, not CI. Online-first
 today; per the decided client local data boundary (invariant #16) a future
 web offline-first migration will implement the existing decision rather
 than a new architecture.
@@ -327,7 +329,7 @@ than a new architecture.
 - **Testing**: 64 vitest files — repositories (via `globalThis.fetch`
   spies), DI wiring, stores/composables, and extensive component/page tests
   with a mount-with-providers helper; Playwright e2e covers the auth flow
-  only. Steiger runs in lint.
+  only. Steiger runs via `pnpm exec steiger`.
 
 ## Mobile (`apps/mobile/`)
 
@@ -335,8 +337,8 @@ React Native + Expo (dev build) with FSD adapted to Expo Router: `src/app/`
 is routes-only (thin re-export files), plus `pages/ features/ widgets/
 entities/ shared/`.
 
-- **Layers** (decided 2026-08-20): canonical model is six layers
-  `app → pages → widgets → features → entities → shared`; `widgets/`
+- **Layers** (decided 2026-08-20; invariant #15): canonical model is six
+  layers `app → pages → widgets → features → entities → shared`; `widgets/`
   (`bottom-tab-bar`, `sync-status`) is documented. Hard rule, no
   exceptions: dependencies point only downward — `shared` must not import
   from any higher layer; cross-slice imports within a layer are
@@ -355,8 +357,9 @@ entities/ shared/`.
   documented in-code as deliberate mirroring. TanStack Query is explicitly
   "a UI cache over the local repositories — NOT the offline store"
   (`shared/lib/query/query-client.ts`; `staleTime 15s`, RN AppState-mapped
-  focus manager). Mock repositories used by tests live inside production
-  `model/` segments (observed hygiene issue).
+  focus manager). Mock repositories used by tests live in
+  `shared/lib/testing/` (`mock-{account,category,transaction}-repository.ts`,
+  moved out of production segments — finding A13).
 - **Sync** (`shared/lib/sync/`): engine cycle = push → resolve conflicts →
   pull, over the package's sync transport (`createApiTransport(apiClient)`
   → `pushSyncOperations`/`pullSyncChanges`). Per-record op coalescing;
@@ -371,22 +374,24 @@ entities/ shared/`.
   query cache is invalidated.
 - **Auth**: React context (`entities/session/model/use-auth.tsx`) with
   restoring/authenticated/anonymous statuses; **no router guard** — the app
-  is deliberately usable anonymously on local data (disclosed in
-  `apps/mobile/AGENTS.md` as not-yet-ported; the sync pause behavior makes
-  it coherent). A device-ownership gate on `sync_meta.owner_user_id` binds
+  is deliberately usable anonymously on local data: decided behavior,
+  specified in `openspec/specs/sync-protocol` ("Initial sync and account
+  ownership": the app SHALL be fully usable anonymously before login; the
+  sync pause behavior makes it coherent). A device-ownership gate on `sync_meta.owner_user_id` binds
   local data to the first syncing account and offers a wipe when a
   different account tries to sync; logout keeps local data. The 401
   handler switches to anonymous without redirect.
 - **i18n**: none. `@expense-tracker/i18n` is not installed; UI strings are
   hardcoded Russian with `TODO(i18n)` markers; repository error text comes
   from a static RU map (`repository-errors-ru.ts`) that self-describes as
-  a twin of the shared bundle's wording [INTENT-DIVERGENT vs root and
-  mobile AGENTS.md header claims].
+  a twin of the shared bundle's wording [INTENT-DIVERGENT vs the decided
+  i18n direction (`docs/assumptions.md`, decided-directions list)].
 - **Money**: amounts stay strings through forms;
   `parseMajorUnitsToMinor` is the single sanctioned ×100 conversion
   (`shared/lib/money/parse.ts`); formatting via `@expense-tracker/money`'s
-  Intl-free `formatMoney`. One unguarded spot: `conflict-center.tsx` casts
-  serialized conflict values with `Number()` without safe-integer checks.
+  Intl-free `formatMoney`. Serialized conflict values parse through a
+  `Number.isSafeInteger`-guarded `toMinorUnits` helper
+  (`conflict-center.tsx`, fixed 2026-08-20 — finding B4).
 - **Dates**: uses `@expense-tracker/dates` throughout (21 non-test import
   sites); never imports date-fns directly.
 - **Testing**: 37 jest files — local repositories against **real SQLite**

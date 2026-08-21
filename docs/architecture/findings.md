@@ -68,9 +68,10 @@ deployment assumptions, not cross-cutting architecture changes.
 None — every FIX finding (A3–A6, A9, A11, A13, B3, B4, A8-follow-up) is
 closed. The remaining open work items are implementations of already-made
 decisions: the ADR-0001 Origin-check middleware, the web migration onto
-`@expense-tracker/dates`, the web offline-first migration (invariant #16),
-the mobile i18n wiring, and the `i18n` en→ru default flip — see
-`docs/assumptions.md`.
+`@expense-tracker/dates`, the mobile i18n wiring, and the `i18n` en→ru
+default flip — tracked in `docs/assumptions.md`; and the web offline-first
+migration — decided and tracked in invariant #16
+(`docs/architecture/invariants.md`), not in assumptions.
 
 ## Registered deviations & accepted debts (do not "fix" without a decision)
 

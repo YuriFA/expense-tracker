@@ -1,31 +1,35 @@
 # Backend (`backend/`) - agent memory
 
-Spec-first, layered Go API. The OpenAPI contract at `docs/api/openapi.yaml` is
-the source of truth and the project-wide invariants (money/UTC/UUID/session-auth/
-error model) live in the root `AGENTS.md`. Code is the source of truth.
+Spec-first, layered Go API. Project-wide invariants (money/UTC/UUID/session
+auth/error model) live in the root `AGENTS.md`; the evidence-backed list is
+`docs/architecture/invariants.md` (backend entries: #5-#8, #17-#18). Observed
+architecture with file-level evidence: `docs/architecture/overview.md` §Backend.
+Auth/CSRF posture: `docs/adr/0001-auth-csrf-threat-model.md`. Code is the
+source of truth.
 
 ## Layering (transport -> service -> repository; middleware exception)
 
 - `internal/transport/http` - gin handlers (the generated `StrictServerInterface`
   impl). Knows HTTP/gin/httperr/httpctx/cookie. No SQL, no business rules.
 - `internal/service` - business rules + authorization (userID scoping). No HTTP, no SQL.
-- `internal/repository` - SQL/Postgres only. Repository MUST NOT decide business
-  policy; it MAY implement the persistence/integrity mechanics required to
-  execute a business operation atomically and classify persistence-level
-  outcomes (e.g. `UPDATE ... WHERE version = X`; mapping 0 affected rows to
-  NotFound vs VersionConflict). Placement heuristic: if a rule can be
-  expressed and tested without a database, it should not live in the
-  repository. Known deviations (predate the rule; migration deferred, no
-  UoW seam for now): `RegisterUser` category seeding and `VerifyEmailCode`
-  attempt accounting are business policy living inside repository
-  transactions - new code follows the rule.
+- `internal/repository` - SQL/Postgres only. The repository MUST NOT decide
+  business policy; it MAY implement the persistence/integrity mechanics
+  required to execute a business operation atomically and classify
+  persistence-level outcomes (e.g. `UPDATE ... WHERE version = X`; mapping 0
+  affected rows to NotFound vs VersionConflict). Placement heuristic: if a rule
+  can be expressed and tested without a database, it should not live in the
+  repository. Known deviations (registered, migration deferred - new code
+  follows the rule): `RegisterUser` category seeding and `VerifyEmailCode`
+  attempt accounting are business policy inside repository transactions
+  (invariant #18).
 - Middleware exception: middleware implementing a cross-cutting infrastructure
-  concern that needs no service business logic may depend directly on repository
-  interfaces. Allowed (explicit): `SessionRepository` + `UserRepository` (auth
-  middleware), `IdempotencyRepository` (idempotency middleware). Any NEW
-  middleware -> repository dependency requires a separate architectural decision.
-- The authenticated `userID` is passed **explicitly** handler -> service; never
-  read from a request body. Handlers get it from auth middleware via the request context.
+  concern that needs no service business logic may depend directly on
+  repository interfaces. Allowed (explicit): `SessionRepository` +
+  `UserRepository` (auth middleware), `IdempotencyRepository` (idempotency
+  middleware). Any NEW middleware -> repository dependency requires a separate
+  architectural decision (invariant #17).
+- The authenticated `userID` is passed **explicitly** handler -> service, from
+  the auth middleware via the request context; never read from a request body.
 
 ## Data (PostgreSQL only, no SQLite)
 
@@ -37,17 +41,18 @@ error model) live in the root `AGENTS.md`. Code is the source of truth.
   cross-user access returns "not found" (IDOR-safe). User-owned resources:
   accounts, categories, transactions, idempotency keys, sync change_log /
   applied operations, tombstones. Sanctioned exceptions (no user_id filter):
-  (a) `users` lookups keyed by unique identity - email for login (pre-auth,
-  no user context yet), id for the auth middleware; the PK is the identity
-  (see the queries/users.sql header); (b) capability-keyed auth rows where
-  possessing the secret IS the authorization: `sessions` by token id
-  (expiry-checked), `password_reset_tokens` by token hash (single-use;
-  `ResetPassword` derives user_id from the consumed token and scopes the
-  rest of the tx); (c) time-based cleanup of expired rows (expired
-  sessions, expired idempotency keys) - no user dimension.
-  FK refs inside a transaction
-  use distinct errors (`ErrTransactionAccountNotFound` ...) so the transport
-  error mapper stays 1:1 (422 in a transaction vs 404 by id).
+  (a) `users` lookups keyed by unique identity - email for login (pre-auth),
+  id for the auth middleware (the PK is the identity; see the `queries/users.sql`
+  header); (b) capability-keyed auth rows where possessing the secret IS the
+  authorization: `sessions` by token id (expiry-checked),
+  `password_reset_tokens` by token hash (single-use; `ResetPassword` derives
+  user_id from the consumed token and scopes the rest of the tx); (c) time-based
+  cleanup of expired rows (expired sessions, expired idempotency keys).
+  FK refs inside a transaction use distinct errors
+  (`ErrTransactionAccountNotFound` ...) so the transport error mapper stays 1:1
+  (422 in a transaction vs 404 by id).
+- Deletes are tombstones (`deleted_at`); only the retention job hard-deletes,
+  and `change_log` is never pruned (invariant #8).
 - Type/currency use `CHECK` constraints, not Postgres ENUM.
 - Money/IDs/timestamps follow the project-wide invariants (root `AGENTS.md`).
 
@@ -69,6 +74,9 @@ migrations). `make gen-check` is the CI drift gate. Both generated trees are com
   env-defaults to zero-value fields, which silently flips an explicit
   `secure: false` (plain-HTTP local dev; RN/iOS won't send Secure cookies
   over http) back to true. Every yaml sets it explicitly.
+- CSRF: the server-side Origin check on state-changing browser requests is
+  decided (ADR-0001) but NOT yet implemented - do not treat the current
+  SameSite/JSON/CORS layers as the final posture.
 
 ## Cross-cutting
 

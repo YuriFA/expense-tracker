@@ -9,74 +9,86 @@ together.
 Each area has its own rules in its own `AGENTS.md` (`backend/`, `apps/web/`,
 `apps/mobile/`) - read the one for the area you touch. Code is the source of truth.
 
+## Canonical documentation map
+
+Architectural knowledge lives in docs, not here. Before changing architecture
+or questioning a rule, read the relevant canonical document:
+
+- Invariants (evidence-backed, with enforcement status): `docs/architecture/invariants.md`
+- Architecture overview (observed baseline, file-level evidence): `docs/architecture/overview.md`
+- Architectural decisions: `docs/adr/` (ADR-0001: auth/CSRF threat model)
+- Open decisions & accepted assumptions: `docs/assumptions.md`
+- Known technical debts: `docs/technical-debt.md`
+- Finding classification & resolution history: `docs/architecture/findings.md`
+- Domain behavior specs: `openspec/specs/`; proposed changes: `openspec/changes/`
+- Web FSD architecture: `apps/web/docs/ARCHITECTURE.md`
+- Mobile form conventions: `apps/mobile/docs/conventions/forms.md`
+
+If a task conflicts with an invariant or an architecture decision, stop and
+surface the conflict - do not silently violate it, and do not "improve" the
+architecture as a side effect of an unrelated task.
+
 ## Cross-cutting invariants (all areas)
+
+Full statements, evidence, and enforcement status live in
+`docs/architecture/invariants.md`; the short forms below are the
+non-negotiables an agent must see before touching code.
 
 - **OpenAPI is the source of truth** at `docs/api/openapi.yaml`. Change the spec
   FIRST, then regenerate everywhere; never hand-maintain duplicate types/structs.
-  Lint: `npx @redocly/cli lint --config docs/api/redocly.yaml docs/api/openapi.yaml`.
   - Backend server code: `make gen` (oapi-codegen); CI drift gate `make gen-check`.
   - TS types: `pnpm gen:api` (in `packages/api` or `apps/web`) regenerates
-    `packages/api/src/schema.ts` via openapi-typescript; re-run + commit after spec changes.
-    CI drift gate: the `ts-gen-check` job (regenerate + `git diff --exit-code`).
+    `packages/api/src/schema.ts` via openapi-typescript; re-run + commit after
+    spec changes. CI drift gate: the `ts-gen-check` job.
+  - Spec lint: `npx @redocly/cli lint --config docs/api/redocly.yaml docs/api/openapi.yaml`.
 - **Money is `int64` minor units** (divisor 100) at every persistence /
-  transport / sync / calculation boundary. Never float/decimal where money
-  is stored, transmitted, or computed. Form/UI state may use a
-  platform-appropriate representation (float majors on web, digit strings
-  on mobile), converted exactly once at the mapper seam via round-based
-  `toMinorUnits` / `parseMajorUnitsToMinor`; conversion must not lose
-  integer precision (no chained float arithmetic before the single
-  rounding step).
+  transport / sync / calculation boundary - never float/decimal. Form/UI state
+  may hold platform-appropriate majors (float on web, digit strings on mobile),
+  converted exactly once at the mapper seam via round-based `toMinorUnits` /
+  `parseMajorUnitsToMinor` (full boundary rule: invariant #2).
 - **Timestamps are UTC** (`TIMESTAMPTZ` / `time.Time`).
 - **IDs are UUID v4** (`github.com/google/uuid`).
 - **Auth is a stateful session cookie** (`session_id`). Do NOT introduce JWT.
-  Affects backend (sessions), web (`entities/session`), and mobile alike.
-- **Errors carry a machine `code` + human `message`.** Backend maps domain errors
-  to `ErrorResponse{code,message}` in ONE place; frontends map every non-2xx to a
-  `RepositoryError` by `code` (e.g. 409 `ACCOUNT_IN_USE` vs
-  `TRANSACTION_VERSION_CONFLICT` vs `USER_ALREADY_EXISTS`), not by HTTP status.
+  CSRF/transport posture: ADR-0001.
+- **Errors carry a machine `code` + human `message`.** Backend maps domain
+  errors to `ErrorResponse{code,message}` in ONE place; frontends map every
+  non-2xx to a `RepositoryError` by `code` (e.g. 409 `ACCOUNT_IN_USE` vs
+  `TRANSACTION_VERSION_CONFLICT`), not by HTTP status.
+- Backend-only invariants (user_id scoping, change_log atomicity, tombstones,
+  layering) are stated in `backend/AGENTS.md` (invariants #5-#8, #17-#18).
 
 ## Shared workspace packages (`packages/*`)
 
 Platform-agnostic TS consumed by the apps — web: `@expense-tracker/{api,money,i18n,tokens}`;
 mobile: `@expense-tracker/{api,dates,money,tokens}` (i18n wiring pending) —
 resolved to source `.ts` via `exports` (no build step; `moduleResolution: bundler`).
-Each TS package has its own `tsconfig.json` + `type-check` and must
-type-check cleanly alone (`tokens` is css-only and exempt - its palette is
-guarded by the mobile `design-tokens-guard` and `design-tokens-sync` tests).
-Each package's source/README is authoritative for its contents; only the cross-cutting
-rules and decisions live here.
 
 - **MUST stay free of DOM/Vue/browser-only/RN APIs.** Only the fetch-family
   (`fetch`/`Request`/`Response`/`Headers`) is allowed (works in browser/Node/RN).
-- **`api`** (deps: `money`): the contract layer - generated schema,
-  `createApiClient({ baseUrl, fetch })` (apps supply the base URL - no `window`),
-  error mapping keyed on `code` + `setUnauthorizedHandler`, and the
-  `Repository<T,C,U>` DI seam. Apps implement the repository interface; the
-  package never imports app code.
-- **`money`** (leaf): dinero.js minor-units money. Its balance calculator is
-  generic over a minimal account shape (no domain dep).
-- **`dates`** (deps: `date-fns`): the shared date layer - locale-shaped labels
-  (ru/en via date-fns locale data, no Intl), month-cursor navigation,
-  Monday-first month grids, day keys, and `nowIso`/`isoDaysAgo` ISO timestamps.
-  Apps never import `date-fns` directly, only this facade. Decided end-state
-  (2026-08-20): BOTH apps use this package as the canonical date layer -
-  web's app-local `@internationalized/date` adapter is temporary; extend the
-  package API when web needs more, don't grow a permanent parallel adapter.
-- **`i18n`** (leaf): EN/RU bundles + `MessageSchema`. `mapCategory(s)` take an
-  injected `Translator` (vue-i18n `t` on web, react-i18next on mobile) - no app
-  coupling. Default product locale is RU (decided 2026-08-20): `dates`
-  already defaults to 'ru'; the `i18n` `DEFAULT_LOCALE` en→ru change is
-  pending implementation.
-- **`tokens`** (css-only): the home of the shared design-token palette - two
-  platform copies in `src/` (`index.css` for web via `/css`, `mobile.css` for
-  Uniwind via `/mobile`), same sRGB hex values kept in sync by hand; the
-  mobile copy is the canonical palette (decided 2026-08-20) - when copies
-  disagree, web syncs to mobile. App CSS
-  entries stay thin and must not re-declare token values.
+- **Fixed dependency direction:** `api → money` is the only cross-package edge;
+  `money`/`dates`/`i18n`/`tokens` are leaves.
+- **Apps never import `date-fns` directly** - only the `@expense-tracker/dates`
+  facade (web's app-local `@internationalized/date` adapter is a sanctioned
+  temporary exception, see `docs/assumptions.md`).
+- **Repository seam:** app data access goes through `Repository` interfaces
+  from `@expense-tracker/api`; the package never imports app code (apps supply
+  the base URL - no `window`).
+- Each TS package has its own `tsconfig.json` + `type-check` and must
+  type-check cleanly alone (`tokens` is css-only and exempt - its palette is
+  guarded by the mobile `design-tokens-guard` and `design-tokens-sync` tests).
+- The mobile copy of the `tokens` palette is canonical; web syncs to it, and
+  drift fails the mobile `design-tokens-sync` test. App CSS entries stay thin
+  and must not re-declare token values.
+- Each package's source/README is authoritative for its contents (per-package
+  APIs and consumption evidence: `docs/architecture/overview.md`). Only
+  cross-cutting rules and decisions live here.
 
-App-local concerns stay OUT of packages: web keeps its vue-i18n instance, Vite
-base-URL resolution, localStorage repos, Vue DI/composables, and Zod schemas;
-mobile keeps its native wiring.
+The first three rules are enforced by `pnpm arch:check` (see below). App-local
+concerns stay OUT of packages: web keeps its vue-i18n instance, Vite base-URL
+resolution, localStorage repos, Vue DI/composables, and Zod schemas; mobile
+keeps its native wiring. Decided-direction-but-pending items (web migration
+onto `@expense-tracker/dates`, `i18n` `DEFAULT_LOCALE` en→ru) are tracked in
+`docs/assumptions.md`.
 
 ## Monorepo tooling
 
@@ -98,15 +110,18 @@ both apps. Backend layering is enforced by depguard rules in
 
 ```
 backend/        Go API (Gin + sqlc + Postgres)
-apps/web/       Vue 3 + Vite (Feature-Sliced Design)
-apps/mobile/    React Native + Expo (Feature-Sliced Design + Expo Router)
+apps/web/       Vue 3 + Vite (Feature-Sliced Design, online-first)
+apps/mobile/    React Native + Expo (Feature-Sliced Design + Expo Router, offline-first)
 packages/       shared TS: api, dates, money, i18n; shared css: tokens
-docs/api/       OpenAPI contract (source of truth)
+docs/           architecture, ADRs, assumptions, API policy; docs/api/ = OpenAPI contract
+openspec/       domain behavior specs + proposed changes
 ```
 
 ## Maintaining these files
 
-Keep each `AGENTS.md` for knowledge useful to almost every session in its area.
-Do not repeat what the codebase already shows - point to the authoritative file
-or command. Prefer rewriting/pruning over appending. Preserve this bar for all
-agents and keep entries concise.
+Keep each `AGENTS.md` for knowledge useful to almost every session in its area:
+what the area is, the rules an agent must see before touching code, the
+commands that enforce them, and pointers to canonical docs. Do not repeat what
+the codebase or canonical docs already show - point to the authoritative file
+or command. Prefer rewriting/pruning over appending; never let an
+architectural decision live ONLY in an AGENTS.md. Preserve this bar for all agents.

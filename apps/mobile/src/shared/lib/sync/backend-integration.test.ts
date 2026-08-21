@@ -5,7 +5,7 @@
 // shared cookie store natively - the app path stays unchanged).
 //
 // Run explicitly (a running backend on :8080 is required):
-//   SYNC_INTEGRATION_API=http://localhost:8080 pnpm test sync-integration
+//   SYNC_INTEGRATION_API=http://localhost:8080 pnpm test backend-integration
 // Without the env var the suite skips (CI/dev default).
 
 import { beforeAll, describe, expect, it, jest } from '@jest/globals'

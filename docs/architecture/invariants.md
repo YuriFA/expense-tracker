@@ -47,9 +47,7 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   (`toMinorUnits` / `parseMajorUnitsToMinor`, both `Math.round`-based) and
   is safe: no loss of integer precision, no chained float arithmetic
   before the single rounding step. Display and arithmetic on money are
-  integer-only. (Boundary refined by decision 2026-08-20; the unguarded
-  `Number()` casts in mobile conflict-center remain a violation — tracked
-  as separate finding B4.)
+  integer-only. (Boundary refined by decision 2026-08-20.)
 - **Evidence**: spec `type: integer, format: int64` with "divisor 100" on
   every amount (`docs/api/openapi.yaml`); SQL `BIGINT`
   (`migrations/000001_init.up.sql:50-51,89`); `domain.Transaction.Amount
@@ -222,10 +220,10 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   produces `time.Now().UTC()`; the wire format is RFC3339/ISO.
 - **Evidence**: every table in `migrations/000001/000002`;
   `middleware/auth.go:64`, `service/auth.go:55`; `packages/api/src/lib/datetime.ts`;
-  `packages/dates` `nowIso`. Note: root `AGENTS.md` additionally claims
-  "`time.Local = time.UTC` in tests" — **no backend test sets `time.Local`**
-  (tests use `time.Equal`/RFC3339 instead); the observable rule is
-  UTC-instants, the stated mechanism is not implemented.
+  `packages/dates` `nowIso`. (An earlier root `AGENTS.md` claimed a
+  "`time.Local = time.UTC` in tests" mechanism — no backend test sets it;
+  the stale claim was removed 2026-08-20, finding A7. The observable rule
+  is UTC-instants via `time.Now().UTC()` + `time.Equal`/RFC3339.)
 - **Risk if violated**: Timezone-shifted transactions; month boundaries
   (mobile queries by UTC day range via `monthToUtcDayRange`) would mis-bucket.
 - **Current enforcement**: convention; DB column types reject naive
@@ -257,8 +255,9 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   `repositories/*.ts` extensions; web DI `app/repositories.ts`
   (provide/inject, `VITE_REPO_VARIANT`); mobile DI via React context
   providers in `src/app/_layout.tsx`; grep confirms no `apps/` imports in
-  packages; session-exception documented in `apps/web/AGENTS.md` and
-  observable in both apps' `entities/session/api/`; sync transport seam in
+  packages; session-exception documented in `docs/architecture/overview.md`
+  (§Web) and observable in both apps' `entities/session/api/`; sync
+  transport seam in
   `apps/mobile/src/shared/lib/sync/` (engine depends on an injected
   transport, not the client).
 - **Risk if violated**: Untestable data layers; app/server coupling;
@@ -307,7 +306,7 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   `apps/mobile`; mobile has 21 non-test `@expense-tracker/dates` imports;
   web's app-local adapter is sanctioned as **temporary** — decided
   end-state (2026-08-20): both apps on `@expense-tracker/dates`
-  (root `AGENTS.md`).
+  (decided-directions list in `docs/assumptions.md`).
 - **Risk if violated**: Duplicated locale/week-start logic diverging
   between platforms; unsanctioned direct deps defeat the facade's purpose.
 - **Current enforcement**: dependency-cruiser `no-date-fns` rules for both
@@ -326,9 +325,10 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   Barrel exports (`index.ts`) are required per slice. The rule is
   formulated to be mechanically enforceable — no exceptions.
 - **Evidence**: web — enforced by `apps/web/steiger.config.ts`
-  (`@feature-sliced/steiger-plugin`, fractal-FSD overrides) in `lint`;
-  grep found no violations. Mobile — rule decided 2026-08-20 and recorded
-  in `apps/mobile/AGENTS.md`; all A11 deviations fixed 2026-08-20 (sync
+  (`@feature-sliced/steiger-plugin`, fractal-FSD overrides; run via
+  `pnpm exec steiger` in `apps/web`);
+  grep found no violations. Mobile — rule decided 2026-08-20; all A11
+  deviations fixed 2026-08-20 (sync
   provider composes in `src/app/_layout.tsx`, context in
   `shared/lib/sync/sync-context.tsx`; cashflow sheets delegate to
   page-level composition; entity barrels added) — the dependency-cruiser
@@ -336,12 +336,11 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
 - **Risk if violated**: entangled layers make slices non-reusable and the
   DI seams meaningless; an upward import from `shared` poisons the
   foundation layer for every consumer.
-- **Current enforcement**: web — Steiger in local lint (not CI). Mobile —
-  dependency-cruiser `fsd-*` rules (`pnpm arch:check`, CI `arch-check`
-  job): layer direction, cross-slice, with the three registered A11
-  deviations excluded until their decided fix lands
-  (`.dependency-cruiser.mobile.cjs`).
-- **Automated**: mobile yes (CI); web local lint only.
+- **Current enforcement**: web — Steiger (`pnpm exec steiger`, local
+  only, not CI). Mobile — dependency-cruiser `fsd-*` rules
+  (`pnpm arch:check`, CI `arch-check` job): layer direction and
+  cross-slice, zero exclusions (`.dependency-cruiser.mobile.cjs`).
+- **Automated**: mobile yes (CI); web local only.
 
 ### 16. Client local data boundary: local repositories are the source of truth for offline-first clients
 
@@ -385,8 +384,8 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   `SessionRepository` + `UserRepository` (auth), `IdempotencyRepository`
   (idempotency). Any new middleware → repository dependency is a separate
   architectural decision.
-- **Evidence**: decided 2026-08-20; rule recorded in `backend/AGENTS.md`
-  (Layering section); implemented at `middleware/auth.go:23-28`,
+- **Evidence**: decided 2026-08-20; rule recorded in this invariant;
+  implemented at `middleware/auth.go:23-28`,
   `middleware/idempotency.go:48`, wiring at `server.go:30-32`; all handlers
   dispatch through `service.*` (`transport/http/handler.go`).
 - **Risk if violated**: business rules migrate into transport code that the
@@ -407,8 +406,8 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   business operation atomically and classify persistence-level outcomes.
   Placement heuristic: if a rule can be expressed and tested without a
   database, it does not belong in the repository.
-- **Evidence**: decided 2026-08-20; rule recorded in `backend/AGENTS.md`
-  (Layering). Compliant today: CAS `WHERE version = X` and `classify*Write`
+- **Evidence**: decided 2026-08-20; rule recorded in this invariant.
+  Compliant today: CAS `WHERE version = X` and `classify*Write`
   outcome mapping (`postgres/transactions.go:143-152`,
   `postgres/accounts.go:130-136`). Registered deviations (migration
   deferred by decision; no UoW seam introduced): `RegisterUser` seeding
