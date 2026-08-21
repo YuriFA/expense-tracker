@@ -9,7 +9,9 @@ and the canonical documentation map live in the root `AGENTS.md`.
 FSD layers with the Fractal FSD `pages/*/features/` extension; authoritative
 layout, segment conventions, and placement decision trees:
 `apps/web/docs/ARCHITECTURE.md`. Steiger (`pnpm exec steiger`, config
-`steiger.config.ts`) must stay green.
+`steiger.config.ts`) must stay green. Component-level conventions (query
+idiom, reactivity budget, vee-validate forms, lists/dialogs):
+`apps/web/docs/conventions/vue-patterns.md`.
 
 ## Spec-first (contract from `docs/api/openapi.yaml`)
 

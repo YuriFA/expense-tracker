@@ -22,7 +22,10 @@ or questioning a rule, read the relevant canonical document:
 - Finding classification & resolution history: `docs/architecture/findings.md`
 - Domain behavior specs: `openspec/specs/`; proposed changes: `openspec/changes/`
 - Web FSD architecture: `apps/web/docs/ARCHITECTURE.md`
+- Web Vue conventions (query idiom, reactivity budget, forms): `apps/web/docs/conventions/vue-patterns.md`
 - Mobile form conventions: `apps/mobile/docs/conventions/forms.md`
+- Mobile component/state conventions (effects, hooks, memoization, decomposition): `apps/mobile/docs/conventions/components-and-state.md`
+- Coding principles (minimal complexity, comments, self-review): `docs/development/coding-principles.md`
 
 If a task conflicts with an invariant or an architecture decision, stop and
 surface the conflict - do not silently violate it, and do not "improve" the

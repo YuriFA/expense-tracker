@@ -124,7 +124,8 @@ OpenSpec change. Canonical requirements (declarative form state, validation
 gating, error surfacing, money parsing, sheet composition, lifecycle, test
 coverage): `openspec/specs/mobile-forms`. Canonical worked examples (page
 form, FormProvider composite, Bottom Sheet split, values-vs-payload mapper,
-server-error pattern, reset lifecycle): `docs/conventions/forms.md` — follow
+server-error pattern, reset lifecycle, subscription/render scoping):
+`docs/conventions/forms.md` — follow
 them; don't re-derive the patterns here.
 
 Rules beyond the worked examples:
@@ -172,6 +173,10 @@ derived values or event handling — compute derived booleans/values directly
 instead of syncing them into state via an effect. Effects are for
 synchronization with external systems or lifecycle operations, not basic
 computation.
+
+Effects policy, state-choice decision tree, custom-hook criteria,
+memoization, and component-boundary criteria:
+`docs/conventions/components-and-state.md`.
 
 ## State management
 

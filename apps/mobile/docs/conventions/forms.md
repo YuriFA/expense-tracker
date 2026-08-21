@@ -714,3 +714,70 @@ CreateTransactionSheet
 
 The goal is not maximum component fragmentation. Split components when the
 split creates a meaningful responsibility boundary.
+
+## 8. Subscription and render scoping
+
+Who reads form state decides what re-renders on every keystroke: an RHF
+subscription is per-component, so the component that calls `useWatch`, reads
+`form.formState`, or calls `useFormState` re-renders whenever its read values
+change. There is no blanket "always localize" rule — match the subscription
+scope to the form's size and edit frequency.
+
+### Simple forms: root subscription is correct
+
+Sections 1–2 read `form.formState.isSubmitting` in the component that owns
+`useForm`, so every edit re-renders that whole component. For a small, flat
+page form (`pages/login/ui/login-screen.tsx`,
+`pages/accounts/ui/new-account-form.tsx`,
+`features/cashflow-overview/ui/category-form.tsx`) that is the right trade:
+the form is one component, its render is cheap, and splitting it would add
+indirection without a meaningful boundary. Do not pre-split such forms.
+
+### Sectioned forms: fields subscribe to their own slice
+
+Localize subscriptions when a form has distinct sections, a high-frequency
+field (a keypad amount), or leaf controls that react to form-wide state — so
+an edit re-renders only the section that shows it. The canonical
+implementation is `features/create-transaction/`; its contract is stated in
+the `new-transaction-form.tsx` header: the root owns only the form lifecycle
+and submission — no `useWatch`, no `formState` reads.
+
+```text
+FormProvider (root: useForm + reset lifecycle + submit handler)
+├── AmountField      — useController('amount') + useWatch(source account id)
+├── AccountField     — useController('accountId')
+├── CategoryField    — useController('categoryId')
+├── FormActions      — reveal flags only (local useState)
+│   ├── NoteFieldButton (memo)  — useWatch('description')
+│   ├── DateFieldButton (memo)
+│   └── TransactionSubmitField (memo) — useFormState({ control }) → isValid/isSubmitting
+└── TransactionRootError — useFormState({ control }) → errors.root
+```
+
+The mechanisms, each placed where its value is rendered:
+
+- Field components get the form via `useFormContext` (never their own
+  `useForm`, section 2) and own their `Controller`/`useController`.
+- Cross-field reads use `useWatch` in the consuming component: the amount
+  display (`amount-field.tsx`) watches the source account id to derive its
+  currency — keypad presses and account changes never re-render the rest of
+  the form.
+- Leaf controls reacting to form-wide state (validity, submitting) are
+  `memo`-wrapped components reading `useFormState({ control })`:
+  `TransactionSubmitField` in `form-actions.tsx`, so a validity flip
+  re-renders the button alone.
+- The form-level error slot is an isolated component reading only
+  `errors.root` (`TransactionRootError` in `new-transaction-form.tsx`).
+
+`React.memo` is what makes these boundaries real: an isolated subscriber
+without `memo` still re-renders whenever its parent does. The two go together
+(memoization criteria: `docs/conventions/components-and-state.md` §4).
+
+### When a parent-level subscription is justified
+
+Keep a subscription in the parent when the parent's render genuinely needs the
+value — one discriminator choosing which sections render, or a value that
+shapes the layout of several children at once. Don't push a `useWatch` into a
+child just so the parent "doesn't subscribe" when the parent is the only
+consumer. The criterion in both directions: the component that renders the
+value subscribes to it, and nobody else does.
