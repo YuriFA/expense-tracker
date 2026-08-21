@@ -58,6 +58,8 @@
       --color-muted-foreground: #6e6b7c;
       --color-accent: #e4ddfe;
       --color-accent-foreground: #312e58;
+      --color-popover: #ffffff;
+      --color-popover-foreground: #1b1927;
       --color-brand-aliceblue: #f1f3fd;
       --color-brand-indigo: #6366f1;
       --color-brand-violet: #7c5cff;
@@ -89,6 +91,8 @@
       --color-muted-foreground: #a5a3b2;
       --color-accent: #312e45;
       --color-accent-foreground: #ddd8f6;
+      --color-popover: #211f2b;
+      --color-popover-foreground: #f4f2fa;
       --color-brand-aliceblue: #f1f3fd;
       --color-brand-indigo: #6366f1;
       --color-brand-violet: #7c5cff;

@@ -14,7 +14,7 @@ import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Text } from '@/shared/ui/text'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
-import { useCreateAccount } from '@/entities/account/model/use-accounts'
+import { useCreateAccount } from '@/entities/account'
 import { newAccountSchema, type NewAccountFormValues } from '../model/schema'
 
 const defaultValues: NewAccountFormValues = {

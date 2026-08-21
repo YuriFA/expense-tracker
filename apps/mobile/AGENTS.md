@@ -1,6 +1,6 @@
 # Mobile (`apps/mobile/`) — agent memory
 
-React Native + Expo (SDK 57 / RN 0.86 / React 19.2 / TS 6). Workspace member `@expense-tracker/mobile`, twin of `apps/web` — shares the domain model and `@expense-tracker/{api,money,i18n}` packages. Project-wide invariants live in the root `AGENTS.md`.
+React Native + Expo (SDK 57 / RN 0.86 / React 19.2 / TS 6). Workspace member `@expense-tracker/mobile`, twin of `apps/web` — shares the domain model and `@expense-tracker/{api,dates,money,tokens}` packages (i18n wiring pending, see §i18n). Project-wide invariants live in the root `AGENTS.md`.
 
 ## Architecture: FSD + Expo Router
 
@@ -13,12 +13,15 @@ src/
 │   ├── (auth)/         unauthenticated flows, no tab bar
 │   └── (tabs)/         bottom-tab navigator - twin of the web top nav
 ├── pages/          screen bodies each route renders (index.ts barrel + ui/)
+├── widgets/        composite cross-screen UI (bottom-tab-bar, sync-status)
 ├── features/       global reusable features (2+ consumers)
 ├── entities/       domain models (account/category/transaction/session)
 └── shared/         infrastructure: ui/, lib/, api/, config/, i18n/
 ```
 
-Import direction is strictly downward, identical to web: `app → pages → features → entities → shared`. Each slice exports through an `index.ts` barrel; cross-imports between slices of the same layer are forbidden.
+Import direction is strictly downward, identical to web: `app → pages → widgets → features → entities → shared` (decided 2026-08-20: six layers, `widgets/` is canonical). Hard rule, no exceptions: `shared` MUST NOT import from entities, features, widgets, pages, or app; cross-layer upward imports are forbidden anywhere; dependencies point only downward. Cross-imports between slices of the same layer are forbidden. Each slice exports through an `index.ts` barrel. The rule is deliberately mechanical — any `shared → higher layer` import is always an error — so it can be enforced automatically.
+
+The A11 deviations were fixed 2026-08-20 - the layer rules now run with zero exclusions: the sync provider composes in `src/app/_layout.tsx` (its context/hook live in `shared/lib/sync/sync-context.tsx`); the cashflow sheets delegate new-transaction actions to page-level composition (`pages/dashboard`, `pages/income` render the `NewTransactionSheet` instances with the original testIDs); every entity slice exports an `index.ts` barrel.
 
 There is deliberately no segment-level `shared/ui/index.ts` aggregate — import each component from its slice (e.g. `@/shared/ui/button`, `@/shared/ui/text`).
 
@@ -167,7 +170,7 @@ Will use the shared `@expense-tracker/i18n` bundle via react-i18next; mobile kee
 
 ## Testing
 
-`pnpm test` runs Jest (`jest-expo` + `@testing-library/react-native`). Test observable behavior (e.g. `getByTestId('submit')` is enabled/disabled), not internal state, computed Uniwind styles, animation frames, or private function calls (unless mocking a genuine external boundary). Components using `useSafeAreaInsets` need `SafeAreaProvider` with `initialMetrics` in tests; wrap screens in `ThemeProvider`. Co-locate tests next to the component (`new-transaction-form.tsx` + `.test.tsx`).
+`pnpm test` runs Jest (`jest-expo` + `@testing-library/react-native`). Test-only repository fixtures live in `shared/lib/testing/mock-*-repository.ts` (like the `node:sqlite` adapter in `shared/lib/db/testing`, never import them from application code). Test observable behavior (e.g. `getByTestId('submit')` is enabled/disabled), not internal state, computed Uniwind styles, animation frames, or private function calls (unless mocking a genuine external boundary). Components using `useSafeAreaInsets` need `SafeAreaProvider` with `initialMetrics` in tests; wrap screens in `ThemeProvider`. Co-locate tests next to the component (`new-transaction-form.tsx` + `.test.tsx`).
 
 Form tests should cover: invalid input blocks submission; valid input submits the expected values; validation errors are visible; server/repository errors surface; loading state prevents duplicate submission; conditional fields appear/disappear correctly; reset behavior works where the flow requires it. Don't test RHF internals.
 

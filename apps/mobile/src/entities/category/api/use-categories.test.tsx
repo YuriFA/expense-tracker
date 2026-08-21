@@ -7,7 +7,7 @@ import { createQueryClient } from '@/shared/lib/query/query-client'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { CategoryRepositoryProvider } from '../api/repository'
-import { createMockCategoryRepository } from '../model/mock-repository'
+import { createMockCategoryRepository } from '@/shared/lib/testing/mock-category-repository'
 import { useCategories, useCreateCategory } from '../model/use-categories'
 
 function createWrapper(

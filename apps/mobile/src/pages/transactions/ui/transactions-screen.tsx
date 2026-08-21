@@ -20,8 +20,8 @@ import {
   type MonthCursor,
 } from '@expense-tracker/dates'
 import { formatAmount } from '@/shared/lib/format/format'
-import { useCategories } from '@/entities/category/model/use-categories'
-import { useTransactions } from '@/entities/transaction/model/use-transactions'
+import { useCategories } from '@/entities/category'
+import { useTransactions } from '@/entities/transaction'
 
 const TYPE_ICONS: Record<Transaction['type'], IconName> = {
   income: 'arrow-down',

@@ -5,7 +5,7 @@
 
 import { beforeEach, describe, expect, it } from '@jest/globals'
 import { eq } from 'drizzle-orm'
-import { createLocalCategoryRepository } from '@/entities/category/api/local-repository'
+import { createLocalCategoryRepository } from '@/entities/category'
 import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
 import {
   applyPushConfirmations,

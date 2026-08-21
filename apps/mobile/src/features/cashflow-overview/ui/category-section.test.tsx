@@ -1,13 +1,13 @@
-import { describe, expect, it } from '@jest/globals'
+import { describe, expect, it, jest } from '@jest/globals'
 import { render, screen } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { CategoryRepositoryProvider } from '@/entities/category/api/repository'
-import { createMockCategoryRepository } from '@/entities/category/model/mock-repository'
-import { TransactionRepositoryProvider } from '@/entities/transaction/api/repository'
-import { createMockTransactionRepository } from '@/entities/transaction/model/mock-repository'
+import { CategoryRepositoryProvider } from '@/entities/category'
+import { createMockCategoryRepository } from '@/shared/lib/testing/mock-category-repository'
+import { TransactionRepositoryProvider } from '@/entities/transaction'
+import { createMockTransactionRepository } from '@/shared/lib/testing/mock-transaction-repository'
 import { CategorySection } from './category-section'
 import { currentMonth } from '../model/selectors'
 
@@ -31,6 +31,7 @@ function renderSection(kind: 'income' | 'expense' = 'expense') {
                 cursor={currentMonth()}
                 transactions={[]}
                 categories={[]}
+                onNewTransaction={jest.fn()}
               />
             </ThemeProvider>
           </TransactionRepositoryProvider>

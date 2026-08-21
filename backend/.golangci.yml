@@ -220,6 +220,39 @@ linters:
           deny:
             - pkg: log$
               desc: Use log/slog instead, see https://go.dev/blog/slog
+        # --- architecture rules (docs/architecture/invariants.md #17, #18) ---
+        # Layering is transport -> service -> repository; the ONLY transport
+        # files allowed to import repository interfaces directly (the
+        # middleware allowlist, backend/AGENTS.md Layering) are excluded via
+        # issues.exclusions below.
+        "arch: handlers go through services, not repositories":
+          files:
+            - "**/internal/transport/http/**"
+          deny:
+            - pkg: github.com/yurifa/expense-tracker-api/internal/repository
+              desc: Handlers must call services, not repositories (backend/AGENTS.md Layering; middleware exception is allowlisted)
+        "arch: service layer has no HTTP":
+          files:
+            - "**/internal/service/**"
+          deny:
+            - pkg: github.com/yurifa/expense-tracker-api/internal/transport
+              desc: Service layer has no HTTP (backend/AGENTS.md Layering)
+            - pkg: github.com/gin-gonic/gin
+              desc: Service layer has no HTTP (backend/AGENTS.md Layering)
+        "arch: repository layer has no HTTP":
+          files:
+            - "**/internal/repository/**"
+          deny:
+            - pkg: github.com/gin-gonic/gin
+              desc: Repository layer is SQL-only (backend/AGENTS.md Layering)
+            - pkg: github.com/yurifa/expense-tracker-api/internal/transport
+              desc: Repository layer is SQL-only (backend/AGENTS.md Layering)
+        "arch: sqlc code stays inside repository/postgres":
+          files:
+            - "!**/internal/repository/postgres/**"
+          deny:
+            - pkg: github.com/yurifa/expense-tracker-api/internal/repository/db
+              desc: sqlc types are confined to internal/repository/postgres
 
     embeddedstructfieldcheck:
       # Checks that sync.Mutex and sync.RWMutex are not used as embedded fields.
@@ -454,6 +487,12 @@ linters:
     rules:
       - source: 'TODO'
         linters: [ godot ]
+      # Invariant #17 middleware allowlist (decided 2026-08-20): auth +
+      # idempotency middleware and engine wiring may import repository
+      # interfaces directly (see backend/AGENTS.md Layering). Do not add
+      # files here without an explicit architectural decision.
+      - path: 'internal/transport/http/(server\.go|middleware/(auth|idempotency)\.go)$'
+        linters: [ depguard ]
       - text: 'should have a package comment'
         linters: [ revive ]
       - text: 'exported \S+ \S+ should have comment( \(or a comment on this block\))? or be unexported'

@@ -1,61 +1,59 @@
 # expense-tracker
 
-Monorepo for the Expense Tracker product: a Go REST API and a Vue 3 web client,
-with a mobile app planned.
+Monorepo for the Expense Tracker product: a Go API, a Vue 3 web client,
+and a React Native (Expo) mobile client, tied together by an OpenAPI
+contract.
 
 ## Structure
 
 ```
-apps/
-  web/      Vue 3 + Vite + Tailwind frontend
-  mobile/   (planned)
-backend/    Go REST API (Gin + SQLite + database/sql)
-packages/   shared TS packages (planned)
-docs/       API reference and product docs
+backend/      Go API (Gin + sqlc + Postgres)
+apps/web/     Vue 3 + Vite (Feature-Sliced Design)
+apps/mobile/  React Native + Expo (FSD + Expo Router, offline-first)
+packages/     shared TS: api, dates, money, i18n; css: tokens
+docs/api/     OpenAPI contract (source of truth)
 ```
 
-The Go backend and the JS workspaces (`apps/*`, `packages/*`) are independent
-toolchains. `pnpm install` only manages the JS side; it ignores `backend/`.
+Start with `AGENTS.md` (root + per area) for working rules,
+`docs/architecture/` for the architecture baseline (overview, invariants,
+findings), and `openspec/` for specs and changes.
+
+The Go backend and the JS workspaces (`apps/*`, `packages/*`) are
+independent toolchains. `pnpm install` only manages the JS side; it
+ignores `backend/`.
 
 ## Prerequisites
 
 - Go 1.26+
 - pnpm 10+ (JS workspaces)
-- Docker (optional, for containerized backend)
+- Docker (Postgres for local runs; required for Go integration/e2e tests)
 
 ## Backend
 
 ```bash
 cd backend
-cp .env.example .env       # CONFIG_PATH=./config/local.yaml
+cp .env.example .env       # CONFIG_PATH + DATABASE_URL (local Postgres)
 make dev                   # go run ./cmd/expense-tracker-api
-make test                  # go test ./...
+make test                  # go test -race ./... (repo/e2e need Docker)
 ```
 
-API runs on `http://localhost:8080`. Local SQLite is created at
-`backend/storage/storage.db` (see `backend/config/local.yaml`).
+API runs on `http://localhost:8080`. Bring up Postgres with
+`docker compose up db`.
 
 ## Frontend
 
 ```bash
 pnpm install               # from repo root (installs all workspaces)
 cd apps/web
-pnpm dev                   # Vite dev server on :5173
+pnpm dev                   # Vite dev server on :5173 (proxies /api to :8080)
 pnpm build                 # type-check + production build
 ```
+
+Mobile (`apps/mobile`): local iOS dev build via `pnpm ios` — see
+`apps/mobile/AGENTS.md`.
 
 ## Docker
 
 ```bash
-docker compose up          # builds backend image from ./backend
+docker compose up          # builds the backend image + Postgres
 ```
-
-## Layout notes
-
-- Backend lives under `backend/`, not at the repo root, so the root stays clean
-  for monorepo tooling. The Go module path is unchanged
-  (`github.com/yurifa/expense-tracker-api`) - it is independent of the on-disk
-  location.
-- `apps/` holds JS/TS client applications managed as pnpm workspaces.
-- CI (`.github/workflows`) runs Go with `working-directory: backend` and builds
-  the Docker image with `context: backend`.

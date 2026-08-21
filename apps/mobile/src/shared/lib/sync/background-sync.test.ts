@@ -6,7 +6,7 @@
 
 import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import type { SyncPullPage, SyncPushOperation, SyncPushResultItem } from '@expense-tracker/api'
-import { createLocalCategoryRepository } from '@/entities/category/api/local-repository'
+import { createLocalCategoryRepository } from '@/entities/category'
 import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
 import { syncOutbox } from '@/shared/lib/db/schema'
 import type { LocalDatabase } from '@/shared/lib/db/database'

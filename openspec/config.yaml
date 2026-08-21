@@ -20,11 +20,12 @@ context: |
   backend/       Go API (Gin + sqlc + Postgres)
   apps/web/      Vue 3 + Vite (Feature-Sliced Design)
   apps/mobile/   React Native + Expo (FSD + Expo Router)
-  packages/      shared platform-agnostic TS: api, money, i18n, tokens
+  packages/      shared platform-agnostic TS: api, dates, money, i18n; css: tokens
 
   STATUS (brief): backend and web are complete and tested; the web app
-  uses the existing API. Mobile is in active development but not yet
-  integrated with the backend (UI shell only).
+  uses the existing API (online-first). Mobile is in active development,
+  offline-first: local SQLite + sync engine are integrated with the
+  backend (session auth + sync push/pull); i18n wiring pending.
 
   ARCHITECTURE:
   - docs/api/openapi.yaml is the source of truth for the HTTP API
@@ -37,7 +38,10 @@ context: |
     DOM/Vue/RN imports in packages/*).
 
   GLOBAL INVARIANTS:
-  - Money is int64 minor units (divisor 100); never float/decimal.
+  - Money is int64 minor units (divisor 100) at persistence/transport/
+    sync/calculation boundaries; form/UI state may use a platform-
+    appropriate representation converted exactly once at the mapper seam
+    (no integer-precision loss).
   - Timestamps are UTC; IDs are UUID v4.
   - Auth is a stateful session cookie (session_id); no JWT.
   - API errors carry a machine-readable code + human-readable message;

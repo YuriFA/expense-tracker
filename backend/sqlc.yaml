@@ -8,7 +8,6 @@ sql:
         package: "db"
         out: "internal/repository/db"
         sql_package: "pgx/v5"
-        emit_interface: true
         emit_pointers_for_null_types: true
         emit_json_tags: false
         emit_enum_valid_method: true

@@ -70,7 +70,6 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeTransactionNotFound,
 		"transaction not found",
 	},
-	domain.ErrIdempotencyKeyNotFound: {http.StatusNotFound, httperr.ErrCodeInternal, "idempotency key not found"},
 
 	// --- conflict (409) ---
 	domain.ErrUserAlreadyExists: {

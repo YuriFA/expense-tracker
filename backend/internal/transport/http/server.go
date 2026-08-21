@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -36,6 +37,16 @@ func NewEngine(
 		panic("failed to set trusted proxies: " + err.Error())
 	}
 
+	// ADR-0001 (docs/adr/0001-auth-csrf-threat-model.md): the Origin/CORS
+	// allowlist is the CSRF correctness dependency — explicit origins only.
+	// Wildcard/empty origins are forbidden while credentials are enabled:
+	// browsers reject credentialed wildcards, so fail fast instead.
+	for _, origin := range cfg.CorsConfig.AllowedOrigins {
+		if origin == "*" || origin == "" {
+			panic("forbidden cors allowed origin " + origin + ": explicit origins only (ADR-0001)")
+		}
+	}
+
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CorsConfig.AllowedOrigins,
 		AllowMethods:     cfg.CorsConfig.AllowedMethods,
@@ -47,6 +58,23 @@ func NewEngine(
 	router.Use(middleware.RequestID())
 	router.Use(gin.Recovery())
 	router.Use(middleware.SlogLogger(log))
+
+	// API docs: served from the embedded spec (the same copy that powers
+	// runtime validation), so the routes work from any working directory
+	// and can never drift from the contract. Registered BEFORE the
+	// spec-validation middleware — /docs is deliberately not part of the
+	// OpenAPI contract, so the validator would 404 it.
+	router.GET("/docs", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(redocShell))
+	})
+	router.GET("/docs/openapi.json", func(c *gin.Context) {
+		spec, err := api.GetSpecJSON()
+		if err != nil {
+			httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "failed to serialize spec")
+			return
+		}
+		c.Data(http.StatusOK, "application/json", spec)
+	})
 
 	// Spec-driven request validation (path/query/header params + request body)
 	// via the embedded OpenAPI document. Auth is NOT enforced here (see below).
@@ -81,10 +109,6 @@ func NewEngine(
 		HandlerErrorFunc: func(c *gin.Context, err error) { writeDomainError(c, log, err) },
 	})
 	api.RegisterHandlers(router, strictHandler)
-
-	// API docs (OpenAPI spec + Redoc UI).
-	router.StaticFile("/docs", "docs/api/redoc.html")
-	router.StaticFile("/docs/openapi.yaml", "docs/api/openapi.yaml")
 
 	return router
 }

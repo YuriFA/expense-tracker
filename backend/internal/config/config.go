@@ -63,9 +63,11 @@ type SessionConfig struct {
 }
 
 type CORSConfig struct {
-	AllowedOrigins []string `yaml:"allowed_origins" env:"CORS_ALLOWED_ORIGINS" env-default:"*"                           env-separator:","`
-	AllowedMethods []string `yaml:"allowed_methods" env:"CORS_ALLOWED_METHODS" env-default:"GET,POST,PUT,DELETE,OPTIONS" env-separator:","`
-	AllowedHeaders []string `yaml:"allowed_headers" env:"CORS_ALLOWED_HEADERS" env-default:"Content-Type,Authorization"  env-separator:","`
+	// No env-default on purpose (ADR-0001): the origin allowlist is the CSRF
+	// correctness dependency — it must be set explicitly (yaml or env).
+	AllowedOrigins []string `yaml:"allowed_origins" env:"CORS_ALLOWED_ORIGINS" env-separator:","`
+	AllowedMethods []string `yaml:"allowed_methods" env:"CORS_ALLOWED_METHODS" env-separator:"," env-default:"GET,POST,PUT,DELETE,OPTIONS"`
+	AllowedHeaders []string `yaml:"allowed_headers" env:"CORS_ALLOWED_HEADERS" env-separator:"," env-default:"Content-Type,Authorization"`
 }
 
 //nolint:gosec // G703: config path is operator-controlled (env var), not user input

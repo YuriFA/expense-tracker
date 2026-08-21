@@ -87,18 +87,3 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow
 	)
 	return i, err
 }
-
-const setEmailVerified = `-- name: SetEmailVerified :execrows
-UPDATE users
-SET email_verified_at = now(),
-    updated_at = now()
-WHERE id = $1
-`
-
-func (q *Queries) SetEmailVerified(ctx context.Context, id uuid.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, setEmailVerified, id)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}

@@ -1,26 +1,31 @@
 import '../../global.css'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useQueryClient } from '@tanstack/react-query'
+import NetInfo from '@react-native-community/netinfo'
+import { AppState, type AppStateStatus, View } from 'react-native'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Uniwind } from 'uniwind'
-import { View } from 'react-native'
 import { ThemeProvider } from '@/shared/config/theme'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 import { Text } from '@/shared/ui/text'
-import { DatabaseProvider } from '@/shared/lib/db/database-context'
+import { DatabaseProvider, useLocalDatabase } from '@/shared/lib/db/database-context'
 import { openLocalDatabase } from '@/shared/lib/db/database'
 import { connectQueryFocusManager, createQueryClient } from '@/shared/lib/query/query-client'
-import { AuthProvider } from '@/entities/session'
-import { createLocalAccountRepository } from '@/entities/account/api/local-repository'
-import { AccountRepositoryProvider } from '@/entities/account/api/repository'
-import { createLocalCategoryRepository } from '@/entities/category/api/local-repository'
-import { CategoryRepositoryProvider } from '@/entities/category/api/repository'
-import { createLocalTransactionRepository } from '@/entities/transaction/api/local-repository'
-import { TransactionRepositoryProvider } from '@/entities/transaction/api/repository'
-import { SyncProvider } from '@/shared/lib/sync/sync-provider'
+import { AuthProvider, useAuth } from '@/entities/session'
+import { AccountRepositoryProvider, createLocalAccountRepository } from '@/entities/account'
+import { CategoryRepositoryProvider, createLocalCategoryRepository } from '@/entities/category'
+import {
+  TransactionRepositoryProvider,
+  createLocalTransactionRepository,
+} from '@/entities/transaction'
+import { registerBackgroundSync } from '@/shared/lib/sync/background-sync'
+import { createLocalSyncTransport } from '@/shared/lib/sync/transport'
+import { createSyncEngine, type SyncEngineState } from '@/shared/lib/sync/sync-engine'
+import { SyncContext, type SyncController } from '@/shared/lib/sync/sync-context'
 import { ConflictCenter } from '@/features/sync-conflicts'
 
 /**
@@ -104,6 +109,119 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
       </QueryClientProvider>
     </DatabaseProvider>
   )
+}
+
+/**
+ * Sync engine composition root (design D7): creates the engine once over
+ * the local database and the shared API client, gates runs on
+ * authentication (the app is fully usable anonymously; the outbox just
+ * waits), bridges the 401 pause/resume with the auth provider, and mounts
+ * the opportunistic triggers: foreground, NetInfo reconnect, post-mutation
+ * debounce, manual refresh. Lives at the app layer - the FSD composition
+ * root - because it composes entity state (auth) with shared
+ * infrastructure; lower layers read it via useSyncController from
+ * shared/lib/sync/sync-context.
+ */
+const POST_MUTATION_DEBOUNCE_MS = 2_500
+
+function SyncProvider({ children }: { children: React.ReactNode }) {
+  const db = useLocalDatabase()
+  const queryClient = useQueryClient()
+  const { status: authStatus } = useAuth()
+
+  const [engine] = useState(() =>
+    createSyncEngine({
+      db,
+      transport: createLocalSyncTransport(),
+      onDataChanged: () => {
+        // The engine is a writer beside the repositories (design D3): after
+        // its writes every cached query (entities + sync status) refetches.
+        void queryClient.invalidateQueries()
+      },
+    }),
+  )
+
+  const [engineState, setEngineState] = useState<SyncEngineState>(() => engine.getState())
+  useEffect(() => engine.subscribe(() => setEngineState(engine.getState())), [engine])
+
+  // OS-scheduled background-fetch trigger (dev build only): best-effort
+  // catch-up while the app sits in the background; correctness never
+  // depends on it (the triggers below stay primary). Idempotent, fire-and-forget.
+  useEffect(() => {
+    registerBackgroundSync()
+  }, [])
+
+  // The engine only runs while authenticated; logging in resumes + kicks it
+  // (this is also the initial sync right after the ownership check passes).
+  useEffect(() => {
+    if (authStatus === 'authenticated') {
+      engine.resume()
+      void engine.run()
+    }
+  }, [authStatus, engine])
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scheduleSync = useCallback(
+    (delayMs: number) => {
+      if (authStatus !== 'authenticated') return
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+      debounceTimer.current = setTimeout(() => {
+        debounceTimer.current = null
+        void engine.run()
+      }, delayMs)
+    },
+    [authStatus, engine],
+  )
+  useEffect(
+    () => () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    },
+    [],
+  )
+
+  // Reconnect / foreground / post-mutation triggers.
+  useEffect(() => {
+    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+      if (state.isConnected) scheduleSync(0)
+    })
+    const appStateSubscription = AppState.addEventListener('change', (status: AppStateStatus) => {
+      if (status === 'active') scheduleSync(0)
+    })
+    const unsubscribeMutations = queryClient.getMutationCache().subscribe((event) => {
+      const action = (event as { action?: { type?: string } }).action
+      if (event.type === 'updated' && action?.type === 'success') {
+        scheduleSync(POST_MUTATION_DEBOUNCE_MS)
+      }
+    })
+    return () => {
+      unsubscribeNetInfo()
+      appStateSubscription.remove()
+      unsubscribeMutations()
+    }
+  }, [queryClient, scheduleSync])
+
+  const conflictPresenterRef = useRef<(() => void) | null>(null)
+  const registerConflictPresenter = useCallback((presenter: (() => void) | null) => {
+    conflictPresenterRef.current = presenter
+  }, [])
+  const presentConflicts = useCallback(() => {
+    conflictPresenterRef.current?.()
+  }, [])
+
+  const value = useMemo<SyncController>(
+    () => ({
+      engine,
+      engineState,
+      runNow: () => {
+        void engine.run({ force: true })
+      },
+      presentConflicts,
+      registerConflictPresenter,
+    }),
+    [engine, engineState, presentConflicts, registerConflictPresenter],
+  )
+
+  return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>
 }
 
 /**

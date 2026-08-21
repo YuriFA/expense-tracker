@@ -6,7 +6,7 @@ import { createQueryClient } from '@/shared/lib/query/query-client'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { AccountRepositoryProvider } from '../api/repository'
-import { createMockAccountRepository } from '../model/mock-repository'
+import { createMockAccountRepository } from '@/shared/lib/testing/mock-account-repository'
 import { useAccount, useAccounts, useCreateAccount, useDeleteAccount } from '../model/use-accounts'
 
 function createWrapper(

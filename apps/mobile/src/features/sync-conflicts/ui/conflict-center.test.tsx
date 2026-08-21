@@ -10,12 +10,12 @@ import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
 import { DatabaseProvider } from '@/shared/lib/db/database-context'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { AccountRepositoryProvider } from '@/entities/account/api/repository'
-import { createLocalAccountRepository } from '@/entities/account/api/local-repository'
-import { CategoryRepositoryProvider } from '@/entities/category/api/repository'
-import { createLocalCategoryRepository } from '@/entities/category/api/local-repository'
-import { TransactionRepositoryProvider } from '@/entities/transaction/api/repository'
-import { createLocalTransactionRepository } from '@/entities/transaction/api/local-repository'
+import { AccountRepositoryProvider } from '@/entities/account'
+import { createLocalAccountRepository } from '@/entities/account'
+import { CategoryRepositoryProvider } from '@/entities/category'
+import { createLocalCategoryRepository } from '@/entities/category'
+import { TransactionRepositoryProvider } from '@/entities/transaction'
+import { createLocalTransactionRepository } from '@/entities/transaction'
 import { categories, syncOutbox } from '@/shared/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { listUnresolvedConflicts, recordConflict } from '@/shared/lib/sync/conflicts'
@@ -28,7 +28,7 @@ const mockEngineRun = jest.fn(() =>
 )
 const mockRegisterPresenter = jest.fn()
 
-jest.mock('@/shared/lib/sync/sync-provider', () => ({
+jest.mock('@/shared/lib/sync/sync-context', () => ({
   useSyncController: () => ({
     engine: {
       run: mockEngineRun,

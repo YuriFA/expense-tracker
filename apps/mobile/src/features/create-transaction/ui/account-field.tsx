@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
-import { useAccounts } from '@/entities/account/model/use-accounts'
+import { useAccounts } from '@/entities/account'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { Icon } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'

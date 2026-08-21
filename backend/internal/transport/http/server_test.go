@@ -27,12 +27,54 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// TestDocsRoutesServeEmbeddedSpec pins the fix for the /docs routes (finding
+// A3): they used to read relative spec files that only resolved when the
+// process ran from the repo root. The embedded spec has no filesystem
+// dependency, and the test's working directory (this package) is exactly the
+// environment where the old implementation 404'd.
+func TestDocsRoutesServeEmbeddedSpec(t *testing.T) {
+	t.Parallel()
+	engine := newTestEngine(t)
+
+	resp := httptest.NewRecorder()
+	engine.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/docs", nil))
+	require.Equal(t, http.StatusOK, resp.Code)
+	assert.Contains(t, resp.Body.String(), `redoc spec-url="/docs/openapi.json"`)
+
+	resp = httptest.NewRecorder()
+	engine.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/docs/openapi.json", nil))
+	require.Equal(t, http.StatusOK, resp.Code)
+	assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+	assert.Contains(t, resp.Body.String(), `"openapi":"3.0.3"`)
+}
+
+// TestNewEngineRejectsWildcardCorsOrigin pins the ADR-0001 fail-fast:
+// credentialed CORS forbids wildcard/empty allowed origins.
+func TestNewEngineRejectsWildcardCorsOrigin(t *testing.T) {
+	t.Parallel()
+	for _, origin := range []string{"*", ""} {
+		cfg := testHTTPConfig()
+		cfg.CorsConfig.AllowedOrigins = []string{"https://ok.example", origin}
+		assert.Panics(t, func() { newTestEngineWithConfig(t, cfg) })
+	}
+}
+
 func newTestEngine(t *testing.T) *gin.Engine {
 	t.Helper()
 	return newTestEngineWithLogger(t, logger.NewDiscardLogger())
 }
 
 func newTestEngineWithLogger(t *testing.T, log *slog.Logger) *gin.Engine {
+	t.Helper()
+	return wireTestEngine(t, testHTTPConfig(), log)
+}
+
+func newTestEngineWithConfig(t *testing.T, cfg *config.HTTPServer) *gin.Engine {
+	t.Helper()
+	return wireTestEngine(t, cfg, logger.NewDiscardLogger())
+}
+
+func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin.Engine {
 	t.Helper()
 	store := fakes.New()
 	authSvc := service.NewAuthService(
@@ -49,7 +91,7 @@ func newTestEngineWithLogger(t *testing.T, log *slog.Logger) *gin.Engine {
 	sessionSvc := service.NewSessionService(store)
 
 	server := httptransport.NewServer(
-		testHTTPConfig(),
+		cfg,
 		log,
 		accountSvc,
 		categorySvc,
@@ -58,15 +100,14 @@ func newTestEngineWithLogger(t *testing.T, log *slog.Logger) *gin.Engine {
 		sessionSvc,
 		service.NewSyncService(store),
 	)
-	engine := httptransport.NewEngine(testHTTPConfig(), log, server, store, store, store)
-	return engine
+	return httptransport.NewEngine(cfg, log, server, store, store, store)
 }
 
 func testHTTPConfig() *config.HTTPServer {
 	return &config.HTTPServer{
 		Address: "127.0.0.1:0",
 		CorsConfig: config.CORSConfig{
-			AllowedOrigins: []string{"*"},
+			AllowedOrigins: []string{"http://localhost:5173"},
 			AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 			AllowedHeaders: []string{"Content-Type"},
 		},

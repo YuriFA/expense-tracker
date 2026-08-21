@@ -15,8 +15,8 @@ import {
 } from '@expense-tracker/api'
 import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { AccountRepositoryProvider } from '@/entities/account/api/repository'
-import { createMockAccountRepository } from '@/entities/account/model/mock-repository'
+import { AccountRepositoryProvider } from '@/entities/account'
+import { createMockAccountRepository } from '@/shared/lib/testing/mock-account-repository'
 import { NewAccountForm } from './new-account-form'
 
 type MockRepository = ReturnType<typeof createMockAccountRepository>

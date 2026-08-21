@@ -6,19 +6,19 @@
 // transaction-creation and category-edit sheets. The expense kind keeps
 // the dashboard's ids and wording; the income kind mirrors them.
 
-import { describe, expect, it } from '@jest/globals'
+import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { Category, Transaction } from '@expense-tracker/api'
 import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { AccountRepositoryProvider } from '@/entities/account/api/repository'
-import { createMockAccountRepository } from '@/entities/account/model/mock-repository'
-import { CategoryRepositoryProvider } from '@/entities/category/api/repository'
-import { createMockCategoryRepository } from '@/entities/category/model/mock-repository'
-import { TransactionRepositoryProvider } from '@/entities/transaction/api/repository'
-import { createMockTransactionRepository } from '@/entities/transaction/model/mock-repository'
+import { AccountRepositoryProvider } from '@/entities/account'
+import { createMockAccountRepository } from '@/shared/lib/testing/mock-account-repository'
+import { CategoryRepositoryProvider } from '@/entities/category'
+import { createMockCategoryRepository } from '@/shared/lib/testing/mock-category-repository'
+import { TransactionRepositoryProvider } from '@/entities/transaction'
+import { createMockTransactionRepository } from '@/shared/lib/testing/mock-transaction-repository'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 import { CategorySection } from './category-section'
 import { formatAmount } from '@/shared/lib/format/format'
@@ -95,6 +95,7 @@ const TRANSACTIONS: Transaction[] = [
 ]
 
 function renderSection() {
+  const onNewTransaction = jest.fn()
   render(
     <SafeAreaProvider
       initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
@@ -112,6 +113,7 @@ function renderSection() {
                     cursor={currentMonth()}
                     transactions={TRANSACTIONS}
                     categories={CATEGORIES}
+                    onNewTransaction={onNewTransaction}
                   />
                 </BottomSheetProvider>
               </ThemeProvider>
@@ -121,6 +123,7 @@ function renderSection() {
       </QueryClientProvider>
     </SafeAreaProvider>,
   )
+  return { onNewTransaction }
 }
 
 async function openTaxiSheet() {
@@ -204,12 +207,12 @@ describe('CategoryCashflowSheet (expense kind)', () => {
     expect(screen.queryAllByTestId(/^category-expense-row-/)).toHaveLength(0)
   })
 
-  it('presents the expense-creation sheet from the footer button', async () => {
-    renderSection()
+  it('delegates the footer new-transaction action to the page composition', async () => {
+    const { onNewTransaction } = renderSection()
     await openTaxiSheet()
 
     fireEvent.press(screen.getByTestId('category-new-expense-button'))
-    await waitFor(() => expect(screen.getByTestId('category-new-expense-sheet')).toBeTruthy())
+    expect(onNewTransaction).toHaveBeenCalledWith('cat-taxi')
   })
 
   it('presents the category-edit sheet from the header pencil', async () => {
@@ -270,6 +273,7 @@ const INCOME_TRANSACTIONS: Transaction[] = [
 ]
 
 function renderIncomeSection() {
+  const onNewTransaction = jest.fn()
   render(
     <SafeAreaProvider
       initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
@@ -287,6 +291,7 @@ function renderIncomeSection() {
                     cursor={currentMonth()}
                     transactions={INCOME_TRANSACTIONS}
                     categories={INCOME_CATEGORIES}
+                    onNewTransaction={onNewTransaction}
                   />
                 </BottomSheetProvider>
               </ThemeProvider>
@@ -296,11 +301,12 @@ function renderIncomeSection() {
       </QueryClientProvider>
     </SafeAreaProvider>,
   )
+  return { onNewTransaction }
 }
 
 describe('CategoryCashflowSheet (income kind)', () => {
   it('shows the income breakdown, wording, and ids; expenses never appear', async () => {
-    renderIncomeSection()
+    const { onNewTransaction } = renderIncomeSection()
 
     await waitFor(() => expect(screen.getByTestId('income-category-cat-salary')).toBeTruthy())
     fireEvent.press(screen.getByTestId('income-category-cat-salary'))
@@ -315,7 +321,7 @@ describe('CategoryCashflowSheet (income kind)', () => {
     expect(screen.queryByTestId('category-income-row-tx-salary-prev')).toBeNull()
 
     fireEvent.press(screen.getByTestId('category-new-income-button'))
-    await waitFor(() => expect(screen.getByTestId('category-new-income-sheet')).toBeTruthy())
+    expect(onNewTransaction).toHaveBeenCalledWith('cat-salary')
   })
 
   it('shows the income empty state for a month without incomes', async () => {

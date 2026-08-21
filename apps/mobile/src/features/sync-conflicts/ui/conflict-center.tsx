@@ -16,9 +16,9 @@ import type {
   CreateCategoryPayload,
   CreateTransactionPayload,
 } from '@expense-tracker/api'
-import { useAccountRepository } from '@/entities/account/api/repository'
-import { useCategoryRepository } from '@/entities/category/api/repository'
-import { useTransactionRepository } from '@/entities/transaction/api/repository'
+import { useAccountRepository } from '@/entities/account'
+import { useCategoryRepository } from '@/entities/category'
+import { useTransactionRepository } from '@/entities/transaction'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import {
   getConflictById,
@@ -28,7 +28,7 @@ import {
   resolveConflictTakeServer,
   type LocalSyncConflict,
 } from '@/shared/lib/sync/conflicts'
-import { useSyncController } from '@/shared/lib/sync/sync-provider'
+import { useSyncController } from '@/shared/lib/sync/sync-context'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 
 const ENTITY_NAMES_RU: Record<LocalSyncConflict['entity'], string> = {
@@ -47,13 +47,22 @@ function conflictSubject(conflict: LocalSyncConflict): string {
   return name || description
 }
 
+/**
+ * Parses a serialized minor-units money value (invariant #2): non-integer
+ * garbage falls back to 0 instead of poisoning the payload with a float.
+ */
+function toMinorUnits(value: unknown): number {
+  const parsed = Number(value ?? 0)
+  return Number.isSafeInteger(parsed) ? parsed : 0
+}
+
 function asCreateAccountPayload(state: Record<string, unknown>): CreateAccountPayload {
   return {
     name: String(state.name ?? ''),
     currency: (state.currency === 'EUR' || state.currency === 'RUB'
       ? state.currency
       : 'USD') as CreateAccountPayload['currency'],
-    openingBalance: Number(state.openingBalance ?? 0),
+    openingBalance: toMinorUnits(state.openingBalance),
   }
 }
 
@@ -68,7 +77,7 @@ function asCreateCategoryPayload(state: Record<string, unknown>): CreateCategory
 
 function asCreateTransactionPayload(state: Record<string, unknown>): CreateTransactionPayload {
   const base = {
-    amount: Number(state.amount ?? 0),
+    amount: toMinorUnits(state.amount),
     description: typeof state.description === 'string' ? state.description : '',
     occurredAt: String(state.occurredAt ?? nowIso()),
   }
@@ -123,8 +132,8 @@ export function ConflictCenter() {
           const created = await accountRepository.create(asCreateAccountPayload(state))
           // Create cannot carry a manual adjustment (wire contract), so a
           // lost adjustment is replayed as an immediate local update.
-          const manualAdjustment = Number(state.manualAdjustment ?? 0)
-          if (Number.isSafeInteger(manualAdjustment) && manualAdjustment !== 0) {
+          const manualAdjustment = toMinorUnits(state.manualAdjustment)
+          if (manualAdjustment !== 0) {
             await accountRepository.update(created.id, {
               manualAdjustment,
               version: created.version,

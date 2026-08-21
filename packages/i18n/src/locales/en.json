@@ -204,6 +204,7 @@
   },
   "auth": {
     "signIn": "Sign in",
+    "invalidCredentials": "Invalid email or password",
     "signUp": "Sign up",
     "signOut": "Sign out",
     "emailLabel": "Email",

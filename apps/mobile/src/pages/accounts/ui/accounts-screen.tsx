@@ -12,7 +12,7 @@ import { IconButton } from '@/shared/ui/icon-button'
 import { Text } from '@/shared/ui/text'
 import { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
-import { useAccounts, useDeleteAccount } from '@/entities/account/model/use-accounts'
+import { useAccounts, useDeleteAccount } from '@/entities/account'
 import { NewAccountSheet } from './new-account-sheet'
 
 export function AccountsScreen() {

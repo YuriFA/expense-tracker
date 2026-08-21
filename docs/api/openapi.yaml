@@ -440,9 +440,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ErrorResponse"
-                  - $ref: "#/components/schemas/ValidationErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 invalidToken:
                   value:
@@ -667,9 +665,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ErrorResponse"
-                  - $ref: "#/components/schemas/ValidationErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -1136,13 +1132,10 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ValidationErrorResponse"
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             code: VALIDATION_FAILED
             message: validation failed
-            errors:
-              - field: email
-                message: email is required
     TransactionNotFound:
       description: Транзакция не найдена (или чужая).
       content:
@@ -1393,31 +1386,6 @@ components:
           type: string
           description: Human-readable сообщение.
       required: [code, message]
-
-    ValidationErrorResponse:
-      description: |
-        ErrorResponse extended with a list of per-field validation errors.
-        `errors` is required so this schema is distinguishable from the plain
-        `ErrorResponse` inside `oneOf`.
-      allOf:
-        - $ref: "#/components/schemas/ErrorResponse"
-        - type: object
-          required: [errors]
-          properties:
-            errors:
-              type: array
-              minItems: 1
-              items:
-                $ref: "#/components/schemas/FieldError"
-
-    FieldError:
-      type: object
-      properties:
-        field:
-          type: string
-        message:
-          type: string
-      required: [field, message]
 
     SessionResponse:
       type: object

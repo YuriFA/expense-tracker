@@ -29,7 +29,7 @@ async function submit() {
   errors.value = {}
   const parsed = schema.safeParse(form)
   if (!parsed.success) {
-    errors.value.form = t('auth.signIn')
+    errors.value.form = t('auth.invalidCredentials')
     return
   }
   isSubmitting.value = true
@@ -40,8 +40,8 @@ async function submit() {
     await router.push(redirect)
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      errors.value.form = t('auth.signIn')
-      notification.warning(t('auth.signIn'))
+      errors.value.form = t('auth.invalidCredentials')
+      notification.warning(t('auth.invalidCredentials'))
     } else if (error instanceof RateLimitedError) {
       retryAfter.value = error.retryAfter
       errors.value.form = t('auth.rateLimited', { seconds: error.retryAfter ?? 0 })

@@ -23,3 +23,6 @@ node_modules/
 
 # --- Frontend (apps/web) ---
 # dist, coverage, playwright artifacts handled by apps/web/.gitignore
+
+# --- Agent harness workspace (session plans, local commands/skills) ---
+/.zcode/

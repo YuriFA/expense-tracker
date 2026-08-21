@@ -4,8 +4,6 @@
 package httperr
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,20 +40,9 @@ const (
 	ErrCodeInvalidPasswordResetToken  = "INVALID_PASSWORD_RESET_TOKEN"
 )
 
-type FieldError struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
-}
-
 type ErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
-}
-
-type ValidationErrorResponse struct {
-	ErrorResponse
-
-	Errors []FieldError `json:"errors"`
 }
 
 // Write sends a JSON error response with the given status, code, and message.
@@ -63,13 +50,5 @@ func Write(c *gin.Context, status int, code, message string) {
 	c.AbortWithStatusJSON(status, ErrorResponse{
 		Code:    code,
 		Message: message,
-	})
-}
-
-// WriteValidation sends a 400 with the standard validation-error shape.
-func WriteValidation(c *gin.Context, code, message string, errors []FieldError) {
-	c.AbortWithStatusJSON(http.StatusBadRequest, ValidationErrorResponse{
-		ErrorResponse: ErrorResponse{Code: code, Message: message},
-		Errors:        errors,
 	})
 }

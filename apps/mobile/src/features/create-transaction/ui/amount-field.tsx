@@ -1,5 +1,5 @@
 import { useController, useFormContext, useWatch } from 'react-hook-form'
-import { useAccounts } from '@/entities/account/model/use-accounts'
+import { useAccounts } from '@/entities/account'
 import { DEFAULT_CURRENCY } from '@/shared/lib/format/format'
 import type { TransactionFlowKind } from '../model/schema'
 import type { CreateTransactionFormValues } from '../model/schema'

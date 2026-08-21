@@ -12,8 +12,8 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { AlreadyExistsError, type Category } from '@expense-tracker/api'
 import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { CategoryRepositoryProvider } from '@/entities/category/api/repository'
-import { createMockCategoryRepository } from '@/entities/category/model/mock-repository'
+import { CategoryRepositoryProvider } from '@/entities/category'
+import { createMockCategoryRepository } from '@/shared/lib/testing/mock-category-repository'
 import { CategoryForm } from './category-form'
 
 type MockRepository = ReturnType<typeof createMockCategoryRepository>

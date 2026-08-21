@@ -27,7 +27,7 @@ jest.mock('@/entities/session', () => ({
   useAuth: () => ({ status: mockUseAuth.status }),
 }))
 
-jest.mock('@/shared/lib/sync/sync-provider', () => ({
+jest.mock('@/shared/lib/sync/sync-context', () => ({
   useSyncController: () => mockController,
 }))
 

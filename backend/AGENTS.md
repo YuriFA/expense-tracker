@@ -4,12 +4,26 @@ Spec-first, layered Go API. The OpenAPI contract at `docs/api/openapi.yaml` is
 the source of truth and the project-wide invariants (money/UTC/UUID/session-auth/
 error model) live in the root `AGENTS.md`. Code is the source of truth.
 
-## Layering (strict: transport -> service -> repository)
+## Layering (transport -> service -> repository; middleware exception)
 
 - `internal/transport/http` - gin handlers (the generated `StrictServerInterface`
   impl). Knows HTTP/gin/httperr/httpctx/cookie. No SQL, no business rules.
 - `internal/service` - business rules + authorization (userID scoping). No HTTP, no SQL.
-- `internal/repository` - SQL/Postgres only. No business rules.
+- `internal/repository` - SQL/Postgres only. Repository MUST NOT decide business
+  policy; it MAY implement the persistence/integrity mechanics required to
+  execute a business operation atomically and classify persistence-level
+  outcomes (e.g. `UPDATE ... WHERE version = X`; mapping 0 affected rows to
+  NotFound vs VersionConflict). Placement heuristic: if a rule can be
+  expressed and tested without a database, it should not live in the
+  repository. Known deviations (predate the rule; migration deferred, no
+  UoW seam for now): `RegisterUser` category seeding and `VerifyEmailCode`
+  attempt accounting are business policy living inside repository
+  transactions - new code follows the rule.
+- Middleware exception: middleware implementing a cross-cutting infrastructure
+  concern that needs no service business logic may depend directly on repository
+  interfaces. Allowed (explicit): `SessionRepository` + `UserRepository` (auth
+  middleware), `IdempotencyRepository` (idempotency middleware). Any NEW
+  middleware -> repository dependency requires a separate architectural decision.
 - The authenticated `userID` is passed **explicitly** handler -> service; never
   read from a request body. Handlers get it from auth middleware via the request context.
 
@@ -20,7 +34,18 @@ error model) live in the root `AGENTS.md`. Code is the source of truth.
   in the binary (`//go:embed`). **Never edit a merged migration** - add a new one.
   `make migrate-up` / `make migrate-create name=...`.
 - **Multi-user scoping is mandatory:** every resource query includes `user_id`;
-  cross-user access returns "not found" (IDOR-safe). FK refs inside a transaction
+  cross-user access returns "not found" (IDOR-safe). User-owned resources:
+  accounts, categories, transactions, idempotency keys, sync change_log /
+  applied operations, tombstones. Sanctioned exceptions (no user_id filter):
+  (a) `users` lookups keyed by unique identity - email for login (pre-auth,
+  no user context yet), id for the auth middleware; the PK is the identity
+  (see the queries/users.sql header); (b) capability-keyed auth rows where
+  possessing the secret IS the authorization: `sessions` by token id
+  (expiry-checked), `password_reset_tokens` by token hash (single-use;
+  `ResetPassword` derives user_id from the consumed token and scopes the
+  rest of the tx); (c) time-based cleanup of expired rows (expired
+  sessions, expired idempotency keys) - no user dimension.
+  FK refs inside a transaction
   use distinct errors (`ErrTransactionAccountNotFound` ...) so the transport
   error mapper stays 1:1 (422 in a transaction vs 404 by id).
 - Type/currency use `CHECK` constraints, not Postgres ENUM.
@@ -68,5 +93,8 @@ migrations). `make gen-check` is the CI drift gate. Both generated trees are com
 ## Lint / build
 
 - Lint: `golangci-lint run` (config `backend/.golangci.yml`, strict golden config).
+  Includes depguard architecture rules: layering + sqlc confinement; the
+  middleware allowlist exception (see Layering above) lives in
+  `issues.exclusions` - do not add files there without a decision.
 - Build: `go build ./...` from `backend/`. Docker image is CGO-free
   (`CGO_ENABLED=0`); `docker compose up` brings up `db` (postgres:17) + `app`.

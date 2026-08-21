@@ -204,6 +204,7 @@
   },
   "auth": {
     "signIn": "Вход",
+    "invalidCredentials": "Неверный email или пароль",
     "signUp": "Регистрация",
     "signOut": "Выйти",
     "emailLabel": "Email",

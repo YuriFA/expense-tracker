@@ -140,7 +140,7 @@ func testCfg() *config.HTTPServer {
 	return &config.HTTPServer{
 		Address: "127.0.0.1:0",
 		CorsConfig: config.CORSConfig{
-			AllowedOrigins: []string{"*"},
+			AllowedOrigins: []string{"http://localhost:5173"},
 			AllowedMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 			AllowedHeaders: []string{"Content-Type"},
 		},

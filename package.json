@@ -4,9 +4,11 @@
   "private": true,
   "packageManager": "pnpm@10.28.1",
   "scripts": {
-    "knip": "knip"
+    "knip": "knip",
+    "arch:check": "depcruise packages/api/src packages/dates/src packages/money/src packages/i18n/src --config .dependency-cruiser.packages.cjs && pnpm -C apps/mobile exec depcruise src --config ../../.dependency-cruiser.mobile.cjs && depcruise apps/web/src --config .dependency-cruiser.web.cjs"
   },
   "devDependencies": {
+    "dependency-cruiser": "^18.2.0",
     "knip": "^6.32.2"
   }
 }

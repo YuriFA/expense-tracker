@@ -1,6 +1,6 @@
 // Runtime wiring of the local database: opens the on-device SQLite file
-// (expo-sqlite, JSI - bundled with Expo Go) and applies drizzle-kit
-// migrations at app start. Unit tests bypass this module and build a drizzle
+// (expo-sqlite, JSI) and applies drizzle-kit migrations at app start.
+// Unit tests bypass this module and build a drizzle
 // instance over the Node sqlite adapter instead (see ./testing).
 
 import { drizzle, type ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite'

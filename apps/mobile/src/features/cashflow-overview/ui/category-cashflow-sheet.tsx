@@ -17,8 +17,7 @@ import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import type { Category } from '@expense-tracker/api'
 import { monthRangeLabelShort, monthToUtcDayRange } from '@expense-tracker/dates'
-import { NewTransactionSheet } from '@/features/create-transaction'
-import { useTransactions } from '@/entities/transaction/model/use-transactions'
+import { useTransactions } from '@/entities/transaction'
 import { Icon } from '@/shared/ui/icon'
 import { IconButton } from '@/shared/ui/icon-button'
 import { Text } from '@/shared/ui/text'
@@ -53,6 +52,12 @@ export interface CategoryCashflowSheetProps {
   categories: Category[]
   /** The month the sheet opens on; the in-sheet navigator takes over after. */
   initialCursor: MonthCursor
+  /**
+   * Opens the kind's new-transaction sheet with this category preselected.
+   * Composed by the hosting page (features must not import the
+   * create-transaction slice - invariant #15).
+   */
+  onNewTransaction: (categoryId: string | undefined) => void
 }
 
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
@@ -70,12 +75,12 @@ export function CategoryCashflowSheet({
   category,
   categories,
   initialCursor,
+  onNewTransaction,
   ref,
 }: CategoryCashflowSheetProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
   const [cursor, setCursor] = useState(initialCursor)
   const [sortAscending, setSortAscending] = useState(false)
-  const newTransactionSheetRef = useRef<BottomSheetRef>(null)
   const editCategorySheetRef = useRef<BottomSheetRef>(null)
   const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
 
@@ -100,10 +105,6 @@ export function CategoryCashflowSheet({
     editCategorySheetRef.current?.present()
   }
 
-  const handleNewTransaction = () => {
-    newTransactionSheetRef.current?.present()
-  }
-
   // Every presentation starts at the screen's month: the in-sheet
   // navigation is ephemeral per open, not a lasting selection.
   const handleSheetChange = (index: number) => {
@@ -123,7 +124,7 @@ export function CategoryCashflowSheet({
             {...props}
             testID={ids.categoryNewTransactionButton}
             buttonTranslationY={buttonTranslationY}
-            onPress={handleNewTransaction}
+            onPress={() => onNewTransaction(category?.id)}
             label={copy.newTransaction}
           />
         )}
@@ -232,13 +233,6 @@ export function CategoryCashflowSheet({
           </BottomSheetBody>
         </AnimatedBottomSheetScrollView>
       </BottomSheet>
-
-      <NewTransactionSheet
-        ref={newTransactionSheetRef}
-        kind={kind}
-        defaultCategoryId={category?.id}
-        testID={ids.categoryNewTransactionSheet}
-      />
 
       <EditCategorySheet ref={editCategorySheetRef} category={category} />
     </>

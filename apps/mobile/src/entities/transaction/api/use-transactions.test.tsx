@@ -7,7 +7,7 @@ import { createQueryClient } from '@/shared/lib/query/query-client'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { TransactionRepositoryProvider } from '../api/repository'
-import { createMockTransactionRepository } from '../model/mock-repository'
+import { createMockTransactionRepository } from '@/shared/lib/testing/mock-transaction-repository'
 import {
   useCreateTransaction,
   useDeleteTransaction,

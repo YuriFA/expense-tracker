@@ -559,18 +559,6 @@ export interface components {
             /** @description Human-readable сообщение. */
             message: string;
         };
-        /**
-         * @description ErrorResponse extended with a list of per-field validation errors.
-         *     `errors` is required so this schema is distinguishable from the plain
-         *     `ErrorResponse` inside `oneOf`.
-         */
-        ValidationErrorResponse: components["schemas"]["ErrorResponse"] & {
-            errors: components["schemas"]["FieldError"][];
-        };
-        FieldError: {
-            field: string;
-            message: string;
-        };
         /** @description Метаданные сессии без токена. */
         SessionResponse: {
             /** Format: date-time */
@@ -870,16 +858,10 @@ export interface components {
                 /**
                  * @example {
                  *       "code": "VALIDATION_FAILED",
-                 *       "message": "validation failed",
-                 *       "errors": [
-                 *         {
-                 *           "field": "email",
-                 *           "message": "email is required"
-                 *         }
-                 *       ]
+                 *       "message": "validation failed"
                  *     }
                  */
-                "application/json": components["schemas"]["ValidationErrorResponse"];
+                "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Транзакция не найдена (или чужая). */
@@ -1426,7 +1408,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             500: components["responses"]["InternalError"];
@@ -1600,7 +1582,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["ValidationErrorResponse"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];

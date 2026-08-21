@@ -23,9 +23,17 @@ interface AllCashflowCardProps {
   cursor: MonthCursor
   transactions: Transaction[]
   categories: Category[]
+  /** Opens the kind's new-transaction sheet (composed by the hosting page). */
+  onNewTransaction: () => void
 }
 
-export function AllCashflowCard({ kind, cursor, transactions, categories }: AllCashflowCardProps) {
+export function AllCashflowCard({
+  kind,
+  cursor,
+  transactions,
+  categories,
+  onNewTransaction,
+}: AllCashflowCardProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
   const listSheetRef = useRef<BottomSheetRef>(null)
   const last = latestCashflow(transactions, cursor, kind)
@@ -85,6 +93,7 @@ export function AllCashflowCard({ kind, cursor, transactions, categories }: AllC
         kind={kind}
         subtitle={sheetSubtitle}
         groups={sheetGroups}
+        onNewTransaction={onNewTransaction}
       />
     </>
   )

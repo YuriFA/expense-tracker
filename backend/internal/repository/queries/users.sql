@@ -25,9 +25,3 @@ SELECT
     updated_at
 FROM users
 WHERE id = $1;
-
--- name: SetEmailVerified :execrows
-UPDATE users
-SET email_verified_at = now(),
-    updated_at = now()
-WHERE id = $1;

@@ -61,6 +61,42 @@ jobs:
       - name: Verify generated code is in sync
         run: make gen-check
 
+  ts-gen-check:
+    # TS counterpart of gen-check: regenerating the contract types must
+    # leave the tree clean — if schema.ts drifts from openapi.yaml, fail.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json packageManager
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Regenerate TS contract types
+        run: pnpm --filter @expense-tracker/api gen:api
+      - name: Verify generated schema is in sync
+        run: git diff --exit-code packages/api/src/schema.ts
+
+  arch-check:
+    # Architecture rules via dependency-cruiser (configs at repo root):
+    # packages leaf/direction + platform bans, mobile FSD layer direction +
+    # cross-slice + api-client seam, date-fns facade ban. Backend layering
+    # is enforced separately by depguard inside the lint-test job.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json packageManager
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run architecture checks
+        run: pnpm arch:check
+
   lint-test:
     runs-on: ubuntu-latest
     defaults:

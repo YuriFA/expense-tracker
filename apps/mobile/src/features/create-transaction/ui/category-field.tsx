@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 import { View } from 'react-native'
-import { useCategories } from '@/entities/category/model/use-categories'
+import { useCategories } from '@/entities/category'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { Text } from '@/shared/ui/text'
 import type { CreateTransactionFormValues } from '../model/schema'

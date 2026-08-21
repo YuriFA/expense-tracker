@@ -1,7 +1,6 @@
-import { Fragment, useRef } from 'react'
+import { Fragment } from 'react'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
-import { NewTransactionSheet } from '@/features/create-transaction'
 import { Icon, type IconName } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
@@ -35,19 +34,19 @@ export interface CashflowListSheetProps {
   /** Period + total summary under the title: "1 авг. - 31 авг., 30 325 ₽". */
   subtitle: string
   groups: CashflowDayGroup[]
+  /**
+   * Opens the kind's new-transaction sheet. Composed by the hosting page
+   * (features must not import the create-transaction slice - invariant #15).
+   */
+  onNewTransaction: () => void
 }
 
 /** Scroll-driven footer visibility shared by the cashflow sheets. */
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
 
-export function CashflowListSheet({ kind, subtitle, groups, ref }: CashflowListSheetProps) {
+export function CashflowListSheet({ kind, subtitle, groups, onNewTransaction, ref }: CashflowListSheetProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
-  const newTransactionSheetRef = useRef<BottomSheetRef>(null)
   const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
-
-  const handleNewTransaction = () => {
-    newTransactionSheetRef.current?.present()
-  }
 
   return (
     <>
@@ -60,7 +59,7 @@ export function CashflowListSheet({ kind, subtitle, groups, ref }: CashflowListS
           <SheetFooter
             {...props}
             buttonTranslationY={buttonTranslationY}
-            onPress={handleNewTransaction}
+            onPress={onNewTransaction}
             label={copy.newTransaction}
             testID={ids.newTransactionButton}
           />
@@ -123,12 +122,6 @@ export function CashflowListSheet({ kind, subtitle, groups, ref }: CashflowListS
           </>
         )}
       </BottomSheet>
-
-      <NewTransactionSheet
-        ref={newTransactionSheetRef}
-        kind={kind}
-        testID={ids.newTransactionSheet}
-      />
     </>
   )
 }

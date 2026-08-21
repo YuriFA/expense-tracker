@@ -10,7 +10,7 @@ import { Icon } from '@/shared/ui/icon'
 import { useAuth } from '@/entities/session'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import { readSyncStatus } from '@/shared/lib/sync/sync-status'
-import { useSyncController } from '@/shared/lib/sync/sync-provider'
+import { useSyncController } from '@/shared/lib/sync/sync-context'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 
 function formatSyncedAt(iso: string | null): string {

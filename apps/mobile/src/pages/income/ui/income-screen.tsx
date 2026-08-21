@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { monthToUtcDayRange } from '@expense-tracker/dates'
-import { useCategories } from '@/entities/category/model/use-categories'
-import { useTransactions } from '@/entities/transaction/model/use-transactions'
+import { useCategories } from '@/entities/category'
+import { useTransactions } from '@/entities/transaction'
+import { NewTransactionSheet } from '@/features/create-transaction'
 import {
   AllCashflowCard,
+  CASHFLOW_KIND_VIEWS,
   CategorySection,
   SummaryCard,
   currentMonth,
@@ -16,6 +18,7 @@ import {
 } from '@/features/cashflow-overview'
 import { Screen } from '@/shared/ui/screen'
 import { IconButton } from '@/shared/ui/icon-button'
+import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { formatAmount } from '@/shared/lib/format/format'
 
 /**
@@ -29,6 +32,13 @@ import { formatAmount } from '@/shared/lib/format/format'
 export function IncomeScreen() {
   const router = useRouter()
   const [cursor, setCursor] = useState<MonthCursor>(() => currentMonth())
+  const { ids } = CASHFLOW_KIND_VIEWS.income
+
+  // Page-level composition of the new-transaction sheets (invariant #15):
+  // the cashflow feature must not import the create-transaction slice.
+  const listNewTransactionRef = useRef<BottomSheetRef>(null)
+  const categoryNewTransactionRef = useRef<BottomSheetRef>(null)
+  const [prefillCategoryId, setPrefillCategoryId] = useState<string | undefined>(undefined)
 
   // Month-bounded superset (UTC days covering the local month) filtered to
   // income by the repository; children trim to the exact local month via the
@@ -40,6 +50,14 @@ export function IncomeScreen() {
 
   const goPrev = () => setCursor(previousMonth(cursor))
   const goNext = () => setCursor(nextMonth(cursor))
+
+  const openListNewTransaction = () => {
+    listNewTransactionRef.current?.present()
+  }
+  const openCategoryNewTransaction = (categoryId: string | undefined) => {
+    setPrefillCategoryId(categoryId)
+    categoryNewTransactionRef.current?.present()
+  }
 
   return (
     <Screen testID="screen-income">
@@ -68,15 +86,29 @@ export function IncomeScreen() {
             cursor={cursor}
             transactions={transactions}
             categories={categories}
+            onNewTransaction={openListNewTransaction}
           />
           <CategorySection
             kind="income"
             cursor={cursor}
             transactions={transactions}
             categories={categories}
+            onNewTransaction={openCategoryNewTransaction}
           />
         </View>
       </ScrollView>
+
+      <NewTransactionSheet
+        ref={listNewTransactionRef}
+        kind="income"
+        testID={ids.newTransactionSheet}
+      />
+      <NewTransactionSheet
+        ref={categoryNewTransactionRef}
+        kind="income"
+        defaultCategoryId={prefillCategoryId}
+        testID={ids.categoryNewTransactionSheet}
+      />
     </Screen>
   )
 }

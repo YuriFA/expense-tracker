@@ -12,7 +12,7 @@ import { Icon } from '@/shared/ui/icon'
 import { useAuth } from '@/entities/session'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import { readSyncStatus } from '@/shared/lib/sync/sync-status'
-import { useSyncController } from '@/shared/lib/sync/sync-provider'
+import { useSyncController } from '@/shared/lib/sync/sync-context'
 import { useQuery } from '@tanstack/react-query'
 
 export function SyncStatusBadge() {

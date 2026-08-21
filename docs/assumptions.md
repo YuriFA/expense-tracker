@@ -14,10 +14,23 @@ decision in the OpenSpec change that implements it and prune it here.
   accounts are in a single currency; the intended model is conversion
   into a primary currency once an exchange-rate subsystem exists
   (future work, unbuilt).
-- **Mobile auth is undesigned.** How the RN client stores the session
-  cookie is open, and the backend's CSRF posture (SameSite=Lax + CORS
-  allowlist) does not protect a native client. Needs a spec change
-  before mobile touches the API.
+- **Auth/CSRF posture decided** — see `docs/adr/0001-auth-csrf-threat-model.md`
+  (2026-08-20): one stateful cookie session for both clients; server-side
+  Origin check on state-changing browser requests; production HTTPS-only,
+  dev HTTP-on-localhost allowed. The Origin-check middleware itself is
+  still an unimplemented work item.
+- **Deployment is single-replica** (decided 2026-08-20). The backend runs
+  as one replica, which makes the in-memory per-IP rate limiter
+  (`middleware/ratelimit.go`) sufficient. Revisit (distributed or
+  proxy-level limiting) before ever scaling horizontally.
+- **Decided-direction items pending implementation** (2026-08-20):
+  (a) web migrates onto `@expense-tracker/dates` as the canonical date
+  layer (its app-local `@internationalized/date` adapter is temporary;
+  extend the package when web needs more); (b) tokens: the mobile palette
+  is canonical — the web CSS copy syncs to it (light background/border,
+  popover↔aliceblue, radius) plus a guard test; (c) `i18n`
+  `DEFAULT_LOCALE` changes en→ru (product default locale RU; `dates`
+  already 'ru').
 - **Mobile package adoption is expected, not wired.** Mobile is meant
   to consume `@expense-tracker/{api,money,i18n}` (see
   `apps/mobile/AGENTS.md` "Not yet built"), but none are integrated

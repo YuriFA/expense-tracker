@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 import { View } from 'react-native'
-import { useAccounts } from '@/entities/account/model/use-accounts'
+import { useAccounts } from '@/entities/account'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import type { CreateTransactionFormValues } from '../model/schema'
 import { AccountPickerSheet } from './account-picker-sheet'

@@ -18,9 +18,17 @@ export interface CategorySectionProps {
   cursor: MonthCursor
   transactions: Transaction[]
   categories: Category[]
+  /** Opens the new-transaction sheet with the category preselected (page composition). */
+  onNewTransaction: (categoryId: string | undefined) => void
 }
 
-export function CategorySection({ kind, cursor, transactions, categories }: CategorySectionProps) {
+export function CategorySection({
+  kind,
+  cursor,
+  transactions,
+  categories,
+  onNewTransaction,
+}: CategorySectionProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
   const categorySheetRef = useRef<BottomSheetRef>(null)
   const newCategorySheetRef = useRef<BottomSheetRef>(null)
@@ -98,6 +106,7 @@ export function CategorySection({ kind, cursor, transactions, categories }: Cate
         category={sheetCategory}
         categories={categories}
         initialCursor={cursor}
+        onNewTransaction={onNewTransaction}
       />
     </>
   )

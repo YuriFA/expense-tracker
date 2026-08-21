@@ -19,9 +19,9 @@ import {
   type ApiClient,
   type SyncPushOperation,
 } from '@expense-tracker/api'
-import { createLocalAccountRepository } from '@/entities/account/api/local-repository'
-import { createLocalCategoryRepository } from '@/entities/category/api/local-repository'
-import { createLocalTransactionRepository } from '@/entities/transaction/api/local-repository'
+import { createLocalAccountRepository } from '@/entities/account'
+import { createLocalCategoryRepository } from '@/entities/category'
+import { createLocalTransactionRepository } from '@/entities/transaction'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
 import { syncOutbox, categories as categoriesTable } from '@/shared/lib/db/schema'

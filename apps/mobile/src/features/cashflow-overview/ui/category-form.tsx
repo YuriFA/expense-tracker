@@ -14,8 +14,8 @@ import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
-import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/entities/category/config/category-appearance'
-import { useCreateCategory, useUpdateCategory } from '@/entities/category/model/use-categories'
+import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/entities/category'
+import { useCreateCategory, useUpdateCategory } from '@/entities/category'
 import {
   newCategoryDefaultValues,
   newCategorySchema,
