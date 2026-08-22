@@ -28,7 +28,16 @@ export function NewCategorySheet({
   testID = 'home-new-category',
 }: NewCategorySheetProps) {
   return (
-    <BottomSheet ref={ref} testID={`${testID}-sheet`} snapPoints={['75%']}>
+    <BottomSheet
+      ref={ref}
+      testID={`${testID}-sheet`}
+      snapPoints={['70%', '75%']}
+      stackBehavior="push"
+      enableDynamicSizing
+      enableBlurKeyboardOnGesture
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
+    >
       <BottomSheetView testID={`${testID}-sheet`}>
         <BottomSheetHeader title="Новая категория" />
         <BottomSheetBody>

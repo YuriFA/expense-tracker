@@ -25,6 +25,7 @@ import {
   FAB_SIZE,
   OPEN_DURATION,
 } from './constants'
+import { Button } from '../button'
 
 const AnimatedView = Animated.View
 
@@ -122,25 +123,23 @@ export function SpeedDial({
           ))}
         </View>
 
-        <Pressable
+        <Button
+          variant="primary"
           testID={`${DEFAULT_TEST_ID}-fab`}
           onPress={toggle}
           accessibilityRole="button"
           accessibilityLabel={fabLabel}
           accessibilityState={{ expanded: open }}
           accessibilityHint="Opens or closes the action menu"
-          className="items-center justify-center rounded-full bg-primary shadow-lg"
-          style={({ pressed }) => [
-            {
-              width: FAB_SIZE,
-              height: FAB_SIZE,
-              marginTop: ACTION_SPACING,
-            },
-            pressed && { opacity: 0.9, transform: [{ scale: 0.95 }] },
-          ]}
+          className="items-center justify-center rounded-full shadow-[0_0_12px_4px_rgba(0,0,0,0.1)]"
+          style={{
+            width: FAB_SIZE,
+            height: FAB_SIZE,
+            marginTop: ACTION_SPACING,
+          }}
         >
           <FabIcon progress={progress} />
-        </Pressable>
+        </Button>
       </View>
     </View>
   )

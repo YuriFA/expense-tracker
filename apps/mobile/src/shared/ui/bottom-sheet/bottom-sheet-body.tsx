@@ -7,5 +7,5 @@ interface BottomSheetBodyProps extends PropsWithChildren {
 }
 
 export function BottomSheetBody({ className, children }: BottomSheetBodyProps) {
-  return <View className={cn('px-4', className)}>{children}</View>
+  return <View className={cn('flex-1 px-4', className)}>{children}</View>
 }

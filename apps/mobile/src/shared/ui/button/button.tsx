@@ -16,7 +16,7 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-primary',
+  primary: 'bg-linear-to-bl from-primary/50 to-primary to-[50%]',
   secondary: 'bg-secondary',
   outline: 'bg-transparent border border-border',
   ghost: 'bg-transparent',
@@ -42,12 +42,10 @@ const indicatorVariantStyles: Record<ButtonVariant, string> = {
 }
 
 const sizeStyles: Record<ButtonSize, { container: string; text: string }> = {
-  sm: { container: 'px-3 py-1.5 rounded-md', text: 'text-sm' },
-  md: { container: 'px-4 py-2 rounded-lg', text: 'text-base' },
-  lg: { container: 'px-6 py-3 rounded-lg', text: 'text-lg' },
+  sm: { container: 'px-3 py-1.5 rounded-3xl', text: 'text-sm' },
+  md: { container: 'px-4 py-3 rounded-3xl', text: 'text-base' },
+  lg: { container: 'px-6 py-3 rounded-3xl', text: 'text-lg' },
 }
-
-const disabledOpacity = 0.5
 
 export function Button({
   children,
@@ -56,7 +54,6 @@ export function Button({
   loading = false,
   text,
   disabled,
-  style,
   className,
   ...pressableProps
 }: ButtonProps) {
@@ -67,17 +64,12 @@ export function Button({
 
   return (
     <Pressable
-      className={cn(variantClassName, sizeContainer, className)}
-      style={(state) => {
-        const baseStyle: any = {}
-        if (isDisabled) baseStyle.opacity = disabledOpacity
-        else if (state.pressed) baseStyle.opacity = 0.8
-        if (style) {
-          if (typeof style === 'function') return [baseStyle, style(state)]
-          return [baseStyle, style]
-        }
-        return baseStyle
-      }}
+      className={cn(
+        variantClassName,
+        sizeContainer,
+        'disabled:opacity-50 active:opacity-80 active:scale-95 transition-transform',
+        className,
+      )}
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled ?? false }}
@@ -86,7 +78,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator colorClassName={indicatorVariantClassName} />
       ) : text ? (
-        <Text variant="button" className={cn(textVariantStyles[variant], sizeText)}>
+        <Text variant="button" className={cn('text-center', textVariantStyles[variant], sizeText)}>
           {text}
         </Text>
       ) : (

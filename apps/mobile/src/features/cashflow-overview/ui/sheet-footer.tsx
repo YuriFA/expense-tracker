@@ -1,10 +1,10 @@
 import { View } from 'react-native'
 import { BottomSheetFooter, BottomSheetFooterProps } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Pressable } from '@/shared/ui/pressable'
 import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import Animated, { SharedValue } from 'react-native-reanimated'
+import { Button } from '@/shared/ui/button'
 
 // Inherent the `BottomSheetFooterProps` to be able to receive
 // `animatedFooterPosition`.
@@ -35,18 +35,18 @@ export const SheetFooter = ({
         className="items-center"
         style={{ transform: [{ translateY: buttonTranslationY || 0 }] }}
       >
-        <Pressable
+        <Button
           testID={testID}
           accessibilityRole="button"
           accessibilityLabel={label}
-          className="flex-row items-center gap-2 rounded-full bg-primary px-6 py-3 shadow-lg"
+          className="flex-row items-center gap-2"
           onPress={onPress}
         >
           <Icon name="add" size={18} colorClassName="accent-primary-foreground" />
           <Text variant="button" className="text-primary-foreground">
             {label}
           </Text>
-        </Pressable>
+        </Button>
       </Animated.View>
     </BottomSheetFooter>
   )

@@ -86,7 +86,7 @@ export function CategoryForm({
   }
 
   return (
-    <View className="gap-4">
+    <View className="gap-4 pb-safe">
       <Controller
         control={form.control}
         name="name"
@@ -197,12 +197,13 @@ export function CategoryForm({
       <FormError testID={`${id}-error`}>{form.formState.errors.root?.message}</FormError>
 
       <Button
+        testID={`${id}-submit`}
+        className="my-8"
         variant="primary"
         text={isEdit ? 'Сохранить' : 'Создать'}
         loading={pending}
         disabled={pending}
         onPress={form.handleSubmit(handleSubmit)}
-        testID={`${id}-submit`}
       />
     </View>
   )
