@@ -154,7 +154,8 @@ describe('IncomeScreen', () => {
     expect(screen.getByTestId('screen-income')).toBeTruthy()
     await waitFor(() => expect(screen.getByText('Все доходы')).toBeTruthy())
 
-    expect(screen.getByText('Доходы')).toBeTruthy()
+    // The header's large title and the SummaryCard both carry «Доходы».
+    expect(screen.getAllByText('Доходы').length).toBeGreaterThanOrEqual(2)
     // The total also appears in the category breakdown row - at least once.
     await waitFor(() =>
       expect(
@@ -204,7 +205,7 @@ describe('IncomeScreen', () => {
     renderIncome()
     await waitFor(() => expect(screen.getByText('Все доходы')).toBeTruthy())
 
-    fireEvent.press(screen.getByTestId('income-back'))
+    fireEvent.press(screen.getByTestId('screen-header-back'))
     expect(mockBack).toHaveBeenCalledTimes(1)
   })
 })

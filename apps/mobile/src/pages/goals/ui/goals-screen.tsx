@@ -1,3 +1,5 @@
+import { Screen } from '@/shared/ui/screen'
+import { ScreenHeader, ScreenScrollView } from '@/shared/ui/screen-header'
 import { ScreenPlaceholder } from '@/shared/ui/screen-placeholder'
 
 /**
@@ -7,10 +9,11 @@ import { ScreenPlaceholder } from '@/shared/ui/screen-placeholder'
  */
 export function GoalsScreen() {
   return (
-    <ScreenPlaceholder
-      testID="screen-goals"
-      title="Цели"
-      hint="Отслеживание целей появится позже."
-    />
+    <Screen testID="screen-goals" topInset={false}>
+      <ScreenHeader title="Цели" />
+      <ScreenScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ScreenPlaceholder hint="Отслеживание целей появится позже." />
+      </ScreenScrollView>
+    </Screen>
   )
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals'
+import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -10,6 +10,9 @@ import { AccountRepositoryProvider } from '@/entities/account'
 import { createMockAccountRepository } from '@/shared/lib/testing/mock-account-repository'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 import { AccountsScreen } from './accounts-screen'
+
+// ScreenHeader's default back goes through the router.
+jest.mock('expo-router', () => ({ useRouter: () => ({ back: jest.fn() }) }))
 
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 

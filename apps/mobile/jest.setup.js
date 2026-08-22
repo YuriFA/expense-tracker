@@ -68,6 +68,8 @@ jest.mock("react-native-reanimated", () => {
   // Scroll handlers are JS callbacks invoked on scroll events; hand the
   // handler back untouched so component logic that reads it stays exercisable.
   const useAnimatedScrollHandler = (handler) => handler
+  // Worklet->JS calls run immediately: the "UI thread" is the JS thread here.
+  const runOnJS = (fn) => fn
 
   // Animations resolve instantly to their target.
   const withTiming = (toValue) => toValue
@@ -115,6 +117,7 @@ jest.mock("react-native-reanimated", () => {
     useAnimatedProps,
     useAnimatedReaction,
     useAnimatedScrollHandler,
+    runOnJS,
     withTiming,
     withSpring,
     withDelay,
@@ -128,6 +131,17 @@ jest.mock("react-native-reanimated", () => {
     interpolate,
     clamp,
   }
+})
+
+// expo-blur's native blur view is unavailable under jest; tests never assert
+// resolved visuals, so a plain View passthrough (dropping blur-only props) is
+// sufficient and faithful.
+jest.mock("expo-blur", () => {
+  const React = require("react")
+  const { View } = require("react-native")
+  const BlurView = ({ intensity, tint, experimentalBlurMethod, ...rest }) =>
+    React.createElement(View, rest)
+  return { __esModule: true, BlurView }
 })
 
 // @gorhom/bottom-sheet renders via reanimated animations and portals, which

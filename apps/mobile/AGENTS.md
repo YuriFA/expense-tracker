@@ -66,6 +66,15 @@ route and not a tab. It's fully uncontrolled (internal open state), always
 centered, with fixed `speed-dial-*` testIDs (Maestro relies on them). Its
 Expense/Income/Transfer actions are wired in that layout.
 
+Stack (non-tab) destinations (`income`, `accounts`, `goals`) render the shared
+collapsible large-title header (`shared/ui/screen-header`) as a sibling of the
+screen's scroll body: `<Screen topInset={false}>` hosts the scroll wiring and
+composes `<ScreenHeader title … />` + the matching `Screen*` scroll wrapper
+(the header owns the top inset). Native headers stay hidden (`headerShown:
+false` on the root Stack); tab roots keep plain in-screen titles without a
+back affordance. The slice README documents the animation model and the fixed
+`screen-header-*` testID contract.
+
 ## Styling
 
 Styling is Uniwind (Tailwind CSS v4, CSS-first) — no `tailwind.config.*`.

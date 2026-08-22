@@ -1,8 +1,8 @@
 import { Text, View, type ViewProps } from 'react-native'
 
 interface ScreenPlaceholderProps extends ViewProps {
-  /** Screen heading. */
-  title: string
+  /** Screen heading. Omit when the screen already shows a title (e.g. ScreenHeader). */
+  title?: string
   /** Optional supporting line shown under the title. */
   hint?: string
 }
@@ -18,7 +18,7 @@ interface ScreenPlaceholderProps extends ViewProps {
 export function ScreenPlaceholder({ title, hint, ...rest }: ScreenPlaceholderProps) {
   return (
     <View className="flex-1 items-center justify-center gap-2 p-6" {...rest}>
-      <Text className="text-xl font-semibold text-foreground">{title}</Text>
+      {title ? <Text className="text-xl font-semibold text-foreground">{title}</Text> : null}
       {hint ? <Text className="text-sm text-center text-muted-foreground">{hint}</Text> : null}
     </View>
   )

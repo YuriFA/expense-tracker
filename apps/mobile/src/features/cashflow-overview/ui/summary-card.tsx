@@ -6,7 +6,7 @@ import { monthRangeLabel } from '@expense-tracker/dates'
 import type { MonthCursor } from '../model/selectors'
 
 export interface SummaryCardProps {
-  title: string
+  title?: string
   /** Pre-formatted period total; the caller owns which figure it is. */
   amountText: string
   cursor: MonthCursor
@@ -36,22 +36,24 @@ export function SummaryCard({
 
   return (
     <View className="gap-2">
-      <View className="flex-row items-center justify-between">
-        {onTitlePress ? (
-          <Pressable
-            testID={`${testIDPrefix}-summary-mode`}
-            accessibilityRole="button"
-            accessibilityLabel="Изменить отображение суммы"
-            className="flex-row items-center gap-1 active:opacity-70"
-            onPress={onTitlePress}
-          >
+      {title && (
+        <View className="flex-row items-center justify-between">
+          {onTitlePress ? (
+            <Pressable
+              testID={`${testIDPrefix}-summary-mode`}
+              accessibilityRole="button"
+              accessibilityLabel="Изменить отображение суммы"
+              className="flex-row items-center gap-1 active:opacity-70"
+              onPress={onTitlePress}
+            >
+              <Text variant="display">{title}</Text>
+              <Icon name="chevron-down" size={24} colorClassName="accent-muted-foreground" />
+            </Pressable>
+          ) : (
             <Text variant="display">{title}</Text>
-            <Icon name="chevron-down" size={24} colorClassName="accent-muted-foreground" />
-          </Pressable>
-        ) : (
-          <Text variant="display">{title}</Text>
-        )}
-      </View>
+          )}
+        </View>
+      )}
 
       <View className="flex-row items-center justify-between">
         <Text variant="h1" className="text-foreground">

@@ -128,6 +128,6 @@ tags:
 
 # Header back button returns to the dashboard
 - tapOn:
-    id: income-back
+    id: screen-header-back
 - assertVisible:
     id: screen-dashboard

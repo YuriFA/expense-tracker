@@ -3,9 +3,10 @@
 // messaging surfaced from the repository error codes.
 
 import { useRef, useState } from 'react'
-import { Pressable, ScrollView, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { formatMoney } from '@expense-tracker/money'
 import { Screen } from '@/shared/ui/screen'
+import { ScreenHeader, ScreenScrollView } from '@/shared/ui/screen-header'
 import { Card } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
 import { IconButton } from '@/shared/ui/icon-button'
@@ -32,24 +33,26 @@ export function AccountsScreen() {
   }
 
   return (
-    <Screen testID="screen-accounts">
-      <ScrollView>
-        <View className="p-6 gap-6">
-          <View className="flex-row items-center justify-between">
-            <Text variant="display">Счета</Text>
-            <Pressable
-              testID="accounts-add"
-              accessibilityRole="button"
-              accessibilityLabel="Добавить счёт"
-              className="active:opacity-70"
-              onPress={() => newAccountSheetRef.current?.present()}
-            >
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
-                <Icon name="add" size={24} colorClassName="accent-primary-foreground" />
-              </View>
-            </Pressable>
-          </View>
+    <Screen testID="screen-accounts" topInset={false}>
+      <ScreenHeader
+        title="Счета"
+        right={
+          <Pressable
+            testID="accounts-add"
+            accessibilityRole="button"
+            accessibilityLabel="Добавить счёт"
+            className="active:opacity-70"
+            onPress={() => newAccountSheetRef.current?.present()}
+          >
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
+              <Icon name="add" size={24} colorClassName="accent-primary-foreground" />
+            </View>
+          </Pressable>
+        }
+      />
 
+      <ScreenScrollView>
+        <View className="px-6 pb-safe gap-6">
           {error ? (
             <Text variant="body-sm" className="text-destructive" testID="accounts-error">
               {error}
@@ -100,7 +103,7 @@ export function AccountsScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <NewAccountSheet ref={newAccountSheetRef} />
     </Screen>

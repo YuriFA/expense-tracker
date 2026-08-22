@@ -22,6 +22,10 @@ tags:
 - tapOn:
     id: home-new-category-name
 - inputText: 'Транспорт ${output.suffix}'
+# Hide the keyboard before picking icon/color: with it up, the sheet is
+# stretched over the keyboard and the submit button sits under the key area,
+# so the tap would land on the keyboard instead of the button.
+- hideKeyboard
 - tapOn:
     id: home-new-category-icon-bus
 - tapOn:
@@ -33,6 +37,7 @@ tags:
 - tapOn:
     id: home-new-category-name
 - inputText: 'Транспорт ${output.suffix}'
+- hideKeyboard
 - tapOn:
     id: home-new-category-submit
 - assertVisible:
