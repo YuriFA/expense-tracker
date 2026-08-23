@@ -17,7 +17,12 @@ const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g
 // rendered via inline `style={{ backgroundColor }}`, exactly like
 // API-provided colors will be - so it is the one sanctioned place where raw
 // hex appears in src/.
-const RAW_COLOR_EXEMPT_FILES = ['src/entities/category/config/category-appearance.ts']
+const RAW_COLOR_EXEMPT_FILES = [
+  'src/entities/category/config/category-appearance.ts',
+  // The analytics «Прочие» aggregate entry stores the same kind of token-hex
+  // DATA for the Skia canvas paint (see that file for the rationale).
+  'src/features/analytics/config/other-entry.ts',
+]
 
 const SRC_ROOT = path.resolve(__dirname, '../../..')
 

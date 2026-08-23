@@ -1,0 +1,108 @@
+# Analytics tab: month overview cards open the parametrized detail screen;
+# the selector switches week/month/year (resetting to the current period)
+# and the stepper walks adjacent periods - into the future too, where the
+# empty state shows (navigation is never blocked).
+#
+# Requires expense data in the current month - 07-add-expense creates it
+# (income comes from 11-income), so run the suite in order on a fresh local
+# database.
+#
+# Conventions: assert/tap by testID only.
+appId: com.anonymous.mobile
+tags:
+  - analytics
+---
+- runFlow: ../_launch.yaml
+- assertVisible:
+    id: screen-dashboard
+
+# The tab renders the current-month overview cards
+- tapOn:
+    id: tab-analytics
+- assertVisible:
+    id: screen-analytics
+- assertVisible:
+    id: analytics-card-expenses
+- scrollUntilVisible:
+    element:
+      id: analytics-card-income
+    direction: DOWN
+
+# The expenses card opens the expenses detail screen
+- tapOn:
+    id: analytics-card-expenses
+- assertVisible:
+    id: screen-analytics-detail
+- assertVisible:
+    id: screen-header-back
+- assertVisible:
+    id: analytics-period-month
+- assertVisible:
+    id: analytics-period-label
+
+# Kind switching resets to the current period of that kind
+- tapOn:
+    id: analytics-period-week
+- assertVisible:
+    id: analytics-period-label
+- tapOn:
+    id: analytics-period-month
+- assertVisible:
+    id: analytics-period-label
+
+# The stepper walks adjacent periods; two steps forward land in a future
+# month with its empty state, and stepping back restores the data view
+- tapOn:
+    id: analytics-period-prev
+- assertVisible:
+    id: analytics-period-label
+- tapOn:
+    id: analytics-period-next
+- tapOn:
+    id: analytics-period-next
+- assertVisible:
+    id: analytics-empty-state
+- tapOn:
+    id: analytics-period-prev
+- assertVisible:
+    id: analytics-period-label
+
+# With data restored, the breakdown (summary row + full category list) shows
+- scrollUntilVisible:
+    element:
+      id: analytics-total-row
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: analytics-category-list
+    direction: DOWN
+
+# The year kind also resets to the current period (scroll back to controls)
+- scrollUntilVisible:
+    element:
+      id: analytics-period-year
+    direction: UP
+- tapOn:
+    id: analytics-period-year
+- assertVisible:
+    id: analytics-period-label
+
+# Back returns to the tab; the income card opens the income detail
+- tapOn:
+    id: screen-header-back
+- assertVisible:
+    id: screen-analytics
+- scrollUntilVisible:
+    element:
+      id: analytics-card-income
+    direction: DOWN
+- tapOn:
+    id: analytics-card-income
+- assertVisible:
+    id: screen-analytics-detail
+- assertVisible:
+    id: screen-header-back
+- tapOn:
+    id: screen-header-back
+- assertVisible:
+    id: screen-analytics

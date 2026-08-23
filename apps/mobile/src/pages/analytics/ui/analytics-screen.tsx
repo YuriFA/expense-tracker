@@ -1,11 +1,157 @@
-import { ScreenPlaceholder } from '@/shared/ui/screen-placeholder'
+// Analytics tab: two current-month overview cards (expenses / income) with
+// a donut-by-category chart and a matching legend each (design D5-D7). The
+// tab always shows the current device-local month - week/month/year
+// exploration lives on the detail screen.
+// TODO(i18n): RU copy stays hardcoded until react-i18next is wired (see
+// apps/mobile/AGENTS.md §i18n).
+
+import { ScrollView, View } from 'react-native'
+import { useRouter } from 'expo-router'
+import type { Category, Transaction } from '@expense-tracker/api'
+import {
+  currentPeriod,
+  monthLabel,
+  periodToUtcDayRange,
+  type PeriodCursor,
+} from '@expense-tracker/dates'
+import {
+  ChartLegend,
+  DonutChart,
+  categoryTotals,
+  periodTotal,
+  toChartEntries,
+  type AnalyticsDirection,
+  type ChartEntry,
+} from '@/features/analytics'
+import { useCategories } from '@/entities/category'
+import { useTransactions } from '@/entities/transaction'
+import { Card } from '@/shared/ui/card'
+import { Icon } from '@/shared/ui/icon'
+import { Pressable } from '@/shared/ui/pressable'
+import { Screen } from '@/shared/ui/screen'
+import { Text } from '@/shared/ui/text'
+import { formatAmount } from '@/shared/lib/format/format'
+
+const DIRECTION_VIEWS: Record<
+  AnalyticsDirection,
+  { title: string; testId: string; emptyText: string }
+> = {
+  expense: {
+    title: 'Расходы',
+    testId: 'analytics-card-expenses',
+    emptyText: 'Нет расходов за этот период',
+  },
+  income: {
+    title: 'Доходы',
+    testId: 'analytics-card-income',
+    emptyText: 'Нет доходов за этот период',
+  },
+}
+
+/** Compact speech summary of the capped breakdown ("Такси 66%, Кафе 20%"). */
+function chartSummaryLabel(entries: ChartEntry[], total: number): string {
+  return entries
+    .map((entry) => `${entry.label} ${Math.round((entry.totalMinor / total) * 100)}%`)
+    .join(', ')
+}
+
+interface OverviewCardProps {
+  direction: AnalyticsDirection
+  cursor: PeriodCursor
+  transactions: Transaction[]
+  categories: Category[]
+  onPress: () => void
+}
+
+function AnalyticsOverviewCard({
+  direction,
+  cursor,
+  transactions,
+  categories,
+  onPress,
+}: OverviewCardProps) {
+  const view = DIRECTION_VIEWS[direction]
+  const totals = categoryTotals(transactions, categories, cursor, direction)
+  const total = periodTotal(transactions, cursor, direction)
+  const entries = toChartEntries(totals)
+  const monthName = monthLabel(cursor.start.getFullYear(), cursor.start.getMonth())
+
+  return (
+    <Pressable
+      testID={view.testId}
+      accessibilityRole="button"
+      accessibilityLabel={`${view.title} за ${monthName} ${cursor.start.getFullYear()}, ${formatAmount(total)}`}
+      onPress={onPress}
+    >
+      <Card variant="elevated" className="gap-4">
+        <View className="flex-row items-center justify-between">
+          <Text variant="h3">{view.title}</Text>
+          <Icon name="chevron-forward" size={20} colorClassName="accent-muted-foreground" />
+        </View>
+        {entries.length === 0 ? (
+          <Text variant="body-sm" className="text-muted-foreground">
+            {view.emptyText}
+          </Text>
+        ) : (
+          <View className="flex-row items-center gap-5">
+            <DonutChart
+              segments={entries.map((entry) => ({ value: entry.totalMinor, color: entry.color }))}
+              size={120}
+              strokeWidth={14}
+              accessibilityLabel={`${view.title} по категориям: ${chartSummaryLabel(entries, total)}`}
+            >
+              <View className="items-center px-3">
+                <Text variant="caption" className="uppercase text-muted-foreground">
+                  СУММА
+                </Text>
+                <Text variant="label" className="font-semibold">
+                  {formatAmount(total)}
+                </Text>
+              </View>
+            </DonutChart>
+            <ChartLegend entries={entries} testIdPrefix={`${view.testId}-legend`} />
+          </View>
+        )}
+      </Card>
+    </Pressable>
+  )
+}
 
 export function AnalyticsScreen() {
+  const router = useRouter()
+
+  const cursor = currentPeriod('month')
+  const range = periodToUtcDayRange(cursor)
+  const expenseQuery = useTransactions({ type: 'expense', ...range })
+  const incomeQuery = useTransactions({ type: 'income', ...range })
+  const categoriesQuery = useCategories()
+  const categories = categoriesQuery.data ?? []
+
+  const handleOpenDetail = (direction: AnalyticsDirection) => {
+    router.push({ pathname: '/analytics-detail', params: { type: direction } })
+  }
+
   return (
-    <ScreenPlaceholder
-      testID="screen-analytics"
-      title="Аналитика"
-      hint="Отслеживание аналитики появится позже."
-    />
+    <Screen testID="screen-analytics">
+      <ScrollView>
+        <View className="gap-6 p-6">
+          <Text variant="display">Аналитика</Text>
+          <AnalyticsOverviewCard
+            direction="expense"
+            cursor={cursor}
+            transactions={expenseQuery.data ?? []}
+            categories={categories}
+            onPress={() => handleOpenDetail('expense')}
+          />
+          <AnalyticsOverviewCard
+            direction="income"
+            cursor={cursor}
+            transactions={incomeQuery.data ?? []}
+            categories={categories}
+            onPress={() => handleOpenDetail('income')}
+          />
+        </View>
+      </ScrollView>
+    </Screen>
   )
 }

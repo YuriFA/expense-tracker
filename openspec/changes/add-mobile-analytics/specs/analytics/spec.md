@@ -118,7 +118,7 @@ income nor expense.
 #### Scenario: Breakdown with percentages
 
 - **WHEN** the selected period contains expenses of 20 113 ₽ in «Такси» out of 30 325 ₽ total
-- **THEN** the breakdown lists «Такси» with its amount and percentage (66,33%) in descending order below the summary row showing 30 325 ₽ and 100%
+- **THEN** the breakdown lists «Такси» with its amount and percentage (66,32%) in descending order below the summary row showing 30 325 ₽ and 100%
 
 #### Scenario: Transfers excluded
 

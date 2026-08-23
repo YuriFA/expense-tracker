@@ -134,14 +134,38 @@ jest.mock("react-native-reanimated", () => {
 })
 
 // expo-blur's native blur view is unavailable under jest; tests never assert
-// resolved visuals, so a plain View passthrough (dropping blur-only props) is
-// sufficient and faithful.
+// resolved visuals, so a plain View passthrough (dropping blur-only props,
+// renamed to "_" so oxlint accepts the intentional discards) is sufficient
+// and faithful.
 jest.mock("expo-blur", () => {
   const React = require("react")
   const { View } = require("react-native")
-  const BlurView = ({ intensity, tint, experimentalBlurMethod, ...rest }) =>
-    React.createElement(View, rest)
+  const BlurView = ({
+    intensity: _intensity,
+    tint: _tint,
+    experimentalBlurMethod: _experimentalBlurMethod,
+    ...rest
+  }) => React.createElement(View, rest)
   return { __esModule: true, BlurView }
+})
+
+// @shopify/react-native-skia draws through its own native GPU pipeline, which
+// is unavailable under jest. Tests never assert pixels or resolved styles -
+// a chart's data is asserted via testIDs/labels on the surrounding RN nodes -
+// so a Canvas that renders its children plus inert drawables is sufficient
+// and faithful (the real renderer is exercised by the Maestro e2e suite).
+jest.mock("@shopify/react-native-skia", () => {
+  const React = require("react")
+  const { View } = require("react-native")
+  const Canvas = ({ children, ...rest }) => React.createElement(View, rest, children)
+  // Drawables carry no RN-renderable content; render nothing under jest.
+  const Path = () => null
+  const pathStub = { addArc: () => pathStub }
+  const Skia = {
+    Path: { Make: () => pathStub },
+    XYWHRect: (x, y, width, height) => ({ x, y, width, height }),
+  }
+  return { __esModule: true, Canvas, Path, Skia }
 })
 
 // @gorhom/bottom-sheet renders via reanimated animations and portals, which

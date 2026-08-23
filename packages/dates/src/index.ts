@@ -28,4 +28,14 @@ export {
   type MonthCursor,
 } from './month'
 export { monthGrid, weekdayLabels } from './grid'
+export {
+  currentPeriod,
+  isSamePeriod,
+  periodRangeLabel,
+  periodToUtcDayRange,
+  shiftPeriod,
+  transactionsInPeriod,
+  type AnalyticsPeriodKind,
+  type PeriodCursor,
+} from './period'
 export { calendarDayKey, isoDaysAgo, nowIso } from './keys'

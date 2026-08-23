@@ -168,7 +168,7 @@ animation stack, and both require the same dev-build rebuild anyway);
   `transactionsInPeriod`, `type === kind` filter excludes transfers by
   construction, integer minor-unit sums, descending), `periodTotal(txs,
   cursor, kind)`, `percentLabel(part, total)` (at most two fractional digits
-  with trailing zeros dropped, ru comma — "66,33%", "22,5%"), and `toChartEntries(totals, { top = 5 })` returning the
+  with trailing zeros dropped, ru comma — "66,32%", "22,5%"), and `toChartEntries(totals, { top = 5 })` returning the
   top-N entries plus an aggregated «Прочие» entry when more exist.
 - `ui/donut-chart.tsx` (D3) and `ui/chart-legend.tsx` (color-dot rows) live
   here because two screens consume them (tab cards + detail); the period

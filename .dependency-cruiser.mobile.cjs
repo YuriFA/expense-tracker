@@ -13,7 +13,7 @@
  * Run from the repo root: `pnpm arch:check` (see root package.json).
  */
 
-const FEATURE_SLICES = ['cashflow-overview', 'create-transaction', 'sync-conflicts']
+const FEATURE_SLICES = ['analytics', 'cashflow-overview', 'create-transaction', 'sync-conflicts']
 const ENTITY_SLICES = ['account', 'category', 'transaction', 'session']
 
 const crossSliceRules = (layer, slices) =>

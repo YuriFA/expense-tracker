@@ -251,6 +251,8 @@ export default function RootLayout() {
             {/* Placeholder destinations for the Home quick actions. */}
             <Stack.Screen name="income" />
             <Stack.Screen name="goals" />
+            {/* Analytics tab detail screens (expense/income breakdown). */}
+            <Stack.Screen name="analytics-detail" />
           </Stack>
         </AppShellProviders>
       </ThemeProvider>

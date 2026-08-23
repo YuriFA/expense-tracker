@@ -1,0 +1,106 @@
+// Pure derived-data helpers for the analytics screens over the DOMAIN types
+// from @expense-tracker/api and the period model from @expense-tracker/dates.
+// Integer money math only (minor units): totals are plain integer sums and
+// percentages are display strings derived from them - UI components never
+// filter, group, or compute shares themselves.
+
+import type { Category, Transaction } from '@expense-tracker/api'
+import { transactionsInPeriod, type PeriodCursor } from '@expense-tracker/dates'
+import { OTHER_ENTRY_COLOR, OTHER_ENTRY_ID, OTHER_ENTRY_LABEL } from '../config/other-entry'
+
+/** Which cashflow direction an analytics view aggregates. */
+export type AnalyticsDirection = 'income' | 'expense'
+
+function cashflowInPeriod(
+  txs: readonly Transaction[],
+  cursor: PeriodCursor,
+  direction: AnalyticsDirection,
+): Transaction[] {
+  // Transfers are excluded by construction: a transfer is neither income nor
+  // expense (same semantics as monthlyBalance / the backend's
+  // account_contributions view).
+  return transactionsInPeriod(txs, cursor).filter((t) => t.type === direction)
+}
+
+/** Integer minor-unit total of one direction for the period. */
+export function periodTotal(
+  txs: readonly Transaction[],
+  cursor: PeriodCursor,
+  direction: AnalyticsDirection,
+): number {
+  return cashflowInPeriod(txs, cursor, direction).reduce((sum, t) => sum + t.amount, 0)
+}
+
+export interface CategoryTotal {
+  category: Category
+  totalMinor: number
+}
+
+/**
+ * Totals per category for the period and direction, descending by amount.
+ * Categories without movement in the period are omitted (transactions whose
+ * category is missing from `categories` still count toward `periodTotal` but
+ * have no row to render).
+ */
+export function categoryTotals(
+  txs: readonly Transaction[],
+  categories: readonly Category[],
+  cursor: PeriodCursor,
+  direction: AnalyticsDirection,
+): CategoryTotal[] {
+  const totals = new Map<string, number>()
+  for (const t of cashflowInPeriod(txs, cursor, direction)) {
+    if (!t.categoryId) continue
+    totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount)
+  }
+  return categories
+    .filter((c) => totals.has(c.id))
+    .map((c) => ({ category: c, totalMinor: totals.get(c.id) as number }))
+    .sort((a, b) => b.totalMinor - a.totalMinor)
+}
+
+/**
+ * Percentage of `total` as a display string: at most two fractional digits
+ * with trailing zeros dropped, ru decimal comma - "66,33%", "22,5%", "100%".
+ * An undefined share (total <= 0) renders as "0%".
+ */
+export function percentLabel(part: number, total: number): string {
+  if (total <= 0) return '0%'
+  const percent = Math.round((part / total) * 10000) / 100
+  return `${String(percent).replace('.', ',')}%`
+}
+
+export interface ChartEntry {
+  /** Category id, or OTHER_ENTRY_ID for the aggregated remainder. */
+  id: string
+  label: string
+  color: string
+  totalMinor: number
+}
+
+/**
+ * Donut/legend entries: the `top` largest categories plus one aggregated
+ * «Прочие» entry when more remain. Expects `totals` in categoryTotals order
+ * (descending).
+ */
+export function toChartEntries(
+  totals: readonly CategoryTotal[],
+  { top = 5 }: { top?: number } = {},
+): ChartEntry[] {
+  const entries: ChartEntry[] = totals.slice(0, top).map(({ category, totalMinor }) => ({
+    id: category.id,
+    label: category.name,
+    color: category.color,
+    totalMinor,
+  }))
+  const rest = totals.slice(top)
+  if (rest.length > 0) {
+    entries.push({
+      id: OTHER_ENTRY_ID,
+      label: OTHER_ENTRY_LABEL,
+      color: OTHER_ENTRY_COLOR,
+      totalMinor: rest.reduce((sum, { totalMinor }) => sum + totalMinor, 0),
+    })
+  }
+  return entries
+}
