@@ -7,6 +7,7 @@ import { useCategories } from '@/entities/category'
 import { useTransactions } from '@/entities/transaction'
 import { SyncStatusBadge } from '@/widgets/sync-status'
 import { NewTransactionSheet } from '@/features/create-transaction'
+import { EditTransactionSheet } from '@/features/edit-transaction'
 import {
   AllCashflowCard,
   CASHFLOW_KIND_VIEWS,
@@ -30,6 +31,8 @@ export function DashboardScreen() {
   const listNewTransactionRef = useRef<BottomSheetRef>(null)
   const categoryNewTransactionRef = useRef<BottomSheetRef>(null)
   const [prefillCategoryId, setPrefillCategoryId] = useState<string | undefined>(undefined)
+  const editTransactionRef = useRef<BottomSheetRef>(null)
+  const [editingTransactionId, setEditingTransactionId] = useState<string | undefined>(undefined)
 
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
@@ -49,6 +52,10 @@ export function DashboardScreen() {
   const openCategoryNewTransaction = (categoryId: string | undefined) => {
     setPrefillCategoryId(categoryId)
     categoryNewTransactionRef.current?.present()
+  }
+  const openEditTransaction = (id: string) => {
+    setEditingTransactionId(id)
+    editTransactionRef.current?.present()
   }
 
   return (
@@ -70,6 +77,7 @@ export function DashboardScreen() {
             transactions={transactions}
             categories={categories}
             onNewTransaction={openListNewTransaction}
+            onEditTransaction={openEditTransaction}
           />
           <CategorySection
             kind="expense"
@@ -77,6 +85,7 @@ export function DashboardScreen() {
             transactions={transactions}
             categories={categories}
             onNewTransaction={openCategoryNewTransaction}
+            onEditTransaction={openEditTransaction}
           />
         </View>
       </ScrollView>
@@ -92,6 +101,7 @@ export function DashboardScreen() {
         defaultCategoryId={prefillCategoryId}
         testID={ids.categoryNewTransactionSheet}
       />
+      <EditTransactionSheet ref={editTransactionRef} transactionId={editingTransactionId} />
     </Screen>
   )
 }

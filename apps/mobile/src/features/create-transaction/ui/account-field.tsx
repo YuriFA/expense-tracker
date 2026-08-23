@@ -5,9 +5,9 @@ import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { Icon } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
+import { AccountPickerSheet } from '@/shared/ui/account-picker-sheet'
 import { cn } from '@/shared/lib/utils'
 import type { CreateTransactionFormValues } from '../model/schema'
-import { AccountPickerSheet } from './account-picker-sheet'
 
 /**
  * The expense/income account selector: the name row at the top of the sheet

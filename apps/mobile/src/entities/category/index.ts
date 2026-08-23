@@ -7,4 +7,9 @@ export {
   useDeleteCategory,
 } from './model/use-categories'
 export type { Category } from './model/use-categories'
-export { CATEGORY_COLORS, CATEGORY_ICONS, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './config/category-appearance'
+export {
+  CATEGORY_COLORS,
+  CATEGORY_ICONS,
+  DEFAULT_CATEGORY_COLOR,
+  DEFAULT_CATEGORY_ICON,
+} from './config/category-appearance'

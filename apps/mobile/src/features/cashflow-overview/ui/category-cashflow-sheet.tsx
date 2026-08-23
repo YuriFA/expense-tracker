@@ -27,6 +27,7 @@ import {
 import { useTransactions } from '@/entities/transaction'
 import { Icon } from '@/shared/ui/icon'
 import { IconButton } from '@/shared/ui/icon-button'
+import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import {
@@ -73,6 +74,11 @@ export interface CategoryCashflowSheetProps {
    * create-transaction slice - invariant #15).
    */
   onNewTransaction: (categoryId: string | undefined) => void
+  /**
+   * Opens the edit sheet for the tapped row. Composed by the hosting page
+   * (features must not import the edit-transaction slice - invariant #15).
+   */
+  onEditTransaction?: (id: string) => void
 }
 
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
@@ -96,6 +102,7 @@ export function CategoryCashflowSheet({
   initialCursor,
   initialPeriod,
   onNewTransaction,
+  onEditTransaction,
   ref,
 }: CategoryCashflowSheetProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
@@ -230,9 +237,13 @@ export function CategoryCashflowSheet({
                   {group.rows.map((row, index) => (
                     <Fragment key={row.id}>
                       {index > 0 ? <View className="h-px bg-border/10" /> : null}
-                      <View
+                      <Pressable
                         className="flex-row items-center gap-4"
                         testID={`${ids.categoryRowItem}-${row.id}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Редактировать: ${row.description || row.categoryName}`}
+                        disabled={!onEditTransaction}
+                        onPress={() => onEditTransaction?.(row.id)}
                       >
                         <View
                           className={cn(
@@ -249,7 +260,7 @@ export function CategoryCashflowSheet({
                           {row.description || row.categoryName}
                         </Text>
                         <Text variant="button">{row.amountText}</Text>
-                      </View>
+                      </Pressable>
                     </Fragment>
                   ))}
                 </View>

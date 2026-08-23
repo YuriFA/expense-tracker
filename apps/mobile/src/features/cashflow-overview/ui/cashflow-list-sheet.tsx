@@ -3,6 +3,7 @@ import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { Icon, type IconName } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
+import { Pressable } from '@/shared/ui/pressable'
 import { cn } from '@/shared/lib/utils'
 import {
   BottomSheet,
@@ -39,6 +40,11 @@ export interface CashflowListSheetProps {
    * (features must not import the create-transaction slice - invariant #15).
    */
   onNewTransaction: () => void
+  /**
+   * Opens the edit sheet for the tapped row. Composed by the hosting page
+   * (features must not import the edit-transaction slice - invariant #15).
+   */
+  onEditTransaction?: (id: string) => void
 }
 
 /** Scroll-driven footer visibility shared by the cashflow sheets. */
@@ -49,6 +55,7 @@ export function CashflowListSheet({
   subtitle,
   groups,
   onNewTransaction,
+  onEditTransaction,
   ref,
 }: CashflowListSheetProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
@@ -99,9 +106,13 @@ export function CashflowListSheet({
                     {group.rows.map((row, index) => (
                       <Fragment key={row.id}>
                         {index > 0 ? <View className="h-px bg-border/10" /> : null}
-                        <View
+                        <Pressable
                           className="flex-row items-center gap-4"
                           testID={`${ids.listRow}-${row.id}`}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Редактировать: ${row.categoryName}`}
+                          disabled={!onEditTransaction}
+                          onPress={() => onEditTransaction?.(row.id)}
                         >
                           <View
                             className={cn(
@@ -118,7 +129,7 @@ export function CashflowListSheet({
                             {row.categoryName}
                           </Text>
                           <Text variant="button">{row.amountText}</Text>
-                        </View>
+                        </Pressable>
                       </Fragment>
                     ))}
                   </View>

@@ -25,6 +25,8 @@ interface AllCashflowCardProps {
   categories: Category[]
   /** Opens the kind's new-transaction sheet (composed by the hosting page). */
   onNewTransaction: () => void
+  /** Opens the edit sheet for the tapped list row (composed by the hosting page). */
+  onEditTransaction?: (id: string) => void
 }
 
 export function AllCashflowCard({
@@ -33,6 +35,7 @@ export function AllCashflowCard({
   transactions,
   categories,
   onNewTransaction,
+  onEditTransaction,
 }: AllCashflowCardProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
   const listSheetRef = useRef<BottomSheetRef>(null)
@@ -94,6 +97,7 @@ export function AllCashflowCard({
         subtitle={sheetSubtitle}
         groups={sheetGroups}
         onNewTransaction={onNewTransaction}
+        onEditTransaction={onEditTransaction}
       />
     </>
   )

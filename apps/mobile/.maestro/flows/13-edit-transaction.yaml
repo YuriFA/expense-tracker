@@ -1,0 +1,88 @@
+# Edit + delete an existing transaction from the all-expenses list sheet:
+# a row tap opens the edit sheet (plain-text amount input, no keypad), Save
+# writes the change without an error, and the trash button goes through the
+# native alert - cancel keeps the transaction, confirm deletes it.
+#
+# Requires an account, a category, and an expense to exist - 05/06/07 create
+# them, so run the suite in order (fresh local database starts empty).
+appId: com.anonymous.mobile
+tags:
+  - transactions
+---
+- runFlow: ../_launch.yaml
+- assertVisible:
+    id: screen-dashboard
+
+# Open the all-expenses list and tap its first row
+- tapOn:
+    id: home-all-expenses
+- assertVisible:
+    id: home-expenses-sheet
+- assertVisible:
+    id: home-expense-row-.*
+- tapOn:
+    id: home-expense-row-.*
+    index: 0
+
+# The edit sheet opens prefilled for the transaction's type
+- assertVisible:
+    id: edit-transaction-sheet
+- assertVisible:
+    id: edit-transaction-amount
+- assertVisible:
+    id: edit-transaction-account
+- assertVisible:
+    id: edit-transaction-category
+- assertVisible:
+    id: edit-transaction-date
+- assertVisible:
+    id: edit-transaction-delete
+
+# Edit the amount through the plain text input and save without an error
+- tapOn:
+    id: edit-transaction-amount
+- eraseText
+- inputText: '123'
+- tapOn:
+    id: edit-transaction-save
+- assertNotVisible:
+    id: edit-transaction-error
+
+# The sheet may or may not auto-dismiss (TODO(sheet-dismiss)); close it via
+# the backdrop when still open, then reopen the same row for the delete path.
+- runFlow:
+    when:
+      visible:
+        id: edit-transaction-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- tapOn:
+    id: home-expense-row-.*
+    index: 0
+
+# Cancel keeps the transaction and the open form
+- tapOn:
+    id: edit-transaction-delete
+- tapOn:
+    text: Отмена
+- assertVisible:
+    id: edit-transaction-sheet
+
+# Confirm deletes: the sheet follows (or is backdrop-closed), and the list
+# sheet is dismissed behind it, proving the full stack unwound.
+- tapOn:
+    id: edit-transaction-delete
+- tapOn:
+    text: Удалить
+- runFlow:
+    when:
+      visible:
+        id: edit-transaction-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- tapOn:
+    point: 50%, 8%
+- assertNotVisible:
+    id: home-expenses-sheet

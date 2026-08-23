@@ -8,17 +8,7 @@ import { describe, expect, it } from '@jest/globals'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-const TOKENS_DIR = path.join(
-  __dirname,
-  '..',
-  '..',
-  '..',
-  '..',
-  '..',
-  'packages',
-  'tokens',
-  'src',
-)
+const TOKENS_DIR = path.join(__dirname, '..', '..', '..', '..', '..', 'packages', 'tokens', 'src')
 
 /** Mobile-only plain neutrals with no web counterpart. */
 const MOBILE_ONLY = new Set(['white', 'black'])

@@ -4,7 +4,7 @@ import { nowIso } from '@expense-tracker/dates'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { occurredAtForDaysAgo } from '../model/quick-dates'
 import type { CreateTransactionFormValues } from '../model/schema'
-import { DatePickerSheet } from './date-picker-sheet'
+import { DatePickerSheet } from '@/shared/ui/date-picker-sheet'
 import { DateButton, QuickDateRow } from './date-selector-row'
 
 /**

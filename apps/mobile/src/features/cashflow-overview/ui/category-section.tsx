@@ -20,6 +20,8 @@ export interface CategorySectionProps {
   categories: Category[]
   /** Opens the new-transaction sheet with the category preselected (page composition). */
   onNewTransaction: (categoryId: string | undefined) => void
+  /** Opens the edit sheet for a tapped list row (page composition, invariant #15). */
+  onEditTransaction?: (id: string) => void
 }
 
 export function CategorySection({
@@ -28,6 +30,7 @@ export function CategorySection({
   transactions,
   categories,
   onNewTransaction,
+  onEditTransaction,
 }: CategorySectionProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
   const categorySheetRef = useRef<BottomSheetRef>(null)
@@ -107,6 +110,7 @@ export function CategorySection({
         categories={categories}
         initialCursor={cursor}
         onNewTransaction={onNewTransaction}
+        onEditTransaction={onEditTransaction}
       />
     </>
   )

@@ -37,6 +37,7 @@ import {
 } from '@/features/analytics'
 import { CASHFLOW_KIND_VIEWS, CategoryCashflowSheet } from '@/features/cashflow-overview'
 import { NewTransactionSheet } from '@/features/create-transaction'
+import { EditTransactionSheet } from '@/features/edit-transaction'
 import { useCategories, type Category } from '@/entities/category'
 import { useTransactions, type Transaction } from '@/entities/transaction'
 import { Button } from '@/shared/ui/button'
@@ -155,6 +156,8 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
   const sheetRef = useRef<BottomSheetRef>(null)
   const newTransactionRef = useRef<BottomSheetRef>(null)
   const [prefillCategoryId, setPrefillCategoryId] = useState<string | undefined>(undefined)
+  const editTransactionRef = useRef<BottomSheetRef>(null)
+  const [editingTransactionId, setEditingTransactionId] = useState<string | undefined>(undefined)
 
   const transactionsQuery = useTransactions({ type: direction, ...periodToUtcDayRange(cursor) })
   // Adjacent periods feed the carousel's neighbor pages; their query keys
@@ -226,6 +229,10 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
   const handleNewTransaction = (categoryId: string | undefined) => {
     setPrefillCategoryId(categoryId)
     newTransactionRef.current?.present()
+  }
+  const handleEditTransaction = (id: string) => {
+    setEditingTransactionId(id)
+    editTransactionRef.current?.present()
   }
 
   const includedWithMovement = includedTotals.filter(({ totalMinor }) => totalMinor > 0)
@@ -390,6 +397,7 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
         categories={categories}
         initialPeriod={cursor}
         onNewTransaction={handleNewTransaction}
+        onEditTransaction={handleEditTransaction}
       />
       <NewTransactionSheet
         ref={newTransactionRef}
@@ -397,6 +405,7 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
         defaultCategoryId={prefillCategoryId}
         testID={ids.categoryNewTransactionSheet}
       />
+      <EditTransactionSheet ref={editTransactionRef} transactionId={editingTransactionId} />
     </Screen>
   )
 }

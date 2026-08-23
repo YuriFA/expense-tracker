@@ -4,8 +4,8 @@ import { View } from 'react-native'
 import { useAccounts } from '@/entities/account'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import type { CreateTransactionFormValues } from '../model/schema'
-import { AccountPickerSheet } from './account-picker-sheet'
-import { AccountSelectorRow } from './account-selector-row'
+import { AccountPickerSheet } from '@/shared/ui/account-picker-sheet'
+import { AccountSelectorRow } from '@/shared/ui/account-selector-row'
 
 /**
  * The transfer variant's source and destination selectors: both rows, both

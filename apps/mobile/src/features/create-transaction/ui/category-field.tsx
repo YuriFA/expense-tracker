@@ -5,7 +5,7 @@ import { useCategories } from '@/entities/category'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { Text } from '@/shared/ui/text'
 import type { CreateTransactionFormValues } from '../model/schema'
-import { CategoryPickerSheet } from './category-picker-sheet'
+import { CategoryPickerSheet } from '@/shared/ui/category-picker-sheet'
 import { CategoryQuickBar } from './category-quick-bar'
 
 /**

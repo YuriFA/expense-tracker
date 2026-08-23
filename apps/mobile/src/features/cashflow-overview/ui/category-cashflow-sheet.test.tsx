@@ -99,6 +99,7 @@ const TRANSACTIONS: Transaction[] = [
 
 function renderSection() {
   const onNewTransaction = jest.fn()
+  const onEditTransaction = jest.fn()
   render(
     <SafeAreaProvider
       initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
@@ -117,6 +118,7 @@ function renderSection() {
                     transactions={TRANSACTIONS}
                     categories={CATEGORIES}
                     onNewTransaction={onNewTransaction}
+                    onEditTransaction={onEditTransaction}
                   />
                 </BottomSheetProvider>
               </ThemeProvider>
@@ -126,7 +128,7 @@ function renderSection() {
       </QueryClientProvider>
     </SafeAreaProvider>,
   )
-  return { onNewTransaction }
+  return { onNewTransaction, onEditTransaction }
 }
 
 async function openTaxiSheet() {
@@ -216,6 +218,16 @@ describe('CategoryCashflowSheet (expense kind)', () => {
 
     fireEvent.press(screen.getByTestId('category-new-expense-button'))
     expect(onNewTransaction).toHaveBeenCalledWith('cat-taxi')
+  })
+
+  it('delegates a tapped row to the page-composed edit action', async () => {
+    const { onEditTransaction } = renderSection()
+    await openTaxiSheet()
+    await waitFor(() => expect(screen.getAllByTestId(/^category-expense-row-/)).toHaveLength(2))
+
+    fireEvent.press(screen.getByTestId('category-expense-row-tx-taxi-1'))
+
+    expect(onEditTransaction).toHaveBeenCalledWith('tx-taxi-1')
   })
 
   it('presents the category-edit sheet from the header pencil', async () => {

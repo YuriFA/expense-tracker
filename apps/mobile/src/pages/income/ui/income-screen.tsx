@@ -4,6 +4,7 @@ import { monthToUtcDayRange } from '@expense-tracker/dates'
 import { useCategories } from '@/entities/category'
 import { useTransactions } from '@/entities/transaction'
 import { NewTransactionSheet } from '@/features/create-transaction'
+import { EditTransactionSheet } from '@/features/edit-transaction'
 import {
   AllCashflowCard,
   CASHFLOW_KIND_VIEWS,
@@ -37,6 +38,8 @@ export function IncomeScreen() {
   const listNewTransactionRef = useRef<BottomSheetRef>(null)
   const categoryNewTransactionRef = useRef<BottomSheetRef>(null)
   const [prefillCategoryId, setPrefillCategoryId] = useState<string | undefined>(undefined)
+  const editTransactionRef = useRef<BottomSheetRef>(null)
+  const [editingTransactionId, setEditingTransactionId] = useState<string | undefined>(undefined)
 
   // Month-bounded superset (UTC days covering the local month) filtered to
   // income by the repository; children trim to the exact local month via the
@@ -55,6 +58,10 @@ export function IncomeScreen() {
   const openCategoryNewTransaction = (categoryId: string | undefined) => {
     setPrefillCategoryId(categoryId)
     categoryNewTransactionRef.current?.present()
+  }
+  const openEditTransaction = (id: string) => {
+    setEditingTransactionId(id)
+    editTransactionRef.current?.present()
   }
 
   return (
@@ -76,6 +83,7 @@ export function IncomeScreen() {
             transactions={transactions}
             categories={categories}
             onNewTransaction={openListNewTransaction}
+            onEditTransaction={openEditTransaction}
           />
           <CategorySection
             kind="income"
@@ -83,6 +91,7 @@ export function IncomeScreen() {
             transactions={transactions}
             categories={categories}
             onNewTransaction={openCategoryNewTransaction}
+            onEditTransaction={openEditTransaction}
           />
         </View>
       </ScreenScrollView>
@@ -98,6 +107,7 @@ export function IncomeScreen() {
         defaultCategoryId={prefillCategoryId}
         testID={ids.categoryNewTransactionSheet}
       />
+      <EditTransactionSheet ref={editTransactionRef} transactionId={editingTransactionId} />
     </Screen>
   )
 }
