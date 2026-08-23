@@ -72,8 +72,13 @@ jest.mock("react-native-reanimated", () => {
   // Worklet->JS calls run immediately: the "UI thread" is the JS thread here.
   const runOnJS = (fn) => fn
 
-  // Animations resolve instantly to their target.
-  const withTiming = (toValue) => toValue
+  // Animations resolve instantly to their target, including the completion
+  // callback (fire-and-forget callers ignore it; settle-on-finish callers -
+  // the period carousel's commit - complete synchronously).
+  const withTiming = (toValue, _options, callback) => {
+    if (typeof callback === "function") callback(true)
+    return toValue
+  }
   const withSpring = (toValue) => toValue
   const withDelay = (_delay, value) => value
   const withSequence = (...values) => values[values.length - 1]
@@ -183,6 +188,7 @@ jest.mock("react-native-gesture-handler", () => {
       "enabled",
       "onBegin",
       "onStart",
+      "onUpdate",
       "onEnd",
       "onFinalize",
       "simultaneousWithExternalGesture",

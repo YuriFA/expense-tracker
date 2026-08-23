@@ -47,6 +47,13 @@ const SELECTED_STROKE_BONUS = 6
 const DIMMED_OPACITY = 0.35
 /** Slack beyond the ring's outer/inner edge where a tap still counts. */
 const HIT_SLACK = 12
+/**
+ * The selected segment's stroke widens by SELECTED_STROKE_BONUS, and a stroke
+ * straddles its path - so the oval is inset by half the widest stroke plus
+ * this margin to keep the widened arc inside the canvas (and inside any
+ * exactly chart-sized container, which would otherwise clip it top/bottom).
+ */
+const STROKE_EDGE_MARGIN = 4
 
 /** Contiguous per-segment angular spans, degrees from 12 o'clock, clockwise. */
 interface SegmentSpan {
@@ -86,8 +93,9 @@ export function segmentAt(
   const dx = x - center
   const dy = y - center
   const distance = Math.hypot(dx, dy)
-  if (distance < center - strokeWidth / 2 - HIT_SLACK) return null
-  if (distance > center + strokeWidth / 2 + HIT_SLACK) return null
+  const bandCenter = center - STROKE_EDGE_MARGIN
+  if (distance < bandCenter - strokeWidth / 2 - HIT_SLACK) return null
+  if (distance > bandCenter + strokeWidth / 2 + HIT_SLACK) return null
   // Screen coordinates (y down): atan2 + 90° gives degrees from 12 o'clock,
   // clockwise (top → 0, right → 90).
   const fromTop = ((Math.atan2(dy, dx) * 180) / Math.PI + 90 + FULL_CIRCLE) % FULL_CIRCLE
@@ -107,12 +115,13 @@ export function DonutChart({
   accessibilityLabel,
   children,
 }: DonutChartProps) {
-  // The stroke straddles the path, so the oval is inset by half its width.
+  // The stroke straddles the path, so the oval is inset by half its width
+  // (plus the selection-widening margin - see STROKE_EDGE_MARGIN).
   const oval = Skia.XYWHRect(
-    strokeWidth / 2,
-    strokeWidth / 2,
-    size - strokeWidth,
-    size - strokeWidth,
+    strokeWidth / 2 + STROKE_EDGE_MARGIN,
+    strokeWidth / 2 + STROKE_EDGE_MARGIN,
+    size - strokeWidth - 2 * STROKE_EDGE_MARGIN,
+    size - strokeWidth - 2 * STROKE_EDGE_MARGIN,
   )
 
   const spans = segmentSpans(segments)

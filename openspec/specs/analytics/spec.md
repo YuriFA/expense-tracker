@@ -63,11 +63,13 @@ and last day («1 августа – 31 августа»), a year including the 
 января – 31 декабря 2026»). Labels SHALL include the year whenever the range
 spans two calendar years or would otherwise be ambiguous. A left/right swipe
 over the chart section SHALL step to the next/previous period exactly like
-the controls. Switching periods SHALL animate ONLY the donut chart, sliding
-it in the step direction like a carousel while the rest of the screen stays
-static. Navigation SHALL NOT be blocked at the current period: future
-periods are reachable and display their (normally empty) state like any
-other period.
+the controls. Switching periods SHALL animate ONLY the donut chart while the
+rest of the screen stays static, like a carousel: a swipe tracks the finger
+with the adjacent period's chart sliding in during the drag, and the step
+settles in the swipe direction on release (or springs back when the swipe
+traveled too little); the controls animate the same settle. Navigation SHALL
+NOT be blocked at the current period: future periods are reachable and
+display their (normally empty) state like any other period.
 
 #### Scenario: Stepping weeks
 
@@ -87,7 +89,7 @@ other period.
 #### Scenario: Swiping between periods
 
 - **WHEN** the user swipes left over the chart section
-- **THEN** the screen shows the next period exactly as with the next control (swiping right steps to the previous one), the donut chart sliding in the swipe direction while the rest of the screen stays static
+- **THEN** the screen shows the next period exactly as with the next control (swiping right steps to the previous one), the donut chart following the swipe - the adjacent period's chart sliding in during the drag and the step settling on release - while the rest of the screen stays static
 
 #### Scenario: Navigating into the future
 

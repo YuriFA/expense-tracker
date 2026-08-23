@@ -10,3 +10,4 @@ export {
 } from './model/selectors'
 export { ChartLegend } from './ui/chart-legend'
 export { DonutChart } from './ui/donut-chart'
+export type { DonutSegment } from './ui/donut-chart'

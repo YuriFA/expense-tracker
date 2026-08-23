@@ -6,8 +6,9 @@
 // checkboxes include/exclude categories from the chart (renormalized among
 // the included; the list always shows full-period figures), and tapping a
 // row drills into that category via the shared period-aware cashflow sheet.
-// Periods step via the flanking arrows or a swipe over the chart, sliding
-// the period content like a carousel in the step direction. A period
+// Periods step via the flanking arrows or a swipe over the chart: the swipe
+// tracks the finger (the adjacent period's chart slides in during the drag -
+// see PeriodChartCarousel) and the step settles on release. A period
 // without movement renders the SAME composition with zero figures (neutral
 // empty ring, every direction category listed at 0) - no separate empty
 // state. Every period change resets selection and filtering.
@@ -16,8 +17,6 @@
 
 import { useRef, useState } from 'react'
 import { View } from 'react-native'
-import Animated, { SlideInLeft, SlideInRight } from 'react-native-reanimated'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import {
   currentPeriod,
   periodRangeLabel,
@@ -34,15 +33,15 @@ import {
   periodTotal,
   type AnalyticsDirection,
   type CategoryTotal,
+  type DonutSegment,
 } from '@/features/analytics'
 import { CASHFLOW_KIND_VIEWS, CategoryCashflowSheet } from '@/features/cashflow-overview'
 import { NewTransactionSheet } from '@/features/create-transaction'
-import { useCategories } from '@/entities/category'
-import { useTransactions } from '@/entities/transaction'
+import { useCategories, type Category } from '@/entities/category'
+import { useTransactions, type Transaction } from '@/entities/transaction'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
-import { IconButton } from '@/shared/ui/icon-button'
 import { Pressable } from '@/shared/ui/pressable'
 import { Screen } from '@/shared/ui/screen'
 import { ScreenHeader, ScreenScrollView } from '@/shared/ui/screen-header'
@@ -50,6 +49,12 @@ import { Text } from '@/shared/ui/text'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { cn } from '@/shared/lib/utils'
 import { formatAmount } from '@/shared/lib/format/format'
+import {
+  CHART_SIZE,
+  CHART_STROKE,
+  PeriodChartCarousel,
+  type PeriodCarouselPages,
+} from './period-chart-carousel'
 
 const PERIOD_KINDS: Array<{ kind: AnalyticsPeriodKind; label: string; testId: string }> = [
   { kind: 'week', label: 'Неделя', testId: 'analytics-period-week' },
@@ -62,10 +67,34 @@ const DIRECTION_VIEWS: Record<AnalyticsDirection, { title: string; allLabel: str
   income: { title: 'Доходы', allLabel: 'Все доходы' },
 }
 
-const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 }
-const CHART_SIZE = 216
-const CHART_STROKE = 24
-const SLIDE_DURATION_MS = 250
+// The content wrapper's horizontal padding (px-6 below); the carousel bleeds
+// past it so its pages travel edge-to-edge (PeriodChartCarousel contentInset).
+const CONTENT_INSET = 24
+
+/**
+ * Neighbor-period carousel page composition: every category with movement,
+ * no session filtering (selection/exclusions reset on commit anyway); a
+ * period without movement renders the same neutral empty ring as the current
+ * one.
+ */
+function neighborSegments(
+  transactions: Transaction[],
+  categories: Category[],
+  cursor: PeriodCursor,
+  direction: AnalyticsDirection,
+): DonutSegment[] {
+  const withMovement = categoryTotals(transactions, categories, cursor, direction).filter(
+    ({ totalMinor }) => totalMinor > 0,
+  )
+  if (withMovement.length === 0) {
+    return [{ id: 'empty-period', value: 1, color: OTHER_ENTRY_COLOR }]
+  }
+  return withMovement.map(({ category, totalMinor }) => ({
+    id: category.id,
+    value: totalMinor,
+    color: category.color,
+  }))
+}
 
 /**
  * Round checkbox controlling chart inclusion. Category rows pass their
@@ -118,9 +147,8 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
   const view = DIRECTION_VIEWS[direction]
   const { copy, ids } = CASHFLOW_KIND_VIEWS[direction]
   const [cursor, setCursor] = useState<PeriodCursor>(() => currentPeriod('month'))
-  // Carousel direction of the LAST step (+1 forward / -1 back) drives the
-  // entering/exiting slide pair.
-  const [lastDirection, setLastDirection] = useState<1 | -1>(1)
+  // Bumped on kind switches so the carousel tears any in-flight session down.
+  const [resetEpoch, setResetEpoch] = useState(0)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined)
   const [excludedIds, setExcludedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [drillDownCategoryId, setDrillDownCategoryId] = useState<string | undefined>(undefined)
@@ -129,6 +157,14 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
   const [prefillCategoryId, setPrefillCategoryId] = useState<string | undefined>(undefined)
 
   const transactionsQuery = useTransactions({ type: direction, ...periodToUtcDayRange(cursor) })
+  // Adjacent periods feed the carousel's neighbor pages; their query keys
+  // differ per period, so they are simply always mounted (cheap local reads).
+  const prevCursor = shiftPeriod(cursor, -1)
+  const nextCursor = shiftPeriod(cursor, 1)
+  const prevTransactions =
+    useTransactions({ type: direction, ...periodToUtcDayRange(prevCursor) }).data ?? []
+  const nextTransactions =
+    useTransactions({ type: direction, ...periodToUtcDayRange(nextCursor) }).data ?? []
   const categoriesQuery = useCategories(direction)
   const transactions = transactionsQuery.data ?? []
   const categories = categoriesQuery.data ?? []
@@ -147,28 +183,21 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
     .map((category) => ({ category, totalMinor: movementByCategory.get(category.id) ?? 0 }))
     .sort((a, b) => b.totalMinor - a.totalMinor)
 
-  // Every period change resets selection and filtering and remembers the
-  // step direction for the carousel slide (conventions §2 - the reset lives
-  // in the handlers, not in an effect).
-  const applyPeriod = (next: PeriodCursor, stepDirection: 1 | -1) => {
+  // Every period change resets selection and filtering and the carousel
+  // commits through the stepper (conventions §2 - the reset lives in the
+  // handlers, not in an effect).
+  const applyPeriod = (next: PeriodCursor) => {
     setCursor(next)
-    setLastDirection(stepDirection)
     setSelectedCategoryId(undefined)
     setExcludedIds(new Set())
   }
-  const handleSelectKind = (nextKind: AnalyticsPeriodKind) =>
-    applyPeriod(currentPeriod(nextKind), 1)
-  const handlePrevPeriod = () => applyPeriod(shiftPeriod(cursor, -1), -1)
-  const handleNextPeriod = () => applyPeriod(shiftPeriod(cursor, 1), 1)
-
-  const swipe = Gesture.Pan()
-    .activeOffsetX([-15, 15])
-    .failOffsetY([-20, 20])
-    .runOnJS(true)
-    .onEnd((event) => {
-      if (event.translationX < 0) handleNextPeriod()
-      else if (event.translationX > 0) handlePrevPeriod()
-    })
+  const handleCarouselCommit = (step: 1 | -1) => applyPeriod(shiftPeriod(cursor, step))
+  // A kind switch jumps the cursor outside the stepper, so any in-flight
+  // carousel session must be dropped (resetEpoch drives the teardown).
+  const handleSelectKind = (nextKind: AnalyticsPeriodKind) => {
+    applyPeriod(currentPeriod(nextKind))
+    setResetEpoch((epoch) => epoch + 1)
+  }
 
   const handleToggleCategory = (categoryId: string) => {
     if (categoryId === selectedCategoryId) setSelectedCategoryId(undefined)
@@ -200,7 +229,7 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
   }
 
   const includedWithMovement = includedTotals.filter(({ totalMinor }) => totalMinor > 0)
-  const chartSegments =
+  const chartSegments: DonutSegment[] =
     includedWithMovement.length === 0
       ? [{ id: 'empty-period', value: 1, color: OTHER_ENTRY_COLOR }]
       : includedWithMovement.map(({ category, totalMinor }) => ({
@@ -208,6 +237,22 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
           value: totalMinor,
           color: category.color,
         }))
+
+  const carouselPages: PeriodCarouselPages = {
+    prev: {
+      segments: neighborSegments(prevTransactions, categories, prevCursor, direction),
+      rangeLabel: periodRangeLabel(prevCursor).toUpperCase(),
+    },
+    cur: {
+      segments: chartSegments,
+      rangeLabel: rangeLabel.toUpperCase(),
+      selectedSegmentId: selectedCategoryId,
+    },
+    next: {
+      segments: neighborSegments(nextTransactions, categories, nextCursor, direction),
+      rangeLabel: periodRangeLabel(nextCursor).toUpperCase(),
+    },
+  }
 
   const orderedTotals = selectedCategoryId
     ? [
@@ -258,53 +303,31 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
             <Text variant="caption">всего</Text>
           </View>
 
-          {/* Only the chart slides in the step direction (carousel feel);
-              the total, arrows, and breakdown stay static. */}
-          <GestureDetector gesture={swipe}>
-            <View className="flex-row items-center justify-between">
-              <IconButton
-                testID="analytics-period-prev"
-                icon="chevron-back"
-                size="sm"
-                accessibilityLabel="Предыдущий период"
-                hitSlop={HIT_SLOP}
-                onPress={handlePrevPeriod}
-              />
-              <Animated.View
-                key={`${kind}:${cursor.start.toISOString()}`}
-                entering={
-                  lastDirection === -1
-                    ? SlideInLeft.duration(SLIDE_DURATION_MS)
-                    : SlideInRight.duration(SLIDE_DURATION_MS)
-                }
+          {/* Only the chart steps - the swipe tracks the finger and settles
+              on release; the total, arrows, and breakdown stay static. */}
+          <PeriodChartCarousel
+            pages={carouselPages}
+            onCommit={handleCarouselCommit}
+            resetEpoch={resetEpoch}
+            contentInset={CONTENT_INSET}
+          >
+            <DonutChart
+              segments={chartSegments}
+              size={CHART_SIZE}
+              strokeWidth={CHART_STROKE}
+              selectedSegmentId={selectedCategoryId}
+              onPressSegment={handlePressSegment}
+              accessibilityLabel={`${view.title} по категориям: ${chartSummary}`}
+            >
+              <Text
+                variant="label"
+                className="px-6 text-center uppercase text-muted-foreground"
+                testID="analytics-period-label"
               >
-                <DonutChart
-                  segments={chartSegments}
-                  size={CHART_SIZE}
-                  strokeWidth={CHART_STROKE}
-                  selectedSegmentId={selectedCategoryId}
-                  onPressSegment={handlePressSegment}
-                  accessibilityLabel={`${view.title} по категориям: ${chartSummary}`}
-                >
-                  <Text
-                    variant="label"
-                    className="px-6 text-center uppercase text-muted-foreground"
-                    testID="analytics-period-label"
-                  >
-                    {rangeLabel.toUpperCase()}
-                  </Text>
-                </DonutChart>
-              </Animated.View>
-              <IconButton
-                testID="analytics-period-next"
-                icon="chevron-forward"
-                size="sm"
-                accessibilityLabel="Следующий период"
-                hitSlop={HIT_SLOP}
-                onPress={handleNextPeriod}
-              />
-            </View>
-          </GestureDetector>
+                {rangeLabel.toUpperCase()}
+              </Text>
+            </DonutChart>
+          </PeriodChartCarousel>
 
           <Card variant="elevated" className="gap-4" testID="analytics-category-list">
             <View className="flex-row items-center gap-3" testID="analytics-total-row">

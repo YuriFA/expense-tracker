@@ -42,9 +42,9 @@ describe('DonutChart', () => {
   })
 })
 
-// Geometry fixture: size 100, strokeWidth 20 → ring band radius [40, 60]
-// (hit slack ±12 → accepted radius [28, 72]); angles are clockwise from the
-// top of the chart.
+// Geometry fixture: size 100, strokeWidth 20, stroke-edge margin 4 → ring
+// band radius [26, 46] (hit slack ±12 → accepted radius [24, 68]); angles are
+// clockwise from the top of the chart.
 const GEOMETRY = {
   size: 100,
   strokeWidth: 20,
@@ -95,7 +95,7 @@ describe('segmentAt', () => {
       segmentAt(TWO_SEGMENTS, GEOMETRY.size, GEOMETRY.strokeWidth, GEOMETRY.gapDegrees, 50, 50),
     ).toBeNull() // center
     expect(
-      segmentAt(TWO_SEGMENTS, GEOMETRY.size, GEOMETRY.strokeWidth, GEOMETRY.gapDegrees, 50, 25),
+      segmentAt(TWO_SEGMENTS, GEOMETRY.size, GEOMETRY.strokeWidth, GEOMETRY.gapDegrees, 50, 28),
     ).toBeNull() // inside the hole
     expect(
       segmentAt(TWO_SEGMENTS, GEOMETRY.size, GEOMETRY.strokeWidth, GEOMETRY.gapDegrees, 50, 125),
