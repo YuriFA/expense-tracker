@@ -62,9 +62,13 @@ inclusive date range in the app's date locale: a week as its first and last
 day («3 августа – 9 августа», Monday through Sunday), a month as its first
 and last day («1 августа – 31 августа»), a year including the year («1
 января – 31 декабря 2026»). Labels SHALL include the year whenever the range
-spans two calendar years or would otherwise be ambiguous. Navigation SHALL
-NOT be blocked at the current period: future periods are reachable and
-display their (normally empty) state like any other period.
+spans two calendar years or would otherwise be ambiguous. A left/right swipe
+over the chart section SHALL step to the next/previous period exactly like
+the controls. Switching periods SHALL animate ONLY the donut chart, sliding
+it in the step direction like a carousel while the rest of the screen stays
+static. Navigation SHALL NOT be blocked at the current period: future
+periods are reachable and display their (normally empty) state like any
+other period.
 
 #### Scenario: Stepping weeks
 
@@ -80,6 +84,11 @@ display their (normally empty) state like any other period.
 
 - **WHEN** the selected period is a year and the user steps next
 - **THEN** the screen shows the following year with a label that includes it
+
+#### Scenario: Swiping between periods
+
+- **WHEN** the user swipes left over the chart section
+- **THEN** the screen shows the next period exactly as with the next control (swiping right steps to the previous one), the donut chart sliding in the swipe direction while the rest of the screen stays static
 
 #### Scenario: Navigating into the future
 
@@ -106,14 +115,22 @@ category rows, percentages).
 
 ### Requirement: Category breakdown
 
-The detail screen SHALL list every category with movement in the selected
-period and direction, ordered by total descending, each row showing the
-category's amount and its percentage of the direction total, plus a leading
-non-interactive summary row («Все расходы» / «Все доходы») with the direction
-total and 100%. Amounts SHALL be displayed through the app's existing money
-formatting; percentages SHALL be shown with at most two fractional digits.
-Transfers SHALL be excluded from both directions: a transfer is neither
-income nor expense.
+The detail screen SHALL list every category of the direction, ordered by
+total descending (categories without movement keep their place, at 0), each
+row showing the category's amount and its percentage of the direction's
+FULL period total, plus a leading summary row («Все расходы» / «Все
+доходы») with the direction total and 100%. Each category row SHALL carry a
+checkbox controlling whether the category appears in the donut; the summary
+row's checkbox SHALL be a master toggle — on iff every category is included,
+tapping it includes or excludes all. Percentages SHALL always be computed
+against the full period total, regardless of checkbox state. Tapping a
+category row outside its checkbox SHALL open that category's transaction
+sheet scoped to the same period and direction. Transfers SHALL be excluded
+from both directions: a transfer is neither income nor expense. A period
+without movement SHALL render the same composition with zero figures —
+total 0, every category row at 0 and 0% — instead of a separate empty
+state. Changing the period SHALL reset selection and checkbox filtering to
+the complete picture.
 
 #### Scenario: Breakdown with percentages
 
@@ -130,33 +147,86 @@ income nor expense.
 - **WHEN** the selected period contains movement in exactly one category
 - **THEN** that row shows 100% and the summary row shows the same total
 
+#### Scenario: Excluding categories from the donut
+
+- **WHEN** the user unchecks two of five category rows
+- **THEN** the donut charts only the three checked categories (renormalized to fill the ring) while every row keeps its full-total amount and percentage
+
+#### Scenario: Master toggle
+
+- **WHEN** the user unchecks the «Все расходы» checkbox and every category checkbox turns off
+- **THEN** the donut renders as a single neutral grey ring; checking the master checkbox back restores every segment
+
+#### Scenario: Category drill-down
+
+- **WHEN** the user taps a category row outside its checkbox
+- **THEN** that category's transaction sheet opens showing the category's transactions for the selected period (week, month, and year alike), with the period navigable inside the sheet
+
+#### Scenario: Empty period keeps the full layout
+
+- **WHEN** the selected period contains no transactions of the direction
+- **THEN** the screen renders exactly as with data but zeroed: the total shows 0, and every direction category is listed with a 0 amount and 0%
+
 ### Requirement: Donut presentation
 
 Donut charts SHALL render one segment per displayed category, sized
-proportionally to the category's share of the direction total, colored with
-the category's color, with a small visual gap between segments. Charts SHALL
-display at most five categories individually; the remainder SHALL be
-aggregated into one «Прочие» segment, and the accompanying legend SHALL
-mirror exactly what the chart shows. A period with movement in exactly one
-category SHALL render as a full ring without gaps. A period with no movement
-SHALL NOT render a chart; the empty state takes its place. The donut center
-SHALL show the direction total on the tab cards and the selected period's
-range label on the detail screen.
+proportionally to the category's share of the charted total, colored with
+the category's color, with a small visual gap between segments. The tab
+cards' small charts SHALL display at most five categories individually; the
+remainder SHALL be aggregated into one «Прочие» segment, and the accompanying
+legend SHALL mirror exactly what the chart shows. The detail chart SHALL
+display every included category individually — no cap and no «Прочие»
+aggregate. A period with movement in exactly one category SHALL render as a
+full ring without gaps. The tab cards SHALL replace the chart with an
+empty-state message when the period has no movement (the detail screen
+instead renders its zeroed full layout — see the breakdown requirement). The donut center SHALL show the direction
+total on the tab cards and the selected period's range label on the detail
+screen.
 
 #### Scenario: Many categories aggregate into «Прочие»
 
-- **WHEN** the selected period has movement in seven categories
-- **THEN** the donut shows the five largest categories plus one «Прочие» segment covering the remaining two, and the legend lists those six entries
+- **WHEN** the current month has movement in seven categories
+- **THEN** the tab card's donut shows the five largest categories plus one «Прочие» segment covering the remaining two, and the legend lists those six entries
 
 #### Scenario: Segment colors match categories
 
 - **WHEN** a category with a violet color is among the displayed categories
 - **THEN** its donut segment and its legend marker are both violet
 
-#### Scenario: No chart without data
+#### Scenario: No chart without data (tab cards)
 
-- **WHEN** the selected period contains no transactions of the direction
-- **THEN** no donut chart is rendered and an empty-state message (e.g. «Нет расходов за этот период») is shown instead
+- **WHEN** the current month contains no transactions of a direction
+- **THEN** that tab card shows an empty-state message (e.g. «Нет расходов за этот период») in place of the donut and legend
+
+### Requirement: Interactive detail donut
+
+The detail donut SHALL reflect the breakdown's checkboxes: only included
+categories are charted, and their segments SHALL be sized proportionally to
+the INCLUDED total (the ring stays full — excluding a category grows the
+remaining segments). When nothing is chartable — a period without movement
+or every category excluded — the chart SHALL render as a single neutral
+grey ring with the period label still in its center.
+Tapping a segment SHALL select its category: the tapped segment scales up in
+place (the chart does not reorder) while the other segments dim, and in the
+breakdown list the selected category's row moves to the top (below the
+summary row) while the other rows dim; tapping the selected segment again
+SHALL clear the selection, and changing the period SHALL clear both
+selection and filtering.
+
+#### Scenario: Selecting a segment emphasizes the category
+
+- **WHEN** the user taps the «Такси» segment
+- **THEN** that segment scales up in place, the other segments dim, and «Такси» becomes the first category row below the summary row with the other rows dimmed
+
+#### Scenario: Deselecting
+
+- **WHEN** the user taps the selected segment again
+- **THEN** all segments and breakdown rows return to their normal, unfiltered state
+
+#### Scenario: All categories excluded
+
+- **WHEN** every category checkbox is unchecked
+- **THEN** the donut renders as a single neutral grey ring and the period label remains in its center
 
 ### Requirement: Currency of analytics figures
 

@@ -15,6 +15,8 @@ interface CashflowKindCopy {
   listTitle: string
   /** Empty-month text in the list sheets and the category section. */
   monthEmpty: string
+  /** Empty text for non-month periods in the category sheet. */
+  periodEmpty: string
   /** Period-total participle: «потрачено» / «получено». */
   totalWord: string
   /** Footer CTA: «Новый расход» / «Новый доход». */
@@ -68,6 +70,7 @@ export const CASHFLOW_KIND_VIEWS: Record<CashflowKind, CashflowKindView> = {
       allEmpty: 'Расходов нет',
       listTitle: 'Список расходов',
       monthEmpty: 'В этом месяце расходов нет',
+      periodEmpty: 'За этот период расходов нет',
       totalWord: 'потрачено',
       newTransaction: 'Новый расход',
       categoryHint: 'Создайте первую категорию, чтобы записывать расходы',
@@ -103,6 +106,7 @@ export const CASHFLOW_KIND_VIEWS: Record<CashflowKind, CashflowKindView> = {
       allEmpty: 'Доходов нет',
       listTitle: 'Список доходов',
       monthEmpty: 'В этом месяце доходов нет',
+      periodEmpty: 'За этот период доходов нет',
       totalWord: 'получено',
       newTransaction: 'Новый доход',
       categoryHint: 'Создайте первую категорию, чтобы записывать доходы',

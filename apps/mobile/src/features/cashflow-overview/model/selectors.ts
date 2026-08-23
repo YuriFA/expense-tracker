@@ -12,7 +12,9 @@ import {
   fullDayLabel,
   relativeDayLabel,
   transactionsInMonth,
+  transactionsInPeriod,
   type MonthCursor,
+  type PeriodCursor,
 } from '@expense-tracker/dates'
 import type { IconName } from '@/shared/ui/icon'
 import { formatAmount } from '@/shared/lib/format/format'
@@ -35,6 +37,15 @@ export function cashflowInMonth(
   kind: CashflowKind,
 ): Transaction[] {
   return transactionsInMonth(txs, cursor).filter((t) => t.type === kind)
+}
+
+/** Same trim as cashflowInMonth, over any analytics period kind. */
+export function cashflowInPeriod(
+  txs: Transaction[],
+  cursor: PeriodCursor,
+  kind: CashflowKind,
+): Transaction[] {
+  return transactionsInPeriod(txs, cursor).filter((t) => t.type === kind)
 }
 
 function toCashflowRow(tx: Transaction, categories: Category[]): CashflowRowView {
@@ -70,17 +81,10 @@ function byOccurredAtDesc(a: Transaction, b: Transaction): number {
 }
 
 /**
- * The month's cashflow of one kind grouped by local calendar day, newest
- * day first, each day's rows newest first. Feeds the grouped list sheets.
+ * Day-grouped cashflow over PRE-TRIMMED, newest-first transactions of one
+ * kind (shared by the month and period variants below).
  */
-export function cashflowDayGroups(
-  txs: Transaction[],
-  categories: Category[],
-  cursor: MonthCursor,
-  kind: CashflowKind,
-): CashflowDayGroup[] {
-  const matching = cashflowInMonth(txs, cursor, kind).slice().sort(byOccurredAtDesc)
-
+function groupCashflowByDay(matching: Transaction[], categories: Category[]): CashflowDayGroup[] {
   const buckets: Array<Omit<CashflowDayGroup, 'totalText'> & { totalMinor: number }> = []
   for (const tx of matching) {
     const key = calendarDayKey(new Date(tx.occurredAt))
@@ -107,8 +111,45 @@ export function cashflowDayGroups(
   }))
 }
 
+/**
+ * The month's cashflow of one kind grouped by local calendar day, newest
+ * day first, each day's rows newest first. Feeds the grouped list sheets.
+ */
+export function cashflowDayGroups(
+  txs: Transaction[],
+  categories: Category[],
+  cursor: MonthCursor,
+  kind: CashflowKind,
+): CashflowDayGroup[] {
+  return groupCashflowByDay(
+    cashflowInMonth(txs, cursor, kind).slice().sort(byOccurredAtDesc),
+    categories,
+  )
+}
+
+/** periodCursor equivalent of cashflowDayGroups (any week/month/year). */
+export function cashflowDayGroupsInPeriod(
+  txs: Transaction[],
+  categories: Category[],
+  cursor: PeriodCursor,
+  kind: CashflowKind,
+): CashflowDayGroup[] {
+  return groupCashflowByDay(
+    cashflowInPeriod(txs, cursor, kind).slice().sort(byOccurredAtDesc),
+    categories,
+  )
+}
+
 export function totalCashflow(txs: Transaction[], cursor: MonthCursor, kind: CashflowKind): number {
   return cashflowInMonth(txs, cursor, kind).reduce((sum, t) => sum + t.amount, 0)
+}
+
+export function totalCashflowInPeriod(
+  txs: Transaction[],
+  cursor: PeriodCursor,
+  kind: CashflowKind,
+): number {
+  return cashflowInPeriod(txs, cursor, kind).reduce((sum, t) => sum + t.amount, 0)
 }
 
 export interface CategoryCashflow {

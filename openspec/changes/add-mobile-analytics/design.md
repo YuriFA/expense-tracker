@@ -149,6 +149,15 @@ interface DonutChartProps {
   share of `segments`' total; a single segment renders a full ring without
   gaps. Center content is regular RN children absolutely positioned over the
   `Canvas` — no Skia text/font plumbing.
+- Detail-screen interactivity (added): every segment carries an `id`;
+  `selectedSegmentId` widens that segment's stroke slightly (the segment
+  stays in place — no reordering) and dims the others (Skia `opacity`), and
+  `onPressSegment(id)` reports taps. Hit-testing is manual and pure: a
+  Gesture.Tap on the chart wrapper yields view coordinates, which
+  `segmentAt(segments, size, strokeWidth, x, y)` maps to a segment id by
+  angle from 12 o'clock (accumulated sweeps) and radius within the ring
+  band; the helper is exported for unit tests. The chart stays non-interactive
+  by default — the tab cards pass no selection props.
 - Pairs with the already-installed Reanimated if animation is ever wanted;
   GPU-backed; first-class Expo dev-build support via its config plugin.
 - Costs: a new native module (one-time iOS dev build rebuild — the app
@@ -169,7 +178,11 @@ animation stack, and both require the same dev-build rebuild anyway);
   construction, integer minor-unit sums, descending), `periodTotal(txs,
   cursor, kind)`, `percentLabel(part, total)` (at most two fractional digits
   with trailing zeros dropped, ru comma — "66,32%", "22,5%"), and `toChartEntries(totals, { top = 5 })` returning the
-  top-N entries plus an aggregated «Прочие» entry when more exist.
+  top-N entries plus an aggregated «Прочие» entry when more exist. After the
+  interactivity update, `toChartEntries` serves ONLY the tab cards; the
+  detail screen charts the raw `categoryTotals` list (no cap, no «Прочие»)
+  filtered by its checkbox state — the chart renormalizes among the included
+  segments by construction (it sizes by the segments' own total).
 - `ui/donut-chart.tsx` (D3) and `ui/chart-legend.tsx` (color-dot rows) live
   here because two screens consume them (tab cards + detail); the period
   selector/stepper stay page-local in `pages/analytics-detail/ui/` (single
@@ -208,11 +221,16 @@ animation stack, and both require the same dev-build rebuild anyway);
 - Tab screen: stateless — `const cursor = currentPeriod('month')` per render;
   two queries (`type: 'expense' | 'income'` + the cursor's day range) and
   `useCategories()` filtered by kind client-side.
-- Detail screen: two `useState` values — period kind (default `'month'`) and
-  cursor (default `currentPeriod('month')`); switching the kind resets the
-  cursor to `currentPeriod(kind)`; arrows call `setCursor(shiftPeriod(cursor,
-  ±1))`. Nothing persists across opens (ephemeral UI state the user edits —
-  the sanctioned `useState` case).
+- Detail screen: a single `useState` cursor (default `currentPeriod('month')`,
+  kind derived from it) plus `lastDirection` (1/-1 — the last carousel step,
+  driving the chart slide direction) and the interactivity state —
+  `selectedCategoryId` (segment tap, toggle to deselect) and `excludedIds:
+  Set<string>` (row checkboxes, master toggle writes all ids or clears).
+  Period changes (kind switch, arrows, swipe) go through one `applyPeriod`
+  handler that also clears selection and exclusions — the fresh period
+  starts as the complete picture (no effect-sync; the reset happens in the
+  handlers, per conventions §2). The drill-down keeps the category id in
+  state for the mounted sheet. Nothing persists across opens.
 - Figures are derived at render from `query.data ?? []` through the D4
   selectors — no `useMemo` mirrors, no effects (personal-finance scale; the
   worst case, a year of transactions pre-filtered in SQL, is linear grouping
@@ -228,13 +246,25 @@ animation stack, and both require the same dev-build rebuild anyway);
   the card legend is color dot + category name only — amounts and
   percentages appear only in the detail breakdown; empty state replaces
   donut + legend with a muted message card («Нет расходов за этот период»).
-- Detail: total line («30 325 ₽» + muted «всего»), large donut with the
-  upper-cased `periodRangeLabel` in the center, period stepper (IconButton
-  chevrons + label between), three-way selector built from the existing
-  Button variant-swap pattern (`category-form.tsx` precedent), then the
-  breakdown list: summary row (checkmark icon, «Все расходы/Доходы», total,
-  100%) and one row per category (color dot, name, `formatAmount`,
-  `percentLabel`), all categories shown.
+- Detail (always the full layout, even for a period without movement —
+  zeroed figures instead of an empty state): total line («30 325 ₽» + muted
+  «всего»; 0 for an empty period), chart section `[◀ IconButton] DonutChart(216)
+  [▶ IconButton]` with the upper-cased `periodRangeLabel` in the donut
+  center (the center Text carries `analytics-period-label`), then the
+  breakdown card. The section's Gesture.Pan (`activeOffsetX ±15`,
+  `failOffsetY`) steps periods on swipe; ONLY the chart animates — an
+  `Animated.View` keyed by the period remounts with `SlideInLeft/Right`
+  (250ms) per the step direction, the arrows/totals/list stay static.
+  Three-way selector via the Button variant-swap pattern. The list shows
+  every direction category (`categoryTotals` zeros merged in, desc by
+  amount): summary row = master checkbox (neutral primary/border look,
+  full-period total, 100%); category rows = per-row checkbox painted with
+  the CATEGORY color (checkmark = included; unchecked dims to 40%; the
+  separate color dot is gone) + pressable row body (name, `formatAmount`,
+  `percentLabel` — always vs the full period total) opening the category
+  sheet; with an active selection the selected row moves first and the
+  others get `opacity-*`. Nothing chartable (no movement or all excluded)
+  renders the grey ring (`other-entry` hex) instead of segments.
 - Colors: category hexes ride inline `style` (the sanctioned data-color
   exception); every other color is a token class. Money via `formatAmount`;
   percentages via the D4 formatter. RU strings hardcoded with `TODO(i18n)`.
@@ -253,7 +283,31 @@ animation stack, and both require the same dev-build rebuild anyway);
   `analytics-period-next`.
 - Detail rows: `analytics-category-<id>` (id suffix per bottom-tab-bar
   precedent for stable dynamic keys), summary `analytics-total-row`, screen
-  root `screen-analytics-detail`.
+  root `screen-analytics-detail`. Checkboxes: `accessibilityRole="checkbox"`
+  with `accessibilityState={{ checked }}` — per-row
+  `analytics-category-check-<id>`, master `analytics-total-check`; the row
+  body is a `button`-roled pressable («Открыть траты по категории …») since
+  the tap target differs from the checkbox. Segment selection and swipe have
+  no non-gesture path by design; screen readers get the same data through
+  the rows, and the arrows remain the accessible period navigation.
+
+### D10. Drill-down reuses the shared category sheet, generalized to periods
+
+`CategoryCashflowSheet` (`features/cashflow-overview`) is month-bound today
+(`initialCursor: MonthCursor`, `monthToUtcDayRange`, month prev/next,
+`monthRangeLabelShort`). It gains an optional `initialPeriod?: PeriodCursor`:
+when provided, the sheet's internal navigator steps same-kind periods via
+`shiftPeriod`, fetches via `periodToUtcDayRange`, labels via
+`periodRangeLabel`, and groups/totals via new period-aware variants
+(`cashflowInPeriod` / `cashflowDayGroupsInPeriod` / `totalCashflowInPeriod`)
+added beside the month selectors in `cashflow-overview/model/selectors.ts`
+(the month grouping body is extracted once and shared). Month callers
+(dashboard, income) pass only `initialCursor` and keep byte-identical
+behavior — including the short month label. The sheet's existing
+affordances (edit category, new-transaction footer) come along unchanged;
+the analytics page composes `NewTransactionSheet` itself (invariant #15 —
+features never import the create-transaction slice). testIDs stay the
+shared `CASHFLOW_KIND_VIEWS[kind].ids` (instances never co-mount).
 
 ### D9. Testing strategy
 
@@ -269,15 +323,21 @@ animation stack, and both require the same dev-build rebuild anyway);
 - Component tests (RNTL + the `mock-*-repository.ts` harness): tab cards
   (totals, legend, empty state, press navigation), detail screen (default
   month, kind switching resets cursor, arrows change the label, breakdown
-  rows with percentages, empty period). Add a `@shopify/react-native-skia`
+  rows with percentages, empty period) — extended for interactivity:
+  checkbox/master `accessibilityState.checked` transitions, exclusion state
+  feeding the chart (grey-ring case), row tap presenting the category sheet,
+  and the pure `segmentAt` hit-test helper unit-tested (angle accumulation,
+  gap handling, radius band, misses). Segment taps and swipes themselves are
+  gesture-driven and stay e2e-only. Add a `@shopify/react-native-skia`
   mock to `jest.setup.js` (no-op Canvas rendering children) — same pattern as
   the existing reanimated/blur mocks; tests assert testIDs/labels, never
   pixels.
 - Maestro `apps/mobile/.maestro/flows/12-analytics.yaml` (next number after
   `11-income`): open tab → cards visible → open expenses detail → back
   affordance → switch Неделя/Месяц/Год → step periods → category rows and
-  totals visible. `02-tab-navigation.yaml` must stay green (placeholder
-  testID retained).
+  totals visible — extended with a category-row drill-down (+ sheet close),
+  a checkbox toggle, a master-checkbox toggle, and a swipe over the chart.
+  `02-tab-navigation.yaml` must stay green (placeholder testID retained).
 
 ## Risks / Trade-offs
 

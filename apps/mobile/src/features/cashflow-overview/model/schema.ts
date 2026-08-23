@@ -1,8 +1,5 @@
 import { z } from 'zod'
-import {
-  DEFAULT_CATEGORY_COLOR,
-  DEFAULT_CATEGORY_ICON,
-} from '@/entities/category'
+import { DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from '@/entities/category'
 
 // TODO(i18n): RU validation messages until mobile i18n wiring lands.
 // type/icon/color always hold picker defaults, so they have no error path.

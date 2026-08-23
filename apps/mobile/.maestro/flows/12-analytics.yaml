@@ -1,7 +1,9 @@
 # Analytics tab: month overview cards open the parametrized detail screen;
-# the selector switches week/month/year (resetting to the current period)
-# and the stepper walks adjacent periods - into the future too, where the
-# empty state shows (navigation is never blocked).
+# the selector switches week/month/year (resetting to the current period),
+# the stepper and the chart swipe walk adjacent periods - into the future
+# too, where the full layout renders zeroed (no separate empty state). Rows
+# carry inclusion checkboxes (the master toggles all), and tapping a row
+# opens the shared category sheet at the screen's period.
 #
 # Requires expense data in the current month - 07-add-expense creates it
 # (income comes from 11-income), so run the suite in order on a fresh local
@@ -39,6 +41,63 @@ tags:
     id: analytics-period-month
 - assertVisible:
     id: analytics-period-label
+- assertVisible:
+    id: analytics-period-prev
+- assertVisible:
+    id: analytics-period-next
+
+# With data: the breakdown (summary row + full category list) shows. The
+# list card is taller than the viewport, so partial visibility is enough.
+- scrollUntilVisible:
+    element:
+      id: analytics-total-row
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: analytics-category-list
+    direction: DOWN
+    visibilityPercentage: 20
+
+# A category row opens the shared category sheet at the screen's period
+# (negative lookaheads keep the selector off the list card and checkboxes)
+- tapOn:
+    id: analytics-category-(?!list)(?!check).*
+    index: 0
+- assertVisible:
+    id: category-expenses-sheet
+- assertVisible:
+    id: category-expenses-period
+- tapOn:
+    point: 50%, 8%
+
+# Inclusion checkboxes: uncheck a category, then the master off/on
+- tapOn:
+    id: analytics-category-check-.*
+    index: 0
+- assertVisible:
+    id: analytics-total-row
+- scrollUntilVisible:
+    element:
+      id: analytics-total-check
+    direction: UP
+- tapOn:
+    id: analytics-total-check
+- tapOn:
+    id: analytics-total-check
+- assertVisible:
+    id: analytics-total-check
+
+# Swipe over the chart steps periods (chart-only carousel animation)
+- swipe:
+    start: 80%, 45%
+    end: 20%, 45%
+- assertVisible:
+    id: analytics-period-label
+- swipe:
+    start: 20%, 45%
+    end: 80%, 45%
+- assertVisible:
+    id: analytics-period-label
 
 # Kind switching resets to the current period of that kind
 - tapOn:
@@ -50,34 +109,15 @@ tags:
 - assertVisible:
     id: analytics-period-label
 
-# The stepper walks adjacent periods; two steps forward land in a future
-# month with its empty state, and stepping back restores the data view
-- tapOn:
-    id: analytics-period-prev
-- assertVisible:
-    id: analytics-period-label
+# Two steps forward land in a future month: the full layout stays, zeroed
 - tapOn:
     id: analytics-period-next
 - tapOn:
     id: analytics-period-next
-- assertVisible:
-    id: analytics-empty-state
-- tapOn:
-    id: analytics-period-prev
-- assertVisible:
-    id: analytics-period-label
-
-# With data restored, the breakdown (summary row + full category list) shows
 - scrollUntilVisible:
     element:
       id: analytics-total-row
     direction: DOWN
-- scrollUntilVisible:
-    element:
-      id: analytics-category-list
-    direction: DOWN
-
-# The year kind also resets to the current period (scroll back to controls)
 - scrollUntilVisible:
     element:
       id: analytics-period-year

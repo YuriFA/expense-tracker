@@ -95,7 +95,11 @@ function AnalyticsOverviewCard({
         ) : (
           <View className="flex-row items-center gap-5">
             <DonutChart
-              segments={entries.map((entry) => ({ value: entry.totalMinor, color: entry.color }))}
+              segments={entries.map((entry) => ({
+                id: entry.id,
+                value: entry.totalMinor,
+                color: entry.color,
+              }))}
               size={120}
               strokeWidth={14}
               accessibilityLabel={`${view.title} по категориям: ${chartSummaryLabel(entries, total)}`}

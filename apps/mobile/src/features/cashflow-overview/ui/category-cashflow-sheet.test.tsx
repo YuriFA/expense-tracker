@@ -6,11 +6,13 @@
 // transaction-creation and category-edit sheets. The expense kind keeps
 // the dashboard's ids and wording; the income kind mirrors them.
 
+import { createRef } from 'react'
 import { describe, expect, it, jest } from '@jest/globals'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { Category, Transaction } from '@expense-tracker/api'
+import { currentPeriod, monthRangeLabelShort, periodRangeLabel } from '@expense-tracker/dates'
 import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
 import { AccountRepositoryProvider } from '@/entities/account'
@@ -20,9 +22,10 @@ import { createMockCategoryRepository } from '@/shared/lib/testing/mock-category
 import { TransactionRepositoryProvider } from '@/entities/transaction'
 import { createMockTransactionRepository } from '@/shared/lib/testing/mock-transaction-repository'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
+import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
+import { CategoryCashflowSheet } from './category-cashflow-sheet'
 import { CategorySection } from './category-section'
 import { formatAmount } from '@/shared/lib/format/format'
-import { monthRangeLabelShort } from '@expense-tracker/dates'
 import { currentMonth, previousMonth, totalCashflow } from '../model/selectors'
 
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
@@ -222,6 +225,80 @@ describe('CategoryCashflowSheet (expense kind)', () => {
     fireEvent.press(screen.getByTestId('category-expenses-edit'))
     await waitFor(() => expect(screen.getByTestId('category-edit-sheet')).toBeTruthy())
     expect(screen.getByDisplayValue('Такси')).toBeTruthy()
+  })
+})
+
+// --- Period mode (analytics): initialPeriod switches the sheet onto the
+// week/month/year model with the long range label ----------------------------
+
+function dayThisWeek(offsetDays: number): string {
+  const now = new Date()
+  const monday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - ((now.getDay() + 6) % 7),
+  )
+  return toIso(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + offsetDays))
+}
+
+const WEEK_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'tx-taxi-mon',
+    type: 'expense',
+    amount: 420_000,
+    description: 'Поездка в аэропорт',
+    occurredAt: dayThisWeek(1),
+    version: 1,
+    accountId: 'acc-card',
+    categoryId: 'cat-taxi',
+  },
+]
+
+describe('CategoryCashflowSheet (period mode)', () => {
+  it('opens on the given week period and steps periods inside', async () => {
+    const sheetRef = createRef<BottomSheetRef>()
+    const onNewTransaction = jest.fn()
+    render(
+      <SafeAreaProvider
+        initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
+      >
+        <QueryClientProvider client={createQueryClient()}>
+          <CategoryRepositoryProvider repository={createMockCategoryRepository(CATEGORIES)}>
+            <TransactionRepositoryProvider
+              repository={createMockTransactionRepository(WEEK_TRANSACTIONS)}
+            >
+              <ThemeProvider>
+                <BottomSheetProvider>
+                  <CategoryCashflowSheet
+                    ref={sheetRef}
+                    kind="expense"
+                    category={CATEGORIES[0]}
+                    categories={CATEGORIES}
+                    initialPeriod={currentPeriod('week')}
+                    onNewTransaction={onNewTransaction}
+                  />
+                </BottomSheetProvider>
+              </ThemeProvider>
+            </TransactionRepositoryProvider>
+          </CategoryRepositoryProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>,
+    )
+
+    act(() => sheetRef.current?.present())
+    await waitFor(() =>
+      expect(screen.getByTestId('category-expenses-period')).toHaveTextContent(
+        periodRangeLabel(currentPeriod('week')),
+      ),
+    )
+    await waitFor(() => expect(screen.getByTestId('category-expense-row-tx-taxi-mon')).toBeTruthy())
+    expect(screen.getByTestId('category-expenses-total')).toHaveTextContent(
+      `${formatAmount(420_000)} потрачено`,
+    )
+
+    // Previous week: no fixtures → the period-scoped empty state.
+    fireEvent.press(screen.getByTestId('category-expenses-prev-month'))
+    await waitFor(() => expect(screen.getByText('За этот период расходов нет')).toBeTruthy())
   })
 })
 

@@ -16,7 +16,14 @@ import { Fragment, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import type { Category } from '@expense-tracker/api'
-import { monthRangeLabelShort, monthToUtcDayRange } from '@expense-tracker/dates'
+import {
+  monthRangeLabelShort,
+  periodRangeLabel,
+  periodToUtcDayRange,
+  shiftPeriod,
+  type MonthCursor,
+  type PeriodCursor,
+} from '@expense-tracker/dates'
 import { useTransactions } from '@/entities/transaction'
 import { Icon } from '@/shared/ui/icon'
 import { IconButton } from '@/shared/ui/icon-button'
@@ -31,13 +38,11 @@ import {
 } from '@/shared/ui/bottom-sheet'
 import { formatAmount } from '@/shared/lib/format/format'
 import {
-  cashflowDayGroups,
-  nextMonth,
-  previousMonth,
-  totalCashflow,
+  cashflowDayGroupsInPeriod,
+  currentMonth,
+  totalCashflowInPeriod,
   type CashflowDayGroup,
   type CashflowKind,
-  type MonthCursor,
 } from '../model/selectors'
 import { CASHFLOW_KIND_VIEWS } from './kind'
 import { EditCategorySheet } from './edit-category-sheet'
@@ -50,8 +55,18 @@ export interface CategoryCashflowSheetProps {
   /** The category whose transactions are listed; falls back to neutral content. */
   category: Category | undefined
   categories: Category[]
-  /** The month the sheet opens on; the in-sheet navigator takes over after. */
-  initialCursor: MonthCursor
+  /**
+   * The month the sheet opens on (existing dashboard/income callers); the
+   * in-sheet navigator takes over after. Provide exactly one of
+   * `initialCursor` / `initialPeriod`.
+   */
+  initialCursor?: MonthCursor
+  /**
+   * Analytics-period mode: the sheet opens on this week/month/year and its
+   * navigator steps periods of the same kind. When omitted, the sheet runs
+   * in the original month mode (short month label, month-step a11y labels).
+   */
+  initialPeriod?: PeriodCursor
   /**
    * Opens the kind's new-transaction sheet with this category preselected.
    * Composed by the hosting page (features must not import the
@@ -70,22 +85,29 @@ function reverseGroups(groups: CashflowDayGroup[]): CashflowDayGroup[] {
     .map((group) => ({ ...group, rows: group.rows.slice().reverse() }))
 }
 
+function monthCursorToPeriod(cursor: MonthCursor): PeriodCursor {
+  return { kind: 'month', start: new Date(cursor.year, cursor.month, 1) }
+}
+
 export function CategoryCashflowSheet({
   kind,
   category,
   categories,
   initialCursor,
+  initialPeriod,
   onNewTransaction,
   ref,
 }: CategoryCashflowSheetProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
-  const [cursor, setCursor] = useState(initialCursor)
+  const isMonthMode = initialPeriod === undefined
+  const initialPeriodCursor = initialPeriod ?? monthCursorToPeriod(initialCursor ?? currentMonth())
+  const [period, setPeriod] = useState<PeriodCursor>(initialPeriodCursor)
   const [sortAscending, setSortAscending] = useState(false)
   const editCategorySheetRef = useRef<BottomSheetRef>(null)
   const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
 
   const categoryQuery = useTransactions(
-    { type: kind, categoryId: category?.id, ...monthToUtcDayRange(cursor) },
+    { type: kind, categoryId: category?.id, ...periodToUtcDayRange(period) },
     { enabled: category !== undefined },
   )
 
@@ -94,21 +116,24 @@ export function CategoryCashflowSheet({
   const { groups, totalText } = useMemo(() => {
     const categoryTransactions = categoryQuery.data ?? []
     return {
-      groups: cashflowDayGroups(categoryTransactions, categories, cursor, kind),
-      totalText: formatAmount(totalCashflow(categoryTransactions, cursor, kind)),
+      groups: cashflowDayGroupsInPeriod(categoryTransactions, categories, period, kind),
+      totalText: formatAmount(totalCashflowInPeriod(categoryTransactions, period, kind)),
     }
-  }, [categoryQuery.data, categories, cursor, kind])
+  }, [categoryQuery.data, categories, period, kind])
   const orderedGroups = sortAscending ? reverseGroups(groups) : groups
-  const periodLabel = monthRangeLabelShort(cursor.year, cursor.month)
+  const periodLabel = isMonthMode
+    ? monthRangeLabelShort(period.start.getFullYear(), period.start.getMonth())
+    : periodRangeLabel(period)
+  const emptyText = period.kind === 'month' ? copy.monthEmpty : copy.periodEmpty
 
   const handleEdit = () => {
     editCategorySheetRef.current?.present()
   }
 
-  // Every presentation starts at the screen's month: the in-sheet
+  // Every presentation starts at the opening period: the in-sheet
   // navigation is ephemeral per open, not a lasting selection.
   const handleSheetChange = (index: number) => {
-    if (index >= 0) setCursor(initialCursor)
+    if (index >= 0) setPeriod(initialPeriodCursor)
   }
 
   return (
@@ -146,9 +171,9 @@ export function CategoryCashflowSheet({
           <IconButton
             icon="chevron-back"
             size="sm"
-            accessibilityLabel="Предыдущий месяц"
+            accessibilityLabel={isMonthMode ? 'Предыдущий месяц' : 'Предыдущий период'}
             testID={ids.categoryPrevMonth}
-            onPress={() => setCursor((current) => previousMonth(current))}
+            onPress={() => setPeriod((current) => shiftPeriod(current, -1))}
           />
           <Text
             variant="body-sm"
@@ -160,9 +185,9 @@ export function CategoryCashflowSheet({
           <IconButton
             icon="chevron-forward"
             size="sm"
-            accessibilityLabel="Следующий месяц"
+            accessibilityLabel={isMonthMode ? 'Следующий месяц' : 'Следующий период'}
             testID={ids.categoryNextMonth}
-            onPress={() => setCursor((current) => nextMonth(current))}
+            onPress={() => setPeriod((current) => shiftPeriod(current, 1))}
           />
         </View>
 
@@ -188,7 +213,7 @@ export function CategoryCashflowSheet({
 
             {orderedGroups.length === 0 ? (
               <Text variant="body" className="text-muted-foreground">
-                {copy.monthEmpty}
+                {emptyText}
               </Text>
             ) : (
               orderedGroups.map((group) => (

@@ -39,6 +39,7 @@ jest.mock("uniwind", () => ({
 }))
 
 jest.mock("react-native-reanimated", () => {
+  const React = require("react")
   const { View } = require("react-native")
 
   const Animated = {
@@ -106,10 +107,25 @@ jest.mock("react-native-reanimated", () => {
 
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
+  // Layout animations (entering/exiting) run on the UI thread; under the
+  // synchronous mock they render statically at their final position. The
+  // builder chain (.duration/.springify/...) must stay callable.
+  const makeLayoutAnimation = () => {
+    const component = (props) => React.createElement(View, props)
+    for (const builder of ["duration", "delay", "springify", "damping", "stiffness", "withCallback"]) {
+      component[builder] = () => component
+    }
+    return component
+  }
+
   return {
     __esModule: true,
     default: Animated,
     Animated,
+    SlideInLeft: makeLayoutAnimation(),
+    SlideInRight: makeLayoutAnimation(),
+    SlideOutLeft: makeLayoutAnimation(),
+    SlideOutRight: makeLayoutAnimation(),
     useSharedValue,
     useDerivedValue,
     useReducedMotion,
@@ -147,6 +163,40 @@ jest.mock("expo-blur", () => {
     ...rest
   }) => React.createElement(View, rest)
   return { __esModule: true, BlurView }
+})
+
+// react-native-gesture-handler's GestureDetector drives gestures through
+// the reanimated worklet runtime, which the synchronous reanimated mock
+// above cannot host (Reanimated.useEvent is unavailable, so any detector
+// render crashes). Tests never assert gesture mechanics (taps/swipes are
+// e2e-only, per AGENTS.md), so the detector becomes a passthrough and the
+// Gesture builders inert chainable stubs; everything else stays real.
+jest.mock("react-native-gesture-handler", () => {
+  const React = require("react")
+  const actual = jest.requireActual("react-native-gesture-handler")
+  const chainable = () => {
+    const stub = {}
+    const methods = [
+      "activeOffsetX",
+      "failOffsetY",
+      "runOnJS",
+      "enabled",
+      "onBegin",
+      "onStart",
+      "onEnd",
+      "onFinalize",
+      "simultaneousWithExternalGesture",
+      "requireExternalGestureToFail",
+      "withTestId",
+    ]
+    for (const method of methods) stub[method] = () => stub
+    return stub
+  }
+  return {
+    ...actual,
+    GestureDetector: ({ children }) => React.createElement(React.Fragment, null, children),
+    Gesture: { ...actual.Gesture, Tap: chainable, Pan: chainable },
+  }
 })
 
 // @shopify/react-native-skia draws through its own native GPU pipeline, which

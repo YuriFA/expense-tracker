@@ -44,7 +44,13 @@ export interface CashflowListSheetProps {
 /** Scroll-driven footer visibility shared by the cashflow sheets. */
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
 
-export function CashflowListSheet({ kind, subtitle, groups, onNewTransaction, ref }: CashflowListSheetProps) {
+export function CashflowListSheet({
+  kind,
+  subtitle,
+  groups,
+  onNewTransaction,
+  ref,
+}: CashflowListSheetProps) {
   const { copy, ids } = CASHFLOW_KIND_VIEWS[kind]
   const { scrollHandler, buttonTranslationY } = useSheetFooterScroll()
 

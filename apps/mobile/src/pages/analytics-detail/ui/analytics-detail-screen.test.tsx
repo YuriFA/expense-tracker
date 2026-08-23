@@ -3,7 +3,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { Category, Transaction } from '@expense-tracker/api'
-import { currentPeriod, periodRangeLabel, shiftPeriod } from '@expense-tracker/dates'
+import {
+  currentPeriod,
+  periodRangeLabel,
+  shiftPeriod,
+  type PeriodCursor,
+} from '@expense-tracker/dates'
 import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
 import { CategoryRepositoryProvider } from '@/entities/category'
@@ -74,12 +79,20 @@ function renderScreen(direction: AnalyticsDirection = 'expense') {
   )
 }
 
+/** The chart center always carries the UPPER-CASED range label (a period
+ *  without data still renders the full layout with zeroed figures). */
+const centerLabel = (cursor: PeriodCursor) => periodRangeLabel(cursor).toUpperCase()
+
+function checkboxChecked(testID: string): boolean {
+  return Boolean(screen.getByTestId(testID).props.accessibilityState?.checked)
+}
+
 describe('AnalyticsDetailScreen', () => {
   it('opens on the current month with the breakdown, totals, and percentages', async () => {
     renderScreen()
 
-    await waitFor(() => expect(screen.getByTestId('analytics-total-row')).toBeTruthy())
-    expect(screen.getByText(periodRangeLabel(currentPeriod('month')))).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('80%')).toBeTruthy())
+    expect(screen.getByText(centerLabel(currentPeriod('month')))).toBeTruthy()
     // 400 000 + 100 000 minor = 5 000 ₽ total (total line + summary row);
     // 80% / 20% shares.
     expect(screen.getAllByText('5 000 ₽')).toHaveLength(2)
@@ -90,17 +103,24 @@ describe('AnalyticsDetailScreen', () => {
     expect(screen.getByText('Все расходы')).toBeTruthy()
     expect(screen.getByTestId('analytics-category-cat-taxi')).toBeTruthy()
     expect(screen.getByTestId('analytics-category-cat-cafe')).toBeTruthy()
+    // All checkboxes start checked.
+    expect(checkboxChecked('analytics-total-check')).toBe(true)
+    expect(checkboxChecked('analytics-category-check-cat-taxi')).toBe(true)
   })
 
   it('switching the period kind resets to the current period of that kind', async () => {
     renderScreen()
     await waitFor(() => expect(screen.getByTestId('analytics-total-row')).toBeTruthy())
 
+    // The fixtures are mid-August, so the current week is empty: same full
+    // layout, zeroed figures (no empty-state card anymore).
     fireEvent.press(screen.getByTestId('analytics-period-week'))
-    expect(screen.getByText(periodRangeLabel(currentPeriod('week')))).toBeTruthy()
+    await waitFor(() => expect(screen.getByText(centerLabel(currentPeriod('week')))).toBeTruthy())
+    expect(screen.getAllByText('0%')).toHaveLength(2)
+    expect(checkboxChecked('analytics-category-check-cat-taxi')).toBe(true)
 
     fireEvent.press(screen.getByTestId('analytics-period-year'))
-    expect(screen.getByText(periodRangeLabel(currentPeriod('year')))).toBeTruthy()
+    await waitFor(() => expect(screen.getByText(centerLabel(currentPeriod('year')))).toBeTruthy())
   })
 
   it('arrows step to the adjacent period and update the range label', async () => {
@@ -108,26 +128,91 @@ describe('AnalyticsDetailScreen', () => {
     await waitFor(() => expect(screen.getByTestId('analytics-total-row')).toBeTruthy())
 
     fireEvent.press(screen.getByTestId('analytics-period-prev'))
-    expect(screen.getByText(periodRangeLabel(shiftPeriod(currentPeriod('month'), -1)))).toBeTruthy()
+    await waitFor(() =>
+      expect(screen.getByText(centerLabel(shiftPeriod(currentPeriod('month'), -1)))).toBeTruthy(),
+    )
 
     fireEvent.press(screen.getByTestId('analytics-period-next'))
     fireEvent.press(screen.getByTestId('analytics-period-next'))
-    expect(screen.getByText(periodRangeLabel(shiftPeriod(currentPeriod('month'), 1)))).toBeTruthy()
+    await waitFor(() =>
+      expect(screen.getByText(centerLabel(shiftPeriod(currentPeriod('month'), 1)))).toBeTruthy(),
+    )
   })
 
-  it('shows the empty state for a future period (navigation is never blocked)', async () => {
+  it('renders the same full layout with zeroed figures for a period without data', async () => {
     renderScreen()
     await waitFor(() => expect(screen.getByTestId('analytics-total-row')).toBeTruthy())
 
     fireEvent.press(screen.getByTestId('analytics-period-next'))
-    await waitFor(() => expect(screen.getByText('Нет расходов за этот период')).toBeTruthy())
-    expect(screen.getByText(periodRangeLabel(shiftPeriod(currentPeriod('month'), 1)))).toBeTruthy()
+    await waitFor(() =>
+      expect(screen.getByText(centerLabel(shiftPeriod(currentPeriod('month'), 1)))).toBeTruthy(),
+    )
+    // Total line and summary row show 0; every direction category is listed
+    // with a 0 amount and 0%.
+    expect(screen.getAllByText('0 ₽').length).toBeGreaterThanOrEqual(4)
+    expect(screen.getAllByText('0%')).toHaveLength(2)
+    expect(screen.getByTestId('analytics-category-cat-taxi')).toBeTruthy()
+    expect(screen.getByTestId('analytics-category-cat-cafe')).toBeTruthy()
   })
 
   it('renders the income copy for the income direction', async () => {
     renderScreen('income')
 
-    await waitFor(() => expect(screen.getByText('Нет доходов за этот период')).toBeTruthy())
-    expect(screen.getByText('Доходы')).toBeTruthy()
+    await waitFor(() => expect(screen.getByTestId('analytics-category-cat-salary')).toBeTruthy())
+    expect(screen.getByText('Все доходы')).toBeTruthy()
+    expect(screen.getAllByText('0 ₽').length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('unchecking a category clears its checkbox; the master follows the remaining state', async () => {
+    renderScreen()
+    await waitFor(() =>
+      expect(screen.getByTestId('analytics-category-check-cat-cafe')).toBeTruthy(),
+    )
+
+    fireEvent.press(screen.getByTestId('analytics-category-check-cat-cafe'))
+    expect(checkboxChecked('analytics-category-check-cat-cafe')).toBe(false)
+    expect(checkboxChecked('analytics-category-check-cat-taxi')).toBe(true)
+    // Some-but-not-all included → master off; row figures keep full-total
+    // semantics (percentages unchanged).
+    expect(checkboxChecked('analytics-total-check')).toBe(false)
+    expect(screen.getByText('20%')).toBeTruthy()
+
+    // Master off (some unchecked) → tapping it includes everything again;
+    // master on → tapping it excludes everything.
+    fireEvent.press(screen.getByTestId('analytics-total-check'))
+    expect(checkboxChecked('analytics-category-check-cat-taxi')).toBe(true)
+    expect(checkboxChecked('analytics-category-check-cat-cafe')).toBe(true)
+    fireEvent.press(screen.getByTestId('analytics-total-check'))
+    expect(checkboxChecked('analytics-category-check-cat-taxi')).toBe(false)
+    expect(checkboxChecked('analytics-category-check-cat-cafe')).toBe(false)
+  })
+
+  it('tapping a category row opens the period-scoped category sheet', async () => {
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId('analytics-category-cat-taxi')).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId('analytics-category-cat-taxi'))
+    await waitFor(() => expect(screen.getByTestId('category-expenses-period')).toBeTruthy())
+    // Opens at the screen's current period (period-mode label, month kind).
+    expect(screen.getByText(periodRangeLabel(currentPeriod('month')))).toBeTruthy()
+  })
+
+  it('resets filtering when the period changes', async () => {
+    renderScreen()
+    await waitFor(() =>
+      expect(screen.getByTestId('analytics-category-check-cat-taxi')).toBeTruthy(),
+    )
+
+    fireEvent.press(screen.getByTestId('analytics-category-check-cat-taxi'))
+    expect(checkboxChecked('analytics-category-check-cat-taxi')).toBe(false)
+
+    // Step away (empty week) and back to the month: filtering reset, the
+    // checkbox renders checked again.
+    fireEvent.press(screen.getByTestId('analytics-period-week'))
+    fireEvent.press(screen.getByTestId('analytics-period-month'))
+    await waitFor(() =>
+      expect(screen.getByTestId('analytics-category-check-cat-taxi')).toBeTruthy(),
+    )
+    expect(checkboxChecked('analytics-category-check-cat-taxi')).toBe(true)
   })
 })
