@@ -21,6 +21,8 @@ type Store interface {
 	DeleteTombstonedTransactionsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedCategoriesBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedAccountsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedDebtOperationsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedDebtorsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 type Job struct {
@@ -65,7 +67,8 @@ func (j *Job) Run(ctx context.Context) error {
 }
 
 // runOnce deletes in FK-safe order: transactions reference categories and
-// accounts, so their tombstoned rows must go first.
+// accounts, and debt operations reference debtors, so the referencing
+// tombstoned rows must go first.
 func (j *Job) runOnce(ctx context.Context) {
 	cutoff := time.Now().UTC().Add(-j.window)
 
@@ -85,5 +88,17 @@ func (j *Job) runOnce(ctx context.Context) {
 		j.log.WarnContext(ctx, "failed to delete tombstoned accounts", logger.Error(err))
 	} else if n > 0 {
 		j.log.InfoContext(ctx, "tombstoned accounts deleted", slog.Int64("count", n))
+	}
+
+	if n, err := j.db.DeleteTombstonedDebtOperationsBefore(ctx, cutoff); err != nil {
+		j.log.WarnContext(ctx, "failed to delete tombstoned debt operations", logger.Error(err))
+	} else if n > 0 {
+		j.log.InfoContext(ctx, "tombstoned debt operations deleted", slog.Int64("count", n))
+	}
+
+	if n, err := j.db.DeleteTombstonedDebtorsBefore(ctx, cutoff); err != nil {
+		j.log.WarnContext(ctx, "failed to delete tombstoned debtors", logger.Error(err))
+	} else if n > 0 {
+		j.log.InfoContext(ctx, "tombstoned debtors deleted", slog.Int64("count", n))
 	}
 }

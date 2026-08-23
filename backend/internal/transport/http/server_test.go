@@ -88,6 +88,8 @@ func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin
 	accountSvc := service.NewAccountService(store)
 	categorySvc := service.NewCategoryService(store)
 	txnSvc := service.NewTransactionService(store, store, store)
+	debtorSvc := service.NewDebtorService(store)
+	debtOpSvc := service.NewDebtOperationService(store, store)
 	sessionSvc := service.NewSessionService(store)
 
 	server := httptransport.NewServer(
@@ -96,6 +98,8 @@ func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin
 		accountSvc,
 		categorySvc,
 		txnSvc,
+		debtorSvc,
+		debtOpSvc,
 		authSvc,
 		sessionSvc,
 		service.NewSyncService(store),

@@ -36,6 +36,32 @@ func (q *Queries) DeleteTombstonedCategoriesBefore(ctx context.Context, deletedA
 	return result.RowsAffected(), nil
 }
 
+const deleteTombstonedDebtOperationsBefore = `-- name: DeleteTombstonedDebtOperationsBefore :execrows
+DELETE FROM debt_operations
+WHERE deleted_at IS NOT NULL AND deleted_at < $1
+`
+
+func (q *Queries) DeleteTombstonedDebtOperationsBefore(ctx context.Context, deletedAt *time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteTombstonedDebtOperationsBefore, deletedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteTombstonedDebtorsBefore = `-- name: DeleteTombstonedDebtorsBefore :execrows
+DELETE FROM debtors
+WHERE deleted_at IS NOT NULL AND deleted_at < $1
+`
+
+func (q *Queries) DeleteTombstonedDebtorsBefore(ctx context.Context, deletedAt *time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteTombstonedDebtorsBefore, deletedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteTombstonedTransactionsBefore = `-- name: DeleteTombstonedTransactionsBefore :execrows
 
 DELETE FROM transactions
@@ -47,7 +73,8 @@ WHERE deleted_at IS NOT NULL AND deleted_at < $1
 // serve tombstones from the log alone, so devices offline during the window
 // still converge to the deleted state. Transactions go first: their FKs
 // reference accounts/categories, so those rows can only go once no
-// tombstoned transaction still points at them.
+// tombstoned transaction still points at them. Debt operations likewise go
+// before debtors (their FK references debtors).
 func (q *Queries) DeleteTombstonedTransactionsBefore(ctx context.Context, deletedAt *time.Time) (int64, error) {
 	result, err := q.db.Exec(ctx, deleteTombstonedTransactionsBefore, deletedAt)
 	if err != nil {

@@ -28,9 +28,13 @@ type Store struct {
 	accounts     map[uuid.UUID]*domain.Account
 	categories   map[uuid.UUID]*domain.Category
 	transactions map[uuid.UUID]*domain.Transaction
+	debtors      map[uuid.UUID]*domain.Debtor
+	debtOps      map[uuid.UUID]*domain.DebtOperation
 
 	// catUnique enforces UNIQUE(user_id, name) among LIVE categories.
 	catUnique map[string]struct{} // "userID|name"
+	// debtorUnique enforces UNIQUE(user_id, name) among LIVE debtors.
+	debtorUnique map[string]struct{} // "userID|name"
 
 	// Sync plumbing: an in-memory change log (monotonic seq) and applied
 	// operations, mirroring the Postgres tables closely enough to exercise
@@ -81,7 +85,10 @@ func New() *Store {
 		accounts:     make(map[uuid.UUID]*domain.Account),
 		categories:   make(map[uuid.UUID]*domain.Category),
 		transactions: make(map[uuid.UUID]*domain.Transaction),
+		debtors:      make(map[uuid.UUID]*domain.Debtor),
+		debtOps:      make(map[uuid.UUID]*domain.DebtOperation),
 		catUnique:    make(map[string]struct{}),
+		debtorUnique: make(map[string]struct{}),
 		appliedOps:   make(map[uuid.UUID]*domain.AppliedOperation),
 		idemKeys:     make(map[string]*domain.IdempotencyKey),
 		verifyCodes:  make(map[uuid.UUID]*verifyCode),
@@ -685,6 +692,215 @@ func uuidLess(a, b uuid.UUID) bool {
 	return false
 }
 
+// --- DebtorRepository -----------------------------------------------------
+
+func debtorUniqueKey(userID uuid.UUID, name string) string { return userID.String() + "|" + name }
+
+func (s *Store) CreateDebtor(_ context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	id := params.ID
+	if id == uuid.Nil {
+		id = uuid.New()
+	}
+	if _, exists := s.debtors[id]; exists {
+		return nil, domain.ErrDebtorAlreadyExists
+	}
+	if _, exists := s.debtorUnique[debtorUniqueKey(params.UserID, params.Name)]; exists {
+		return nil, domain.ErrDebtorAlreadyExists
+	}
+	now := time.Now().UTC()
+	d := &domain.Debtor{
+		ID: id, UserID: params.UserID, Name: params.Name, Note: params.Note,
+		CreatedAt: now, UpdatedAt: now, Version: 1,
+	}
+	s.debtors[d.ID] = d
+	s.debtorUnique[debtorUniqueKey(params.UserID, d.Name)] = struct{}{}
+	s.appendChange(params.UserID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
+	c := *d
+	return &c, nil
+}
+
+func (s *Store) UpdateDebtor(
+	_ context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateDebtorParams,
+) (*domain.Debtor, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, ok := s.debtors[id]
+	if !ok || d.UserID != userID || d.Deleted() {
+		return nil, domain.ErrDebtorNotFound
+	}
+	if d.Version != params.Version {
+		return nil, domain.ErrDebtorVersionConflict
+	}
+	if params.Name != nil {
+		if _, exists := s.debtorUnique[debtorUniqueKey(userID, *params.Name)]; exists && d.Name != *params.Name {
+			return nil, domain.ErrDebtorAlreadyExists
+		}
+		delete(s.debtorUnique, debtorUniqueKey(userID, d.Name))
+		d.Name = *params.Name
+		s.debtorUnique[debtorUniqueKey(userID, d.Name)] = struct{}{}
+	}
+	if params.Note != nil {
+		d.Note = *params.Note
+	}
+	d.UpdatedAt = time.Now().UTC()
+	d.Version++
+	s.appendChange(userID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
+	c := *d
+	return &c, nil
+}
+
+func (s *Store) DeleteDebtor(_ context.Context, userID, id uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, ok := s.debtors[id]
+	if !ok || d.UserID != userID {
+		return domain.ErrDebtorNotFound
+	}
+	// In-use counts LIVE operations only: tombstoned ops never block.
+	for _, o := range s.debtOps {
+		if o.UserID == userID && !o.Deleted() && o.DebtorID == id {
+			return domain.ErrDebtorHasOperations
+		}
+	}
+	delete(s.debtorUnique, debtorUniqueKey(userID, d.Name))
+	delete(s.debtors, id)
+	return nil
+}
+
+func (s *Store) GetDebtor(_ context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, ok := s.debtors[id]
+	if !ok || d.UserID != userID || d.Deleted() {
+		return nil, domain.ErrDebtorNotFound
+	}
+	c := *d
+	return &c, nil
+}
+
+func (s *Store) GetDebtors(_ context.Context, userID uuid.UUID) ([]domain.Debtor, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []domain.Debtor
+	for _, d := range s.debtors {
+		if d.UserID == userID && !d.Deleted() {
+			out = append(out, *d)
+		}
+	}
+	return out, nil
+}
+
+// --- DebtOperationRepository ----------------------------------------------
+
+func (s *Store) CreateDebtOperation(
+	_ context.Context,
+	params domain.CreateDebtOperationParams,
+) (*domain.DebtOperation, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	id := params.ID
+	if id == uuid.Nil {
+		id = uuid.New()
+	}
+	if _, exists := s.debtOps[id]; exists {
+		return nil, domain.ErrDebtOperationAlreadyExists
+	}
+	now := time.Now().UTC()
+	o := &domain.DebtOperation{
+		ID: id, UserID: params.UserID, DebtorID: params.DebtorID,
+		Direction: params.Direction, Kind: params.Kind, Amount: params.Amount,
+		Note: params.Note, OccurredAt: params.OccurredAt,
+		CreatedAt: now, UpdatedAt: now, Version: 1,
+	}
+	s.debtOps[o.ID] = o
+	s.appendChange(params.UserID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
+	c := *o
+	return &c, nil
+}
+
+func (s *Store) UpdateDebtOperation(
+	_ context.Context,
+	userID, id uuid.UUID,
+	params domain.UpdateDebtOperationParams,
+) (*domain.DebtOperation, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	o, ok := s.debtOps[id]
+	if !ok || o.UserID != userID || o.Deleted() {
+		return nil, domain.ErrDebtOperationNotFound
+	}
+	if o.Version != params.Version {
+		return nil, domain.ErrDebtOperationVersionConflict
+	}
+	if params.Amount != nil {
+		o.Amount = *params.Amount
+	}
+	if params.Note != nil {
+		o.Note = *params.Note
+	}
+	if params.OccurredAt != nil {
+		o.OccurredAt = *params.OccurredAt
+	}
+	o.UpdatedAt = time.Now().UTC()
+	o.Version++
+	s.appendChange(userID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
+	c := *o
+	return &c, nil
+}
+
+func (s *Store) DeleteDebtOperation(_ context.Context, userID, id uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	o, ok := s.debtOps[id]
+	if !ok || o.UserID != userID {
+		return domain.ErrDebtOperationNotFound
+	}
+	delete(s.debtOps, id)
+	return nil
+}
+
+func (s *Store) GetDebtOperation(_ context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	o, ok := s.debtOps[id]
+	if !ok || o.UserID != userID || o.Deleted() {
+		return nil, domain.ErrDebtOperationNotFound
+	}
+	c := *o
+	return &c, nil
+}
+
+func (s *Store) GetDebtOperations(
+	_ context.Context,
+	userID uuid.UUID,
+	params domain.GetDebtOperationsParams,
+) ([]domain.DebtOperation, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []domain.DebtOperation
+	for _, o := range s.debtOps {
+		if o.UserID != userID || o.Deleted() {
+			continue
+		}
+		if params.DebtorID != nil && o.DebtorID != *params.DebtorID {
+			continue
+		}
+		out = append(out, *o)
+	}
+	// ORDER BY occurred_at DESC, id DESC
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].OccurredAt.Equal(out[j].OccurredAt) {
+			return out[i].OccurredAt.After(out[j].OccurredAt)
+		}
+		return uuidLess(out[j].ID, out[i].ID)
+	})
+	return out, nil
+}
+
 // --- IdempotencyRepository ------------------------------------------------------
 
 func idemKey(userID uuid.UUID, key string) string { return userID.String() + "|" + key }
@@ -946,6 +1162,14 @@ func (s *Store) currentState(userID uuid.UUID, entity string, id uuid.UUID) any 
 		if t, ok := s.transactions[id]; ok && t.UserID == userID {
 			return t.FullState()
 		}
+	case domain.SyncEntityDebtor:
+		if d, ok := s.debtors[id]; ok && d.UserID == userID {
+			return d.FullState()
+		}
+	case domain.SyncEntityDebtOperation:
+		if o, ok := s.debtOps[id]; ok && o.UserID == userID {
+			return o.FullState()
+		}
 	}
 	return nil
 }
@@ -1001,6 +1225,28 @@ func (t *fakeSyncTx) GetTransactionAny(_ context.Context, userID, id uuid.UUID) 
 	return &c, nil
 }
 
+func (t *fakeSyncTx) GetDebtorAny(_ context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	d, ok := t.store.debtors[id]
+	if !ok || d.UserID != userID {
+		return nil, nil //nolint:nilnil // (nil, nil) = never created
+	}
+	c := *d
+	return &c, nil
+}
+
+func (t *fakeSyncTx) GetDebtOperationAny(_ context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	o, ok := t.store.debtOps[id]
+	if !ok || o.UserID != userID {
+		return nil, nil //nolint:nilnil // (nil, nil) = never created
+	}
+	c := *o
+	return &c, nil
+}
+
 func (t *fakeSyncTx) LiveAccountExists(_ context.Context, userID, id uuid.UUID) (bool, error) {
 	a, _ := t.GetAccountAny(context.Background(), userID, id)
 	return a != nil && !a.Deleted(), nil
@@ -1051,6 +1297,38 @@ func (t *fakeSyncTx) HasLiveTransactionsForCategory(_ context.Context, userID, c
 	defer t.store.mu.Unlock()
 	for _, tx := range t.store.transactions {
 		if !tx.Deleted() && tx.UserID == userID && tx.CategoryID != nil && *tx.CategoryID == categoryID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (t *fakeSyncTx) LiveDebtorExists(_ context.Context, userID, id uuid.UUID) (bool, error) {
+	d, _ := t.GetDebtorAny(context.Background(), userID, id)
+	return d != nil && !d.Deleted(), nil
+}
+
+func (t *fakeSyncTx) DebtorNameTaken(
+	_ context.Context,
+	userID uuid.UUID,
+	name string,
+	exceptID uuid.UUID,
+) (bool, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	for _, d := range t.store.debtors {
+		if d.UserID == userID && !d.Deleted() && d.Name == name && d.ID != exceptID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (t *fakeSyncTx) HasLiveDebtOperationsForDebtor(_ context.Context, userID, debtorID uuid.UUID) (bool, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	for _, o := range t.store.debtOps {
+		if !o.Deleted() && o.UserID == userID && o.DebtorID == debtorID {
 			return true, nil
 		}
 	}
@@ -1220,5 +1498,115 @@ func (t *fakeSyncTx) TombstoneTransaction(_ context.Context, userID, id uuid.UUI
 	tx.Version++
 	t.store.appendChange(userID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeTombstone, tx.Version)
 	c := *tx
+	return &c, nil
+}
+
+func (t *fakeSyncTx) CreateDebtor(_ context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error) {
+	return t.store.CreateDebtor(context.Background(), params)
+}
+
+func (t *fakeSyncTx) ReplaceDebtor(
+	_ context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.DebtorFullState,
+) (*domain.Debtor, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	d, ok := t.store.debtors[id]
+	if !ok || d.UserID != userID {
+		return nil, domain.ErrDebtorNotFound
+	}
+	if d.Deleted() {
+		return nil, domain.ErrRecordDeleted
+	}
+	if d.Version != baseVersion {
+		return nil, domain.ErrDebtorVersionConflict
+	}
+	delete(t.store.debtorUnique, debtorUniqueKey(userID, d.Name))
+	d.Name = st.Name
+	d.Note = st.Note
+	d.UpdatedAt = time.Now().UTC()
+	d.Version++
+	t.store.debtorUnique[debtorUniqueKey(userID, d.Name)] = struct{}{}
+	t.store.appendChange(userID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
+	c := *d
+	return &c, nil
+}
+
+func (t *fakeSyncTx) TombstoneDebtor(_ context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	d, ok := t.store.debtors[id]
+	if !ok || d.UserID != userID {
+		return nil, domain.ErrDebtorNotFound
+	}
+	if d.Deleted() {
+		c := *d
+		return &c, nil // idempotent
+	}
+	delete(t.store.debtorUnique, debtorUniqueKey(userID, d.Name))
+	now := time.Now().UTC()
+	d.DeletedAt = &now
+	d.Version++
+	t.store.appendChange(userID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeTombstone, d.Version)
+	c := *d
+	return &c, nil
+}
+
+func (t *fakeSyncTx) CreateDebtOperation(
+	_ context.Context,
+	params domain.CreateDebtOperationParams,
+) (*domain.DebtOperation, error) {
+	return t.store.CreateDebtOperation(context.Background(), params)
+}
+
+func (t *fakeSyncTx) ReplaceDebtOperation(
+	_ context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.DebtOperationFullState,
+) (*domain.DebtOperation, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	o, ok := t.store.debtOps[id]
+	if !ok || o.UserID != userID {
+		return nil, domain.ErrDebtOperationNotFound
+	}
+	if o.Deleted() {
+		return nil, domain.ErrRecordDeleted
+	}
+	if o.Version != baseVersion {
+		return nil, domain.ErrDebtOperationVersionConflict
+	}
+	o.DebtorID = st.DebtorID
+	o.Direction = st.Direction
+	o.Kind = st.Kind
+	o.Amount = st.Amount
+	o.Note = st.Note
+	o.OccurredAt = st.OccurredAt
+	o.Version++
+	o.UpdatedAt = time.Now().UTC()
+	t.store.appendChange(userID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
+	c := *o
+	return &c, nil
+}
+
+func (t *fakeSyncTx) TombstoneDebtOperation(_ context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error) {
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	o, ok := t.store.debtOps[id]
+	if !ok || o.UserID != userID {
+		return nil, domain.ErrDebtOperationNotFound
+	}
+	if o.Deleted() {
+		c := *o
+		return &c, nil // idempotent
+	}
+	now := time.Now().UTC()
+	o.DeletedAt = &now
+	o.Version++
+	t.store.appendChange(userID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeTombstone, o.Version)
+	c := *o
 	return &c, nil
 }

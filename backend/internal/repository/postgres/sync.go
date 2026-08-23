@@ -147,6 +147,39 @@ func (t *syncTx) GetTransactionAny(ctx context.Context, userID, id uuid.UUID) (*
 	), nil
 }
 
+func (t *syncTx) GetDebtorAny(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+	const op = "repository.postgres.syncTx.GetDebtorAny"
+
+	row, err := t.q.GetDebtorAny(ctx, db.GetDebtorAnyParams{ID: id, UserID: userID})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil //nolint:nilnil // (nil, nil) is the documented "never created" signal
+		}
+		return nil, opWrap(op, err)
+	}
+	d := debtorFromFields(row.ID, row.UserID, row.Name, row.Note, row.CreatedAt, row.UpdatedAt, int(row.Version))
+	d.DeletedAt = row.DeletedAt
+	return d, nil
+}
+
+func (t *syncTx) GetDebtOperationAny(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error) {
+	const op = "repository.postgres.syncTx.GetDebtOperationAny"
+
+	row, err := t.q.GetDebtOperationAny(ctx, db.GetDebtOperationAnyParams{ID: id, UserID: userID})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil //nolint:nilnil // (nil, nil) is the documented "never created" signal
+		}
+		return nil, opWrap(op, err)
+	}
+	op2 := debtOperationFromFields(
+		row.ID, row.UserID, row.DebtorID, row.Direction, row.Kind,
+		row.Amount, row.Note, row.OccurredAt, row.CreatedAt, row.UpdatedAt, int(row.Version),
+	)
+	op2.DeletedAt = row.DeletedAt
+	return op2, nil
+}
+
 // --- live reads ----------------------------------------------------------------
 
 func (t *syncTx) LiveAccountExists(ctx context.Context, userID, id uuid.UUID) (bool, error) {
@@ -210,6 +243,48 @@ func (t *syncTx) HasLiveTransactionsForCategory(ctx context.Context, userID, cat
 	inUse, err := t.q.HasLiveTransactionsForCategory(ctx, db.HasLiveTransactionsForCategoryParams{
 		UserID:     userID,
 		CategoryID: &categoryID,
+	})
+	if err != nil {
+		return false, opWrap(op, err)
+	}
+	return inUse, nil
+}
+
+func (t *syncTx) LiveDebtorExists(ctx context.Context, userID, id uuid.UUID) (bool, error) {
+	const op = "repository.postgres.syncTx.LiveDebtorExists"
+
+	d, err := t.GetDebtorAny(ctx, userID, id)
+	if err != nil {
+		return false, opWrap(op, err)
+	}
+	return d != nil && !d.Deleted(), nil
+}
+
+func (t *syncTx) DebtorNameTaken(
+	ctx context.Context,
+	userID uuid.UUID,
+	name string,
+	exceptID uuid.UUID,
+) (bool, error) {
+	const op = "repository.postgres.syncTx.DebtorNameTaken"
+
+	taken, err := t.q.DebtorNameTaken(ctx, db.DebtorNameTakenParams{
+		UserID:   userID,
+		Name:     name,
+		ExceptID: exceptID,
+	})
+	if err != nil {
+		return false, opWrap(op, err)
+	}
+	return taken, nil
+}
+
+func (t *syncTx) HasLiveDebtOperationsForDebtor(ctx context.Context, userID, debtorID uuid.UUID) (bool, error) {
+	const op = "repository.postgres.syncTx.HasLiveDebtOperationsForDebtor"
+
+	inUse, err := t.q.HasLiveDebtOperationsForDebtor(ctx, db.HasLiveDebtOperationsForDebtorParams{
+		UserID:   userID,
+		DebtorID: debtorID,
 	})
 	if err != nil {
 		return false, opWrap(op, err)
@@ -421,6 +496,207 @@ func (t *syncTx) TombstoneCategory( //nolint:dupl // account/category/transactio
 	return c, nil
 }
 
+func (t *syncTx) CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error) {
+	const op = "repository.postgres.syncTx.CreateDebtor"
+
+	row, err := t.q.CreateDebtor(ctx, db.CreateDebtorParams{
+		ID:     newEntityID(params.ID),
+		UserID: params.UserID,
+		Name:   params.Name,
+		Note:   params.Note,
+	})
+	if err != nil {
+		if pgUniqueViolation(err) {
+			return nil, domain.ErrDebtorAlreadyExists
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, params.UserID, row.ID, domain.SyncEntityDebtor, domain.SyncChangeUpsert, int(row.Version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return debtorFromFields(
+		row.ID, row.UserID, row.Name, row.Note, row.CreatedAt, row.UpdatedAt, int(row.Version),
+	), nil
+}
+
+func (t *syncTx) ReplaceDebtor(
+	ctx context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.DebtorFullState,
+) (*domain.Debtor, error) {
+	const op = "repository.postgres.syncTx.ReplaceDebtor"
+
+	row, err := t.q.SyncReplaceDebtor(ctx, db.SyncReplaceDebtorParams{
+		ID:          id,
+		UserID:      userID,
+		Name:        st.Name,
+		Note:        st.Note,
+		BaseVersion: int32(baseVersion), //nolint:gosec // server versions are small positive ints
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, t.classifySyncWrite(
+				ctx,
+				userID,
+				id,
+				domain.SyncEntityDebtor,
+				domain.ErrDebtorNotFound,
+				domain.ErrDebtorVersionConflict,
+			)
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, userID, row.ID, domain.SyncEntityDebtor, domain.SyncChangeUpsert, int(row.Version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return debtorFromFields(
+		row.ID, row.UserID, row.Name, row.Note, row.CreatedAt, row.UpdatedAt, int(row.Version),
+	), nil
+}
+
+func (t *syncTx) TombstoneDebtor( //nolint:dupl // per-entity tombstone twins: identical protocol shape
+	ctx context.Context,
+	userID, id uuid.UUID,
+) (*domain.Debtor, error) {
+	const op = "repository.postgres.syncTx.TombstoneDebtor"
+
+	version, err := t.q.SoftDeleteDebtor(ctx, db.SoftDeleteDebtorParams{ID: id, UserID: userID})
+	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
+		if errors.Is(err, pgx.ErrNoRows) {
+			current, err := t.GetDebtorAny(ctx, userID, id)
+			if err != nil {
+				return nil, opWrap(op, err)
+			}
+			if current == nil {
+				return nil, domain.ErrDebtorNotFound
+			}
+			return current, nil // already tombstoned: idempotent delete
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, userID, id, domain.SyncEntityDebtor, domain.SyncChangeTombstone, int(version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	d := &domain.Debtor{ID: id, UserID: userID, Version: int(version)}
+	now := time.Now().UTC()
+	d.DeletedAt = &now
+	return d, nil
+}
+
+func (t *syncTx) CreateDebtOperation(
+	ctx context.Context,
+	params domain.CreateDebtOperationParams,
+) (*domain.DebtOperation, error) {
+	const op = "repository.postgres.syncTx.CreateDebtOperation"
+
+	row, err := t.q.CreateDebtOperation(ctx, db.CreateDebtOperationParams{
+		ID:         newEntityID(params.ID),
+		UserID:     params.UserID,
+		DebtorID:   params.DebtorID,
+		Direction:  string(params.Direction),
+		Kind:       string(params.Kind),
+		Amount:     params.Amount,
+		Note:       params.Note,
+		OccurredAt: params.OccurredAt,
+	})
+	if err != nil {
+		if pgUniqueViolation(err) {
+			return nil, domain.ErrDebtOperationAlreadyExists
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, params.UserID, row.ID, domain.SyncEntityDebtOperation, domain.SyncChangeUpsert, int(row.Version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return debtOperationFromFields(
+		row.ID, row.UserID, row.DebtorID, row.Direction, row.Kind,
+		row.Amount, row.Note, row.OccurredAt, row.CreatedAt, row.UpdatedAt, int(row.Version),
+	), nil
+}
+
+func (t *syncTx) ReplaceDebtOperation(
+	ctx context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.DebtOperationFullState,
+) (*domain.DebtOperation, error) {
+	const op = "repository.postgres.syncTx.ReplaceDebtOperation"
+
+	row, err := t.q.SyncReplaceDebtOperation(ctx, db.SyncReplaceDebtOperationParams{
+		ID:          id,
+		UserID:      userID,
+		DebtorID:    st.DebtorID,
+		Direction:   string(st.Direction),
+		Kind:        string(st.Kind),
+		Amount:      st.Amount,
+		Note:        st.Note,
+		OccurredAt:  st.OccurredAt,
+		BaseVersion: int32(baseVersion), //nolint:gosec // server versions are small positive ints
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, t.classifySyncWrite(
+				ctx,
+				userID,
+				id,
+				domain.SyncEntityDebtOperation,
+				domain.ErrDebtOperationNotFound,
+				domain.ErrDebtOperationVersionConflict,
+			)
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, userID, row.ID, domain.SyncEntityDebtOperation, domain.SyncChangeUpsert, int(row.Version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return debtOperationFromFields(
+		row.ID, row.UserID, row.DebtorID, row.Direction, row.Kind,
+		row.Amount, row.Note, row.OccurredAt, row.CreatedAt, row.UpdatedAt, int(row.Version),
+	), nil
+}
+
+func (t *syncTx) TombstoneDebtOperation( //nolint:dupl // per-entity tombstone twins: identical protocol shape
+	ctx context.Context,
+	userID, id uuid.UUID,
+) (*domain.DebtOperation, error) {
+	const op = "repository.postgres.syncTx.TombstoneDebtOperation"
+
+	version, err := t.q.SoftDeleteDebtOperation(ctx, db.SoftDeleteDebtOperationParams{ID: id, UserID: userID})
+	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
+		if errors.Is(err, pgx.ErrNoRows) {
+			current, err := t.GetDebtOperationAny(ctx, userID, id)
+			if err != nil {
+				return nil, opWrap(op, err)
+			}
+			if current == nil {
+				return nil, domain.ErrDebtOperationNotFound
+			}
+			return current, nil // already tombstoned: idempotent delete
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, userID, id, domain.SyncEntityDebtOperation, domain.SyncChangeTombstone, int(version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	o := &domain.DebtOperation{ID: id, UserID: userID, Version: int(version)}
+	now := time.Now().UTC()
+	o.DeletedAt = &now
+	return o, nil
+}
+
 func (t *syncTx) CreateTransaction(
 	ctx context.Context,
 	params domain.CreateTransactionParams,
@@ -568,6 +844,22 @@ func (t *syncTx) classifySyncWrite(
 		if row.DeletedAt != nil {
 			return domain.ErrRecordDeleted
 		}
+	case domain.SyncEntityDebtor:
+		row, err := t.q.GetDebtorAny(ctx, db.GetDebtorAnyParams{ID: id, UserID: userID})
+		if err != nil {
+			return notFound
+		}
+		if row.DeletedAt != nil {
+			return domain.ErrRecordDeleted
+		}
+	case domain.SyncEntityDebtOperation:
+		row, err := t.q.GetDebtOperationAny(ctx, db.GetDebtOperationAnyParams{ID: id, UserID: userID})
+		if err != nil {
+			return notFound
+		}
+		if row.DeletedAt != nil {
+			return domain.ErrRecordDeleted
+		}
 	}
 	return versionConflict
 }
@@ -599,6 +891,10 @@ func (r *Repository) PullChanges(
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
+	debtorsByID, debtOperationsByID, err := r.fetchDebtPullStates(ctx, userID, rows)
+	if err != nil {
+		return nil, opWrap(op, err)
+	}
 
 	changes := make([]domain.SyncChange, 0, len(rows))
 	for _, row := range rows {
@@ -610,7 +906,10 @@ func (r *Repository) PullChanges(
 			Version: int(row.Version),
 		}
 		if row.Action == domain.SyncChangeUpsert {
-			change.Data = pullStateOf(row.Entity, row.EntityID, accountsByID, categoriesByID, transactionsByID)
+			change.Data = pullStateOf(
+				row.Entity, row.EntityID,
+				accountsByID, categoriesByID, transactionsByID, debtorsByID, debtOperationsByID,
+			)
 		}
 		changes = append(changes, change)
 	}
@@ -623,7 +922,12 @@ func (r *Repository) fetchPullStates(
 	ctx context.Context,
 	userID uuid.UUID,
 	rows []db.PullChangeLogRow,
-) (map[uuid.UUID]db.SyncAccountsByIDsRow, map[uuid.UUID]db.SyncCategoriesByIDsRow, map[uuid.UUID]db.Transaction, error) {
+) (
+	map[uuid.UUID]db.SyncAccountsByIDsRow,
+	map[uuid.UUID]db.SyncCategoriesByIDsRow,
+	map[uuid.UUID]db.Transaction,
+	error,
+) {
 	accIDs := make([]uuid.UUID, 0)
 	catIDs := make([]uuid.UUID, 0)
 	txnIDs := make([]uuid.UUID, 0)
@@ -674,6 +978,55 @@ func (r *Repository) fetchPullStates(
 	return accountsByID, categoriesByID, transactionsByID, nil
 }
 
+// fetchDebtPullStates batch-loads the current state of the debt records named
+// by an upsert row of the page, keyed by id (the debt half of fetchPullStates,
+// split out to keep both under the funlen budget).
+func (r *Repository) fetchDebtPullStates(
+	ctx context.Context,
+	userID uuid.UUID,
+	rows []db.PullChangeLogRow,
+) (
+	map[uuid.UUID]db.SyncDebtorsByIDsRow,
+	map[uuid.UUID]db.SyncDebtOperationsByIDsRow,
+	error,
+) {
+	debtorIDs := make([]uuid.UUID, 0)
+	debtOpIDs := make([]uuid.UUID, 0)
+	for _, row := range rows {
+		if row.Action != domain.SyncChangeUpsert {
+			continue
+		}
+		switch row.Entity {
+		case domain.SyncEntityDebtor:
+			debtorIDs = append(debtorIDs, row.EntityID)
+		case domain.SyncEntityDebtOperation:
+			debtOpIDs = append(debtOpIDs, row.EntityID)
+		}
+	}
+
+	debtorsByID := make(map[uuid.UUID]db.SyncDebtorsByIDsRow, len(debtorIDs))
+	if len(debtorIDs) > 0 {
+		items, err := r.q.SyncDebtorsByIDs(ctx, db.SyncDebtorsByIDsParams{UserID: userID, Ids: debtorIDs})
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, d := range items {
+			debtorsByID[d.ID] = d
+		}
+	}
+	debtOperationsByID := make(map[uuid.UUID]db.SyncDebtOperationsByIDsRow, len(debtOpIDs))
+	if len(debtOpIDs) > 0 {
+		items, err := r.q.SyncDebtOperationsByIDs(ctx, db.SyncDebtOperationsByIDsParams{UserID: userID, Ids: debtOpIDs})
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, o := range items {
+			debtOperationsByID[o.ID] = o
+		}
+	}
+	return debtorsByID, debtOperationsByID, nil
+}
+
 // pullStateOf maps a change row to the full state payload of its record (nil
 // when the record no longer exists). A record superseded later in the window
 // may carry newer data than its change-time version; applying the stream in
@@ -684,6 +1037,8 @@ func pullStateOf(
 	accountsByID map[uuid.UUID]db.SyncAccountsByIDsRow,
 	categoriesByID map[uuid.UUID]db.SyncCategoriesByIDsRow,
 	transactionsByID map[uuid.UUID]db.Transaction,
+	debtorsByID map[uuid.UUID]db.SyncDebtorsByIDsRow,
+	debtOperationsByID map[uuid.UUID]db.SyncDebtOperationsByIDsRow,
 ) any {
 	switch entity {
 	case domain.SyncEntityAccount:
@@ -715,6 +1070,24 @@ func pullStateOf(
 				CategoryID:    t.CategoryID,
 				FromAccountID: t.FromAccountID,
 				ToAccountID:   t.ToAccountID,
+			}
+		}
+	case domain.SyncEntityDebtor:
+		if d, ok := debtorsByID[id]; ok {
+			return &domain.DebtorFullState{
+				Name: d.Name,
+				Note: d.Note,
+			}
+		}
+	case domain.SyncEntityDebtOperation:
+		if o, ok := debtOperationsByID[id]; ok {
+			return &domain.DebtOperationFullState{
+				DebtorID:   o.DebtorID,
+				Direction:  domain.DebtDirection(o.Direction),
+				Kind:       domain.DebtOperationKind(o.Kind),
+				Amount:     o.Amount,
+				Note:       o.Note,
+				OccurredAt: o.OccurredAt,
 			}
 		}
 	}

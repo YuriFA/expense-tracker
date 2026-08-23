@@ -26,6 +26,8 @@ type Server struct {
 	accounts   *service.AccountService
 	categories *service.CategoryService
 	txn        *service.TransactionService
+	debtors    *service.DebtorService
+	debtOps    *service.DebtOperationService
 	auth       *service.AuthService
 	sessions   *service.SessionService
 	sync       *service.SyncService
@@ -37,6 +39,8 @@ func NewServer(
 	accounts *service.AccountService,
 	categories *service.CategoryService,
 	txn *service.TransactionService,
+	debtors *service.DebtorService,
+	debtOps *service.DebtOperationService,
 	auth *service.AuthService,
 	sessions *service.SessionService,
 	sync *service.SyncService,
@@ -45,6 +49,7 @@ func NewServer(
 		cfg:      cfg,
 		log:      logger.WithComponent(log, "http"),
 		accounts: accounts, categories: categories, txn: txn,
+		debtors: debtors, debtOps: debtOps,
 		auth: auth, sessions: sessions, sync: sync,
 	}
 }

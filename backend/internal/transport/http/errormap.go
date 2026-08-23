@@ -70,6 +70,12 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeTransactionNotFound,
 		"transaction not found",
 	},
+	domain.ErrDebtorNotFound: {http.StatusNotFound, httperr.ErrCodeDebtorNotFound, "debtor not found"},
+	domain.ErrDebtOperationNotFound: {
+		http.StatusNotFound,
+		httperr.ErrCodeDebtOperationNotFound,
+		"debt operation not found",
+	},
 
 	// --- conflict (409) ---
 	domain.ErrUserAlreadyExists: {
@@ -92,6 +98,16 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeTransactionAlreadyExists,
 		"transaction already exists",
 	},
+	domain.ErrDebtorAlreadyExists: {
+		http.StatusConflict,
+		httperr.ErrCodeDebtorAlreadyExists,
+		"debtor already exists",
+	},
+	domain.ErrDebtOperationAlreadyExists: {
+		http.StatusConflict,
+		httperr.ErrCodeDebtOperationAlreadyExists,
+		"debt operation already exists",
+	},
 	domain.ErrAccountVersionConflict: {
 		http.StatusConflict,
 		httperr.ErrCodeAccountVersionConflict,
@@ -107,6 +123,16 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeTransactionVersionConflict,
 		"transaction was modified by another request, please refetch and retry",
 	},
+	domain.ErrDebtorVersionConflict: {
+		http.StatusConflict,
+		httperr.ErrCodeDebtorVersionConflict,
+		"debtor was modified by another request, please refetch and retry",
+	},
+	domain.ErrDebtOperationVersionConflict: {
+		http.StatusConflict,
+		httperr.ErrCodeDebtOperationVersionConflict,
+		"debt operation was modified by another request, please refetch and retry",
+	},
 	domain.ErrAccountHasTransactions: {
 		http.StatusConflict,
 		httperr.ErrCodeAccountInUse,
@@ -116,6 +142,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		http.StatusConflict,
 		httperr.ErrCodeCategoryInUse,
 		"category has transactions and cannot be deleted",
+	},
+	domain.ErrDebtorHasOperations: {
+		http.StatusConflict,
+		httperr.ErrCodeDebtorInUse,
+		"debtor has debt operations and cannot be deleted",
 	},
 	domain.ErrEmailAlreadyVerified: {
 		http.StatusConflict,
@@ -182,6 +213,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		http.StatusUnprocessableEntity,
 		httperr.ErrCodeSameAccountTransfer,
 		"transaction from and to accounts are the same",
+	},
+	domain.ErrDebtOperationDebtorNotFound: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeDebtOperationDebtorNotFound,
+		"debtor not found",
 	},
 	domain.ErrInvalidRefs: {
 		http.StatusUnprocessableEntity,

@@ -34,3 +34,23 @@ func (r *Repository) DeleteTombstonedAccountsBefore(ctx context.Context, cutoff 
 	}
 	return n, nil
 }
+
+func (r *Repository) DeleteTombstonedDebtOperationsBefore(ctx context.Context, cutoff time.Time) (int64, error) {
+	const op = "repository.postgres.DeleteTombstonedDebtOperationsBefore"
+
+	n, err := r.q.DeleteTombstonedDebtOperationsBefore(ctx, &cutoff)
+	if err != nil {
+		return 0, opWrap(op, err)
+	}
+	return n, nil
+}
+
+func (r *Repository) DeleteTombstonedDebtorsBefore(ctx context.Context, cutoff time.Time) (int64, error) {
+	const op = "repository.postgres.DeleteTombstonedDebtorsBefore"
+
+	n, err := r.q.DeleteTombstonedDebtorsBefore(ctx, &cutoff)
+	if err != nil {
+		return 0, opWrap(op, err)
+	}
+	return n, nil
+}

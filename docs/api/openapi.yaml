@@ -960,6 +960,265 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/debtors:
+    get:
+      tags: [Debtors]
+      operationId: listDebtors
+      summary: Список должников
+      description: Все не удалённые (не tombstoned) должники текущего user.
+      responses:
+        "200":
+          description: Должники текущего user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Debtor"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Debtors]
+      operationId: createDebtor
+      summary: Создать должника
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtorCreateRequest"
+      responses:
+        "201":
+          description: Должник создан.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debtor"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/DebtorAlreadyExists"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/debtors/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DebtorId"
+    get:
+      tags: [Debtors]
+      operationId: getDebtor
+      summary: Получить должника по ID
+      responses:
+        "200":
+          description: Должник.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debtor"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/DebtorNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Debtors]
+      operationId: updateDebtor
+      summary: Обновить должника (name, note)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtorUpdateRequest"
+      responses:
+        "200":
+          description: Обновлённый должник.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debtor"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/DebtorNotFound"
+        "409":
+          description: |
+            Либо имя уже занято (`DEBTOR_ALREADY_EXISTS`), либо конфликт
+            версии (`DEBTOR_VERSION_CONFLICT`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                alreadyExists:
+                  value:
+                    code: DEBTOR_ALREADY_EXISTS
+                    message: debtor already exists
+                versionConflict:
+                  value:
+                    code: DEBTOR_VERSION_CONFLICT
+                    message: debtor version conflict
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Debtors]
+      operationId: deleteDebtor
+      summary: Удалить должника
+      description: |
+        409 если есть не удалённые (live) debt operations — tombstoned
+        операции удаление не блокируют. Удаление мягкое (tombstone): должник
+        исчезает из листингов, но сохраняется для синхронизации устройств.
+      responses:
+        "204":
+          description: Удалено.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/DebtorNotFound"
+        "409":
+          $ref: "#/components/responses/DebtorInUse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/debt-operations:
+    get:
+      tags: [Debt Operations]
+      operationId: listDebtOperations
+      summary: Список долговых операций
+      description: Все не удалённые (не tombstoned) операции текущего user.
+      parameters:
+        - name: debtorId
+          in: query
+          description: Фильтр по должнику.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Операции текущего user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DebtOperation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Debt Operations]
+      operationId: createDebtOperation
+      summary: Создать долговую операцию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtOperationCreateRequest"
+      responses:
+        "201":
+          description: Операция создана.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebtOperation"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/DebtOperationAlreadyExists"
+        "422":
+          description: Бизнес-правило нарушено — должник не найден.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                debtorNotFound:
+                  value:
+                    code: DEBT_OPERATION_DEBTOR_NOT_FOUND
+                    message: debtor not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/debt-operations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DebtOperationId"
+    get:
+      tags: [Debt Operations]
+      operationId: getDebtOperation
+      summary: Получить долговую операцию по ID
+      responses:
+        "200":
+          description: Операция.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebtOperation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/DebtOperationNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Debt Operations]
+      operationId: updateDebtOperation
+      summary: Частично обновить долговую операцию
+      description: |
+        Все поля кроме `version` optional. `debtorId`, `direction` и `kind`
+        менять нельзя. Балансы нигде не хранятся — производные суммы
+        пересчитываются из истории операций.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtOperationUpdateRequest"
+      responses:
+        "200":
+          description: Обновлённая операция.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebtOperation"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/DebtOperationNotFound"
+        "409":
+          $ref: "#/components/responses/DebtOperationVersionConflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Debt Operations]
+      operationId: deleteDebtOperation
+      summary: Удалить долговую операцию
+      description: |
+        Удаление мягкое (tombstone): операция исчезает из листингов и
+        перестаёт влиять на производные балансы, но сохраняется для
+        синхронизации устройств.
+      responses:
+        "204":
+          description: Удалено.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/DebtOperationNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/sync/push:
     post:
       tags: [Sync]
@@ -1107,6 +1366,20 @@ components:
       schema:
         type: string
         format: uuid
+    DebtorId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DebtOperationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   responses:
     Unauthorized:
@@ -1217,6 +1490,60 @@ components:
           example:
             code: ACCOUNT_VERSION_CONFLICT
             message: account version conflict
+    DebtorNotFound:
+      description: Должник не найден (или чужой).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: DEBTOR_NOT_FOUND
+            message: debtor not found
+    DebtorAlreadyExists:
+      description: Должник с таким name (или id) уже есть у user.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: DEBTOR_ALREADY_EXISTS
+            message: debtor already exists
+    DebtorInUse:
+      description: У должника есть не удалённые debt operations, удаление невозможно.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: DEBTOR_IN_USE
+            message: debtor has debt operations and cannot be deleted
+    DebtOperationNotFound:
+      description: Долговая операция не найдена (или чужая).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: DEBT_OPERATION_NOT_FOUND
+            message: debt operation not found
+    DebtOperationAlreadyExists:
+      description: Операция с таким id уже есть у user (клиентский id-дубликат).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: DEBT_OPERATION_ALREADY_EXISTS
+            message: debt operation already exists
+    DebtOperationVersionConflict:
+      description: Конфликт в версии операции (optimistic concurrency).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: DEBT_OPERATION_VERSION_CONFLICT
+            message: debt operation version conflict
 
   schemas:
     User:
@@ -1584,6 +1911,181 @@ components:
           minLength: 1
       required: [version]
 
+    Debtor:
+      type: object
+      description: |
+        Человек, с которым user отслеживает долги. Балансы не хранятся:
+        они производны от debt operations (по направлениям, без неттинга).
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int
+          description: Версия должника (optimistic concurrency).
+      required: [id, userId, name, note, createdAt, updatedAt, version]
+
+    DebtorCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Опциональный клиентский id (UUID v4). Дубликат для user →
+            409 `DEBTOR_ALREADY_EXISTS`.
+        name:
+          type: string
+          minLength: 1
+        note:
+          type: string
+          default: ""
+
+    DebtorUpdateRequest:
+      type: object
+      description: |
+        Все поля кроме `version` optional. `version` — optimistic concurrency:
+        при параллельном изменении → 409 `DEBTOR_VERSION_CONFLICT`.
+        `note`: отсутствует = не менять, `""` = очистить; `null` невалиден.
+      properties:
+        version:
+          type: integer
+          format: int
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+        note:
+          type: string
+      required: [version]
+
+    DebtOperation:
+      type: object
+      description: |
+        Запись долгового леджера. `direction` = receivable («мне должны»)
+        или payable («я должен»); kind = debt (долг растёт) или repayment
+        (списание — долг уменьшается). Баланс должника в направлении =
+        Σ(debt) − Σ(repayment) по live-операциям; направления независимы
+        (без неттинга) и баланс может стать отрицательным при переплате.
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        debtorId:
+          type: string
+          format: uuid
+        direction:
+          type: string
+          enum: [receivable, payable]
+        kind:
+          type: string
+          enum: [debt, repayment]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Положительные минорные единицы (divisor 100).
+        note:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int
+          description: Версия операции (optimistic concurrency).
+      required:
+        [
+          id,
+          userId,
+          debtorId,
+          direction,
+          kind,
+          amount,
+          note,
+          occurredAt,
+          createdAt,
+          updatedAt,
+          version,
+        ]
+
+    DebtOperationCreateRequest:
+      type: object
+      required: [debtorId, direction, kind, amount, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Опциональный клиентский id (UUID v4). Дубликат для user →
+            409 `DEBT_OPERATION_ALREADY_EXISTS`.
+        debtorId:
+          type: string
+          format: uuid
+          description: Существующий live-должник того же user.
+        direction:
+          type: string
+          enum: [receivable, payable]
+        kind:
+          type: string
+          enum: [debt, repayment]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        note:
+          type: string
+          default: ""
+        occurredAt:
+          type: string
+          format: date-time
+
+    DebtOperationUpdateRequest:
+      type: object
+      description: |
+        Все поля кроме `version` optional. `debtorId`, `direction` и `kind`
+        менять нельзя. `note`: отсутствует = не менять, `""` = очистить;
+        `null` невалиден.
+      properties:
+        version:
+          type: integer
+          format: int
+          minimum: 1
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        note:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+      required: [version]
+
     AccountSyncData:
       type: object
       description: Полное состояние счёта в sync-операции (upsert).
@@ -1653,9 +2155,43 @@ components:
           format: uuid
           nullable: true
 
+    DebtorSyncData:
+      type: object
+      description: Полное состояние должника в sync-операции (upsert).
+      required: [name, note]
+      properties:
+        name:
+          type: string
+        note:
+          type: string
+
+    DebtOperationSyncData:
+      type: object
+      description: Полное состояние долговой операции в sync-операции (upsert).
+      required: [debtorId, direction, kind, amount, note, occurredAt]
+      properties:
+        debtorId:
+          type: string
+          format: uuid
+        direction:
+          type: string
+          enum: [receivable, payable]
+        kind:
+          type: string
+          enum: [debt, repayment]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        note:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+
     SyncEntity:
       type: string
-      enum: [account, category, transaction]
+      enum: [account, category, transaction, debtor, debt_operation]
 
     SyncOperation:
       type: object
@@ -1688,6 +2224,8 @@ components:
             - $ref: "#/components/schemas/AccountSyncData"
             - $ref: "#/components/schemas/CategorySyncData"
             - $ref: "#/components/schemas/TransactionSyncData"
+            - $ref: "#/components/schemas/DebtorSyncData"
+            - $ref: "#/components/schemas/DebtOperationSyncData"
           description: Полное состояние записи; обязательно для upsert.
 
     SyncPushRequest:
@@ -1717,6 +2255,8 @@ components:
             - $ref: "#/components/schemas/AccountSyncData"
             - $ref: "#/components/schemas/CategorySyncData"
             - $ref: "#/components/schemas/TransactionSyncData"
+            - $ref: "#/components/schemas/DebtorSyncData"
+            - $ref: "#/components/schemas/DebtOperationSyncData"
           description: Присутствует для не удалённой записи.
 
     SyncPushResult:
@@ -1781,6 +2321,8 @@ components:
             - $ref: "#/components/schemas/AccountSyncData"
             - $ref: "#/components/schemas/CategorySyncData"
             - $ref: "#/components/schemas/TransactionSyncData"
+            - $ref: "#/components/schemas/DebtorSyncData"
+            - $ref: "#/components/schemas/DebtOperationSyncData"
           description: Полное состояние записи; присутствует для upsert.
 
     SyncPullResponse:

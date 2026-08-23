@@ -113,6 +113,10 @@ func applySyncOperation(
 		result, err = applyCategoryOperation(ctx, t, userID, op)
 	case domain.SyncEntityTransaction:
 		result, err = applyTransactionOperation(ctx, t, userID, op)
+	case domain.SyncEntityDebtor:
+		result, err = applyDebtorOperation(ctx, t, userID, op)
+	case domain.SyncEntityDebtOperation:
+		result, err = applyDebtOperationOperation(ctx, t, userID, op)
 	default:
 		return domain.SyncPushResult{
 			OpID: op.OpID, Status: domain.SyncStatusError,
@@ -546,6 +550,258 @@ func deleteTransactionOp(
 		return appliedResult(op.OpID, current.Version), nil
 	}
 	deleted, err := t.TombstoneTransaction(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	return appliedResult(op.OpID, deleted.Version), nil
+}
+
+// --- debtors -----------------------------------------------------------------
+
+func applyDebtorOperation(
+	ctx context.Context,
+	t repository.SyncTx,
+	userID uuid.UUID,
+	op domain.SyncOperation,
+) (domain.SyncPushResult, error) {
+	if op.Action == domain.SyncActionDelete {
+		return deleteDebtorOp(ctx, t, userID, op)
+	}
+	if op.Action != domain.SyncActionUpsert {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
+	}
+
+	var data domain.DebtorFullState
+	if err := decodeSyncData(op.Data, &data); err != nil {
+		return errorResult( //nolint:nilerr // decode failure is a per-item error result, not a batch error
+			op.OpID,
+			"VALIDATION_FAILED",
+			"invalid debtor data",
+		), nil
+	}
+
+	// Live-name uniqueness (pre-checked under the advisory lock so a
+	// violation surfaces as a per-item error, never an aborted batch).
+	nameTaken, err := t.DebtorNameTaken(ctx, userID, data.Name, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	if nameTaken {
+		return errorResult(op.OpID, "DEBTOR_ALREADY_EXISTS", "debtor name already exists"), nil
+	}
+
+	current, err := t.GetDebtorAny(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+
+	if op.BaseVersion == 0 {
+		if current != nil {
+			return conflictResult(
+				op.OpID, domain.SyncCodeAlreadyExists, "debtor already exists",
+				serverStateOf(current.Version, current.Deleted(), current.FullState()),
+			), nil
+		}
+		created, err := t.CreateDebtor(ctx, domain.CreateDebtorParams{
+			ID: op.ID, UserID: userID, Name: data.Name, Note: data.Note,
+		})
+		if err != nil {
+			return domain.SyncPushResult{}, err
+		}
+		return appliedResult(op.OpID, created.Version), nil
+	}
+
+	if current == nil {
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "debtor not found on server",
+			serverStateOf(0, false, nil),
+		), nil
+	}
+	if current.Deleted() {
+		return conflictResult(
+			op.OpID, domain.SyncCodeDeletedConflict, "debtor was deleted on server",
+			serverStateOf(current.Version, true, nil),
+		), nil
+	}
+	if current.Version != op.BaseVersion {
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "debtor version conflict",
+			serverStateOf(current.Version, false, current.FullState()),
+		), nil
+	}
+
+	updated, err := t.ReplaceDebtor(ctx, userID, op.ID, op.BaseVersion, data)
+	if errors.Is(err, domain.ErrDebtorVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
+		fresh, ferr := t.GetDebtorAny(ctx, userID, op.ID)
+		if ferr != nil {
+			return domain.SyncPushResult{}, ferr
+		}
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "debtor version conflict",
+			serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),
+		), nil
+	}
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	return appliedResult(op.OpID, updated.Version), nil
+}
+
+// deleteDebtorOp mirrors deleteCategoryOp: idempotent on tombstones and
+// missing records, delete-wins over concurrent edits, live-operations in-use
+// guard as a per-item error.
+func deleteDebtorOp( //nolint:dupl // per-entity delete twins: identical protocol shape
+	ctx context.Context,
+	t repository.SyncTx,
+	userID uuid.UUID,
+	op domain.SyncOperation,
+) (domain.SyncPushResult, error) {
+	current, err := t.GetDebtorAny(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	if current == nil {
+		return appliedResult(op.OpID, 0), nil
+	}
+	if current.Deleted() {
+		return appliedResult(op.OpID, current.Version), nil
+	}
+	inUse, err := t.HasLiveDebtOperationsForDebtor(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	if inUse {
+		return errorResult(op.OpID, "DEBTOR_IN_USE", "debtor has debt operations and cannot be deleted"), nil
+	}
+	deleted, err := t.TombstoneDebtor(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	return appliedResult(op.OpID, deleted.Version), nil
+}
+
+// --- debt operations ----------------------------------------------------------
+
+func applyDebtOperationOperation(
+	ctx context.Context,
+	t repository.SyncTx,
+	userID uuid.UUID,
+	op domain.SyncOperation,
+) (domain.SyncPushResult, error) {
+	if op.Action == domain.SyncActionDelete {
+		return deleteDebtOperationOp(ctx, t, userID, op)
+	}
+	if op.Action != domain.SyncActionUpsert {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
+	}
+
+	var data domain.DebtOperationFullState
+	if err := decodeSyncData(op.Data, &data); err != nil {
+		return errorResult( //nolint:nilerr // decode failure is a per-item error result, not a batch error
+			op.OpID,
+			"VALIDATION_FAILED",
+			"invalid debt operation data",
+		), nil
+	}
+	if data.Amount < 1 {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "amount must be at least 1 minor unit"), nil
+	}
+	if data.Direction != domain.DebtDirectionReceivable && data.Direction != domain.DebtDirectionPayable {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "invalid debt direction"), nil
+	}
+	if data.Kind != domain.DebtOperationKindDebt && data.Kind != domain.DebtOperationKindRepayment {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "invalid debt operation kind"), nil
+	}
+
+	// Reference validation with the REST granularity: the debtor must be
+	// among the user's LIVE debtors (a tombstoned debtor is "not found").
+	live, err := t.LiveDebtorExists(ctx, userID, data.DebtorID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	if !live {
+		return errorResult(op.OpID, "DEBT_OPERATION_DEBTOR_NOT_FOUND", "debtor not found"), nil
+	}
+
+	current, err := t.GetDebtOperationAny(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+
+	if op.BaseVersion == 0 {
+		if current != nil {
+			return conflictResult(
+				op.OpID, domain.SyncCodeAlreadyExists, "debt operation already exists",
+				serverStateOf(current.Version, current.Deleted(), current.FullState()),
+			), nil
+		}
+		created, err := t.CreateDebtOperation(ctx, domain.CreateDebtOperationParams{
+			ID: op.ID, UserID: userID,
+			DebtorID: data.DebtorID, Direction: data.Direction, Kind: data.Kind,
+			Amount: data.Amount, Note: data.Note, OccurredAt: data.OccurredAt,
+		})
+		if err != nil {
+			return domain.SyncPushResult{}, err
+		}
+		return appliedResult(op.OpID, created.Version), nil
+	}
+
+	if current == nil {
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "debt operation not found on server",
+			serverStateOf(0, false, nil),
+		), nil
+	}
+	if current.Deleted() {
+		return conflictResult(
+			op.OpID, domain.SyncCodeDeletedConflict, "debt operation was deleted on server",
+			serverStateOf(current.Version, true, nil),
+		), nil
+	}
+	if current.DebtorID != data.DebtorID || current.Direction != data.Direction || current.Kind != data.Kind {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "debtor, direction, and kind are immutable"), nil
+	}
+	if current.Version != op.BaseVersion {
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "debt operation version conflict",
+			serverStateOf(current.Version, false, current.FullState()),
+		), nil
+	}
+
+	updated, err := t.ReplaceDebtOperation(ctx, userID, op.ID, op.BaseVersion, data)
+	if errors.Is(err, domain.ErrDebtOperationVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
+		fresh, ferr := t.GetDebtOperationAny(ctx, userID, op.ID)
+		if ferr != nil {
+			return domain.SyncPushResult{}, ferr
+		}
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "debt operation version conflict",
+			serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),
+		), nil
+	}
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	return appliedResult(op.OpID, updated.Version), nil
+}
+
+func deleteDebtOperationOp(
+	ctx context.Context,
+	t repository.SyncTx,
+	userID uuid.UUID,
+	op domain.SyncOperation,
+) (domain.SyncPushResult, error) {
+	current, err := t.GetDebtOperationAny(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	if current == nil {
+		return appliedResult(op.OpID, 0), nil
+	}
+	if current.Deleted() {
+		return appliedResult(op.OpID, current.Version), nil
+	}
+	deleted, err := t.TombstoneDebtOperation(ctx, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}

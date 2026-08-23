@@ -118,6 +118,8 @@ func testMain(m *testing.M) int {
 	accountSvc := service.NewAccountService(e2eRepo)
 	categorySvc := service.NewCategoryService(e2eRepo)
 	txnSvc := service.NewTransactionService(e2eRepo, e2eRepo, e2eRepo)
+	debtorSvc := service.NewDebtorService(e2eRepo)
+	debtOpSvc := service.NewDebtOperationService(e2eRepo, e2eRepo)
 	sessionSvc := service.NewSessionService(e2eRepo)
 	syncSvc := service.NewSyncService(e2eRepo)
 
@@ -127,6 +129,8 @@ func testMain(m *testing.M) int {
 		accountSvc,
 		categorySvc,
 		txnSvc,
+		debtorSvc,
+		debtOpSvc,
 		authSvc,
 		sessionSvc,
 		syncSvc,

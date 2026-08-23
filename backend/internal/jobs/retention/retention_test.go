@@ -18,13 +18,19 @@ type fakeStore struct {
 	transactionsDeleted atomic.Int64
 	categoriesDeleted   atomic.Int64
 	accountsDeleted     atomic.Int64
+	debtOpsDeleted      atomic.Int64
+	debtorsDeleted      atomic.Int64
 	transactionsErr     error
 	categoriesErr       error
 	accountsErr         error
+	debtOpsErr          error
+	debtorsErr          error
 
 	transactionsCutoff atomic.Pointer[time.Time]
 	categoriesCutoff   atomic.Pointer[time.Time]
 	accountsCutoff     atomic.Pointer[time.Time]
+	debtOpsCutoff      atomic.Pointer[time.Time]
+	debtorsCutoff      atomic.Pointer[time.Time]
 }
 
 func (f *fakeStore) DeleteTombstonedTransactionsBefore(_ context.Context, cutoff time.Time) (int64, error) {
@@ -49,6 +55,22 @@ func (f *fakeStore) DeleteTombstonedAccountsBefore(_ context.Context, cutoff tim
 		return 0, f.accountsErr
 	}
 	return f.accountsDeleted.Swap(0), nil
+}
+
+func (f *fakeStore) DeleteTombstonedDebtOperationsBefore(_ context.Context, cutoff time.Time) (int64, error) {
+	f.debtOpsCutoff.Store(&cutoff)
+	if f.debtOpsErr != nil {
+		return 0, f.debtOpsErr
+	}
+	return f.debtOpsDeleted.Swap(0), nil
+}
+
+func (f *fakeStore) DeleteTombstonedDebtorsBefore(_ context.Context, cutoff time.Time) (int64, error) {
+	f.debtorsCutoff.Store(&cutoff)
+	if f.debtorsErr != nil {
+		return 0, f.debtorsErr
+	}
+	return f.debtorsDeleted.Swap(0), nil
 }
 
 func TestRetention_Run_SweepsOnStartup(t *testing.T) {

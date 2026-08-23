@@ -9,9 +9,11 @@ import (
 
 // Sync entity kinds (matches the OpenAPI SyncEntity enum).
 const (
-	SyncEntityAccount     = "account"
-	SyncEntityCategory    = "category"
-	SyncEntityTransaction = "transaction"
+	SyncEntityAccount       = "account"
+	SyncEntityCategory      = "category"
+	SyncEntityTransaction   = "transaction"
+	SyncEntityDebtor        = "debtor"
+	SyncEntityDebtOperation = "debt_operation"
 )
 
 // Sync action kinds (matches the OpenAPI SyncOperation.action enum).

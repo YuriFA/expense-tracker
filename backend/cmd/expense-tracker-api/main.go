@@ -118,6 +118,8 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 	accountSvc := service.NewAccountService(repo)
 	categorySvc := service.NewCategoryService(repo)
 	txnSvc := service.NewTransactionService(repo, repo, repo)
+	debtorSvc := service.NewDebtorService(repo)
+	debtOpSvc := service.NewDebtOperationService(repo, repo)
 	authSvc := service.NewAuthService(repo, repo, repo, repo, service.NewLogMailer(log), service.AuthConfig{
 		SessionTTL: cfg.SessionConfig.TTL,
 	})
@@ -130,6 +132,8 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 		accountSvc,
 		categorySvc,
 		txnSvc,
+		debtorSvc,
+		debtOpSvc,
 		authSvc,
 		sessionSvc,
 		syncSvc,

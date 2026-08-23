@@ -76,6 +76,38 @@ type TransactionRepository interface {
 	) ([]domain.Transaction, error)
 }
 
+// DebtorRepository owns per-user debtors. Balances are derived (never stored);
+// delete is guarded by the live-operations in-use check.
+type DebtorRepository interface {
+	CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error)
+	UpdateDebtor(
+		ctx context.Context,
+		userID, id uuid.UUID,
+		params domain.UpdateDebtorParams,
+	) (*domain.Debtor, error)
+	DeleteDebtor(ctx context.Context, userID, id uuid.UUID) error
+	GetDebtor(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error)
+	GetDebtors(ctx context.Context, userID uuid.UUID) ([]domain.Debtor, error)
+}
+
+// DebtOperationRepository owns debt-operation ledger records (optimistic
+// concurrency). Debtor-reference validation lives in the service layer.
+type DebtOperationRepository interface {
+	CreateDebtOperation(ctx context.Context, params domain.CreateDebtOperationParams) (*domain.DebtOperation, error)
+	UpdateDebtOperation(
+		ctx context.Context,
+		userID, id uuid.UUID,
+		params domain.UpdateDebtOperationParams,
+	) (*domain.DebtOperation, error)
+	DeleteDebtOperation(ctx context.Context, userID, id uuid.UUID) error
+	GetDebtOperation(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
+	GetDebtOperations(
+		ctx context.Context,
+		userID uuid.UUID,
+		params domain.GetDebtOperationsParams,
+	) ([]domain.DebtOperation, error)
+}
+
 // SyncTx is the unit-of-work handed to SyncRepository.WithinUserTx: every
 // method operates on the SAME open database transaction (which holds the
 // user's change-log advisory lock), so a whole push batch commits atomically
@@ -88,6 +120,8 @@ type SyncTx interface {
 	GetAccountAny(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error)
 	GetCategoryAny(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
 	GetTransactionAny(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
+	GetDebtorAny(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error)
+	GetDebtOperationAny(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
 
 	// Live-only reads for reference validation.
 	LiveAccountExists(ctx context.Context, userID, id uuid.UUID) (bool, error)
@@ -95,6 +129,9 @@ type SyncTx interface {
 	CategoryNameTaken(ctx context.Context, userID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
 	HasLiveTransactionsForAccount(ctx context.Context, userID, accountID uuid.UUID) (bool, error)
 	HasLiveTransactionsForCategory(ctx context.Context, userID, categoryID uuid.UUID) (bool, error)
+	LiveDebtorExists(ctx context.Context, userID, id uuid.UUID) (bool, error)
+	DebtorNameTaken(ctx context.Context, userID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
+	HasLiveDebtOperationsForDebtor(ctx context.Context, userID, debtorID uuid.UUID) (bool, error)
 
 	// Writes; each appends its change_log row on the same transaction. The
 	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
@@ -115,6 +152,16 @@ type SyncTx interface {
 		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.TransactionFullState,
 	) (*domain.Transaction, error)
 	TombstoneTransaction(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
+	CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error)
+	ReplaceDebtor(
+		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.DebtorFullState,
+	) (*domain.Debtor, error)
+	TombstoneDebtor(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error)
+	CreateDebtOperation(ctx context.Context, params domain.CreateDebtOperationParams) (*domain.DebtOperation, error)
+	ReplaceDebtOperation(
+		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.DebtOperationFullState,
+	) (*domain.DebtOperation, error)
+	TombstoneDebtOperation(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
 }
 
 // SyncRepository backs /api/sync: batched pushes (one transaction per batch)
@@ -145,11 +192,14 @@ type IdempotencyRepository interface {
 // TombstoneRetention backs the retention job: hard-deleting soft-deleted
 // rows once they are older than the retention cutoff. The change_log is NOT
 // touched - pulls keep serving the tombstones - and callers must delete
-// transactions before categories/accounts (the referencing FKs go first).
+// referencing rows first (transactions before categories/accounts, debt
+// operations before debtors).
 type TombstoneRetention interface {
 	DeleteTombstonedTransactionsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedCategoriesBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedAccountsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedDebtOperationsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedDebtorsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 // EmailVerificationRepository owns OTP verification (atomic consume flow).

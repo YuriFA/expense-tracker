@@ -91,3 +91,31 @@ func toAPITransaction(t domain.Transaction) api.Transaction {
 		ToAccountId:   toUUIDPtr(t.ToAccountID),
 	}
 }
+
+func toAPIDebtor(d domain.Debtor) api.Debtor {
+	return api.Debtor{
+		Id:        toUUID(d.ID),
+		UserId:    toUUID(d.UserID),
+		Name:      d.Name,
+		Note:      d.Note,
+		CreatedAt: d.CreatedAt,
+		UpdatedAt: d.UpdatedAt,
+		Version:   d.Version,
+	}
+}
+
+func toAPIDebtOperation(o domain.DebtOperation) api.DebtOperation {
+	return api.DebtOperation{
+		Id:         toUUID(o.ID),
+		UserId:     toUUID(o.UserID),
+		DebtorId:   toUUID(o.DebtorID),
+		Direction:  api.DebtOperationDirection(o.Direction),
+		Kind:       api.DebtOperationKind(o.Kind),
+		Amount:     o.Amount,
+		Note:       o.Note,
+		OccurredAt: o.OccurredAt,
+		CreatedAt:  o.CreatedAt,
+		UpdatedAt:  o.UpdatedAt,
+		Version:    o.Version,
+	}
+}

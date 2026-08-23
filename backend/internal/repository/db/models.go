@@ -60,6 +60,32 @@ type ChangeLog struct {
 	CreatedAt time.Time
 }
 
+type DebtOperation struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	DebtorID   uuid.UUID
+	Direction  string
+	Kind       string
+	Amount     int64
+	Note       string
+	OccurredAt time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
+	DeletedAt  *time.Time
+}
+
+type Debtor struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Note      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+	DeletedAt *time.Time
+}
+
 type EmailVerificationCode struct {
 	ID        uuid.UUID
 	UserID    uuid.UUID

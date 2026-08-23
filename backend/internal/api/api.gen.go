@@ -178,6 +178,114 @@ func (e CategoryUpdateRequestType) Valid() bool {
 	}
 }
 
+// Defines values for DebtOperationDirection.
+const (
+	DebtOperationDirectionPayable    DebtOperationDirection = "payable"
+	DebtOperationDirectionReceivable DebtOperationDirection = "receivable"
+)
+
+// Valid indicates whether the value is a known member of the DebtOperationDirection enum.
+func (e DebtOperationDirection) Valid() bool {
+	switch e {
+	case DebtOperationDirectionPayable:
+		return true
+	case DebtOperationDirectionReceivable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DebtOperationKind.
+const (
+	DebtOperationKindDebt      DebtOperationKind = "debt"
+	DebtOperationKindRepayment DebtOperationKind = "repayment"
+)
+
+// Valid indicates whether the value is a known member of the DebtOperationKind enum.
+func (e DebtOperationKind) Valid() bool {
+	switch e {
+	case DebtOperationKindDebt:
+		return true
+	case DebtOperationKindRepayment:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DebtOperationCreateRequestDirection.
+const (
+	DebtOperationCreateRequestDirectionPayable    DebtOperationCreateRequestDirection = "payable"
+	DebtOperationCreateRequestDirectionReceivable DebtOperationCreateRequestDirection = "receivable"
+)
+
+// Valid indicates whether the value is a known member of the DebtOperationCreateRequestDirection enum.
+func (e DebtOperationCreateRequestDirection) Valid() bool {
+	switch e {
+	case DebtOperationCreateRequestDirectionPayable:
+		return true
+	case DebtOperationCreateRequestDirectionReceivable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DebtOperationCreateRequestKind.
+const (
+	DebtOperationCreateRequestKindDebt      DebtOperationCreateRequestKind = "debt"
+	DebtOperationCreateRequestKindRepayment DebtOperationCreateRequestKind = "repayment"
+)
+
+// Valid indicates whether the value is a known member of the DebtOperationCreateRequestKind enum.
+func (e DebtOperationCreateRequestKind) Valid() bool {
+	switch e {
+	case DebtOperationCreateRequestKindDebt:
+		return true
+	case DebtOperationCreateRequestKindRepayment:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DebtOperationSyncDataDirection.
+const (
+	DebtOperationSyncDataDirectionPayable    DebtOperationSyncDataDirection = "payable"
+	DebtOperationSyncDataDirectionReceivable DebtOperationSyncDataDirection = "receivable"
+)
+
+// Valid indicates whether the value is a known member of the DebtOperationSyncDataDirection enum.
+func (e DebtOperationSyncDataDirection) Valid() bool {
+	switch e {
+	case DebtOperationSyncDataDirectionPayable:
+		return true
+	case DebtOperationSyncDataDirectionReceivable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DebtOperationSyncDataKind.
+const (
+	DebtOperationSyncDataKindDebt      DebtOperationSyncDataKind = "debt"
+	DebtOperationSyncDataKindRepayment DebtOperationSyncDataKind = "repayment"
+)
+
+// Valid indicates whether the value is a known member of the DebtOperationSyncDataKind enum.
+func (e DebtOperationSyncDataKind) Valid() bool {
+	switch e {
+	case DebtOperationSyncDataKindDebt:
+		return true
+	case DebtOperationSyncDataKindRepayment:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SyncChangeAction.
 const (
 	SyncChangeActionTombstone SyncChangeAction = "tombstone"
@@ -198,9 +306,11 @@ func (e SyncChangeAction) Valid() bool {
 
 // Defines values for SyncEntity.
 const (
-	SyncEntityAccount     SyncEntity = "account"
-	SyncEntityCategory    SyncEntity = "category"
-	SyncEntityTransaction SyncEntity = "transaction"
+	SyncEntityAccount       SyncEntity = "account"
+	SyncEntityCategory      SyncEntity = "category"
+	SyncEntityDebtOperation SyncEntity = "debt_operation"
+	SyncEntityDebtor        SyncEntity = "debtor"
+	SyncEntityTransaction   SyncEntity = "transaction"
 )
 
 // Valid indicates whether the value is a known member of the SyncEntity enum.
@@ -209,6 +319,10 @@ func (e SyncEntity) Valid() bool {
 	case SyncEntityAccount:
 		return true
 	case SyncEntityCategory:
+		return true
+	case SyncEntityDebtOperation:
+		return true
+	case SyncEntityDebtor:
 		return true
 	case SyncEntityTransaction:
 		return true
@@ -487,6 +601,120 @@ type CategoryUpdateRequest struct {
 // CategoryUpdateRequestType defines model for CategoryUpdateRequest.Type.
 type CategoryUpdateRequestType string
 
+// DebtOperation Запись долгового леджера. `direction` = receivable («мне должны»)
+// или payable («я должен»); kind = debt (долг растёт) или repayment
+// (списание — долг уменьшается). Баланс должника в направлении =
+// Σ(debt) − Σ(repayment) по live-операциям; направления независимы
+// (без неттинга) и баланс может стать отрицательным при переплате.
+type DebtOperation struct {
+	// Amount Положительные минорные единицы (divisor 100).
+	Amount     int64                  `json:"amount"`
+	CreatedAt  time.Time              `json:"createdAt"`
+	DebtorId   openapi_types.UUID     `json:"debtorId"`
+	Direction  DebtOperationDirection `json:"direction"`
+	Id         openapi_types.UUID     `json:"id"`
+	Kind       DebtOperationKind      `json:"kind"`
+	Note       string                 `json:"note"`
+	OccurredAt time.Time              `json:"occurredAt"`
+	UpdatedAt  time.Time              `json:"updatedAt"`
+	UserId     openapi_types.UUID     `json:"userId"`
+
+	// Version Версия операции (optimistic concurrency).
+	Version int `json:"version"`
+}
+
+// DebtOperationDirection defines model for DebtOperation.Direction.
+type DebtOperationDirection string
+
+// DebtOperationKind defines model for DebtOperation.Kind.
+type DebtOperationKind string
+
+// DebtOperationCreateRequest defines model for DebtOperationCreateRequest.
+type DebtOperationCreateRequest struct {
+	Amount int64 `json:"amount"`
+
+	// DebtorId Существующий live-должник того же user.
+	DebtorId  openapi_types.UUID                  `json:"debtorId"`
+	Direction DebtOperationCreateRequestDirection `json:"direction"`
+
+	// Id Опциональный клиентский id (UUID v4). Дубликат для user →
+	// 409 `DEBT_OPERATION_ALREADY_EXISTS`.
+	Id         *openapi_types.UUID            `json:"id,omitempty"`
+	Kind       DebtOperationCreateRequestKind `json:"kind"`
+	Note       *string                        `json:"note,omitempty"`
+	OccurredAt time.Time                      `json:"occurredAt"`
+}
+
+// DebtOperationCreateRequestDirection defines model for DebtOperationCreateRequest.Direction.
+type DebtOperationCreateRequestDirection string
+
+// DebtOperationCreateRequestKind defines model for DebtOperationCreateRequest.Kind.
+type DebtOperationCreateRequestKind string
+
+// DebtOperationSyncData Полное состояние долговой операции в sync-операции (upsert).
+type DebtOperationSyncData struct {
+	Amount     int64                          `json:"amount"`
+	DebtorId   openapi_types.UUID             `json:"debtorId"`
+	Direction  DebtOperationSyncDataDirection `json:"direction"`
+	Kind       DebtOperationSyncDataKind      `json:"kind"`
+	Note       string                         `json:"note"`
+	OccurredAt time.Time                      `json:"occurredAt"`
+}
+
+// DebtOperationSyncDataDirection defines model for DebtOperationSyncData.Direction.
+type DebtOperationSyncDataDirection string
+
+// DebtOperationSyncDataKind defines model for DebtOperationSyncData.Kind.
+type DebtOperationSyncDataKind string
+
+// DebtOperationUpdateRequest Все поля кроме `version` optional. `debtorId`, `direction` и `kind`
+// менять нельзя. `note`: отсутствует = не менять, `""` = очистить;
+// `null` невалиден.
+type DebtOperationUpdateRequest struct {
+	Amount     *int64     `json:"amount,omitempty"`
+	Note       *string    `json:"note,omitempty"`
+	OccurredAt *time.Time `json:"occurredAt,omitempty"`
+	Version    int        `json:"version"`
+}
+
+// Debtor Человек, с которым user отслеживает долги. Балансы не хранятся:
+// они производны от debt operations (по направлениям, без неттинга).
+type Debtor struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	Note      string             `json:"note"`
+	UpdatedAt time.Time          `json:"updatedAt"`
+	UserId    openapi_types.UUID `json:"userId"`
+
+	// Version Версия должника (optimistic concurrency).
+	Version int `json:"version"`
+}
+
+// DebtorCreateRequest defines model for DebtorCreateRequest.
+type DebtorCreateRequest struct {
+	// Id Опциональный клиентский id (UUID v4). Дубликат для user →
+	// 409 `DEBTOR_ALREADY_EXISTS`.
+	Id   *openapi_types.UUID `json:"id,omitempty"`
+	Name string              `json:"name"`
+	Note *string             `json:"note,omitempty"`
+}
+
+// DebtorSyncData Полное состояние должника в sync-операции (upsert).
+type DebtorSyncData struct {
+	Name string `json:"name"`
+	Note string `json:"note"`
+}
+
+// DebtorUpdateRequest Все поля кроме `version` optional. `version` — optimistic concurrency:
+// при параллельном изменении → 409 `DEBTOR_VERSION_CONFLICT`.
+// `note`: отсутствует = не менять, `""` = очистить; `null` невалиден.
+type DebtorUpdateRequest struct {
+	Name    *string `json:"name,omitempty"`
+	Note    *string `json:"note,omitempty"`
+	Version int     `json:"version"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	// Code Machine-readable error code.
@@ -716,6 +944,12 @@ type AccountId = openapi_types.UUID
 // CategoryId defines model for CategoryId.
 type CategoryId = openapi_types.UUID
 
+// DebtOperationId defines model for DebtOperationId.
+type DebtOperationId = openapi_types.UUID
+
+// DebtorId defines model for DebtorId.
+type DebtorId = openapi_types.UUID
+
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
@@ -742,6 +976,24 @@ type CategoryInUse = ErrorResponse
 
 // CategoryNotFound defines model for CategoryNotFound.
 type CategoryNotFound = ErrorResponse
+
+// DebtOperationAlreadyExists defines model for DebtOperationAlreadyExists.
+type DebtOperationAlreadyExists = ErrorResponse
+
+// DebtOperationNotFound defines model for DebtOperationNotFound.
+type DebtOperationNotFound = ErrorResponse
+
+// DebtOperationVersionConflict defines model for DebtOperationVersionConflict.
+type DebtOperationVersionConflict = ErrorResponse
+
+// DebtorAlreadyExists defines model for DebtorAlreadyExists.
+type DebtorAlreadyExists = ErrorResponse
+
+// DebtorInUse defines model for DebtorInUse.
+type DebtorInUse = ErrorResponse
+
+// DebtorNotFound defines model for DebtorNotFound.
+type DebtorNotFound = ErrorResponse
 
 // InternalError defines model for InternalError.
 type InternalError = ErrorResponse
@@ -807,6 +1059,12 @@ type ListCategoriesParams struct {
 // ListCategoriesParamsType defines parameters for ListCategories.
 type ListCategoriesParamsType string
 
+// ListDebtOperationsParams defines parameters for ListDebtOperations.
+type ListDebtOperationsParams struct {
+	// DebtorId Фильтр по должнику.
+	DebtorId *openapi_types.UUID `form:"debtorId,omitempty" json:"debtorId,omitempty"`
+}
+
 // SyncPullParams defines parameters for SyncPull.
 type SyncPullParams struct {
 	// Cursor Последний полученный seq (0 = с начала истории).
@@ -871,6 +1129,18 @@ type CreateCategoryJSONRequestBody = CategoryCreateRequest
 
 // UpdateCategoryJSONRequestBody defines body for UpdateCategory for application/json ContentType.
 type UpdateCategoryJSONRequestBody = CategoryUpdateRequest
+
+// CreateDebtOperationJSONRequestBody defines body for CreateDebtOperation for application/json ContentType.
+type CreateDebtOperationJSONRequestBody = DebtOperationCreateRequest
+
+// UpdateDebtOperationJSONRequestBody defines body for UpdateDebtOperation for application/json ContentType.
+type UpdateDebtOperationJSONRequestBody = DebtOperationUpdateRequest
+
+// CreateDebtorJSONRequestBody defines body for CreateDebtor for application/json ContentType.
+type CreateDebtorJSONRequestBody = DebtorCreateRequest
+
+// UpdateDebtorJSONRequestBody defines body for UpdateDebtor for application/json ContentType.
+type UpdateDebtorJSONRequestBody = DebtorUpdateRequest
 
 // SyncPushJSONRequestBody defines body for SyncPush for application/json ContentType.
 type SyncPushJSONRequestBody = SyncPushRequest
@@ -949,6 +1219,58 @@ func (t *SyncChange_Data) FromTransactionSyncData(v TransactionSyncData) error {
 
 // MergeTransactionSyncData performs a merge with any union data inside the SyncChange_Data, using the provided TransactionSyncData
 func (t *SyncChange_Data) MergeTransactionSyncData(v TransactionSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDebtorSyncData returns the union data inside the SyncChange_Data as a DebtorSyncData
+func (t SyncChange_Data) AsDebtorSyncData() (DebtorSyncData, error) {
+	var body DebtorSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDebtorSyncData overwrites any union data inside the SyncChange_Data as the provided DebtorSyncData
+func (t *SyncChange_Data) FromDebtorSyncData(v DebtorSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDebtorSyncData performs a merge with any union data inside the SyncChange_Data, using the provided DebtorSyncData
+func (t *SyncChange_Data) MergeDebtorSyncData(v DebtorSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDebtOperationSyncData returns the union data inside the SyncChange_Data as a DebtOperationSyncData
+func (t SyncChange_Data) AsDebtOperationSyncData() (DebtOperationSyncData, error) {
+	var body DebtOperationSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDebtOperationSyncData overwrites any union data inside the SyncChange_Data as the provided DebtOperationSyncData
+func (t *SyncChange_Data) FromDebtOperationSyncData(v DebtOperationSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDebtOperationSyncData performs a merge with any union data inside the SyncChange_Data, using the provided DebtOperationSyncData
+func (t *SyncChange_Data) MergeDebtOperationSyncData(v DebtOperationSyncData) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1047,6 +1369,58 @@ func (t *SyncOperation_Data) MergeTransactionSyncData(v TransactionSyncData) err
 	return err
 }
 
+// AsDebtorSyncData returns the union data inside the SyncOperation_Data as a DebtorSyncData
+func (t SyncOperation_Data) AsDebtorSyncData() (DebtorSyncData, error) {
+	var body DebtorSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDebtorSyncData overwrites any union data inside the SyncOperation_Data as the provided DebtorSyncData
+func (t *SyncOperation_Data) FromDebtorSyncData(v DebtorSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDebtorSyncData performs a merge with any union data inside the SyncOperation_Data, using the provided DebtorSyncData
+func (t *SyncOperation_Data) MergeDebtorSyncData(v DebtorSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDebtOperationSyncData returns the union data inside the SyncOperation_Data as a DebtOperationSyncData
+func (t SyncOperation_Data) AsDebtOperationSyncData() (DebtOperationSyncData, error) {
+	var body DebtOperationSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDebtOperationSyncData overwrites any union data inside the SyncOperation_Data as the provided DebtOperationSyncData
+func (t *SyncOperation_Data) FromDebtOperationSyncData(v DebtOperationSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDebtOperationSyncData performs a merge with any union data inside the SyncOperation_Data, using the provided DebtOperationSyncData
+func (t *SyncOperation_Data) MergeDebtOperationSyncData(v DebtOperationSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SyncOperation_Data) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -1135,6 +1509,58 @@ func (t *SyncServerState_Data) MergeTransactionSyncData(v TransactionSyncData) e
 	return err
 }
 
+// AsDebtorSyncData returns the union data inside the SyncServerState_Data as a DebtorSyncData
+func (t SyncServerState_Data) AsDebtorSyncData() (DebtorSyncData, error) {
+	var body DebtorSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDebtorSyncData overwrites any union data inside the SyncServerState_Data as the provided DebtorSyncData
+func (t *SyncServerState_Data) FromDebtorSyncData(v DebtorSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDebtorSyncData performs a merge with any union data inside the SyncServerState_Data, using the provided DebtorSyncData
+func (t *SyncServerState_Data) MergeDebtorSyncData(v DebtorSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDebtOperationSyncData returns the union data inside the SyncServerState_Data as a DebtOperationSyncData
+func (t SyncServerState_Data) AsDebtOperationSyncData() (DebtOperationSyncData, error) {
+	var body DebtOperationSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDebtOperationSyncData overwrites any union data inside the SyncServerState_Data as the provided DebtOperationSyncData
+func (t *SyncServerState_Data) FromDebtOperationSyncData(v DebtOperationSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDebtOperationSyncData performs a merge with any union data inside the SyncServerState_Data, using the provided DebtOperationSyncData
+func (t *SyncServerState_Data) MergeDebtOperationSyncData(v DebtOperationSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SyncServerState_Data) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -1210,6 +1636,36 @@ type ServerInterface interface {
 	// UpdateCategory Обновить категорию
 	// (PATCH /api/categories/{id})
 	UpdateCategory(c *gin.Context, id CategoryId)
+	// ListDebtOperations Список долговых операций
+	// (GET /api/debt-operations)
+	ListDebtOperations(c *gin.Context, params ListDebtOperationsParams)
+	// CreateDebtOperation Создать долговую операцию
+	// (POST /api/debt-operations)
+	CreateDebtOperation(c *gin.Context)
+	// DeleteDebtOperation Удалить долговую операцию
+	// (DELETE /api/debt-operations/{id})
+	DeleteDebtOperation(c *gin.Context, id DebtOperationId)
+	// GetDebtOperation Получить долговую операцию по ID
+	// (GET /api/debt-operations/{id})
+	GetDebtOperation(c *gin.Context, id DebtOperationId)
+	// UpdateDebtOperation Частично обновить долговую операцию
+	// (PATCH /api/debt-operations/{id})
+	UpdateDebtOperation(c *gin.Context, id DebtOperationId)
+	// ListDebtors Список должников
+	// (GET /api/debtors)
+	ListDebtors(c *gin.Context)
+	// CreateDebtor Создать должника
+	// (POST /api/debtors)
+	CreateDebtor(c *gin.Context)
+	// DeleteDebtor Удалить должника
+	// (DELETE /api/debtors/{id})
+	DeleteDebtor(c *gin.Context, id DebtorId)
+	// GetDebtor Получить должника по ID
+	// (GET /api/debtors/{id})
+	GetDebtor(c *gin.Context, id DebtorId)
+	// UpdateDebtor Обновить должника (name, note)
+	// (PATCH /api/debtors/{id})
+	UpdateDebtor(c *gin.Context, id DebtorId)
 	// SyncPull Инкрементальный pull изменений по курсору
 	// (GET /api/sync/pull)
 	SyncPull(c *gin.Context, params SyncPullParams)
@@ -1601,6 +2057,222 @@ func (siw *ServerInterfaceWrapper) UpdateCategory(c *gin.Context) {
 	siw.Handler.UpdateCategory(c, id)
 }
 
+// ListDebtOperations operation middleware
+func (siw *ServerInterfaceWrapper) ListDebtOperations(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDebtOperationsParams
+
+	// ------------- Optional query parameter "debtorId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "debtorId", c.Request.URL.Query(), &params.DebtorId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter debtorId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListDebtOperations(c, params)
+}
+
+// CreateDebtOperation operation middleware
+func (siw *ServerInterfaceWrapper) CreateDebtOperation(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateDebtOperation(c)
+}
+
+// DeleteDebtOperation operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDebtOperation(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DebtOperationId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteDebtOperation(c, id)
+}
+
+// GetDebtOperation operation middleware
+func (siw *ServerInterfaceWrapper) GetDebtOperation(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DebtOperationId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDebtOperation(c, id)
+}
+
+// UpdateDebtOperation operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDebtOperation(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DebtOperationId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateDebtOperation(c, id)
+}
+
+// ListDebtors operation middleware
+func (siw *ServerInterfaceWrapper) ListDebtors(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListDebtors(c)
+}
+
+// CreateDebtor operation middleware
+func (siw *ServerInterfaceWrapper) CreateDebtor(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateDebtor(c)
+}
+
+// DeleteDebtor operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDebtor(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DebtorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteDebtor(c, id)
+}
+
+// GetDebtor operation middleware
+func (siw *ServerInterfaceWrapper) GetDebtor(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DebtorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDebtor(c, id)
+}
+
+// UpdateDebtor operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDebtor(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id DebtorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateDebtor(c, id)
+}
+
 // SyncPull operation middleware
 func (siw *ServerInterfaceWrapper) SyncPull(c *gin.Context) {
 
@@ -1895,6 +2567,16 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/categories/:id", wrapper.DeleteCategory)
 	router.GET(options.BaseURL+"/api/categories/:id", wrapper.GetCategory)
 	router.PATCH(options.BaseURL+"/api/categories/:id", wrapper.UpdateCategory)
+	router.GET(options.BaseURL+"/api/debtors", wrapper.ListDebtors)
+	router.POST(options.BaseURL+"/api/debtors", wrapper.CreateDebtor)
+	router.DELETE(options.BaseURL+"/api/debtors/:id", wrapper.DeleteDebtor)
+	router.GET(options.BaseURL+"/api/debtors/:id", wrapper.GetDebtor)
+	router.PATCH(options.BaseURL+"/api/debtors/:id", wrapper.UpdateDebtor)
+	router.GET(options.BaseURL+"/api/debt-operations", wrapper.ListDebtOperations)
+	router.POST(options.BaseURL+"/api/debt-operations", wrapper.CreateDebtOperation)
+	router.DELETE(options.BaseURL+"/api/debt-operations/:id", wrapper.DeleteDebtOperation)
+	router.GET(options.BaseURL+"/api/debt-operations/:id", wrapper.GetDebtOperation)
+	router.PATCH(options.BaseURL+"/api/debt-operations/:id", wrapper.UpdateDebtOperation)
 	router.POST(options.BaseURL+"/api/sync/push", wrapper.SyncPush)
 	router.GET(options.BaseURL+"/api/sync/pull", wrapper.SyncPull)
 }
@@ -1912,6 +2594,18 @@ type CategoryAlreadyExistsJSONResponse ErrorResponse
 type CategoryInUseJSONResponse ErrorResponse
 
 type CategoryNotFoundJSONResponse ErrorResponse
+
+type DebtOperationAlreadyExistsJSONResponse ErrorResponse
+
+type DebtOperationNotFoundJSONResponse ErrorResponse
+
+type DebtOperationVersionConflictJSONResponse ErrorResponse
+
+type DebtorAlreadyExistsJSONResponse ErrorResponse
+
+type DebtorInUseJSONResponse ErrorResponse
+
+type DebtorNotFoundJSONResponse ErrorResponse
 
 type InternalErrorJSONResponse ErrorResponse
 
@@ -3244,6 +3938,731 @@ func (response UpdateCategory500JSONResponse) VisitUpdateCategoryResponse(w http
 	return err
 }
 
+type ListDebtOperationsRequestObject struct {
+	Params ListDebtOperationsParams
+}
+
+type ListDebtOperationsResponseObject interface {
+	VisitListDebtOperationsResponse(w http.ResponseWriter) error
+}
+
+type ListDebtOperations200JSONResponse []DebtOperation
+
+func (response ListDebtOperations200JSONResponse) VisitListDebtOperationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDebtOperations401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDebtOperations401JSONResponse) VisitListDebtOperationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDebtOperations500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListDebtOperations500JSONResponse) VisitListDebtOperationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtOperationRequestObject struct {
+	Body *CreateDebtOperationJSONRequestBody
+}
+
+type CreateDebtOperationResponseObject interface {
+	VisitCreateDebtOperationResponse(w http.ResponseWriter) error
+}
+
+type CreateDebtOperation201JSONResponse DebtOperation
+
+func (response CreateDebtOperation201JSONResponse) VisitCreateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtOperation400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response CreateDebtOperation400JSONResponse) VisitCreateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtOperation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateDebtOperation401JSONResponse) VisitCreateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtOperation409JSONResponse struct {
+	DebtOperationAlreadyExistsJSONResponse
+}
+
+func (response CreateDebtOperation409JSONResponse) VisitCreateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtOperation422JSONResponse ErrorResponse
+
+func (response CreateDebtOperation422JSONResponse) VisitCreateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtOperation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateDebtOperation500JSONResponse) VisitCreateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDebtOperationRequestObject struct {
+	Id DebtOperationId `json:"id"`
+}
+
+type DeleteDebtOperationResponseObject interface {
+	VisitDeleteDebtOperationResponse(w http.ResponseWriter) error
+}
+
+type DeleteDebtOperation204Response struct {
+}
+
+func (response DeleteDebtOperation204Response) VisitDeleteDebtOperationResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteDebtOperation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteDebtOperation401JSONResponse) VisitDeleteDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDebtOperation404JSONResponse struct {
+	DebtOperationNotFoundJSONResponse
+}
+
+func (response DeleteDebtOperation404JSONResponse) VisitDeleteDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDebtOperation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteDebtOperation500JSONResponse) VisitDeleteDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtOperationRequestObject struct {
+	Id DebtOperationId `json:"id"`
+}
+
+type GetDebtOperationResponseObject interface {
+	VisitGetDebtOperationResponse(w http.ResponseWriter) error
+}
+
+type GetDebtOperation200JSONResponse DebtOperation
+
+func (response GetDebtOperation200JSONResponse) VisitGetDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtOperation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDebtOperation401JSONResponse) VisitGetDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtOperation404JSONResponse struct {
+	DebtOperationNotFoundJSONResponse
+}
+
+func (response GetDebtOperation404JSONResponse) VisitGetDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtOperation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetDebtOperation500JSONResponse) VisitGetDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtOperationRequestObject struct {
+	Id   DebtOperationId `json:"id"`
+	Body *UpdateDebtOperationJSONRequestBody
+}
+
+type UpdateDebtOperationResponseObject interface {
+	VisitUpdateDebtOperationResponse(w http.ResponseWriter) error
+}
+
+type UpdateDebtOperation200JSONResponse DebtOperation
+
+func (response UpdateDebtOperation200JSONResponse) VisitUpdateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtOperation400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response UpdateDebtOperation400JSONResponse) VisitUpdateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtOperation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateDebtOperation401JSONResponse) VisitUpdateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtOperation404JSONResponse struct {
+	DebtOperationNotFoundJSONResponse
+}
+
+func (response UpdateDebtOperation404JSONResponse) VisitUpdateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtOperation409JSONResponse struct {
+	DebtOperationVersionConflictJSONResponse
+}
+
+func (response UpdateDebtOperation409JSONResponse) VisitUpdateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtOperation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateDebtOperation500JSONResponse) VisitUpdateDebtOperationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDebtorsRequestObject struct {
+}
+
+type ListDebtorsResponseObject interface {
+	VisitListDebtorsResponse(w http.ResponseWriter) error
+}
+
+type ListDebtors200JSONResponse []Debtor
+
+func (response ListDebtors200JSONResponse) VisitListDebtorsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDebtors401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDebtors401JSONResponse) VisitListDebtorsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDebtors500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListDebtors500JSONResponse) VisitListDebtorsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtorRequestObject struct {
+	Body *CreateDebtorJSONRequestBody
+}
+
+type CreateDebtorResponseObject interface {
+	VisitCreateDebtorResponse(w http.ResponseWriter) error
+}
+
+type CreateDebtor201JSONResponse Debtor
+
+func (response CreateDebtor201JSONResponse) VisitCreateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtor400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response CreateDebtor400JSONResponse) VisitCreateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtor401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateDebtor401JSONResponse) VisitCreateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtor409JSONResponse struct {
+	DebtorAlreadyExistsJSONResponse
+}
+
+func (response CreateDebtor409JSONResponse) VisitCreateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDebtor500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateDebtor500JSONResponse) VisitCreateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDebtorRequestObject struct {
+	Id DebtorId `json:"id"`
+}
+
+type DeleteDebtorResponseObject interface {
+	VisitDeleteDebtorResponse(w http.ResponseWriter) error
+}
+
+type DeleteDebtor204Response struct {
+}
+
+func (response DeleteDebtor204Response) VisitDeleteDebtorResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteDebtor401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteDebtor401JSONResponse) VisitDeleteDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDebtor404JSONResponse struct{ DebtorNotFoundJSONResponse }
+
+func (response DeleteDebtor404JSONResponse) VisitDeleteDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDebtor409JSONResponse struct{ DebtorInUseJSONResponse }
+
+func (response DeleteDebtor409JSONResponse) VisitDeleteDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDebtor500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteDebtor500JSONResponse) VisitDeleteDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtorRequestObject struct {
+	Id DebtorId `json:"id"`
+}
+
+type GetDebtorResponseObject interface {
+	VisitGetDebtorResponse(w http.ResponseWriter) error
+}
+
+type GetDebtor200JSONResponse Debtor
+
+func (response GetDebtor200JSONResponse) VisitGetDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtor401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDebtor401JSONResponse) VisitGetDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtor404JSONResponse struct{ DebtorNotFoundJSONResponse }
+
+func (response GetDebtor404JSONResponse) VisitGetDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDebtor500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetDebtor500JSONResponse) VisitGetDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtorRequestObject struct {
+	Id   DebtorId `json:"id"`
+	Body *UpdateDebtorJSONRequestBody
+}
+
+type UpdateDebtorResponseObject interface {
+	VisitUpdateDebtorResponse(w http.ResponseWriter) error
+}
+
+type UpdateDebtor200JSONResponse Debtor
+
+func (response UpdateDebtor200JSONResponse) VisitUpdateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtor400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response UpdateDebtor400JSONResponse) VisitUpdateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtor401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateDebtor401JSONResponse) VisitUpdateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtor404JSONResponse struct{ DebtorNotFoundJSONResponse }
+
+func (response UpdateDebtor404JSONResponse) VisitUpdateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtor409JSONResponse ErrorResponse
+
+func (response UpdateDebtor409JSONResponse) VisitUpdateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDebtor500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateDebtor500JSONResponse) VisitUpdateDebtorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SyncPullRequestObject struct {
 	Params SyncPullParams
 }
@@ -3835,6 +5254,36 @@ type StrictServerInterface interface {
 	// UpdateCategory Обновить категорию
 	// (PATCH /api/categories/{id})
 	UpdateCategory(ctx context.Context, request UpdateCategoryRequestObject) (UpdateCategoryResponseObject, error)
+	// ListDebtOperations Список долговых операций
+	// (GET /api/debt-operations)
+	ListDebtOperations(ctx context.Context, request ListDebtOperationsRequestObject) (ListDebtOperationsResponseObject, error)
+	// CreateDebtOperation Создать долговую операцию
+	// (POST /api/debt-operations)
+	CreateDebtOperation(ctx context.Context, request CreateDebtOperationRequestObject) (CreateDebtOperationResponseObject, error)
+	// DeleteDebtOperation Удалить долговую операцию
+	// (DELETE /api/debt-operations/{id})
+	DeleteDebtOperation(ctx context.Context, request DeleteDebtOperationRequestObject) (DeleteDebtOperationResponseObject, error)
+	// GetDebtOperation Получить долговую операцию по ID
+	// (GET /api/debt-operations/{id})
+	GetDebtOperation(ctx context.Context, request GetDebtOperationRequestObject) (GetDebtOperationResponseObject, error)
+	// UpdateDebtOperation Частично обновить долговую операцию
+	// (PATCH /api/debt-operations/{id})
+	UpdateDebtOperation(ctx context.Context, request UpdateDebtOperationRequestObject) (UpdateDebtOperationResponseObject, error)
+	// ListDebtors Список должников
+	// (GET /api/debtors)
+	ListDebtors(ctx context.Context, request ListDebtorsRequestObject) (ListDebtorsResponseObject, error)
+	// CreateDebtor Создать должника
+	// (POST /api/debtors)
+	CreateDebtor(ctx context.Context, request CreateDebtorRequestObject) (CreateDebtorResponseObject, error)
+	// DeleteDebtor Удалить должника
+	// (DELETE /api/debtors/{id})
+	DeleteDebtor(ctx context.Context, request DeleteDebtorRequestObject) (DeleteDebtorResponseObject, error)
+	// GetDebtor Получить должника по ID
+	// (GET /api/debtors/{id})
+	GetDebtor(ctx context.Context, request GetDebtorRequestObject) (GetDebtorResponseObject, error)
+	// UpdateDebtor Обновить должника (name, note)
+	// (PATCH /api/debtors/{id})
+	UpdateDebtor(ctx context.Context, request UpdateDebtorRequestObject) (UpdateDebtorResponseObject, error)
 	// SyncPull Инкрементальный pull изменений по курсору
 	// (GET /api/sync/pull)
 	SyncPull(ctx context.Context, request SyncPullRequestObject) (SyncPullResponseObject, error)
@@ -4496,6 +5945,288 @@ func (sh *strictHandler) UpdateCategory(ctx *gin.Context, id CategoryId) {
 	}
 }
 
+// ListDebtOperations operation middleware
+func (sh *strictHandler) ListDebtOperations(ctx *gin.Context, params ListDebtOperationsParams) {
+	var request ListDebtOperationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDebtOperations(ctx, request.(ListDebtOperationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDebtOperations")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListDebtOperationsResponseObject); ok {
+		if err := validResponse.VisitListDebtOperationsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDebtOperation operation middleware
+func (sh *strictHandler) CreateDebtOperation(ctx *gin.Context) {
+	var request CreateDebtOperationRequestObject
+
+	var body CreateDebtOperationJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDebtOperation(ctx, request.(CreateDebtOperationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDebtOperation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateDebtOperationResponseObject); ok {
+		if err := validResponse.VisitCreateDebtOperationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDebtOperation operation middleware
+func (sh *strictHandler) DeleteDebtOperation(ctx *gin.Context, id DebtOperationId) {
+	var request DeleteDebtOperationRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDebtOperation(ctx, request.(DeleteDebtOperationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDebtOperation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteDebtOperationResponseObject); ok {
+		if err := validResponse.VisitDeleteDebtOperationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDebtOperation operation middleware
+func (sh *strictHandler) GetDebtOperation(ctx *gin.Context, id DebtOperationId) {
+	var request GetDebtOperationRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDebtOperation(ctx, request.(GetDebtOperationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDebtOperation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetDebtOperationResponseObject); ok {
+		if err := validResponse.VisitGetDebtOperationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDebtOperation operation middleware
+func (sh *strictHandler) UpdateDebtOperation(ctx *gin.Context, id DebtOperationId) {
+	var request UpdateDebtOperationRequestObject
+
+	request.Id = id
+
+	var body UpdateDebtOperationJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDebtOperation(ctx, request.(UpdateDebtOperationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDebtOperation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateDebtOperationResponseObject); ok {
+		if err := validResponse.VisitUpdateDebtOperationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDebtors operation middleware
+func (sh *strictHandler) ListDebtors(ctx *gin.Context) {
+	var request ListDebtorsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDebtors(ctx, request.(ListDebtorsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDebtors")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListDebtorsResponseObject); ok {
+		if err := validResponse.VisitListDebtorsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDebtor operation middleware
+func (sh *strictHandler) CreateDebtor(ctx *gin.Context) {
+	var request CreateDebtorRequestObject
+
+	var body CreateDebtorJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDebtor(ctx, request.(CreateDebtorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDebtor")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateDebtorResponseObject); ok {
+		if err := validResponse.VisitCreateDebtorResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDebtor operation middleware
+func (sh *strictHandler) DeleteDebtor(ctx *gin.Context, id DebtorId) {
+	var request DeleteDebtorRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDebtor(ctx, request.(DeleteDebtorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDebtor")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteDebtorResponseObject); ok {
+		if err := validResponse.VisitDeleteDebtorResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDebtor operation middleware
+func (sh *strictHandler) GetDebtor(ctx *gin.Context, id DebtorId) {
+	var request GetDebtorRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDebtor(ctx, request.(GetDebtorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDebtor")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetDebtorResponseObject); ok {
+		if err := validResponse.VisitGetDebtorResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDebtor operation middleware
+func (sh *strictHandler) UpdateDebtor(ctx *gin.Context, id DebtorId) {
+	var request UpdateDebtorRequestObject
+
+	request.Id = id
+
+	var body UpdateDebtorJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDebtor(ctx, request.(UpdateDebtorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDebtor")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateDebtorResponseObject); ok {
+		if err := validResponse.VisitUpdateDebtorResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SyncPull operation middleware
 func (sh *strictHandler) SyncPull(ctx *gin.Context, params SyncPullParams) {
 	var request SyncPullRequestObject
@@ -4702,184 +6433,213 @@ func (sh *strictHandler) UpdateTransaction(ctx *gin.Context, id TransactionId) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"7L19bxvHuSj+VQbs+eGQMklRiuw2Mgz8FIludGJLuhKVNg0D7YociVuTu8zuUjZPYMCSmtiB0wjO7UWL",
+	"nNOmbQ5w/ri4uLIsxbQsyUA/QDH7FfpJLuaZmd3Z3Vm+SKTkAP0rjri7M/M8zzzvL5+lKlajaZnYdJ3U",
+	"9Geppm7rDexiG/5vplKxWqY7X6X/Y5ip6VRTd2upbMrUGzg1nTKqqWzKxp+2DBtXU9Ou3cLZlFOp4YZO",
+	"39iw7IbupqZTrRY86bab9C3HtQ1zM/XwYTY1q7t407Lbo1thDq+7i01s665hmaNdxrJH9/35Km40LReb",
+	"lfYHuE3fqWKnYhtNeqzUdIp8T05JhxyTffLa+4qcek/JK1SpG9h0c5vYpOfHVUSOyWvva+8xSq+uzs8h",
+	"G1esRgObVVzN5BH5EzkkHXIaPHWrbJIz/kfDdLHp5hH5jpyRA2+HnHmPEP0PeUHOEPmBHCHykuyTN94j",
+	"cuZtk31EDsgZeUkOvEdk3/uS7JMjbwfe8Hb482feDjmgf86XzVSWwa2G9Sq2A8hJB8/Rk3cDY0N/cAeb",
+	"m24tNT15/boKjCVbNx29MkpaeEhfdpqW6WD5Ds3UbaxX28UHhsNuWsUCiNJ/6s1m3agAhY7/2qH4/CyF",
+	"H+iNZh2zJ6t0hZnZ2cXVhdLazJ3l4szcR2vFX86vlFZS2VQDO46+SR/R2VpIZ4shzFZ7KO//X2y8kZpO",
+	"/WQ8uPjj7FdnvGjblr3Md8/OEiGzv3iPGR63KSr3yTHpkBNkVJG3y3B65G17O95XyNtFLQfbKE2piXTI",
+	"ETn1drxteOEVMqo5cujtkufw2zHZ93YyebpPwXHMVQdfCErzC2urK0UldGq6g9yAEBykm1VU0U3TctE6",
+	"RlVcxy6uDhlq3jNK9h1yQo4AgHBROuTA24NrcwpX9ii0rywF6iG90RR6FIaInJIjfq9OyBn5gZySMxlu",
+	"C5Z722qZ1QuBbmGxtHZ7cXVhTgk9CqUNWGMUADplh9wnr8ghPTVKkw6lEeQ9Bgo7I69ChPIhth3DMmct",
+	"c6NuVNwLnfvD4vLK/OLC2uziwu0787Ml5fG32IKoIlYcIhS+JWfk1PsNuxMUGgcI+OMjb5t0KAy22e0j",
+	"+yhtNV2jYTiuUaFbqbRsm7JIBhshVS/Oc2ZnSsWfLy5/1I3pVPhqI+Q631IGQY6oqKG3xtuL8B/KuZM4",
+	"UAgi5+crPiQUjMWHwOVzljhkRsdjBBAvxGR8OKq5jA/KkbAZBbSiDIferTDL2ff22LUKqZIXv1tzxfdK",
+	"a4tLxeWZEuU6XW5YFa+7yBIrj/Ce/Ym8oeyG7HtfKG7Z8KR8CJIXIqcIENVEFYHfSEjrd+SMvKaERQ4o",
+	"xSByFoHluSltGCIuAqauki4CrasUeGEgkk53scdssOFczMXlXhfSskd4ERk1/cBsOpWwE5RjVDNdBR+3",
+	"S88t9jgsFEKPw4CKvDDFXILU+x6RQxlC1NoUp4d7JoSa98yXepFNDiL4GBAvzKcWl7vwJ8seJV8SlNS/",
+	"fj1vutg29TqscK4jzy+UissLM3fWisvLi8uhAxv848jB9ha2EYZFhnjqb8ipt+vteI8AuafeHnBk7wnp",
+	"kOdALt428JUDxl3gxJJv4EKoLi3PLKzMzHaRR5ICNhqk/5UeipyC1nd8DvkjgWIY0keGSFfRIwPmSg2t",
+	"nSgAe8meVVNvuTXLNv4dn49qVhdmVkvvLy7P/6oYJpaG4TiGuYkc7HB4WPcMPExo/JESxr5w6pEOecm0",
+	"GOAOp8ySOABO2SGHlCmSV5HdMBh8qNeNKpzz/Ezjw5k783NMSbk9M38nAostfwW0oRv14QqVPwL3p/yA",
+	"HvEIgaXwmpxF/Zrp2C7o8f2NyE4/8KjbVOi4BvMGrut13axghQP3G++p95h0vG3y2tujQPe2QQOX+NQZ",
+	"OaFUiE1KD9dQQzdbeh1dQ3//PmTTZfKpbOCmNEz3xlTgp6SsdxMDs63YWHdxdcYNuTWruotzrtHAcd9m",
+	"NiWIHpBnthqp6Y9TqysUScVVyuKXV99LfaJ4z6j24TrNptiJZqq/bjlug9NNHwdhjtvP4t/jsHovAHof",
+	"X2s1q4OChapb8/0dkbM1FQEIBgRoZw6xrp6eMJIVZ3ko+7E/Zo5tvlUONAmjMWgp0JH16VemHhlkwQED",
+	"MrDWf40Z/+bXQsJH4u3oh35HS4yJVNU3tgeEvzh9b8g5PiNLAiH823Bxw+nFGCM4eegvrtu23gZAYPcX",
+	"lu3W+kJL5Mz+dqTPdDnfLBDVMv60hR0F97wYxuPODpDsZ6AUBVGzBFcGj5ltTWXyiPwu7NWg5shrb4/5",
+	"Qv7xxTdlc6rwLtLUERuNRbvOT3/n4GoRrPS8+11QtNI2K3O6qysg+h3YGlx6blNxCSrFHrevJKZGDpDT",
+	"Niu5uIHfajrYdoG7DQf3b4FMGRT6ik13QcgqMF/pzsQUi22q4L2hyKF2wDHTJMgR0jiv1pAFT+v1vPS3",
+	"fzz6HVLLnrKZBu2YqoRn5AXpeI8p1hVqs7dHTjLT3BFN97APT7wGqxuuHCg1oHOegFHCjPEOvUVoqvBu",
+	"2dSSwjP8HoWp5ILYbhimiCC/0114R0RvwzCNBiXKiZ7o7yYghYtdwfqsOlOp4zrZ4GqcUWGHGLpoZH8I",
+	"LqhhVizYAn7QxFReqW7o26BwMT4ehAa62ntDUbzgHY6KLEfv+bQqQTS9hGciBfUgh0uXmwlRxwsLznNQ",
+	"p5p1q3DXDTPnl5kKujyP7Bwc9W8fEC9fzk2XzfNLLomM+5JcPo4kGTTRhXf3eEwh0VSPnYthj1wMhuJf",
+	"ClT/nuyTN6TjbXtfiUgAi7zxbDSKo0PyA3fuIq1q2Bh8Ixq6hWxcwcaWvl7HKP23/01OmGPUjyd4T//2",
+	"OlM2uWe0qbfFk5SmxFNH5PRvrzM30T3DrKJbLLaQFjtBcCe3vR2q7GYQ/5KNm3qbqiRlM+1ts+2DskSv",
+	"OaXB4PVdRlHeV94TljbnbXt7lH0+AwrcJ6fetiICcsDcu2+AUA/8wEYH3Sqbf/8+TTeZQf948g36+/dp",
+	"fzcZuDGobmzhXDRmSU5uKj/Jvcmg5h3AOTrkxHtK1cLn9M+IeQ29HdIhp+QF2adAQOS5vHsWYWGpZNQk",
+	"YLGbM1AhO94XnOsJ6XIiqZBH4NV/Qz9Fn1HdJb0hvG9KbktX7oS+f0Q3RDdLmSz/wxHLfKS78Z6idNXY",
+	"MhzLRhOFgtrB1o32z6WlVaWc0p5Czydx+TYHpE5BxEj5Ii4RSu7y9+kOIVmSE5Py26blJlhSFWC0gyl+",
+	"b4Ou2H9U+mKaok8AMno5FrKCyDmAQ+A8nx4Z4ro9lMnghg14D2SijiUB7npfsjguOfB2va+9L0GHZLzp",
+	"MBwSD2Ues3B39nJuyaWrw10ThfpVii90dat4Q2/V6edVnx78Hkeovk86l9bpSb4X0LjD+sSr+HU/hwI+",
+	"lOsyYuq+auZ+PqKIM7+etDFkQ0JsVMuGFE3SQRrdrFY2uTq35+enAJt46e3lkUb3r00zzWcbchY4+wPd",
+	"6BYP20sfyCKtnCqnqCZLzljEkCpa9KebZVMzW/W6JlJZRMz2iJx2V5MGpMqhivRLsSaYaRVB9H+zAC85",
+	"IEfkOIuoWnoMRSln3iNQOoERM9SA7vsD6QBUjxivZnyiE1bMvac8Belz5gwFrG17e9NQTHMKOiwQFLUc",
+	"D6C+5pS+c+btxBKp0qCbq1VwcpJFSeq20r48h5vwgt7ARDJ5K7S4qP00Yn8fZ1TnVcwsu4dGdoXKSSxZ",
+	"clBPXS9fRh9qiMrHlAzLC6sHIbN7UG1g0Auj9p/Bw8lH/NG5yzglqZxlw5WSaCAhOSCNXr54C2c2Kdz+",
+	"VUW60V29UjNMnLOxXgUHF6RgIvpwHrx/PDFLmZAVj7GKDK3oMu+3GroZLELvEzkjz6mZx+5TvudNhv0H",
+	"S6ggsMKS0WQYRIj9P1nZFCT8ioRgSK3aFpnmTJKCWXnMsiPzwxCh+EHTsLEzkNR1ZuFCuRI5rVtWHetm",
+	"THZGjvk/vUeUaQOLb9rWgzbcb668HAK9v0IQm90BTeaUs7cOSlO0wCU9COWf8Qvt1I2qYW6GZWH/unyS",
+	"0AugIx9bieK2WZmt6aaKyKBw+ZSy4peSX7gCT+fq1qaQXM1Wva4wzWIWE+Pb9FBWY91xLVNtL1XPJz/8",
+	"PZLOTQ5eBUsTwha2QjdtmXhxIzX9cV/JPL54e5jt/nwsQNXrBSkzuO93IiK3n8fjdvzDT+htMl3DbffK",
+	"aKLvFNmT/SuxDv5UyTfO4JLswH+57vQG7IM90ASOYyLN2+sz/TJZTf2LlPN5yqqJDmTNVSIh6YL3sZPe",
+	"qisFgw/nLNNkdWF7d5NCEtClq8SrZqneKzIbsnKWt+/k5P9Y840f5ZWji3SLC/mMIKreqiqy8khb1x38",
+	"oazYhNJt46DPIvF5biWSM/IK7LpIrRdFyanIoqa2RYEqIjJ7Ikfel94zbipuhz2fjAOcRssUjkArp3yh",
+	"bDLGgDTKhDQmVw/hIYhscLWuby7EmA0r1OHfpKdSKVtKP0IyC2XfVCJTAn435aigdIsNg/dSRQQqY4NQ",
+	"ELW2/8l5h8p5wyiar4bZl7pwlFuhAhcSpaBbKBJ+S2LoVlMZZPhWbfhGrbebQRcUxmF9QmL1D9xiOIEf",
+	"d9j3AnWqjw1G+C7sVmK8PnuEd+WrksR8l1r1ehcrALSh/rOCJX1LmRH8wJ1t2Y7Sq/attwv8EhrEcNWT",
+	"R3Oo+gmBcZYmCJHVm4haYywCLtECM7RfML9FiA8qxSv9Bni2eb+WHmJOgCN0lGTIOrVEt0vgrRsItoEU",
+	"gxTVB/PsxYlCAVif+N8o6GNU4y/effNJZGFjp1V3B9s6/2Kr7sZJI7I/8fkemwOfToyO/kwtMm+XMmaW",
+	"IICYs1QZlLmJ3i+VlqSWQoygDijhkBfU7kOThYIqM6ov65hKfHIIKR6UIYmatHGwmjPTSFv5aGE27rrI",
+	"lk32S8Q9luUvzBXvFEvFueAFBBfgORVDsKL3tGyS56DYnVL9IOf7gTvkNUprka4U9MPzC2Cyry0Xb9OF",
+	"8vk8dwcP0WpPAkS+GyPuQwW3t7C94urMk9KLDlekx+nbru62nJDy2WzWDVyF5DJeQ5hNsVLTTwZyG//R",
+	"r+rvoR9GZRsDEtsZuoX4hs7hUebigZ8x6TqthAEYLQolR+SYKZq91SOV+onS5IDRpVQ7SbXS2K1KUs+6",
+	"G7uKym1216V9/VMh4wqZqKqPQZnKP8b8ZHPDd2VUVZiV7q3kaUr2XPbprQx2qaJYCX7xU8zqTm2jbt3P",
+	"qWoKUJqlKY7zJMVM3ADSdNG6ULumVfwug1q+bMK6G9hWvLRhW40Z6UXXCv4vj8j/AVcZc24DZz6AXXUg",
+	"ma0D6iSojGSf566ok9PkpopRppigxwRcKjG17T/7z18TF251ZW68uLo8vrz6Xt81o6GGjQPv/lxZcNIx",
+	"Ff71EM7Otak+PUTniW1LBHSurfVMz+XelA1sv7WlFapi+guGVHnquJ8EIq8+hEQ4iTP1SoOTsRuGwTLf",
+	"vbhsYZaVR7cte92oVrEpHhCI7Mu6PXfqRvgCX+aWIxe5e05Z7FZ336m/kfgeI4foZ6fDDaVPI2tjo07N",
+	"iQ3DdtzwC1SKvGAuW1COHoGlvINYxQeC9BS/qSs5y4YENwKhwyK4X4GtdCS9Sl87Bt+GrD+VzV6BfRaN",
+	"lXt2nC+4PwR+eZlIvxirjbCrKIPqkZ6mUiUHL69VNS3pnZ2AhKpVNmNqFTM6oTNnkkKV9dFAlc6y2V2H",
+	"GqE6dCE+OPC6o9dKfnzqRo87kCike9yI4Say8Ft0hDS6poaSczMHo9TLoszhU+JlUN7lZ8WsOthWuMHP",
+	"kcHR0I166HH2l6RHP8S2sWGoLHMgvUPuoKQ256H3jJyCyw/Bq2ozvE/zZGBVX6Vhi6OFT5KkRcfhDl68",
+	"Sss23PZKpYYbDOq8WdQs61wVgws4rDZa9UhTqTyaabk1ZDji77l13cFVlF5YLKF/+0UpM43cGhYt5O5h",
+	"3HTKpviEbd13kGHCE1Xd1emr0JeQN2/CDvzEVkKWifAWttvIZlwmXzbL5k9+gnhiEaobG7jSrtQx/XsO",
+	"jY2BWUB/SWs23jQcF9taFml1a9MwtczYGMohvX5fbzuoYZiug3S0YWOnhjS+vzWjqpVNBDtysOsgwxW7",
+	"FYefd5yWYW4iHZn4PpqfCzYJq1C46AIy9FMbxgO2pSreoLw6BB2Tvols3HKwg3STfk43ke66euUetlFD",
+	"b6OavkUfd+m31vGGZWO2UB5BK02pBZmDNiwbuTXdZTqjbmNEcWKYArhVlKOfabTqrpETKKGIbDWblk1/",
+	"T9/H6+gaaljrRh3Tozd1W6/XcT2TZxC+Y21aLRcgGXzXQYsLdz5iYGLJQj7NpLmrCVF+B0/MvZelm+Ao",
+	"rtSxbsOcg0W3hu3oWTA7iuPqbUYieeRPHnD5llZYEhSCrCWANWzPx4vecmvYdI0KQICTUhYZG6iOHUpv",
+	"OiBq8vr/h6wNWLNUuoNsetdMJ8vR5cMKP3BhMgNyLaSZ1n10jT6uAcm4NSwdzcZAXLiaR78w3JrVchGV",
+	"nFuG2w59lGdbId1FGv/3mu5q/HRLuuPct2y6cQczwOvIaVUq2HHo5YQ/IxtvWfewg2bu3BGHoID7V4fu",
+	"R8D0ZgBQGzKw4CreN9wa/EDpuclX44tTbs3yDwRUtcUFxMIjaHZmZXZmrqihe0a97iC9XqdL63xhf1W4",
+	"Ty47MfhPUR1v4bo0W4K3zvMnPQSXMeCOetP4ALdZgzjD3LAUZkhxpYRmluaFrcF1I6oH08skeAf5C8Qv",
+	"X5N974nIxxHsA+oFoMsezygCl/hX02NjSBvXm4bGH/sv8OedCCtt39uhj8yvLKKf3ShMoLQ2WZi8kSv8",
+	"NDfxTmmiMP1OYbpQ+JUmrhD5Hag2z1hVM88zISfkxHsKK3GxitKgl2Q0qCAOlcF6n4fciGTf+zyP/mVi",
+	"Mn+9AJaiNjF5vSAIaH6OflWE7nmYl1qvHf7ALGsGmCu1mxg2EG0JqPmRAIjbeZ+LS4TWraqBHf4dKhbo",
+	"+45abqC0zGUzAh/SIBH6F21pcaWEKLDH5d55GlMkDwO/cFDw0SXk732FoDX/I1aPQS2wF7zU+IDCoGxq",
+	"kUEmWniUinAmSK0GedvfI3LCx6UI7zJLpA79tm5V2+CPjk9cYeYgOfKekA4g5MDPgX0lj2CJTHbpvjY5",
+	"hEzTF9CQmC7OKgK0qcK7SLQK1QTkF4Ns8dkgW1zgemmmNPs+wwj9Vxwl458Z1YdUukq/c1Wc/4ZIJ/w6",
+	"V6EN7D+gQCr4WdSZ7BIyIbtLkSfkmxwhO4MciLaR0XE4eSSnnghzZdd7zNEkfaNDV/15sZQLsEP2RRsB",
+	"+isK/3BK9hFQM3TM9naCWiGWyOt7hOhBHsExINGJpfYC2PKI/C/I1eiUzXCa2nPvKeVh0eTC/YQc/1gW",
+	"nXoMUJhQROUVpHyclE2tW8NYDY2j5J5QaLxsdm+8wZhzPA3oiCpFFIIn3h55wf8U7hHNGDg3OFmnAsQ0",
+	"41x09hGbvHAKsSFGaeRsEAeiZlQ1yYVYNrv5EJHShWhUY+7DPJNKL3kePGvKJvqHR7MQeQzrpGzKDkLY",
+	"GFDZMXz9VEoW5/3Qc6wfutxw+Yy8yqoX2A9FzbkNXjb9Pg/BT08FJ6Zr5RH5PoyaMOLSfsAzMx35/hvm",
+	"HRA3j36tbGpcfaQKURb8qpQFwIuc978EQ43ld0GZ3RkVlx1K7AecdI8hP/SMOef88r8gl/6Q5W5CycEp",
+	"PAAFgcBamFfO2/Xl5isGJkmdUL7EaFKSZk7brIw3W05NE1TIPRx8JAiXBjsKuqPiPuwnfEXpo4ntnOHi",
+	"RtlkGJFzcsg+1RhQmqc2oHE/JQSNs5oS1vtj0Bw67yvva3irbGpWE8Kv2s+L4SNCDQ99k2pGfLxSJAGa",
+	"IU4uBYCCyuMgRc3bLZtpB3+ayVJOFQRw94KQeS7kQEfQPfrQezpo0g9UBCel/YBMolog3YXoXd7pDnpK",
+	"gGlIe5osFOj+93kd1AEK1QQhbFablmG6OXps0ABOvT2mF9eNCuaZYVwpvjtfoka+XU9Np2qu23Smx8ct",
+	"quFaLbuC85a9Oc5fGm8YLAXMcKFUqMgV4RJThKmOLAXaplOF/ES+IFoo6k0jNZ16J1/IvwN16W4NXAUh",
+	"6U7/sIm7+PwSWv1D12op5SEjT04CShN5MFQsiuYRljwlMHXHcNwZsY/ISLfJQqGP5tZBX+pB+rAqcuoS",
+	"p7AlnQbk6UHQT5o3wX9KdTXWYhL6dU8VJpI25R93PNTY/GE2dZ2dvftL4eEB4BVqNRq63WbVDewqncFk",
+	"C34SoGVvW+wvQw0yfdNJTX+c8rHwycNsqmkxH3AYWSxKO+MXG3Cz4T2r2h4IUX3gJxwQfhj2orl2Cz+M",
+	"EcvEsPfQdYQaQJZLeI7mPjAW7d1+XvKYKrzb+yXlSMQh0RY/OzPJeMNZNTE9zIa5zbjcOpmznTCZ/Ry7",
+	"kT7MF+UM/Tdmdrr2ro/0HxDmc+h6kQ4ysYvuW7Zbu9r7z/QlKJ6WeoLBJq8hv010f0ij9h0TEFBoEhMV",
+	"1NCgKicznvwhMb0no0U1TCgw5hrmWUTDpDqdP+KxP9UxGyiOx5HmaDFsdVUrffV8ULUyJvLmAIQyFw1R",
+	"9pRy6mwAobP8BbjGVN9cw5/NMiC3YTOQhkLB4tSdPrhMthcruQQW0k1eXD7SLg7/73zfSRgDTLufn0tU",
+	"HqTh1gnZw8Ej40FA8+EnoKFWanE8suD0pWge4Th4X5rH5VDSn6TK8We+a1Eg5Sp0kNFzk+hYpKHQdQDI",
+	"CF2nqW2WRdHm5pkeMrLl1sYhhgeBcEuZPfEdtwiPoKSZCqyKjavYdA297mRFc85H3g7PLgu6JnhfC9/E",
+	"su5iVDcaBkQJy61CYfIGcu2W4+Iq9CEwsEMfvSMClxu6UW/ZOGfrLs7Bi/RBbKOxsVmYWT6/NDY2jfQN",
+	"F9voOp+yg3TXxY2m65TN9FRhYnyq8E4Ggko8cFq3KveslovuG2bVuo/SPMEQTVxvZOCB+SW69jp9jn7N",
+	"rJZNG7st23SQNjX5rsYiVDrSlrFrt3MzdHUNsYHkKO3gimVWHdQyXaOOWib9TOYm0sumFCRjoVkIlYkA",
+	"c4tiPI9KNYxsH04QsG47yDKRJk6sZcvm/ZpRgZC3q9/DZhDLLM0u0W01LBfPVKu2RtfHjoM0DuU1DmUN",
+	"GU7ZrFjmhrHZsnEV5dB6GwlIaL/M3bbs+7pdxVX6L21c+2VuGev13PySBmHcsTFj07RsXB0bK5uuhZo2",
+	"3sKmS0HnNC1rAwLSZtWHtb7ecjA4UDDatHKVmjFec90mHFSvQsJ5G42jn7+/MpN7d/P6p7nJ+9cf5GqN",
+	"BxuZPHoP1wyzinR0z7Tum2UTOlaMz84tZJF/AsUJHUuCGYW1Vd/CDqpYto0rbr2tUm2A8iAl5PwsOpxJ",
+	"MkBaiIh19u7sIz7hv6HIsLhUtg8gU05ghMTTI++JcGIfeJ9TZTYrM4g9rniChn3mNy+DzirsWsGGV7Cb",
+	"C3JDgo3FJutfXJCcY4ghq6abXS7OFRdK8zN3ViKTDCFbQGaaI5pJBmAGAvFDQSwCA9m/TMpOvnu++XyL",
+	"i2t3ZxY+Wlsu/o/VYnTYqWtZVPKIvBPBhbOoWcc6xL3bSN/UDRPVdRcPdYzjX0DJfgIW1wnLRgVvn/dY",
+	"RKffQFjlKevb41MhFDgh77d+l9j5pXwoOSk1/fEnIdH7DXtRFqgtt6YQplbL7SJNuWXAJWngnPN2va9D",
+	"olNZX8eiCc95+3A/3uGnBIkYHf9DUosGVv11AoTxGDqUKSJwk4WpBEZptVyfU/Y2AON84CkDpT9ckkfl",
+	"xZTayJZ5QPp1pitTCK8ahPf9j2+ju/qD3MwmvpWbQOl127oPftDdwFKDBbozl4trcN+I0/cgJNZSLMky",
+	"5I2Q1Fi4BOYeVIp2eL8blhTLy2B5FJxZW5GcvXMq7WEo9rd+DxALGZoDbWwcNAq7kXx32Yb8/C2WD8FH",
+	"yD4PQum8BB28MEEGD0uOcq172MyiWMBNMOksu7HkJbvb3tc8MDg2xjx2Y2PhpmQQmUDvG5u1HDZd22q2",
+	"2RLsgkOo5zmEe3e830AsaxsMh20R3Ik4yRkERJ7XMt3y0NQhE99fktSchv5ANMv76WRW7p33M2Xy8D2s",
+	"qCKbvH4jt264qIYf8HODLw1gnaNAgtSEY1YU3CMXHVbIhrZ5Pt1qSpnX66NYikFSWzjLfbGRZnOsodRL",
+	"lorjPZVN5P6EN+vYwHSPkoDell5vqXSXpZmVlV8sLs+tLRdXiqW10uIHxQWlEmPZPEewKhM0g8twNRp/",
+	"mCy9PePMN+o9I8eQMPAqwDaVH7Fxq/mLWNtJCkA4N/vQt8BBHJ952xDFfslaCIpagSB/LyCAwbiSLRUW",
+	"9seVZkzXyGGz1eBXezra5GIqqxjOAdk/3g74qaUcDD8bjOrqLAU9UDJ4JFHVmqrDuI9bsy3XpaY5ZUiG",
+	"47TwvwoOVDZrMt+S6AmlG/qmUUF1w7yXyaO7FKd2znFb64gcoCreUjEv7vYaDfPq25ZTmmvD4yPfSIhM",
+	"6xFEZy7kSBv2dfm9lO4UvyrBfdjrcR9E9nwXnTqI6T0LEuei2sAeU56ZWPZ2u/utUDrQLll+6DJsgwEa",
+	"GQ5MZQ85p9KlxbnFTB4xFxb4O1i2P1WitAyq6LYNXi63hiFrQ3gohK9Lcv6wFG7m1sixNp1Nq25U2mrC",
+	"ZwAajfMi6PNKb/v/z/83X7EacslkX56NMNaW6rphuviBi9Le5yL5lKGC5UKputuFGs86rm2Zmzl/ieyA",
+	"SoWDcXXWzwMNVRxv6HUHxyTT/2UNUeU0oA4PFgKZH5EDiazkcVOnZJ88ZzphfGDbK5SenMoEyV/MKH2F",
+	"QLF8wUWfX5fJ1E42Aorbb8Cev0bWxobQ+yS5o9SMyyb0pnkM0cZ9Tv4sy5wu9pScIH8CFTetY7sO9Qzy",
+	"q5FG46+aGL1J812CDSNnS1zcd9XDTA1boBKp+w/e0tcrN9GS7tZujd9E77tuc9GstxWC6GK+sPO5iVZX",
+	"itFG7yE1khUDsaQOhP2sjiFpjkVwfQkvwksxWmEkyuCf41cTeiGrRU8PESfqU7plKZA/kFNJLfZ5pdJ8",
+	"oHDOUqMxqHQNpYG9GhtDaZ5vSYXmE+8rxnMPIEcA/n5EX2N8QvjJThRpAtBzdJb7WEJrRCwa1sY07rtK",
+	"MkZ5rkG9viKg07+GxAdoAH/rz7K6kjyX34MCfuQ9AuEHgiSOzCxKxKJEVj6QpHyCWMcVRemH1OlbSoyM",
+	"mFtHmTAM1QmSiPxVtEb3npbNsTGeahpeVrg0xsZYIcAOvzHHVEyeKJqwX0Oa3/hbUzokDcdNppER5GFG",
+	"m8n3lY8ZSmn0YfnqbUmzDBMCJIYFm1TTWYiFbWHb2GjnfLWx71jyjRx0LuQOe/IKLZaWcryZYgKdvWe3",
+	"XJzbsOwKBjbvfQmzGvenpVbXZfOu/oCVJzNkz/CghJjpcBTUr0UiBGxt0IxC/FaYwjdBe59fAn29bDKF",
+	"HdqlQCmbz5i57trhaerSEumpyXczKlKGDbeLXGcajiYv+lcGysTE5DtT12+E1eUbIW35Rl8jF4Zm1jLB",
+	"zSqwosXv5/R8cS+Vyun1YXF5/vb8LJtYMbs4V1wr/nJpfhnmVgSqypZEOzD0Qji+sn7JIau7tkwM4DFF",
+	"nkhfSy4sltZuL64uhBc1LVaXi1FsefWyQ3S7fcvJXnB+NM6nRkXGQYjWQRBE49h550KR0xh0lK7HGERG",
+	"GUUV3Vx1n2sIZelrMWv3Inpy8e7M/B1fUWbnj9Afi+MKXXlLNFoYlbbc5e6NNmQcydy5hJixLD5Elkqa",
+	"sfRMfnjph3FXMQ/Nq+JDJ1J1Yw9jQZa0dD+YsZwEgftn0He5fTIdeCckIo9LusALk5XMX+9Z4Jnh/oU8",
+	"KnEHrx9wKptQHPUlVVbZCWEAliyKl2HT/pvpGwUnk2XboGrAEZqafBd520hKslL7vehn5A/3ZyH8MfCO",
+	"cDVDsvAR6aByKlwjSzXacgqlGzE/9D+5wMW4AL/r93XDFR1FuJQL+poMmdULsot4aSRaU6YYBQ2GHg7N",
+	"9At7xyWvXVzUJbKESsh/OZxSuJirrzNISZzkUY3lU0OPjU9bGIa88GpC3gRM8noltRZT9BP75DLsPdH3",
+	"uS9D79t+YfeW2H0xt65EaxIqe1XWzQbDe0aR4C4+f6W1dQEd9MY7q7YJCun339JCO3GmkVfaRQnN+zqJ",
+	"0OKs7W0p4YqdYW+AYq7edf9d6rPK5iAFWqHL+FZVaImdDVxUIV4cWY1W//SZXK+VDPfCFTGhK0Dn8Iu3",
+	"4qhRlHFFZdVAhVyzQUPNnpVclyTprrSWqyuRxYq5WIeW4wTae9vKurqwoAH8i3pIXipcfn6HoS7hUNHH",
+	"NRYSDdqf+uVj3ZaINhhRL8K/6LdfGa778D/EVKIOFaDxKCzZl4cRRRqfUPM/NNZIGh8DTcv4rADSkT8S",
+	"66sCPvWR1NkNrr1U8bqbC4/+GpJ1Fu3TPYBtFpoWo7DPIlv7L9JhzWS8R7wtTmi0ubebF30TIzYdm9jJ",
+	"BhL59NVr3N2l2HIhCPRl0P2pP3C/JeYcQ9AL5kpQdGuSyJaCAknU0MvEC4NuNNIvtMaVGnsRQulFGD8W",
+	"ey90rJjRNzU5OaAcZDd9oUvsa674Xmltcam4zOI7fIa/Ov7Fvga5lRtMNg9TRD1LmJLHE/SgToI1YmVN",
+	"CsPcjpdTnJJ98gq6kp3mR2Inyzd4l6q64dHBX3e9wQnSp6cB3b8VjOKjjPtvhRd07fNTj6CdGX3W76/P",
+	"eyOeAbZY/xM+r+q53MNmNJ30EizqOO97q8zq0PaGa4xFrOQLUWey5dwDvoWrY+s/XszFzOheuFNY1Uod",
+	"YSDTOnTAqH19oTkdmtAytSzSqoaNwaXHmijeM8yqVjaTR3egaEMsyhteUL7OVXGfpXCGAgJBzZeCptkh",
+	"/sbgHq7jY6yxwxtdPuIZiWEVTcWFmDfg0jWwK3VC9HNVlZ6IM+UNftv8EIk3f3A9biStZv4b0nR3SMd7",
+	"zIoezqI28dA0Fcsepn0c0toGt4/pZi7LEmU01tME/V1/J3qrTFCx2zNyEKEDCuB+bE3LHiGLs+wrty4t",
+	"uzeyfwy9OtlZRh9ADNPVvpKqIlzlvIHDJGZTN7ZwBtGPo8C4AtUg4EAwDiDiMtqNWlesMl9OGaYqwiDR",
+	"yAg8yuYlRSIHNpss++20lySvxWCUProQZD8U3t2GsuxRG0/9cK1Lx97IjCUfFwm2kS/LBraJwD3eM9h4",
+	"CXLwynX8BIpS94wM4+UtVu2V7GWYAUbuSO0SXuTe1PMFF/nnu4YW+QJXHFg8Q2lNCYzBwooJBx5lUDHK",
+	"Y3gTT9NyQ+3t4+qNP96ii9mkqvaLT7+AitzoCAxvG2kO/lQLRnRBzcdzVqrnPSFHZVOrtGzHsrUszAR7",
+	"A82F9qBV9RF/mc8PRtcC5SgLTdfkmn4258N377AcK/IDgOZVaC41ReYbqLrfRpqJH7izbAPMMyPN60B8",
+	"oMEhnx/DSlH92ccd7wvvKe8cUzY1s1Wv00McwykPWX2+NIXpEP4O83hCO4cy/H2Yb3UahICCCV8a1IVp",
+	"N0OfK5vchSQw75feh9SxZ3wAyovIJBKyj8R0DtDgkN+9DionwaWeRcKNdRYqTu+Q10mVtitts7JEialX",
+	"PPg7UV0HFQxS561dUDwFj3bwpyhdQLegpQDL6d/nE6Jkx1cmKXrMKCsUO/YbMxSyXYblFlTzYGN9J/RN",
+	"jBzj37HU/7VQyKKG/gBdLxQSdwX4VG+Kvp9q6A/YLq7D/3WbUfvJCCWqQGb3ronybYiP7qKYvYaCO3b5",
+	"YvbizPYP5BT8x0fcB7wTmqhFeafq1IrhP3Lxa9usxLmwU+tR8Jo8Xyk6Sil5hBcfD8dYo8rLyafQPYJG",
+	"I/vC8Sx3U4k3fEpDqY7v5GNNuXd5v8bPuZXKBnmFvhgeG+Xbx2XT+y1whxMxdsyf7BQaZMfHGvAGJ6GJ",
+	"RdNs/qXGh0Vx5h6LOErLs54bWSlCcIuXUgCYIsIGIOfLfQo1FBIyN2H1ij92ji4/O7OSi2oPKJ0w2knM",
+	"zGNhZtjGGyhoZxTWoQtq67qDuc9Wy6KEUVCSQJKHkzGuvw9DzE6QUeUKEf1uYicu2JL3xHtGXgdzGUHu",
+	"wuCsbPLQKX8TYUCJQG2kO2nIz7GfyVJFwN7CNoxvpogJOS6PmNALZn51/JGIMjJgRJgm6svkKH2HOVHU",
+	"QX3wDO8HlOI9QkHm2PzC2upKUYPpv5ooQ10u3l6hsEhMUoM+UOQPXWd8xsaY8ar0YIono8FDXzwfgOrn",
+	"V2BFLxYX8AxTZTPN5kdCLw5/dhOoYAFeTxBnAY/J0bjcuCGjbvQa1z0YJ4jdzrJJnrPxpW8gGnDmd9n1",
+	"fuv9xvsNIBf6HuURMysVA+aAHYXbPggHnEQe8YsqU4aa+hju6S+hG5ZHzNWL0vKf0S1U0CCpP/JdaI/7",
+	"xTdy4eOO99XNwDt4DXZPrxbFGEMMvGHjZl1vJ6py6uF4oQ8rLieboqtmEc/5+NHYJETSySPmgfNHN4a8",
+	"mTHlWj1p74icorTPizPJuqNTG5GLQnz+itwTwfLJytQSH8CnuC8waClqHMWEfmQK7I9P16IQktSaiAmV",
+	"ODgyWbGSK3QGs3Ajdt6u2pXvfa4aAChehGnIAjdR9JVNqwIzgKszLporrsxmqQym/8gj8h/cwPEnpwbm",
+	"oNXUP23BTHrHslE60K0zN8tm0zdJpDdYXxHfRrnOTZQJaqIkdMEpyXAbcvFlNgVY2cC2qg4zq/687g/I",
+	"GSQROOFjlaBIY8CvhQlnfmURgWxKf/TRRx/l7t7Nzc1lsqhu3cc2WrdaZhUZZqXecowtnGQMbthWY053",
+	"sXonVfbLeXfSajb734lrXXwfCpM4RG59W8S+DTzR0waObWKR3ZCQJwccU8FdYdrEETn0noJ350t/bHUw",
+	"7HoAp8KwE9Cj/a7FtuO8S3HWm8gEm9TXhUKcLOR841oKPSl9R1+vYyYKVY2zI6y0r9QEiY8o8hMifbPD",
+	"PEc6tbo9UA9PhJILXxvYv/dj9FiEWoSpwJDm0qOpbxom6/grydAQ85fzKxR9LiNz7oVzuIthI3V9hj29",
+	"AAcm63B6jLT5Km40LReblXbuA9zWuKOzEx89kY2YQyyqI6lA3MI9omYMmESi1So1bK6Fflq3qm3w4ytc",
+	"3S+5OvJEbt0llvP5BWtaJ3R5sVRUE6frMD18qvCusgcdszDkezNoTFCC4Ae4nWLMaBCFWg4eVXSntlG3",
+	"7gN/8imMyXQ0jgKZ7kd9Akk9nbp+vYB/NlUo5PDku+u5qYnqVE7/6cSN3NTUjRvXr09NFQqFQiqb0hsw",
+	"743y+gJl95J87usbE6koN1jR67rdRhuWjf6tZdL9BcpWajo1WZi8kSv8NDfxTmmiMP1OYbpQ+FVKEi2g",
+	"sTx8KGkqoeOLv6J17N7H2ER6MLw5gAM/1HV2pkjvEAs5+pZhbtJXqAowMxjUJvs9kTXgh98JwOCffYAg",
+	"nES3V5oVFZI7qqkjUab49lTdDFIy02K/43llvUxpeWZhZWYWimW6BHcluauK8ELbceXIh7ni3aXFUnFh",
+	"9qO1D4rCFRbuuBawInQPB9WpLYcPYmkYTkNkLfT6/t35lbszpdn3u64gWtvVdKeG/K+PJIwsLR3z6srh",
+	"4kNvFxK0Osz5HTdpuV/OqGo8QDx48ZQemTCpAOfM7Ozi6kIpoV6KfyBUMBUw4m7f9Z2c6g/7RcPqL5fa",
+	"TXy3CxH4Xy99tFRUk4BMv5R1oaqFWVd9+CrydwB8jZE0NAJcxhtOt1kmy8Xb6gFsNt7ANoaZ3EBYekNM",
+	"ZS1J8iL62ZWZu8U1gQW4m7eLy4kngXGM0Lzf8sULjE10axjRFa+2ok0eiROvZ/PD4gDznLiHQ8t/iIxe",
+	"j6m4oYzxiDqrcg0Ns6pNsZuRVLYNXMI2tKYwYeX0LUvIlDY3yvK1wWguOdWyKywLV6kP/VjxFBvYrcCU",
+	"IgczbvQOZHRJrw9WmhZUobGdkyOkUaapocSSMxHKZgNEvKcifCff+A6Ec+RhIT7Hhr7Rwq5DWw4Sin4m",
+	"uV4sSqbDj89IK1xpHmmvm6KuFFMx/QH6TQ9bNY2NMZP1UT6aJfBHpDXTQhsGrlcdqm20APx+tuKls4C+",
+	"EuildxU1a/0p0MOC+l8pVH8gR1nkPYYsUm8XLS2ulFA6MadAoVYNq2Nwz2q7AdWl8OySz8QAGTGI5uNP",
+	"KLNj2RmqVL87VkWvoyrewnWr2aDYyKZadj01naq5bnN6fLxOH6hZjjv9s8LPCsA6+VYULYgVo1Ky0jzo",
+	"YCJslsf8Scf7Dbe8vggmz2W7TBDjXn7ojhqPLZDvw918mTIYnn1xwmbr+tN96B+CD/tzDxQf/wtE7XZ4",
+	"kUDC/BexQeFzUnxH1TpU5QZuYjvXcrCdCT4rtSBSfDjWwmZbyfoABOmolxCNB6ImWDBEbyqYqJVWKjqT",
+	"c9yoKp1utpwa5DbTbQZJydLaEC1++MnD/xcAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

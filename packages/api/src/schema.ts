@@ -378,6 +378,105 @@ export interface paths {
         patch: operations["updateCategory"];
         trace?: never;
     };
+    "/api/debtors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список должников
+         * @description Все не удалённые (не tombstoned) должники текущего user.
+         */
+        get: operations["listDebtors"];
+        put?: never;
+        /** Создать должника */
+        post: operations["createDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/debtors/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtorId"];
+            };
+            cookie?: never;
+        };
+        /** Получить должника по ID */
+        get: operations["getDebtor"];
+        put?: never;
+        post?: never;
+        /**
+         * Удалить должника
+         * @description 409 если есть не удалённые (live) debt operations — tombstoned
+         *     операции удаление не блокируют. Удаление мягкое (tombstone): должник
+         *     исчезает из листингов, но сохраняется для синхронизации устройств.
+         */
+        delete: operations["deleteDebtor"];
+        options?: never;
+        head?: never;
+        /** Обновить должника (name, note) */
+        patch: operations["updateDebtor"];
+        trace?: never;
+    };
+    "/api/debt-operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список долговых операций
+         * @description Все не удалённые (не tombstoned) операции текущего user.
+         */
+        get: operations["listDebtOperations"];
+        put?: never;
+        /** Создать долговую операцию */
+        post: operations["createDebtOperation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/debt-operations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtOperationId"];
+            };
+            cookie?: never;
+        };
+        /** Получить долговую операцию по ID */
+        get: operations["getDebtOperation"];
+        put?: never;
+        post?: never;
+        /**
+         * Удалить долговую операцию
+         * @description Удаление мягкое (tombstone): операция исчезает из листингов и
+         *     перестаёт влиять на производные балансы, но сохраняется для
+         *     синхронизации устройств.
+         */
+        delete: operations["deleteDebtOperation"];
+        options?: never;
+        head?: never;
+        /**
+         * Частично обновить долговую операцию
+         * @description Все поля кроме `version` optional. `debtorId`, `direction` и `kind`
+         *     менять нельзя. Балансы нигде не хранятся — производные суммы
+         *     пересчитываются из истории операций.
+         */
+        patch: operations["updateDebtOperation"];
+        trace?: never;
+    };
     "/api/sync/push": {
         parameters: {
             query?: never;
@@ -686,6 +785,122 @@ export interface components {
             icon?: string;
             color?: string;
         };
+        /**
+         * @description Человек, с которым user отслеживает долги. Балансы не хранятся:
+         *     они производны от debt operations (по направлениям, без неттинга).
+         */
+        Debtor: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            name: string;
+            note: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /**
+             * Format: int
+             * @description Версия должника (optimistic concurrency).
+             */
+            version: number;
+        };
+        DebtorCreateRequest: {
+            /**
+             * Format: uuid
+             * @description Опциональный клиентский id (UUID v4). Дубликат для user →
+             *     409 `DEBTOR_ALREADY_EXISTS`.
+             */
+            id?: string;
+            name: string;
+            /** @default  */
+            note: string;
+        };
+        /**
+         * @description Все поля кроме `version` optional. `version` — optimistic concurrency:
+         *     при параллельном изменении → 409 `DEBTOR_VERSION_CONFLICT`.
+         *     `note`: отсутствует = не менять, `""` = очистить; `null` невалиден.
+         */
+        DebtorUpdateRequest: {
+            /** Format: int */
+            version: number;
+            name?: string;
+            note?: string;
+        };
+        /**
+         * @description Запись долгового леджера. `direction` = receivable («мне должны»)
+         *     или payable («я должен»); kind = debt (долг растёт) или repayment
+         *     (списание — долг уменьшается). Баланс должника в направлении =
+         *     Σ(debt) − Σ(repayment) по live-операциям; направления независимы
+         *     (без неттинга) и баланс может стать отрицательным при переплате.
+         */
+        DebtOperation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** Format: uuid */
+            debtorId: string;
+            /** @enum {string} */
+            direction: "receivable" | "payable";
+            /** @enum {string} */
+            kind: "debt" | "repayment";
+            /**
+             * Format: int64
+             * @description Положительные минорные единицы (divisor 100).
+             */
+            amount: number;
+            note: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /**
+             * Format: int
+             * @description Версия операции (optimistic concurrency).
+             */
+            version: number;
+        };
+        DebtOperationCreateRequest: {
+            /**
+             * Format: uuid
+             * @description Опциональный клиентский id (UUID v4). Дубликат для user →
+             *     409 `DEBT_OPERATION_ALREADY_EXISTS`.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Существующий live-должник того же user.
+             */
+            debtorId: string;
+            /** @enum {string} */
+            direction: "receivable" | "payable";
+            /** @enum {string} */
+            kind: "debt" | "repayment";
+            /** Format: int64 */
+            amount: number;
+            /** @default  */
+            note: string;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        /**
+         * @description Все поля кроме `version` optional. `debtorId`, `direction` и `kind`
+         *     менять нельзя. `note`: отсутствует = не менять, `""` = очистить;
+         *     `null` невалиден.
+         */
+        DebtOperationUpdateRequest: {
+            /** Format: int */
+            version: number;
+            /** Format: int64 */
+            amount?: number;
+            note?: string;
+            /** Format: date-time */
+            occurredAt?: string;
+        };
         /** @description Полное состояние счёта в sync-операции (upsert). */
         AccountSyncData: {
             name: string;
@@ -726,8 +941,27 @@ export interface components {
             /** Format: uuid */
             toAccountId?: string | null;
         };
+        /** @description Полное состояние должника в sync-операции (upsert). */
+        DebtorSyncData: {
+            name: string;
+            note: string;
+        };
+        /** @description Полное состояние долговой операции в sync-операции (upsert). */
+        DebtOperationSyncData: {
+            /** Format: uuid */
+            debtorId: string;
+            /** @enum {string} */
+            direction: "receivable" | "payable";
+            /** @enum {string} */
+            kind: "debt" | "repayment";
+            /** Format: int64 */
+            amount: number;
+            note: string;
+            /** Format: date-time */
+            occurredAt: string;
+        };
         /** @enum {string} */
-        SyncEntity: "account" | "category" | "transaction";
+        SyncEntity: "account" | "category" | "transaction" | "debtor" | "debt_operation";
         /**
          * @description Одна клиентская операция. `baseVersion` — серверная версия, на которой
          *     операция основана (0 = запись ещё не существует на сервере). Для
@@ -751,7 +985,7 @@ export interface components {
             /** Format: int */
             baseVersion: number;
             /** @description Полное состояние записи; обязательно для upsert. */
-            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"];
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"];
         };
         SyncPushRequest: {
             operations: components["schemas"]["SyncOperation"][];
@@ -763,7 +997,7 @@ export interface components {
             /** @description true — запись tombstoned на сервере. */
             deleted: boolean;
             /** @description Присутствует для не удалённой записи. */
-            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"];
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"];
         };
         /** @description Результат одной операции; HTTP ответ — всегда 200. */
         SyncPushResult: {
@@ -807,7 +1041,7 @@ export interface components {
              */
             version: number;
             /** @description Полное состояние записи; присутствует для upsert. */
-            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"];
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"];
         };
         SyncPullResponse: {
             changes: components["schemas"]["SyncChange"][];
@@ -999,6 +1233,96 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Должник не найден (или чужой). */
+        DebtorNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "DEBTOR_NOT_FOUND",
+                 *       "message": "debtor not found"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Должник с таким name (или id) уже есть у user. */
+        DebtorAlreadyExists: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "DEBTOR_ALREADY_EXISTS",
+                 *       "message": "debtor already exists"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description У должника есть не удалённые debt operations, удаление невозможно. */
+        DebtorInUse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "DEBTOR_IN_USE",
+                 *       "message": "debtor has debt operations and cannot be deleted"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Долговая операция не найдена (или чужая). */
+        DebtOperationNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "DEBT_OPERATION_NOT_FOUND",
+                 *       "message": "debt operation not found"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Операция с таким id уже есть у user (клиентский id-дубликат). */
+        DebtOperationAlreadyExists: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "DEBT_OPERATION_ALREADY_EXISTS",
+                 *       "message": "debt operation already exists"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Конфликт в версии операции (optimistic concurrency). */
+        DebtOperationVersionConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "DEBT_OPERATION_VERSION_CONFLICT",
+                 *       "message": "debt operation version conflict"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         TransactionId: string;
@@ -1009,6 +1333,8 @@ export interface components {
         IdempotencyKey: string;
         AccountId: string;
         CategoryId: string;
+        DebtorId: string;
+        DebtOperationId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1892,6 +2218,288 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listDebtors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Должники текущего user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Debtor"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtorCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Должник создан. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Debtor"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["DebtorAlreadyExists"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtorId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Должник. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Debtor"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["DebtorNotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deleteDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtorId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Удалено. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["DebtorNotFound"];
+            409: components["responses"]["DebtorInUse"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtorId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtorUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Обновлённый должник. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Debtor"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["DebtorNotFound"];
+            /**
+             * @description Либо имя уже занято (`DEBTOR_ALREADY_EXISTS`), либо конфликт
+             *     версии (`DEBTOR_VERSION_CONFLICT`).
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listDebtOperations: {
+        parameters: {
+            query?: {
+                /** @description Фильтр по должнику. */
+                debtorId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Операции текущего user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtOperation"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createDebtOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtOperationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Операция создана. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtOperation"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["DebtOperationAlreadyExists"];
+            /** @description Бизнес-правило нарушено — должник не найден. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getDebtOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtOperationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Операция. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtOperation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["DebtOperationNotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deleteDebtOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtOperationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Удалено. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["DebtOperationNotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateDebtOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["DebtOperationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtOperationUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Обновлённая операция. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtOperation"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["DebtOperationNotFound"];
+            409: components["responses"]["DebtOperationVersionConflict"];
             500: components["responses"]["InternalError"];
         };
     };
