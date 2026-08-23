@@ -10,9 +10,13 @@ import { UnauthorizedError } from '@expense-tracker/api'
 import { ThemeProvider } from '@/shared/config/theme'
 import { LoginScreen } from './login-screen'
 
-jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), replace: jest.fn() },
-}))
+// The mock object is created inside the factory: the jest.mock call is hoisted
+// above this module's body, so an outer `const` would still be uninitialized
+// when the component's import of expo-router runs the factory.
+jest.mock('expo-router', () => {
+  const mockRouter = { back: jest.fn(), push: jest.fn() }
+  return { router: mockRouter, useRouter: () => mockRouter }
+})
 
 jest.mock('@/entities/session', () => {
   const loginMock = jest.fn()
@@ -20,7 +24,7 @@ jest.mock('@/entities/session', () => {
 })
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { router } = require('expo-router') as { router: { back: jest.Mock } }
+const { router } = require('expo-router') as { router: { back: jest.Mock; push: jest.Mock } }
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { loginMock } = require('@/entities/session') as {
@@ -44,6 +48,21 @@ function renderLogin() {
 describe('LoginScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  it('renders the shared header shell with the back affordance', () => {
+    renderLogin()
+
+    expect(screen.getByTestId('screen-header-large-title')).toHaveTextContent('Вход')
+    expect(screen.getByTestId('screen-header-back')).toBeTruthy()
+  })
+
+  it('pushes to register so the register header back can pop to login', () => {
+    renderLogin()
+
+    fireEvent.press(screen.getByTestId('login-to-register-button'))
+
+    expect(router.push).toHaveBeenCalledWith('/register')
   })
 
   it('blocks an empty submit with both field errors and no login call', async () => {

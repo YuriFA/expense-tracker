@@ -47,9 +47,9 @@ appId: com.anonymous.mobile
       visible: 'Save Password'
     commands:
       - tapOn: 'Not Now'
-# Dismiss the keyboard by tapping the (non-interactive) screen header.
+# Dismiss the keyboard by tapping the (non-interactive) compact header bar.
 - tapOn:
-    text: 'С возвращением'
+    id: screen-header
 - tapOn:
     id: login-submit-button
 # The save-password sheet can appear either while typing or right after the

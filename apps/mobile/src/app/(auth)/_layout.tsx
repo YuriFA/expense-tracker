@@ -3,8 +3,10 @@ import { Stack } from 'expo-router'
 /**
  * Navigator for the unauthenticated entry points (login / register / verify /
  * reset). Rendered full-screen without the bottom tabs - the mobile twin of the
- * web `meta.public` routes (apps/web/src/app/router).
+ * web `meta.public` routes (apps/web/src/app/router). Native headers stay
+ * hidden: each screen carries the shared collapsible ScreenHeader like every
+ * other stack destination.
  */
 export default function AuthLayout() {
-  return <Stack screenOptions={{ headerTitleAlign: 'center' }} />
+  return <Stack screenOptions={{ headerShown: false }} />
 }

@@ -14,4 +14,8 @@ appId: com.anonymous.mobile
     timeout: 30000
 - assertVisible:
     id: screen-login
+- assertVisible:
+    id: screen-header-back
+- assertVisible:
+    id: screen-header-large-title
 - takeScreenshot: auth-login

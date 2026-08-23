@@ -5,10 +5,10 @@ pattern implemented as pure in-screen UI, cross-platform, with no
 iOS-only native API. Native navigation headers stay hidden for these
 screens (`headerShown: false` is already the root Stack default).
 
-Purpose-built for pushed screens like `income`, `accounts`, `goals`. Tab
-roots keep their existing in-screen titles (no back affordance, no
-collapse); `(auth)` keeps its native headers. If a second header concept
-ever appears, generalize then - not before.
+Purpose-built for pushed screens like `income`, `accounts`, `goals` and
+the `(auth)` stack screens. Tab roots keep their existing in-screen titles
+(no back affordance, no collapse). If a second header concept ever
+appears, generalize then - not before.
 
 The component knows nothing about domain entities, repositories or app
 state: it renders the given `title` / `right` slot and animates from the

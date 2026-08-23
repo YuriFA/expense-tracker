@@ -10,9 +10,13 @@ import { AlreadyExistsError } from '@expense-tracker/api'
 import { ThemeProvider } from '@/shared/config/theme'
 import { RegisterScreen } from './register-screen'
 
-jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), replace: jest.fn() },
-}))
+// The mock object is created inside the factory: the jest.mock call is hoisted
+// above this module's body, so an outer `const` would still be uninitialized
+// when the component's import of expo-router runs the factory.
+jest.mock('expo-router', () => {
+  const mockRouter = { back: jest.fn(), navigate: jest.fn() }
+  return { router: mockRouter, useRouter: () => mockRouter }
+})
 
 jest.mock('@/entities/session', () => {
   const registerMock = jest.fn()
@@ -20,7 +24,7 @@ jest.mock('@/entities/session', () => {
 })
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { router } = require('expo-router') as { router: { back: jest.Mock } }
+const { router } = require('expo-router') as { router: { back: jest.Mock; navigate: jest.Mock } }
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { registerMock } = require('@/entities/session') as {
@@ -50,6 +54,17 @@ function fillValid(password = 'longenough') {
 describe('RegisterScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  it('renders the shared header shell and pops to login on back', () => {
+    renderRegister()
+
+    expect(screen.getByTestId('screen-header-large-title')).toHaveTextContent('Регистрация')
+    fireEvent.press(screen.getByTestId('screen-header-back'))
+
+    // login→register is a push, so the default back() is a real pop to login
+    // (a pop, not a replace, keeps the transition animating backwards).
+    expect(router.back).toHaveBeenCalledTimes(1)
   })
 
   it('blocks a mismatched confirm with the confirm-field error', async () => {
@@ -90,7 +105,9 @@ describe('RegisterScreen', () => {
     fireEvent.press(screen.getByTestId('register-submit-button'))
 
     await waitFor(() => expect(registerMock).toHaveBeenCalledWith('user@example.com', 'longenough'))
-    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1))
+    // Success must leave the auth flow entirely (login sits beneath in the
+    // stack), not just pop one screen.
+    await waitFor(() => expect(router.navigate).toHaveBeenCalledWith('/settings'))
   })
 
   it('surfaces a repository error at the root slot and keeps the values', async () => {
