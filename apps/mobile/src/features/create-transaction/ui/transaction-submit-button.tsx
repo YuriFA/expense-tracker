@@ -9,19 +9,24 @@ export function TransactionSubmitButton({
   disabled,
   loading,
   onPress,
+  testID = 'new-transaction-submit',
+  accessibilityLabel = 'Сохранить транзакцию',
 }: {
   className?: string
   disabled: boolean
   loading: boolean
   onPress: () => void
+  /** Overrides for reuse outside the transaction form (e.g. debts). */
+  testID?: string
+  accessibilityLabel?: string
 }) {
   const isBlocked = disabled || loading
 
   return (
     <Pressable
-      testID="new-transaction-submit"
+      testID={testID}
       accessibilityRole="button"
-      accessibilityLabel="Сохранить транзакцию"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: isBlocked }}
       disabled={isBlocked}
       className={cn(

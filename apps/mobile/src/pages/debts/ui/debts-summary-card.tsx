@@ -4,6 +4,7 @@ import { Text } from '@/shared/ui/text'
 import { formatAmount } from '@/shared/lib/format/format'
 import { DEBT_DIRECTION_VIEWS } from '../model/kind'
 import type { DirectionBalances } from '../model/selectors'
+import { Card } from '@/shared/ui/card'
 
 /**
  * Dual-total summary card: both direction totals as separate rows («Мне
@@ -12,7 +13,7 @@ import type { DirectionBalances } from '../model/selectors'
  */
 export function DebtsSummaryCard({ totals }: { totals: DirectionBalances }) {
   return (
-    <View className="gap-3 rounded-2xl bg-card p-5" testID="debts-summary">
+    <Card variant="elevated" className="bg-brand-indigo/20" testID="debts-summary">
       <SummaryRow
         testID="debts-total-receivable"
         label={DEBT_DIRECTION_VIEWS.receivable.summaryLabel}
@@ -25,7 +26,7 @@ export function DebtsSummaryCard({ totals }: { totals: DirectionBalances }) {
         icon="arrow-up"
         total={totals.payable}
       />
-    </View>
+    </Card>
   )
 }
 

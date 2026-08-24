@@ -1,9 +1,10 @@
 // Debtor history sheet: the remaining balance of one debtor-direction
 // ledger, the day-grouped operation history («Долг» / «Списание» with
 // sign-colored amounts), a debtor edit affordance in the header, a row tap
-// opening the edit-operation sheet, and the «Новое списание» footer CTA.
-// Pure presentation: the page passes the derived views and callbacks down
-// (invariant #15 - the page owns all sheet composition).
+// opening the edit-operation sheet, and the «Новая операция» footer CTA
+// opening the fixed-context operation form (design D9). Pure presentation:
+// the page passes the derived views and callbacks down (invariant #15 - the
+// page owns all sheet composition).
 
 import { useEffect } from 'react'
 import { View } from 'react-native'
@@ -34,7 +35,7 @@ export interface DebtorHistorySheetProps {
   operations: DebtOperation[]
   onEditOperation: (operation: DebtOperation) => void
   onEditDebtor: (debtor: Debtor) => void
-  onNewRepayment: (debtorId: string, direction: DebtDirection) => void
+  onNewOperation: (debtorId: string, direction: DebtDirection) => void
 }
 
 export function DebtorHistorySheet({
@@ -44,7 +45,7 @@ export function DebtorHistorySheet({
   operations,
   onEditOperation,
   onEditDebtor,
-  onNewRepayment,
+  onNewOperation,
 }: DebtorHistorySheetProps) {
   // Present when a selection arrives: a parent-side present() would race the
   // selection's commit (the sheet renders nothing until the debtor is set)
@@ -69,7 +70,7 @@ export function DebtorHistorySheet({
               icon="create-outline"
               size="md"
               colorClassName="accent-muted-foreground"
-              accessibilityLabel="Редактировать должника"
+              accessibilityLabel="Редактировать контакт"
               testID="debts-history-edit-debtor"
               onPress={() => onEditDebtor(debtor)}
             />
@@ -131,9 +132,9 @@ export function DebtorHistorySheet({
         <View className="px-4 pb-safe pt-3">
           <Button
             variant="primary"
-            text={DEBTS_COPY.newRepayment}
+            text={DEBTS_COPY.newOperation}
             testID="debts-new-repayment"
-            onPress={() => onNewRepayment(debtor.id, direction)}
+            onPress={() => onNewOperation(debtor.id, direction)}
           />
         </View>
       </BottomSheetView>

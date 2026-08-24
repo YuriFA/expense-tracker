@@ -1,27 +1,28 @@
 // Debt-operation bottom-sheet container: presentation only (ref, snap
-// points). The form and its lifecycle - including its own header with the
-// edit variant's delete affordance - live in `operation-form.tsx`
-// (conventions forms.md §3).
+// points, dismissal on success). The form and its lifecycle - including its
+// own header with the edit variant's delete affordance - live in
+// `operation-form.tsx` (conventions forms.md §3). Create is always
+// fixed-context (a contact's history sheet, design D9).
 
 import { useEffect } from 'react'
-import type { DebtDirection, DebtOperation, DebtOperationKind } from '@expense-tracker/api'
+import type { DebtDirection, DebtOperation } from '@expense-tracker/api'
 import { BottomSheet, BottomSheetView, type BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { OperationForm } from './operation-form'
 
-export interface OperationSheetProps {
-  ref: React.Ref<BottomSheetRef>
-  /** The operation being edited; undefined = create mode. */
-  operation?: DebtOperation
-  /** Fixed context when opened from a debtor's history sheet. */
-  fixed?: { debtorId: string; direction: DebtDirection }
-  /** Initial kind for create mode (e.g. repayment from «Новое списание»). */
-  defaultKind?: DebtOperationKind
-}
+/** Mirrors the form's edit/create union; the sheet owns dismissal itself. */
+export type OperationSheetProps =
+  | { ref: React.Ref<BottomSheetRef>; operation: DebtOperation }
+  | {
+      ref: React.Ref<BottomSheetRef>
+      operation?: undefined
+      fixed: { debtorId: string; direction: DebtDirection }
+    }
 
-export function OperationSheet({ ref, operation, fixed, defaultKind }: OperationSheetProps) {
+export function OperationSheet({ ref, ...formProps }: OperationSheetProps) {
   // The edit variant mounts WITH its subject (a parent-side present() would
   // race the conditional mount and be lost); the create variant is presented
   // imperatively by the page.
+  const { operation } = formProps
   useEffect(() => {
     if (operation && ref && typeof ref !== 'function') ref.current?.present()
   }, [operation, ref])
@@ -38,12 +39,7 @@ export function OperationSheet({ ref, operation, fixed, defaultKind }: Operation
       {/* The visible element carrying the sheet testID (accounts-sheet
           pattern): the modal container is zero-bounds to Maestro. */}
       <BottomSheetView testID={sheetTestId} className="flex-1">
-        <OperationForm
-          operation={operation}
-          fixed={fixed}
-          defaultKind={defaultKind}
-          onSuccess={handleSuccess}
-        />
+        <OperationForm {...formProps} onSuccess={handleSuccess} />
       </BottomSheetView>
     </BottomSheet>
   )

@@ -1,34 +1,23 @@
-// The debt-operation form (new + edit variants, conventions forms.md):
-// Долг ↔ Списание kind switch, direction segmented control (fixed when opened
-// from a debtor's sheet), debtor picker, keypad-only amount, date picker,
-// note, and the over-repayment warning (warn, never block). The amount stays
-// a digit string in form values; the named mappers convert to int64 minor
-// units exactly once at the submission boundary (forms.md §2/§4). Edit mode
-// carries the record's CAS `version`; direction/kind/debtor are immutable
-// server-side, so they render as static context rows.
+// The debt-operation form (edit + fixed-context create variants, conventions
+// forms.md §2/§3): static «Контакт» / «Направление» context rows, the Долг ↔
+// Списание kind switch (create mode), keypad-only amount, and the one-row
+// action toolbar with expandable quick dates and note (design D9). The create
+// entry point is a contact's history sheet, so the contact and direction are
+// always fixed context. The amount stays a digit string in form values; the
+// named mappers convert to int64 minor units exactly once at the submission
+// boundary (forms.md §4). Edit mode carries the record's CAS `version`;
+// direction/kind/debtor are immutable server-side, so they render as static
+// context rows.
 //
 // The root owns the form lifecycle and submission. Field sections subscribe
 // to their own slice through useFormContext; the over-repayment warning reads
 // the live amount, kind, and debtor selection in one isolated subscriber.
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  FormProvider,
-  useController,
-  useForm,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from 'react-hook-form'
+import { FormProvider, useController, useForm, useFormContext, useWatch } from 'react-hook-form'
 import { Alert, View } from 'react-native'
-import type {
-  DebtDirection,
-  DebtOperation,
-  DebtOperationKind,
-  DebtOperationRepository,
-} from '@expense-tracker/api'
-import { fullDayLabel } from '@expense-tracker/dates'
+import type { DebtDirection, DebtOperation, DebtOperationRepository } from '@expense-tracker/api'
 import { AmountKeypad, applyKeypadInput, type KeypadKey } from '@/features/create-transaction'
 import {
   useCreateDebtOperation,
@@ -42,28 +31,30 @@ import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { formatAmount } from '@/shared/lib/format/format'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
 import { minorToInputValue } from '@/shared/lib/money/display'
-import { DatePickerSheet } from '@/shared/ui/date-picker-sheet'
-import { BottomSheetHeader, BottomSheetInput, type BottomSheetRef } from '@/shared/ui/bottom-sheet'
-import { Button } from '@/shared/ui/button'
+import { BottomSheetHeader } from '@/shared/ui/bottom-sheet'
 import { FormError } from '@/shared/ui/form'
-import { Icon } from '@/shared/ui/icon'
 import { IconButton } from '@/shared/ui/icon-button'
 import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
-import { DEBTS_COPY, DEBT_DIRECTION_VIEWS, DEBT_KIND_LABELS } from '../model/kind'
+import {
+  DEBTS_CONTACT_NOUN,
+  DEBTS_COPY,
+  DEBT_DIRECTION_VIEWS,
+  DEBT_KIND_LABELS,
+} from '../model/kind'
 import { operationDefaultValues, operationSchema, type OperationFormValues } from '../model/schema'
-import { DebtorPickerSheet } from './debtor-picker-sheet'
+import { DebtsFormActions } from './form-actions'
 
-interface OperationFormProps {
-  /** The operation being edited; undefined = create mode. */
-  operation?: DebtOperation
-  /** Fixed context when opened from a debtor's history sheet. */
-  fixed?: { debtorId: string; direction: DebtDirection }
-  /** Initial kind for create mode (e.g. repayment from «Новое списание»). */
-  defaultKind?: DebtOperationKind
-  onSuccess: () => void
+interface FixedContext {
+  debtorId: string
+  direction: DebtDirection
 }
+
+/** Either an edit (operation given) or a fixed-context create (design D9). */
+export type OperationFormProps =
+  | { operation: DebtOperation; fixed?: never; onSuccess: () => void }
+  | { operation?: undefined; fixed: FixedContext; onSuccess: () => void }
 
 function toCreatePayload(
   values: OperationFormValues,
@@ -133,7 +124,7 @@ function SegmentedSwitch<T extends string>({
   )
 }
 
-/** Static context row for immutable fields in edit mode. */
+/** Static context row for immutable fields. */
 function StaticRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between py-2">
@@ -147,82 +138,21 @@ function StaticRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** The kind switch (create mode only) and, outside a fixed context, the
- * direction segmented control. One subscriber for both discriminator fields. */
-function KindDirectionFields({ fixed }: { fixed?: OperationFormProps['fixed'] }) {
+/** The Долг ↔ Списание kind switch (create mode only). */
+function KindFields() {
   const { control, setValue } = useFormContext<OperationFormValues>()
   const kind = useWatch({ control, name: 'kind' })
-  const direction = useWatch({ control, name: 'direction' })
 
   return (
-    <View className="gap-3">
-      <SegmentedSwitch
-        testIDPrefix="debts-operation-kind"
-        value={kind}
-        onChange={(next) => setValue('kind', next, { shouldValidate: true })}
-        options={[
-          { value: 'debt', label: DEBT_KIND_LABELS.debt },
-          { value: 'repayment', label: DEBT_KIND_LABELS.repayment },
-        ]}
-      />
-      {fixed ? (
-        <StaticRow label="Направление" value={DEBT_DIRECTION_VIEWS[fixed.direction].summaryLabel} />
-      ) : (
-        <SegmentedSwitch
-          testIDPrefix="debts-operation-direction"
-          value={direction}
-          onChange={(next) => setValue('direction', next, { shouldValidate: true })}
-          options={[
-            { value: 'receivable', label: DEBT_DIRECTION_VIEWS.receivable.summaryLabel },
-            { value: 'payable', label: DEBT_DIRECTION_VIEWS.payable.summaryLabel },
-          ]}
-        />
-      )}
-    </View>
-  )
-}
-
-/** The debtor picker row plus its sheet (create mode without a fixed debtor). */
-function DebtorField() {
-  const { control, setValue } = useFormContext<OperationFormValues>()
-  const { field, fieldState } = useController({ name: 'debtorId', control })
-  const debtors = useDebtors().data ?? []
-  const pickerRef = useRef<BottomSheetRef>(null)
-  const selected = debtors.find((debtor) => debtor.id === field.value)
-
-  return (
-    <>
-      <Pressable
-        testID="debts-operation-debtor"
-        accessibilityRole="button"
-        accessibilityLabel={`Должник: ${selected?.name ?? 'не выбран'}`}
-        className="flex-row items-center gap-3 py-3.5"
-        onPress={() => pickerRef.current?.present()}
-      >
-        <Icon name="person-outline" size={20} colorClassName="accent-muted-foreground" />
-        <Text variant="body" className="text-muted-foreground">
-          Должник
-        </Text>
-        <Text
-          variant="body"
-          className={cn(
-            'flex-1 text-right',
-            selected && !fieldState.error ? 'text-foreground' : 'text-muted-foreground',
-          )}
-          numberOfLines={1}
-        >
-          {selected?.name ?? 'Выберите должника'}
-        </Text>
-        <Icon name="chevron-forward" size={16} colorClassName="accent-muted-foreground" />
-      </Pressable>
-      <FormError testID="debts-operation-debtor-error">{fieldState.error?.message}</FormError>
-      <DebtorPickerSheet
-        ref={pickerRef}
-        debtors={debtors}
-        selectedId={field.value}
-        onSelect={(id) => setValue('debtorId', id, { shouldValidate: true })}
-      />
-    </>
+    <SegmentedSwitch
+      testIDPrefix="debts-operation-kind"
+      value={kind}
+      onChange={(next) => setValue('kind', next, { shouldValidate: true })}
+      options={[
+        { value: 'debt', label: DEBT_KIND_LABELS.debt },
+        { value: 'repayment', label: DEBT_KIND_LABELS.repayment },
+      ]}
+    />
   )
 }
 
@@ -238,61 +168,6 @@ function AmountField() {
       </Text>
       <FormError testID="debts-operation-amount-error">{fieldState.error?.message}</FormError>
     </View>
-  )
-}
-
-/** Date row + its picker sheet (the edit-transaction DateFieldRow idiom). */
-function DateField() {
-  const { control, setValue } = useFormContext<OperationFormValues>()
-  const { field } = useController({ name: 'occurredAt', control })
-  const pickerRef = useRef<BottomSheetRef>(null)
-  // `new Date('')` is an Invalid Date that crashes the calendar; the schema
-  // default always seeds "now".
-  const selectedDate = useMemo(
-    () => (field.value ? new Date(field.value) : new Date()),
-    [field.value],
-  )
-
-  return (
-    <>
-      <Pressable
-        testID="debts-operation-date"
-        accessibilityRole="button"
-        accessibilityLabel={`Дата: ${field.value ? fullDayLabel(field.value) : 'не выбрана'}`}
-        className="flex-row items-center gap-3 py-3.5"
-        onPress={() => pickerRef.current?.present()}
-      >
-        <Icon name="calendar-outline" size={20} colorClassName="accent-muted-foreground" />
-        <Text variant="body" className="text-muted-foreground">
-          Дата
-        </Text>
-        <Text variant="body" className="flex-1 text-right text-foreground" numberOfLines={1}>
-          {field.value ? fullDayLabel(field.value) : 'Выберите дату'}
-        </Text>
-        <Icon name="chevron-forward" size={16} colorClassName="accent-muted-foreground" />
-      </Pressable>
-      <DatePickerSheet
-        ref={pickerRef}
-        selected={selectedDate}
-        onSelect={(date: Date) =>
-          setValue('occurredAt', date.toISOString(), { shouldValidate: true })
-        }
-      />
-    </>
-  )
-}
-
-/** Note input (the only native keyboard field). */
-function NoteField() {
-  const { control } = useFormContext<OperationFormValues>()
-  const { field } = useController({ name: 'note', control })
-  return (
-    <BottomSheetInput
-      testID="debts-operation-note"
-      placeholder="Заметка"
-      value={field.value}
-      onChangeText={field.onChange}
-    />
   )
 }
 
@@ -323,11 +198,13 @@ function OverRepaymentWarning() {
   )
 }
 
-export function OperationForm({ operation, fixed, defaultKind, onSuccess }: OperationFormProps) {
-  const editing = operation !== undefined
+export function OperationForm(props: OperationFormProps) {
   const debtors = useDebtors().data ?? []
 
+  // Edit derives its context from the record itself; create receives the
+  // contact+direction it was opened with. Both arms narrow the props union.
   const defaults = useMemo<OperationFormValues>(() => {
+    const operation = props.operation
     if (operation) {
       return {
         kind: operation.kind,
@@ -339,11 +216,13 @@ export function OperationForm({ operation, fixed, defaultKind, onSuccess }: Oper
       }
     }
     return operationDefaultValues({
-      kind: defaultKind ?? 'debt',
-      direction: fixed?.direction ?? 'receivable',
-      debtorId: fixed?.debtorId ?? '',
+      kind: 'debt',
+      direction: props.fixed.direction,
+      debtorId: props.fixed.debtorId,
     })
-  }, [operation, fixed, defaultKind])
+    // Stable page state in both variants - defaults must not re-derive per
+    // render, or the reset effect below would wipe the user's typing.
+  }, [props.operation, props.fixed])
 
   const form = useForm<OperationFormValues>({
     resolver: zodResolver(operationSchema),
@@ -370,10 +249,11 @@ export function OperationForm({ operation, fixed, defaultKind, onSuccess }: Oper
   }
 
   const handleDeleteConfirm = async () => {
+    const operation = props.operation
     if (!operation) return
     try {
       await deleteOperation.mutateAsync(operation.id)
-      onSuccess()
+      props.onSuccess()
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })
     }
@@ -388,6 +268,7 @@ export function OperationForm({ operation, fixed, defaultKind, onSuccess }: Oper
   }
 
   const handleSubmit = async (values: OperationFormValues) => {
+    const operation = props.operation
     try {
       if (operation) {
         await updateOperation.mutateAsync({
@@ -398,23 +279,25 @@ export function OperationForm({ operation, fixed, defaultKind, onSuccess }: Oper
         await createOperation.mutateAsync(toCreatePayload(values))
         form.reset(defaults)
       }
-      onSuccess()
+      props.onSuccess()
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })
     }
   }
 
-  const selectedDebtor = operation
-    ? debtors.find((debtor) => debtor.id === operation.debtorId)
-    : undefined
+  const context = props.operation
+    ? { debtorId: props.operation.debtorId, direction: props.operation.direction }
+    : props.fixed
+  const selectedDebtor = debtors.find((debtor) => debtor.id === context.debtorId)
 
   return (
     <FormProvider {...form}>
       <View className="flex-1">
         <BottomSheetHeader
-          title={editing ? 'Операция' : 'Новая операция'}
+          title={props.operation ? 'Операция' : DEBTS_COPY.newOperation}
+          subtitle={selectedDebtor?.name}
           right={
-            editing ? (
+            props.operation ? (
               <IconButton
                 icon="trash-outline"
                 size="md"
@@ -428,34 +311,23 @@ export function OperationForm({ operation, fixed, defaultKind, onSuccess }: Oper
           }
         />
         <View className="flex-1 gap-3 px-4">
-          {editing ? (
-            <View className="gap-1">
-              <StaticRow label="Должник" value={selectedDebtor?.name ?? operation.debtorId} />
-              <StaticRow
-                label="Направление"
-                value={DEBT_DIRECTION_VIEWS[operation.direction].summaryLabel}
-              />
-              <StaticRow label="Тип" value={DEBT_KIND_LABELS[operation.kind]} />
-            </View>
-          ) : (
-            <KindDirectionFields fixed={fixed} />
-          )}
+          <View className="gap-1">
+            <StaticRow
+              label={DEBTS_CONTACT_NOUN}
+              value={selectedDebtor?.name ?? context.debtorId}
+            />
+            <StaticRow
+              label="Направление"
+              value={DEBT_DIRECTION_VIEWS[context.direction].summaryLabel}
+            />
+            {props.operation ? (
+              <StaticRow label="Тип" value={DEBT_KIND_LABELS[props.operation.kind]} />
+            ) : null}
+          </View>
 
-          {!editing && !fixed ? <DebtorField /> : null}
+          {props.operation ? null : <KindFields />}
 
           <AmountField />
-
-          <DateField />
-          <NoteField />
-
-          {!editing && debtors.length === 0 ? (
-            <View className="flex-row items-center gap-2">
-              <Icon name="information-circle" size={16} colorClassName="accent-muted-foreground" />
-              <Text variant="caption" className="flex-1 text-muted-foreground">
-                Чтобы записать операцию, сначала добавьте должника
-              </Text>
-            </View>
-          ) : null}
 
           <OverRepaymentWarning />
 
@@ -463,42 +335,16 @@ export function OperationForm({ operation, fixed, defaultKind, onSuccess }: Oper
             {form.formState.errors.root?.message}
           </FormError>
 
-          <OperationSubmitField
+          <DebtsFormActions
+            testIDPrefix="debts-operation"
             pending={pending}
-            text={editing ? 'Сохранить' : 'Добавить'}
             onSubmit={form.handleSubmit(handleSubmit)}
+            submitAccessibilityLabel={props.operation ? 'Сохранить операцию' : 'Добавить операцию'}
           />
         </View>
 
         <AmountKeypad onKey={handleAmountKey} testIDPrefix="debts-operation" />
       </View>
     </FormProvider>
-  )
-}
-
-/** The submit button, isolated: it alone subscribes to form validity. */
-function OperationSubmitField({
-  pending,
-  text,
-  onSubmit,
-}: {
-  pending: boolean
-  text: string
-  onSubmit: () => void
-}) {
-  const { control } = useFormContext<OperationFormValues>()
-  const { isValid, isSubmitting } = useFormState({ control })
-  const blocked = pending || isSubmitting
-
-  return (
-    <Button
-      variant="primary"
-      text={text}
-      className="mt-2"
-      testID="debts-operation-submit"
-      loading={blocked}
-      disabled={!isValid || blocked}
-      onPress={onSubmit}
-    />
   )
 }

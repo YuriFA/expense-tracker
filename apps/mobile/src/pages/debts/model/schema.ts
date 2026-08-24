@@ -45,3 +45,27 @@ export const debtorSchema = z.object({
 })
 
 export type DebtorFormValues = z.infer<typeof debtorSchema>
+
+// The combined per-section creation form (design D9): one submit creates a
+// debtor and their initial debt; the direction comes from the section, not
+// from form values.
+export const debtorDebtSchema = z.object({
+  name: z.string().trim().min(1, 'Введите имя'),
+  amount: amountField,
+  occurredAt: z.string().min(1, 'Выберите дату'),
+  note: z.string(),
+})
+
+export type DebtorDebtFormValues = z.infer<typeof debtorDebtSchema>
+
+export function debtorDebtDefaultValues(
+  overrides: Partial<DebtorDebtFormValues> = {},
+): DebtorDebtFormValues {
+  return {
+    name: '',
+    amount: '',
+    occurredAt: nowIso(),
+    note: '',
+    ...overrides,
+  }
+}

@@ -7,22 +7,26 @@ import type { DebtDirection, DebtOperationKind } from '@expense-tracker/api'
 interface DebtDirectionCopy {
   /** Summary row label: «Мне должны» / «Я должен». */
   summaryLabel: string
-  /** Section header: «МНЕ ДОЛЖНЫ» / «Я ДОЛЖЕН». */
+  /** Section header: «Мне должны» / «Я должен». */
   sectionTitle: string
   /** Section empty state when nobody holds a nonzero balance. */
   sectionEmpty: string
+  /** Combined contact+debt form title (design D9): «Кто должен» / «Кому должен». */
+  sheetTitle: string
 }
 
 export const DEBT_DIRECTION_VIEWS: Record<DebtDirection, DebtDirectionCopy> = {
   receivable: {
     summaryLabel: 'Мне должны',
-    sectionTitle: 'МНЕ ДОЛЖНЫ',
+    sectionTitle: 'Мне должны',
     sectionEmpty: 'Вам никто не должен',
+    sheetTitle: 'Кто должен',
   },
   payable: {
     summaryLabel: 'Я должен',
-    sectionTitle: 'Я ДОЛЖЕН',
+    sectionTitle: 'Я должен',
     sectionEmpty: 'Вы никому не должны',
+    sheetTitle: 'Кому должен',
   },
 }
 
@@ -32,16 +36,14 @@ export const DEBT_KIND_LABELS: Record<DebtOperationKind, string> = {
   repayment: 'Списание',
 }
 
+/** Direction-neutral noun for a person the user tracks debts with (design D9). */
+export const DEBTS_CONTACT_NOUN = 'Контакт'
+
 export const DEBTS_COPY = {
   screenTitle: 'Долги',
-  /** Screen-level CTA opening the operation form with both pickers active. */
+  /** History sheet footer CTA (fixed-context operation form, Долг by default). */
   newOperation: 'Новая операция',
-  addDebtor: 'Добавить должника',
-  /** History sheet footer CTA (a repayment for that debtor and direction). */
-  newRepayment: 'Новое списание',
   historyEmpty: 'Операций пока нет',
-  emptyTitle: 'Долгов пока нет',
-  emptyHint: 'Добавьте человека и запишите, кто кому должен — всё работает офлайн.',
   /** Over-repayment warning in the operation form (warn, never block). */
   overRepayment: (remaining: string) =>
     `Списание больше остатка долга (${remaining}). Баланс станет отрицательным.`,

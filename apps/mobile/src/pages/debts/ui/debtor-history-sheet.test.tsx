@@ -64,7 +64,7 @@ function renderSheet({
 } = {}) {
   const onEditOperation = jest.fn()
   const onEditDebtor = jest.fn()
-  const onNewRepayment = jest.fn()
+  const onNewOperation = jest.fn()
   const sheetRef = { current: null } as { current: BottomSheetRef | null }
   render(
     <SafeAreaProvider
@@ -84,7 +84,7 @@ function renderSheet({
                 operations={operations}
                 onEditOperation={onEditOperation}
                 onEditDebtor={onEditDebtor}
-                onNewRepayment={onNewRepayment}
+                onNewOperation={onNewOperation}
               />
             </BottomSheetProvider>
           </DebtRepositoryProvider>
@@ -94,7 +94,7 @@ function renderSheet({
   )
   // The @gorhom mock mounts sheet children only while presented.
   if (debtor) act(() => sheetRef.current?.present())
-  return { onEditOperation, onEditDebtor, onNewRepayment }
+  return { onEditOperation, onEditDebtor, onNewOperation }
 }
 
 describe('DebtorHistorySheet', () => {
@@ -120,7 +120,7 @@ describe('DebtorHistorySheet', () => {
   })
 
   it('reports row taps, debtor edit, and the new-repayment CTA upward', () => {
-    const { onEditOperation, onEditDebtor, onNewRepayment } = renderSheet()
+    const { onEditOperation, onEditDebtor, onNewOperation } = renderSheet()
 
     fireEvent.press(screen.getByTestId('debts-history-op-op-1'))
     expect(onEditOperation).toHaveBeenCalledWith(OPERATIONS[0])
@@ -129,7 +129,7 @@ describe('DebtorHistorySheet', () => {
     expect(onEditDebtor).toHaveBeenCalledWith(ANNA)
 
     fireEvent.press(screen.getByTestId('debts-new-repayment'))
-    expect(onNewRepayment).toHaveBeenCalledWith('debtor-anna', 'receivable')
+    expect(onNewOperation).toHaveBeenCalledWith('debtor-anna', 'receivable')
   })
 
   it('renders nothing without a selected debtor', () => {
@@ -143,7 +143,7 @@ describe('DebtorHistorySheet', () => {
         operations={OPERATIONS}
         onEditOperation={jest.fn()}
         onEditDebtor={jest.fn()}
-        onNewRepayment={jest.fn()}
+        onNewOperation={jest.fn()}
       />,
     )
     expect(screen.queryByTestId('debts-history-sheet')).toBeNull()

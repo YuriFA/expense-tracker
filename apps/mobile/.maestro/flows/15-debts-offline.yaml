@@ -59,7 +59,7 @@ tags:
       id: tab-settings
     timeout: 20000
 
-# --- Create the debtor + a 5 000,00 ₽ debt ONLINE ----------------------------
+# --- Create the contact + a 5 000,00 ₽ debt ONLINE (one submit, D9) -----------
 - tapOn:
     id: tab-dashboard
 - tapOn:
@@ -69,47 +69,25 @@ tags:
       id: screen-debts
     timeout: 15000
 - tapOn:
-    id: debts-add-debtor
+    id: debts-section-add-receivable
 - assertVisible:
-    id: debts-new-debtor-sheet
+    id: debts-new-debt-sheet
 - tapOn:
-    id: debts-debtor-name
+    id: debts-new-debt-name
 - inputText: 'Борис ${output.suffix}'
+# A keypad press both enters the amount and blurs the name field.
 - tapOn:
-    id: debts-debtor-note
+    id: debts-new-debt-key-5
 - tapOn:
-    id: debts-debtor-submit
+    id: debts-new-debt-key-0
+- tapOn:
+    id: debts-new-debt-key-0
+- tapOn:
+    id: debts-new-debt-key-0
+- tapOn:
+    id: debts-new-debt-submit
 - tapOn:
     point: 50%, 8%
-
-- tapOn:
-    id: debts-new-operation
-- assertVisible:
-    id: debts-new-operation-sheet
-- tapOn:
-    id: debts-operation-key-5
-- tapOn:
-    id: debts-operation-key-0
-- tapOn:
-    id: debts-operation-key-0
-- tapOn:
-    id: debts-operation-key-0
-- tapOn:
-    id: debts-operation-debtor
-- assertVisible:
-    id: debts-debtor-picker-list
-# The option rows carry the debtor name; select this run's debtor by text.
-- tapOn:
-    text: 'Борис ${output.suffix}'
-- tapOn:
-    id: debts-operation-submit
-- runFlow:
-    when:
-      visible:
-        id: debts-new-operation-sheet
-    commands:
-      - tapOn:
-          point: 50%, 8%
 
 # This run's debtor row shows the derived 5 000 ₽ figure (random-suffix
 # scoped: re-runs accumulate debtors, totals would not stay stable).
@@ -158,6 +136,9 @@ tags:
     visible:
       id: debts-new-operation-sheet
     timeout: 10000
+# Switch the kind to Списание (Долг is the default) for the repayment.
+- tapOn:
+    id: debts-operation-kind-repayment
 - tapOn:
     id: debts-operation-key-1
 - tapOn:

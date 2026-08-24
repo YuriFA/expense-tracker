@@ -18,14 +18,17 @@ export function NoteButton({
   open,
   hasNote,
   onToggle,
+  testID = 'new-transaction-note-button',
 }: {
   open: boolean
   hasNote: boolean
   onToggle: () => void
+  /** Override for reuse outside the transaction form (e.g. debts). */
+  testID?: string
 }) {
   return (
     <Pressable
-      testID="new-transaction-note-button"
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={open ? 'Скрыть заметку' : 'Добавить заметку'}
       accessibilityState={{ expanded: open }}

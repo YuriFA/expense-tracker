@@ -1,9 +1,10 @@
-# Debts screen end-to-end (add-debts task 7.2): the «Долги» quick action
-# opens the screen, a debtor and a debt operation are created offline-first,
-# the debtor history sheet shows the remaining balance, a repayment through
-# «Новое списание» updates it, and the settled debtor disappears behind the
-# reveal row. The derived balance figures (summary totals, row amounts) are
-# asserted as text, not just element presence.
+# Debts screen end-to-end (add-debts task 7.2, design D9): the «Долги» quick
+# action opens the screen, the section «+» creates a contact and their initial
+# debt in one submit, the debtor history sheet shows the remaining balance, a
+# repayment through «Новая операция» (kind switched to Списание) updates it,
+# and the settled debtor disappears behind the reveal row. The derived balance
+# figures (summary totals, row amounts) are asserted as text, not just element
+# presence.
 #
 # The local database persists across suite runs, so the debtor name carries
 # the random suffix (the unique-name guard would reject a fixed name on the
@@ -21,56 +22,33 @@ tags:
       id: screen-debts
     timeout: 15000
 
-# Always create this run's debtor (the add button exists in both the empty
-# state and the footer row): the suite's local database accumulates debtors
-# across runs, and the random suffix keeps the name unique.
+# Always create this run's contact + initial debt through the receivable
+# section's «+» (the affordance always renders, empty screen or not): the
+# suite's local database accumulates debtors across runs, and the random
+# suffix keeps the name unique.
 - tapOn:
-    id: debts-add-debtor
+    id: debts-section-add-receivable
 - assertVisible:
-    id: debts-new-debtor-sheet
+    id: debts-new-debt-sheet
 - tapOn:
-    id: debts-debtor-name
+    id: debts-new-debt-name
 - inputText: 'Анна ${output.suffix}'
-# Blur the name field through the note field - the keyboard over a
-# BottomSheetTextInput cannot be hidden by Maestro directly.
+# A keypad press both enters the amount and blurs the name field (the
+# keyboard over a BottomSheetTextInput cannot be hidden by Maestro directly).
 - tapOn:
-    id: debts-debtor-note
+    id: debts-new-debt-key-5
 - tapOn:
-    id: debts-debtor-submit
+    id: debts-new-debt-key-0
+- tapOn:
+    id: debts-new-debt-key-0
+- tapOn:
+    id: debts-new-debt-key-0
+- tapOn:
+    id: debts-new-debt-submit
 # The sheet may or may not auto-dismiss (TODO(sheet-dismiss)); close it via
 # the backdrop (the tap lands on the non-interactive header when it did).
 - tapOn:
     point: 50%, 8%
-
-# A debt of 5 000,00 ₽ through the screen CTA (both pickers active).
-- tapOn:
-    id: debts-new-operation
-- assertVisible:
-    id: debts-new-operation-sheet
-- tapOn:
-    id: debts-operation-key-5
-- tapOn:
-    id: debts-operation-key-0
-- tapOn:
-    id: debts-operation-key-0
-- tapOn:
-    id: debts-operation-key-0
-- tapOn:
-    id: debts-operation-debtor
-- assertVisible:
-    id: debts-debtor-picker-list
-# The option rows carry the debtor names; select this run's debtor by text.
-- tapOn:
-    text: 'Анна ${output.suffix}'
-- tapOn:
-    id: debts-operation-submit
-- runFlow:
-    when:
-      visible:
-        id: debts-new-operation-sheet
-    commands:
-      - tapOn:
-          point: 50%, 8%
 
 # Derived figure as text: this run's debtor row shows 5 000 ₽ (the row text
 # carries the random-suffixed name, so the assert survives re-runs of the
@@ -95,13 +73,16 @@ tags:
     id: debts-history-balance
     text: '.*5.*000.*'
 
-# «Новое списание»: fixed debtor + direction, kind preset to Списание.
+# «Новая операция»: fixed contact + direction; switch the kind to Списание
+# (Долг is the default) so the 5 000 repayment settles the balance to zero.
 - tapOn:
     id: debts-new-repayment
 - extendedWaitUntil:
     visible:
       id: debts-new-operation-sheet
     timeout: 10000
+- tapOn:
+    id: debts-operation-kind-repayment
 - tapOn:
     id: debts-operation-key-5
 - tapOn:

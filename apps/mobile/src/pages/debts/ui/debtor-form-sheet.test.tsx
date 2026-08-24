@@ -1,7 +1,7 @@
-// Debtor form behavior: name validation, create with note, rename-conflict
-// error mapping at the root slot, edit prefill with CAS update, and delete
-// with confirm. The form renders standalone (the @gorhom mock degrades
-// BottomSheetInput to a plain input under jest).
+// Debtor edit form behavior: name validation, edit prefill with CAS update,
+// and delete with confirm. Creation lives in the combined contact+debt sheet
+// (design D9) - this form is edit-only. The form renders standalone (the
+// @gorhom mock degrades BottomSheetInput to a plain input under jest).
 
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
@@ -19,8 +19,8 @@ import { DebtorForm } from './debtor-form-sheet'
 
 const ANNA: Debtor = { id: 'debtor-anna', name: 'Анна', note: 'коллега', version: 3 }
 
-function renderForm(debtor?: Debtor, initial: Debtor[] = debtor ? [ANNA] : []) {
-  const debtorRepository = createMockDebtorRepository(initial)
+function renderForm(debtor: Debtor = ANNA) {
+  const debtorRepository = createMockDebtorRepository([debtor])
   const debtOperationRepository = createMockDebtOperationRepository([])
   render(
     <QueryClientProvider client={createQueryClient()}>
@@ -37,50 +37,33 @@ function renderForm(debtor?: Debtor, initial: Debtor[] = debtor ? [ANNA] : []) {
   return debtorRepository
 }
 
-describe('DebtorForm', () => {
+describe('DebtorForm (edit only)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
   })
 
-  it('blocks an empty name with the field error and no create call', async () => {
+  it('prefills from the record', () => {
+    renderForm()
+
+    expect(screen.getByTestId('debts-debtor-name')).toHaveProp('value', 'Анна')
+    expect(screen.getByTestId('debts-debtor-note')).toHaveProp('value', 'коллега')
+  })
+
+  it('blocks an emptied name with the field error and no update call', async () => {
     const repository = renderForm()
 
+    fireEvent.changeText(screen.getByTestId('debts-debtor-name'), '')
     fireEvent.press(screen.getByTestId('debts-debtor-submit'))
 
     await waitFor(() =>
       expect(screen.getByTestId('debts-debtor-name-error')).toHaveTextContent('Введите имя'),
     )
-    expect(repository.calls.create).toBe(0)
-  })
-
-  it('creates a debtor with name and note', async () => {
-    const repository = renderForm()
-
-    fireEvent.changeText(screen.getByTestId('debts-debtor-name'), 'Анна')
-    fireEvent.changeText(screen.getByTestId('debts-debtor-note'), 'коллега')
-    await waitFor(() => expect(screen.getByTestId('debts-debtor-submit')).toBeEnabled())
-    fireEvent.press(screen.getByTestId('debts-debtor-submit'))
-
-    await waitFor(() => expect(repository.calls.create).toBe(1))
-    expect(repository.snapshot()[0]).toMatchObject({ name: 'Анна', note: 'коллега' })
-  })
-
-  it('maps a duplicate name to the root error and keeps the values', async () => {
-    renderForm(undefined, [ANNA])
-    // Create an Анна while an Анна already exists: the mock flags duplicates.
-    fireEvent.changeText(screen.getByTestId('debts-debtor-name'), 'Анна')
-    await waitFor(() => expect(screen.getByTestId('debts-debtor-submit')).toBeEnabled())
-    fireEvent.press(screen.getByTestId('debts-debtor-submit'))
-
-    await waitFor(() =>
-      expect(screen.getByTestId('debts-debtor-error')).toHaveTextContent('Уже существует'),
-    )
-    expect(screen.getByTestId('debts-debtor-name')).toHaveProp('value', 'Анна')
+    expect(repository.calls.update).toBe(0)
   })
 
   it('edits with the record CAS version', async () => {
-    const repository = renderForm(ANNA)
+    const repository = renderForm()
 
     fireEvent.changeText(screen.getByTestId('debts-debtor-name'), 'Анна П.')
     await waitFor(() => expect(screen.getByTestId('debts-debtor-submit')).toBeEnabled())
@@ -91,11 +74,11 @@ describe('DebtorForm', () => {
   })
 
   it('deletes through the confirm alert', async () => {
-    const repository = renderForm(ANNA)
+    const repository = renderForm()
 
     fireEvent.press(screen.getByTestId('debts-debtor-delete'))
     expect(Alert.alert).toHaveBeenCalledWith(
-      'Удалить должника?',
+      'Удалить контакт?',
       undefined,
       expect.arrayContaining([expect.objectContaining({ text: 'Удалить' })]),
     )

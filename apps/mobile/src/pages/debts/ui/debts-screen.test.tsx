@@ -1,6 +1,8 @@
-// Debts screen tests: dual totals, direction sections, settled-debtor
-// reveal, empty states, and the D7 performance pin - the overview renders
-// every figure from ONE operations read, never one per debtor.
+// Debts screen tests: dual totals, direction sections (always rendered -
+// empty hints + the per-section «+», design D9), settled-debtor reveal, the
+// combined contact+debt sheet entry, and the D7 performance pin - the
+// overview renders every figure from ONE operations read, never one per
+// debtor.
 
 import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
@@ -117,7 +119,9 @@ describe('DebtsScreen', () => {
   it('renders both direction totals from the derived operation sums', async () => {
     renderDebts()
 
-    await waitFor(() => expect(screen.getByTestId('debts-summary')).toBeTruthy())
+    // A debtor row appears only once the queries resolve and the selectors
+    // have run - the totals are computed by then too.
+    await waitFor(() => expect(screen.getByTestId('debts-debtor-debtor-anna')).toBeTruthy())
     // receivable = 500 000 − 150 000 + (100 000 − 100 000) = 350 000
     expect(screen.getByTestId('debts-total-receivable')).toHaveTextContent(
       `${formatAmount(350_000)}`,
@@ -130,7 +134,7 @@ describe('DebtsScreen', () => {
     renderDebts()
 
     await waitFor(() => expect(screen.getByTestId('debts-debtor-debtor-anna')).toBeTruthy())
-    // Анна only in «МНЕ ДОЛЖНЫ» with her receivable balance…
+    // Анна only in «Мне должны» with her receivable balance…
     expect(
       within(screen.getByTestId('debts-debtor-debtor-anna')).getByText(formatAmount(350_000)),
     ).toBeTruthy()
@@ -138,8 +142,10 @@ describe('DebtsScreen', () => {
     expect(
       within(screen.getByTestId('debts-debtor-debtor-sergey')).getByText(formatAmount(200_000)),
     ).toBeTruthy()
-    expect(screen.getByText('МНЕ ДОЛЖНЫ')).toBeTruthy()
-    expect(screen.getByText('Я ДОЛЖЕН')).toBeTruthy()
+    expect(
+      within(screen.getByTestId('debts-section-receivable')).getByText('Мне должны'),
+    ).toBeTruthy()
+    expect(within(screen.getByTestId('debts-section-payable')).getByText('Я должен')).toBeTruthy()
   })
 
   it('hides settled debtors behind a reveal row that carries the count', async () => {
@@ -159,12 +165,14 @@ describe('DebtsScreen', () => {
     ).toBeTruthy()
   })
 
-  it('shows the empty state with the add-debtor CTA when no debtors exist', async () => {
+  it('renders both sections with empty hints and «+» affordances when no contacts exist', async () => {
     renderDebts({ debtors: [], operations: [] })
 
-    await waitFor(() => expect(screen.getByTestId('debts-empty')).toBeTruthy())
-    expect(screen.getByTestId('debts-add-debtor')).toBeTruthy()
-    expect(screen.queryByTestId('debts-summary')).toBeNull()
+    await waitFor(() => expect(screen.getByTestId('debts-summary')).toBeTruthy())
+    expect(screen.getByTestId('debts-section-add-receivable')).toBeTruthy()
+    expect(screen.getByTestId('debts-section-add-payable')).toBeTruthy()
+    expect(screen.getByText('Вам никто не должен')).toBeTruthy()
+    expect(screen.getByText('Вы никому не должны')).toBeTruthy()
   })
 
   it('shows a section empty hint when nobody holds a balance in a direction', async () => {
@@ -174,7 +182,16 @@ describe('DebtsScreen', () => {
     })
 
     await waitFor(() => expect(screen.getByText('Вам никто не должен')).toBeTruthy())
-    expect(screen.getByText('Я ДОЛЖЕН')).toBeTruthy()
+    expect(screen.getByTestId('debts-section-payable')).toBeTruthy()
+  })
+
+  it('opens the combined contact+debt sheet from a section «+» with the section direction', async () => {
+    renderDebts()
+
+    await waitFor(() => expect(screen.getByTestId('debts-section-add-payable')).toBeTruthy())
+    // The @gorhom mock mounts sheet children only while presented.
+    fireEvent.press(screen.getByTestId('debts-section-add-payable'))
+    await waitFor(() => expect(screen.getByText('Кому должен')).toBeTruthy())
   })
 
   it('loads every figure from exactly ONE operations read (D7 perf pin)', async () => {

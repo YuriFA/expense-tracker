@@ -1,15 +1,15 @@
-// Debtor create/edit form + sheet (conventions forms.md §1/§3): name and
-// note; the edit variant carries delete with a confirm alert. Rename
-// conflicts surface through the shared code-keyed error mapping
-// (repository-errors-ru), CAS `version` on update.
+// Debtor edit form + sheet (conventions forms.md §1/§3): name and note,
+// delete with a confirm alert. Rename conflicts surface through the shared
+// code-keyed error mapping (repository-errors-ru), CAS `version` on update.
+// Creation lives in the combined contact+debt sheet (design D9) - this form
+// is edit-only.
 
 import { useEffect, useMemo } from 'react'
-import { Alert } from 'react-native'
+import { Alert, View } from 'react-native'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, FormProvider, useForm, useFormContext, useFormState } from 'react-hook-form'
-import { View } from 'react-native'
 import type { Debtor } from '@expense-tracker/api'
-import { useCreateDebtor, useDeleteDebtor, useUpdateDebtor } from '@/entities/debt'
+import { useDeleteDebtor, useUpdateDebtor } from '@/entities/debt'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import {
   BottomSheet,
@@ -22,28 +22,32 @@ import {
 import { Button } from '@/shared/ui/button'
 import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { IconButton } from '@/shared/ui/icon-button'
+import { DEBTS_CONTACT_NOUN } from '../model/kind'
 import { debtorSchema, type DebtorFormValues } from '../model/schema'
 
 export interface DebtorFormSheetProps {
   ref: React.Ref<BottomSheetRef>
-  /** The debtor being edited; undefined = create mode. */
-  debtor?: Debtor
+  /** The debtor being edited; the sheet mounts with its subject (edit-only). */
+  debtor: Debtor
 }
 
 export function DebtorFormSheet({ ref, debtor }: DebtorFormSheetProps) {
   // The edit variant mounts WITH its subject (a parent-side present() would
-  // race the conditional mount and be lost); the create variant is presented
-  // imperatively by the page.
+  // race the conditional mount and be lost).
   useEffect(() => {
-    if (debtor && ref && typeof ref !== 'function') ref.current?.present()
+    if (ref && typeof ref !== 'function') ref.current?.present()
   }, [debtor, ref])
 
-  const sheetTestId = debtor ? 'debts-edit-debtor-sheet' : 'debts-new-debtor-sheet'
   return (
-    <BottomSheet ref={ref} testID={sheetTestId} snapPoints={['55%']} stackBehavior="push">
-      {/* The visible element carrying the sheet testID (the accounts-sheet
+    <BottomSheet
+      ref={ref}
+      testID="debts-edit-debtor-sheet"
+      snapPoints={['55%']}
+      stackBehavior="push"
+    >
+      {/* The visible element carrying the sheet testID (accounts-sheet
           pattern): the modal container itself is zero-bounds to Maestro. */}
-      <BottomSheetView testID={sheetTestId}>
+      <BottomSheetView testID="debts-edit-debtor-sheet">
         <BottomSheetBody>
           <DebtorForm debtor={debtor} sheetRef={ref} />
         </BottomSheetBody>
@@ -52,19 +56,11 @@ export function DebtorFormSheet({ ref, debtor }: DebtorFormSheetProps) {
   )
 }
 
-// The header renders inside the form (the edit-transaction layout): the title
-// reflects the mode and the edit variant carries delete on the right.
+// The header renders inside the form (the edit-transaction layout): the
+// title and the delete affordance on the right.
 
 /** The submit button, isolated: it alone subscribes to form validity. */
-function DebtorSubmitField({
-  pending,
-  text,
-  onSubmit,
-}: {
-  pending: boolean
-  text: string
-  onSubmit: () => void
-}) {
+function DebtorSubmitField({ pending, onSubmit }: { pending: boolean; onSubmit: () => void }) {
   const { control } = useFormContext<DebtorFormValues>()
   const { isValid, isSubmitting } = useFormState({ control })
   const blocked = pending || isSubmitting
@@ -72,7 +68,7 @@ function DebtorSubmitField({
   return (
     <Button
       variant="primary"
-      text={text}
+      text="Сохранить"
       testID="debts-debtor-submit"
       loading={blocked}
       disabled={!isValid || blocked}
@@ -85,13 +81,11 @@ export function DebtorForm({
   debtor,
   sheetRef,
 }: {
-  debtor?: Debtor
+  debtor: Debtor
   sheetRef: React.Ref<BottomSheetRef>
 }) {
-  const editing = debtor !== undefined
-
   const defaults = useMemo<DebtorFormValues>(
-    () => ({ name: debtor?.name ?? '', note: debtor?.note ?? '' }),
+    () => ({ name: debtor.name, note: debtor.note }),
     [debtor],
   )
 
@@ -100,10 +94,9 @@ export function DebtorForm({
     defaultValues: defaults,
     mode: 'onChange',
   })
-  const createDebtor = useCreateDebtor()
   const updateDebtor = useUpdateDebtor()
   const deleteDebtor = useDeleteDebtor()
-  const pending = createDebtor.isPending || updateDebtor.isPending || deleteDebtor.isPending
+  const pending = updateDebtor.isPending || deleteDebtor.isPending
 
   // Sheets stay mounted in @gorhom, so prefill must be an explicit reset
   // (forms.md §3); trigger() recomputes validity for the fresh defaults.
@@ -120,17 +113,12 @@ export function DebtorForm({
 
   const handleSubmit = async (values: DebtorFormValues) => {
     try {
-      if (debtor) {
-        await updateDebtor.mutateAsync({
-          id: debtor.id,
-          // The form always carries the full note state: an untouched value
-          // re-sends the same string, an emptied field clears it (D3).
-          payload: { name: values.name, note: values.note, version: debtor.version },
-        })
-      } else {
-        await createDebtor.mutateAsync({ name: values.name, note: values.note })
-        form.reset(defaults)
-      }
+      await updateDebtor.mutateAsync({
+        id: debtor.id,
+        // The form always carries the full note state: an untouched value
+        // re-sends the same string, an emptied field clears it (D3).
+        payload: { name: values.name, note: values.note, version: debtor.version },
+      })
       dismiss()
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })
@@ -138,7 +126,6 @@ export function DebtorForm({
   }
 
   const handleDeleteConfirm = async () => {
-    if (!debtor) return
     try {
       await deleteDebtor.mutateAsync(debtor.id)
       dismiss()
@@ -149,7 +136,7 @@ export function DebtorForm({
 
   const handleDelete = () => {
     // TODO(i18n): RU wording until mobile i18n wiring lands.
-    Alert.alert('Удалить должника?', undefined, [
+    Alert.alert(`Удалить ${DEBTS_CONTACT_NOUN.toLowerCase()}?`, undefined, [
       { text: 'Отмена', style: 'cancel' },
       { text: 'Удалить', style: 'destructive', onPress: () => void handleDeleteConfirm() },
     ])
@@ -159,19 +146,17 @@ export function DebtorForm({
     <FormProvider {...form}>
       <View className="gap-4">
         <BottomSheetHeader
-          title={editing ? 'Должник' : 'Новый должник'}
+          title={DEBTS_CONTACT_NOUN}
           right={
-            editing ? (
-              <IconButton
-                icon="trash-outline"
-                size="md"
-                colorClassName="accent-destructive"
-                accessibilityLabel="Удалить должника"
-                testID="debts-debtor-delete"
-                disabled={pending}
-                onPress={handleDelete}
-              />
-            ) : undefined
+            <IconButton
+              icon="trash-outline"
+              size="md"
+              colorClassName="accent-destructive"
+              accessibilityLabel={`Удалить ${DEBTS_CONTACT_NOUN.toLowerCase()}`}
+              testID="debts-debtor-delete"
+              disabled={pending}
+              onPress={handleDelete}
+            />
           }
         />
 
@@ -214,11 +199,7 @@ export function DebtorForm({
 
         <FormError testID="debts-debtor-error">{form.formState.errors.root?.message}</FormError>
 
-        <DebtorSubmitField
-          pending={pending}
-          text={editing ? 'Сохранить' : 'Добавить'}
-          onSubmit={form.handleSubmit(handleSubmit)}
-        />
+        <DebtorSubmitField pending={pending} onSubmit={form.handleSubmit(handleSubmit)} />
       </View>
     </FormProvider>
   )

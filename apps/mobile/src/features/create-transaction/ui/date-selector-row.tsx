@@ -10,16 +10,19 @@ export function DateButton({
   occurredAt,
   expanded,
   onToggle,
+  testID = 'new-transaction-date-button',
 }: {
   occurredAt: string
   expanded: boolean
   onToggle: () => void
+  /** Override for reuse outside the transaction form (e.g. debts). */
+  testID?: string
 }) {
   const label = relativeDayLabel(occurredAt)
 
   return (
     <Pressable
-      testID="new-transaction-date-button"
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={`Дата: ${label}`}
       accessibilityState={{ expanded }}
@@ -47,31 +50,34 @@ export function QuickDateRow({
   occurredAt,
   onSelectDaysAgo,
   onOpenCalendar,
+  testIDPrefix = 'new-transaction',
 }: {
   occurredAt: string
   onSelectDaysAgo: (daysAgo: number) => void
   onOpenCalendar: () => void
+  /** Override for reuse outside the transaction form (e.g. debts). */
+  testIDPrefix?: string
 }) {
   const selectedDaysAgo = calendarDaysAgo(occurredAt)
 
   return (
     <ScrollView
       horizontal
-      testID="new-transaction-quick-dates"
+      testID={`${testIDPrefix}-quick-dates`}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ gap: 8 }}
     >
       {quickDateOptions().map((option) => (
         <QuickDateChip
           key={option.daysAgo}
-          testID={`new-transaction-quick-date-${option.daysAgo}`}
+          testID={`${testIDPrefix}-quick-date-${option.daysAgo}`}
           label={option.label}
           selected={selectedDaysAgo === option.daysAgo}
           onPress={() => onSelectDaysAgo(option.daysAgo)}
         />
       ))}
       <QuickDateChip
-        testID="new-transaction-quick-date-other"
+        testID={`${testIDPrefix}-quick-date-other`}
         label="Другой"
         selected={false}
         onPress={onOpenCalendar}

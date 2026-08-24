@@ -17,7 +17,7 @@ export interface ScreenProps extends Omit<ViewProps, 'children'> {
  */
 export function Screen({ className, topInset = true, children, ...viewProps }: ScreenProps) {
   return (
-    <View className={cn('flex-1', topInset && 'pt-safe', className)} {...viewProps}>
+    <View className={cn('flex-1 bg-background', topInset && 'pt-safe', className)} {...viewProps}>
       <ScreenHeaderScrollProvider>{children}</ScreenHeaderScrollProvider>
     </View>
   )

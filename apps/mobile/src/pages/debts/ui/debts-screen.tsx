@@ -1,9 +1,11 @@
 // Debts screen (openspec mobile-local-data "Debts screen data behavior"):
 // dual-total summary («Мне должны» / «Я должен», no period navigation), two
-// direction sections of debtor rows, settled debtors behind reveal rows, and
-// the sheet flows - debtor history, new/edit operation, new/edit debtor. A
-// stack destination without the tab bar, so the collapsible ScreenHeader
-// carries the title and back affordance.
+// direction sections of debtor rows that always render (empty hints + the
+// per-section «+» opening the combined contact+debt sheet, design D9),
+// settled debtors behind reveal rows, and the sheet flows - debtor history,
+// fixed-context new/edit operation, edit debtor. A stack destination without
+// the tab bar, so the collapsible ScreenHeader carries the title and back
+// affordance.
 //
 // Performance invariant (design D7): the whole overview derives from ONE
 // `useDebtOperations()` read - every figure is an in-memory selector; the
@@ -12,12 +14,10 @@
 
 import { useRef, useState } from 'react'
 import { View } from 'react-native'
-import type { DebtDirection, DebtOperation, DebtOperationKind, Debtor } from '@expense-tracker/api'
+import type { DebtDirection, DebtOperation, Debtor } from '@expense-tracker/api'
 import { useDebtOperations, useDebtors } from '@/entities/debt'
 import { Screen } from '@/shared/ui/screen'
 import { ScreenHeader, ScreenScrollView } from '@/shared/ui/screen-header'
-import { ScreenPlaceholder } from '@/shared/ui/screen-placeholder'
-import { Button } from '@/shared/ui/button'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { DEBTS_COPY } from '../model/kind'
 import { debtorSection, totalsByDirection } from '../model/selectors'
@@ -25,6 +25,7 @@ import { DebtorFormSheet } from './debtor-form-sheet'
 import { DebtorHistorySheet } from './debtor-history-sheet'
 import { DebtorSection } from './debtor-section'
 import { DebtsSummaryCard } from './debts-summary-card'
+import { NewDebtorDebtSheet } from './new-debtor-debt-sheet'
 import { OperationSheet } from './operation-sheet'
 
 export function DebtsScreen() {
@@ -34,19 +35,22 @@ export function DebtsScreen() {
   const operations = operationsQuery.data ?? []
 
   // Sheet composition state (invariant #15): the page owns every ref and the
-  // selection each sheet acts on.
+  // selection each sheet acts on. The create-operation context starts as a
+  // placeholder - openNewOperation always sets it before presenting.
   const historyRef = useRef<BottomSheetRef>(null)
   const [historyContext, setHistoryContext] = useState<
     { debtorId: string; direction: DebtDirection } | undefined
   >(undefined)
-  const newDebtorRef = useRef<BottomSheetRef>(null)
+  const [newDebtContext, setNewDebtContext] = useState<
+    { direction: DebtDirection; session: number } | undefined
+  >(undefined)
   const editDebtorRef = useRef<BottomSheetRef>(null)
   const [editingDebtor, setEditingDebtor] = useState<Debtor | undefined>(undefined)
   const newOperationRef = useRef<BottomSheetRef>(null)
-  const [newOperationFixed, setNewOperationFixed] = useState<
-    { debtorId: string; direction: DebtDirection } | undefined
-  >(undefined)
-  const [newOperationKind, setNewOperationKind] = useState<DebtOperationKind>('debt')
+  const [newOperationFixed, setNewOperationFixed] = useState<{
+    debtorId: string
+    direction: DebtDirection
+  }>({ debtorId: '', direction: 'receivable' })
   const editOperationRef = useRef<BottomSheetRef>(null)
   const [editingOperation, setEditingOperation] = useState<DebtOperation | undefined>(undefined)
 
@@ -62,24 +66,25 @@ export function DebtsScreen() {
     ? debtors.find((debtor) => debtor.id === historyContext.debtorId)
     : undefined
 
-  const openNewOperation = () => {
-    // Screen CTA: both pickers active, kind defaults to «Долг» (design D7).
-    setNewOperationFixed(undefined)
-    setNewOperationKind('debt')
-    newOperationRef.current?.present()
+  const openNewDebtorDebt = (direction: DebtDirection) => {
+    // From a section's «+»: one submit creates the contact and their initial
+    // debt in that direction (design D9). A fresh session key per open
+    // remounts the sheet with clean values.
+    setNewDebtContext((context) => ({
+      direction,
+      session: (context?.session ?? 0) + 1,
+    }))
   }
-  const openNewRepayment = (debtorId: string, direction: DebtDirection) => {
-    // From a debtor's sheet: debtor and direction fixed, kind preset to
-    // «Списание» - the footer CTA's whole purpose.
+  const openNewOperation = (debtorId: string, direction: DebtDirection) => {
+    // From a contact's sheet: contact and direction are fixed context, kind
+    // defaults to «Долг» (design D9).
     setNewOperationFixed({ debtorId, direction })
-    setNewOperationKind('repayment')
     newOperationRef.current?.present()
   }
   const openEditOperation = (operation: DebtOperation) => {
     setEditingOperation(operation)
     editOperationRef.current?.present()
   }
-  const openNewDebtor = () => newDebtorRef.current?.present()
   const openEditDebtor = (debtor: Debtor) => {
     setEditingDebtor(debtor)
     editDebtorRef.current?.present()
@@ -91,47 +96,19 @@ export function DebtsScreen() {
 
       <ScreenScrollView>
         <View className="gap-6 px-6 pb-8">
-          {debtors.length === 0 ? (
-            <View className="items-center gap-4 pt-8" testID="debts-empty">
-              <ScreenPlaceholder title={DEBTS_COPY.emptyTitle} hint={DEBTS_COPY.emptyHint} />
-              <Button
-                variant="primary"
-                text={DEBTS_COPY.addDebtor}
-                testID="debts-add-debtor"
-                onPress={openNewDebtor}
-              />
-            </View>
-          ) : (
-            <>
-              <DebtsSummaryCard totals={totals} />
-              <DebtorSection
-                direction="receivable"
-                section={receivableSection}
-                onDebtorPress={openHistory}
-              />
-              <DebtorSection
-                direction="payable"
-                section={payableSection}
-                onDebtorPress={openHistory}
-              />
-              <View className="flex-row gap-3">
-                <Button
-                  variant="secondary"
-                  className="flex-1"
-                  text={DEBTS_COPY.newOperation}
-                  testID="debts-new-operation"
-                  onPress={openNewOperation}
-                />
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  text={DEBTS_COPY.addDebtor}
-                  testID="debts-add-debtor"
-                  onPress={openNewDebtor}
-                />
-              </View>
-            </>
-          )}
+          <DebtsSummaryCard totals={totals} />
+          <DebtorSection
+            direction="receivable"
+            section={receivableSection}
+            onDebtorPress={openHistory}
+            onAdd={openNewDebtorDebt}
+          />
+          <DebtorSection
+            direction="payable"
+            section={payableSection}
+            onDebtorPress={openHistory}
+            onAdd={openNewDebtorDebt}
+          />
         </View>
       </ScreenScrollView>
 
@@ -142,15 +119,13 @@ export function DebtsScreen() {
         operations={operations}
         onEditOperation={openEditOperation}
         onEditDebtor={openEditDebtor}
-        onNewRepayment={openNewRepayment}
+        onNewOperation={openNewOperation}
       />
-      <DebtorFormSheet ref={newDebtorRef} />
+      {newDebtContext ? (
+        <NewDebtorDebtSheet key={newDebtContext.session} direction={newDebtContext.direction} />
+      ) : null}
       {editingDebtor ? <DebtorFormSheet ref={editDebtorRef} debtor={editingDebtor} /> : null}
-      <OperationSheet
-        ref={newOperationRef}
-        fixed={newOperationFixed}
-        defaultKind={newOperationKind}
-      />
+      <OperationSheet ref={newOperationRef} fixed={newOperationFixed} />
       {editingOperation ? (
         <OperationSheet ref={editOperationRef} operation={editingOperation} />
       ) : null}
