@@ -22,6 +22,11 @@ import {
   TransactionRepositoryProvider,
   createLocalTransactionRepository,
 } from '@/entities/transaction'
+import {
+  DebtRepositoryProvider,
+  createLocalDebtOperationRepository,
+  createLocalDebtorRepository,
+} from '@/entities/debt'
 import { registerBackgroundSync } from '@/shared/lib/sync/background-sync'
 import { createLocalSyncTransport } from '@/shared/lib/sync/transport'
 import { createSyncEngine, type SyncEngineState } from '@/shared/lib/sync/sync-engine'
@@ -97,12 +102,17 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
         <AccountRepositoryProvider repository={createLocalAccountRepository(database)}>
           <CategoryRepositoryProvider repository={createLocalCategoryRepository(database)}>
             <TransactionRepositoryProvider repository={createLocalTransactionRepository(database)}>
-              <AuthProvider>
-                <SyncProvider>
-                  <ConflictCenter />
-                  {children}
-                </SyncProvider>
-              </AuthProvider>
+              <DebtRepositoryProvider
+                debtorRepository={createLocalDebtorRepository(database)}
+                debtOperationRepository={createLocalDebtOperationRepository(database)}
+              >
+                <AuthProvider>
+                  <SyncProvider>
+                    <ConflictCenter />
+                    {children}
+                  </SyncProvider>
+                </AuthProvider>
+              </DebtRepositoryProvider>
             </TransactionRepositoryProvider>
           </CategoryRepositoryProvider>
         </AccountRepositoryProvider>
@@ -132,7 +142,7 @@ function SyncProvider({ children }: { children: React.ReactNode }) {
   const [engine] = useState(() =>
     createSyncEngine({
       db,
-      transport: createLocalSyncTransport(),
+      transport: createLocalSyncTransport(db),
       onDataChanged: () => {
         // The engine is a writer beside the repositories (design D3): after
         // its writes every cached query (entities + sync status) refetches.
@@ -248,9 +258,9 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false, gestureEnabled: true }}>
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
-            {/* Placeholder destinations for the Home quick actions. */}
+            {/* Stack destinations for the Home quick actions. */}
             <Stack.Screen name="income" />
-            <Stack.Screen name="goals" />
+            <Stack.Screen name="debts" />
             {/* Analytics tab detail screens (expense/income breakdown). */}
             <Stack.Screen name="analytics-detail" />
           </Stack>

@@ -14,11 +14,14 @@ import { nowIso } from '@expense-tracker/dates'
 import type {
   CreateAccountPayload,
   CreateCategoryPayload,
+  CreateDebtOperationPayload,
   CreateTransactionPayload,
+  CreateDebtorPayload,
 } from '@expense-tracker/api'
 import { useAccountRepository } from '@/entities/account'
 import { useCategoryRepository } from '@/entities/category'
 import { useTransactionRepository } from '@/entities/transaction'
+import { useDebtOperationRepository, useDebtorRepository } from '@/entities/debt'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import {
   getConflictById,
@@ -35,6 +38,8 @@ const ENTITY_NAMES_RU: Record<LocalSyncConflict['entity'], string> = {
   account: 'Счёт',
   category: 'Категория',
   transaction: 'Транзакция',
+  debtor: 'Должник',
+  debt_operation: 'Долговая операция',
 }
 
 /** Human label of the conflicting record (name / description). */
@@ -97,6 +102,24 @@ function asCreateTransactionPayload(state: Record<string, unknown>): CreateTrans
   }
 }
 
+function asCreateDebtorPayload(state: Record<string, unknown>): CreateDebtorPayload {
+  return {
+    name: String(state.name ?? ''),
+    note: typeof state.note === 'string' ? state.note : '',
+  }
+}
+
+function asCreateDebtOperationPayload(state: Record<string, unknown>): CreateDebtOperationPayload {
+  return {
+    debtorId: String(state.debtorId),
+    direction: state.direction === 'payable' ? 'payable' : 'receivable',
+    kind: state.kind === 'repayment' ? 'repayment' : 'debt',
+    amount: toMinorUnits(state.amount),
+    note: typeof state.note === 'string' ? state.note : '',
+    occurredAt: String(state.occurredAt ?? nowIso()),
+  }
+}
+
 /**
  * Global conflict host: mounted once in the root layout. Tracks unresolved
  * conflicts, prompts for every new one (and re-prompts after a restart - the
@@ -109,6 +132,8 @@ export function ConflictCenter() {
   const accountRepository = useAccountRepository()
   const categoryRepository = useCategoryRepository()
   const transactionRepository = useTransactionRepository()
+  const debtorRepository = useDebtorRepository()
+  const debtOperationRepository = useDebtOperationRepository()
   const promptedRef = useRef<Set<string>>(new Set())
 
   const conflictsQuery = useQuery({
@@ -141,6 +166,10 @@ export function ConflictCenter() {
           }
         } else if (fresh.entity === 'category') {
           await categoryRepository.create(asCreateCategoryPayload(state))
+        } else if (fresh.entity === 'debtor') {
+          await debtorRepository.create(asCreateDebtorPayload(state))
+        } else if (fresh.entity === 'debt_operation') {
+          await debtOperationRepository.create(asCreateDebtOperationPayload(state))
         } else {
           await transactionRepository.create(asCreateTransactionPayload(state))
         }
@@ -151,7 +180,15 @@ export function ConflictCenter() {
       }
       afterResolution()
     },
-    [accountRepository, afterResolution, categoryRepository, db, transactionRepository],
+    [
+      accountRepository,
+      afterResolution,
+      categoryRepository,
+      db,
+      debtOperationRepository,
+      debtorRepository,
+      transactionRepository,
+    ],
   )
 
   const resolve = useCallback(

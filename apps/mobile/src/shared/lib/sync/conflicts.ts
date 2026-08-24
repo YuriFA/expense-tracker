@@ -15,11 +15,15 @@ import { enqueueOperation } from '@/shared/lib/db/outbox'
 import {
   accounts,
   categories,
+  debtOperations,
+  debtors,
   syncConflicts,
   syncOutbox,
   transactions,
   type AccountRow,
   type CategoryRow,
+  type DebtOperationRow,
+  type DebtorRow,
   type SyncConflictRow,
   type SyncEntity,
   type TransactionRow,
@@ -192,7 +196,12 @@ function updateEntityRow(
   tx: LocalTransaction,
   entity: SyncEntity,
   entityId: string,
-  patch: Partial<AccountRow> | Partial<CategoryRow> | Partial<TransactionRow>,
+  patch:
+    | Partial<AccountRow>
+    | Partial<CategoryRow>
+    | Partial<TransactionRow>
+    | Partial<DebtorRow>
+    | Partial<DebtOperationRow>,
 ): void {
   switch (entity) {
     case 'account':
@@ -211,6 +220,18 @@ function updateEntityRow(
       tx.update(transactions)
         .set(patch as Partial<TransactionRow>)
         .where(eq(transactions.id, entityId))
+        .run()
+      break
+    case 'debtor':
+      tx.update(debtors)
+        .set(patch as Partial<DebtorRow>)
+        .where(eq(debtors.id, entityId))
+        .run()
+      break
+    case 'debt_operation':
+      tx.update(debtOperations)
+        .set(patch as Partial<DebtOperationRow>)
+        .where(eq(debtOperations.id, entityId))
         .run()
       break
   }
@@ -376,6 +397,12 @@ export function resolveConflictTakeServer(db: LocalDatabase, conflictId: string)
           break
         case 'transaction':
           tx.delete(transactions).where(eq(transactions.id, conflict.entityId)).run()
+          break
+        case 'debtor':
+          tx.delete(debtors).where(eq(debtors.id, conflict.entityId)).run()
+          break
+        case 'debt_operation':
+          tx.delete(debtOperations).where(eq(debtOperations.id, conflict.entityId)).run()
           break
       }
     }

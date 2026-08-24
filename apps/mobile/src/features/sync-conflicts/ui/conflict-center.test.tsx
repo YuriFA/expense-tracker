@@ -16,6 +16,8 @@ import { CategoryRepositoryProvider } from '@/entities/category'
 import { createLocalCategoryRepository } from '@/entities/category'
 import { TransactionRepositoryProvider } from '@/entities/transaction'
 import { createLocalTransactionRepository } from '@/entities/transaction'
+import { DebtRepositoryProvider } from '@/entities/debt'
+import { createLocalDebtOperationRepository, createLocalDebtorRepository } from '@/entities/debt'
 import { categories, syncOutbox } from '@/shared/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { listUnresolvedConflicts, recordConflict } from '@/shared/lib/sync/conflicts'
@@ -67,7 +69,12 @@ function renderCenter() {
         <AccountRepositoryProvider repository={createLocalAccountRepository(db)}>
           <CategoryRepositoryProvider repository={createLocalCategoryRepository(db)}>
             <TransactionRepositoryProvider repository={createLocalTransactionRepository(db)}>
-              <ConflictCenter />
+              <DebtRepositoryProvider
+                debtorRepository={createLocalDebtorRepository(db)}
+                debtOperationRepository={createLocalDebtOperationRepository(db)}
+              >
+                <ConflictCenter />
+              </DebtRepositoryProvider>
             </TransactionRepositoryProvider>
           </CategoryRepositoryProvider>
         </AccountRepositoryProvider>

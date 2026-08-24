@@ -80,8 +80,8 @@ tags:
 - tapOn:
     point: 50%, 8%
 
-# Goals quick action stays a disabled placeholder until the goals area ships
-# (income, by contrast, is wired to its screen - covered by 11-income).
+# Debts quick action is enabled and wired to the debts screen (covered by
+# 14-debts); goals stay deferred without a tile.
 - assertVisible:
-    id: home-quick-goals
-    enabled: false
+    id: home-quick-debts
+    enabled: true

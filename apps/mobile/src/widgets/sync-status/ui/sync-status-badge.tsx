@@ -35,24 +35,31 @@ export function SyncStatusBadge() {
   let label = 'Синхронизировано'
   let iconClassName = 'accent-muted-foreground'
   let onPress: () => void = runNow
+  // Per-state testID (e.g. `sync-status-synced` / `sync-status-pending`) so
+  // e2e flows assert the sync STATE by testID instead of label text.
+  let stateTestId = 'sync-status-synced'
 
   if (conflicts > 0) {
     iconName = 'warning'
     label = `Конфликты: ${conflicts}`
     iconClassName = 'accent-destructive'
     onPress = presentConflicts
+    stateTestId = 'sync-status-conflicts'
   } else if (engineState.paused) {
     iconName = 'time'
     label = 'Сессия истекла'
     iconClassName = 'accent-destructive'
     onPress = () => undefined
+    stateTestId = 'sync-status-paused'
   } else if (engineState.running) {
     label = 'Синхронизация…'
     iconClassName = 'accent-primary'
+    stateTestId = 'sync-status-running'
   } else if (pending > 0) {
     iconName = 'cloud-upload-outline'
     label = `${pending} ожидает отправки`
     iconClassName = 'accent-primary'
+    stateTestId = 'sync-status-pending'
   }
 
   return (
@@ -68,7 +75,7 @@ export function SyncStatusBadge() {
       ) : (
         <Icon name={iconName} size={14} colorClassName={iconClassName} />
       )}
-      <Text variant="caption" className="text-muted-foreground" testID="sync-status-value">
+      <Text variant="caption" className="text-muted-foreground" testID={stateTestId}>
         {label}
       </Text>
     </Pressable>

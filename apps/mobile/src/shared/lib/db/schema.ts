@@ -10,7 +10,7 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /** Syncable entity kinds stored in the outbox / conflict tables. */
-export type SyncEntity = 'account' | 'category' | 'transaction'
+export type SyncEntity = 'account' | 'category' | 'transaction' | 'debtor' | 'debt_operation'
 
 /** Operation kind of a pending sync operation (spec: upsert or delete). */
 export type SyncOperationKind = 'upsert' | 'delete'
@@ -75,6 +75,40 @@ export const transactions = sqliteTable(
   ],
 )
 
+export const debtors = sqliteTable('debtors', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  note: text('note').notNull().default(''),
+  version: integer('version').notNull().default(1),
+  serverVersion: integer('server_version').notNull().default(0),
+  deletedAt: text('deleted_at'),
+  createdAt: text('created_at').notNull(),
+})
+
+export const debtOperations = sqliteTable(
+  'debt_operations',
+  {
+    id: text('id').primaryKey(),
+    debtorId: text('debtor_id').notNull(),
+    /** DebtDirection ('receivable' | 'payable'). */
+    direction: text('direction').notNull(),
+    /** DebtOperationKind ('debt' | 'repayment'). */
+    kind: text('kind').notNull(),
+    /** Integer minor units, always >= 1. */
+    amount: integer('amount').notNull(),
+    note: text('note').notNull().default(''),
+    /** Canonical UTC ISO-8601 (`new Date(...).toISOString()`). */
+    occurredAt: text('occurred_at').notNull(),
+    version: integer('version').notNull().default(1),
+    serverVersion: integer('server_version').notNull().default(0),
+    deletedAt: text('deleted_at'),
+  },
+  (table) => [
+    index('idx_debt_operations_debtor_id').on(table.debtorId),
+    index('idx_debt_operations_occurred_at').on(table.occurredAt),
+  ],
+)
+
 // --- Sync plumbing (exists from day one so the sync engine plugs in without
 // schema changes; see design D6, D8, D9) ------------------------------------
 
@@ -126,5 +160,7 @@ export const syncMeta = sqliteTable('sync_meta', {
 export type AccountRow = typeof accounts.$inferSelect
 export type CategoryRow = typeof categories.$inferSelect
 export type TransactionRow = typeof transactions.$inferSelect
+export type DebtorRow = typeof debtors.$inferSelect
+export type DebtOperationRow = typeof debtOperations.$inferSelect
 export type SyncOutboxRow = typeof syncOutbox.$inferSelect
 export type SyncConflictRow = typeof syncConflicts.$inferSelect

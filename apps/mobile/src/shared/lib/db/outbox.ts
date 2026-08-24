@@ -12,6 +12,8 @@ import type { LocalTransaction } from './database'
 import {
   accounts,
   categories,
+  debtOperations,
+  debtors,
   syncOutbox,
   transactions,
   type SyncEntity,
@@ -117,6 +119,12 @@ function updateEntityRevisions(
       break
     case 'transaction':
       tx.update(transactions).set(patch).where(eq(transactions.id, entityId)).run()
+      break
+    case 'debtor':
+      tx.update(debtors).set(patch).where(eq(debtors.id, entityId)).run()
+      break
+    case 'debt_operation':
+      tx.update(debtOperations).set(patch).where(eq(debtOperations.id, entityId)).run()
       break
   }
 }

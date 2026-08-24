@@ -7,6 +7,8 @@ import type { LocalDatabase, LocalTransaction } from '@/shared/lib/db/database'
 import {
   accounts,
   categories,
+  debtOperations,
+  debtors,
   syncConflicts,
   syncMeta,
   syncOutbox,
@@ -61,6 +63,9 @@ export function wipeLocalData(db: LocalDatabase): void {
     tx.delete(transactions).run()
     tx.delete(accounts).run()
     tx.delete(categories).run()
+    // Debt rows go referencing-rows-first, mirroring the retention order.
+    tx.delete(debtOperations).run()
+    tx.delete(debtors).run()
     tx.delete(syncOutbox).run()
     tx.delete(syncConflicts).run()
     tx.delete(syncMeta)

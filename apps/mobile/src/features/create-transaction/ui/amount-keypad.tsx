@@ -30,11 +30,19 @@ function keyContent(key: KeypadKey) {
  * Full-width numeric keypad pinned to the bottom of the sheet - the only way
  * the amount is edited (the system keyboard is never involved). Keys are pure
  * `applyKeypadInput` transitions, so calculator operator keys could be added
- * later without changing this layout.
+ * later without changing this layout. `testIDPrefix` keeps ids unique when
+ * more than one sheet with a keypad stays mounted (default: the create and
+ * edit transaction flows' original ids).
  */
-export function AmountKeypad({ onKey }: { onKey: (key: KeypadKey) => void }) {
+export function AmountKeypad({
+  onKey,
+  testIDPrefix = 'new-transaction',
+}: {
+  onKey: (key: KeypadKey) => void
+  testIDPrefix?: string
+}) {
   return (
-    <View className="border-t border-border pb-safe" testID="new-transaction-keypad">
+    <View className="border-t border-border pb-safe" testID={`${testIDPrefix}-keypad`}>
       {KEY_ROWS.map((row, rowIndex) => (
         <View key={rowIndex} className={cn('flex-row', rowIndex > 0 && 'border-t border-border')}>
           {row.map((key, keyIndex) => {
@@ -42,7 +50,7 @@ export function AmountKeypad({ onKey }: { onKey: (key: KeypadKey) => void }) {
             return (
               <Pressable
                 key={key}
-                testID={`new-transaction-key-${key}`}
+                testID={`${testIDPrefix}-key-${key}`}
                 accessibilityRole="button"
                 accessibilityLabel={label}
                 className={cn(

@@ -37,10 +37,14 @@ import {
 import {
   accounts,
   categories,
+  debtOperations,
+  debtors,
   syncOutbox,
   transactions,
   type AccountRow,
   type CategoryRow,
+  type DebtOperationRow,
+  type DebtorRow,
   type SyncOutboxRow,
   type TransactionRow,
 } from '@/shared/lib/db/schema'
@@ -109,6 +113,16 @@ export interface SyncEngineState {
 /** Server caps a push batch at 100 operations; stay comfortably below. */
 const PUSH_BATCH_SIZE = 50
 
+/** Entity kinds this build knows how to apply; anything else in a pull page
+ * is newer than the app and must be skipped (D5). */
+const KNOWN_SYNC_ENTITIES: ReadonlySet<string> = new Set([
+  'account',
+  'category',
+  'transaction',
+  'debtor',
+  'debt_operation',
+])
+
 const BACKOFF_BASE_MS = 5_000
 const BACKOFF_CAP_MS = 15 * 60_000
 
@@ -118,7 +132,12 @@ export function backoffDelayMs(attempts: number): number {
   return Math.min(BACKOFF_BASE_MS * 2 ** exp, BACKOFF_CAP_MS)
 }
 
-type AnyRowPatch = Partial<AccountRow> | Partial<CategoryRow> | Partial<TransactionRow>
+type AnyRowPatch =
+  | Partial<AccountRow>
+  | Partial<CategoryRow>
+  | Partial<TransactionRow>
+  | Partial<DebtorRow>
+  | Partial<DebtOperationRow>
 
 function updateEntityRow(
   tx: LocalTransaction,
@@ -143,6 +162,18 @@ function updateEntityRow(
       tx.update(transactions)
         .set(patch as Partial<TransactionRow>)
         .where(eq(transactions.id, entityId))
+        .run()
+      break
+    case 'debtor':
+      tx.update(debtors)
+        .set(patch as Partial<DebtorRow>)
+        .where(eq(debtors.id, entityId))
+        .run()
+      break
+    case 'debt_operation':
+      tx.update(debtOperations)
+        .set(patch as Partial<DebtOperationRow>)
+        .where(eq(debtOperations.id, entityId))
         .run()
       break
   }
@@ -414,6 +445,27 @@ export function createSyncEngine(options: SyncEngineOptions) {
           createdAt: timestamp,
         } as typeof categories.$inferInsert)
         .run()
+    } else if (change.entity === 'debtor') {
+      tx.insert(debtors)
+        .values({
+          ...(patch as Partial<DebtorRow>),
+          id: change.id,
+          version: change.version,
+          serverVersion: change.version,
+          deletedAt: null,
+          createdAt: timestamp,
+        } as typeof debtors.$inferInsert)
+        .run()
+    } else if (change.entity === 'debt_operation') {
+      tx.insert(debtOperations)
+        .values({
+          ...(patch as Partial<DebtOperationRow>),
+          id: change.id,
+          version: change.version,
+          serverVersion: change.version,
+          deletedAt: null,
+        } as typeof debtOperations.$inferInsert)
+        .run()
     } else {
       tx.insert(transactions)
         .values({
@@ -433,6 +485,14 @@ export function createSyncEngine(options: SyncEngineOptions) {
     change: SyncPullPage['changes'][number],
     outcome: SyncRunOutcome,
   ): void {
+    if (!KNOWN_SYNC_ENTITIES.has(change.entity)) {
+      // D5 version-skew hardening: the server knows an entity kind this
+      // build does not. Skip the change and let the cursor advance - a
+      // stalled cursor would brick sync on this build permanently.
+      console.warn(`[sync] skipped unknown entity kind in pull: ${String(change.entity)}`)
+      return
+    }
+
     const row = readEntityRow(tx, change.entity, change.id)
     if (!row) {
       insertFromChange(tx, change)

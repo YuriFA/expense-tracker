@@ -194,7 +194,7 @@ describe('DashboardScreen (Home)', () => {
 
     expect(screen.getByTestId('home-quick-accounts')).toBeTruthy()
     expect(screen.getByTestId('home-quick-income')).toBeTruthy()
-    expect(screen.getByTestId('home-quick-goals')).toBeTruthy()
+    expect(screen.getByTestId('home-quick-debts')).toBeTruthy()
 
     expect(screen.getByText('Расходы')).toBeTruthy()
     const expected = formatAmount(totalCashflow(TRANSACTIONS, currentMonth(), 'expense'))

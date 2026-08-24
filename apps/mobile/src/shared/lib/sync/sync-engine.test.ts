@@ -6,7 +6,7 @@
 // batches, 401 pause/resume, CLEAN-only pull applies, pull-newer-on-dirty,
 // delete-wins with restore-as-new, restart with open conflicts, backoff.
 
-import { beforeEach, describe, expect, it } from '@jest/globals'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import {
   UnauthorizedError,
   type SyncPushOperation,
@@ -16,9 +16,17 @@ import {
 import { createLocalAccountRepository } from '@/entities/account'
 import { createLocalCategoryRepository } from '@/entities/category'
 import { createLocalTransactionRepository } from '@/entities/transaction'
+import { createLocalDebtOperationRepository, createLocalDebtorRepository } from '@/entities/debt'
+import { balancesByDebtor } from '@/entities/debt/model/balances'
 import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
 import type { LocalDatabase } from '@/shared/lib/db/database'
-import { categories, syncOutbox } from '@/shared/lib/db/schema'
+import {
+  categories,
+  debtOperations,
+  debtors,
+  syncOutbox,
+  type SyncEntity,
+} from '@/shared/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import {
   listUnresolvedConflicts,
@@ -48,7 +56,7 @@ class FakeServer implements SyncTransport {
   appliedOps = new Map<string, number>()
   log: {
     seq: number
-    entity: 'account' | 'category' | 'transaction'
+    entity: SyncEntity
     id: string
     action: 'upsert' | 'tombstone'
     version: number
@@ -61,13 +69,15 @@ class FakeServer implements SyncTransport {
   nextPushReject: Error | null = null
   /** Record keys whose next upsert returns a per-item error result. */
   failNextUpsertFor = new Set<string>()
+  /** Per-item error results with a custom code (e.g. reference validation). */
+  nextErrorResults = new Map<string, { code: string; message: string }>()
 
   private key(entity: string, id: string) {
     return `${entity}:${id}`
   }
 
   append(
-    entity: 'account' | 'category' | 'transaction',
+    entity: SyncEntity,
     id: string,
     action: 'upsert' | 'tombstone',
     version: number,
@@ -140,6 +150,11 @@ class FakeServer implements SyncTransport {
           message: 'name taken',
         }
       }
+      const customError = this.nextErrorResults.get(k)
+      if (customError) {
+        this.nextErrorResults.delete(k)
+        return { opId: op.opId, status: 'error', ...customError }
+      }
       this.records.set(k, { version: 1, deleted: false, data })
       this.append(op.entity, op.id, 'upsert', 1, data)
       this.appliedOps.set(op.opId, 1)
@@ -189,11 +204,7 @@ class FakeServer implements SyncTransport {
   }
 
   /** Server-side mutation by "another device". */
-  mutate(
-    entity: 'account' | 'category' | 'transaction',
-    id: string,
-    patch: Record<string, unknown>,
-  ) {
+  mutate(entity: SyncEntity, id: string, patch: Record<string, unknown>) {
     const k = this.key(entity, id)
     const rec = this.records.get(k)
     if (!rec) throw new Error('mutate: unknown record')
@@ -202,7 +213,7 @@ class FakeServer implements SyncTransport {
     this.append(entity, id, 'upsert', rec.version, rec.data)
   }
 
-  deleteRecord(entity: 'account' | 'category' | 'transaction', id: string) {
+  deleteRecord(entity: SyncEntity, id: string) {
     const k = this.key(entity, id)
     const rec = this.records.get(k)
     if (!rec) throw new Error('deleteRecord: unknown record')
@@ -789,5 +800,159 @@ describe('backoffDelayMs', () => {
     expect(backoffDelayMs(2)).toBe(10_000)
     expect(backoffDelayMs(3)).toBe(20_000)
     expect(backoffDelayMs(20)).toBe(15 * 60_000)
+  })
+})
+
+// --- Debts (debtor + debt_operation as first-class synced entities) -------------
+
+describe('sync engine: debts', () => {
+  let debtorRepo: ReturnType<typeof createLocalDebtorRepository>
+  let operationRepo: ReturnType<typeof createLocalDebtOperationRepository>
+
+  beforeEach(() => {
+    debtorRepo = createLocalDebtorRepository(db)
+    operationRepo = createLocalDebtOperationRepository(db)
+  })
+
+  async function seedDebt() {
+    const debtor = await debtorRepo.create({ name: 'Анна', note: '' })
+    const debt = await operationRepo.create({
+      debtorId: debtor.id,
+      direction: 'receivable',
+      kind: 'debt',
+      amount: 500_000,
+      note: '',
+      occurredAt: '2026-08-20T10:00:00.000Z',
+    })
+    return { debtor, debt }
+  }
+
+  it('round-trips a debtor and its operations; a second device derives the same balance', async () => {
+    const { debtor, debt } = await seedDebt()
+    await operationRepo.create({
+      debtorId: debtor.id,
+      direction: 'receivable',
+      kind: 'repayment',
+      amount: 150_000,
+      note: '',
+      occurredAt: '2026-08-21T10:00:00.000Z',
+    })
+
+    const outcome = await engine.run({ force: true })
+
+    expect(outcome.pushed).toBe(3) // debtor create + debt + repayment
+    expect(outboxRows()).toHaveLength(0)
+    expect(server.records.get(`debtor:${debtor.id}`)?.data).toMatchObject({ name: 'Анна' })
+    expect(server.records.get(`debt_operation:${debt.id}`)?.data).toMatchObject({
+      amount: 500_000,
+      direction: 'receivable',
+    })
+    // Both local rows ended CLEAN under their client-generated ids.
+    expect(db.select().from(debtors).where(eq(debtors.id, debtor.id)).get()).toMatchObject({
+      version: 1,
+      serverVersion: 1,
+    })
+
+    // A second device (fresh database) converges by pulling from cursor 0 and
+    // derives the same balance from the pulled records.
+    const secondDb = await createTestDatabase()
+    const secondEngine = createSyncEngine({
+      db: secondDb,
+      transport: server,
+      now: () => new Date(clockMs),
+      onDataChanged: () => undefined,
+    })
+    await secondEngine.run({ force: true })
+    const secondOperations = await createLocalDebtOperationRepository(secondDb).getAll()
+    expect(balancesByDebtor(secondOperations).get(debtor.id)).toEqual({
+      receivable: 350_000,
+      payable: 0,
+    })
+  })
+
+  it('skips an unknown entity kind in a pull and still advances the cursor (D5)', async () => {
+    // A server newer than this build emits a foreign entity kind.
+    server.log.push({
+      seq: 1,
+      entity: 'budget' as unknown as SyncEntity,
+      id: 'foreign-1',
+      action: 'upsert',
+      version: 1,
+      data: { name: 'Бюджет' },
+    })
+    const debtorId = '22222222-2222-4222-8222-222222222222'
+    server.records.set(`debtor:${debtorId}`, {
+      version: 1,
+      deleted: false,
+      data: { name: 'Сергей', note: '' },
+    })
+    server.log.push({
+      seq: 2,
+      entity: 'debtor',
+      id: debtorId,
+      action: 'upsert',
+      version: 1,
+      data: { name: 'Сергей', note: '' },
+    })
+
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const outcome = await engine.run({ force: true })
+      expect(outcome.pulled).toBe(2)
+    } finally {
+      warnSpy.mockRestore()
+    }
+
+    // The foreign change is skipped (no crash, no row), the known one applies,
+    // and the cursor advanced past BOTH - sync never stalls on this build.
+    expect(db.select().from(debtors).where(eq(debtors.id, debtorId)).get()).toMatchObject({
+      name: 'Сергей',
+    })
+    expect(getPullCursor(db)).toBe(2)
+  })
+
+  it('keeps an operation queued with lastError when its debtor was deleted on the server (D8)', async () => {
+    const { debtor } = await seedDebt()
+    await engine.run({ force: true })
+
+    // Another device deletes the debtor server-side; this device, still
+    // unaware, records one more operation offline.
+    server.deleteRecord('debtor', debtor.id)
+    const pending = await operationRepo.create({
+      debtorId: debtor.id,
+      direction: 'receivable',
+      kind: 'repayment',
+      amount: 50_000,
+      note: '',
+      occurredAt: '2026-08-22T10:00:00.000Z',
+    })
+    // The server's reference validation rejects the pushed operation.
+    server.nextErrorResults.set(`debt_operation:${pending.id}`, {
+      code: 'DEBT_OPERATION_DEBTOR_NOT_FOUND',
+      message: 'debtor not found',
+    })
+    const pushCallsBefore = server.pushCalls.length
+
+    await engine.run({ force: true })
+
+    // The op is NOT confirmed: it stays queued with the machine error visible
+    // and never becomes a sync conflict (user resolves it by editing/deleting).
+    const ops = outboxRows()
+    expect(ops).toHaveLength(1)
+    expect(ops[0]).toMatchObject({ entityId: pending.id, op: 'upsert', attempts: 1 })
+    expect(ops[0].lastError).toContain('DEBT_OPERATION_DEBTOR_NOT_FOUND')
+    expect(listUnresolvedConflicts(db)).toHaveLength(0)
+    expect(server.pushCalls.length).toBeGreaterThan(pushCallsBefore)
+
+    // Pulling the debtor tombstone independently tombstones the local debtor
+    // and leaves the queued operation's own record untouched.
+    const debtorRow = db.select().from(debtors).where(eq(debtors.id, debtor.id)).get()
+    expect(debtorRow?.deletedAt).not.toBeNull()
+    const operationRow = db
+      .select()
+      .from(debtOperations)
+      .where(eq(debtOperations.id, pending.id))
+      .get()
+    expect(operationRow?.deletedAt).toBeNull()
   })
 })

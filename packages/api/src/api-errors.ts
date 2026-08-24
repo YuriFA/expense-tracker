@@ -16,18 +16,20 @@ import {
 type ErrorResponse = components['schemas']['ErrorResponse']
 
 // Backend codes that mean "used by other rows, cannot delete".
-const IN_USE_CODES = new Set(['ACCOUNT_IN_USE', 'CATEGORY_IN_USE'])
+const IN_USE_CODES = new Set(['ACCOUNT_IN_USE', 'CATEGORY_IN_USE', 'DEBTOR_IN_USE'])
 
 // Backend codes that mean "the row does not exist" (returned at 404).
 const NOT_FOUND_BY_ID_CODES = new Set([
   'ACCOUNT_NOT_FOUND',
   'CATEGORY_NOT_FOUND',
   'TRANSACTION_NOT_FOUND',
+  'DEBTOR_NOT_FOUND',
+  'DEBT_OPERATION_NOT_FOUND',
 ])
 
-// Backend codes returned at 422 that mean "referenced account/category is
-// invalid or missing" (FK-validation context inside a transaction).
-const UNKNOWN_REF_CODES = new Set(['INVALID_REFS'])
+// Backend codes returned at 422 that mean "referenced account/category/debtor
+// is invalid or missing" (FK-validation context inside a transaction).
+const UNKNOWN_REF_CODES = new Set(['INVALID_REFS', 'DEBT_OPERATION_DEBTOR_NOT_FOUND'])
 
 // 422 codes that are business-rule violations but NOT missing references.
 const BUSINESS_RULE_CODES = new Set(['SAME_ACCOUNT_TRANSFER', 'CATEGORY_TYPE_MISMATCH'])
@@ -36,6 +38,8 @@ const ALREADY_EXISTS_CODES = new Set([
   'CATEGORY_ALREADY_EXISTS',
   'ACCOUNT_ALREADY_EXISTS',
   'TRANSACTION_ALREADY_EXISTS',
+  'DEBTOR_ALREADY_EXISTS',
+  'DEBT_OPERATION_ALREADY_EXISTS',
   'SYNC_ALREADY_EXISTS',
   'USER_ALREADY_EXISTS',
   'EMAIL_ALREADY_VERIFIED',
@@ -46,6 +50,8 @@ const VERSION_CONFLICT_CODES = new Set([
   'TRANSACTION_VERSION_CONFLICT',
   'ACCOUNT_VERSION_CONFLICT',
   'CATEGORY_VERSION_CONFLICT',
+  'DEBTOR_VERSION_CONFLICT',
+  'DEBT_OPERATION_VERSION_CONFLICT',
   'SYNC_VERSION_CONFLICT',
 ])
 

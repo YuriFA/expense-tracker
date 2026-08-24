@@ -35,7 +35,6 @@ The initial Home screen does not include (reference counterparts in
 parentheses):
 
 - spending limits / budgets (the "Лимит" card);
-- debts (the "Долги" quick-action tile);
 - Pro / subscription functionality (the "PRO" crown button);
 - transaction search (the header search icon);
 - overflow / "more" menu (the "···" header button, the "Ещё" tab).
@@ -49,7 +48,7 @@ in the visual reference.
 
 The layout follows the reference's vertical order:
 
-1. Quick actions row (Счета / Доходы / Цели).
+1. Quick actions row (Счета / Доходы / Долги).
 2. Header summary: mode title (e.g. "Расходы"), total amount, period
    range with previous/next navigation.
 3. "All expenses" card (latest expense → full period expense list).
@@ -220,19 +219,19 @@ The Home screen provides quick access to frequently used areas:
   day-grouped list sheet, and the per-category income breakdown with a
   category detail sheet). Data behavior is specified in
   `openspec/specs/mobile-local-data` ("Income screen data behavior").
-- **Goals** — navigates to a dedicated goals area. Goals are planned
-  but not built (no API, no screens); the action leads to a placeholder
-  screen until then.
+- **Debts** — navigates to the dedicated debts screen: debtors and debt
+  operations in two independent directions («Мне должны» / «Я должен»)
+  with balances derived from the operation history. Data behavior is
+  specified in `openspec/specs/mobile-local-data` ("Debts screen data
+  behavior"). Goals remain a deferred product idea without a tile.
 
 The quick-action set is intentionally limited to functionality that
-currently exists or is planned as part of the product. Placeholders
-keep the intended navigation surface visible without implementing the
-target features.
+currently exists or is planned as part of the product.
 
 Reference presentation: a row of four large square soft-rounded tiles
 with 3D-style icons and labels below (Счета, Доходы, Цели, Долги). The
-implementation keeps three of them — the "Долги" (Debts) tile is
-excluded (see Scope).
+implementation keeps three of them — the "Цели" (Goals) tile is
+deferred without a tile until the feature is designed.
 
 ---
 

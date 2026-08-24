@@ -1,5 +1,6 @@
 // Mapping between local records/payloads and the sync wire shapes
-// (`AccountSyncData` / `CategorySyncData` / `TransactionSyncData`).
+// (`AccountSyncData` / `CategorySyncData` / `TransactionSyncData` /
+// `DebtorSyncData` / `DebtOperationSyncData`).
 //
 // The outbox stores mutations as full DOMAIN payloads (the same shape the
 // repositories return); the wire `data` of an operation/change carries a
@@ -12,6 +13,8 @@ import { eq } from 'drizzle-orm'
 import type {
   AccountSyncData,
   CategorySyncData,
+  DebtOperationSyncData,
+  DebtorSyncData,
   SyncOperationData,
   TransactionSyncData,
 } from '@expense-tracker/api'
@@ -19,15 +22,22 @@ import type { LocalDatabase, LocalTransaction } from '@/shared/lib/db/database'
 import {
   accounts,
   categories,
+  debtOperations,
+  debtors,
   transactions,
   type AccountRow,
   type CategoryRow,
+  type DebtOperationRow,
+  type DebtorRow,
   type SyncEntity,
   type TransactionRow,
 } from '@/shared/lib/db/schema'
 
 /** Either the raw db handle or a transaction over it (same select surface). */
 export type DbLike = LocalDatabase | LocalTransaction
+
+/** A row of any syncable entity table (tombstones included). */
+export type EntityRow = AccountRow | CategoryRow | TransactionRow | DebtorRow | DebtOperationRow
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null
@@ -42,11 +52,7 @@ function asInt(value: unknown): number | null {
 }
 
 /** Reads the raw row of any syncable entity (tombstones included). */
-export function readEntityRow(
-  db: DbLike,
-  entity: SyncEntity,
-  id: string,
-): AccountRow | CategoryRow | TransactionRow | undefined {
+export function readEntityRow(db: DbLike, entity: SyncEntity, id: string): EntityRow | undefined {
   switch (entity) {
     case 'account':
       return db.select().from(accounts).where(eq(accounts.id, id)).get()
@@ -54,15 +60,16 @@ export function readEntityRow(
       return db.select().from(categories).where(eq(categories.id, id)).get()
     case 'transaction':
       return db.select().from(transactions).where(eq(transactions.id, id)).get()
+    case 'debtor':
+      return db.select().from(debtors).where(eq(debtors.id, id)).get()
+    case 'debt_operation':
+      return db.select().from(debtOperations).where(eq(debtOperations.id, id)).get()
   }
 }
 
 /** Domain payload of a row (the same shape the repositories return and the
  * outbox stores) - used for coalescing and conflict local states. */
-export function rowToPayload(
-  entity: SyncEntity,
-  row: AccountRow | CategoryRow | TransactionRow,
-): Record<string, unknown> {
+export function rowToPayload(entity: SyncEntity, row: EntityRow): Record<string, unknown> {
   if (entity === 'account') {
     const r = row as AccountRow
     return {
@@ -76,6 +83,22 @@ export function rowToPayload(
   if (entity === 'category') {
     const r = row as CategoryRow
     return { id: r.id, name: r.name, type: r.type, icon: r.icon, color: r.color }
+  }
+  if (entity === 'debtor') {
+    const r = row as DebtorRow
+    return { id: r.id, name: r.name, note: r.note }
+  }
+  if (entity === 'debt_operation') {
+    const r = row as DebtOperationRow
+    return {
+      id: r.id,
+      debtorId: r.debtorId,
+      direction: r.direction,
+      kind: r.kind,
+      amount: r.amount,
+      note: r.note,
+      occurredAt: r.occurredAt,
+    }
   }
   const r = row as TransactionRow
   const base = {
@@ -91,7 +114,7 @@ export function rowToPayload(
 }
 
 /** True when the row is tombstoned (or treated as such). */
-export function isRowDeleted(row: AccountRow | CategoryRow | TransactionRow): boolean {
+export function isRowDeleted(row: EntityRow): boolean {
   return row.deletedAt !== null
 }
 
@@ -137,6 +160,34 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
     return data.name && data.type && data.icon && data.color ? (data as CategorySyncData) : null
   }
 
+  if (entity === 'debtor') {
+    const data: DebtorSyncData = {
+      name: asString(p.name) ?? '',
+      note: asString(p.note) ?? '',
+    }
+    return data.name ? data : null
+  }
+
+  if (entity === 'debt_operation') {
+    const direction = asString(p.direction)
+    const kind = asString(p.kind)
+    if (direction !== 'receivable' && direction !== 'payable') return null
+    if (kind !== 'debt' && kind !== 'repayment') return null
+    const debtorId = asString(p.debtorId)
+    const amount = asInt(p.amount)
+    const occurredAt = asString(p.occurredAt)
+    if (!debtorId || amount === null || amount < 1 || !occurredAt) return null
+    const data: DebtOperationSyncData = {
+      debtorId,
+      direction,
+      kind,
+      amount,
+      note: asString(p.note) ?? '',
+      occurredAt,
+    }
+    return data
+  }
+
   const type = asString(p.type)
   if (type !== 'income' && type !== 'expense' && type !== 'transfer') return null
   const amount = asInt(p.amount)
@@ -177,6 +228,8 @@ export type SyncRowPatch =
       | 'fromAccountId'
       | 'toAccountId'
     >
+  | Pick<DebtorRow, 'name' | 'note'>
+  | Pick<DebtOperationRow, 'debtorId' | 'direction' | 'kind' | 'amount' | 'note' | 'occurredAt'>
 
 const ACCOUNT_CURRENCIES = new Set(['USD', 'EUR', 'RUB'])
 
@@ -214,6 +267,32 @@ export function syncDataToRowPatch(
       icon: asString(p.icon) ?? '',
       color: asString(p.color) ?? '',
       slug: null,
+    }
+  }
+
+  if (entity === 'debtor') {
+    return {
+      name: asString(p.name) ?? '',
+      note: asString(p.note) ?? '',
+    }
+  }
+
+  if (entity === 'debt_operation') {
+    const direction = asString(p.direction)
+    const kind = asString(p.kind)
+    if (direction !== 'receivable' && direction !== 'payable') return null
+    if (kind !== 'debt' && kind !== 'repayment') return null
+    const debtorId = asString(p.debtorId)
+    const amount = asInt(p.amount)
+    const occurredAt = asString(p.occurredAt)
+    if (!debtorId || amount === null || !occurredAt) return null
+    return {
+      debtorId,
+      direction,
+      kind,
+      amount,
+      note: asString(p.note) ?? '',
+      occurredAt,
     }
   }
 

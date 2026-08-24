@@ -64,7 +64,7 @@ describe('SyncStatusBadge', () => {
     }
     renderBadge()
 
-    const value = await screen.findByTestId('sync-status-value')
+    const value = await screen.findByTestId('sync-status-synced')
     expect(value.props.children).toBe('Синхронизировано')
     fireEvent.press(screen.getByTestId('sync-status-badge'))
     expect(mockController.runNow).toHaveBeenCalledTimes(1)
@@ -95,7 +95,7 @@ describe('SyncStatusBadge', () => {
     renderBadge()
 
     await waitFor(() =>
-      expect(screen.getByTestId('sync-status-value').props.children).toBe('Конфликты: 1'),
+      expect(screen.getByTestId('sync-status-conflicts').props.children).toBe('Конфликты: 1'),
     )
     fireEvent.press(screen.getByTestId('sync-status-badge'))
     expect(mockController.presentConflicts).toHaveBeenCalledTimes(1)
@@ -107,7 +107,7 @@ describe('SyncStatusBadge', () => {
     mockController.engineState = { running: false, paused: true, lastRunAt: null }
     renderBadge()
 
-    const value = await screen.findByTestId('sync-status-value')
+    const value = await screen.findByTestId('sync-status-paused')
     expect(value.props.children).toBe('Сессия истекла')
   })
 
@@ -133,7 +133,7 @@ describe('SyncStatusBadge', () => {
     renderBadge()
 
     await waitFor(() =>
-      expect(screen.getByTestId('sync-status-value').props.children).toBe('2 ожидает отправки'),
+      expect(screen.getByTestId('sync-status-pending').props.children).toBe('2 ожидает отправки'),
     )
   })
 
@@ -142,7 +142,7 @@ describe('SyncStatusBadge', () => {
     mockController.engineState = { running: true, paused: false, lastRunAt: null }
     renderBadge()
 
-    const value = await screen.findByTestId('sync-status-value')
+    const value = await screen.findByTestId('sync-status-running')
     expect(value.props.children).toBe('Синхронизация…')
   })
 })

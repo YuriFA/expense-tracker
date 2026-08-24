@@ -1,0 +1,142 @@
+// Debtor history sheet: the remaining balance of one debtor-direction
+// ledger, the day-grouped operation history («Долг» / «Списание» with
+// sign-colored amounts), a debtor edit affordance in the header, a row tap
+// opening the edit-operation sheet, and the «Новое списание» footer CTA.
+// Pure presentation: the page passes the derived views and callbacks down
+// (invariant #15 - the page owns all sheet composition).
+
+import { useEffect } from 'react'
+import { View } from 'react-native'
+import type { DebtDirection, DebtOperation, Debtor } from '@expense-tracker/api'
+import {
+  BottomSheet,
+  BottomSheetHeader,
+  BottomSheetRef,
+  BottomSheetScrollView,
+  BottomSheetView,
+} from '@/shared/ui/bottom-sheet'
+import { Button } from '@/shared/ui/button'
+import { IconButton } from '@/shared/ui/icon-button'
+import { Pressable } from '@/shared/ui/pressable'
+import { Text } from '@/shared/ui/text'
+import { cn } from '@/shared/lib/utils'
+import { formatAmount } from '@/shared/lib/format/format'
+import { balanceInDirection } from '@/entities/debt/model/balances'
+import { DEBTS_COPY, DEBT_DIRECTION_VIEWS, DEBT_KIND_LABELS } from '../model/kind'
+import { debtorHistoryGroups } from '../model/selectors'
+
+export interface DebtorHistorySheetProps {
+  ref: React.Ref<BottomSheetRef>
+  /** The debtor + direction of the ledger; renders nothing while unset. */
+  debtor: Debtor | undefined
+  direction: DebtDirection
+  /** ALL live operations (the screen's single query - D7 perf invariant). */
+  operations: DebtOperation[]
+  onEditOperation: (operation: DebtOperation) => void
+  onEditDebtor: (debtor: Debtor) => void
+  onNewRepayment: (debtorId: string, direction: DebtDirection) => void
+}
+
+export function DebtorHistorySheet({
+  ref,
+  debtor,
+  direction,
+  operations,
+  onEditOperation,
+  onEditDebtor,
+  onNewRepayment,
+}: DebtorHistorySheetProps) {
+  // Present when a selection arrives: a parent-side present() would race the
+  // selection's commit (the sheet renders nothing until the debtor is set)
+  // and be lost.
+  useEffect(() => {
+    if (debtor && ref && typeof ref !== 'function') ref.current?.present()
+  }, [debtor, ref])
+
+  if (!debtor) return null
+
+  const groups = debtorHistoryGroups(operations, debtor.id, direction)
+
+  return (
+    <BottomSheet ref={ref} snapPoints={['75%']} testID="debts-history-sheet" stackBehavior="push">
+      {/* The visible element carrying the sheet testID (accounts-sheet
+          pattern): the modal container is zero-bounds to Maestro. */}
+      <BottomSheetView testID="debts-history-sheet" className="flex-1">
+        <BottomSheetHeader
+          title={debtor.name}
+          right={
+            <IconButton
+              icon="create-outline"
+              size="md"
+              colorClassName="accent-muted-foreground"
+              accessibilityLabel="Редактировать должника"
+              testID="debts-history-edit-debtor"
+              onPress={() => onEditDebtor(debtor)}
+            />
+          }
+        />
+        <BottomSheetScrollView testID="debts-history-list">
+          <View className="gap-3 px-4 pb-4">
+            <View className="gap-1">
+              <Text variant="caption" className="uppercase text-muted-foreground">
+                {DEBT_DIRECTION_VIEWS[direction].summaryLabel}
+              </Text>
+              <Text variant="h1" className="text-foreground" testID="debts-history-balance">
+                {formatAmount(balanceInDirection(operations, debtor.id, direction))}
+              </Text>
+            </View>
+
+            {groups.length === 0 ? (
+              <Text variant="body-sm" className="py-2 text-muted-foreground">
+                {DEBTS_COPY.historyEmpty}
+              </Text>
+            ) : (
+              groups.map((group) => (
+                <View key={group.key} className="gap-1" testID={`debts-history-day-${group.key}`}>
+                  <Text variant="caption" className="text-muted-foreground">
+                    {group.title}
+                  </Text>
+                  {group.rows.map((row) => (
+                    <Pressable
+                      key={row.id}
+                      testID={`debts-history-op-${row.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${DEBT_KIND_LABELS[row.kind]}, ${row.amountText}`}
+                      className="flex-row items-center gap-3 py-3 active:opacity-70"
+                      onPress={() => {
+                        const operation = operations.find((op) => op.id === row.id)
+                        if (operation) onEditOperation(operation)
+                      }}
+                    >
+                      <Text variant="body" className="flex-1 text-foreground" numberOfLines={1}>
+                        {row.note || DEBT_KIND_LABELS[row.kind]}
+                      </Text>
+                      <Text
+                        variant="body"
+                        className={cn(
+                          'font-medium',
+                          row.kind === 'debt' ? 'text-success' : 'text-destructive',
+                        )}
+                      >
+                        {row.amountText}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ))
+            )}
+          </View>
+        </BottomSheetScrollView>
+
+        <View className="px-4 pb-safe pt-3">
+          <Button
+            variant="primary"
+            text={DEBTS_COPY.newRepayment}
+            testID="debts-new-repayment"
+            onPress={() => onNewRepayment(debtor.id, direction)}
+          />
+        </View>
+      </BottomSheetView>
+    </BottomSheet>
+  )
+}

@@ -1,0 +1,140 @@
+# Debts screen end-to-end (add-debts task 7.2): the «Долги» quick action
+# opens the screen, a debtor and a debt operation are created offline-first,
+# the debtor history sheet shows the remaining balance, a repayment through
+# «Новое списание» updates it, and the settled debtor disappears behind the
+# reveal row. The derived balance figures (summary totals, row amounts) are
+# asserted as text, not just element presence.
+#
+# The local database persists across suite runs, so the debtor name carries
+# the random suffix (the unique-name guard would reject a fixed name on the
+# second run).
+appId: com.anonymous.mobile
+tags:
+  - debts
+---
+- runFlow: ../_launch.yaml
+- runScript: ../_random.js
+- tapOn:
+    id: home-quick-debts
+- extendedWaitUntil:
+    visible:
+      id: screen-debts
+    timeout: 15000
+
+# Always create this run's debtor (the add button exists in both the empty
+# state and the footer row): the suite's local database accumulates debtors
+# across runs, and the random suffix keeps the name unique.
+- tapOn:
+    id: debts-add-debtor
+- assertVisible:
+    id: debts-new-debtor-sheet
+- tapOn:
+    id: debts-debtor-name
+- inputText: 'Анна ${output.suffix}'
+# Blur the name field through the note field - the keyboard over a
+# BottomSheetTextInput cannot be hidden by Maestro directly.
+- tapOn:
+    id: debts-debtor-note
+- tapOn:
+    id: debts-debtor-submit
+# The sheet may or may not auto-dismiss (TODO(sheet-dismiss)); close it via
+# the backdrop (the tap lands on the non-interactive header when it did).
+- tapOn:
+    point: 50%, 8%
+
+# A debt of 5 000,00 ₽ through the screen CTA (both pickers active).
+- tapOn:
+    id: debts-new-operation
+- assertVisible:
+    id: debts-new-operation-sheet
+- tapOn:
+    id: debts-operation-key-5
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-debtor
+- assertVisible:
+    id: debts-debtor-picker-list
+# The option rows carry the debtor names; select this run's debtor by text.
+- tapOn:
+    text: 'Анна ${output.suffix}'
+- tapOn:
+    id: debts-operation-submit
+- runFlow:
+    when:
+      visible:
+        id: debts-new-operation-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# Derived figure as text: this run's debtor row shows 5 000 ₽ (the row text
+# carries the random-suffixed name, so the assert survives re-runs of the
+# suite, whose local database accumulates debtors).
+- extendedWaitUntil:
+    visible:
+      id: debts-debtor-.*
+    timeout: 10000
+- assertVisible:
+    text: '.*Анна ${output.suffix}.*5.*000.*'
+- assertVisible:
+    id: debts-summary
+
+# The debtor history sheet: remaining balance for the direction.
+- tapOn:
+    text: '.*Анна ${output.suffix}.*'
+- extendedWaitUntil:
+    visible:
+      id: debts-history-sheet
+    timeout: 10000
+- assertVisible:
+    id: debts-history-balance
+    text: '.*5.*000.*'
+
+# «Новое списание»: fixed debtor + direction, kind preset to Списание.
+- tapOn:
+    id: debts-new-repayment
+- extendedWaitUntil:
+    visible:
+      id: debts-new-operation-sheet
+    timeout: 10000
+- tapOn:
+    id: debts-operation-key-5
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-submit
+- runFlow:
+    when:
+      visible:
+        id: debts-new-operation-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# The history sheet is still open beneath: the balance updated to 0 ₽.
+- assertVisible:
+    id: debts-history-balance
+    text: '.*0.*'
+# Close the history sheet; the overview now hides the settled debtor behind
+# the reveal row and the direction total is 0 ₽.
+- tapOn:
+    point: 50%, 8%
+- extendedWaitUntil:
+    visible:
+      id: debts-settled-reveal-receivable
+    timeout: 10000
+# The reveal row appears with the settled count (accumulation-tolerant: the
+# count grows across suite runs).
+- assertVisible:
+    id: debts-settled-reveal-receivable
+    text: '.*Показать рассчитавшихся.*'
+- takeScreenshot: debts-settled

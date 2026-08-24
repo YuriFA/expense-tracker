@@ -11,6 +11,7 @@ import { useAuth } from '@/entities/session'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import { readSyncStatus } from '@/shared/lib/sync/sync-status'
 import { useSyncController } from '@/shared/lib/sync/sync-context'
+import { isOfflineGateEnabled, setOfflineGate } from '@/shared/lib/sync/offline-gate'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 
 function formatSyncedAt(iso: string | null): string {
@@ -25,6 +26,16 @@ export function SettingsScreen() {
   const db = useLocalDatabase()
   const { runNow } = useSyncController()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  // Dev-build-only e2e gate (add-debts 7.3): blocks the sync transport so
+  // Maestro flows can exercise offline behavior mid-flow. Never rendered in
+  // production builds.
+  const [devOffline, setDevOffline] = useState(() => isOfflineGateEnabled(db))
+  const handleToggleOfflineGate = () => {
+    const next = !devOffline
+    setOfflineGate(db, next)
+    setDevOffline(next)
+    if (!next) runNow()
+  }
 
   const syncStatusQuery = useQuery({
     queryKey: ['sync', 'status'],
@@ -105,6 +116,22 @@ export function SettingsScreen() {
                 text="Синхронизировать сейчас"
                 onPress={runNow}
                 testID="settings-sync-now-button"
+              />
+            </View>
+          ) : null}
+
+          {__DEV__ ? (
+            <View className="gap-2 rounded-2xl bg-card p-4" testID="settings-dev-section">
+              <Text variant="h4">Разработка</Text>
+              <Text variant="body-sm" className="text-muted-foreground">
+                Симуляция офлайна для e2e-тестов: синхронизация не выполняется, пока переключатель
+                включён.
+              </Text>
+              <Button
+                variant="outline"
+                text={devOffline ? 'Офлайн-режим: вкл' : 'Офлайн-режим: выкл'}
+                onPress={handleToggleOfflineGate}
+                testID="settings-dev-offline-toggle"
               />
             </View>
           ) : null}

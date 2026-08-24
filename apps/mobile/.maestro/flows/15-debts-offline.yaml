@@ -1,0 +1,240 @@
+# Offline debts convergence (add-debts task 7.4): with a real backend and
+# the signed-in test user (pattern of 09-sync-signin), record a debtor and a
+# debt online, then use the dev offline gate (Settings toggle, task 7.3) to
+# record a repayment with sync blocked, restart the app (the local database
+# persists - never clearState), assert the derived balance survived the
+# restart, go back online, force a sync run, and assert the synced-state
+# testID plus the same balance.
+#
+# Prerequisites: the backend on :8080, the test user provisioned (see
+# _launch.js), the pasteboard primed with the test password (the e2e runner
+# does it), and Metro running. Runs after 14-debts (the local DB persists
+# across flows, so this run's debtor carries the random suffix).
+appId: com.anonymous.mobile
+tags:
+  - debts
+  - sync
+---
+- runFlow: ../_launch.yaml
+- runScript: ../_random.js
+
+# --- Sign in (the 09-sync-signin pattern) ------------------------------------
+- tapOn:
+    id: tab-settings
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 15000
+- tapOn:
+    id: settings-login-button
+- extendedWaitUntil:
+    visible:
+      id: screen-login
+    timeout: 15000
+- tapOn:
+    id: login-email-input
+- eraseText
+- inputText: ${output.testEmail}
+# The password goes through the native Paste (see 09-sync-signin for why).
+- longPressOn:
+    id: login-password-input
+- tapOn:
+    text: Paste
+- runFlow:
+    when:
+      visible: 'Save Password'
+    commands:
+      - tapOn: 'Not Now'
+- tapOn:
+    id: screen-header
+- tapOn:
+    id: login-submit-button
+- runFlow:
+    when:
+      visible: 'Save Password'
+    commands:
+      - tapOn: 'Not Now'
+- extendedWaitUntil:
+    visible:
+      id: tab-settings
+    timeout: 20000
+
+# --- Create the debtor + a 5 000,00 ₽ debt ONLINE ----------------------------
+- tapOn:
+    id: tab-dashboard
+- tapOn:
+    id: home-quick-debts
+- extendedWaitUntil:
+    visible:
+      id: screen-debts
+    timeout: 15000
+- tapOn:
+    id: debts-add-debtor
+- assertVisible:
+    id: debts-new-debtor-sheet
+- tapOn:
+    id: debts-debtor-name
+- inputText: 'Борис ${output.suffix}'
+- tapOn:
+    id: debts-debtor-note
+- tapOn:
+    id: debts-debtor-submit
+- tapOn:
+    point: 50%, 8%
+
+- tapOn:
+    id: debts-new-operation
+- assertVisible:
+    id: debts-new-operation-sheet
+- tapOn:
+    id: debts-operation-key-5
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-debtor
+- assertVisible:
+    id: debts-debtor-picker-list
+# The option rows carry the debtor name; select this run's debtor by text.
+- tapOn:
+    text: 'Борис ${output.suffix}'
+- tapOn:
+    id: debts-operation-submit
+- runFlow:
+    when:
+      visible:
+        id: debts-new-operation-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# This run's debtor row shows the derived 5 000 ₽ figure (random-suffix
+# scoped: re-runs accumulate debtors, totals would not stay stable).
+- extendedWaitUntil:
+    visible:
+      text: '.*Борис ${output.suffix}.*5.*000.*'
+    timeout: 10000
+
+# Wait for the post-mutation sync to settle while still online.
+- tapOn:
+    id: screen-header-back
+- extendedWaitUntil:
+    visible:
+      id: sync-status-synced
+    timeout: 30000
+
+# --- Block the network via the dev offline gate -------------------------------
+- tapOn:
+    id: tab-settings
+- scrollUntilVisible:
+    element:
+      id: settings-dev-offline-toggle
+    direction: DOWN
+- tapOn:
+    id: settings-dev-offline-toggle
+
+# --- Record a 1 500,00 ₽ repayment OFFLINE ------------------------------------
+- tapOn:
+    id: tab-dashboard
+- tapOn:
+    id: home-quick-debts
+- extendedWaitUntil:
+    visible:
+      id: screen-debts
+    timeout: 15000
+# Open this run's debtor (identified by its random-suffixed name).
+- tapOn:
+    text: '.*Борис ${output.suffix}.*'
+- extendedWaitUntil:
+    visible:
+      id: debts-history-sheet
+    timeout: 10000
+- tapOn:
+    id: debts-new-repayment
+- extendedWaitUntil:
+    visible:
+      id: debts-new-operation-sheet
+    timeout: 10000
+- tapOn:
+    id: debts-operation-key-1
+- tapOn:
+    id: debts-operation-key-5
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-key-0
+- tapOn:
+    id: debts-operation-submit
+- runFlow:
+    when:
+      visible:
+        id: debts-new-operation-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# The offline balance derivation: 5 000 − 1 500 = 3 500.
+- assertVisible:
+    id: debts-history-balance
+    text: '.*3.*500.*'
+- takeScreenshot: debts-offline-balance
+
+# --- Restart the app: the local database persists (never clearState) ----------
+- runFlow: ../_launch.yaml
+- tapOn:
+    id: home-quick-debts
+- extendedWaitUntil:
+    visible:
+      id: screen-debts
+    timeout: 15000
+- assertVisible:
+    text: '.*Борис ${output.suffix}.*3.*500.*'
+- takeScreenshot: debts-after-restart
+
+# --- Back online: toggle the gate off (which also forces a run) ---------------
+- tapOn:
+    id: screen-header-back
+- tapOn:
+    id: tab-settings
+- scrollUntilVisible:
+    element:
+      id: settings-dev-offline-toggle
+    direction: DOWN
+- tapOn:
+    id: settings-dev-offline-toggle
+# Belt and braces: the explicit sync button as well.
+- tapOn:
+    id: settings-sync-now-button
+
+# --- Converged: the synced-state testID and the same derived balance ----------
+- tapOn:
+    id: tab-dashboard
+- extendedWaitUntil:
+    visible:
+      id: sync-status-synced
+    timeout: 30000
+- tapOn:
+    id: home-quick-debts
+- extendedWaitUntil:
+    visible:
+      id: screen-debts
+    timeout: 15000
+- assertVisible:
+    text: '.*Борис ${output.suffix}.*3.*500.*'
+- takeScreenshot: debts-online-converged
+
+# Restore the suite invariant (09-sync-signin expects an anonymous app): sign
+# out at the end, like 09 itself does.
+- tapOn:
+    id: screen-header-back
+- tapOn:
+    id: tab-settings
+- tapOn:
+    id: settings-logout-button
+- extendedWaitUntil:
+    visible:
+      id: settings-login-button
+    timeout: 20000

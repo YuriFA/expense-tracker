@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { cn } from '@/shared/lib/utils'
 import { Pressable } from '@/shared/ui/pressable'
 
-type QuickActionId = 'accounts' | 'income' | 'goals'
+type QuickActionId = 'accounts' | 'income' | 'debts'
 
 export function QuickActionsRow() {
   const router = useRouter()
@@ -36,12 +36,12 @@ export function QuickActionsRow() {
       onPress: () => router.push('/income'),
     },
     {
-      id: 'goals',
-      label: 'Цели',
-      icon: 'flag',
-      disabled: true, // TODO: wire up goals page
+      id: 'debts',
+      label: 'Долги',
+      // Closest coins-style glyph in the Ionicons set (no `hand-coins` there).
+      icon: 'cash',
       chipClassName: 'bg-brand-green',
-      onPress: () => router.push('/goals'),
+      onPress: () => router.push('/debts'),
     },
   ]
 

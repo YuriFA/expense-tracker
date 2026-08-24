@@ -13,14 +13,14 @@ import {
   pendingOperations,
   type PushConfirmation,
 } from '@/shared/lib/db/outbox'
-import { categories, syncOutbox } from '@/shared/lib/db/schema'
+import { categories, syncOutbox, type SyncEntity } from '@/shared/lib/db/schema'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 
 const PAYLOAD = { name: 'Такси', type: 'expense' as const, icon: 'car', color: '#7c5cff' }
 
 /** Direct row access - the sync engine's readRecord callback equivalent. */
 function readCategory(db: LocalDatabase) {
-  return (entity: 'account' | 'category' | 'transaction', entityId: string) => {
+  return (entity: SyncEntity, entityId: string) => {
     expect(entity).toBe('category')
     const row = db.select().from(categories).where(eq(categories.id, entityId)).get()
     if (!row) return null

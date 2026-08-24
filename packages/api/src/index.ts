@@ -66,6 +66,14 @@ export {
   type AccountRef,
   type CategoryRef,
 } from './domain/transaction'
+export type { Debtor } from './domain/debtor'
+export { normalizeDebtor } from './domain/debtor'
+export type {
+  DebtOperation,
+  DebtDirection,
+  DebtOperationKind,
+} from './domain/debt-operation'
+export { normalizeDebtOperation } from './domain/debt-operation'
 
 // --- Per-entity repository contracts (the DI seam) -------------------------
 export {
@@ -86,11 +94,24 @@ export {
   type UpdateTransactionPayload,
   type LocalStorageTransactionRepository,
 } from './repositories/transaction'
+export {
+  type DebtorRepository,
+  type CreateDebtorPayload,
+  type UpdateDebtorPayload,
+} from './repositories/debtor'
+export {
+  type DebtOperationRepository,
+  type DebtOperationQuery,
+  type CreateDebtOperationPayload,
+  type UpdateDebtOperationPayload,
+} from './repositories/debt-operation'
 
 // --- HTTP repository implementations ---------------------------------------
 export { createHTTPAccountRepository } from './http/account'
 export { createHTTPCategoryRepository } from './http/category'
 export { createHTTPTransactionRepository } from './http/transaction'
+export { createHTTPDebtorRepository } from './http/debtor'
+export { createHTTPDebtOperationRepository } from './http/debt-operation'
 
 // --- Sync endpoint client (offline-first push/pull) -------------------------
 export {
@@ -100,6 +121,8 @@ export {
   type AccountSyncData,
   type CategorySyncData,
   type TransactionSyncData,
+  type DebtorSyncData,
+  type DebtOperationSyncData,
   type SyncOperationData,
   type SyncPushOperation,
   type SyncPushResultItem,

@@ -11,9 +11,16 @@ export type SyncEntityKind = components['schemas']['SyncEntity']
 export type AccountSyncData = components['schemas']['AccountSyncData']
 export type CategorySyncData = components['schemas']['CategorySyncData']
 export type TransactionSyncData = components['schemas']['TransactionSyncData']
+export type DebtorSyncData = components['schemas']['DebtorSyncData']
+export type DebtOperationSyncData = components['schemas']['DebtOperationSyncData']
 
 /** Full record state of an operation/change, shape depends on `entity`. */
-export type SyncOperationData = AccountSyncData | CategorySyncData | TransactionSyncData
+export type SyncOperationData =
+  | AccountSyncData
+  | CategorySyncData
+  | TransactionSyncData
+  | DebtorSyncData
+  | DebtOperationSyncData
 
 /** One pending client operation to push. */
 export interface SyncPushOperation {
