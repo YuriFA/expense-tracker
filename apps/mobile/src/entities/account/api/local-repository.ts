@@ -24,7 +24,7 @@ import {
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { enqueueOperation, hasSentOperations, removeOperationsFor } from '@/shared/lib/db/outbox'
-import { accounts, transactions, type AccountRow } from '@/shared/lib/db/schema'
+import { accounts, plannedPayments, transactions, type AccountRow } from '@/shared/lib/db/schema'
 import { generateId } from '@/shared/lib/generate-id'
 
 type LocalTx = Parameters<Parameters<LocalDatabase['transaction']>[0]>[0]
@@ -97,6 +97,17 @@ function hasTransactionsForAccount(tx: LocalTx, accountId: string): boolean {
           ),
         ),
       )
+      .get() !== undefined
+  )
+}
+
+/** Live plans referencing the account block its deletion (local D4 mirror). */
+function hasLivePlansForAccount(tx: LocalTx, accountId: string): boolean {
+  return (
+    tx
+      .select({ id: plannedPayments.id })
+      .from(plannedPayments)
+      .where(and(eq(plannedPayments.accountId, accountId), isNull(plannedPayments.deletedAt)))
       .get() !== undefined
   )
 }
@@ -217,6 +228,12 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
 
         if (hasTransactionsForAccount(tx, id)) {
           throw new ReferentialIntegrityError('Account has referencing transactions', {
+            apiCode: 'ACCOUNT_IN_USE',
+          })
+        }
+
+        if (hasLivePlansForAccount(tx, id)) {
+          throw new ReferentialIntegrityError('Account has live planned payments', {
             apiCode: 'ACCOUNT_IN_USE',
           })
         }

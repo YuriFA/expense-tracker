@@ -18,6 +18,8 @@ import { TransactionRepositoryProvider } from '@/entities/transaction'
 import { createLocalTransactionRepository } from '@/entities/transaction'
 import { DebtRepositoryProvider } from '@/entities/debt'
 import { createLocalDebtOperationRepository, createLocalDebtorRepository } from '@/entities/debt'
+import { PlannedPaymentRepositoryProvider } from '@/entities/planned-payment'
+import { createLocalPlannedPaymentRepository } from '@/entities/planned-payment'
 import { categories, syncOutbox } from '@/shared/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { listUnresolvedConflicts, recordConflict } from '@/shared/lib/sync/conflicts'
@@ -73,7 +75,11 @@ function renderCenter() {
                 debtorRepository={createLocalDebtorRepository(db)}
                 debtOperationRepository={createLocalDebtOperationRepository(db)}
               >
-                <ConflictCenter />
+                <PlannedPaymentRepositoryProvider
+                  repository={createLocalPlannedPaymentRepository(db)}
+                >
+                  <ConflictCenter />
+                </PlannedPaymentRepositoryProvider>
               </DebtRepositoryProvider>
             </TransactionRepositoryProvider>
           </CategoryRepositoryProvider>

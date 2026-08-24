@@ -15,6 +15,7 @@ import type {
   CreateAccountPayload,
   CreateCategoryPayload,
   CreateDebtOperationPayload,
+  CreatePlannedPaymentPayload,
   CreateTransactionPayload,
   CreateDebtorPayload,
 } from '@expense-tracker/api'
@@ -22,6 +23,7 @@ import { useAccountRepository } from '@/entities/account'
 import { useCategoryRepository } from '@/entities/category'
 import { useTransactionRepository } from '@/entities/transaction'
 import { useDebtOperationRepository, useDebtorRepository } from '@/entities/debt'
+import { usePlannedPaymentRepository } from '@/entities/planned-payment'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import {
   getConflictById,
@@ -40,6 +42,7 @@ const ENTITY_NAMES_RU: Record<LocalSyncConflict['entity'], string> = {
   transaction: 'Транзакция',
   debtor: 'Должник',
   debt_operation: 'Долговая операция',
+  planned_payment: 'Плановый платёж',
 }
 
 /** Human label of the conflicting record (name / description). */
@@ -120,6 +123,34 @@ function asCreateDebtOperationPayload(state: Record<string, unknown>): CreateDeb
   }
 }
 
+function asCreatePlannedPaymentPayload(
+  state: Record<string, unknown>,
+): CreatePlannedPaymentPayload {
+  const type = state.type === 'income' ? 'income' : 'expense'
+  const regularity =
+    state.regularity === 'daily' || state.regularity === 'weekly' || state.regularity === 'yearly'
+      ? state.regularity
+      : 'monthly'
+  const confirmMode = state.confirmMode === 'auto' ? 'auto' : 'manual'
+  const reminder =
+    state.reminder === 'day_before' || state.reminder === 'on_day' ? state.reminder : 'off'
+  const day = (value: unknown, fallback: string) =>
+    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : fallback
+  const anchor = day(state.anchorDate, '2026-01-01')
+  return {
+    type,
+    amount: toMinorUnits(state.amount),
+    name: typeof state.name === 'string' ? state.name : '',
+    accountId: String(state.accountId),
+    categoryId: String(state.categoryId),
+    nextDue: day(state.nextDue, anchor),
+    regularity,
+    confirmMode,
+    reminder,
+    note: typeof state.note === 'string' ? state.note : '',
+  }
+}
+
 /**
  * Global conflict host: mounted once in the root layout. Tracks unresolved
  * conflicts, prompts for every new one (and re-prompts after a restart - the
@@ -134,6 +165,7 @@ export function ConflictCenter() {
   const transactionRepository = useTransactionRepository()
   const debtorRepository = useDebtorRepository()
   const debtOperationRepository = useDebtOperationRepository()
+  const plannedPaymentRepository = usePlannedPaymentRepository()
   const promptedRef = useRef<Set<string>>(new Set())
 
   const conflictsQuery = useQuery({
@@ -170,6 +202,8 @@ export function ConflictCenter() {
           await debtorRepository.create(asCreateDebtorPayload(state))
         } else if (fresh.entity === 'debt_operation') {
           await debtOperationRepository.create(asCreateDebtOperationPayload(state))
+        } else if (fresh.entity === 'planned_payment') {
+          await plannedPaymentRepository.create(asCreatePlannedPaymentPayload(state))
         } else {
           await transactionRepository.create(asCreateTransactionPayload(state))
         }
@@ -187,6 +221,7 @@ export function ConflictCenter() {
       db,
       debtOperationRepository,
       debtorRepository,
+      plannedPaymentRepository,
       transactionRepository,
     ],
   )

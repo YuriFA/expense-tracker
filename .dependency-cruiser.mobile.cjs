@@ -14,7 +14,7 @@
  */
 
 const FEATURE_SLICES = ['analytics', 'cashflow-overview', 'create-transaction', 'sync-conflicts']
-const ENTITY_SLICES = ['account', 'category', 'transaction', 'debt', 'session']
+const ENTITY_SLICES = ['account', 'category', 'transaction', 'debt', 'session', 'planned-payment']
 
 const crossSliceRules = (layer, slices) =>
   slices.map((slice) => ({

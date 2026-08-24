@@ -15,6 +15,7 @@ import type {
   CategorySyncData,
   DebtOperationSyncData,
   DebtorSyncData,
+  PlannedPaymentSyncData,
   SyncOperationData,
   TransactionSyncData,
 } from '@expense-tracker/api'
@@ -24,11 +25,13 @@ import {
   categories,
   debtOperations,
   debtors,
+  plannedPayments,
   transactions,
   type AccountRow,
   type CategoryRow,
   type DebtOperationRow,
   type DebtorRow,
+  type PlannedPaymentRow,
   type SyncEntity,
   type TransactionRow,
 } from '@/shared/lib/db/schema'
@@ -37,7 +40,13 @@ import {
 export type DbLike = LocalDatabase | LocalTransaction
 
 /** A row of any syncable entity table (tombstones included). */
-export type EntityRow = AccountRow | CategoryRow | TransactionRow | DebtorRow | DebtOperationRow
+export type EntityRow =
+  | AccountRow
+  | CategoryRow
+  | TransactionRow
+  | DebtorRow
+  | DebtOperationRow
+  | PlannedPaymentRow
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null
@@ -49,6 +58,12 @@ function asString(value: unknown): string | null {
 
 function asInt(value: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) ? value : null
+}
+
+const CALENDAR_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+function asCalendarDay(value: unknown): string | null {
+  return typeof value === 'string' && CALENDAR_DAY_PATTERN.test(value) ? value : null
 }
 
 /** Reads the raw row of any syncable entity (tombstones included). */
@@ -64,6 +79,8 @@ export function readEntityRow(db: DbLike, entity: SyncEntity, id: string): Entit
       return db.select().from(debtors).where(eq(debtors.id, id)).get()
     case 'debt_operation':
       return db.select().from(debtOperations).where(eq(debtOperations.id, id)).get()
+    case 'planned_payment':
+      return db.select().from(plannedPayments).where(eq(plannedPayments.id, id)).get()
   }
 }
 
@@ -98,6 +115,24 @@ export function rowToPayload(entity: SyncEntity, row: EntityRow): Record<string,
       amount: r.amount,
       note: r.note,
       occurredAt: r.occurredAt,
+    }
+  }
+  if (entity === 'planned_payment') {
+    const r = row as PlannedPaymentRow
+    return {
+      id: r.id,
+      type: r.type,
+      amount: r.amount,
+      name: r.name,
+      accountId: r.accountId,
+      categoryId: r.categoryId,
+      nextDue: r.nextDue,
+      anchorDate: r.anchorDate,
+      regularity: r.regularity,
+      confirmMode: r.confirmMode,
+      reminder: r.reminder,
+      note: r.note,
+      version: r.version,
     }
   }
   const r = row as TransactionRow
@@ -188,6 +223,45 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
     return data
   }
 
+  if (entity === 'planned_payment') {
+    const type = asString(p.type)
+    if (type !== 'expense' && type !== 'income') return null
+    const regularity = asString(p.regularity)
+    if (
+      regularity !== 'daily' &&
+      regularity !== 'weekly' &&
+      regularity !== 'monthly' &&
+      regularity !== 'yearly'
+    ) {
+      return null
+    }
+    const confirmMode = asString(p.confirmMode)
+    if (confirmMode !== 'manual' && confirmMode !== 'auto') return null
+    const reminder = asString(p.reminder)
+    if (reminder !== 'off' && reminder !== 'day_before' && reminder !== 'on_day') return null
+    const amount = asInt(p.amount)
+    const accountId = asString(p.accountId)
+    const categoryId = asString(p.categoryId)
+    const nextDue = asCalendarDay(p.nextDue)
+    const anchorDate = asCalendarDay(p.anchorDate)
+    if (!accountId || !categoryId || !nextDue || !anchorDate) return null
+    if (amount === null || amount < 1) return null
+    const data: PlannedPaymentSyncData = {
+      type,
+      amount,
+      name: asString(p.name) ?? '',
+      accountId,
+      categoryId,
+      nextDue,
+      anchorDate,
+      regularity,
+      confirmMode,
+      reminder,
+      note: asString(p.note) ?? '',
+    }
+    return data
+  }
+
   const type = asString(p.type)
   if (type !== 'income' && type !== 'expense' && type !== 'transfer') return null
   const amount = asInt(p.amount)
@@ -230,6 +304,20 @@ export type SyncRowPatch =
     >
   | Pick<DebtorRow, 'name' | 'note'>
   | Pick<DebtOperationRow, 'debtorId' | 'direction' | 'kind' | 'amount' | 'note' | 'occurredAt'>
+  | Pick<
+      PlannedPaymentRow,
+      | 'type'
+      | 'amount'
+      | 'name'
+      | 'accountId'
+      | 'categoryId'
+      | 'nextDue'
+      | 'anchorDate'
+      | 'regularity'
+      | 'confirmMode'
+      | 'reminder'
+      | 'note'
+    >
 
 const ACCOUNT_CURRENCIES = new Set(['USD', 'EUR', 'RUB'])
 
@@ -293,6 +381,43 @@ export function syncDataToRowPatch(
       amount,
       note: asString(p.note) ?? '',
       occurredAt,
+    }
+  }
+
+  if (entity === 'planned_payment') {
+    const type = asString(p.type)
+    if (type !== 'expense' && type !== 'income') return null
+    const regularity = asString(p.regularity)
+    if (
+      regularity !== 'daily' &&
+      regularity !== 'weekly' &&
+      regularity !== 'monthly' &&
+      regularity !== 'yearly'
+    ) {
+      return null
+    }
+    const confirmMode = asString(p.confirmMode)
+    if (confirmMode !== 'manual' && confirmMode !== 'auto') return null
+    const reminder = asString(p.reminder)
+    if (reminder !== 'off' && reminder !== 'day_before' && reminder !== 'on_day') return null
+    const amount = asInt(p.amount)
+    const accountId = asString(p.accountId)
+    const categoryId = asString(p.categoryId)
+    const nextDue = asCalendarDay(p.nextDue)
+    const anchorDate = asCalendarDay(p.anchorDate)
+    if (!accountId || !categoryId || !nextDue || !anchorDate || amount === null) return null
+    return {
+      type,
+      amount,
+      name: asString(p.name) ?? '',
+      accountId,
+      categoryId,
+      nextDue,
+      anchorDate,
+      regularity,
+      confirmMode,
+      reminder,
+      note: asString(p.note) ?? '',
     }
   }
 

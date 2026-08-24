@@ -14,6 +14,7 @@ import {
   categories,
   debtOperations,
   debtors,
+  plannedPayments,
   syncOutbox,
   transactions,
   type SyncEntity,
@@ -125,6 +126,9 @@ function updateEntityRevisions(
       break
     case 'debt_operation':
       tx.update(debtOperations).set(patch).where(eq(debtOperations.id, entityId)).run()
+      break
+    case 'planned_payment':
+      tx.update(plannedPayments).set(patch).where(eq(plannedPayments.id, entityId)).run()
       break
   }
 }

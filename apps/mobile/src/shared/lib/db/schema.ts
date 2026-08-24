@@ -10,7 +10,13 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /** Syncable entity kinds stored in the outbox / conflict tables. */
-export type SyncEntity = 'account' | 'category' | 'transaction' | 'debtor' | 'debt_operation'
+export type SyncEntity =
+  | 'account'
+  | 'category'
+  | 'transaction'
+  | 'debtor'
+  | 'debt_operation'
+  | 'planned_payment'
 
 /** Operation kind of a pending sync operation (spec: upsert or delete). */
 export type SyncOperationKind = 'upsert' | 'delete'
@@ -109,6 +115,41 @@ export const debtOperations = sqliteTable(
   ],
 )
 
+export const plannedPayments = sqliteTable(
+  'planned_payments',
+  {
+    id: text('id').primaryKey(),
+    /** PlannedPaymentType ('expense' | 'income'); immutable after create. */
+    type: text('type').notNull(),
+    /** Integer minor units, always >= 1. */
+    amount: integer('amount').notNull(),
+    /** Optional name (never unique); '' = unnamed. */
+    name: text('name').notNull().default(''),
+    accountId: text('account_id').notNull(),
+    categoryId: text('category_id').notNull(),
+    /** Calendar day (`YYYY-MM-DD`) of the next occurrence; past dates are legal. */
+    nextDue: text('next_due').notNull(),
+    /** Series anchor (`YYYY-MM-DD`): short months clamp to it and recover. */
+    anchorDate: text('anchor_date').notNull(),
+    /** PlannedPaymentRegularity ('daily' | 'weekly' | 'monthly' | 'yearly'). */
+    regularity: text('regularity').notNull(),
+    /** PlannedPaymentConfirmMode ('manual' | 'auto'). */
+    confirmMode: text('confirm_mode').notNull(),
+    /** PlannedPaymentReminder ('off' | 'day_before' | 'on_day'). */
+    reminder: text('reminder').notNull(),
+    note: text('note').notNull().default(''),
+    version: integer('version').notNull().default(1),
+    serverVersion: integer('server_version').notNull().default(0),
+    deletedAt: text('deleted_at'),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    index('idx_planned_payments_next_due').on(table.nextDue),
+    index('idx_planned_payments_account_id').on(table.accountId),
+    index('idx_planned_payments_category_id').on(table.categoryId),
+  ],
+)
+
 // --- Sync plumbing (exists from day one so the sync engine plugs in without
 // schema changes; see design D6, D8, D9) ------------------------------------
 
@@ -162,5 +203,6 @@ export type CategoryRow = typeof categories.$inferSelect
 export type TransactionRow = typeof transactions.$inferSelect
 export type DebtorRow = typeof debtors.$inferSelect
 export type DebtOperationRow = typeof debtOperations.$inferSelect
+export type PlannedPaymentRow = typeof plannedPayments.$inferSelect
 export type SyncOutboxRow = typeof syncOutbox.$inferSelect
 export type SyncConflictRow = typeof syncConflicts.$inferSelect

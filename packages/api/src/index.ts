@@ -74,6 +74,14 @@ export type {
   DebtOperationKind,
 } from './domain/debt-operation'
 export { normalizeDebtOperation } from './domain/debt-operation'
+export type {
+  PlannedPayment,
+  PlannedPaymentType,
+  PlannedPaymentRegularity,
+  PlannedPaymentConfirmMode,
+  PlannedPaymentReminder,
+} from './domain/planned_payment'
+export { normalizePlannedPayment } from './domain/planned_payment'
 
 // --- Per-entity repository contracts (the DI seam) -------------------------
 export {
@@ -105,6 +113,12 @@ export {
   type CreateDebtOperationPayload,
   type UpdateDebtOperationPayload,
 } from './repositories/debt-operation'
+export {
+  type PlannedPaymentRepository,
+  type PlannedPaymentQuery,
+  type CreatePlannedPaymentPayload,
+  type UpdatePlannedPaymentPayload,
+} from './repositories/planned-payment'
 
 // --- HTTP repository implementations ---------------------------------------
 export { createHTTPAccountRepository } from './http/account'
@@ -112,6 +126,7 @@ export { createHTTPCategoryRepository } from './http/category'
 export { createHTTPTransactionRepository } from './http/transaction'
 export { createHTTPDebtorRepository } from './http/debtor'
 export { createHTTPDebtOperationRepository } from './http/debt-operation'
+export { createHTTPPlannedPaymentRepository } from './http/planned-payment'
 
 // --- Sync endpoint client (offline-first push/pull) -------------------------
 export {
@@ -123,6 +138,7 @@ export {
   type TransactionSyncData,
   type DebtorSyncData,
   type DebtOperationSyncData,
+  type PlannedPaymentSyncData,
   type SyncOperationData,
   type SyncPushOperation,
   type SyncPushResultItem,

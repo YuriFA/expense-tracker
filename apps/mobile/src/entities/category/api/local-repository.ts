@@ -22,7 +22,7 @@ import {
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { enqueueOperation, hasSentOperations, removeOperationsFor } from '@/shared/lib/db/outbox'
-import { categories, transactions, type CategoryRow } from '@/shared/lib/db/schema'
+import { categories, plannedPayments, transactions, type CategoryRow } from '@/shared/lib/db/schema'
 import { generateId } from '@/shared/lib/generate-id'
 
 function toCategory(row: CategoryRow): Category {
@@ -184,6 +184,19 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
           .get()
         if (referenced) {
           throw new ReferentialIntegrityError('Category has referencing transactions', {
+            apiCode: 'CATEGORY_IN_USE',
+          })
+        }
+
+        // Live plans referencing the category block deletion too (tombstoned
+        // plans never block) - the local mirror of the server-side guard.
+        const planned = tx
+          .select({ id: plannedPayments.id })
+          .from(plannedPayments)
+          .where(and(eq(plannedPayments.categoryId, id), isNull(plannedPayments.deletedAt)))
+          .get()
+        if (planned) {
+          throw new ReferentialIntegrityError('Category has live planned payments', {
             apiCode: 'CATEGORY_IN_USE',
           })
         }

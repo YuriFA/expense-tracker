@@ -18,12 +18,14 @@ import { createLocalCategoryRepository } from '@/entities/category'
 import { createLocalTransactionRepository } from '@/entities/transaction'
 import { createLocalDebtOperationRepository, createLocalDebtorRepository } from '@/entities/debt'
 import { balancesByDebtor } from '@/entities/debt/model/balances'
+import { createLocalPlannedPaymentRepository } from '@/entities/planned-payment'
 import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import {
   categories,
   debtOperations,
   debtors,
+  plannedPayments,
   syncOutbox,
   type SyncEntity,
 } from '@/shared/lib/db/schema'
@@ -911,6 +913,69 @@ describe('sync engine: debts', () => {
     expect(getPullCursor(db)).toBe(2)
   })
 
+  it('a pre-plans build skips pulled planned payments and advances the cursor (D8)', async () => {
+    // Simulate an older app build: the engine knows every kind except
+    // planned_payment. A newer server delivers a plan change plus a known one.
+    const oldBuildEngine = createSyncEngine({
+      db,
+      transport: server,
+      now: () => new Date(clockMs),
+      onDataChanged: () => undefined,
+      knownEntities: new Set(['account', 'category', 'transaction', 'debtor', 'debt_operation']),
+    })
+    const planId = '33333333-3333-4333-8333-333333333333'
+    server.log.push({
+      seq: 1,
+      entity: 'planned_payment',
+      id: planId,
+      action: 'upsert',
+      version: 1,
+      data: {
+        type: 'expense',
+        amount: 59_900,
+        name: 'Netflix',
+        accountId: '44444444-4444-4444-8444-444444444444',
+        categoryId: '55555555-5555-4555-8555-555555555555',
+        nextDue: '2026-09-05',
+        anchorDate: '2026-09-05',
+        regularity: 'monthly',
+        confirmMode: 'manual',
+        reminder: 'off',
+        note: '',
+      },
+    })
+    const debtorId = '22222222-2222-4222-8222-222222222222'
+    server.records.set(`debtor:${debtorId}`, {
+      version: 1,
+      deleted: false,
+      data: { name: 'Сергей', note: '' },
+    })
+    server.log.push({
+      seq: 2,
+      entity: 'debtor',
+      id: debtorId,
+      action: 'upsert',
+      version: 1,
+      data: { name: 'Сергей', note: '' },
+    })
+
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const outcome = await oldBuildEngine.run({ force: true })
+      expect(outcome.pulled).toBe(2)
+    } finally {
+      warnSpy.mockRestore()
+    }
+
+    // The plan is skipped without a crash or a row; the debtor applies; the
+    // cursor advanced past both - the old build keeps syncing.
+    expect(db.select().from(plannedPayments).all()).toHaveLength(0)
+    expect(db.select().from(debtors).where(eq(debtors.id, debtorId)).get()).toMatchObject({
+      name: 'Сергей',
+    })
+    expect(getPullCursor(db)).toBe(2)
+  })
+
   it('keeps an operation queued with lastError when its debtor was deleted on the server (D8)', async () => {
     const { debtor } = await seedDebt()
     await engine.run({ force: true })
@@ -954,5 +1019,104 @@ describe('sync engine: debts', () => {
       .where(eq(debtOperations.id, pending.id))
       .get()
     expect(operationRow?.deletedAt).toBeNull()
+  })
+})
+
+// --- Planned payments (first-class synced entity, design D6/D8) -----------------
+
+describe('sync engine: planned payments', () => {
+  let planRepo: ReturnType<typeof createLocalPlannedPaymentRepository>
+
+  beforeEach(() => {
+    planRepo = createLocalPlannedPaymentRepository(db)
+  })
+
+  async function seedPlanRefs() {
+    const account = await accountRepo.create({ name: 'Карта', currency: 'RUB', openingBalance: 0 })
+    const category = await categoryRepo.create(CATEGORY)
+    return { accountId: account.id, categoryId: category.id }
+  }
+
+  it('round-trips a plan; a second device converges with the same next-due and anchor', async () => {
+    const refs = await seedPlanRefs()
+    const plan = await planRepo.create({
+      type: 'expense',
+      amount: 599_00,
+      name: 'Netflix',
+      accountId: refs.accountId,
+      categoryId: refs.categoryId,
+      nextDue: '2026-09-05',
+      regularity: 'monthly',
+      confirmMode: 'manual',
+      reminder: 'day_before',
+      note: '',
+    })
+
+    const outcome = await engine.run({ force: true })
+    expect(outcome.pushed).toBe(3) // account + category + plan
+    expect(outboxRows()).toHaveLength(0)
+    expect(server.records.get(`planned_payment:${plan.id}`)?.data).toMatchObject({
+      type: 'expense',
+      amount: 599_00,
+      nextDue: '2026-09-05',
+      anchorDate: '2026-09-05',
+      regularity: 'monthly',
+    })
+    expect(
+      db.select().from(plannedPayments).where(eq(plannedPayments.id, plan.id)).get(),
+    ).toMatchObject({ version: 1, serverVersion: 1 })
+
+    // A second device (fresh database) converges by pulling from cursor 0.
+    const secondDb = await createTestDatabase()
+    const secondEngine = createSyncEngine({
+      db: secondDb,
+      transport: server,
+      now: () => new Date(clockMs),
+      onDataChanged: () => undefined,
+    })
+    await secondEngine.run({ force: true })
+    const secondPlan = await createLocalPlannedPaymentRepository(secondDb).getById(plan.id)
+    expect(secondPlan).toMatchObject({
+      nextDue: '2026-09-05',
+      anchorDate: '2026-09-05',
+      amount: 599_00,
+      version: 1,
+    })
+  })
+
+  it('keeps a pushed plan queued with lastError when its category was deleted on the server (D8)', async () => {
+    const refs = await seedPlanRefs()
+    await engine.run({ force: true })
+
+    // Another device deletes the category server-side; this device, still
+    // unaware, records a plan referencing it offline.
+    server.deleteRecord('category', refs.categoryId)
+    const pending = await planRepo.create({
+      type: 'expense',
+      amount: 1_200_00,
+      name: '',
+      accountId: refs.accountId,
+      categoryId: refs.categoryId,
+      nextDue: '2026-10-01',
+      regularity: 'monthly',
+      confirmMode: 'manual',
+      reminder: 'off',
+      note: '',
+    })
+    server.nextErrorResults.set(`planned_payment:${pending.id}`, {
+      code: 'PLANNED_PAYMENT_CATEGORY_NOT_FOUND',
+      message: 'category not found',
+    })
+
+    await engine.run({ force: true })
+
+    // The plan is NOT applied: it stays queued with the machine error visible
+    // and never becomes a sync conflict - the user edits or deletes it locally.
+    const ops = outboxRows()
+    expect(ops).toHaveLength(1)
+    expect(ops[0]).toMatchObject({ entityId: pending.id, op: 'upsert', attempts: 1 })
+    expect(ops[0].lastError).toContain('PLANNED_PAYMENT_CATEGORY_NOT_FOUND')
+    expect(listUnresolvedConflicts(db)).toHaveLength(0)
+    expect(server.records.has(`planned_payment:${pending.id}`)).toBe(false)
   })
 })

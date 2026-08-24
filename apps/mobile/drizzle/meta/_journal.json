@@ -15,6 +15,13 @@
       "when": 1787526309443,
       "tag": "0001_mixed_shen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787591718358,
+      "tag": "0002_noisy_victor_mancha",
+      "breakpoints": true
     }
   ]
 }

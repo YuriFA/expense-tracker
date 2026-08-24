@@ -27,6 +27,10 @@ import {
   createLocalDebtOperationRepository,
   createLocalDebtorRepository,
 } from '@/entities/debt'
+import {
+  PlannedPaymentRepositoryProvider,
+  createLocalPlannedPaymentRepository,
+} from '@/entities/planned-payment'
 import { registerBackgroundSync } from '@/shared/lib/sync/background-sync'
 import { createLocalSyncTransport } from '@/shared/lib/sync/transport'
 import { createSyncEngine, type SyncEngineState } from '@/shared/lib/sync/sync-engine'
@@ -106,12 +110,16 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
                 debtorRepository={createLocalDebtorRepository(database)}
                 debtOperationRepository={createLocalDebtOperationRepository(database)}
               >
-                <AuthProvider>
-                  <SyncProvider>
-                    <ConflictCenter />
-                    {children}
-                  </SyncProvider>
-                </AuthProvider>
+                <PlannedPaymentRepositoryProvider
+                  repository={createLocalPlannedPaymentRepository(database)}
+                >
+                  <AuthProvider>
+                    <SyncProvider>
+                      <ConflictCenter />
+                      {children}
+                    </SyncProvider>
+                  </AuthProvider>
+                </PlannedPaymentRepositoryProvider>
               </DebtRepositoryProvider>
             </TransactionRepositoryProvider>
           </CategoryRepositoryProvider>

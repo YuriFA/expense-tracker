@@ -17,6 +17,7 @@ import {
   categories,
   debtOperations,
   debtors,
+  plannedPayments,
   syncConflicts,
   syncOutbox,
   transactions,
@@ -24,6 +25,7 @@ import {
   type CategoryRow,
   type DebtOperationRow,
   type DebtorRow,
+  type PlannedPaymentRow,
   type SyncConflictRow,
   type SyncEntity,
   type TransactionRow,
@@ -201,7 +203,8 @@ function updateEntityRow(
     | Partial<CategoryRow>
     | Partial<TransactionRow>
     | Partial<DebtorRow>
-    | Partial<DebtOperationRow>,
+    | Partial<DebtOperationRow>
+    | Partial<PlannedPaymentRow>,
 ): void {
   switch (entity) {
     case 'account':
@@ -232,6 +235,12 @@ function updateEntityRow(
       tx.update(debtOperations)
         .set(patch as Partial<DebtOperationRow>)
         .where(eq(debtOperations.id, entityId))
+        .run()
+      break
+    case 'planned_payment':
+      tx.update(plannedPayments)
+        .set(patch as Partial<PlannedPaymentRow>)
+        .where(eq(plannedPayments.id, entityId))
         .run()
       break
   }
@@ -403,6 +412,9 @@ export function resolveConflictTakeServer(db: LocalDatabase, conflictId: string)
           break
         case 'debt_operation':
           tx.delete(debtOperations).where(eq(debtOperations.id, conflict.entityId)).run()
+          break
+        case 'planned_payment':
+          tx.delete(plannedPayments).where(eq(plannedPayments.id, conflict.entityId)).run()
           break
       }
     }

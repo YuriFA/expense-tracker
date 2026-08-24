@@ -39,12 +39,14 @@ import {
   categories,
   debtOperations,
   debtors,
+  plannedPayments,
   syncOutbox,
   transactions,
   type AccountRow,
   type CategoryRow,
   type DebtOperationRow,
   type DebtorRow,
+  type PlannedPaymentRow,
   type SyncOutboxRow,
   type TransactionRow,
 } from '@/shared/lib/db/schema'
@@ -92,6 +94,11 @@ export interface SyncEngineOptions {
   onDataChanged?: () => void
   /** Injectable clock for tests. */
   now?: () => Date
+  /**
+   * Entity kinds this build can apply; defaults to every kind it knows. Tests
+   * inject a reduced set to simulate an older build pulling a newer kind (D5).
+   */
+  knownEntities?: ReadonlySet<string>
 }
 
 export interface SyncRunOutcome {
@@ -121,6 +128,7 @@ const KNOWN_SYNC_ENTITIES: ReadonlySet<string> = new Set([
   'transaction',
   'debtor',
   'debt_operation',
+  'planned_payment',
 ])
 
 const BACKOFF_BASE_MS = 5_000
@@ -138,6 +146,7 @@ type AnyRowPatch =
   | Partial<TransactionRow>
   | Partial<DebtorRow>
   | Partial<DebtOperationRow>
+  | Partial<PlannedPaymentRow>
 
 function updateEntityRow(
   tx: LocalTransaction,
@@ -176,6 +185,12 @@ function updateEntityRow(
         .where(eq(debtOperations.id, entityId))
         .run()
       break
+    case 'planned_payment':
+      tx.update(plannedPayments)
+        .set(patch as Partial<PlannedPaymentRow>)
+        .where(eq(plannedPayments.id, entityId))
+        .run()
+      break
   }
 }
 
@@ -185,6 +200,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
   const { db, transport } = options
   const now = options.now ?? (() => new Date())
   const onDataChanged = options.onDataChanged
+  const knownEntities = options.knownEntities ?? KNOWN_SYNC_ENTITIES
 
   let running = false
   let rerunQueued = false
@@ -466,6 +482,17 @@ export function createSyncEngine(options: SyncEngineOptions) {
           deletedAt: null,
         } as typeof debtOperations.$inferInsert)
         .run()
+    } else if (change.entity === 'planned_payment') {
+      tx.insert(plannedPayments)
+        .values({
+          ...(patch as Partial<PlannedPaymentRow>),
+          id: change.id,
+          version: change.version,
+          serverVersion: change.version,
+          deletedAt: null,
+          createdAt: timestamp,
+        } as typeof plannedPayments.$inferInsert)
+        .run()
     } else {
       tx.insert(transactions)
         .values({
@@ -485,7 +512,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
     change: SyncPullPage['changes'][number],
     outcome: SyncRunOutcome,
   ): void {
-    if (!KNOWN_SYNC_ENTITIES.has(change.entity)) {
+    if (!knownEntities.has(change.entity)) {
       // D5 version-skew hardening: the server knows an entity kind this
       // build does not. Skip the change and let the cursor advance - a
       // stalled cursor would brick sync on this build permanently.

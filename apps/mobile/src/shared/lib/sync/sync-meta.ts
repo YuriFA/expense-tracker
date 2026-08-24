@@ -9,6 +9,7 @@ import {
   categories,
   debtOperations,
   debtors,
+  plannedPayments,
   syncConflicts,
   syncMeta,
   syncOutbox,
@@ -61,6 +62,9 @@ export function setPullCursor(db: DbLike, cursor: number): void {
 export function wipeLocalData(db: LocalDatabase): void {
   db.transaction((tx) => {
     tx.delete(transactions).run()
+    // Plans reference accounts/categories: wipe referencing rows first,
+    // mirroring the retention order.
+    tx.delete(plannedPayments).run()
     tx.delete(accounts).run()
     tx.delete(categories).run()
     // Debt rows go referencing-rows-first, mirroring the retention order.
