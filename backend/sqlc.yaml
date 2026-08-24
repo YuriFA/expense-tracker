@@ -24,6 +24,15 @@ sql:
           # Timestamps -> time.Time (UTC everywhere); nullable -> *time.Time.
           - db_type: "timestamptz"
             go_type: "time.Time"
+          # Dates (day-granularity, UTC midnight) -> time.Time.
+          - db_type: "date"
+            go_type: "time.Time"
+          - db_type: "date"
+            nullable: true
+            go_type:
+              import: "time"
+              type: "Time"
+              pointer: true
           - db_type: "timestamptz"
             nullable: true
             go_type:

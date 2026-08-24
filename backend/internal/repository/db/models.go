@@ -116,6 +116,26 @@ type PasswordResetToken struct {
 	CreatedAt time.Time
 }
 
+type PlannedPayment struct {
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Type        string
+	Amount      int64
+	Name        string
+	AccountID   uuid.UUID
+	CategoryID  uuid.UUID
+	NextDue     time.Time
+	AnchorDate  time.Time
+	Regularity  string
+	ConfirmMode string
+	Reminder    string
+	Note        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Version     int32
+	DeletedAt   *time.Time
+}
+
 type Session struct {
 	ID        string
 	UserID    uuid.UUID

@@ -1219,6 +1219,153 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/planned-payments:
+    get:
+      tags: [Planned Payments]
+      operationId: listPlannedPayments
+      summary: Список плановых платежей
+      description: Все не удалённые (не tombstoned) плановые платежи текущего user.
+      parameters:
+        - name: type
+          in: query
+          description: Фильтр по типу плана.
+          schema:
+            type: string
+            enum: [income, expense]
+      responses:
+        "200":
+          description: Плановые платежи текущего user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlannedPayment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Planned Payments]
+      operationId: createPlannedPayment
+      summary: Создать плановый платёж
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlannedPaymentCreateRequest"
+      responses:
+        "201":
+          description: Плановый платёж создан.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannedPayment"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/PlannedPaymentAlreadyExists"
+        "422":
+          description: Бизнес-правило нарушено — счёт или категория не найдены.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                accountNotFound:
+                  value:
+                    code: PLANNED_PAYMENT_ACCOUNT_NOT_FOUND
+                    message: account not found
+                categoryNotFound:
+                  value:
+                    code: PLANNED_PAYMENT_CATEGORY_NOT_FOUND
+                    message: category not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/planned-payments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/PlannedPaymentId"
+    get:
+      tags: [Planned Payments]
+      operationId: getPlannedPayment
+      summary: Получить плановый платёж по ID
+      responses:
+        "200":
+          description: Плановый платёж.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannedPayment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/PlannedPaymentNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Planned Payments]
+      operationId: updatePlannedPayment
+      summary: Обновить плановый платёж
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlannedPaymentUpdateRequest"
+      responses:
+        "200":
+          description: Обновлённый плановый платёж.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannedPayment"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/PlannedPaymentNotFound"
+        "409":
+          $ref: "#/components/responses/PlannedPaymentVersionConflict"
+        "422":
+          description: Бизнес-правило нарушено — счёт или категория не найдены.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                accountNotFound:
+                  value:
+                    code: PLANNED_PAYMENT_ACCOUNT_NOT_FOUND
+                    message: account not found
+                categoryNotFound:
+                  value:
+                    code: PLANNED_PAYMENT_CATEGORY_NOT_FOUND
+                    message: category not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Planned Payments]
+      operationId: deletePlannedPayment
+      summary: Удалить плановый платёж
+      description: |
+        Удаление всегда разрешено (у плана нет дочерних записей); созданные
+        им транзакции остаются. Удаление мягкое (tombstone): план исчезает
+        из листингов, но сохраняется для синхронизации устройств.
+      responses:
+        "204":
+          description: Удалено.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/PlannedPaymentNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/sync/push:
     post:
       tags: [Sync]
@@ -1374,6 +1521,13 @@ components:
         type: string
         format: uuid
     DebtOperationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlannedPaymentId:
       name: id
       in: path
       required: true
@@ -1544,6 +1698,33 @@ components:
           example:
             code: DEBT_OPERATION_VERSION_CONFLICT
             message: debt operation version conflict
+    PlannedPaymentNotFound:
+      description: Плановый платёж не найден (или чужой).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: PLANNED_PAYMENT_NOT_FOUND
+            message: planned payment not found
+    PlannedPaymentAlreadyExists:
+      description: Плановый платёж с таким id уже есть у user (клиентский id-дубликат).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: PLANNED_PAYMENT_ALREADY_EXISTS
+            message: planned payment already exists
+    PlannedPaymentVersionConflict:
+      description: Конфликт в версии планового платежа (optimistic concurrency).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: PLANNED_PAYMENT_VERSION_CONFLICT
+            message: planned payment version conflict
 
   schemas:
     User:
@@ -2086,8 +2267,184 @@ components:
           format: date-time
       required: [version]
 
+    PlannedPayment:
+      type: object
+      description: |
+        Регулярный плановый платёж (расход: подписки, платежи по кредитам;
+        доход: зарплата, премии). Подтверждение плана создаёт обычную
+        транзакцию (type/account/category из плана) и сдвигает `nextDue` на
+        период. `anchorDate` — дата-якорь серии: регулярность считается от её
+        дня (день месяца / день недели / месяц+день), в коротких месяцах
+        вхождения клампятся к последнему дню и возвращаются к якорю
+        (31 → 28/29 → 31). Изменение `nextDue` пользователем сбрасывает якорь.
+        Название не уникально (два «Netflix» легальны); у созданных планом
+        транзакций `description` = название плана.
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [expense, income]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Положительные минорные единицы (divisor 100).
+        name:
+          type: string
+          description: Опциональное название; пустая строка = без названия.
+        accountId:
+          type: string
+          format: uuid
+          description: Live-счёт того же user (счёт списания/зачисления).
+        categoryId:
+          type: string
+          format: uuid
+          description: Live-категория того же user, тип совпадает с типом плана.
+        nextDue:
+          type: string
+          format: date
+          description: Дата следующего вхождения; прошедшая дата допустима (план сразу просрочен).
+        anchorDate:
+          type: string
+          format: date
+          description: Дата-якорь серии (день месяца/недели/года для регулярности).
+        regularity:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+        confirmMode:
+          type: string
+          enum: [manual, auto]
+          description: auto — серверная джоба создаёт транзакции без участия user.
+        reminder:
+          type: string
+          enum: [off, day_before, on_day]
+          description: Локальные напоминания на устройствах (off / за день / в день).
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int
+          description: Версия планового платежа (optimistic concurrency).
+      required:
+        [
+          id,
+          userId,
+          type,
+          amount,
+          name,
+          accountId,
+          categoryId,
+          nextDue,
+          anchorDate,
+          regularity,
+          confirmMode,
+          reminder,
+          note,
+          createdAt,
+          updatedAt,
+          version,
+        ]
+
+    PlannedPaymentCreateRequest:
+      type: object
+      required: [type, amount, accountId, categoryId, nextDue, regularity, confirmMode]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Опциональный клиентский id (UUID v4). Дубликат для user →
+            409 `PLANNED_PAYMENT_ALREADY_EXISTS`.
+        type:
+          type: string
+          enum: [expense, income]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          default: ""
+        accountId:
+          type: string
+          format: uuid
+          description: Существующий live-счёт того же user.
+        categoryId:
+          type: string
+          format: uuid
+          description: Существующая live-категория того же user с совпадающим типом.
+        nextDue:
+          type: string
+          format: date
+        regularity:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+        confirmMode:
+          type: string
+          enum: [manual, auto]
+        reminder:
+          type: string
+          enum: [off, day_before, on_day]
+          default: "off"
+        note:
+          type: string
+          default: ""
+
+    PlannedPaymentUpdateRequest:
+      type: object
+      description: |
+        Все поля кроме `version` optional. `type` менять нельзя. Изменение
+        `nextDue` сбрасывает `anchorDate` на новую дату. `name` / `note`:
+        отсутствует = не менять, `""` = очистить; `null` невалиден.
+        `version` — optimistic concurrency: при параллельном изменении →
+        409 `PLANNED_PAYMENT_VERSION_CONFLICT`.
+      properties:
+        version:
+          type: integer
+          format: int
+          minimum: 1
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        nextDue:
+          type: string
+          format: date
+        regularity:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+        confirmMode:
+          type: string
+          enum: [manual, auto]
+        reminder:
+          type: string
+          enum: [off, day_before, on_day]
+        note:
+          type: string
+      required: [version]
+
     AccountSyncData:
       type: object
+      additionalProperties: false
       description: Полное состояние счёта в sync-операции (upsert).
       required: [name, currency, openingBalance, manualAdjustment]
       properties:
@@ -2105,6 +2462,7 @@ components:
 
     CategorySyncData:
       type: object
+      additionalProperties: false
       description: Полное состояние категории в sync-операции (upsert).
       required: [name, type, icon, color]
       properties:
@@ -2120,6 +2478,7 @@ components:
 
     TransactionSyncData:
       type: object
+      additionalProperties: false
       description: |
         Полное состояние транзакции в sync-операции (upsert). Cashflow
         (income/expense) несёт `accountId`+`categoryId`, transfer —
@@ -2157,6 +2516,7 @@ components:
 
     DebtorSyncData:
       type: object
+      additionalProperties: false
       description: Полное состояние должника в sync-операции (upsert).
       required: [name, note]
       properties:
@@ -2167,6 +2527,7 @@ components:
 
     DebtOperationSyncData:
       type: object
+      additionalProperties: false
       description: Полное состояние долговой операции в sync-операции (upsert).
       required: [debtorId, direction, kind, amount, note, occurredAt]
       properties:
@@ -2189,9 +2550,61 @@ components:
           type: string
           format: date-time
 
+    PlannedPaymentSyncData:
+      type: object
+      additionalProperties: false
+      description: Полное состояние планового платежа в sync-операции (upsert).
+      required:
+        [
+          type,
+          amount,
+          name,
+          accountId,
+          categoryId,
+          nextDue,
+          anchorDate,
+          regularity,
+          confirmMode,
+          reminder,
+          note,
+        ]
+      properties:
+        type:
+          type: string
+          enum: [expense, income]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        nextDue:
+          type: string
+          format: date
+        anchorDate:
+          type: string
+          format: date
+        regularity:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+        confirmMode:
+          type: string
+          enum: [manual, auto]
+        reminder:
+          type: string
+          enum: [off, day_before, on_day]
+        note:
+          type: string
+
     SyncEntity:
       type: string
-      enum: [account, category, transaction, debtor, debt_operation]
+      enum: [account, category, transaction, debtor, debt_operation, planned_payment]
 
     SyncOperation:
       type: object
@@ -2226,6 +2639,7 @@ components:
             - $ref: "#/components/schemas/TransactionSyncData"
             - $ref: "#/components/schemas/DebtorSyncData"
             - $ref: "#/components/schemas/DebtOperationSyncData"
+            - $ref: "#/components/schemas/PlannedPaymentSyncData"
           description: Полное состояние записи; обязательно для upsert.
 
     SyncPushRequest:
@@ -2257,6 +2671,7 @@ components:
             - $ref: "#/components/schemas/TransactionSyncData"
             - $ref: "#/components/schemas/DebtorSyncData"
             - $ref: "#/components/schemas/DebtOperationSyncData"
+            - $ref: "#/components/schemas/PlannedPaymentSyncData"
           description: Присутствует для не удалённой записи.
 
     SyncPushResult:
@@ -2323,6 +2738,7 @@ components:
             - $ref: "#/components/schemas/TransactionSyncData"
             - $ref: "#/components/schemas/DebtorSyncData"
             - $ref: "#/components/schemas/DebtOperationSyncData"
+            - $ref: "#/components/schemas/PlannedPaymentSyncData"
           description: Полное состояние записи; присутствует для upsert.
 
     SyncPullResponse:

@@ -62,6 +62,19 @@ func (q *Queries) DeleteTombstonedDebtorsBefore(ctx context.Context, deletedAt *
 	return result.RowsAffected(), nil
 }
 
+const deleteTombstonedPlannedPaymentsBefore = `-- name: DeleteTombstonedPlannedPaymentsBefore :execrows
+DELETE FROM planned_payments
+WHERE deleted_at IS NOT NULL AND deleted_at < $1
+`
+
+func (q *Queries) DeleteTombstonedPlannedPaymentsBefore(ctx context.Context, deletedAt *time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteTombstonedPlannedPaymentsBefore, deletedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteTombstonedTransactionsBefore = `-- name: DeleteTombstonedTransactionsBefore :execrows
 
 DELETE FROM transactions

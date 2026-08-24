@@ -9,11 +9,12 @@ import (
 
 // Sync entity kinds (matches the OpenAPI SyncEntity enum).
 const (
-	SyncEntityAccount       = "account"
-	SyncEntityCategory      = "category"
-	SyncEntityTransaction   = "transaction"
-	SyncEntityDebtor        = "debtor"
-	SyncEntityDebtOperation = "debt_operation"
+	SyncEntityAccount        = "account"
+	SyncEntityCategory       = "category"
+	SyncEntityTransaction    = "transaction"
+	SyncEntityDebtor         = "debtor"
+	SyncEntityDebtOperation  = "debt_operation"
+	SyncEntityPlannedPayment = "planned_payment"
 )
 
 // Sync action kinds (matches the OpenAPI SyncOperation.action enum).
@@ -86,8 +87,9 @@ type AppliedOperation struct {
 }
 
 // SyncChange is one change-log entry delivered by a pull. Data is one of
-// *AccountFullState / *CategoryFullState / *TransactionFullState, nil for
-// tombstones.
+// *AccountFullState / *CategoryFullState / *TransactionFullState /
+// *DebtorFullState / *DebtOperationFullState / *PlannedPaymentFullState,
+// nil for tombstones.
 type SyncChange struct {
 	Seq     int64
 	Entity  string

@@ -123,7 +123,10 @@ func (r *Repository) UpdateCategory(
 	), nil
 }
 
-func (r *Repository) DeleteCategory(ctx context.Context, userID, id uuid.UUID) error {
+func (r *Repository) DeleteCategory( //nolint:dupl // account/category delete twins: identical guard shape
+	ctx context.Context,
+	userID, id uuid.UUID,
+) error {
 	const op = "repository.postgres.DeleteCategory"
 
 	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
@@ -136,6 +139,16 @@ func (r *Repository) DeleteCategory(ctx context.Context, userID, id uuid.UUID) e
 		}
 		if inUse {
 			return domain.ErrCategoryHasTransactions
+		}
+		plansInUse, err := q.HasLivePlannedPaymentsForCategory(ctx, db.HasLivePlannedPaymentsForCategoryParams{
+			UserID:     userID,
+			CategoryID: id,
+		})
+		if err != nil {
+			return err
+		}
+		if plansInUse {
+			return domain.ErrCategoryHasPlannedPayments
 		}
 		version, err := q.SoftDeleteCategory(ctx, db.SoftDeleteCategoryParams{ID: id, UserID: userID})
 		if err != nil {

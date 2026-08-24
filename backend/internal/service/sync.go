@@ -117,6 +117,8 @@ func applySyncOperation(
 		result, err = applyDebtorOperation(ctx, t, userID, op)
 	case domain.SyncEntityDebtOperation:
 		result, err = applyDebtOperationOperation(ctx, t, userID, op)
+	case domain.SyncEntityPlannedPayment:
+		result, err = applyPlannedPaymentOperation(ctx, t, userID, op)
 	default:
 		return domain.SyncPushResult{
 			OpID: op.OpID, Status: domain.SyncStatusError,
@@ -806,6 +808,188 @@ func deleteDebtOperationOp(
 		return domain.SyncPushResult{}, err
 	}
 	return appliedResult(op.OpID, deleted.Version), nil
+}
+
+// --- planned payments ----------------------------------------------------------
+
+func applyPlannedPaymentOperation(
+	ctx context.Context,
+	t repository.SyncTx,
+	userID uuid.UUID,
+	op domain.SyncOperation,
+) (domain.SyncPushResult, error) {
+	if op.Action == domain.SyncActionDelete {
+		return deletePlannedPaymentOp(ctx, t, userID, op)
+	}
+	if op.Action != domain.SyncActionUpsert {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
+	}
+
+	var data domain.PlannedPaymentFullState
+	if err := decodeSyncData(op.Data, &data); err != nil {
+		return errorResult( //nolint:nilerr // decode failure is a per-item error result, not a batch error
+			op.OpID,
+			"VALIDATION_FAILED",
+			"invalid planned payment data",
+		), nil
+	}
+	if code := validatePlannedPaymentSyncData(&data); code != "" {
+		return errorResult(op.OpID, code, "invalid planned payment data"), nil
+	}
+
+	// Reference validation with the REST granularity (see the helper).
+	if code, message, err := plannedPaymentRefViolation(ctx, t, userID, &data); err != nil {
+		return domain.SyncPushResult{}, err
+	} else if code != "" {
+		return errorResult(op.OpID, code, message), nil
+	}
+
+	current, err := t.GetPlannedPaymentAny(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+
+	if op.BaseVersion == 0 {
+		if current != nil {
+			return conflictResult(
+				op.OpID, domain.SyncCodeAlreadyExists, "planned payment already exists",
+				serverStateOf(current.Version, current.Deleted(), current.FullState()),
+			), nil
+		}
+		created, err := t.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
+			ID: op.ID, UserID: userID,
+			Type: data.Type, Amount: data.Amount, Name: data.Name,
+			AccountID: data.AccountID, CategoryID: data.CategoryID,
+			NextDue: data.NextDue.Time, Regularity: data.Regularity,
+			ConfirmMode: data.ConfirmMode, Reminder: data.Reminder, Note: data.Note,
+		})
+		if err != nil {
+			return domain.SyncPushResult{}, err
+		}
+		return appliedResult(op.OpID, created.Version), nil
+	}
+
+	if current == nil {
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "planned payment not found on server",
+			serverStateOf(0, false, nil),
+		), nil
+	}
+	if current.Deleted() {
+		return conflictResult(
+			op.OpID, domain.SyncCodeDeletedConflict, "planned payment was deleted on server",
+			serverStateOf(current.Version, true, nil),
+		), nil
+	}
+	if current.Type != data.Type {
+		return errorResult(op.OpID, "VALIDATION_FAILED", "plan type is immutable"), nil
+	}
+	if current.Version != op.BaseVersion {
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "planned payment version conflict",
+			serverStateOf(current.Version, false, current.FullState()),
+		), nil
+	}
+
+	updated, err := t.ReplacePlannedPayment(ctx, userID, op.ID, op.BaseVersion, data)
+	if errors.Is(err, domain.ErrPlannedPaymentVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
+		fresh, ferr := t.GetPlannedPaymentAny(ctx, userID, op.ID)
+		if ferr != nil {
+			return domain.SyncPushResult{}, ferr
+		}
+		return conflictResult(
+			op.OpID, domain.SyncCodeVersionConflict, "planned payment version conflict",
+			serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),
+		), nil
+	}
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	return appliedResult(op.OpID, updated.Version), nil
+}
+
+func deletePlannedPaymentOp(
+	ctx context.Context,
+	t repository.SyncTx,
+	userID uuid.UUID,
+	op domain.SyncOperation,
+) (domain.SyncPushResult, error) {
+	current, err := t.GetPlannedPaymentAny(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	if current == nil {
+		return appliedResult(op.OpID, 0), nil
+	}
+	if current.Deleted() {
+		return appliedResult(op.OpID, current.Version), nil
+	}
+	deleted, err := t.TombstonePlannedPayment(ctx, userID, op.ID)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	return appliedResult(op.OpID, deleted.Version), nil
+}
+
+// plannedPaymentRefViolation validates a plan's account/category references
+// against the LIVE records (REST granularity): a missing/tombstoned account
+// or category, or a category whose type does not match the plan, returns the
+// per-item machine code + message ("" = valid).
+func plannedPaymentRefViolation(
+	ctx context.Context,
+	t repository.SyncTx,
+	userID uuid.UUID,
+	data *domain.PlannedPaymentFullState,
+) (string, string, error) {
+	liveAccount, err := t.LiveAccountExists(ctx, userID, data.AccountID)
+	if err != nil {
+		return "", "", err
+	}
+	if !liveAccount {
+		return "PLANNED_PAYMENT_ACCOUNT_NOT_FOUND", "account not found", nil
+	}
+	category, err := t.LiveCategory(ctx, userID, data.CategoryID)
+	if err != nil {
+		if errors.Is(err, domain.ErrCategoryNotFound) {
+			return "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", "category not found", nil
+		}
+		return "", "", err
+	}
+	if category.Type != data.Type {
+		return "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", "category type does not match the plan type", nil
+	}
+	return "", "", nil
+}
+
+// validatePlannedPaymentSyncData checks the shape a plan upsert must satisfy
+// regardless of the transport (the REST surface gets this from the OpenAPI
+// request validator), returning the machine code of the violation ("" =
+// valid).
+func validatePlannedPaymentSyncData(data *domain.PlannedPaymentFullState) string {
+	if data.Amount < 1 {
+		return "VALIDATION_FAILED"
+	}
+	if data.Type != domain.TransactionTypeIncome && data.Type != domain.TransactionTypeExpense {
+		return "VALIDATION_FAILED"
+	}
+	switch data.Regularity {
+	case domain.PlannedRegularityDaily, domain.PlannedRegularityWeekly,
+		domain.PlannedRegularityMonthly, domain.PlannedRegularityYearly:
+	default:
+		return "VALIDATION_FAILED"
+	}
+	if data.ConfirmMode != domain.PlannedConfirmManual && data.ConfirmMode != domain.PlannedConfirmAuto {
+		return "VALIDATION_FAILED"
+	}
+	switch data.Reminder {
+	case domain.PlannedReminderOff, domain.PlannedReminderDayBefore, domain.PlannedReminderOnDay:
+	default:
+		return "VALIDATION_FAILED"
+	}
+	if data.NextDue.IsZero() || data.AnchorDate.IsZero() {
+		return "VALIDATION_FAILED"
+	}
+	return ""
 }
 
 // validateSyncRefs enforces the cashflow-vs-transfer reference rules on the

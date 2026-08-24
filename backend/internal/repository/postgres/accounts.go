@@ -95,7 +95,10 @@ func (r *Repository) UpdateAccount(
 	), nil
 }
 
-func (r *Repository) DeleteAccount(ctx context.Context, userID, id uuid.UUID) error {
+func (r *Repository) DeleteAccount( //nolint:dupl // account/category delete twins: identical guard shape
+	ctx context.Context,
+	userID, id uuid.UUID,
+) error {
 	const op = "repository.postgres.DeleteAccount"
 
 	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
@@ -108,6 +111,16 @@ func (r *Repository) DeleteAccount(ctx context.Context, userID, id uuid.UUID) er
 		}
 		if inUse {
 			return domain.ErrAccountHasTransactions
+		}
+		plansInUse, err := q.HasLivePlannedPaymentsForAccount(ctx, db.HasLivePlannedPaymentsForAccountParams{
+			UserID:    userID,
+			AccountID: id,
+		})
+		if err != nil {
+			return err
+		}
+		if plansInUse {
+			return domain.ErrAccountHasPlannedPayments
 		}
 		version, err := q.SoftDeleteAccount(ctx, db.SoftDeleteAccountParams{ID: id, UserID: userID})
 		if err != nil {

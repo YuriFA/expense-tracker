@@ -10,6 +10,10 @@
 DELETE FROM transactions
 WHERE deleted_at IS NOT NULL AND deleted_at < $1;
 
+-- name: DeleteTombstonedPlannedPaymentsBefore :execrows
+DELETE FROM planned_payments
+WHERE deleted_at IS NOT NULL AND deleted_at < $1;
+
 -- name: DeleteTombstonedCategoriesBefore :execrows
 DELETE FROM categories
 WHERE deleted_at IS NOT NULL AND deleted_at < $1;

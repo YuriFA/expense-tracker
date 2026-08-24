@@ -20,13 +20,16 @@ type fakeStore struct {
 	accountsDeleted     atomic.Int64
 	debtOpsDeleted      atomic.Int64
 	debtorsDeleted      atomic.Int64
+	plansDeleted        atomic.Int64
 	transactionsErr     error
 	categoriesErr       error
 	accountsErr         error
 	debtOpsErr          error
 	debtorsErr          error
+	plansErr            error
 
 	transactionsCutoff atomic.Pointer[time.Time]
+	plansCutoff        atomic.Pointer[time.Time]
 	categoriesCutoff   atomic.Pointer[time.Time]
 	accountsCutoff     atomic.Pointer[time.Time]
 	debtOpsCutoff      atomic.Pointer[time.Time]
@@ -39,6 +42,14 @@ func (f *fakeStore) DeleteTombstonedTransactionsBefore(_ context.Context, cutoff
 		return 0, f.transactionsErr
 	}
 	return f.transactionsDeleted.Swap(0), nil
+}
+
+func (f *fakeStore) DeleteTombstonedPlannedPaymentsBefore(_ context.Context, cutoff time.Time) (int64, error) {
+	f.plansCutoff.Store(&cutoff)
+	if f.plansErr != nil {
+		return 0, f.plansErr
+	}
+	return f.plansDeleted.Swap(0), nil
 }
 
 func (f *fakeStore) DeleteTombstonedCategoriesBefore(_ context.Context, cutoff time.Time) (int64, error) {

@@ -76,6 +76,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeDebtOperationNotFound,
 		"debt operation not found",
 	},
+	domain.ErrPlannedPaymentNotFound: {
+		http.StatusNotFound,
+		httperr.ErrCodePlannedPaymentNotFound,
+		"planned payment not found",
+	},
 
 	// --- conflict (409) ---
 	domain.ErrUserAlreadyExists: {
@@ -108,6 +113,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeDebtOperationAlreadyExists,
 		"debt operation already exists",
 	},
+	domain.ErrPlannedPaymentAlreadyExists: {
+		http.StatusConflict,
+		httperr.ErrCodePlannedPaymentAlreadyExists,
+		"planned payment already exists",
+	},
 	domain.ErrAccountVersionConflict: {
 		http.StatusConflict,
 		httperr.ErrCodeAccountVersionConflict,
@@ -133,6 +143,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeDebtOperationVersionConflict,
 		"debt operation was modified by another request, please refetch and retry",
 	},
+	domain.ErrPlannedPaymentVersionConflict: {
+		http.StatusConflict,
+		httperr.ErrCodePlannedPaymentVersionConflict,
+		"planned payment was modified by another request, please refetch and retry",
+	},
 	domain.ErrAccountHasTransactions: {
 		http.StatusConflict,
 		httperr.ErrCodeAccountInUse,
@@ -147,6 +162,16 @@ var domainErrorMap = map[error]domainErrorSpec{
 		http.StatusConflict,
 		httperr.ErrCodeDebtorInUse,
 		"debtor has debt operations and cannot be deleted",
+	},
+	domain.ErrAccountHasPlannedPayments: {
+		http.StatusConflict,
+		httperr.ErrCodeAccountInUse,
+		"account has planned payments and cannot be deleted",
+	},
+	domain.ErrCategoryHasPlannedPayments: {
+		http.StatusConflict,
+		httperr.ErrCodeCategoryInUse,
+		"category has planned payments and cannot be deleted",
 	},
 	domain.ErrEmailAlreadyVerified: {
 		http.StatusConflict,
@@ -218,6 +243,26 @@ var domainErrorMap = map[error]domainErrorSpec{
 		http.StatusUnprocessableEntity,
 		httperr.ErrCodeDebtOperationDebtorNotFound,
 		"debtor not found",
+	},
+	domain.ErrPlannedPaymentAccountNotFound: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodePlannedPaymentAccountNotFound,
+		"account not found",
+	},
+	domain.ErrPlannedPaymentCategoryNotFound: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodePlannedPaymentCategoryNotFound,
+		"category not found",
+	},
+	domain.ErrPlannedPaymentCategoryTypeMismatch: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodePlannedPaymentCategoryNotFound,
+		"plan type does not match category type",
+	},
+	domain.ErrInvalidDate: {
+		http.StatusBadRequest,
+		httperr.ErrCodeValidationFailed,
+		"date must be YYYY-MM-DD",
 	},
 	domain.ErrInvalidRefs: {
 		http.StatusUnprocessableEntity,

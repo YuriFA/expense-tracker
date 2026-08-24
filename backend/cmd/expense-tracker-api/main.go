@@ -12,6 +12,7 @@ import (
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
 	"github.com/yurifa/expense-tracker-api/internal/jobs/cleanup"
+	"github.com/yurifa/expense-tracker-api/internal/jobs/plannedconfirm"
 	"github.com/yurifa/expense-tracker-api/internal/jobs/retention"
 	"github.com/yurifa/expense-tracker-api/internal/logger"
 	"github.com/yurifa/expense-tracker-api/internal/repository/postgres"
@@ -65,19 +66,7 @@ func run(cfg *config.Config, log *slog.Logger) error {
 	bgCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cleanupJob := cleanup.New(repo, log, cfg.SessionConfig.CleanupInterval)
-	jobDone := make(chan struct{})
-	go func() {
-		defer close(jobDone)
-		_ = cleanupJob.Run(bgCtx)
-	}()
-
-	retentionJob := retention.New(repo, log, cfg.Retention.TombstoneWindow, cfg.Retention.Interval)
-	retentionDone := make(chan struct{})
-	go func() {
-		defer close(retentionDone)
-		_ = retentionJob.Run(bgCtx)
-	}()
+	waitJobs := startBackgroundJobs(bgCtx, repo, log, cfg)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -91,8 +80,7 @@ func run(cfg *config.Config, log *slog.Logger) error {
 	}
 
 	cancel()
-	<-jobDone
-	<-retentionDone
+	waitJobs()
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.WriteTimeout)
 	defer shutdownCancel()
@@ -112,6 +100,44 @@ func run(cfg *config.Config, log *slog.Logger) error {
 	return nil
 }
 
+// startBackgroundJobs launches the cleanup, retention, and planned-confirm
+// jobs on bgCtx and returns a function that blocks until all of them have
+// stopped (call it after cancelling bgCtx).
+func startBackgroundJobs(
+	bgCtx context.Context,
+	repo *postgres.Repository,
+	log *slog.Logger,
+	cfg *config.Config,
+) func() {
+	cleanupJob := cleanup.New(repo, log, cfg.SessionConfig.CleanupInterval)
+	cleanupDone := make(chan struct{})
+
+	retentionJob := retention.New(repo, log, cfg.Retention.TombstoneWindow, cfg.Retention.Interval)
+	retentionDone := make(chan struct{})
+
+	plannedConfirmJob := plannedconfirm.New(repo, log, cfg.PlannedConfirm.Interval)
+	plannedConfirmDone := make(chan struct{})
+
+	go func() {
+		defer close(cleanupDone)
+		_ = cleanupJob.Run(bgCtx)
+	}()
+	go func() {
+		defer close(retentionDone)
+		_ = retentionJob.Run(bgCtx)
+	}()
+	go func() {
+		defer close(plannedConfirmDone)
+		_ = plannedConfirmJob.Run(bgCtx)
+	}()
+
+	return func() {
+		<-cleanupDone
+		<-retentionDone
+		<-plannedConfirmDone
+	}
+}
+
 // newHTTPServer wires every service to the single *postgres.Repository, builds
 // the gin engine, and returns a configured *[http.Server] ready to serve.
 func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logger) *http.Server {
@@ -120,6 +146,7 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 	txnSvc := service.NewTransactionService(repo, repo, repo)
 	debtorSvc := service.NewDebtorService(repo)
 	debtOpSvc := service.NewDebtOperationService(repo, repo)
+	planSvc := service.NewPlannedPaymentService(repo, repo, repo)
 	authSvc := service.NewAuthService(repo, repo, repo, repo, service.NewLogMailer(log), service.AuthConfig{
 		SessionTTL: cfg.SessionConfig.TTL,
 	})
@@ -134,6 +161,7 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 		txnSvc,
 		debtorSvc,
 		debtOpSvc,
+		planSvc,
 		authSvc,
 		sessionSvc,
 		syncSvc,

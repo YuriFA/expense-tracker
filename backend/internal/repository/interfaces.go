@@ -108,6 +108,25 @@ type DebtOperationRepository interface {
 	) ([]domain.DebtOperation, error)
 }
 
+// PlannedPaymentRepository owns recurring planned-payment rules (optimistic
+// concurrency). Account/category-reference validation lives in the service
+// layer; deletion is unguarded (a plan has no child records).
+type PlannedPaymentRepository interface {
+	CreatePlannedPayment(ctx context.Context, params domain.CreatePlannedPaymentParams) (*domain.PlannedPayment, error)
+	UpdatePlannedPayment(
+		ctx context.Context,
+		userID, id uuid.UUID,
+		params domain.UpdatePlannedPaymentParams,
+	) (*domain.PlannedPayment, error)
+	DeletePlannedPayment(ctx context.Context, userID, id uuid.UUID) error
+	GetPlannedPayment(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error)
+	GetPlannedPayments(
+		ctx context.Context,
+		userID uuid.UUID,
+		params domain.GetPlannedPaymentsParams,
+	) ([]domain.PlannedPayment, error)
+}
+
 // SyncTx is the unit-of-work handed to SyncRepository.WithinUserTx: every
 // method operates on the SAME open database transaction (which holds the
 // user's change-log advisory lock), so a whole push batch commits atomically
@@ -122,6 +141,7 @@ type SyncTx interface {
 	GetTransactionAny(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
 	GetDebtorAny(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error)
 	GetDebtOperationAny(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
+	GetPlannedPaymentAny(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error)
 
 	// Live-only reads for reference validation.
 	LiveAccountExists(ctx context.Context, userID, id uuid.UUID) (bool, error)
@@ -132,6 +152,11 @@ type SyncTx interface {
 	LiveDebtorExists(ctx context.Context, userID, id uuid.UUID) (bool, error)
 	DebtorNameTaken(ctx context.Context, userID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
 	HasLiveDebtOperationsForDebtor(ctx context.Context, userID, debtorID uuid.UUID) (bool, error)
+	HasLivePlannedPaymentsForAccount(ctx context.Context, userID, accountID uuid.UUID) (bool, error)
+	HasLivePlannedPaymentsForCategory(ctx context.Context, userID, categoryID uuid.UUID) (bool, error)
+
+	// The auto-confirm job's due scan (live auto plans, next_due <= today).
+	DueAutoPlannedPayments(ctx context.Context, userID uuid.UUID, today time.Time) ([]domain.PlannedPayment, error)
 
 	// Writes; each appends its change_log row on the same transaction. The
 	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
@@ -162,6 +187,16 @@ type SyncTx interface {
 		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.DebtOperationFullState,
 	) (*domain.DebtOperation, error)
 	TombstoneDebtOperation(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
+	CreatePlannedPayment(ctx context.Context, params domain.CreatePlannedPaymentParams) (*domain.PlannedPayment, error)
+	ReplacePlannedPayment(
+		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.PlannedPaymentFullState,
+	) (*domain.PlannedPayment, error)
+	TombstonePlannedPayment(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error)
+	// AdvancePlannedPayment moves next_due to the already-computed next
+	// occurrence (auto-confirm job only; runs under the advisory lock).
+	AdvancePlannedPayment(
+		ctx context.Context, userID, id uuid.UUID, nextDue time.Time,
+	) (*domain.PlannedPayment, error)
 }
 
 // SyncRepository backs /api/sync: batched pushes (one transaction per batch)
@@ -192,10 +227,11 @@ type IdempotencyRepository interface {
 // TombstoneRetention backs the retention job: hard-deleting soft-deleted
 // rows once they are older than the retention cutoff. The change_log is NOT
 // touched - pulls keep serving the tombstones - and callers must delete
-// referencing rows first (transactions before categories/accounts, debt
-// operations before debtors).
+// referencing rows first (transactions and planned payments before
+// categories/accounts, debt operations before debtors).
 type TombstoneRetention interface {
 	DeleteTombstonedTransactionsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedPlannedPaymentsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedCategoriesBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedAccountsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedDebtOperationsBefore(ctx context.Context, cutoff time.Time) (int64, error)

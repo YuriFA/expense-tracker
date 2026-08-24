@@ -286,6 +286,312 @@ func (e DebtOperationSyncDataKind) Valid() bool {
 	}
 }
 
+// Defines values for PlannedPaymentConfirmMode.
+const (
+	PlannedPaymentConfirmModeAuto   PlannedPaymentConfirmMode = "auto"
+	PlannedPaymentConfirmModeManual PlannedPaymentConfirmMode = "manual"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentConfirmMode enum.
+func (e PlannedPaymentConfirmMode) Valid() bool {
+	switch e {
+	case PlannedPaymentConfirmModeAuto:
+		return true
+	case PlannedPaymentConfirmModeManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentRegularity.
+const (
+	PlannedPaymentRegularityDaily   PlannedPaymentRegularity = "daily"
+	PlannedPaymentRegularityMonthly PlannedPaymentRegularity = "monthly"
+	PlannedPaymentRegularityWeekly  PlannedPaymentRegularity = "weekly"
+	PlannedPaymentRegularityYearly  PlannedPaymentRegularity = "yearly"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentRegularity enum.
+func (e PlannedPaymentRegularity) Valid() bool {
+	switch e {
+	case PlannedPaymentRegularityDaily:
+		return true
+	case PlannedPaymentRegularityMonthly:
+		return true
+	case PlannedPaymentRegularityWeekly:
+		return true
+	case PlannedPaymentRegularityYearly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentReminder.
+const (
+	PlannedPaymentReminderDayBefore PlannedPaymentReminder = "day_before"
+	PlannedPaymentReminderOff       PlannedPaymentReminder = "off"
+	PlannedPaymentReminderOnDay     PlannedPaymentReminder = "on_day"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentReminder enum.
+func (e PlannedPaymentReminder) Valid() bool {
+	switch e {
+	case PlannedPaymentReminderDayBefore:
+		return true
+	case PlannedPaymentReminderOff:
+		return true
+	case PlannedPaymentReminderOnDay:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentType.
+const (
+	PlannedPaymentTypeExpense PlannedPaymentType = "expense"
+	PlannedPaymentTypeIncome  PlannedPaymentType = "income"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentType enum.
+func (e PlannedPaymentType) Valid() bool {
+	switch e {
+	case PlannedPaymentTypeExpense:
+		return true
+	case PlannedPaymentTypeIncome:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentCreateRequestConfirmMode.
+const (
+	PlannedPaymentCreateRequestConfirmModeAuto   PlannedPaymentCreateRequestConfirmMode = "auto"
+	PlannedPaymentCreateRequestConfirmModeManual PlannedPaymentCreateRequestConfirmMode = "manual"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentCreateRequestConfirmMode enum.
+func (e PlannedPaymentCreateRequestConfirmMode) Valid() bool {
+	switch e {
+	case PlannedPaymentCreateRequestConfirmModeAuto:
+		return true
+	case PlannedPaymentCreateRequestConfirmModeManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentCreateRequestRegularity.
+const (
+	PlannedPaymentCreateRequestRegularityDaily   PlannedPaymentCreateRequestRegularity = "daily"
+	PlannedPaymentCreateRequestRegularityMonthly PlannedPaymentCreateRequestRegularity = "monthly"
+	PlannedPaymentCreateRequestRegularityWeekly  PlannedPaymentCreateRequestRegularity = "weekly"
+	PlannedPaymentCreateRequestRegularityYearly  PlannedPaymentCreateRequestRegularity = "yearly"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentCreateRequestRegularity enum.
+func (e PlannedPaymentCreateRequestRegularity) Valid() bool {
+	switch e {
+	case PlannedPaymentCreateRequestRegularityDaily:
+		return true
+	case PlannedPaymentCreateRequestRegularityMonthly:
+		return true
+	case PlannedPaymentCreateRequestRegularityWeekly:
+		return true
+	case PlannedPaymentCreateRequestRegularityYearly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentCreateRequestReminder.
+const (
+	PlannedPaymentCreateRequestReminderDayBefore PlannedPaymentCreateRequestReminder = "day_before"
+	PlannedPaymentCreateRequestReminderOff       PlannedPaymentCreateRequestReminder = "off"
+	PlannedPaymentCreateRequestReminderOnDay     PlannedPaymentCreateRequestReminder = "on_day"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentCreateRequestReminder enum.
+func (e PlannedPaymentCreateRequestReminder) Valid() bool {
+	switch e {
+	case PlannedPaymentCreateRequestReminderDayBefore:
+		return true
+	case PlannedPaymentCreateRequestReminderOff:
+		return true
+	case PlannedPaymentCreateRequestReminderOnDay:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentCreateRequestType.
+const (
+	PlannedPaymentCreateRequestTypeExpense PlannedPaymentCreateRequestType = "expense"
+	PlannedPaymentCreateRequestTypeIncome  PlannedPaymentCreateRequestType = "income"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentCreateRequestType enum.
+func (e PlannedPaymentCreateRequestType) Valid() bool {
+	switch e {
+	case PlannedPaymentCreateRequestTypeExpense:
+		return true
+	case PlannedPaymentCreateRequestTypeIncome:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentSyncDataConfirmMode.
+const (
+	PlannedPaymentSyncDataConfirmModeAuto   PlannedPaymentSyncDataConfirmMode = "auto"
+	PlannedPaymentSyncDataConfirmModeManual PlannedPaymentSyncDataConfirmMode = "manual"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentSyncDataConfirmMode enum.
+func (e PlannedPaymentSyncDataConfirmMode) Valid() bool {
+	switch e {
+	case PlannedPaymentSyncDataConfirmModeAuto:
+		return true
+	case PlannedPaymentSyncDataConfirmModeManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentSyncDataRegularity.
+const (
+	PlannedPaymentSyncDataRegularityDaily   PlannedPaymentSyncDataRegularity = "daily"
+	PlannedPaymentSyncDataRegularityMonthly PlannedPaymentSyncDataRegularity = "monthly"
+	PlannedPaymentSyncDataRegularityWeekly  PlannedPaymentSyncDataRegularity = "weekly"
+	PlannedPaymentSyncDataRegularityYearly  PlannedPaymentSyncDataRegularity = "yearly"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentSyncDataRegularity enum.
+func (e PlannedPaymentSyncDataRegularity) Valid() bool {
+	switch e {
+	case PlannedPaymentSyncDataRegularityDaily:
+		return true
+	case PlannedPaymentSyncDataRegularityMonthly:
+		return true
+	case PlannedPaymentSyncDataRegularityWeekly:
+		return true
+	case PlannedPaymentSyncDataRegularityYearly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentSyncDataReminder.
+const (
+	PlannedPaymentSyncDataReminderDayBefore PlannedPaymentSyncDataReminder = "day_before"
+	PlannedPaymentSyncDataReminderOff       PlannedPaymentSyncDataReminder = "off"
+	PlannedPaymentSyncDataReminderOnDay     PlannedPaymentSyncDataReminder = "on_day"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentSyncDataReminder enum.
+func (e PlannedPaymentSyncDataReminder) Valid() bool {
+	switch e {
+	case PlannedPaymentSyncDataReminderDayBefore:
+		return true
+	case PlannedPaymentSyncDataReminderOff:
+		return true
+	case PlannedPaymentSyncDataReminderOnDay:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentSyncDataType.
+const (
+	PlannedPaymentSyncDataTypeExpense PlannedPaymentSyncDataType = "expense"
+	PlannedPaymentSyncDataTypeIncome  PlannedPaymentSyncDataType = "income"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentSyncDataType enum.
+func (e PlannedPaymentSyncDataType) Valid() bool {
+	switch e {
+	case PlannedPaymentSyncDataTypeExpense:
+		return true
+	case PlannedPaymentSyncDataTypeIncome:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentUpdateRequestConfirmMode.
+const (
+	PlannedPaymentUpdateRequestConfirmModeAuto   PlannedPaymentUpdateRequestConfirmMode = "auto"
+	PlannedPaymentUpdateRequestConfirmModeManual PlannedPaymentUpdateRequestConfirmMode = "manual"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentUpdateRequestConfirmMode enum.
+func (e PlannedPaymentUpdateRequestConfirmMode) Valid() bool {
+	switch e {
+	case PlannedPaymentUpdateRequestConfirmModeAuto:
+		return true
+	case PlannedPaymentUpdateRequestConfirmModeManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentUpdateRequestRegularity.
+const (
+	PlannedPaymentUpdateRequestRegularityDaily   PlannedPaymentUpdateRequestRegularity = "daily"
+	PlannedPaymentUpdateRequestRegularityMonthly PlannedPaymentUpdateRequestRegularity = "monthly"
+	PlannedPaymentUpdateRequestRegularityWeekly  PlannedPaymentUpdateRequestRegularity = "weekly"
+	PlannedPaymentUpdateRequestRegularityYearly  PlannedPaymentUpdateRequestRegularity = "yearly"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentUpdateRequestRegularity enum.
+func (e PlannedPaymentUpdateRequestRegularity) Valid() bool {
+	switch e {
+	case PlannedPaymentUpdateRequestRegularityDaily:
+		return true
+	case PlannedPaymentUpdateRequestRegularityMonthly:
+		return true
+	case PlannedPaymentUpdateRequestRegularityWeekly:
+		return true
+	case PlannedPaymentUpdateRequestRegularityYearly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlannedPaymentUpdateRequestReminder.
+const (
+	PlannedPaymentUpdateRequestReminderDayBefore PlannedPaymentUpdateRequestReminder = "day_before"
+	PlannedPaymentUpdateRequestReminderOff       PlannedPaymentUpdateRequestReminder = "off"
+	PlannedPaymentUpdateRequestReminderOnDay     PlannedPaymentUpdateRequestReminder = "on_day"
+)
+
+// Valid indicates whether the value is a known member of the PlannedPaymentUpdateRequestReminder enum.
+func (e PlannedPaymentUpdateRequestReminder) Valid() bool {
+	switch e {
+	case PlannedPaymentUpdateRequestReminderDayBefore:
+		return true
+	case PlannedPaymentUpdateRequestReminderOff:
+		return true
+	case PlannedPaymentUpdateRequestReminderOnDay:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SyncChangeAction.
 const (
 	SyncChangeActionTombstone SyncChangeAction = "tombstone"
@@ -306,11 +612,12 @@ func (e SyncChangeAction) Valid() bool {
 
 // Defines values for SyncEntity.
 const (
-	SyncEntityAccount       SyncEntity = "account"
-	SyncEntityCategory      SyncEntity = "category"
-	SyncEntityDebtOperation SyncEntity = "debt_operation"
-	SyncEntityDebtor        SyncEntity = "debtor"
-	SyncEntityTransaction   SyncEntity = "transaction"
+	SyncEntityAccount        SyncEntity = "account"
+	SyncEntityCategory       SyncEntity = "category"
+	SyncEntityDebtOperation  SyncEntity = "debt_operation"
+	SyncEntityDebtor         SyncEntity = "debtor"
+	SyncEntityPlannedPayment SyncEntity = "planned_payment"
+	SyncEntityTransaction    SyncEntity = "transaction"
 )
 
 // Valid indicates whether the value is a known member of the SyncEntity enum.
@@ -323,6 +630,8 @@ func (e SyncEntity) Valid() bool {
 	case SyncEntityDebtOperation:
 		return true
 	case SyncEntityDebtor:
+		return true
+	case SyncEntityPlannedPayment:
 		return true
 	case SyncEntityTransaction:
 		return true
@@ -445,6 +754,24 @@ func (e ListCategoriesParamsType) Valid() bool {
 	case ListCategoriesParamsTypeExpense:
 		return true
 	case ListCategoriesParamsTypeIncome:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListPlannedPaymentsParamsType.
+const (
+	ListPlannedPaymentsParamsTypeExpense ListPlannedPaymentsParamsType = "expense"
+	ListPlannedPaymentsParamsTypeIncome  ListPlannedPaymentsParamsType = "income"
+)
+
+// Valid indicates whether the value is a known member of the ListPlannedPaymentsParamsType enum.
+func (e ListPlannedPaymentsParamsType) Valid() bool {
+	switch e {
+	case ListPlannedPaymentsParamsTypeExpense:
+		return true
+	case ListPlannedPaymentsParamsTypeIncome:
 		return true
 	default:
 		return false
@@ -726,6 +1053,150 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// PlannedPayment Регулярный плановый платёж (расход: подписки, платежи по кредитам;
+// доход: зарплата, премии). Подтверждение плана создаёт обычную
+// транзакцию (type/account/category из плана) и сдвигает `nextDue` на
+// период. `anchorDate` — дата-якорь серии: регулярность считается от её
+// дня (день месяца / день недели / месяц+день), в коротких месяцах
+// вхождения клампятся к последнему дню и возвращаются к якорю
+// (31 → 28/29 → 31). Изменение `nextDue` пользователем сбрасывает якорь.
+// Название не уникально (два «Netflix» легальны); у созданных планом
+// транзакций `description` = название плана.
+type PlannedPayment struct {
+	// AccountId Live-счёт того же user (счёт списания/зачисления).
+	AccountId openapi_types.UUID `json:"accountId"`
+
+	// Amount Положительные минорные единицы (divisor 100).
+	Amount int64 `json:"amount"`
+
+	// AnchorDate Дата-якорь серии (день месяца/недели/года для регулярности).
+	AnchorDate openapi_types.Date `json:"anchorDate"`
+
+	// CategoryId Live-категория того же user, тип совпадает с типом плана.
+	CategoryId openapi_types.UUID `json:"categoryId"`
+
+	// ConfirmMode auto — серверная джоба создаёт транзакции без участия user.
+	ConfirmMode PlannedPaymentConfirmMode `json:"confirmMode"`
+	CreatedAt   time.Time                 `json:"createdAt"`
+	Id          openapi_types.UUID        `json:"id"`
+
+	// Name Опциональное название; пустая строка = без названия.
+	Name string `json:"name"`
+
+	// NextDue Дата следующего вхождения; прошедшая дата допустима (план сразу просрочен).
+	NextDue    openapi_types.Date       `json:"nextDue"`
+	Note       string                   `json:"note"`
+	Regularity PlannedPaymentRegularity `json:"regularity"`
+
+	// Reminder Локальные напоминания на устройствах (off / за день / в день).
+	Reminder  PlannedPaymentReminder `json:"reminder"`
+	Type      PlannedPaymentType     `json:"type"`
+	UpdatedAt time.Time              `json:"updatedAt"`
+	UserId    openapi_types.UUID     `json:"userId"`
+
+	// Version Версия планового платежа (optimistic concurrency).
+	Version int `json:"version"`
+}
+
+// PlannedPaymentConfirmMode auto — серверная джоба создаёт транзакции без участия user.
+type PlannedPaymentConfirmMode string
+
+// PlannedPaymentRegularity defines model for PlannedPayment.Regularity.
+type PlannedPaymentRegularity string
+
+// PlannedPaymentReminder Локальные напоминания на устройствах (off / за день / в день).
+type PlannedPaymentReminder string
+
+// PlannedPaymentType defines model for PlannedPayment.Type.
+type PlannedPaymentType string
+
+// PlannedPaymentCreateRequest defines model for PlannedPaymentCreateRequest.
+type PlannedPaymentCreateRequest struct {
+	// AccountId Существующий live-счёт того же user.
+	AccountId openapi_types.UUID `json:"accountId"`
+	Amount    int64              `json:"amount"`
+
+	// CategoryId Существующая live-категория того же user с совпадающим типом.
+	CategoryId  openapi_types.UUID                     `json:"categoryId"`
+	ConfirmMode PlannedPaymentCreateRequestConfirmMode `json:"confirmMode"`
+
+	// Id Опциональный клиентский id (UUID v4). Дубликат для user →
+	// 409 `PLANNED_PAYMENT_ALREADY_EXISTS`.
+	Id         *openapi_types.UUID                   `json:"id,omitempty"`
+	Name       *string                               `json:"name,omitempty"`
+	NextDue    openapi_types.Date                    `json:"nextDue"`
+	Note       *string                               `json:"note,omitempty"`
+	Regularity PlannedPaymentCreateRequestRegularity `json:"regularity"`
+	Reminder   *PlannedPaymentCreateRequestReminder  `json:"reminder,omitempty"`
+	Type       PlannedPaymentCreateRequestType       `json:"type"`
+}
+
+// PlannedPaymentCreateRequestConfirmMode defines model for PlannedPaymentCreateRequest.ConfirmMode.
+type PlannedPaymentCreateRequestConfirmMode string
+
+// PlannedPaymentCreateRequestRegularity defines model for PlannedPaymentCreateRequest.Regularity.
+type PlannedPaymentCreateRequestRegularity string
+
+// PlannedPaymentCreateRequestReminder defines model for PlannedPaymentCreateRequest.Reminder.
+type PlannedPaymentCreateRequestReminder string
+
+// PlannedPaymentCreateRequestType defines model for PlannedPaymentCreateRequest.Type.
+type PlannedPaymentCreateRequestType string
+
+// PlannedPaymentSyncData Полное состояние планового платежа в sync-операции (upsert).
+type PlannedPaymentSyncData struct {
+	AccountId   openapi_types.UUID                `json:"accountId"`
+	Amount      int64                             `json:"amount"`
+	AnchorDate  openapi_types.Date                `json:"anchorDate"`
+	CategoryId  openapi_types.UUID                `json:"categoryId"`
+	ConfirmMode PlannedPaymentSyncDataConfirmMode `json:"confirmMode"`
+	Name        string                            `json:"name"`
+	NextDue     openapi_types.Date                `json:"nextDue"`
+	Note        string                            `json:"note"`
+	Regularity  PlannedPaymentSyncDataRegularity  `json:"regularity"`
+	Reminder    PlannedPaymentSyncDataReminder    `json:"reminder"`
+	Type        PlannedPaymentSyncDataType        `json:"type"`
+}
+
+// PlannedPaymentSyncDataConfirmMode defines model for PlannedPaymentSyncData.ConfirmMode.
+type PlannedPaymentSyncDataConfirmMode string
+
+// PlannedPaymentSyncDataRegularity defines model for PlannedPaymentSyncData.Regularity.
+type PlannedPaymentSyncDataRegularity string
+
+// PlannedPaymentSyncDataReminder defines model for PlannedPaymentSyncData.Reminder.
+type PlannedPaymentSyncDataReminder string
+
+// PlannedPaymentSyncDataType defines model for PlannedPaymentSyncData.Type.
+type PlannedPaymentSyncDataType string
+
+// PlannedPaymentUpdateRequest Все поля кроме `version` optional. `type` менять нельзя. Изменение
+// `nextDue` сбрасывает `anchorDate` на новую дату. `name` / `note`:
+// отсутствует = не менять, `""` = очистить; `null` невалиден.
+// `version` — optimistic concurrency: при параллельном изменении →
+// 409 `PLANNED_PAYMENT_VERSION_CONFLICT`.
+type PlannedPaymentUpdateRequest struct {
+	AccountId   *openapi_types.UUID                     `json:"accountId,omitempty"`
+	Amount      *int64                                  `json:"amount,omitempty"`
+	CategoryId  *openapi_types.UUID                     `json:"categoryId,omitempty"`
+	ConfirmMode *PlannedPaymentUpdateRequestConfirmMode `json:"confirmMode,omitempty"`
+	Name        *string                                 `json:"name,omitempty"`
+	NextDue     *openapi_types.Date                     `json:"nextDue,omitempty"`
+	Note        *string                                 `json:"note,omitempty"`
+	Regularity  *PlannedPaymentUpdateRequestRegularity  `json:"regularity,omitempty"`
+	Reminder    *PlannedPaymentUpdateRequestReminder    `json:"reminder,omitempty"`
+	Version     int                                     `json:"version"`
+}
+
+// PlannedPaymentUpdateRequestConfirmMode defines model for PlannedPaymentUpdateRequest.ConfirmMode.
+type PlannedPaymentUpdateRequestConfirmMode string
+
+// PlannedPaymentUpdateRequestRegularity defines model for PlannedPaymentUpdateRequest.Regularity.
+type PlannedPaymentUpdateRequestRegularity string
+
+// PlannedPaymentUpdateRequestReminder defines model for PlannedPaymentUpdateRequest.Reminder.
+type PlannedPaymentUpdateRequestReminder string
+
 // SessionResponse Метаданные сессии без токена.
 type SessionResponse struct {
 	CreatedAt time.Time `json:"createdAt"`
@@ -953,6 +1424,9 @@ type DebtorId = openapi_types.UUID
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
+// PlannedPaymentId defines model for PlannedPaymentId.
+type PlannedPaymentId = openapi_types.UUID
+
 // TransactionId defines model for TransactionId.
 type TransactionId = openapi_types.UUID
 
@@ -997,6 +1471,15 @@ type DebtorNotFound = ErrorResponse
 
 // InternalError defines model for InternalError.
 type InternalError = ErrorResponse
+
+// PlannedPaymentAlreadyExists defines model for PlannedPaymentAlreadyExists.
+type PlannedPaymentAlreadyExists = ErrorResponse
+
+// PlannedPaymentNotFound defines model for PlannedPaymentNotFound.
+type PlannedPaymentNotFound = ErrorResponse
+
+// PlannedPaymentVersionConflict defines model for PlannedPaymentVersionConflict.
+type PlannedPaymentVersionConflict = ErrorResponse
 
 // TransactionNotFound defines model for TransactionNotFound.
 type TransactionNotFound = ErrorResponse
@@ -1064,6 +1547,15 @@ type ListDebtOperationsParams struct {
 	// DebtorId Фильтр по должнику.
 	DebtorId *openapi_types.UUID `form:"debtorId,omitempty" json:"debtorId,omitempty"`
 }
+
+// ListPlannedPaymentsParams defines parameters for ListPlannedPayments.
+type ListPlannedPaymentsParams struct {
+	// Type Фильтр по типу плана.
+	Type *ListPlannedPaymentsParamsType `form:"type,omitempty" json:"type,omitempty"`
+}
+
+// ListPlannedPaymentsParamsType defines parameters for ListPlannedPayments.
+type ListPlannedPaymentsParamsType string
 
 // SyncPullParams defines parameters for SyncPull.
 type SyncPullParams struct {
@@ -1141,6 +1633,12 @@ type CreateDebtorJSONRequestBody = DebtorCreateRequest
 
 // UpdateDebtorJSONRequestBody defines body for UpdateDebtor for application/json ContentType.
 type UpdateDebtorJSONRequestBody = DebtorUpdateRequest
+
+// CreatePlannedPaymentJSONRequestBody defines body for CreatePlannedPayment for application/json ContentType.
+type CreatePlannedPaymentJSONRequestBody = PlannedPaymentCreateRequest
+
+// UpdatePlannedPaymentJSONRequestBody defines body for UpdatePlannedPayment for application/json ContentType.
+type UpdatePlannedPaymentJSONRequestBody = PlannedPaymentUpdateRequest
 
 // SyncPushJSONRequestBody defines body for SyncPush for application/json ContentType.
 type SyncPushJSONRequestBody = SyncPushRequest
@@ -1271,6 +1769,32 @@ func (t *SyncChange_Data) FromDebtOperationSyncData(v DebtOperationSyncData) err
 
 // MergeDebtOperationSyncData performs a merge with any union data inside the SyncChange_Data, using the provided DebtOperationSyncData
 func (t *SyncChange_Data) MergeDebtOperationSyncData(v DebtOperationSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPlannedPaymentSyncData returns the union data inside the SyncChange_Data as a PlannedPaymentSyncData
+func (t SyncChange_Data) AsPlannedPaymentSyncData() (PlannedPaymentSyncData, error) {
+	var body PlannedPaymentSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPlannedPaymentSyncData overwrites any union data inside the SyncChange_Data as the provided PlannedPaymentSyncData
+func (t *SyncChange_Data) FromPlannedPaymentSyncData(v PlannedPaymentSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePlannedPaymentSyncData performs a merge with any union data inside the SyncChange_Data, using the provided PlannedPaymentSyncData
+func (t *SyncChange_Data) MergePlannedPaymentSyncData(v PlannedPaymentSyncData) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1421,6 +1945,32 @@ func (t *SyncOperation_Data) MergeDebtOperationSyncData(v DebtOperationSyncData)
 	return err
 }
 
+// AsPlannedPaymentSyncData returns the union data inside the SyncOperation_Data as a PlannedPaymentSyncData
+func (t SyncOperation_Data) AsPlannedPaymentSyncData() (PlannedPaymentSyncData, error) {
+	var body PlannedPaymentSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPlannedPaymentSyncData overwrites any union data inside the SyncOperation_Data as the provided PlannedPaymentSyncData
+func (t *SyncOperation_Data) FromPlannedPaymentSyncData(v PlannedPaymentSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePlannedPaymentSyncData performs a merge with any union data inside the SyncOperation_Data, using the provided PlannedPaymentSyncData
+func (t *SyncOperation_Data) MergePlannedPaymentSyncData(v PlannedPaymentSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SyncOperation_Data) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -1561,6 +2111,32 @@ func (t *SyncServerState_Data) MergeDebtOperationSyncData(v DebtOperationSyncDat
 	return err
 }
 
+// AsPlannedPaymentSyncData returns the union data inside the SyncServerState_Data as a PlannedPaymentSyncData
+func (t SyncServerState_Data) AsPlannedPaymentSyncData() (PlannedPaymentSyncData, error) {
+	var body PlannedPaymentSyncData
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPlannedPaymentSyncData overwrites any union data inside the SyncServerState_Data as the provided PlannedPaymentSyncData
+func (t *SyncServerState_Data) FromPlannedPaymentSyncData(v PlannedPaymentSyncData) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePlannedPaymentSyncData performs a merge with any union data inside the SyncServerState_Data, using the provided PlannedPaymentSyncData
+func (t *SyncServerState_Data) MergePlannedPaymentSyncData(v PlannedPaymentSyncData) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SyncServerState_Data) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -1666,6 +2242,21 @@ type ServerInterface interface {
 	// UpdateDebtor Обновить должника (name, note)
 	// (PATCH /api/debtors/{id})
 	UpdateDebtor(c *gin.Context, id DebtorId)
+	// ListPlannedPayments Список плановых платежей
+	// (GET /api/planned-payments)
+	ListPlannedPayments(c *gin.Context, params ListPlannedPaymentsParams)
+	// CreatePlannedPayment Создать плановый платёж
+	// (POST /api/planned-payments)
+	CreatePlannedPayment(c *gin.Context)
+	// DeletePlannedPayment Удалить плановый платёж
+	// (DELETE /api/planned-payments/{id})
+	DeletePlannedPayment(c *gin.Context, id PlannedPaymentId)
+	// GetPlannedPayment Получить плановый платёж по ID
+	// (GET /api/planned-payments/{id})
+	GetPlannedPayment(c *gin.Context, id PlannedPaymentId)
+	// UpdatePlannedPayment Обновить плановый платёж
+	// (PATCH /api/planned-payments/{id})
+	UpdatePlannedPayment(c *gin.Context, id PlannedPaymentId)
 	// SyncPull Инкрементальный pull изменений по курсору
 	// (GET /api/sync/pull)
 	SyncPull(c *gin.Context, params SyncPullParams)
@@ -2273,6 +2864,121 @@ func (siw *ServerInterfaceWrapper) UpdateDebtor(c *gin.Context) {
 	siw.Handler.UpdateDebtor(c, id)
 }
 
+// ListPlannedPayments operation middleware
+func (siw *ServerInterfaceWrapper) ListPlannedPayments(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPlannedPaymentsParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", c.Request.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter type: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListPlannedPayments(c, params)
+}
+
+// CreatePlannedPayment operation middleware
+func (siw *ServerInterfaceWrapper) CreatePlannedPayment(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreatePlannedPayment(c)
+}
+
+// DeletePlannedPayment operation middleware
+func (siw *ServerInterfaceWrapper) DeletePlannedPayment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PlannedPaymentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeletePlannedPayment(c, id)
+}
+
+// GetPlannedPayment operation middleware
+func (siw *ServerInterfaceWrapper) GetPlannedPayment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PlannedPaymentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPlannedPayment(c, id)
+}
+
+// UpdatePlannedPayment operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePlannedPayment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PlannedPaymentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdatePlannedPayment(c, id)
+}
+
 // SyncPull operation middleware
 func (siw *ServerInterfaceWrapper) SyncPull(c *gin.Context) {
 
@@ -2577,6 +3283,11 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/debt-operations/:id", wrapper.DeleteDebtOperation)
 	router.GET(options.BaseURL+"/api/debt-operations/:id", wrapper.GetDebtOperation)
 	router.PATCH(options.BaseURL+"/api/debt-operations/:id", wrapper.UpdateDebtOperation)
+	router.GET(options.BaseURL+"/api/planned-payments", wrapper.ListPlannedPayments)
+	router.POST(options.BaseURL+"/api/planned-payments", wrapper.CreatePlannedPayment)
+	router.DELETE(options.BaseURL+"/api/planned-payments/:id", wrapper.DeletePlannedPayment)
+	router.GET(options.BaseURL+"/api/planned-payments/:id", wrapper.GetPlannedPayment)
+	router.PATCH(options.BaseURL+"/api/planned-payments/:id", wrapper.UpdatePlannedPayment)
 	router.POST(options.BaseURL+"/api/sync/push", wrapper.SyncPush)
 	router.GET(options.BaseURL+"/api/sync/pull", wrapper.SyncPull)
 }
@@ -2608,6 +3319,12 @@ type DebtorInUseJSONResponse ErrorResponse
 type DebtorNotFoundJSONResponse ErrorResponse
 
 type InternalErrorJSONResponse ErrorResponse
+
+type PlannedPaymentAlreadyExistsJSONResponse ErrorResponse
+
+type PlannedPaymentNotFoundJSONResponse ErrorResponse
+
+type PlannedPaymentVersionConflictJSONResponse ErrorResponse
 
 type TransactionNotFoundJSONResponse ErrorResponse
 
@@ -4663,6 +5380,387 @@ func (response UpdateDebtor500JSONResponse) VisitUpdateDebtorResponse(w http.Res
 	return err
 }
 
+type ListPlannedPaymentsRequestObject struct {
+	Params ListPlannedPaymentsParams
+}
+
+type ListPlannedPaymentsResponseObject interface {
+	VisitListPlannedPaymentsResponse(w http.ResponseWriter) error
+}
+
+type ListPlannedPayments200JSONResponse []PlannedPayment
+
+func (response ListPlannedPayments200JSONResponse) VisitListPlannedPaymentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlannedPayments401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListPlannedPayments401JSONResponse) VisitListPlannedPaymentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlannedPayments500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListPlannedPayments500JSONResponse) VisitListPlannedPaymentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlannedPaymentRequestObject struct {
+	Body *CreatePlannedPaymentJSONRequestBody
+}
+
+type CreatePlannedPaymentResponseObject interface {
+	VisitCreatePlannedPaymentResponse(w http.ResponseWriter) error
+}
+
+type CreatePlannedPayment201JSONResponse PlannedPayment
+
+func (response CreatePlannedPayment201JSONResponse) VisitCreatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlannedPayment400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response CreatePlannedPayment400JSONResponse) VisitCreatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlannedPayment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreatePlannedPayment401JSONResponse) VisitCreatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlannedPayment409JSONResponse struct {
+	PlannedPaymentAlreadyExistsJSONResponse
+}
+
+func (response CreatePlannedPayment409JSONResponse) VisitCreatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlannedPayment422JSONResponse ErrorResponse
+
+func (response CreatePlannedPayment422JSONResponse) VisitCreatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlannedPayment500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreatePlannedPayment500JSONResponse) VisitCreatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePlannedPaymentRequestObject struct {
+	Id PlannedPaymentId `json:"id"`
+}
+
+type DeletePlannedPaymentResponseObject interface {
+	VisitDeletePlannedPaymentResponse(w http.ResponseWriter) error
+}
+
+type DeletePlannedPayment204Response struct {
+}
+
+func (response DeletePlannedPayment204Response) VisitDeletePlannedPaymentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeletePlannedPayment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeletePlannedPayment401JSONResponse) VisitDeletePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePlannedPayment404JSONResponse struct {
+	PlannedPaymentNotFoundJSONResponse
+}
+
+func (response DeletePlannedPayment404JSONResponse) VisitDeletePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePlannedPayment500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeletePlannedPayment500JSONResponse) VisitDeletePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlannedPaymentRequestObject struct {
+	Id PlannedPaymentId `json:"id"`
+}
+
+type GetPlannedPaymentResponseObject interface {
+	VisitGetPlannedPaymentResponse(w http.ResponseWriter) error
+}
+
+type GetPlannedPayment200JSONResponse PlannedPayment
+
+func (response GetPlannedPayment200JSONResponse) VisitGetPlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlannedPayment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetPlannedPayment401JSONResponse) VisitGetPlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlannedPayment404JSONResponse struct {
+	PlannedPaymentNotFoundJSONResponse
+}
+
+func (response GetPlannedPayment404JSONResponse) VisitGetPlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlannedPayment500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetPlannedPayment500JSONResponse) VisitGetPlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlannedPaymentRequestObject struct {
+	Id   PlannedPaymentId `json:"id"`
+	Body *UpdatePlannedPaymentJSONRequestBody
+}
+
+type UpdatePlannedPaymentResponseObject interface {
+	VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error
+}
+
+type UpdatePlannedPayment200JSONResponse PlannedPayment
+
+func (response UpdatePlannedPayment200JSONResponse) VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlannedPayment400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response UpdatePlannedPayment400JSONResponse) VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlannedPayment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdatePlannedPayment401JSONResponse) VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlannedPayment404JSONResponse struct {
+	PlannedPaymentNotFoundJSONResponse
+}
+
+func (response UpdatePlannedPayment404JSONResponse) VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlannedPayment409JSONResponse struct {
+	PlannedPaymentVersionConflictJSONResponse
+}
+
+func (response UpdatePlannedPayment409JSONResponse) VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlannedPayment422JSONResponse ErrorResponse
+
+func (response UpdatePlannedPayment422JSONResponse) VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlannedPayment500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdatePlannedPayment500JSONResponse) VisitUpdatePlannedPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SyncPullRequestObject struct {
 	Params SyncPullParams
 }
@@ -5284,6 +6382,21 @@ type StrictServerInterface interface {
 	// UpdateDebtor Обновить должника (name, note)
 	// (PATCH /api/debtors/{id})
 	UpdateDebtor(ctx context.Context, request UpdateDebtorRequestObject) (UpdateDebtorResponseObject, error)
+	// ListPlannedPayments Список плановых платежей
+	// (GET /api/planned-payments)
+	ListPlannedPayments(ctx context.Context, request ListPlannedPaymentsRequestObject) (ListPlannedPaymentsResponseObject, error)
+	// CreatePlannedPayment Создать плановый платёж
+	// (POST /api/planned-payments)
+	CreatePlannedPayment(ctx context.Context, request CreatePlannedPaymentRequestObject) (CreatePlannedPaymentResponseObject, error)
+	// DeletePlannedPayment Удалить плановый платёж
+	// (DELETE /api/planned-payments/{id})
+	DeletePlannedPayment(ctx context.Context, request DeletePlannedPaymentRequestObject) (DeletePlannedPaymentResponseObject, error)
+	// GetPlannedPayment Получить плановый платёж по ID
+	// (GET /api/planned-payments/{id})
+	GetPlannedPayment(ctx context.Context, request GetPlannedPaymentRequestObject) (GetPlannedPaymentResponseObject, error)
+	// UpdatePlannedPayment Обновить плановый платёж
+	// (PATCH /api/planned-payments/{id})
+	UpdatePlannedPayment(ctx context.Context, request UpdatePlannedPaymentRequestObject) (UpdatePlannedPaymentResponseObject, error)
 	// SyncPull Инкрементальный pull изменений по курсору
 	// (GET /api/sync/pull)
 	SyncPull(ctx context.Context, request SyncPullRequestObject) (SyncPullResponseObject, error)
@@ -6227,6 +7340,148 @@ func (sh *strictHandler) UpdateDebtor(ctx *gin.Context, id DebtorId) {
 	}
 }
 
+// ListPlannedPayments operation middleware
+func (sh *strictHandler) ListPlannedPayments(ctx *gin.Context, params ListPlannedPaymentsParams) {
+	var request ListPlannedPaymentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPlannedPayments(ctx, request.(ListPlannedPaymentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPlannedPayments")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListPlannedPaymentsResponseObject); ok {
+		if err := validResponse.VisitListPlannedPaymentsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePlannedPayment operation middleware
+func (sh *strictHandler) CreatePlannedPayment(ctx *gin.Context) {
+	var request CreatePlannedPaymentRequestObject
+
+	var body CreatePlannedPaymentJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePlannedPayment(ctx, request.(CreatePlannedPaymentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePlannedPayment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreatePlannedPaymentResponseObject); ok {
+		if err := validResponse.VisitCreatePlannedPaymentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeletePlannedPayment operation middleware
+func (sh *strictHandler) DeletePlannedPayment(ctx *gin.Context, id PlannedPaymentId) {
+	var request DeletePlannedPaymentRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeletePlannedPayment(ctx, request.(DeletePlannedPaymentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeletePlannedPayment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeletePlannedPaymentResponseObject); ok {
+		if err := validResponse.VisitDeletePlannedPaymentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPlannedPayment operation middleware
+func (sh *strictHandler) GetPlannedPayment(ctx *gin.Context, id PlannedPaymentId) {
+	var request GetPlannedPaymentRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPlannedPayment(ctx, request.(GetPlannedPaymentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPlannedPayment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetPlannedPaymentResponseObject); ok {
+		if err := validResponse.VisitGetPlannedPaymentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePlannedPayment operation middleware
+func (sh *strictHandler) UpdatePlannedPayment(ctx *gin.Context, id PlannedPaymentId) {
+	var request UpdatePlannedPaymentRequestObject
+
+	request.Id = id
+
+	var body UpdatePlannedPaymentJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePlannedPayment(ctx, request.(UpdatePlannedPaymentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePlannedPayment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdatePlannedPaymentResponseObject); ok {
+		if err := validResponse.VisitUpdatePlannedPaymentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SyncPull operation middleware
 func (sh *strictHandler) SyncPull(ctx *gin.Context, params SyncPullParams) {
 	var request SyncPullRequestObject
@@ -6433,213 +7688,238 @@ func (sh *strictHandler) UpdateTransaction(ctx *gin.Context, id TransactionId) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

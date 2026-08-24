@@ -19,6 +19,7 @@ import (
 // Store is the repository surface the job needs.
 type Store interface {
 	DeleteTombstonedTransactionsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	DeleteTombstonedPlannedPaymentsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedCategoriesBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedAccountsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 	DeleteTombstonedDebtOperationsBefore(ctx context.Context, cutoff time.Time) (int64, error)
@@ -66,9 +67,9 @@ func (j *Job) Run(ctx context.Context) error {
 	}
 }
 
-// runOnce deletes in FK-safe order: transactions reference categories and
-// accounts, and debt operations reference debtors, so the referencing
-// tombstoned rows must go first.
+// runOnce deletes in FK-safe order: transactions and planned payments
+// reference categories and accounts, and debt operations reference debtors,
+// so the referencing tombstoned rows must go first.
 func (j *Job) runOnce(ctx context.Context) {
 	cutoff := time.Now().UTC().Add(-j.window)
 
@@ -76,6 +77,12 @@ func (j *Job) runOnce(ctx context.Context) {
 		j.log.WarnContext(ctx, "failed to delete tombstoned transactions", logger.Error(err))
 	} else if n > 0 {
 		j.log.InfoContext(ctx, "tombstoned transactions deleted", slog.Int64("count", n))
+	}
+
+	if n, err := j.db.DeleteTombstonedPlannedPaymentsBefore(ctx, cutoff); err != nil {
+		j.log.WarnContext(ctx, "failed to delete tombstoned planned payments", logger.Error(err))
+	} else if n > 0 {
+		j.log.InfoContext(ctx, "tombstoned planned payments deleted", slog.Int64("count", n))
 	}
 
 	if n, err := j.db.DeleteTombstonedCategoriesBefore(ctx, cutoff); err != nil {

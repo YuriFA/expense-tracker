@@ -30,6 +30,7 @@ type Store struct {
 	transactions map[uuid.UUID]*domain.Transaction
 	debtors      map[uuid.UUID]*domain.Debtor
 	debtOps      map[uuid.UUID]*domain.DebtOperation
+	plans        map[uuid.UUID]*domain.PlannedPayment
 
 	// catUnique enforces UNIQUE(user_id, name) among LIVE categories.
 	catUnique map[string]struct{} // "userID|name"
@@ -87,6 +88,7 @@ func New() *Store {
 		transactions: make(map[uuid.UUID]*domain.Transaction),
 		debtors:      make(map[uuid.UUID]*domain.Debtor),
 		debtOps:      make(map[uuid.UUID]*domain.DebtOperation),
+		plans:        make(map[uuid.UUID]*domain.PlannedPayment),
 		catUnique:    make(map[string]struct{}),
 		debtorUnique: make(map[string]struct{}),
 		appliedOps:   make(map[uuid.UUID]*domain.AppliedOperation),
@@ -358,6 +360,11 @@ func (s *Store) DeleteAccount(_ context.Context, userID, id uuid.UUID) error {
 			return domain.ErrAccountHasTransactions
 		}
 	}
+	for _, p := range s.plans {
+		if p.UserID == userID && p.AccountID == id && !p.Deleted() {
+			return domain.ErrAccountHasPlannedPayments
+		}
+	}
 	_ = a
 	delete(s.accounts, id)
 	return nil
@@ -484,6 +491,11 @@ func (s *Store) DeleteCategory(_ context.Context, userID, id uuid.UUID) error {
 	for _, t := range s.transactions {
 		if t.CategoryID != nil && *t.CategoryID == id {
 			return domain.ErrCategoryHasTransactions
+		}
+	}
+	for _, p := range s.plans {
+		if p.UserID == userID && p.CategoryID == id && !p.Deleted() {
+			return domain.ErrCategoryHasPlannedPayments
 		}
 	}
 	delete(s.catUnique, catUniqueKey(userID, c.Name))
@@ -874,7 +886,7 @@ func (s *Store) GetDebtOperation(_ context.Context, userID, id uuid.UUID) (*doma
 	return &c, nil
 }
 
-func (s *Store) GetDebtOperations(
+func (s *Store) GetDebtOperations( //nolint:dupl // per-entity list twins: identical filter/sort shape
 	_ context.Context,
 	userID uuid.UUID,
 	params domain.GetDebtOperationsParams,

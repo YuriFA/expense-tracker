@@ -11,10 +11,11 @@ import (
 type Config struct {
 	HTTPServer `yaml:"http_server"`
 
-	Env         string          `yaml:"env"          env:"ENV"          env-required:"true"`
-	DatabaseURL string          `yaml:"database_url" env:"DATABASE_URL" env-required:"true"`
-	Database    DatabaseConfig  `yaml:"database"`
-	Retention   RetentionConfig `yaml:"retention"`
+	Env            string               `yaml:"env"             env:"ENV"          env-required:"true"`
+	DatabaseURL    string               `yaml:"database_url"    env:"DATABASE_URL" env-required:"true"`
+	Database       DatabaseConfig       `yaml:"database"`
+	Retention      RetentionConfig      `yaml:"retention"`
+	PlannedConfirm PlannedConfirmConfig `yaml:"planned_confirm"`
 }
 
 // RetentionConfig tunes the tombstone retention job: soft-deleted rows older
@@ -22,6 +23,12 @@ type Config struct {
 type RetentionConfig struct {
 	TombstoneWindow time.Duration `yaml:"tombstone_window" env:"RETENTION_TOMBSTONE_WINDOW" env-default:"2160h"` // 90 days
 	Interval        time.Duration `yaml:"interval"         env:"RETENTION_INTERVAL"         env-default:"1h"`
+}
+
+// PlannedConfirmConfig tunes the automatic planned-payment executor: how
+// often the job sweeps for due auto plans.
+type PlannedConfirmConfig struct {
+	Interval time.Duration `yaml:"interval" env:"PLANNED_CONFIRM_INTERVAL" env-default:"1h"`
 }
 
 // DatabaseConfig tunes the pgxpool connection pool.

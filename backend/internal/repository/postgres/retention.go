@@ -15,6 +15,16 @@ func (r *Repository) DeleteTombstonedTransactionsBefore(ctx context.Context, cut
 	return n, nil
 }
 
+func (r *Repository) DeleteTombstonedPlannedPaymentsBefore(ctx context.Context, cutoff time.Time) (int64, error) {
+	const op = "repository.postgres.DeleteTombstonedPlannedPaymentsBefore"
+
+	n, err := r.q.DeleteTombstonedPlannedPaymentsBefore(ctx, &cutoff)
+	if err != nil {
+		return 0, opWrap(op, err)
+	}
+	return n, nil
+}
+
 func (r *Repository) DeleteTombstonedCategoriesBefore(ctx context.Context, cutoff time.Time) (int64, error) {
 	const op = "repository.postgres.DeleteTombstonedCategoriesBefore"
 

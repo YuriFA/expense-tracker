@@ -180,6 +180,25 @@ func (t *syncTx) GetDebtOperationAny(ctx context.Context, userID, id uuid.UUID) 
 	return op2, nil
 }
 
+func (t *syncTx) GetPlannedPaymentAny(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error) {
+	const op = "repository.postgres.syncTx.GetPlannedPaymentAny"
+
+	row, err := t.q.GetPlannedPaymentAny(ctx, db.GetPlannedPaymentAnyParams{ID: id, UserID: userID})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil //nolint:nilnil // (nil, nil) is the documented "never created" signal
+		}
+		return nil, opWrap(op, err)
+	}
+	p := plannedPaymentFromRow(
+		row.ID, row.UserID, row.Type, row.Amount, row.Name, row.AccountID, row.CategoryID,
+		row.NextDue, row.AnchorDate, row.Regularity, row.ConfirmMode, row.Reminder, row.Note,
+		row.CreatedAt, row.UpdatedAt, int(row.Version),
+	)
+	p.DeletedAt = row.DeletedAt
+	return p, nil
+}
+
 // --- live reads ----------------------------------------------------------------
 
 func (t *syncTx) LiveAccountExists(ctx context.Context, userID, id uuid.UUID) (bool, error) {
@@ -290,6 +309,56 @@ func (t *syncTx) HasLiveDebtOperationsForDebtor(ctx context.Context, userID, deb
 		return false, opWrap(op, err)
 	}
 	return inUse, nil
+}
+
+func (t *syncTx) HasLivePlannedPaymentsForAccount(ctx context.Context, userID, accountID uuid.UUID) (bool, error) {
+	const op = "repository.postgres.syncTx.HasLivePlannedPaymentsForAccount"
+
+	inUse, err := t.q.HasLivePlannedPaymentsForAccount(ctx, db.HasLivePlannedPaymentsForAccountParams{
+		UserID:    userID,
+		AccountID: accountID,
+	})
+	if err != nil {
+		return false, opWrap(op, err)
+	}
+	return inUse, nil
+}
+
+func (t *syncTx) HasLivePlannedPaymentsForCategory(ctx context.Context, userID, categoryID uuid.UUID) (bool, error) {
+	const op = "repository.postgres.syncTx.HasLivePlannedPaymentsForCategory"
+
+	inUse, err := t.q.HasLivePlannedPaymentsForCategory(ctx, db.HasLivePlannedPaymentsForCategoryParams{
+		UserID:     userID,
+		CategoryID: categoryID,
+	})
+	if err != nil {
+		return false, opWrap(op, err)
+	}
+	return inUse, nil
+}
+
+// DueAutoPlannedPayments is the auto-confirm job's due scan, run inside the
+// same locked tx that will create the payments and advance the plans.
+func (t *syncTx) DueAutoPlannedPayments(
+	ctx context.Context,
+	userID uuid.UUID,
+	today time.Time,
+) ([]domain.PlannedPayment, error) {
+	const op = "repository.postgres.syncTx.DueAutoPlannedPayments"
+
+	rows, err := t.q.DueAutoPlannedPayments(ctx, db.DueAutoPlannedPaymentsParams{UserID: userID, Today: today})
+	if err != nil {
+		return nil, opWrap(op, err)
+	}
+	out := make([]domain.PlannedPayment, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, *plannedPaymentFromRow(
+			row.ID, row.UserID, row.Type, row.Amount, row.Name, row.AccountID, row.CategoryID,
+			row.NextDue, row.AnchorDate, row.Regularity, row.ConfirmMode, row.Reminder, row.Note,
+			row.CreatedAt, row.UpdatedAt, int(row.Version),
+		))
+	}
+	return out, nil
 }
 
 // --- writes (each appends change_log on the same tx) -----------------------------
@@ -697,6 +766,162 @@ func (t *syncTx) TombstoneDebtOperation( //nolint:dupl // per-entity tombstone t
 	return o, nil
 }
 
+func (t *syncTx) CreatePlannedPayment(
+	ctx context.Context,
+	params domain.CreatePlannedPaymentParams,
+) (*domain.PlannedPayment, error) {
+	const op = "repository.postgres.syncTx.CreatePlannedPayment"
+
+	row, err := t.q.CreatePlannedPayment(ctx, db.CreatePlannedPaymentParams{
+		ID:          newEntityID(params.ID),
+		UserID:      params.UserID,
+		Type:        string(params.Type),
+		Amount:      params.Amount,
+		Name:        params.Name,
+		AccountID:   params.AccountID,
+		CategoryID:  params.CategoryID,
+		NextDue:     params.NextDue,
+		Regularity:  string(params.Regularity),
+		ConfirmMode: string(params.ConfirmMode),
+		Reminder:    string(params.Reminder),
+		Note:        params.Note,
+	})
+	if err != nil {
+		if pgUniqueViolation(err) {
+			return nil, domain.ErrPlannedPaymentAlreadyExists
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, params.UserID, row.ID,
+		domain.SyncEntityPlannedPayment, domain.SyncChangeUpsert, int(row.Version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return plannedPaymentFromRow(
+		row.ID, row.UserID, row.Type, row.Amount, row.Name, row.AccountID, row.CategoryID,
+		row.NextDue, row.AnchorDate, row.Regularity, row.ConfirmMode, row.Reminder, row.Note,
+		row.CreatedAt, row.UpdatedAt, int(row.Version),
+	), nil
+}
+
+func (t *syncTx) ReplacePlannedPayment(
+	ctx context.Context,
+	userID, id uuid.UUID,
+	baseVersion int,
+	st domain.PlannedPaymentFullState,
+) (*domain.PlannedPayment, error) {
+	const op = "repository.postgres.syncTx.ReplacePlannedPayment"
+
+	row, err := t.q.SyncReplacePlannedPayment(ctx, db.SyncReplacePlannedPaymentParams{
+		ID:          id,
+		UserID:      userID,
+		Type:        string(st.Type),
+		Amount:      st.Amount,
+		Name:        st.Name,
+		AccountID:   st.AccountID,
+		CategoryID:  st.CategoryID,
+		NextDue:     st.NextDue.Time,
+		AnchorDate:  st.AnchorDate.Time,
+		Regularity:  string(st.Regularity),
+		ConfirmMode: string(st.ConfirmMode),
+		Reminder:    string(st.Reminder),
+		Note:        st.Note,
+		BaseVersion: int32(baseVersion), //nolint:gosec // server versions are small positive ints
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, t.classifySyncWrite(
+				ctx,
+				userID,
+				id,
+				domain.SyncEntityPlannedPayment,
+				domain.ErrPlannedPaymentNotFound,
+				domain.ErrPlannedPaymentVersionConflict,
+			)
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, userID, row.ID,
+		domain.SyncEntityPlannedPayment, domain.SyncChangeUpsert, int(row.Version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return plannedPaymentFromRow(
+		row.ID, row.UserID, row.Type, row.Amount, row.Name, row.AccountID, row.CategoryID,
+		row.NextDue, row.AnchorDate, row.Regularity, row.ConfirmMode, row.Reminder, row.Note,
+		row.CreatedAt, row.UpdatedAt, int(row.Version),
+	), nil
+}
+
+func (t *syncTx) TombstonePlannedPayment( //nolint:dupl // per-entity tombstone twins: identical protocol shape
+	ctx context.Context,
+	userID, id uuid.UUID,
+) (*domain.PlannedPayment, error) {
+	const op = "repository.postgres.syncTx.TombstonePlannedPayment"
+
+	version, err := t.q.SoftDeletePlannedPayment(ctx, db.SoftDeletePlannedPaymentParams{ID: id, UserID: userID})
+	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
+		if errors.Is(err, pgx.ErrNoRows) {
+			current, err := t.GetPlannedPaymentAny(ctx, userID, id)
+			if err != nil {
+				return nil, opWrap(op, err)
+			}
+			if current == nil {
+				return nil, domain.ErrPlannedPaymentNotFound
+			}
+			return current, nil // already tombstoned: idempotent delete
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, userID, id,
+		domain.SyncEntityPlannedPayment, domain.SyncChangeTombstone, int(version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	p := &domain.PlannedPayment{ID: id, UserID: userID, Version: int(version)}
+	now := time.Now().UTC()
+	p.DeletedAt = &now
+	return p, nil
+}
+
+// AdvancePlannedPayment moves next_due to the already-computed next occurrence
+// and appends the change_log row — the auto-confirm job's plan half; the
+// transaction half (CreateTransaction) rides the same tx, making the
+// advancement the structural dedup marker for the executed occurrence.
+func (t *syncTx) AdvancePlannedPayment(
+	ctx context.Context,
+	userID, id uuid.UUID,
+	nextDue time.Time,
+) (*domain.PlannedPayment, error) {
+	const op = "repository.postgres.syncTx.AdvancePlannedPayment"
+
+	row, err := t.q.AdvancePlannedPayment(ctx, db.AdvancePlannedPaymentParams{
+		ID:      id,
+		UserID:  userID,
+		NextDue: nextDue,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrPlannedPaymentNotFound
+		}
+		return nil, opWrap(op, err)
+	}
+	if err := appendChangeLog(
+		ctx, t.q, userID, row.ID,
+		domain.SyncEntityPlannedPayment, domain.SyncChangeUpsert, int(row.Version),
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return plannedPaymentFromRow(
+		row.ID, row.UserID, row.Type, row.Amount, row.Name, row.AccountID, row.CategoryID,
+		row.NextDue, row.AnchorDate, row.Regularity, row.ConfirmMode, row.Reminder, row.Note,
+		row.CreatedAt, row.UpdatedAt, int(row.Version),
+	), nil
+}
+
 func (t *syncTx) CreateTransaction(
 	ctx context.Context,
 	params domain.CreateTransactionParams,
@@ -860,6 +1085,14 @@ func (t *syncTx) classifySyncWrite(
 		if row.DeletedAt != nil {
 			return domain.ErrRecordDeleted
 		}
+	case domain.SyncEntityPlannedPayment:
+		row, err := t.q.GetPlannedPaymentAny(ctx, db.GetPlannedPaymentAnyParams{ID: id, UserID: userID})
+		if err != nil {
+			return notFound
+		}
+		if row.DeletedAt != nil {
+			return domain.ErrRecordDeleted
+		}
 	}
 	return versionConflict
 }
@@ -895,6 +1128,10 @@ func (r *Repository) PullChanges(
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
+	plannedPaymentsByID, err := r.fetchPlannedPaymentPullStates(ctx, userID, rows)
+	if err != nil {
+		return nil, opWrap(op, err)
+	}
 
 	changes := make([]domain.SyncChange, 0, len(rows))
 	for _, row := range rows {
@@ -909,6 +1146,7 @@ func (r *Repository) PullChanges(
 			change.Data = pullStateOf(
 				row.Entity, row.EntityID,
 				accountsByID, categoriesByID, transactionsByID, debtorsByID, debtOperationsByID,
+				plannedPaymentsByID,
 			)
 		}
 		changes = append(changes, change)
@@ -1027,6 +1265,38 @@ func (r *Repository) fetchDebtPullStates(
 	return debtorsByID, debtOperationsByID, nil
 }
 
+// fetchPlannedPaymentPullStates batch-loads the current state of the planned
+// payments named by an upsert row of the page, keyed by id.
+func (r *Repository) fetchPlannedPaymentPullStates(
+	ctx context.Context,
+	userID uuid.UUID,
+	rows []db.PullChangeLogRow,
+) (map[uuid.UUID]db.SyncPlannedPaymentsByIDsRow, error) {
+	planIDs := make([]uuid.UUID, 0)
+	for _, row := range rows {
+		if row.Action != domain.SyncChangeUpsert {
+			continue
+		}
+		if row.Entity == domain.SyncEntityPlannedPayment {
+			planIDs = append(planIDs, row.EntityID)
+		}
+	}
+
+	plannedPaymentsByID := make(map[uuid.UUID]db.SyncPlannedPaymentsByIDsRow, len(planIDs))
+	if len(planIDs) > 0 {
+		items, err := r.q.SyncPlannedPaymentsByIDs(
+			ctx, db.SyncPlannedPaymentsByIDsParams{UserID: userID, Ids: planIDs},
+		)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range items {
+			plannedPaymentsByID[p.ID] = p
+		}
+	}
+	return plannedPaymentsByID, nil
+}
+
 // pullStateOf maps a change row to the full state payload of its record (nil
 // when the record no longer exists). A record superseded later in the window
 // may carry newer data than its change-time version; applying the stream in
@@ -1039,6 +1309,7 @@ func pullStateOf(
 	transactionsByID map[uuid.UUID]db.Transaction,
 	debtorsByID map[uuid.UUID]db.SyncDebtorsByIDsRow,
 	debtOperationsByID map[uuid.UUID]db.SyncDebtOperationsByIDsRow,
+	plannedPaymentsByID map[uuid.UUID]db.SyncPlannedPaymentsByIDsRow,
 ) any {
 	switch entity {
 	case domain.SyncEntityAccount:
@@ -1088,6 +1359,22 @@ func pullStateOf(
 				Amount:     o.Amount,
 				Note:       o.Note,
 				OccurredAt: o.OccurredAt,
+			}
+		}
+	case domain.SyncEntityPlannedPayment:
+		if p, ok := plannedPaymentsByID[id]; ok {
+			return &domain.PlannedPaymentFullState{
+				Type:        domain.TransactionType(p.Type),
+				Amount:      p.Amount,
+				Name:        p.Name,
+				AccountID:   p.AccountID,
+				CategoryID:  p.CategoryID,
+				NextDue:     domain.Date{Time: p.NextDue},
+				AnchorDate:  domain.Date{Time: p.AnchorDate},
+				Regularity:  domain.PlannedRegularity(p.Regularity),
+				ConfirmMode: domain.PlannedConfirmMode(p.ConfirmMode),
+				Reminder:    domain.PlannedReminder(p.Reminder),
+				Note:        p.Note,
 			}
 		}
 	}

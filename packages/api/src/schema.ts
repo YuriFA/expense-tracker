@@ -477,6 +477,53 @@ export interface paths {
         patch: operations["updateDebtOperation"];
         trace?: never;
     };
+    "/api/planned-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список плановых платежей
+         * @description Все не удалённые (не tombstoned) плановые платежи текущего user.
+         */
+        get: operations["listPlannedPayments"];
+        put?: never;
+        /** Создать плановый платёж */
+        post: operations["createPlannedPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/planned-payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PlannedPaymentId"];
+            };
+            cookie?: never;
+        };
+        /** Получить плановый платёж по ID */
+        get: operations["getPlannedPayment"];
+        put?: never;
+        post?: never;
+        /**
+         * Удалить плановый платёж
+         * @description Удаление всегда разрешено (у плана нет дочерних записей); созданные
+         *     им транзакции остаются. Удаление мягкое (tombstone): план исчезает
+         *     из листингов, но сохраняется для синхронизации устройств.
+         */
+        delete: operations["deletePlannedPayment"];
+        options?: never;
+        head?: never;
+        /** Обновить плановый платёж */
+        patch: operations["updatePlannedPayment"];
+        trace?: never;
+    };
     "/api/sync/push": {
         parameters: {
             query?: never;
@@ -901,6 +948,138 @@ export interface components {
             /** Format: date-time */
             occurredAt?: string;
         };
+        /**
+         * @description Регулярный плановый платёж (расход: подписки, платежи по кредитам;
+         *     доход: зарплата, премии). Подтверждение плана создаёт обычную
+         *     транзакцию (type/account/category из плана) и сдвигает `nextDue` на
+         *     период. `anchorDate` — дата-якорь серии: регулярность считается от её
+         *     дня (день месяца / день недели / месяц+день), в коротких месяцах
+         *     вхождения клампятся к последнему дню и возвращаются к якорю
+         *     (31 → 28/29 → 31). Изменение `nextDue` пользователем сбрасывает якорь.
+         *     Название не уникально (два «Netflix» легальны); у созданных планом
+         *     транзакций `description` = название плана.
+         */
+        PlannedPayment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** @enum {string} */
+            type: "expense" | "income";
+            /**
+             * Format: int64
+             * @description Положительные минорные единицы (divisor 100).
+             */
+            amount: number;
+            /** @description Опциональное название; пустая строка = без названия. */
+            name: string;
+            /**
+             * Format: uuid
+             * @description Live-счёт того же user (счёт списания/зачисления).
+             */
+            accountId: string;
+            /**
+             * Format: uuid
+             * @description Live-категория того же user, тип совпадает с типом плана.
+             */
+            categoryId: string;
+            /**
+             * Format: date
+             * @description Дата следующего вхождения; прошедшая дата допустима (план сразу просрочен).
+             */
+            nextDue: string;
+            /**
+             * Format: date
+             * @description Дата-якорь серии (день месяца/недели/года для регулярности).
+             */
+            anchorDate: string;
+            /** @enum {string} */
+            regularity: "daily" | "weekly" | "monthly" | "yearly";
+            /**
+             * @description auto — серверная джоба создаёт транзакции без участия user.
+             * @enum {string}
+             */
+            confirmMode: "manual" | "auto";
+            /**
+             * @description Локальные напоминания на устройствах (off / за день / в день).
+             * @enum {string}
+             */
+            reminder: "off" | "day_before" | "on_day";
+            note: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /**
+             * Format: int
+             * @description Версия планового платежа (optimistic concurrency).
+             */
+            version: number;
+        };
+        PlannedPaymentCreateRequest: {
+            /**
+             * Format: uuid
+             * @description Опциональный клиентский id (UUID v4). Дубликат для user →
+             *     409 `PLANNED_PAYMENT_ALREADY_EXISTS`.
+             */
+            id?: string;
+            /** @enum {string} */
+            type: "expense" | "income";
+            /** Format: int64 */
+            amount: number;
+            /** @default  */
+            name: string;
+            /**
+             * Format: uuid
+             * @description Существующий live-счёт того же user.
+             */
+            accountId: string;
+            /**
+             * Format: uuid
+             * @description Существующая live-категория того же user с совпадающим типом.
+             */
+            categoryId: string;
+            /** Format: date */
+            nextDue: string;
+            /** @enum {string} */
+            regularity: "daily" | "weekly" | "monthly" | "yearly";
+            /** @enum {string} */
+            confirmMode: "manual" | "auto";
+            /**
+             * @default off
+             * @enum {string}
+             */
+            reminder: "off" | "day_before" | "on_day";
+            /** @default  */
+            note: string;
+        };
+        /**
+         * @description Все поля кроме `version` optional. `type` менять нельзя. Изменение
+         *     `nextDue` сбрасывает `anchorDate` на новую дату. `name` / `note`:
+         *     отсутствует = не менять, `""` = очистить; `null` невалиден.
+         *     `version` — optimistic concurrency: при параллельном изменении →
+         *     409 `PLANNED_PAYMENT_VERSION_CONFLICT`.
+         */
+        PlannedPaymentUpdateRequest: {
+            /** Format: int */
+            version: number;
+            /** Format: int64 */
+            amount?: number;
+            name?: string;
+            /** Format: uuid */
+            accountId?: string;
+            /** Format: uuid */
+            categoryId?: string;
+            /** Format: date */
+            nextDue?: string;
+            /** @enum {string} */
+            regularity?: "daily" | "weekly" | "monthly" | "yearly";
+            /** @enum {string} */
+            confirmMode?: "manual" | "auto";
+            /** @enum {string} */
+            reminder?: "off" | "day_before" | "on_day";
+            note?: string;
+        };
         /** @description Полное состояние счёта в sync-операции (upsert). */
         AccountSyncData: {
             name: string;
@@ -960,8 +1139,31 @@ export interface components {
             /** Format: date-time */
             occurredAt: string;
         };
+        /** @description Полное состояние планового платежа в sync-операции (upsert). */
+        PlannedPaymentSyncData: {
+            /** @enum {string} */
+            type: "expense" | "income";
+            /** Format: int64 */
+            amount: number;
+            name: string;
+            /** Format: uuid */
+            accountId: string;
+            /** Format: uuid */
+            categoryId: string;
+            /** Format: date */
+            nextDue: string;
+            /** Format: date */
+            anchorDate: string;
+            /** @enum {string} */
+            regularity: "daily" | "weekly" | "monthly" | "yearly";
+            /** @enum {string} */
+            confirmMode: "manual" | "auto";
+            /** @enum {string} */
+            reminder: "off" | "day_before" | "on_day";
+            note: string;
+        };
         /** @enum {string} */
-        SyncEntity: "account" | "category" | "transaction" | "debtor" | "debt_operation";
+        SyncEntity: "account" | "category" | "transaction" | "debtor" | "debt_operation" | "planned_payment";
         /**
          * @description Одна клиентская операция. `baseVersion` — серверная версия, на которой
          *     операция основана (0 = запись ещё не существует на сервере). Для
@@ -985,7 +1187,7 @@ export interface components {
             /** Format: int */
             baseVersion: number;
             /** @description Полное состояние записи; обязательно для upsert. */
-            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"];
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"] | components["schemas"]["PlannedPaymentSyncData"];
         };
         SyncPushRequest: {
             operations: components["schemas"]["SyncOperation"][];
@@ -997,7 +1199,7 @@ export interface components {
             /** @description true — запись tombstoned на сервере. */
             deleted: boolean;
             /** @description Присутствует для не удалённой записи. */
-            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"];
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"] | components["schemas"]["PlannedPaymentSyncData"];
         };
         /** @description Результат одной операции; HTTP ответ — всегда 200. */
         SyncPushResult: {
@@ -1041,7 +1243,7 @@ export interface components {
              */
             version: number;
             /** @description Полное состояние записи; присутствует для upsert. */
-            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"];
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"] | components["schemas"]["PlannedPaymentSyncData"];
         };
         SyncPullResponse: {
             changes: components["schemas"]["SyncChange"][];
@@ -1323,6 +1525,51 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Плановый платёж не найден (или чужой). */
+        PlannedPaymentNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "PLANNED_PAYMENT_NOT_FOUND",
+                 *       "message": "planned payment not found"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Плановый платёж с таким id уже есть у user (клиентский id-дубликат). */
+        PlannedPaymentAlreadyExists: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "PLANNED_PAYMENT_ALREADY_EXISTS",
+                 *       "message": "planned payment already exists"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Конфликт в версии планового платежа (optimistic concurrency). */
+        PlannedPaymentVersionConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "PLANNED_PAYMENT_VERSION_CONFLICT",
+                 *       "message": "planned payment version conflict"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         TransactionId: string;
@@ -1335,6 +1582,7 @@ export interface components {
         CategoryId: string;
         DebtorId: string;
         DebtOperationId: string;
+        PlannedPaymentId: string;
     };
     requestBodies: never;
     headers: never;
@@ -2500,6 +2748,156 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["DebtOperationNotFound"];
             409: components["responses"]["DebtOperationVersionConflict"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listPlannedPayments: {
+        parameters: {
+            query?: {
+                /** @description Фильтр по типу плана. */
+                type?: "income" | "expense";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Плановые платежи текущего user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedPayment"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createPlannedPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedPaymentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Плановый платёж создан. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedPayment"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["PlannedPaymentAlreadyExists"];
+            /** @description Бизнес-правило нарушено — счёт или категория не найдены. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getPlannedPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PlannedPaymentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Плановый платёж. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedPayment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["PlannedPaymentNotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deletePlannedPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PlannedPaymentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Удалено. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["PlannedPaymentNotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updatePlannedPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PlannedPaymentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedPaymentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Обновлённый плановый платёж. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedPayment"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["PlannedPaymentNotFound"];
+            409: components["responses"]["PlannedPaymentVersionConflict"];
+            /** @description Бизнес-правило нарушено — счёт или категория не найдены. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
