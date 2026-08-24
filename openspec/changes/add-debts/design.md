@@ -170,8 +170,9 @@ rule; `cashflow-overview` is month-scoped cashflow and is deliberately not
 reused (no period switching, no all-operations card — only `Screen`,
 `ScreenHeader`, `ScreenScrollView`, cards, sheets, rows are shared UI).
 Composition follows invariant #15: the page owns all sheet refs
-(history sheet, new/edit operation sheets, debtor create/edit sheet) and
-passes callbacks down. Selectors: per-direction balances (integer math),
+(history sheet, new/edit operation sheets, the combined contact+debt
+sheet, debtor edit sheet) and passes callbacks down. Selectors:
+per-direction balances (integer math),
 direction totals, day-grouped operation history, settled-debtor partition,
 balance-descending sort; display via `formatAmount`.
 
@@ -186,17 +187,16 @@ single operations read.
 
 Visual language mirrors the income screen's: a `SummaryCard`-style card
 with two rows («Мне должны» / «Я должен» totals, no period arrows); section
-headers МНЕ ДОЛЖНЫ / Я ДОЛЖЕН; `DebtorRow` with an initials avatar on a
+headers «Мне должны» / «Я должен»; `DebtorRow` with an initials avatar on a
 color derived from the palette by id hash (no stored color — zero sync
 cost), name, balance, chevron. Forms follow `docs/conventions/forms.md`:
 RHF + Zod schema in `model/schema.ts`, sheet/form split, amount as digit
 string with the shared keypad, `BottomSheetInput`, root-error via
 `getRepositoryErrorText`, named `toXxxPayload` mapper doing the single
 minor-unit conversion. The operation form's kind switch (Долг ↔ Списание)
-reuses the segmented-toggle idiom of the transaction type switch; debtor
-picker follows `category-picker-sheet`; direction is a segmented control
-when opened from the screen CTA and fixed when opened from a debtor's
-sheet.
+reuses the segmented-toggle idiom of the transaction type switch; contact
+and direction are fixed context rows (the creation entry points and the
+free-form mode they replaced are decided in D9).
 
 The «Цели» quick action becomes «Долги» (`id: 'debts'`, testID
 `home-quick-debts`, icon `hand-coins` — add the glyph to the icon set if
@@ -251,6 +251,40 @@ architecture. The spec deltas reference these as shared rules.
   confirmed server version, never the local one); unborn records
   (serverVersion 0, nothing sent) hard-delete without outbox traffic —
   the category/transaction local-repository pattern unchanged.
+
+### D9: Creation entry points — per-section «+», no free-form operation form
+
+The initial screen CTA («Новая операция» opening a form with a direction
+segmented control and a debtor picker) forced the common flow — "Анна
+должна мне 5 000" — through a kind switch, a direction switch, and a
+picker before the amount. Revised entry points (UX refinement of the same
+intent, not a new capability):
+
+- Each direction section carries a circular «+» affordance opening ONE
+  combined form titled by the direction («Кто должен» / «Кому должен»)
+  that creates the contact and their initial `debt` in a single submit —
+  name, keypad amount, date + note via the transaction form's one-row
+  action toolbar. The direction is structural (it comes from the section),
+  so no direction switch exists anywhere on the screen; the sections
+  render always (empty hints + «+»), replacing the separate empty-state
+  placeholder and its «Добавить должника» button.
+- Operations for an EXISTING contact are recorded from that contact's
+  history sheet («Новая операция», kind defaulting to Долг) — contact and
+  direction are fixed context rows there. The free-form create mode
+  (direction switch + `debtor-picker-sheet`) is deleted; the picker sheet
+  and the standalone create-debtor form go with it (the debtor form
+  survives as edit-only, copy renamed to the direction-neutral
+  «Контакт»).
+- The combined submit chains create-debtor → create-debt-operation
+  locally; a retry after a partial failure (contact created, operation
+  rejected) reuses the created contact instead of colliding with its own
+  duplicate name. The form adds no new query reads, so the D7 one-read
+  pin holds.
+
+Rejected: a debtor picker inside the combined form (reintroduces the
+branching the revision removes — the history sheet already covers existing
+contacts); an empty-state button with an embedded direction switch (the
+one place the switch would survive, for one screen state only).
 
 ## Risks / Trade-offs
 

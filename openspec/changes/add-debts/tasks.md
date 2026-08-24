@@ -47,3 +47,14 @@
 - [x] 7.5 Full gates: mobile `pnpm type-check && pnpm lint && pnpm format && pnpm test && pnpm test:e2e`; root `pnpm arch:check` and `pnpm knip`; backend `go test -race ./...` (or `-short` without Docker) + `make gen-check`
 - [x] 7.6 Docs: `docs/product/mobile-home.md` quick-actions section (Счета / Доходы / Долги; debts removed from "explicitly excluded"; goals deferred without a tile); sweep `docs/assumptions.md` for goals references
 - [x] 7.7 `openspec validate add-debts --strict` passes
+
+## 8. Screen UX revision — per-section creation (design D9)
+
+- [x] 8.1 `pages/debts/model/`: `DEBT_DIRECTION_VIEWS` gains per-direction sheet titles («Кто должен» / «Кому должен»); `DEBTS_COPY` drops the screen-CTA / add-debtor / empty-placeholder keys; new `debtorDebtSchema` (name, amount digit-string, occurredAt, note) + defaults in `model/schema.ts`
+- [x] 8.2 Shared debts action toolbar `ui/form-actions.tsx` (the create-transaction idiom): one row with note toggle, date toggle (quick-date chips + always-mounted calendar), circular submit; self-subscribing memoized leaves; `testIDPrefix` prop. `occurredAtForDaysAgo` and the parameterized `TransactionSubmitButton` / `DateButton` / `QuickDateRow` / `NoteButton` exported from the create-transaction barrel
+- [x] 8.3 `DebtorSection`: title row with a circular «+» (`debts-section-add-<direction>`) calling a page-owned `onAdd(direction)`
+- [x] 8.4 Combined `NewDebtorDebtSheet` + form: direction-aware title, static direction row, name input, keypad amount, action toolbar; keyed per-open mount (edit-sheet pattern) so every open starts clean; submit chains create-debtor → create-debt-operation (kind `debt`) and a retry after partial failure reuses the created contact; root-error mapping; no new query reads (D7 pin holds)
+- [x] 8.5 `OperationForm`: delete free-form create mode (direction switch, `DebtorField`, `debtor-picker-sheet.tsx`); create is fixed-context only with static «Контакт» / «Направление» rows and kind defaulting to Долг; date/note/submit replaced by the action toolbar (create + edit); «Должник» copy → «Контакт»
+- [x] 8.6 `DebtorFormSheet` becomes edit-only; `DebtsScreen`: remove footer buttons + empty-state placeholder, always render summary + both sections, wire `openNewDebtorDebt(direction)`, history CTA preset kind → Долг
+- [x] 8.7 Tests: screen (always-visible sections/summary, per-section «+»), new combined-form suite (validation, chained create with direction/kind, duplicate-name root error, partial-failure retry), operation-form fixed-context rewrite, debtor-form edit-only; Maestro flows 14/15 rewritten around the «+» entry
+- [x] 8.8 Gates: mobile type-check/lint/format/test, `pnpm knip` (deleted picker sheet + copy keys) and `pnpm arch:check`, `openspec validate add-debts --strict`; `pnpm test:e2e` pending simulator run

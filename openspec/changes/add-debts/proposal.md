@@ -29,10 +29,12 @@ sync, and the mobile screen — and puts it behind the freed-up tile.
   with two direction totals («Мне должны» / «Я должен»), two sections of
   debtor rows (name + current balance in that direction; no «Все доходы»
   card, no period switching), zero-balance debtors hidden behind a reveal
-  row; tapping a debtor opens a history sheet (remaining amount, day-grouped
-  operations, «Новое списание» CTA); the operation form offers a
-  Долг ↔ Списание switch, debtor and direction pickers (pre-fixed when
-  opened from a debtor's sheet).
+  row; each section carries a «+» affordance opening a combined
+  direction-titled form («Кто должен» / «Кому должен») that creates the
+  contact and their initial debt in one submit; tapping a debtor opens a
+  history sheet (remaining amount, day-grouped operations, «Новая
+  операция» CTA) whose operation form offers a Долг ↔ Списание switch
+  with the contact and direction fixed as context.
 - **Removal**: the `/goals` placeholder screen and route are deleted; goals
   stay a deferred product idea without a tile.
 - **Backend + contract (OpenAPI-first)**: REST CRUD for debtors and debt

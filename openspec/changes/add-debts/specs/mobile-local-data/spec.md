@@ -14,8 +14,15 @@ on the home screen, which replaces the «Цели» action; the goals placeholde
 screen SHALL be removed. Debtors whose balance is zero in a direction SHALL
 be hidden from that direction's section by default behind an explicit
 reveal affordance, and visible debtors SHALL be sorted by balance
-descending. The screen SHALL NOT offer period switching (debts are not
-month-scoped) and SHALL NOT include an all-operations card.
+descending. The two direction sections SHALL always render — an empty
+section shows its hint («Вам никто не должен» / «Вы никому не должны»)
+together with the section's creation affordance; there is no separate
+empty-state placeholder. Creating a new contact together with their initial
+debt SHALL be a single per-section flow whose direction comes from the
+section («Кто должен» / «Кому должен»); debt operations for an existing
+contact SHALL be recorded from that contact's history sheet. The screen
+SHALL NOT offer period switching (debts are not month-scoped) and SHALL
+NOT include an all-operations card.
 
 #### Scenario: Debt figures without connectivity
 
@@ -37,15 +44,20 @@ month-scoped) and SHALL NOT include an all-operations card.
 - **WHEN** the user taps the «Долги» quick action on the home screen
 - **THEN** the debts screen opens showing the two direction totals and the two debtor sections
 
+#### Scenario: Contact created with an initial debt
+
+- **WHEN** the user taps the «+» affordance in a direction section («Мне должны» / «Я должен»)
+- **THEN** a single form titled by the direction («Кто должен» / «Кому должен») creates the contact and their initial debt in that direction in one submit: a name, a positive amount entered as digits, a date, and an optional note
+
 #### Scenario: Debtor history sheet
 
 - **WHEN** the user taps a debtor row
-- **THEN** a sheet opens showing the debtor's remaining balance in that direction and the day-grouped operation history labeled by kind («Долг» / «Списание»), with a «Новое списание» action that creates a repayment for that debtor and direction
+- **THEN** a sheet opens showing the debtor's remaining balance in that direction and the day-grouped operation history labeled by kind («Долг» / «Списание»), with a «Новая операция» action that opens the operation form for that debtor and direction
 
 #### Scenario: Operation form
 
-- **WHEN** the user records a debt operation
-- **THEN** the form offers a Долг ↔ Списание kind switch, a debtor picker and a direction choice (both pre-fixed when the form is opened from a debtor's sheet), a positive amount entered as digits, a date, and an optional note
+- **WHEN** the user records a debt operation from a contact's history sheet
+- **THEN** the form fixes the contact and direction as static context rows, offers a Долг ↔ Списание kind switch (Долг by default), a positive amount entered as digits, and a date and an optional note entered through a one-row action toolbar with expandable quick dates and note input
 
 #### Scenario: Over-repayment is warned, not blocked
 
