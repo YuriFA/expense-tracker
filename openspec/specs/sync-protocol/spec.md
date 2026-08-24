@@ -75,7 +75,7 @@ tombstones, and entity listings SHALL exclude tombstoned records.
 
 #### Scenario: No change without a log entry
 
-- **WHEN** any account, category, or transaction mutation commits on the server
+- **WHEN** any account, category, transaction, debtor, or debt operation mutation commits on the server
 - **THEN** exactly one corresponding change-log entry commits in the same transaction
 
 #### Scenario: Tombstone after delete
