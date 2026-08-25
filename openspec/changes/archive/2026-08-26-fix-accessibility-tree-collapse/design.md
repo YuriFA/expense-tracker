@@ -321,8 +321,12 @@ navigation trigger), none matching our trigger exactly; none offers a fix.
    render as direct children of the owning form-sheet component — the
    experimentally safe placement. Applied to every sheet-in-sheet picker:
    plans form (6), new-transaction form (5), edit-transaction form (5),
-   debts form + operation sheet (date picker). 4 unit tests; full unit
-   suite green.
+   debts form + operation sheet (date picker); a post-commit diff review
+   found and closed the one missed site — the confirm sheet's date row
+   (its shared `PlansDateFieldRow` portal was scopeless and silently
+   rendered the picker in place, inside the sheet's content; the confirm
+   composite itself arms the app, so the sheet needed the same scope).
+   4 unit tests; full unit suite green.
 2. **Masked app bug, fixed as a required enabler** (flagged per Scope
    discipline): `plans-screen.tsx` never cleared `editingPlan` and rendered
    `<PlanFormSheet plan={editingPlan} />` without a key, so after one

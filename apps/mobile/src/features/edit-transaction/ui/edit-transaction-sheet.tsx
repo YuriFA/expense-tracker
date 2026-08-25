@@ -10,7 +10,7 @@
 // an id.
 
 import { BottomSheet, BottomSheetRef, BottomSheetView } from '@/shared/ui/bottom-sheet'
-import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
+import { useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { EditTransactionForm } from './edit-transaction-form'
 
 export interface EditTransactionSheetProps {

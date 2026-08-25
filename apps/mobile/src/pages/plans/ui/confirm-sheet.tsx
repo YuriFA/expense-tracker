@@ -32,6 +32,7 @@ import {
   type BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
 import { FormError } from '@/shared/ui/form'
+import { useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { Text } from '@/shared/ui/text'
 import { PLANS_COPY, PLAN_TYPE_VIEWS } from '../model/kind'
 import { planRowTitle } from '../model/selectors'
@@ -59,6 +60,9 @@ function toConfirmInput(values: ConfirmPlanFormValues, planId: string): ConfirmP
 export function ConfirmSheet({ plan }: { plan: PlannedPayment }) {
   // Mounts with its subject and self-presents (the edit-sheet pattern).
   const sheetRef = useRef<BottomSheetRef>(null)
+  // The date picker declared by the row below re-renders beside this sheet
+  // element (outside its portal content) — see useSheetContentPickers.
+  const pickers = useSheetContentPickers()
   useEffect(() => {
     sheetRef.current?.present()
   }, [])
@@ -98,52 +102,57 @@ export function ConfirmSheet({ plan }: { plan: PlannedPayment }) {
   const rootError = form.formState.errors.root?.message
 
   return (
-    // The submit footer must live in @gorhom's footerComponent layer, not as
-    // the last child of the sheet content: with `keyboardBehavior="extend"`
-    // the sheet grows over the keyboard, the in-content footer's
-    // accessibility coordinates go stale, and taps (Maestro, XCTest) land on
-    // the keyboard instead of the button. The footer needs its own
-    // FormProvider — @gorhom renders the footer subtree outside the content
-    // subtree, so the surrounding provider never reaches it (the
-    // plan-form-sheet pattern).
-    <BottomSheet
-      ref={sheetRef}
-      testID="plans-confirm-sheet"
-      snapPoints={['65%']}
-      stackBehavior="push"
-      keyboardBehavior="extend"
-      keyboardBlurBehavior="restore"
-      footerComponent={() => (
-        <FormProvider {...form}>
-          <PlansFormFooter
-            testID="plans-confirm-submit"
-            accessibilityLabel={PLANS_COPY.confirmSubmit}
-            pending={confirmPlan.isPending}
-            onSubmit={form.handleSubmit(handleSubmit)}
-          />
-        </FormProvider>
-      )}
-    >
-      <FormProvider {...form}>
-        <BottomSheetView testID="plans-confirm-sheet" className="flex-1">
-          <BottomSheetHeader
-            title={PLANS_COPY.confirmTitle}
-            subtitle={planRowTitle(plan, categories) || undefined}
-          />
+    <>
+      {pickers.nodes}
+      {/* The submit footer must live in @gorhom's footerComponent layer, not
+          as the last child of the sheet content: with `keyboardBehavior="extend"`
+          the sheet grows over the keyboard, the in-content footer's
+          accessibility coordinates go stale, and taps (Maestro, XCTest) land on
+          the keyboard instead of the button. The footer needs its own
+          FormProvider — @gorhom renders the footer subtree outside the content
+          subtree, so the surrounding provider never reaches it (the
+          plan-form-sheet pattern). */}
+      <BottomSheet
+        ref={sheetRef}
+        testID="plans-confirm-sheet"
+        snapPoints={['65%']}
+        stackBehavior="push"
+        keyboardBehavior="extend"
+        keyboardBlurBehavior="restore"
+        footerComponent={() => (
+          <FormProvider {...form}>
+            <PlansFormFooter
+              testID="plans-confirm-submit"
+              accessibilityLabel={PLANS_COPY.confirmSubmit}
+              pending={confirmPlan.isPending}
+              onSubmit={form.handleSubmit(handleSubmit)}
+            />
+          </FormProvider>
+        )}
+      >
+        <pickers.Provider>
+          <FormProvider {...form}>
+            <BottomSheetView testID="plans-confirm-sheet" className="flex-1">
+              <BottomSheetHeader
+                title={PLANS_COPY.confirmTitle}
+                subtitle={planRowTitle(plan, categories) || undefined}
+              />
 
-          <AmountField plan={plan} />
+              <AmountField plan={plan} />
 
-          <View className="flex-1 gap-1 px-4">
-            <StaticRow label={view.accountLabel} value={account?.name ?? plan.accountId} />
-            <StaticRow label="Категория" value={category?.name ?? plan.categoryId} />
-            <PlansDateFieldRow field="occurredOn" testID="plans-confirm-date" />
-            <PlansNoteFieldRow testID="plans-confirm-note" />
+              <View className="flex-1 gap-1 px-4">
+                <StaticRow label={view.accountLabel} value={account?.name ?? plan.accountId} />
+                <StaticRow label="Категория" value={category?.name ?? plan.categoryId} />
+                <PlansDateFieldRow field="occurredOn" testID="plans-confirm-date" />
+                <PlansNoteFieldRow testID="plans-confirm-note" />
 
-            <FormError testID="plans-confirm-error">{rootError}</FormError>
-          </View>
-        </BottomSheetView>
-      </FormProvider>
-    </BottomSheet>
+                <FormError testID="plans-confirm-error">{rootError}</FormError>
+              </View>
+            </BottomSheetView>
+          </FormProvider>
+        </pickers.Provider>
+      </BottomSheet>
+    </>
   )
 }
 

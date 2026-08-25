@@ -29,7 +29,7 @@ import {
   BottomSheetView,
   type BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
-import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
+import { useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { FormError } from '@/shared/ui/form'
 import { Text } from '@/shared/ui/text'
 import { DEBT_DIRECTION_VIEWS } from '../model/kind'

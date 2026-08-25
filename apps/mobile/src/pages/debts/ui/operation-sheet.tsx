@@ -7,7 +7,7 @@
 import { useEffect } from 'react'
 import type { DebtDirection, DebtOperation } from '@expense-tracker/api'
 import { BottomSheet, BottomSheetView, type BottomSheetRef } from '@/shared/ui/bottom-sheet'
-import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
+import { useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { OperationForm } from './operation-form'
 
 /** Mirrors the form's edit/create union; the sheet owns dismissal itself. */

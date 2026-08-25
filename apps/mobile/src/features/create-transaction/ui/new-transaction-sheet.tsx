@@ -7,7 +7,7 @@
 // matching the reference. The kind still comes from the speed dial action.
 
 import { BottomSheet, BottomSheetRef, BottomSheetView } from '@/shared/ui/bottom-sheet'
-import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
+import { useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import type { TransactionFlowKind } from '../model/schema'
 import { NewTransactionForm } from './new-transaction-form'
 
