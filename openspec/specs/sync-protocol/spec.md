@@ -75,14 +75,13 @@ tombstones, and entity listings SHALL exclude tombstoned records.
 
 #### Scenario: No change without a log entry
 
-- **WHEN** any account, category, transaction, debtor, or debt operation mutation commits on the server
+- **WHEN** any account, category, transaction, debtor, debt operation, or planned payment mutation commits on the server
 - **THEN** exactly one corresponding change-log entry commits in the same transaction
 
 #### Scenario: Tombstone after delete
 
 - **WHEN** a category is deleted on one device
 - **THEN** the change-log records a tombstone, other devices learn of the deletion via pull, and listings never return the tombstoned record
-
 ### Requirement: Incremental pull by cursor
 
 The client SHALL pull changes by presenting the last received cursor and
