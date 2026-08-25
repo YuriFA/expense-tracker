@@ -1,0 +1,389 @@
+# Offline plans convergence (add-planned-payments task 8.2, design D6/D9):
+# with a real backend and the signed-in test user (the 15-debts-offline
+# pattern), create a plan online, then use the dev offline gate (Settings
+# toggle) to create another plan and manually confirm one with sync blocked,
+# restart the app (the local database persists - never clearState), assert
+# the derived card figure survived the restart, go back online, force a sync
+# run, and assert the synced-state testID plus the same figure. Row selection
+# is scoped by this run's random-suffixed plan names - no coordinate hacks.
+#
+# Prerequisites: the backend on :8080, the test user provisioned (see
+# _launch.js), the pasteboard primed with the test password (the e2e runner
+# does it), and Metro running. Row selectors match the row's aggregated
+# accessibility label and the confirm button's label — Maestro 2.x does not
+# match `containsDescendants` composites (see 16-plans.yaml).
+appId: com.anonymous.mobile
+tags:
+  - plans
+  - sync
+---
+- runFlow: ../_launch-online.yaml
+- runScript: ../_random.js
+
+# --- Sign in (the 15-debts-offline pattern) -----------------------------------
+- tapOn:
+    id: tab-settings
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 15000
+- tapOn:
+    id: settings-login-button
+- extendedWaitUntil:
+    visible:
+      id: screen-login
+    timeout: 15000
+- tapOn:
+    id: login-email-input
+- eraseText
+- inputText: ${output.testEmail}
+- longPressOn:
+    id: login-password-input
+- tapOn:
+    text: Paste
+# iOS offers to save the password once the secure field is filled; the
+# simulator is RU-locale, so the alert's buttons are Russian («Не сейчас»).
+# Dismiss it here and again after the submit (whichever moment it appears).
+- tapOn:
+    text: 'Не сейчас'
+    optional: true
+- tapOn:
+    id: screen-header
+- tapOn:
+    id: login-submit-button
+# The save-password alert can surface with a delay AFTER the submit and
+# would cover the tab bar; repeat-dismiss so a late alert cannot block the
+# wait below.
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: 'Не сейчас'
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: tab-settings
+    timeout: 20000
+
+# --- Create a 700,00 ₽ monthly plan ONLINE ------------------------------------
+- tapOn:
+    id: tab-plans
+- extendedWaitUntil:
+    visible:
+      id: screen-plans
+    timeout: 15000
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+- tapOn:
+    id: plans-list-add
+- extendedWaitUntil:
+    visible:
+      id: plans-form-sheet
+    timeout: 10000
+# The notification permission dialog may surface over the form (the app is
+# notification-capable now); deny it — this suite keeps reminders off.
+- runFlow:
+    when:
+      visible: 'Не разрешать'
+    commands:
+      - tapOn: 'Не разрешать'
+# Pickers first (sheets over the form), then the text inputs (name, amount)
+# so the system keyboard only appears at the end; the footer submit sits
+# above it.
+- tapOn:
+    id: plans-form-account
+- tapOn:
+    id: plans-form-account-option-.*
+- tapOn:
+    id: plans-form-category
+- tapOn:
+    id: new-transaction-category-option-.*
+- tapOn:
+    id: plans-form-name
+- inputText: 'Подписка ${output.suffix}'
+- tapOn:
+    id: plans-form-amount
+- inputText: '700'
+- tapOn:
+    id: plans-form-submit
+- runFlow:
+    when:
+      visible:
+        id: plans-form-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# Wait for the post-mutation sync to settle while still online.
+- tapOn:
+    point: 50%, 8%
+- tapOn:
+    id: tab-dashboard
+- extendedWaitUntil:
+    visible:
+      id: sync-status-synced
+    timeout: 30000
+
+# --- Block the network via the dev offline gate -------------------------------
+- tapOn:
+    id: tab-settings
+- scrollUntilVisible:
+    element:
+      id: settings-dev-offline-toggle
+    direction: DOWN
+- tapOn:
+    id: settings-dev-offline-toggle
+
+# --- Create a 300,00 ₽ plan OFFLINE -------------------------------------------
+- tapOn:
+    id: tab-plans
+- extendedWaitUntil:
+    visible:
+      id: screen-plans
+    timeout: 15000
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+- tapOn:
+    id: plans-list-add
+- extendedWaitUntil:
+    visible:
+      id: plans-form-sheet
+    timeout: 10000
+- runFlow:
+    when:
+      visible: 'Не разрешать'
+    commands:
+      - tapOn: 'Не разрешать'
+- tapOn:
+    id: plans-form-account
+- tapOn:
+    id: plans-form-account-option-.*
+- tapOn:
+    id: plans-form-category
+- tapOn:
+    id: new-transaction-category-option-.*
+- tapOn:
+    id: plans-form-name
+- inputText: 'Оффлайн ${output.suffix}'
+- tapOn:
+    id: plans-form-amount
+- inputText: '300'
+- tapOn:
+    id: plans-form-submit
+- runFlow:
+    when:
+      visible:
+        id: plans-form-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# --- Manually confirm the online-created plan OFFLINE (default amount) -------
+- scrollUntilVisible:
+    element:
+      text: '.*Подписка ${output.suffix}, .*'
+    direction: DOWN
+- tapOn:
+    text: 'Подтвердить платёж: Подписка ${output.suffix}'
+- extendedWaitUntil:
+    visible:
+      id: plans-confirm-sheet
+    timeout: 10000
+- tapOn:
+    id: plans-confirm-submit
+- runFlow:
+    when:
+      visible:
+        id: plans-confirm-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# Both plans are live locally; the confirmed one advanced a month.
+- scrollUntilVisible:
+    element:
+      text: '.*Оффлайн ${output.suffix}, .*'
+    direction: DOWN
+- assertVisible:
+    text: '.*Подписка ${output.suffix}, .*'
+- takeScreenshot: plans-offline-created
+
+# The offline derived figure (this run's contribution: 700 + 300 monthly).
+- tapOn:
+    point: 50%, 8%
+- copyTextFrom:
+    id: plans-total-expense
+- evalScript: ${output.totalOffline = parseInt(maestro.copiedText.replace(/[^\d]/g, ''))}
+
+# --- Restart the app: the local database persists (never clearState) ---------
+- runFlow: ../_launch.yaml
+- tapOn:
+    id: tab-plans
+- extendedWaitUntil:
+    visible:
+      id: screen-plans
+    timeout: 15000
+# The rows live in the list sheet: open it before asserting them (the
+# restart closes all sheets), then close it so the card total is exposed.
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: '.*Подписка ${output.suffix}, .*'
+    direction: DOWN
+- assertVisible:
+    text: '.*Оффлайн ${output.suffix}, .*'
+- tapOn:
+    point: 50%, 8%
+- copyTextFrom:
+    id: plans-total-expense
+- evalScript: ${output.totalRestarted = parseInt(maestro.copiedText.replace(/[^\d]/g, ''))}
+- assertTrue: ${output.totalRestarted == output.totalOffline}
+- takeScreenshot: plans-after-restart
+
+# --- Back online: toggle the gate off (which also forces a run) ---------------
+- tapOn:
+    id: tab-settings
+- scrollUntilVisible:
+    element:
+      id: settings-dev-offline-toggle
+    direction: DOWN
+- tapOn:
+    id: settings-dev-offline-toggle
+# Belt and braces: the explicit sync button as well.
+- tapOn:
+    id: settings-sync-now-button
+
+# --- Converged: the synced-state testID and the same derived figure ----------
+- tapOn:
+    id: tab-dashboard
+- extendedWaitUntil:
+    visible:
+      id: sync-status-synced
+    timeout: 30000
+- tapOn:
+    id: tab-plans
+- extendedWaitUntil:
+    visible:
+      id: screen-plans
+    timeout: 15000
+# Same as after the restart: the rows live in the list sheet.
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: '.*Подписка ${output.suffix}, .*'
+    direction: DOWN
+- assertVisible:
+    text: '.*Оффлайн ${output.suffix}, .*'
+- tapOn:
+    point: 50%, 8%
+- copyTextFrom:
+    id: plans-total-expense
+- evalScript: ${output.totalSynced = parseInt(maestro.copiedText.replace(/[^\d]/g, ''))}
+- assertTrue: ${output.totalSynced == output.totalOffline}
+- takeScreenshot: plans-online-converged
+
+# --- Cleanup: delete this run's two plans while online and signed in --------
+# (the shared server account must not accumulate rows run over run; the
+# deletes ride the forced sync below before the sign-out).
+- tapOn:
+    id: tab-plans
+- extendedWaitUntil:
+    visible:
+      id: screen-plans
+    timeout: 15000
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: '.*Подписка ${output.suffix}, .*'
+    direction: DOWN
+- tapOn:
+    text: '.*Подписка ${output.suffix}, .*'
+- extendedWaitUntil:
+    visible:
+      id: plans-form-sheet
+    timeout: 10000
+- tapOn:
+    id: plans-form-delete
+- tapOn:
+    text: 'Удалить'
+- runFlow:
+    when:
+      visible:
+        id: plans-form-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- extendedWaitUntil:
+    notVisible:
+      id: plans-form-sheet
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: '.*Оффлайн ${output.suffix}, .*'
+    direction: DOWN
+- tapOn:
+    text: '.*Оффлайн ${output.suffix}, .*'
+- extendedWaitUntil:
+    visible:
+      id: plans-form-sheet
+    timeout: 10000
+- tapOn:
+    id: plans-form-delete
+- tapOn:
+    text: 'Удалить'
+- runFlow:
+    when:
+      visible:
+        id: plans-form-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- extendedWaitUntil:
+    notVisible:
+      id: plans-form-sheet
+    timeout: 10000
+- tapOn:
+    point: 50%, 8%
+# Push the deletes before signing out.
+- tapOn:
+    id: tab-dashboard
+- extendedWaitUntil:
+    visible:
+      id: sync-status-synced
+    timeout: 30000
+
+# Restore the suite invariant (09-sync-signin expects an anonymous app): sign
+# out at the end, like 09 itself does.
+- tapOn:
+    id: tab-settings
+- tapOn:
+    id: settings-logout-button
+- extendedWaitUntil:
+    visible:
+      id: settings-login-button
+    timeout: 20000

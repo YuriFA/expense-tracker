@@ -10,6 +10,7 @@
 // an id.
 
 import { BottomSheet, BottomSheetRef, BottomSheetView } from '@/shared/ui/bottom-sheet'
+import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { EditTransactionForm } from './edit-transaction-form'
 
 export interface EditTransactionSheetProps {
@@ -29,24 +30,33 @@ export function EditTransactionSheet({ ref, transactionId }: EditTransactionShee
     if (ref && typeof ref !== 'function') ref.current?.dismiss()
   }
 
+  // Pickers declared inside the form re-render beside this sheet element
+  // (outside its portal content) — see useSheetContentPickers.
+  const pickers = useSheetContentPickers()
+
   return (
-    <BottomSheet
-      ref={ref}
-      testID="edit-transaction-sheet"
-      snapPoints={['75%']}
-      stackBehavior="push"
-      keyboardBehavior="extend"
-      keyboardBlurBehavior="restore"
-      enableBlurKeyboardOnGesture
-    >
-      <BottomSheetView testID="edit-transaction-sheet">
-        <EditTransactionForm
-          key={transactionId ?? 'none'}
-          transactionId={transactionId}
-          onSuccess={handleSuccess}
-          onClose={handleClose}
-        />
-      </BottomSheetView>
-    </BottomSheet>
+    <>
+      {pickers.nodes}
+      <BottomSheet
+        ref={ref}
+        testID="edit-transaction-sheet"
+        snapPoints={['75%']}
+        stackBehavior="push"
+        keyboardBehavior="extend"
+        keyboardBlurBehavior="restore"
+        enableBlurKeyboardOnGesture
+      >
+        <BottomSheetView testID="edit-transaction-sheet">
+          <pickers.Provider>
+            <EditTransactionForm
+              key={transactionId ?? 'none'}
+              transactionId={transactionId}
+              onSuccess={handleSuccess}
+              onClose={handleClose}
+            />
+          </pickers.Provider>
+        </BottomSheetView>
+      </BottomSheet>
+    </>
   )
 }

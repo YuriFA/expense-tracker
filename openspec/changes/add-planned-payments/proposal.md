@@ -43,11 +43,15 @@ mobile screen with reminders.
   day ×365/12). Tapping a card opens a sheet with the flat list sorted by
   next-due (overdue plans on top with a badge; row title = name or
   category), a bottom «Добавить расход/доход» button, and a row tap
-  opening the edit sheet (same form plus delete). The add/edit form
-  follows the debts form conventions (amount keypad, account/category
-  pickers, date sheet, segmented switches); manual confirmation opens a
-  lightweight confirm sheet with an editable amount and date and the
-  account/category fixed from the plan.
+opening the edit sheet (same form plus delete). The add/edit form
+follows the reference row layout (the edit-transaction field-rows
+idiom): a decimal-pad amount input with the account-currency chip,
+one-line rows — label left, value right — for the account, category,
+date, regularity, confirmation mode, and reminder, each opening its
+picker/option sheet, plus a note input row and safe-area bottom
+padding; manual confirmation opens a lightweight confirm sheet with an
+editable amount and date and the account/category fixed from the plan,
+sharing the same row layout.
 - **Reminders via local notifications**: new `expo-notifications`
   dependency; each device schedules its own reminders at 10:00 local time
   (day before / on the due day) for plans with reminders enabled, in both

@@ -7,4 +7,4 @@ export {
   useUpdateTransaction,
   useDeleteTransaction,
 } from './model/use-transactions'
-export type { Transaction, TransactionQuery } from './model/use-transactions'
+export type { Transaction } from './model/use-transactions'

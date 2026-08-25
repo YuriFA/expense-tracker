@@ -51,10 +51,21 @@ tags:
 # Close the create sheet (it stays open on success by design) with a
 # pan-down: the name keyboard stays up after submit and stretches the sheet
 # across the screen, so a backdrop tap has no backdrop to hit - the
-# pan-to-close gesture (enablePanDownToClose) works either way.
+# pan-to-close gesture (enablePanDownToClose) works either way. The swipe
+# occasionally fails to register as a pan-to-close - retry it once.
 - swipe:
     start: 50%, 12%
     end: 50%, 85%
+- runFlow:
+    when:
+      visible:
+        id: income-new-category-sheet
+    commands:
+      - swipe:
+          start: 50%, 12%
+          end: 50%, 85%
+      - waitForAnimationToEnd:
+          timeout: 3000
 - assertNotVisible:
     id: income-new-category-sheet
 

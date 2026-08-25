@@ -29,6 +29,7 @@ import {
   BottomSheetView,
   type BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
+import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { FormError } from '@/shared/ui/form'
 import { Text } from '@/shared/ui/text'
 import { DEBT_DIRECTION_VIEWS } from '../model/kind'
@@ -52,19 +53,28 @@ export function NewDebtorDebtSheet({ direction }: NewDebtorDebtSheetProps) {
     sheetRef.current?.present()
   }, [])
 
+  // The date picker declared inside the form re-renders beside this sheet
+  // element (outside its portal content) — see useSheetContentPickers.
+  const pickers = useSheetContentPickers()
+
   return (
-    <BottomSheet
-      ref={sheetRef}
-      testID="debts-new-debt-sheet"
-      snapPoints={['70%']}
-      stackBehavior="push"
-    >
-      {/* The visible element carrying the sheet testID (accounts-sheet
-          pattern): the modal container is zero-bounds to Maestro. */}
-      <BottomSheetView testID="debts-new-debt-sheet" className="flex-1">
-        <NewDebtorDebtForm direction={direction} sheetRef={sheetRef} />
-      </BottomSheetView>
-    </BottomSheet>
+    <>
+      {pickers.nodes}
+      <BottomSheet
+        ref={sheetRef}
+        testID="debts-new-debt-sheet"
+        snapPoints={['70%']}
+        stackBehavior="push"
+      >
+        {/* The visible element carrying the sheet testID (accounts-sheet
+            pattern): the modal container is zero-bounds to Maestro. */}
+        <BottomSheetView testID="debts-new-debt-sheet" className="flex-1">
+          <pickers.Provider>
+            <NewDebtorDebtForm direction={direction} sheetRef={sheetRef} />
+          </pickers.Provider>
+        </BottomSheetView>
+      </BottomSheet>
+    </>
   )
 }
 

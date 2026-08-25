@@ -15,8 +15,7 @@ import {
 } from '@/shared/ui/bottom-sheet'
 import type { CashflowDayGroup, CashflowKind } from '../model/selectors'
 import { CASHFLOW_KIND_VIEWS } from './kind'
-import { SheetFooter } from './sheet-footer'
-import { useSheetFooterScroll } from './use-sheet-footer-scroll'
+import { SheetFooter, useSheetFooterScroll } from '@/shared/ui/sheet-footer'
 
 export interface CashflowRowView {
   id: string

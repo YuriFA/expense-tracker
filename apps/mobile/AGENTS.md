@@ -262,7 +262,9 @@ appearing/disappearing correctly. Don't test RHF internals.
 ## E2E / Maestro
 
 Flows live in `.maestro/flows/*.yaml`; shared launch logic is
-`.maestro/_launch.yaml` + `.maestro/_launch.js`. Every new user-facing flow
+`.maestro/_launch.yaml` + `.maestro/_launch.js` (sync flows 09/15/17 use
+`_launch-online.yaml`, which also restores the anonymous-app and
+offline-gate-OFF invariants). Every new user-facing flow
 requires Maestro coverage — no new user-facing behavior ships without one.
 Selectors use `testID`/Maestro `id` (lowercase-kebab, e.g. `screen-dashboard`,
 `tab-dashboard`, `new-transaction-submit`), not visible text — including

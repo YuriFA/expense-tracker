@@ -11,7 +11,7 @@
 # Override credentials with MAESTRO_TEST_EMAIL/PASSWORD.
 appId: com.anonymous.mobile
 ---
-- runFlow: ../_launch.yaml
+- runFlow: ../_launch-online.yaml
 - tapOn:
     id: tab-settings
 - extendedWaitUntil:
@@ -40,25 +40,28 @@ appId: com.anonymous.mobile
     id: login-password-input
 - tapOn:
     text: Paste
-# iOS offers to save the password once the secure field is filled; dismiss it
-# here and again after the submit (whichever moment it appears).
-- runFlow:
-    when:
-      visible: 'Save Password'
-    commands:
-      - tapOn: 'Not Now'
+# iOS offers to save the password once the secure field is filled; the
+# simulator is RU-locale, so the alert's buttons are Russian («Не сейчас»).
+# Dismiss it here and again after the submit (whichever moment it appears).
+- tapOn:
+    text: 'Не сейчас'
+    optional: true
 # Dismiss the keyboard by tapping the (non-interactive) compact header bar.
 - tapOn:
     id: screen-header
 - tapOn:
     id: login-submit-button
-# The save-password sheet can appear either while typing or right after the
-# submit; dismiss it both times.
-- runFlow:
-    when:
-      visible: 'Save Password'
+# The save-password alert can surface with a delay AFTER the submit and
+# would cover the tab bar; repeat-dismiss so a late alert cannot block the
+# wait below.
+- repeat:
+    times: 3
     commands:
-      - tapOn: 'Not Now'
+      - tapOn:
+          text: 'Не сейчас'
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
 # The screen shown right after a successful login is nondeterministic:
 # router.back() sometimes returns to Settings and sometimes lands on the
 # Dashboard (an expo-router quirk with the dev-client deep-link launch -

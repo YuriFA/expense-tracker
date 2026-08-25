@@ -5,6 +5,7 @@ import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { occurredAtForDaysAgo } from '../model/quick-dates'
 import type { CreateTransactionFormValues } from '../model/schema'
 import { DatePickerSheet } from '@/shared/ui/date-picker-sheet'
+import { SheetContentPortal } from '@/shared/ui/sheet-content-portal'
 import { DateButton, QuickDateRow } from './date-selector-row'
 
 /**
@@ -36,11 +37,13 @@ export const DateField = memo(function DateField({ open }: { open: boolean }) {
       ) : null}
       {/* Always mounted, never inside the conditional QuickDateRow: picking a
           day or collapsing the row must not unmount an open sheet. */}
-      <DatePickerSheet
-        ref={datePickerRef}
-        selected={selectedDate}
-        onSelect={handleCalendarSelect}
-      />
+      <SheetContentPortal>
+        <DatePickerSheet
+          ref={datePickerRef}
+          selected={selectedDate}
+          onSelect={handleCalendarSelect}
+        />
+      </SheetContentPortal>
     </>
   )
 })

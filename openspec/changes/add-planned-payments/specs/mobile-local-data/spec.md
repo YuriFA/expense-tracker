@@ -16,22 +16,29 @@ a flat list sorted by next-due ascending (overdue plans come first,
 badged as overdue); each row SHALL show the plan's name or, when
 unnamed, its category's name, the amount, a regularity label, and the
 next-due date, and the sheet SHALL carry a bottom «Добавить
-расход/доход» action. Tapping a row SHALL open an edit sheet with the
+расход/доход» action above the bottom safe area. Tapping a row SHALL open an edit sheet with the
 same form plus deletion. The add/edit form SHALL fix the plan's type
-from the card and offer a positive amount entered as digits, an optional
-name, a required account («Счёт списания» for expenses, «Счёт
-зачисления» for incomes), a required type-matched category, a next-due
-date chosen from a calendar (past dates allowed), a regularity switch
-(день / неделя / месяц / год), a confirmation-mode switch (ручное /
-авто), a reminder switch (выкл / за день / в день), and an optional
-note. Creating, editing, and deleting plans SHALL be available offline
+from the card and offer a positive amount entered as digits with the
+selected account's currency shown beside the input, an optional name,
+a required account («Счёт списания» for expenses, «Счёт зачисления»
+for incomes), a required type-matched category, a next-due date
+chosen from a calendar (past dates allowed), a regularity choice
+(день / неделя / месяц / год), a confirmation-mode choice (ручное /
+авто), a reminder choice (выкл / за день / в день), and an optional
+note. The form SHALL render the account, category, date, regularity,
+confirmation-mode, reminder, and note fields as one-line rows with the
+label on the left and the current value on the right; tapping a row
+SHALL open that field's picker sheet (the note row SHALL focus its
+input), and the sheet content SHALL keep bottom safe-area padding. Creating, editing, and deleting plans SHALL be available offline
 through the local repository and SHALL converge via sync; deleting an
 account or category referenced by live local plans SHALL be rejected
 locally with the corresponding in-use error. Manually confirming a plan
 SHALL open a confirm sheet with an editable amount (defaulting to the
-plan's amount), an editable date (defaulting to the occurrence's
-scheduled date), and an optional note, with the account and category
-fixed as context; submitting SHALL create the transaction and advance
+plan's amount, shown with the account's currency), an editable date
+(defaulting to the occurrence's scheduled date), and an optional note,
+with the account and category fixed as context; the confirm sheet
+SHALL use the same one-line row layout and safe-area bottom padding as
+the add/edit form; submitting SHALL create the transaction and advance
 the plan in one local transaction, per the planned-payments capability's
 manual-confirmation rules. The screen SHALL replace the «Планы» tab
 placeholder and SHALL NOT touch the home screen or analytics.

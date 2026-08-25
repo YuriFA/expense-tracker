@@ -7,6 +7,7 @@
 import { useEffect } from 'react'
 import type { DebtDirection, DebtOperation } from '@expense-tracker/api'
 import { BottomSheet, BottomSheetView, type BottomSheetRef } from '@/shared/ui/bottom-sheet'
+import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { OperationForm } from './operation-form'
 
 /** Mirrors the form's edit/create union; the sheet owns dismissal itself. */
@@ -34,13 +35,22 @@ export function OperationSheet({ ref, ...formProps }: OperationSheetProps) {
     if (ref && typeof ref !== 'function') ref.current?.dismiss()
   }
 
+  // The date picker declared inside the form re-renders beside this sheet
+  // element (outside its portal content) — see useSheetContentPickers.
+  const pickers = useSheetContentPickers()
+
   return (
-    <BottomSheet ref={ref} testID={sheetTestId} snapPoints={['80%']} stackBehavior="push">
-      {/* The visible element carrying the sheet testID (accounts-sheet
-          pattern): the modal container is zero-bounds to Maestro. */}
-      <BottomSheetView testID={sheetTestId} className="flex-1">
-        <OperationForm {...formProps} onSuccess={handleSuccess} />
-      </BottomSheetView>
-    </BottomSheet>
+    <>
+      {pickers.nodes}
+      <BottomSheet ref={ref} testID={sheetTestId} snapPoints={['80%']} stackBehavior="push">
+        {/* The visible element carrying the sheet testID (accounts-sheet
+            pattern): the modal container is zero-bounds to Maestro. */}
+        <BottomSheetView testID={sheetTestId} className="flex-1">
+          <pickers.Provider>
+            <OperationForm {...formProps} onSuccess={handleSuccess} />
+          </pickers.Provider>
+        </BottomSheetView>
+      </BottomSheet>
+    </>
   )
 }

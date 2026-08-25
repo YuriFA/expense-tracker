@@ -4,6 +4,7 @@ import { useAccounts } from '@/entities/account'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { Icon } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
+import { SheetContentPortal } from '@/shared/ui/sheet-content-portal'
 import { Text } from '@/shared/ui/text'
 import { AccountPickerSheet } from '@/shared/ui/account-picker-sheet'
 import { cn } from '@/shared/lib/utils'
@@ -42,14 +43,16 @@ export function AccountField() {
         <Icon name="chevron-forward" size={16} colorClassName="accent-muted-foreground" />
       </Pressable>
 
-      <AccountPickerSheet
-        ref={pickerRef}
-        title="Выберите счёт"
-        accounts={accounts}
-        selectedId={field.value ?? ''}
-        onSelect={handleSelect}
-        testIDPrefix="new-transaction-account"
-      />
+      <SheetContentPortal>
+        <AccountPickerSheet
+          ref={pickerRef}
+          title="Выберите счёт"
+          accounts={accounts}
+          selectedId={field.value ?? ''}
+          onSelect={handleSelect}
+          testIDPrefix="new-transaction-account"
+        />
+      </SheetContentPortal>
     </>
   )
 }

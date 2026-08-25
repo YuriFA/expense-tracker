@@ -11,6 +11,7 @@ import { Text } from '@/shared/ui/text'
 import { AccountPickerSheet } from '@/shared/ui/account-picker-sheet'
 import { CategoryPickerSheet } from '@/shared/ui/category-picker-sheet'
 import { DatePickerSheet } from '@/shared/ui/date-picker-sheet'
+import { SheetContentPortal } from '@/shared/ui/sheet-content-portal'
 import { cn } from '@/shared/lib/utils'
 import type { EditTransactionFormValues } from '../model/schema'
 
@@ -91,14 +92,16 @@ export function CashflowAccountRow({ kind }: { kind: 'expense' | 'income' }) {
         testID="edit-transaction-account"
         invalid={Boolean(fieldState.error)}
       />
-      <AccountPickerSheet
-        ref={pickerRef}
-        title={label}
-        accounts={accounts}
-        selectedId={field.value ?? ''}
-        onSelect={(id) => setValue('accountId', id, { shouldValidate: true })}
-        testIDPrefix="edit-transaction-account"
-      />
+      <SheetContentPortal>
+        <AccountPickerSheet
+          ref={pickerRef}
+          title={label}
+          accounts={accounts}
+          selectedId={field.value ?? ''}
+          onSelect={(id) => setValue('accountId', id, { shouldValidate: true })}
+          testIDPrefix="edit-transaction-account"
+        />
+      </SheetContentPortal>
     </>
   )
 }
@@ -162,22 +165,26 @@ export function TransferAccountRows() {
         testID="edit-transaction-to"
         invalid={Boolean(toField.fieldState.error)}
       />
-      <AccountPickerSheet
-        ref={fromPickerRef}
-        title="Счёт списания"
-        accounts={accounts}
-        selectedId={fromField.field.value ?? ''}
-        onSelect={handleFromSelect}
-        testIDPrefix="edit-transaction-from"
-      />
-      <AccountPickerSheet
-        ref={toPickerRef}
-        title="Счёт пополнения"
-        accounts={toCandidates}
-        selectedId={toField.field.value ?? ''}
-        onSelect={(id) => setValue('toAccountId', id, { shouldValidate: true })}
-        testIDPrefix="edit-transaction-to"
-      />
+      <SheetContentPortal>
+        <AccountPickerSheet
+          ref={fromPickerRef}
+          title="Счёт списания"
+          accounts={accounts}
+          selectedId={fromField.field.value ?? ''}
+          onSelect={handleFromSelect}
+          testIDPrefix="edit-transaction-from"
+        />
+      </SheetContentPortal>
+      <SheetContentPortal>
+        <AccountPickerSheet
+          ref={toPickerRef}
+          title="Счёт пополнения"
+          accounts={toCandidates}
+          selectedId={toField.field.value ?? ''}
+          onSelect={(id) => setValue('toAccountId', id, { shouldValidate: true })}
+          testIDPrefix="edit-transaction-to"
+        />
+      </SheetContentPortal>
     </>
   )
 }
@@ -215,12 +222,14 @@ export function CategoryFieldRow({ kind }: { kind: 'expense' | 'income' }) {
         testID="edit-transaction-category"
         invalid={Boolean(fieldState.error)}
       />
-      <CategoryPickerSheet
-        ref={pickerRef}
-        categories={categories.filter((item) => item.type === kind)}
-        selectedId={field.value ?? ''}
-        onSelect={(id) => setValue('categoryId', id, { shouldValidate: true })}
-      />
+      <SheetContentPortal>
+        <CategoryPickerSheet
+          ref={pickerRef}
+          categories={categories.filter((item) => item.type === kind)}
+          selectedId={field.value ?? ''}
+          onSelect={(id) => setValue('categoryId', id, { shouldValidate: true })}
+        />
+      </SheetContentPortal>
     </>
   )
 }
@@ -249,13 +258,15 @@ export function DateFieldRow() {
         testID="edit-transaction-date"
         invalid={Boolean(fieldState.error)}
       />
-      <DatePickerSheet
-        ref={pickerRef}
-        selected={selectedDate}
-        onSelect={(date: Date) =>
-          setValue('occurredAt', date.toISOString(), { shouldValidate: true })
-        }
-      />
+      <SheetContentPortal>
+        <DatePickerSheet
+          ref={pickerRef}
+          selected={selectedDate}
+          onSelect={(date: Date) =>
+            setValue('occurredAt', date.toISOString(), { shouldValidate: true })
+          }
+        />
+      </SheetContentPortal>
     </>
   )
 }

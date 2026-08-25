@@ -398,9 +398,9 @@ entities/ shared/`.
   (`node:sqlite` test helper, forbidden from app code), hooks with mock
   repositories, sync engine/background-sync with a fake transport, an
   opt-in backend-integration suite (`SYNC_INTEGRATION_API`), screens/
-  features, and a design-tokens guard test. 11 Maestro flows under
-  `.maestro/flows/`. Gaps: analytics/goals/plans (placeholder screens),
-  reset-password/verify-email/settings screens.
+  features, and a design-tokens guard test. 13 Maestro flows under
+  `.maestro/flows/`. Gaps: goals (no screen yet), reset-password/
+  verify-email/settings screens.
 
 ## Cross-cutting flows
 

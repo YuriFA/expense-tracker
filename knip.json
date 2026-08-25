@@ -1,6 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
+    ".": {
+      "ignore": [
+        ".dependency-cruiser.mobile.cjs"
+      ]
+    },
     "apps/web": {
       "entry": [
         "src/app/router/index.ts",
@@ -30,11 +35,10 @@
         ".maestro/_launch.js",
         ".maestro/_random.js"
       ],
-      "ignoreBinaries": [
-        "maestro"
+      "ignore": [
+        "plugins/with-dev-menu-fab.js"
       ],
       "ignoreDependencies": [
-        "expo-updates",
         "expo-system-ui"
       ],
       "ignoreIssues": {

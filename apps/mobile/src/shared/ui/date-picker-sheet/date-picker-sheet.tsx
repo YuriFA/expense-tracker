@@ -89,7 +89,9 @@ export function DatePickerSheet({
           {monthGrid(view.year, view.month).map((week, weekIndex) => (
             <View key={weekIndex} className="flex-row">
               {week.map((day, dayIndex) => {
-                if (day === null) return <View key={dayIndex} className="h-11 flex-1" />
+                // Placeholder keys must not collide with the day-number
+                // keys of the same row's real cells.
+                if (day === null) return <View key={`pad-${dayIndex}`} className="h-11 flex-1" />
                 const isSelected = isViewingSelectedMonth && day === selected.getDate()
                 const isToday =
                   view.year === now.getFullYear() &&

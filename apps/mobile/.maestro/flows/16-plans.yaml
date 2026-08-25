@@ -1,0 +1,242 @@
+# Plans screen end-to-end (add-planned-payments task 8.1, design D7): the
+# «Планы» tab opens the real screen (no longer a placeholder), the «Расходы»
+# card opens the per-type list, its footer CTA creates a monthly plan
+# (keypad amount, account/category pickers, default date), the card count
+# grows by exactly one and the normalized monthly total grows by the plan's
+# amount, a row-level confirm with an edited amount advances the plan's
+# next-due (the row text changes), and the plan total stays unchanged
+# (confirming creates a transaction, it does not edit the plan).
+#
+# The local database persists across suite runs, so the plan name carries a
+# random suffix and all figure assertions are deltas (before/after copies),
+# never absolute values. The run deletes its own plan at the end so the
+# list does not grow run over run.
+#
+# Row selectors match the row's aggregated accessibility label
+# («<title>, <amount>, <regularity> · <next-due>») and the confirm button's
+# label («Подтвердить платёж: <title>») — Maestro 2.x does not match
+# `containsDescendants` composites, and both labels are unique per row.
+appId: com.anonymous.mobile
+tags:
+  - plans
+---
+- runFlow: ../_launch.yaml
+- runScript: ../_random.js
+- tapOn:
+    id: tab-plans
+- extendedWaitUntil:
+    visible:
+      id: screen-plans
+    timeout: 15000
+
+# --- Baseline card figures before this run's plan ----------------------------
+- copyTextFrom:
+    id: plans-count-expense
+- evalScript: ${output.countBefore = parseInt(maestro.copiedText)}
+- copyTextFrom:
+    id: plans-total-expense
+- evalScript: ${output.totalBefore = parseInt(maestro.copiedText.replace(/[^\d]/g, ''))}
+
+# --- Open «Расходы» and create a 599,00 ₽ monthly plan -----------------------
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+# The list persists across suite runs; the footer CTA is pinned above the
+# safe area (SheetFooter), so the direct tap resolves regardless of how many
+# rows previous runs left behind. Waiting lets the sheet's presentation
+# finish before the tap resolves the element.
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: plans-list-add
+- extendedWaitUntil:
+    visible:
+      id: plans-form-sheet
+    timeout: 10000
+# The notification permission dialog may surface over the form (the app is
+# notification-capable now); deny it — this suite keeps reminders off.
+- runFlow:
+    when:
+      visible: 'Не разрешать'
+    commands:
+      - tapOn: 'Не разрешать'
+# Pickers first (sheets over the form), then the text inputs (name, amount)
+# so the system keyboard only appears at the end; the footer submit sits
+# above it. Account: the first live account; category: the first live
+# expense category (the suite's earlier flows created both). Date keeps its
+# default (today) and the repeat/confirmation/reminder rows keep their
+# defaults (monthly / manual / off).
+- tapOn:
+    id: plans-form-account
+- tapOn:
+    id: plans-form-account-option-.*
+- tapOn:
+    id: plans-form-category
+- tapOn:
+    id: new-transaction-category-option-.*
+- tapOn:
+    id: plans-form-name
+- inputText: 'Нетфликс ${output.suffix}'
+- tapOn:
+    id: plans-form-amount
+- inputText: '599'
+# Let the keyboard-driven sheet reflow settle before tapping the footer
+# submit: racing it can drop the tap (Maestro's hideKeyboard cannot dismiss
+# a keyboard over a sheet input, so waiting is the only lever).
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: plans-form-submit
+# The sheet may or may not auto-dismiss (TODO(sheet-dismiss)); close it via
+# the backdrop (the tap lands on the non-interactive header when it did).
+- runFlow:
+    when:
+      visible:
+        id: plans-form-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# --- The new row is in the list: its label carries title, amount, regularity -
+- scrollUntilVisible:
+    element:
+      text: '.*Нетфликс ${output.suffix}, .*'
+    direction: DOWN
+- assertVisible:
+    text: '.*Нетфликс ${output.suffix}, 599.*каждый месяц.*'
+- takeScreenshot: plans-created
+
+# --- Card figures: count +1, monthly total +599 (as text deltas) -------------
+- tapOn:
+    point: 50%, 8%
+- copyTextFrom:
+    id: plans-count-expense
+- evalScript: ${output.countAfter = parseInt(maestro.copiedText)}
+- copyTextFrom:
+    id: plans-total-expense
+- evalScript: ${output.totalAfterCreate = parseInt(maestro.copiedText.replace(/[^\d]/g, ''))}
+- assertTrue: ${output.countAfter == output.countBefore + 1}
+- assertTrue: ${output.totalAfterCreate == output.totalBefore + 599}
+
+# --- Row-level confirm with an edited amount (599 → 650) ---------------------
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: '.*Нетфликс ${output.suffix}, .*'
+    direction: DOWN
+# The row label (title + amount + regularity + next-due label) before confirm.
+- copyTextFrom:
+    text: '.*Нетфликс ${output.suffix}, 599.*каждый месяц.*'
+- evalScript: ${output.rowBefore = maestro.copiedText}
+- tapOn:
+    text: 'Подтвердить платёж: Нетфликс ${output.suffix}'
+- extendedWaitUntil:
+    visible:
+      id: plans-confirm-sheet
+    timeout: 10000
+# Edit the amount: 599 → 650 (the created transaction carries it). The
+# erase leaves the display's empty-state "0" and the typed digits land
+# after it ("0650" — parseable); waiting between IME steps keeps the
+# controlled input from dropping the keystrokes mid-reflow.
+- tapOn:
+    id: plans-confirm-amount
+- eraseText
+- waitForAnimationToEnd:
+    timeout: 5000
+- inputText: '650'
+- waitForAnimationToEnd:
+    timeout: 5000
+# The erase leaves the display's empty-state "0", so the typed digits land
+# after it ("0650" — parseable as 650,00 ₽). An IME keystroke can straggle
+# into the field after inputText returns; submitting at that moment
+# validates a stale invalid value and the tap no-ops silently — hence the
+# below retry, which submits the settled value.
+- tapOn:
+    id: plans-confirm-submit
+- runFlow:
+    when:
+      visible:
+        id: plans-confirm-sheet
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          id: plans-confirm-submit
+      - extendedWaitUntil:
+          notVisible:
+            id: plans-confirm-sheet
+          timeout: 8000
+- runFlow:
+    when:
+      visible:
+        id: plans-confirm-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+
+# --- The plan advanced exactly one period; its total is unchanged ------------
+# The list sheet is still open beneath: the same row's next-due label moved
+# one month ahead, so the copied row label differs while the amount stays.
+- scrollUntilVisible:
+    element:
+      text: '.*Нетфликс ${output.suffix}, .*'
+    direction: DOWN
+- assertVisible:
+    text: '.*Нетфликс ${output.suffix}, 599.*'
+- copyTextFrom:
+    text: '.*Нетфликс ${output.suffix}, 599.*каждый месяц.*'
+- evalScript: ${output.rowAfter = maestro.copiedText}
+- assertTrue: ${output.rowBefore != output.rowAfter}
+- tapOn:
+    point: 50%, 8%
+- copyTextFrom:
+    id: plans-total-expense
+- evalScript: ${output.totalAfterConfirm = parseInt(maestro.copiedText.replace(/[^\d]/g, ''))}
+- assertTrue: ${output.totalAfterConfirm == output.totalAfterCreate}
+- takeScreenshot: plans-confirmed
+
+# --- Cleanup: delete this run's plan (the list must not grow per run) -------
+- tapOn:
+    id: plans-card-expense
+- extendedWaitUntil:
+    visible:
+      id: plans-list-sheet
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: '.*Нетфликс ${output.suffix}, .*'
+    direction: DOWN
+- tapOn:
+    text: '.*Нетфликс ${output.suffix}, .*'
+- extendedWaitUntil:
+    visible:
+      id: plans-form-sheet
+    timeout: 10000
+- tapOn:
+    id: plans-form-delete
+# The native confirm alert. The form does not reliably auto-dismiss after
+# the delete (TODO(sheet-dismiss)) — close it via the backdrop when it
+# stays open, then require it gone.
+- tapOn:
+    text: 'Удалить'
+- runFlow:
+    when:
+      visible:
+        id: plans-form-sheet
+    commands:
+      - tapOn:
+          point: 50%, 8%
+- extendedWaitUntil:
+    notVisible:
+      id: plans-form-sheet
+    timeout: 10000
+- tapOn:
+    point: 50%, 8%

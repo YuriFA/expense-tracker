@@ -2,7 +2,6 @@ export { PlannedPaymentRepositoryProvider, usePlannedPaymentRepository } from '.
 export {
   createLocalPlannedPaymentRepository,
   type ConfirmPlannedPaymentInput,
-  type LocalPlannedPaymentRepository,
 } from './api/local-repository'
 export {
   usePlannedPayments,
@@ -11,4 +10,5 @@ export {
   useDeletePlannedPayment,
   useConfirmPlannedPayment,
 } from './model/use-planned-payments'
-export { advanceNextDue, monthlyAmount, monthlyTotal } from './model/recurrence'
+export { monthlyTotal } from './model/recurrence'
+export { requestNotificationPermissions, reschedule } from './model/reminders'

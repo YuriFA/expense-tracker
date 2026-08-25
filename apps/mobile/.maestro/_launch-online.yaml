@@ -1,0 +1,36 @@
+# Shared launch for the sync flows (09/15/17): the plain launch plus the
+# two suite invariants those flows rely on — an anonymous app and the dev
+# offline gate OFF. A flow that dies between toggling the gate on and its
+# restore leaves the gate ON (it persists in sync_meta by design), and one
+# that dies after its sign-in leaves the session active; both silently
+# cascade into whichever sync flow runs next. Both restores below are
+# guarded no-ops when the invariants already hold.
+appId: com.anonymous.mobile
+---
+- runFlow: ./_launch.yaml
+- tapOn:
+    id: tab-settings
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: settings-logout-button
+    commands:
+      - tapOn:
+          id: settings-logout-button
+      - extendedWaitUntil:
+          visible:
+            id: settings-login-button
+          timeout: 20000
+# The toggle's label carries its state («Офлайн-режим: вкл/выкл»): tap it
+# only in the on-state, which turns it off; the off-state matches nothing.
+- scrollUntilVisible:
+    element:
+      id: settings-dev-offline-toggle
+    direction: DOWN
+- tapOn:
+    text: 'Офлайн-режим: вкл'
+    optional: true

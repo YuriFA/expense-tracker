@@ -47,8 +47,7 @@ import {
 } from '../model/selectors'
 import { CASHFLOW_KIND_VIEWS } from './kind'
 import { EditCategorySheet } from './edit-category-sheet'
-import { SheetFooter } from './sheet-footer'
-import { useSheetFooterScroll } from './use-sheet-footer-scroll'
+import { SheetFooter, useSheetFooterScroll } from '@/shared/ui/sheet-footer'
 
 export interface CategoryCashflowSheetProps {
   ref: React.Ref<BottomSheetRef>

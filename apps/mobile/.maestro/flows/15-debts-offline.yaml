@@ -15,7 +15,7 @@ tags:
   - debts
   - sync
 ---
-- runFlow: ../_launch.yaml
+- runFlow: ../_launch-online.yaml
 - runScript: ../_random.js
 
 # --- Sign in (the 09-sync-signin pattern) ------------------------------------
@@ -40,20 +40,27 @@ tags:
     id: login-password-input
 - tapOn:
     text: Paste
-- runFlow:
-    when:
-      visible: 'Save Password'
-    commands:
-      - tapOn: 'Not Now'
+# iOS offers to save the password once the secure field is filled; the
+# simulator is RU-locale, so the alert's buttons are Russian («Не сейчас»).
+# Dismiss it here and again after the submit (whichever moment it appears).
+- tapOn:
+    text: 'Не сейчас'
+    optional: true
 - tapOn:
     id: screen-header
 - tapOn:
     id: login-submit-button
-- runFlow:
-    when:
-      visible: 'Save Password'
+# The save-password alert can surface with a delay AFTER the submit and
+# would cover the tab bar; repeat-dismiss so a late alert cannot block the
+# wait below.
+- repeat:
+    times: 3
     commands:
-      - tapOn: 'Not Now'
+      - tapOn:
+          text: 'Не сейчас'
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
 - extendedWaitUntil:
     visible:
       id: tab-settings

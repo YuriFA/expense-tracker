@@ -6,6 +6,7 @@ import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import type { CreateTransactionFormValues } from '../model/schema'
 import { AccountPickerSheet } from '@/shared/ui/account-picker-sheet'
 import { AccountSelectorRow } from '@/shared/ui/account-selector-row'
+import { SheetContentPortal } from '@/shared/ui/sheet-content-portal'
 
 /**
  * The transfer variant's source and destination selectors: both rows, both
@@ -59,22 +60,26 @@ export function TransferFields() {
         onPress={() => toPickerRef.current?.present()}
         testID="new-transaction-to"
       />
-      <AccountPickerSheet
-        ref={fromPickerRef}
-        title="Откуда"
-        accounts={accounts}
-        selectedId={fromField.value ?? ''}
-        onSelect={handleFromSelect}
-        testIDPrefix="new-transaction-from"
-      />
-      <AccountPickerSheet
-        ref={toPickerRef}
-        title="Куда"
-        accounts={toCandidates}
-        selectedId={toField.value ?? ''}
-        onSelect={handleToSelect}
-        testIDPrefix="new-transaction-to"
-      />
+      <SheetContentPortal>
+        <AccountPickerSheet
+          ref={fromPickerRef}
+          title="Откуда"
+          accounts={accounts}
+          selectedId={fromField.value ?? ''}
+          onSelect={handleFromSelect}
+          testIDPrefix="new-transaction-from"
+        />
+      </SheetContentPortal>
+      <SheetContentPortal>
+        <AccountPickerSheet
+          ref={toPickerRef}
+          title="Куда"
+          accounts={toCandidates}
+          selectedId={toField.value ?? ''}
+          onSelect={handleToSelect}
+          testIDPrefix="new-transaction-to"
+        />
+      </SheetContentPortal>
     </View>
   )
 }

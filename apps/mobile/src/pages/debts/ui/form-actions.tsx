@@ -21,6 +21,7 @@ import {
 } from '@/features/create-transaction'
 import { BottomSheetInput, type BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { DatePickerSheet } from '@/shared/ui/date-picker-sheet'
+import { SheetContentPortal } from '@/shared/ui/sheet-content-portal'
 
 /** The reactive slice both debts schemas share with the toolbar. */
 interface DebtsFormActionsValues {
@@ -138,13 +139,15 @@ const DebtsDateField = memo(function DebtsDateField({
           onOpenCalendar={() => datePickerRef.current?.present()}
         />
       ) : null}
-      <DatePickerSheet
-        ref={datePickerRef}
-        selected={selectedDate}
-        onSelect={(date: Date) =>
-          setValue('occurredAt', date.toISOString(), { shouldValidate: true })
-        }
-      />
+      <SheetContentPortal>
+        <DatePickerSheet
+          ref={datePickerRef}
+          selected={selectedDate}
+          onSelect={(date: Date) =>
+            setValue('occurredAt', date.toISOString(), { shouldValidate: true })
+          }
+        />
+      </SheetContentPortal>
     </>
   )
 })

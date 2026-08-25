@@ -6,6 +6,7 @@ import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { Text } from '@/shared/ui/text'
 import type { CreateTransactionFormValues } from '../model/schema'
 import { CategoryPickerSheet } from '@/shared/ui/category-picker-sheet'
+import { SheetContentPortal } from '@/shared/ui/sheet-content-portal'
 import { CategoryQuickBar } from './category-quick-bar'
 
 /**
@@ -34,12 +35,14 @@ export function CategoryField({ kind }: { kind: 'expense' | 'income' }) {
           Нет категорий этого типа - создайте категорию на главном экране
         </Text>
       ) : null}
-      <CategoryPickerSheet
-        ref={pickerRef}
-        categories={categories}
-        selectedId={field.value ?? ''}
-        onSelect={handleSelect}
-      />
+      <SheetContentPortal>
+        <CategoryPickerSheet
+          ref={pickerRef}
+          categories={categories}
+          selectedId={field.value ?? ''}
+          onSelect={handleSelect}
+        />
+      </SheetContentPortal>
     </View>
   )
 }

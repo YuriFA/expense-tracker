@@ -255,12 +255,16 @@ concerns and may be adjusted during implementation.
 
 The Home screen is part of the mobile application's bottom navigation.
 
-**v1 keeps the existing tab set** — Dashboard, Transactions, Accounts,
-Settings — plus the central Speed Dial button (a large round accent
-colored "+"). The reference's tab set (Главная, Планы, Аналитика,
-Ещё) is not adopted: the navigation structure should remain focused on
-the currently available product areas, and destinations must not be
-added solely because they appear in the reference design.
+The shipped tab set is **Dashboard, Планы, Аналитика, Settings** plus the
+central Speed Dial button (a large round accent colored "+"). The v1
+decision to keep only Dashboard/Transactions/Accounts/Settings was
+superseded when the reference's navigation was adopted tab by tab:
+Аналитика shipped with the analytics screens, and Планы hosts the planned
+payments (see `openspec/specs/planned-payments` — recurring expense/income
+rules with per-type cards, manual/auto confirmation, and reminders).
+Transactions live on the Dashboard; Счета, Доходы, and Долги are stack
+destinations behind the Home quick actions, not tabs. The reference's
+«Ещё» tab remains not adopted.
 
 ---
 
@@ -283,8 +287,7 @@ Reference style, to be preserved in spirit:
 
 Deliberate deviations from the reference (all map to the exclusions
 above): no "PRO" crown button, no header search icon, no "···" overflow
-menu, no "Долги" quick-action tile, no "Лимит" card, no
-"Планы/Аналитика/Ещё" tabs.
+menu, no "Лимит" card, no "Ещё" tab.
 
 The implementation should preserve the reference's general:
 

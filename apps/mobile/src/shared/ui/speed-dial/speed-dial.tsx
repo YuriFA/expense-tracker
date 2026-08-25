@@ -131,7 +131,7 @@ export function SpeedDial({
           accessibilityLabel={fabLabel}
           accessibilityState={{ expanded: open }}
           accessibilityHint="Opens or closes the action menu"
-          className="items-center justify-center rounded-full shadow-[0_0_12px_4px_rgba(0,0,0,0.1)]"
+          className="items-center justify-center rounded-full shadow-fab"
           style={{
             width: FAB_SIZE,
             height: FAB_SIZE,

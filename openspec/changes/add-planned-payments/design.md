@@ -232,7 +232,8 @@ check alongside the existing transactions check (local mirror of D4).
 route `(tabs)/plans.tsx` already re-exports it — no routing changes).
 Structure per the debts page: the page owns ALL sheet refs and the
 creation context (invariant #15); `model/schema.ts` (Zod: one
-discriminated form schema, amount as digit string refined via
+discriminated form schema, amount as a decimal-pad digit-string input
+sanitized via `sanitizeAmountInput` and refined via
 `parseMajorUnitsToMinor`, named `toCreatePayload`/`toUpdatePayload`
 mappers doing the single minor-unit conversion), `model/kind.ts` (RU
 copy: card titles/descriptions, «Добавить расход/доход», regularity
@@ -247,16 +248,29 @@ UI: two `Card`s («Расходы» / «Доходы») each with count +
 `next_due`, overdue badge first, bottom «Добавить…» button — the
 debts per-section creation pattern with the button living in the sheet
 footer instead of a header «+»); row tap opens the edit sheet (same
-form + delete). The add/edit form sheet follows forms.md: RHF +
-`FormProvider`, keypad amount, `AccountPickerSheet` /
-`CategoryPickerSheet` (filtered to the plan type), `DatePickerSheet`
-via the `DateButton`/`QuickDateRow` idiom (past dates allowed), three
-`SegmentedSwitch`es (regularity, confirm mode, reminder), note via the
-`NoteButton` toolbar, `TransactionSubmitButton`-style circular submit.
-The confirm sheet fixes account/category as static context rows and
-edits amount (keypad, prefilled) / date / note only; submit runs the
-D6 composite. testIDs: `plans-*` (screen, cards `plans-card-<type>`,
-rows, sheets, fields).
+form + delete). The add/edit form sheet follows forms.md and the
+edit-transaction reference row layout (`field-rows.tsx` idiom): RHF +
+`FormProvider`, a decimal-pad amount input carrying the selected
+account's currency chip (₽ fallback before an account is chosen — the
+`amount-input-field.tsx` idiom), then one-line rows — leading icon,
+muted label left, value right, chevron — for the account
+(`AccountPickerSheet`), the category (`CategoryPickerSheet`, filtered
+to the plan type), the next-due date (`DatePickerSheet`, past dates
+allowed), the regularity, the confirmation mode, and the reminder.
+Regularity / confirm mode / reminder are single-choice option sheets
+replacing the former `SegmentedSwitch`es (labels from `model/kind.ts`,
+selected row checked); picking a non-`off` reminder value triggers the
+D9 permission request. The note is an inline `BottomSheetInput` row
+with a leading icon (tap focuses the input — no sheet). The submit
+stays the circular `TransactionSubmitButton`, alone in the footer. The
+confirm sheet reuses the same row layout: static account/category
+context rows, an editable amount with the currency chip (prefilled),
+a date row, and a note input row; submit runs the D6 composite. All
+plans sheets — form, confirm, and the per-type list — reserve the
+bottom safe area via `pb-safe` (the `debtor-history-sheet` footer
+idiom). testIDs: `plans-*` (screen, cards `plans-card-<type>`, rows,
+sheets, fields). The page-local `segmented-switch.tsx` is dropped with
+the rework (nothing else imports it).
 
 Reminder default in the create form is `off`; confirm-mode default is
 `manual`; regularity default is `monthly` (the overwhelmingly common
@@ -315,9 +329,10 @@ Driver: an effect in the plans data layer subscribes to the
 and calls `reschedule` whenever the data identity changes — which
 covers local mutations and pull-driven invalidation alike
 (`onDataChanged` invalidates queries after sync). Permission: the form
-requests `requestPermissionsAsync` when the user first switches
-reminder away from `off`; denial is stored as-is and the scheduler
-no-ops (quiet degradation — the setting still syncs). Each device
+requests `requestPermissionsAsync` when the user first picks a
+reminder value other than `off` in the reminder option sheet; denial
+is stored as-is and the scheduler no-ops (quiet degradation — the
+setting still syncs). Each device
 schedules only for itself; there is no cross-device coordination and
 no server involvement.
 

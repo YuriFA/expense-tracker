@@ -40,7 +40,7 @@ export function cashflowInMonth(
 }
 
 /** Same trim as cashflowInMonth, over any analytics period kind. */
-export function cashflowInPeriod(
+function cashflowInPeriod(
   txs: Transaction[],
   cursor: PeriodCursor,
   kind: CashflowKind,

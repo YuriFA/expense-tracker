@@ -9,7 +9,10 @@
     "scheme": "expensetracker",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.mobile"
+      "bundleIdentifier": "com.anonymous.mobile",
+      "infoPlist": {
+        "NSNotificationsUsageDescription": "Напоминаем о запланированных платежах."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +25,8 @@
       "package": "com.anonymous.mobile",
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -35,6 +39,7 @@
       "expo-sqlite",
       "expo-dev-client",
       "expo-background-fetch",
+      "expo-notifications",
       "expo-status-bar",
       "./plugins/with-dev-menu-fab"
     ],

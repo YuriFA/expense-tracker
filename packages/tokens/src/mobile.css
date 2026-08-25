@@ -38,6 +38,13 @@
 }
 
 /**
+ * The speed-dial FAB's soft elevation halo.
+ */
+@utility shadow-fab {
+  box-shadow: 0px 0px 12px 4px rgba(0, 0, 0, 0.1);
+}
+
+/**
  * Semantic colors per theme. Light and dark must define the exact same set of
  * variables (mismatched sets are a runtime error). Classes like `bg-background`
  * resolve the active theme's value automatically.

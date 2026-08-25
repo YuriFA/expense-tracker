@@ -154,8 +154,9 @@ describe('IncomeScreen', () => {
     expect(screen.getByTestId('screen-income')).toBeTruthy()
     await waitFor(() => expect(screen.getByText('Все доходы')).toBeTruthy())
 
-    // The header's large title and the SummaryCard both carry «Доходы».
-    expect(screen.getAllByText('Доходы').length).toBeGreaterThanOrEqual(2)
+    // The header's large title carries «Доходы»; the summary card has no
+    // title of its own (the title lives in the collapsible header).
+    expect(screen.getByText('Доходы')).toBeTruthy()
     // The total also appears in the category breakdown row - at least once.
     await waitFor(() =>
       expect(
