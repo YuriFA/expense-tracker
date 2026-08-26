@@ -28,15 +28,15 @@ import {
   type UpdateDebtOperationPayload,
   type UpdateDebtorPayload,
 } from '@expense-tracker/api'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { enqueueOperation, hasSentOperations, removeOperationsFor } from '@/shared/lib/db/outbox'
+import type { LocalDatabase } from '../types'
+import { enqueueOperation, hasSentOperations, removeOperationsFor } from '../outbox'
 import {
   debtOperations,
   debtors,
   type DebtOperationRow,
   type DebtorRow,
-} from '@/shared/lib/db/schema'
-import { generateId } from '@/shared/lib/generate-id'
+} from '../schema'
+import { generateId } from '../id-factory'
 
 type LocalTx = Parameters<Parameters<LocalDatabase['transaction']>[0]>[0]
 

@@ -26,7 +26,7 @@ import {
   useDebtOperations,
   useUpdateDebtOperation,
 } from '@/entities/debt'
-import { balanceInDirection } from '@/entities/debt/model/balances'
+import { balanceInDirection } from '@expense-tracker/local-data'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { formatAmount } from '@/shared/lib/format/format'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'

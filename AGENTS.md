@@ -16,7 +16,7 @@ or questioning a rule, read the relevant canonical document:
 
 - Invariants (evidence-backed, with enforcement status): `docs/architecture/invariants.md`
 - Architecture overview (observed baseline, file-level evidence): `docs/architecture/overview.md`
-- Architectural decisions: `docs/adr/` (ADR-0001: auth/CSRF threat model)
+- Architectural decisions: `docs/adr/` (ADR-0001: auth/CSRF threat model; ADR-0002: household shared budget, implementation pending)
 - Open decisions & accepted assumptions: `docs/assumptions.md`
 - Known technical debts: `docs/technical-debt.md`
 - Finding classification & resolution history: `docs/architecture/findings.md`
@@ -63,12 +63,13 @@ non-negotiables an agent must see before touching code.
 ## Shared workspace packages (`packages/*`)
 
 Platform-agnostic TS consumed by the apps — web: `@expense-tracker/{api,money,i18n,tokens}`;
-mobile: `@expense-tracker/{api,dates,money,tokens}` (i18n wiring pending) —
+mobile: `@expense-tracker/{api,dates,local-data,money,tokens}` (i18n wiring pending) —
 resolved to source `.ts` via `exports` (no build step; `moduleResolution: bundler`).
 
 - **MUST stay free of DOM/Vue/browser-only/RN APIs.** Only the fetch-family
   (`fetch`/`Request`/`Response`/`Headers`) is allowed (works in browser/Node/RN).
-- **Fixed dependency direction:** `api → money` is the only cross-package edge;
+- **Fixed dependency direction:** `api → money` and
+  `local-data → {api, dates, money}` are the only cross-package edges;
   `money`/`dates`/`i18n`/`tokens` are leaves.
 - **Apps never import `date-fns` directly** - only the `@expense-tracker/dates`
   facade (web's app-local `@internationalized/date` adapter is a sanctioned
@@ -130,7 +131,7 @@ measured problem.
 backend/        Go API (Gin + sqlc + Postgres)
 apps/web/       Vue 3 + Vite (Feature-Sliced Design, online-first)
 apps/mobile/    React Native + Expo (Feature-Sliced Design + Expo Router, offline-first)
-packages/       shared TS: api, dates, money, i18n; shared css: tokens
+packages/       shared TS: api, dates, local-data, money, i18n; shared css: tokens
 docs/           architecture, ADRs, assumptions, API policy; docs/api/ = OpenAPI contract
 openspec/       domain behavior specs + proposed changes
 ```

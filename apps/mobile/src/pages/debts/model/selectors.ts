@@ -7,10 +7,10 @@
 import type { DebtDirection, DebtOperation, DebtOperationKind, Debtor } from '@expense-tracker/api'
 import { calendarDayKey, fullDayLabel } from '@expense-tracker/dates'
 import { formatAmount } from '@/shared/lib/format/format'
-import { balancesByDebtor, totalsByDirection } from '@/entities/debt/model/balances'
+import { balancesByDebtor, totalsByDirection } from '@expense-tracker/local-data'
 
-export type { DirectionBalances } from '@/entities/debt/model/balances'
-export { totalsByDirection } from '@/entities/debt/model/balances'
+export type { DirectionBalances } from '@expense-tracker/local-data'
+export { totalsByDirection } from '@expense-tracker/local-data'
 
 export interface DebtorBalanceView {
   debtor: Debtor

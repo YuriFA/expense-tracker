@@ -2,10 +2,12 @@
 
 React Native + Expo (SDK 57 / RN 0.86 / React 19.2 / TS 6). Workspace member
 `@expense-tracker/mobile`, twin of `apps/web` — shares the domain model and the
-`@expense-tracker/{api,dates,money,tokens}` packages (i18n wiring pending, see
-§i18n). Project-wide invariants and the canonical documentation map live in
-the root `AGENTS.md`. The offline-first data layer and sync protocol are
-specified in `openspec/specs/mobile-local-data` and `openspec/specs/sync-protocol`.
+`@expense-tracker/{api,dates,local-data,money,tokens}` packages (i18n wiring
+pending, see §i18n). Project-wide invariants and the canonical documentation map
+live in the root `AGENTS.md`. The offline-first data layer and sync protocol are
+specified in `openspec/specs/mobile-local-data` and `openspec/specs/sync-protocol`;
+the local-first engine/schema/repositories themselves live in
+`packages/local-data` (`@expense-tracker/local-data`).
 
 ## Architecture: FSD + Expo Router
 
@@ -224,11 +226,16 @@ Hard rules:
 
 Code map:
 
-- `shared/lib/db` — Drizzle schema; migrations via `pnpm db:generate`.
-- `entities/*/api/local-repository.ts` (+ `repository.tsx` DI) — repositories.
-- `shared/lib/sync/` — `sync-engine.ts`, `sync-context.tsx` (the provider
-  composes in `src/app/_layout.tsx`), `transport.ts`, `conflicts.ts`,
-  `background-sync.ts`; conflict UI in `features/sync-conflicts`.
+- `@expense-tracker/local-data` (`packages/local-data`) — the whole local-first
+  layer: drizzle schema, outbox, sync engine with conflicts, local
+  repositories, recurrence math, migrations. Generate migrations with
+  `pnpm -C packages/local-data db:generate`.
+- `shared/lib/db/database.ts` — the expo-sqlite driver + migrations call
+  (the only production touchpoint of the driver; types come from the package).
+- `shared/lib/sync/` — app-side wiring only: `transport.ts` (API-client
+  binding), `sync-context.tsx` (the provider composes in
+  `src/app/_layout.tsx`), `background-sync.ts`; conflict UI in
+  `features/sync-conflicts`.
 - `entities/session` (`AuthProvider`/`useAuth`), `widgets/sync-status`.
 
 Env / tests: backend URL `EXPO_PUBLIC_API_URL`; integration suite against a
@@ -246,8 +253,9 @@ mechanism.
 ## Testing
 
 `pnpm test` runs Jest (`jest-expo` + `@testing-library/react-native`). Test-only
-repository fixtures live in `shared/lib/testing/mock-*-repository.ts` (like
-the `node:sqlite` adapter in `shared/lib/db/testing`, never import them from
+repository fixtures live in `shared/lib/testing/mock-*-repository.ts`; real
+local databases for tests come from `createTestDatabase()` in
+`@expense-tracker/local-data/testing` (never import test helpers from
 application code). Test observable behavior (e.g. `getByTestId('submit')` is
 enabled/disabled), not internal state, computed Uniwind styles, animation
 frames, or private function calls (unless mocking a genuine external

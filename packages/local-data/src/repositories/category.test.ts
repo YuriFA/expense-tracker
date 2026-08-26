@@ -2,18 +2,18 @@
 // mirroring the backend: unique names per user, in-use deletion guard,
 // tombstones, and atomic mutation+outbox writes.
 
-import { beforeEach, describe, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq, sql } from 'drizzle-orm'
 import {
   AlreadyExistsError,
   InvalidPayloadError,
   ReferentialIntegrityError,
 } from '@expense-tracker/api'
-import * as outboxModule from '@/shared/lib/db/outbox'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import { categories, syncOutbox } from '@/shared/lib/db/schema'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { createLocalCategoryRepository } from './local-repository'
+import * as outboxModule from '../outbox'
+import { createTestDatabase } from '../testing/test-database'
+import { categories, syncOutbox } from '../schema'
+import type { LocalDatabase } from '../types'
+import { createLocalCategoryRepository } from './category'
 
 const PAYLOAD = { name: 'Такси', type: 'expense' as const, icon: 'car', color: '#7c5cff' }
 
@@ -159,7 +159,7 @@ describe('local category repository', () => {
 
   it('rolls back both the record change and the queued operation when the outbox write dies', async () => {
     const repo = createLocalCategoryRepository(db)
-    const spy = jest.spyOn(outboxModule, 'enqueueOperation').mockImplementation(() => {
+    const spy = vi.spyOn(outboxModule, 'enqueueOperation').mockImplementation(() => {
       throw new Error('killed before the sync operation was durably recorded')
     })
 

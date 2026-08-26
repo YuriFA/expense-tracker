@@ -20,7 +20,7 @@ context: |
   backend/       Go API (Gin + sqlc + Postgres)
   apps/web/      Vue 3 + Vite (Feature-Sliced Design)
   apps/mobile/   React Native + Expo (FSD + Expo Router)
-  packages/      shared platform-agnostic TS: api, dates, money, i18n; css: tokens
+  packages/      shared platform-agnostic TS: api, dates, local-data, money, i18n; css: tokens
 
   STATUS (brief): backend and web are complete and tested; the web app
   uses the existing API (online-first). Mobile is in active development,

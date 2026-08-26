@@ -350,8 +350,12 @@ entities/ shared/`.
   (`arch-check`) with zero exclusions.
 - **Offline-first data architecture**: `src/app/_layout.tsx` mounts local
   repositories backed by expo-sqlite via Drizzle for account/category/
-  transaction; every create/update/remove writes the entity row plus an
-  outbox op in one `db.transaction` (`entities/*/api/local-repository.ts`).
+  transaction; the schema, outbox, engine, and local repositories live in the
+  shared `@expense-tracker/local-data` package
+  (`packages/local-data/src/repositories/*`); every create/update/remove
+  writes the entity row plus an
+  outbox op in one `db.transaction`. The app's `shared/lib/db/database.ts`
+  only supplies the expo driver + migrations call.
   Local repositories mirror backend semantics exactly — version-CAS →
   `VersionConflictError`, referential `ACCOUNT_IN_USE`/`CATEGORY_IN_USE`,
   documented in-code as deliberate mirroring. TanStack Query is explicitly
@@ -360,7 +364,8 @@ entities/ shared/`.
   focus manager). Mock repositories used by tests live in
   `shared/lib/testing/` (`mock-{account,category,transaction}-repository.ts`,
   moved out of production segments — finding A13).
-- **Sync** (`shared/lib/sync/`): engine cycle = push → resolve conflicts →
+- **Sync** (engine in `packages/local-data/src/sync/`, app wiring in
+  `shared/lib/sync/`): engine cycle = push → resolve conflicts →
   pull, over the package's sync transport (`createApiTransport(apiClient)`
   → `pushSyncOperations`/`pullSyncChanges`). Per-record op coalescing;
   frozen `sentAt`; retry backoff with attempt counting; 401 pauses the

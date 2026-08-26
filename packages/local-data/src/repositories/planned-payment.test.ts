@@ -4,7 +4,7 @@
 // next-due edits, the manual-confirm composite's atomicity, and tombstone
 // deletes — every mutation writing row + outbox in one transaction.
 
-import { beforeEach, describe, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
 import {
   InvalidPayloadError,
@@ -13,13 +13,13 @@ import {
   UnknownReferencesError,
   VersionConflictError,
 } from '@expense-tracker/api'
-import * as outboxModule from '@/shared/lib/db/outbox'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import { accounts, plannedPayments, syncOutbox, transactions } from '@/shared/lib/db/schema'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { createLocalAccountRepository } from '@/entities/account'
-import { createLocalCategoryRepository } from '@/entities/category'
-import { createLocalPlannedPaymentRepository } from './local-repository'
+import * as outboxModule from '../outbox'
+import { createTestDatabase } from '../testing/test-database'
+import { accounts, plannedPayments, syncOutbox, transactions } from '../schema'
+import type { LocalDatabase } from '../types'
+import { createLocalAccountRepository } from '../repositories/account'
+import { createLocalCategoryRepository } from '../repositories/category'
+import { createLocalPlannedPaymentRepository } from './planned-payment'
 
 let db: LocalDatabase
 
@@ -351,7 +351,7 @@ describe('manual confirmation composite (design D6)', () => {
     // transaction insert + its operation): the whole db transaction must
     // roll back, taking the inserted transaction row with it.
     const originalEnqueue = outboxModule.enqueueOperation
-    const spy = jest.spyOn(outboxModule, 'enqueueOperation').mockImplementation((tx, input) => {
+    const spy = vi.spyOn(outboxModule, 'enqueueOperation').mockImplementation((tx, input) => {
       if (input.entity === 'planned_payment') {
         throw new Error('killed before the plan advancement was durably recorded')
       }
@@ -372,7 +372,7 @@ describe('manual confirmation composite (design D6)', () => {
   it('rolls back the plan row and the queued operation when the outbox write dies', async () => {
     const repo = createLocalPlannedPaymentRepository(db)
     const s = await seed()
-    const spy = jest.spyOn(outboxModule, 'enqueueOperation').mockImplementation(() => {
+    const spy = vi.spyOn(outboxModule, 'enqueueOperation').mockImplementation(() => {
       throw new Error('killed before the sync operation was durably recorded')
     })
 

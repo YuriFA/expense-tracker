@@ -11,7 +11,7 @@ import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { useAuth } from '@/entities/session'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
-import { readSyncStatus } from '@/shared/lib/sync/sync-status'
+import { readSyncStatus } from '@expense-tracker/local-data'
 import { useSyncController } from '@/shared/lib/sync/sync-context'
 import { Card } from '@/shared/ui/card'
 

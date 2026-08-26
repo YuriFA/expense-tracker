@@ -9,7 +9,7 @@
 // Production builds never render the toggle (Settings gates it behind
 // __DEV__), so the gate can only ever be enabled on dev builds.
 
-import type { LocalDatabase } from '@/shared/lib/db/database'
+import type { LocalDatabase } from '../types'
 import { getMetaValue, setMetaValue } from './sync-meta'
 
 const OFFLINE_GATE_KEY = 'dev_offline_gate'

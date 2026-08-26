@@ -3,21 +3,21 @@
 // matching, distinct transfer accounts, optimistic concurrency, filters and
 // ordering, pagination, and tombstone deletes.
 
-import { beforeEach, describe, expect, it } from '@jest/globals'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import {
-  CreateTransactionPayload,
+  type CreateTransactionPayload,
   InvalidPayloadError,
   NotFoundError,
   UnknownReferencesError,
   VersionConflictError,
 } from '@expense-tracker/api'
-import { createLocalAccountRepository } from '@/entities/account'
-import { createLocalCategoryRepository } from '@/entities/category'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import { syncOutbox, transactions } from '@/shared/lib/db/schema'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { createLocalTransactionRepository } from './local-repository'
+import { createLocalAccountRepository } from '../repositories/account'
+import { createLocalCategoryRepository } from '../repositories/category'
+import { createTestDatabase } from '../testing/test-database'
+import { syncOutbox, transactions } from '../schema'
+import type { LocalDatabase } from '../types'
+import { createLocalTransactionRepository } from './transaction'
 
 let db: LocalDatabase
 let accountRepo: ReturnType<typeof createLocalAccountRepository>

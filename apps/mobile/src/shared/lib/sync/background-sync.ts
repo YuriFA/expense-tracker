@@ -8,10 +8,19 @@
 
 import * as BackgroundFetch from 'expo-background-fetch'
 import * as TaskManager from 'expo-task-manager'
+import { randomUUID } from 'expo-crypto'
 import { apiClient } from '@/shared/api/client'
 import { openLocalDatabase } from '@/shared/lib/db/database'
-import { createApiTransport, createSyncEngine } from './sync-engine'
-import { getOwnerUserId } from './sync-meta'
+import {
+  configureIdFactory,
+  createApiTransport,
+  createSyncEngine,
+  getOwnerUserId,
+} from '@expense-tracker/local-data'
+
+// Headless task runs may skip the app entry, so this module binds the id
+// factory itself (idempotent, same as the _layout bootstrap).
+configureIdFactory(randomUUID)
 
 /** Task name shared by TaskManager.defineTask and registerTaskAsync. */
 export const BACKGROUND_SYNC_TASK = 'background-sync'

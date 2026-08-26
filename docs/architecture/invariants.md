@@ -157,7 +157,7 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   status mapping `errormap.go:96-110`; spec requires `version` on all three
   PATCH bodies; TS `VERSION_CONFLICT_CODES` → `VersionConflictError`
   (`api-errors.ts`); mobile mirrors CAS locally
-  (`entities/transaction/api/local-repository.ts:318`).
+  (`packages/local-data/src/repositories/transaction.ts`).
 - **Risk if violated**: Lost updates — the sync protocol's conflict
   semantics and multi-device editing depend on versions.
 - **Current enforcement**: backend integration tests (optimistic
@@ -360,8 +360,8 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
 - **Evidence**: mobile — providers in `src/app/_layout.tsx` always mount
   local repositories; `shared/lib/query/query-client.ts` states "UI cache
   ... NOT the offline store"; row+outbox single-transaction writes in
-  `entities/*/api/local-repository.ts`; engine + transport seam in
-  `shared/lib/sync/sync-engine.ts` / `createApiTransport`; ownership gate
+  `packages/local-data/src/repositories/*`; engine + transport seam in
+  `packages/local-data/src/sync/sync-engine.ts` / `createApiTransport`; ownership gate
   `sync_meta.owner_user_id` in `use-auth.tsx:74-113`;
   `openspec/specs/mobile-local-data` and `sync-protocol` codify it. Web
   today: HTTP repositories + @pinia/colada SWR (online-first) — exempt
@@ -369,8 +369,9 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
 - **Risk if violated**: direct API calls from offline-first client UI
   would bypass the outbox, creating changes that never sync;
   cache-as-store confusion reintroduces online-only behavior.
-- **Current enforcement**: structure + jest suites over the engine and
-  repositories (local); dependency-cruiser `api-client-seam` rule bans
+- **Current enforcement**: structure + vitest suites in the package (engine
+  and repositories) + jest suites in the app; dependency-cruiser
+  `api-client-seam` rule bans
   direct `shared/api` imports outside session/sync
   (`pnpm arch:check`, CI).
 - **Automated**: partially — import seam yes (CI); behavior no.

@@ -2,7 +2,7 @@
 // functions of the operation set - never stored, no netting across
 // directions, over-repayment yields a negative balance).
 
-import { describe, expect, it } from '@jest/globals'
+import { describe, expect, it } from 'vitest'
 import type { DebtOperation } from '@expense-tracker/api'
 import { balanceInDirection, balancesByDebtor, totalsByDirection } from './balances'
 

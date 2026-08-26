@@ -6,7 +6,7 @@ import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 import { render, waitFor, act } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
+import { createTestDatabase } from '@expense-tracker/local-data/testing'
 import { DatabaseProvider } from '@/shared/lib/db/database-context'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { createQueryClient } from '@/shared/lib/query/query-client'
@@ -20,9 +20,13 @@ import { DebtRepositoryProvider } from '@/entities/debt'
 import { createLocalDebtOperationRepository, createLocalDebtorRepository } from '@/entities/debt'
 import { PlannedPaymentRepositoryProvider } from '@/entities/planned-payment'
 import { createLocalPlannedPaymentRepository } from '@/entities/planned-payment'
-import { categories, syncOutbox } from '@/shared/lib/db/schema'
+import {
+  categories,
+  syncOutbox,
+  listUnresolvedConflicts,
+  recordConflict,
+} from '@expense-tracker/local-data'
 import { eq } from 'drizzle-orm'
-import { listUnresolvedConflicts, recordConflict } from '@/shared/lib/sync/conflicts'
 import { ConflictCenter } from './conflict-center'
 
 // Mock variables must carry the `mock` prefix to be referenceable from the

@@ -8,7 +8,7 @@
 
 import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { nowIso } from '@expense-tracker/dates'
-import type { LocalTransaction } from './database'
+import type { LocalTransaction } from './types'
 import {
   accounts,
   categories,
@@ -21,7 +21,7 @@ import {
   type SyncOperationKind,
   type SyncOutboxRow,
 } from './schema'
-import { generateId } from '../generate-id'
+import { generateId } from './id-factory'
 
 export interface EnqueueOperationInput {
   entity: SyncEntity

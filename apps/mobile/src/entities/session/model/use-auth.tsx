@@ -21,7 +21,7 @@ import { setUnauthorizedHandler, UnauthorizedError } from '@expense-tracker/api'
 import { sessionApi } from '../api/session-api'
 import type { AuthResult, AuthStatus, User } from './types'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
-import { getOwnerUserId, setOwnerUserId, wipeLocalData } from '@/shared/lib/sync/sync-meta'
+import { getOwnerUserId, setOwnerUserId, wipeLocalData } from '@expense-tracker/local-data'
 
 export interface AuthController {
   status: AuthStatus

@@ -27,13 +27,13 @@ import {
   type SyncPushResultItem,
   type SyncPullPage,
 } from '@expense-tracker/api'
-import type { LocalDatabase, LocalTransaction } from '@/shared/lib/db/database'
+import type { LocalDatabase, LocalTransaction } from '../types'
 import {
   applyPushConfirmations,
   coalesceUnsentOperations,
   pendingOperations,
   type PushConfirmation,
-} from '@/shared/lib/db/outbox'
+} from '../outbox'
 import {
   accounts,
   categories,
@@ -49,7 +49,7 @@ import {
   type PlannedPaymentRow,
   type SyncOutboxRow,
   type TransactionRow,
-} from '@/shared/lib/db/schema'
+} from '../schema'
 import {
   applyDeleteWins,
   applyLocalDeleteWins,

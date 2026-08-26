@@ -23,11 +23,16 @@ import { createLocalAccountRepository } from '@/entities/account'
 import { createLocalCategoryRepository } from '@/entities/category'
 import { createLocalTransactionRepository } from '@/entities/transaction'
 import type { LocalDatabase } from '@/shared/lib/db/database'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import { syncOutbox, categories as categoriesTable } from '@/shared/lib/db/schema'
+import { createTestDatabase } from '@expense-tracker/local-data/testing'
+import {
+  categories as categoriesTable,
+  syncOutbox,
+  listUnresolvedConflicts,
+  resolveConflictTakeServer,
+  createApiTransport,
+  createSyncEngine,
+} from '@expense-tracker/local-data'
 import { eq } from 'drizzle-orm'
-import { listUnresolvedConflicts, resolveConflictTakeServer } from './conflicts'
-import { createApiTransport, createSyncEngine } from './sync-engine'
 
 const API_URL = process.env.SYNC_INTEGRATION_API ?? ''
 const maybe = API_URL ? describe : describe.skip

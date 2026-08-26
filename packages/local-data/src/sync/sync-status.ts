@@ -3,8 +3,8 @@
 // invalidated by the engine after every run.
 
 import { count, isNull } from 'drizzle-orm'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { syncConflicts, syncOutbox } from '@/shared/lib/db/schema'
+import type { LocalDatabase } from '../types'
+import { syncConflicts, syncOutbox } from '../schema'
 import { LAST_SYNCED_AT_KEY, getMetaValue } from './sync-meta'
 
 export interface SyncStatusSnapshot {

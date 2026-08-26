@@ -27,6 +27,8 @@ module.exports = {
     "^@expense-tracker/money$": "<rootDir>/../../packages/money/src/index.ts",
     "^@expense-tracker/api$": "<rootDir>/../../packages/api/src/index.ts",
     "^@expense-tracker/dates$": "<rootDir>/../../packages/dates/src/index.ts",
+    "^@expense-tracker/local-data$": "<rootDir>/../../packages/local-data/src/index.ts",
+    "^@expense-tracker/local-data/testing$": "<rootDir>/../../packages/local-data/src/testing/index.ts",
   },
   maxWorkers: "50%",
 }

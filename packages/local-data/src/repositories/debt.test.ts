@@ -3,7 +3,7 @@
 // validated against live debtors, a live-only in-use guard on debtor delete,
 // tombstones, and atomic mutation+outbox writes.
 
-import { beforeEach, describe, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
 import {
   AlreadyExistsError,
@@ -12,11 +12,11 @@ import {
   UnknownReferencesError,
   VersionConflictError,
 } from '@expense-tracker/api'
-import * as outboxModule from '@/shared/lib/db/outbox'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import { debtOperations, debtors, syncOutbox } from '@/shared/lib/db/schema'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { createLocalDebtOperationRepository, createLocalDebtorRepository } from './local-repository'
+import * as outboxModule from '../outbox'
+import { createTestDatabase } from '../testing/test-database'
+import { debtOperations, debtors, syncOutbox } from '../schema'
+import type { LocalDatabase } from '../types'
+import { createLocalDebtOperationRepository, createLocalDebtorRepository } from './debt'
 
 const DEBTOR = { name: 'Анна', note: 'коллега' }
 const OPERATION = {
@@ -149,7 +149,7 @@ describe('local debtor repository', () => {
 
   it('rolls back the record and the queued operation when the outbox write dies', async () => {
     const repo = createLocalDebtorRepository(db)
-    const spy = jest.spyOn(outboxModule, 'enqueueOperation').mockImplementation(() => {
+    const spy = vi.spyOn(outboxModule, 'enqueueOperation').mockImplementation(() => {
       throw new Error('killed before the sync operation was durably recorded')
     })
 

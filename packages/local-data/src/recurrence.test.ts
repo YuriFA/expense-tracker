@@ -2,7 +2,7 @@
 // D2): both implementations are pinned by the same table so a locally
 // confirmed plan and the server's auto job compute identical series.
 
-import { describe, expect, it } from '@jest/globals'
+import { describe, expect, it } from 'vitest'
 import type { PlannedPaymentRegularity } from '@expense-tracker/api'
 import { advanceNextDue, monthlyAmount, monthlyTotal } from './recurrence'
 

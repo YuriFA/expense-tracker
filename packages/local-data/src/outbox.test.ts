@@ -3,18 +3,18 @@
 // repository supplies the mutations, `applyPushConfirmations` /
 // `coalesceUnsentOperations` supply the (future) sync engine's transitions.
 
-import { beforeEach, describe, expect, it } from '@jest/globals'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
-import { createLocalCategoryRepository } from '@/entities/category'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
+import { createLocalCategoryRepository } from './repositories/category'
+import { createTestDatabase } from './testing/test-database'
 import {
   applyPushConfirmations,
   coalesceUnsentOperations,
   pendingOperations,
   type PushConfirmation,
-} from '@/shared/lib/db/outbox'
-import { categories, syncOutbox, type SyncEntity } from '@/shared/lib/db/schema'
-import type { LocalDatabase } from '@/shared/lib/db/database'
+} from './outbox'
+import { categories, syncOutbox, type SyncEntity } from './schema'
+import type { LocalDatabase } from './types'
 
 const PAYLOAD = { name: 'Такси', type: 'expense' as const, icon: 'car', color: '#7c5cff' }
 

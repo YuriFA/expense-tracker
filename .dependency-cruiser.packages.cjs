@@ -34,6 +34,14 @@ module.exports = {
       to: { path: '^(react-native|vue|vue-router|pinia|@vue/.+|react|react-dom)$' },
     },
     {
+      name: 'pkg-no-expo',
+      comment:
+        'invariant #12: expo-* / react-native-* runtime modules are banned in packages — pkg-no-platform-frameworks does not catch them (drizzle-orm/expo-sqlite* subpaths are drizzle code, not expo, and do not match)',
+      severity: 'error',
+      from: { path: '^packages/[^/]+/src/' },
+      to: { path: '^(expo-[^/]+|react-native-[^/]+)$' },
+    },
+    {
       name: 'pkg-no-date-fns-outside-dates',
       comment: 'invariant #14: date-fns lives only inside packages/dates',
       severity: 'error',

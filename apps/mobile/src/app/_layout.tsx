@@ -33,9 +33,14 @@ import {
 } from '@/entities/planned-payment'
 import { registerBackgroundSync } from '@/shared/lib/sync/background-sync'
 import { createLocalSyncTransport } from '@/shared/lib/sync/transport'
-import { createSyncEngine, type SyncEngineState } from '@/shared/lib/sync/sync-engine'
+import { configureIdFactory, createSyncEngine, type SyncEngineState } from '@expense-tracker/local-data'
+import { randomUUID } from 'expo-crypto'
 import { SyncContext, type SyncController } from '@/shared/lib/sync/sync-context'
 import { ConflictCenter } from '@/features/sync-conflicts'
+
+// Hermes has no WebCrypto: bind the shared id factory to expo-crypto before
+// any database work (ids are minted inside @expense-tracker/local-data).
+configureIdFactory(randomUUID)
 
 /**
  * Feeds safe-area insets into Uniwind so `*-safe` utilities (e.g. Screen's

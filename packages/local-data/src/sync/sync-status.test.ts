@@ -1,9 +1,9 @@
 // The sync status snapshot feeds the badge count: resolved conflict rows are
 // kept for history forever, so only unresolved ones may be counted.
 
-import { beforeEach, describe, expect, it } from '@jest/globals'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import type { LocalDatabase } from '@/shared/lib/db/database'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createTestDatabase } from '../testing/test-database'
+import type { LocalDatabase } from '../types'
 import { markConflictResolved, recordConflict } from './conflicts'
 import { readSyncStatus } from './sync-status'
 

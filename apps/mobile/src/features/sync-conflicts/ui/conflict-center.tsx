@@ -32,7 +32,7 @@ import {
   resolveConflictKeepLocal,
   resolveConflictTakeServer,
   type LocalSyncConflict,
-} from '@/shared/lib/sync/conflicts'
+} from '@expense-tracker/local-data'
 import { useSyncController } from '@/shared/lib/sync/sync-context'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 

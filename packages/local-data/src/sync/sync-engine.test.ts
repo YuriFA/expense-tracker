@@ -6,21 +6,21 @@
 // batches, 401 pause/resume, CLEAN-only pull applies, pull-newer-on-dirty,
 // delete-wins with restore-as-new, restart with open conflicts, backoff.
 
-import { beforeEach, describe, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   UnauthorizedError,
   type SyncPushOperation,
   type SyncPullPage,
   type SyncPushResultItem,
 } from '@expense-tracker/api'
-import { createLocalAccountRepository } from '@/entities/account'
-import { createLocalCategoryRepository } from '@/entities/category'
-import { createLocalTransactionRepository } from '@/entities/transaction'
-import { createLocalDebtOperationRepository, createLocalDebtorRepository } from '@/entities/debt'
-import { balancesByDebtor } from '@/entities/debt/model/balances'
-import { createLocalPlannedPaymentRepository } from '@/entities/planned-payment'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import type { LocalDatabase } from '@/shared/lib/db/database'
+import { createLocalAccountRepository } from '../repositories/account'
+import { createLocalCategoryRepository } from '../repositories/category'
+import { createLocalTransactionRepository } from '../repositories/transaction'
+import { createLocalDebtOperationRepository, createLocalDebtorRepository } from '../repositories/debt'
+import { balancesByDebtor } from '../balances'
+import { createLocalPlannedPaymentRepository } from '../repositories/planned-payment'
+import { createTestDatabase } from '../testing/test-database'
+import type { LocalDatabase } from '../types'
 import {
   categories,
   debtOperations,
@@ -28,7 +28,7 @@ import {
   plannedPayments,
   syncOutbox,
   type SyncEntity,
-} from '@/shared/lib/db/schema'
+} from '../schema'
 import { eq } from 'drizzle-orm'
 import {
   listUnresolvedConflicts,
@@ -897,7 +897,7 @@ describe('sync engine: debts', () => {
       data: { name: 'Сергей', note: '' },
     })
 
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     try {
       const outcome = await engine.run({ force: true })
       expect(outcome.pulled).toBe(2)
@@ -959,7 +959,7 @@ describe('sync engine: debts', () => {
       data: { name: 'Сергей', note: '' },
     })
 
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     try {
       const outcome = await oldBuildEngine.run({ force: true })
       expect(outcome.pulled).toBe(2)

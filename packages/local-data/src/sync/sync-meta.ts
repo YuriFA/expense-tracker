@@ -3,7 +3,7 @@
 // (design D9). KV-shaped so no migration is ever needed for new keys.
 
 import { eq, inArray } from 'drizzle-orm'
-import type { LocalDatabase, LocalTransaction } from '@/shared/lib/db/database'
+import type { LocalDatabase, LocalTransaction } from '../types'
 import {
   accounts,
   categories,
@@ -14,7 +14,7 @@ import {
   syncMeta,
   syncOutbox,
   transactions,
-} from '@/shared/lib/db/schema'
+} from '../schema'
 
 type DbLike = LocalDatabase | LocalTransaction
 

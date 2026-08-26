@@ -22,10 +22,10 @@ import {
   type TransactionRepository,
   type UpdateTransactionPayload,
 } from '@expense-tracker/api'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { enqueueOperation, hasSentOperations, removeOperationsFor } from '@/shared/lib/db/outbox'
-import { accounts, categories, transactions, type TransactionRow } from '@/shared/lib/db/schema'
-import { generateId } from '@/shared/lib/generate-id'
+import type { LocalDatabase } from '../types'
+import { enqueueOperation, hasSentOperations, removeOperationsFor } from '../outbox'
+import { accounts, categories, transactions, type TransactionRow } from '../schema'
+import { generateId } from '../id-factory'
 
 type LocalTx = Parameters<Parameters<LocalDatabase['transaction']>[0]>[0]
 

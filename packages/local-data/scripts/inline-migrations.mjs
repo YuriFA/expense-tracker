@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const migrationsDir = path.join(appRoot, 'drizzle')
-const outFile = path.join(appRoot, 'src/shared/lib/db/migrations.generated.ts')
+const outFile = path.join(appRoot, 'src/migrations.generated.ts')
 
 const journal = JSON.parse(readFileSync(path.join(migrationsDir, 'meta/_journal.json'), 'utf8'))
 

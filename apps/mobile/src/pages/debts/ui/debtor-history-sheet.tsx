@@ -21,7 +21,7 @@ import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import { formatAmount } from '@/shared/lib/format/format'
-import { balanceInDirection } from '@/entities/debt/model/balances'
+import { balanceInDirection } from '@expense-tracker/local-data'
 import { DEBTS_COPY, DEBT_DIRECTION_VIEWS, DEBT_KIND_LABELS } from '../model/kind'
 import { debtorHistoryGroups } from '../model/selectors'
 

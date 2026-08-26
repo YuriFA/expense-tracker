@@ -2,15 +2,15 @@
 // + manual adjustment + signed transaction impacts), in-use deletion guard,
 // validation, and the outbox/version rules shared with the other entities.
 
-import { beforeEach, describe, expect, it } from '@jest/globals'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { InvalidPayloadError, NotFoundError, ReferentialIntegrityError } from '@expense-tracker/api'
-import { createLocalTransactionRepository } from '@/entities/transaction'
-import { createLocalCategoryRepository } from '@/entities/category'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
-import { accounts, syncOutbox } from '@/shared/lib/db/schema'
-import type { LocalDatabase } from '@/shared/lib/db/database'
-import { createLocalAccountRepository } from './local-repository'
+import { createLocalTransactionRepository } from '../repositories/transaction'
+import { createLocalCategoryRepository } from '../repositories/category'
+import { createTestDatabase } from '../testing/test-database'
+import { accounts, syncOutbox } from '../schema'
+import type { LocalDatabase } from '../types'
+import { createLocalAccountRepository } from './account'
 
 let db: LocalDatabase
 let accountRepo: ReturnType<typeof createLocalAccountRepository>

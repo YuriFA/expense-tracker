@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { CreatePlannedPaymentPayload, UpdatePlannedPaymentPayload } from '@expense-tracker/api'
 import { usePlannedPaymentRepository } from '../api/repository'
-import type { ConfirmPlannedPaymentInput } from '../api/local-repository'
+import type { ConfirmPlannedPaymentInput } from '@expense-tracker/local-data'
 
 /**
  * Loads ALL live plans in ONE query: card figures, per-type lists, and

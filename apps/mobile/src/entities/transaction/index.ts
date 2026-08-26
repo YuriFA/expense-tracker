@@ -1,5 +1,5 @@
 export { TransactionRepositoryProvider, useTransactionRepository } from './api/repository'
-export { createLocalTransactionRepository } from './api/local-repository'
+export { createLocalTransactionRepository } from '@expense-tracker/local-data'
 export {
   useTransaction,
   useTransactions,

@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Text } from '@/shared/ui/text'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
-import { isOfflineGateEnabled, setOfflineGate } from '@/shared/lib/sync/offline-gate'
+import { isOfflineGateEnabled, setOfflineGate } from '@expense-tracker/local-data'
 import { useSyncController } from '@/shared/lib/sync/sync-context'
 import { Card } from '@/shared/ui/card'
 

@@ -19,7 +19,7 @@ import type {
   SyncOperationData,
   TransactionSyncData,
 } from '@expense-tracker/api'
-import type { LocalDatabase, LocalTransaction } from '@/shared/lib/db/database'
+import type { LocalDatabase, LocalTransaction } from '../types'
 import {
   accounts,
   categories,
@@ -34,7 +34,7 @@ import {
   type PlannedPaymentRow,
   type SyncEntity,
   type TransactionRow,
-} from '@/shared/lib/db/schema'
+} from '../schema'
 
 /** Either the raw db handle or a transaction over it (same select surface). */
 export type DbLike = LocalDatabase | LocalTransaction

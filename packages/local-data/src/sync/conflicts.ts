@@ -10,8 +10,8 @@
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import { nowIso } from '@expense-tracker/dates'
 import type { SyncOperationData } from '@expense-tracker/api'
-import type { LocalDatabase, LocalTransaction } from '@/shared/lib/db/database'
-import { enqueueOperation } from '@/shared/lib/db/outbox'
+import type { LocalDatabase, LocalTransaction } from '../types'
+import { enqueueOperation } from '../outbox'
 import {
   accounts,
   categories,
@@ -29,8 +29,8 @@ import {
   type SyncConflictRow,
   type SyncEntity,
   type TransactionRow,
-} from '@/shared/lib/db/schema'
-import { generateId } from '@/shared/lib/generate-id'
+} from '../schema'
+import { generateId } from '../id-factory'
 import { readEntityRow, rowToPayload, syncDataToRowPatch } from './sync-data'
 
 type SyncConflictKind = 'version' | 'deleted'

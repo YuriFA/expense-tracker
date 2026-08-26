@@ -4,12 +4,11 @@
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { createTestDatabase } from '@/shared/lib/db/testing/test-database'
+import { createTestDatabase } from '@expense-tracker/local-data/testing'
 import { DatabaseProvider } from '@/shared/lib/db/database-context'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { enqueueOperation } from '@/shared/lib/db/outbox'
-import { recordConflict } from '@/shared/lib/sync/conflicts'
+import { enqueueOperation, recordConflict } from '@expense-tracker/local-data'
 import { SyncStatusBadge } from './sync-status-badge'
 
 const mockUseAuth = { status: 'authenticated', replace: jest.fn() }

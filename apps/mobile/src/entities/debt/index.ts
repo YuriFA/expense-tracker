@@ -6,7 +6,7 @@ export {
 export {
   createLocalDebtorRepository,
   createLocalDebtOperationRepository,
-} from './api/local-repository'
+} from '@expense-tracker/local-data'
 export {
   useDebtors,
   useDebtOperations,
