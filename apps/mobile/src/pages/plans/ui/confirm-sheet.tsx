@@ -58,14 +58,12 @@ function toConfirmInput(values: ConfirmPlanFormValues, planId: string): ConfirmP
 }
 
 export function ConfirmSheet({ plan }: { plan: PlannedPayment }) {
-  // Mounts with its subject and self-presents (the edit-sheet pattern).
+  // Mounts with its subject; presentOnMount presents it (forms.md §3). The
+  // ref stays for the post-submit dismissal.
   const sheetRef = useRef<BottomSheetRef>(null)
   // The date picker declared by the row below re-renders beside this sheet
   // element (outside its portal content) — see useSheetContentPickers.
   const pickers = useSheetContentPickers()
-  useEffect(() => {
-    sheetRef.current?.present()
-  }, [])
 
   const view = PLAN_TYPE_VIEWS[plan.type]
   const accounts = useAccounts().data ?? []
@@ -117,6 +115,7 @@ export function ConfirmSheet({ plan }: { plan: PlannedPayment }) {
           neither subtree (the plan-form-sheet pattern). */}
       <BottomSheet
         ref={sheetRef}
+        presentOnMount
         testID="plans-confirm-sheet"
         snapPoints={['65%']}
         stackBehavior="push"

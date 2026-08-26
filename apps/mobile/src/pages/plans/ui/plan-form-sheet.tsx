@@ -71,16 +71,13 @@ export type PlanFormSheetProps =
   | { type?: undefined; plan: PlannedPayment }
 
 export function PlanFormSheet(props: PlanFormSheetProps) {
-  // Both variants mount fresh with their subject and self-present (the
-  // new-debtor-debt pattern): a parent-side present() would race the
-  // conditional mount and be lost.
+  // Both variants mount fresh with their subject; presentOnMount presents
+  // them (forms.md §3) — a parent-side present() would race the conditional
+  // mount and be lost. The ref stays for the post-submit dismissal.
   const sheetRef = useRef<BottomSheetRef>(null)
   // The pickers declared by the rows below re-render beside this sheet
   // element (outside its portal content) — see useSheetContentPickers.
   const pickers = useSheetContentPickers()
-  useEffect(() => {
-    sheetRef.current?.present()
-  }, [])
 
   const view = PLAN_TYPE_VIEWS[props.plan ? props.plan.type : props.type]
 
@@ -177,6 +174,7 @@ export function PlanFormSheet(props: PlanFormSheetProps) {
       {pickers.nodes}
       <BottomSheet
         ref={sheetRef}
+        presentOnMount
         snapPoints={['75%']}
         stackBehavior="push"
         keyboardBehavior="extend"

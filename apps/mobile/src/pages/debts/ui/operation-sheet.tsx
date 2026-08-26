@@ -4,7 +4,6 @@
 // `operation-form.tsx` (conventions forms.md §3). Create is always
 // fixed-context (a contact's history sheet, design D9).
 
-import { useEffect } from 'react'
 import type { DebtDirection, DebtOperation } from '@expense-tracker/api'
 import { BottomSheet, BottomSheetView, type BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
@@ -20,13 +19,11 @@ export type OperationSheetProps =
     }
 
 export function OperationSheet({ ref, ...formProps }: OperationSheetProps) {
-  // The edit variant mounts WITH its subject (a parent-side present() would
-  // race the conditional mount and be lost); the create variant is presented
-  // imperatively by the page.
+  // The edit variant mounts WITH its subject and presents itself
+  // (presentOnMount); the create variant stays mounted without a subject and
+  // is opened imperatively by the page. The ref is the form's dismissal and
+  // the page's imperative path.
   const { operation } = formProps
-  useEffect(() => {
-    if (operation && ref && typeof ref !== 'function') ref.current?.present()
-  }, [operation, ref])
 
   const sheetTestId = operation ? 'debts-edit-operation-sheet' : 'debts-new-operation-sheet'
   const handleSuccess = () => {
@@ -42,7 +39,13 @@ export function OperationSheet({ ref, ...formProps }: OperationSheetProps) {
   return (
     <>
       {pickers.nodes}
-      <BottomSheet ref={ref} testID={sheetTestId} snapPoints={['80%']} stackBehavior="push">
+      <BottomSheet
+        ref={ref}
+        presentOnMount={Boolean(operation)}
+        testID={sheetTestId}
+        snapPoints={['80%']}
+        stackBehavior="push"
+      >
         {/* The visible element carrying the sheet testID (accounts-sheet
             pattern): the modal container is zero-bounds to Maestro. */}
         <BottomSheetView testID={sheetTestId} className="flex-1">

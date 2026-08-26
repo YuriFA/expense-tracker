@@ -32,15 +32,14 @@ export interface DebtorFormSheetProps {
 }
 
 export function DebtorFormSheet({ ref, debtor }: DebtorFormSheetProps) {
-  // The edit variant mounts WITH its subject (a parent-side present() would
-  // race the conditional mount and be lost).
-  useEffect(() => {
-    if (ref && typeof ref !== 'function') ref.current?.present()
-  }, [debtor, ref])
+  // Mounts WITH its subject; presentOnMount presents it (forms.md §3). While
+  // the subject stays set, the page's imperative present() is the reopen
+  // path. The ref is handed to the form for its dismissal.
 
   return (
     <BottomSheet
       ref={ref}
+      presentOnMount
       testID="debts-edit-debtor-sheet"
       snapPoints={['55%']}
       stackBehavior="push"

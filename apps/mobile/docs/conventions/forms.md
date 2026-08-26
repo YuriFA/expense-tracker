@@ -530,6 +530,15 @@ content after the close animation — `enableDismissOnClose` defaults to
 true and nothing in the app overrides it. A sheet minimized by another
 sheet's `stackBehavior: 'switch'` presentation stays mounted instead.
 
+Opening follows one seam. A sheet mounted conditionally with its subject
+presents itself through the shared wrapper's `presentOnMount` prop — the
+single place the imperative `present()` effect lives. Never hand-roll a
+`useEffect(() => ref.current?.present(), …)` at a call site: a parent-side
+`present()` races the conditional mount and is lost. Sheets that stay
+mounted across opens (page-held singletons like the plans list or the
+debtor history) are opened imperatively by the page's `ref.present()` in
+the open handler, which is also the reopen path while a subject stays set.
+
 What survives close is not the content but the form **store**: `useForm`
 usually lives in a host component that outlives the open/close cycle, and
 re-mounted content subscribes back to that surviving store — so a

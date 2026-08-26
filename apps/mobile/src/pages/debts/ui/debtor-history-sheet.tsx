@@ -6,7 +6,6 @@
 // the page passes the derived views and callbacks down (invariant #15 - the
 // page owns all sheet composition).
 
-import { useEffect } from 'react'
 import { View } from 'react-native'
 import type { DebtDirection, DebtOperation, Debtor } from '@expense-tracker/api'
 import {
@@ -47,19 +46,22 @@ export function DebtorHistorySheet({
   onEditDebtor,
   onNewOperation,
 }: DebtorHistorySheetProps) {
-  // Present when a selection arrives: a parent-side present() would race the
-  // selection's commit (the sheet renders nothing until the debtor is set)
-  // and be lost.
-  useEffect(() => {
-    if (debtor && ref && typeof ref !== 'function') ref.current?.present()
-  }, [debtor, ref])
+  // The sheet element mounts with the first selection and presents itself
+  // (presentOnMount); later opens and debtor swaps go through the page's
+  // imperative present() while the sheet stays mounted.
 
   if (!debtor) return null
 
   const groups = debtorHistoryGroups(operations, debtor.id, direction)
 
   return (
-    <BottomSheet ref={ref} snapPoints={['75%']} testID="debts-history-sheet" stackBehavior="push">
+    <BottomSheet
+      ref={ref}
+      presentOnMount
+      snapPoints={['75%']}
+      testID="debts-history-sheet"
+      stackBehavior="push"
+    >
       {/* The visible element carrying the sheet testID (accounts-sheet
           pattern): the modal container is zero-bounds to Maestro. */}
       <BottomSheetView testID="debts-history-sheet" className="flex-1">

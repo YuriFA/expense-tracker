@@ -13,7 +13,7 @@
 // keeps the created debtor id: a retry records the operation for that
 // contact instead of colliding with its own duplicate name.
 
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, FormProvider, useForm } from 'react-hook-form'
 import { View } from 'react-native'
@@ -46,12 +46,9 @@ export interface NewDebtorDebtSheetProps {
 }
 
 export function NewDebtorDebtSheet({ direction }: NewDebtorDebtSheetProps) {
-  // Mounted per open with a fresh key and self-presented (a parent-side
-  // present() would race the conditional mount and be lost).
+  // Mounted per open with a fresh key; presentOnMount presents it
+  // (forms.md §3). The ref is handed to the form for its dismissal.
   const sheetRef = useRef<BottomSheetRef>(null)
-  useEffect(() => {
-    sheetRef.current?.present()
-  }, [])
 
   // The date picker declared inside the form re-renders beside this sheet
   // element (outside its portal content) — see useSheetContentPickers.
@@ -62,6 +59,7 @@ export function NewDebtorDebtSheet({ direction }: NewDebtorDebtSheetProps) {
       {pickers.nodes}
       <BottomSheet
         ref={sheetRef}
+        presentOnMount
         testID="debts-new-debt-sheet"
         snapPoints={['70%']}
         stackBehavior="push"

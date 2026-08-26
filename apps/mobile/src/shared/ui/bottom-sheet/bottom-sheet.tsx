@@ -1,4 +1,4 @@
-import React, { ComponentProps, useImperativeHandle, useMemo, useRef } from 'react'
+import React, { ComponentProps, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 
 import {
   BottomSheetBackdrop,
@@ -51,6 +51,17 @@ export type BottomSheetProps = Omit<
    * @default false
    */
   enableDynamicSizing?: boolean
+
+  /**
+   * Present the sheet when it mounts (and whenever this flips to true). This
+   * is the single place the imperative `present()` effect lives: a sheet
+   * mounted conditionally with its subject must present itself, because a
+   * parent-side present() would race the conditional mount and be lost
+   * (forms.md §3). Call sites must not hand-roll this effect.
+   *
+   * @default false
+   */
+  presentOnMount?: boolean
 }
 
 // @gorhom v5 defaults the sheet content wrapper to `accessible` +
@@ -65,6 +76,7 @@ export const BottomSheet = ({
   enablePanDownToClose = true,
   enableDynamicSizing = false,
   enableBackdropPress = true,
+  presentOnMount = false,
   ref,
   children,
   className,
@@ -72,6 +84,10 @@ export const BottomSheet = ({
   ...props
 }: BottomSheetProps) => {
   const bottomSheetRef = useRef<BottomSheetModal>(null)
+
+  useEffect(() => {
+    if (presentOnMount) bottomSheetRef.current?.present()
+  }, [presentOnMount])
 
   useImperativeHandle(
     ref,
