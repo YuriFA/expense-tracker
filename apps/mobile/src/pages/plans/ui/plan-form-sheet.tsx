@@ -12,26 +12,17 @@
 // grouping is display-only); the named mappers convert to int64 minor
 // units exactly once at the submission boundary (forms.md §4).
 //
-// The root owns the form lifecycle and submission; field sections subscribe
-// to their own slice through useFormContext (forms.md §8). Edit mode carries
-// the record's CAS `version` and a delete affordance; the plan's `type` is
-// immutable server-side and arrives only as the fixed variant context.
+// The root owns the form lifecycle and submission; the field sections
+// live in `form-rows.tsx` and subscribe to their own slice through
+// useFormContext (forms.md §8). Edit mode carries the record's CAS
+// `version` and a delete affordance; the plan's `type` is immutable
+// server-side and arrives only as the fixed variant context.
 
 import { useEffect, useMemo, useRef } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  FormProvider,
-  useController,
-  useForm,
-  useFormContext,
-  useFormState,
-  useWatch,
-} from 'react-hook-form'
-import { Alert, View } from 'react-native'
-import { currencySymbol } from '@expense-tracker/money'
+import { FormProvider, useForm } from 'react-hook-form'
+import { Alert } from 'react-native'
 import type { PlannedPayment, PlannedPaymentType } from '@expense-tracker/api'
-import { useAccounts } from '@/entities/account'
-import { useCategories } from '@/entities/category'
 import {
   useCreatePlannedPayment,
   useDeletePlannedPayment,
@@ -39,23 +30,15 @@ import {
   requestNotificationPermissions,
 } from '@/entities/planned-payment'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
-import { groupAmountInput, minorToInputValue } from '@/shared/lib/money/display'
-import { sanitizeAmountInput } from '@/shared/lib/money/parse'
-import { AccountPickerSheet } from '@/shared/ui/account-picker-sheet'
+import { minorToInputValue } from '@/shared/lib/money/display'
 import {
   BottomSheet,
   BottomSheetHeader,
-  BottomSheetInput,
   BottomSheetScrollView,
   type BottomSheetRef,
 } from '@/shared/ui/bottom-sheet'
-import { CategoryPickerSheet } from '@/shared/ui/category-picker-sheet'
-import { FormError } from '@/shared/ui/form'
-import { SheetContentPortal, useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
-import { Icon, type IconName } from '@/shared/ui/icon'
+import { useSheetContentPickers } from '@/shared/ui/sheet-content-portal'
 import { IconButton } from '@/shared/ui/icon-button'
-import { Text } from '@/shared/ui/text'
-import { cn } from '@/shared/lib/utils'
 import {
   PLANS_CONFIRM_MODE_DESCRIPTIONS,
   PLANS_CONFIRM_MODE_LABELS,
@@ -71,8 +54,16 @@ import {
   type PlanFormValues,
 } from '../model/schema'
 import { PlansFormFooter } from './form-actions'
-import { PlansDateFieldRow, PlansFieldRow, PlansNoteFieldRow } from './form-rows'
-import { OptionPickerSheet, type OptionItem } from './option-picker-sheet'
+import {
+  AccountRow,
+  AmountField,
+  CategoryRow,
+  NameField,
+  OptionFieldRow,
+  PlansDateFieldRow,
+  PlansNoteFieldRow,
+  RootError,
+} from './form-rows'
 
 /** Either a create (type fixed from the card) or an edit (its plan). */
 export type PlanFormSheetProps =
@@ -124,8 +115,11 @@ export function PlanFormSheet(props: PlanFormSheetProps) {
   const deletePlan = useDeletePlannedPayment()
   const pending = createPlan.isPending || updatePlan.isPending || deletePlan.isPending
 
-  // Sheets stay mounted in @gorhom, so prefill/reset must be explicit
-  // (forms.md §3); trigger() recomputes validity for the fresh defaults.
+  // @gorhom v5 unmounts the sheet content on close, but this component —
+  // and with it the form store — stays mounted while the page holds the
+  // create context / editingPlan, so prefill is an explicit reset
+  // (forms.md §3); reset() does not re-run the resolver — trigger()
+  // recomputes validity for the fresh defaults.
   useEffect(() => {
     form.reset(defaults)
     void form.trigger()
@@ -172,6 +166,12 @@ export function PlanFormSheet(props: PlanFormSheetProps) {
     }
   }
 
+  // Both portaled subtrees carry their own FormProvider: @gorhom/portal
+  // renders the content and the footer inside its host at the app root (a
+  // registry portal, not React's createPortal), so a provider above the
+  // <BottomSheet> reaches neither. The footer itself must stay in
+  // footerComponent — an in-content footer's accessibility coordinates go
+  // stale over the extended keyboard (see confirm-sheet).
   return (
     <>
       {pickers.nodes}
@@ -211,14 +211,13 @@ export function PlanFormSheet(props: PlanFormSheetProps) {
               }
             />
 
-            <AmountField />
-
             {/* The visible element carrying the sheet testID (accounts-sheet
             pattern): the modal container is zero-bounds to Maestro. */}
             <BottomSheetScrollView
               testID="plans-form-sheet"
               contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}
             >
+              <AmountField />
               <NameField />
               <AccountRow label={view.accountLabel} />
               <CategoryRow />
@@ -281,200 +280,4 @@ export function PlanFormSheet(props: PlanFormSheetProps) {
       </BottomSheet>
     </>
   )
-}
-
-/** The required positive amount with the account's currency chip beside it. */
-function AmountField() {
-  const { control, setValue } = useFormContext<PlanFormValues>()
-  const { field, fieldState } = useController({ name: 'amount', control })
-  const accounts = useAccounts().data ?? []
-  const accountId = useWatch({ control, name: 'accountId' })
-  // The plan's account owns the amount's currency; ₽ leads before one is
-  // chosen (design D7).
-  const currency = accounts.find((account) => account.id === accountId)?.currency ?? 'RUB'
-
-  return (
-    <View className="gap-1 px-4 pt-2">
-      <View className="flex-row items-center gap-3 rounded-2xl bg-secondary px-4 py-3">
-        <View className="flex-1">
-          <BottomSheetInput
-            testID="plans-form-amount"
-            className="border-0 bg-transparent px-0 py-1 text-3xl font-bold"
-            accessibilityLabel="Сумма"
-            keyboardType="decimal-pad"
-            placeholder="0"
-            value={groupAmountInput(field.value)}
-            onChangeText={(text) =>
-              setValue('amount', sanitizeAmountInput(text), { shouldValidate: true })
-            }
-            invalid={Boolean(fieldState.error)}
-          />
-        </View>
-        <Text variant="h3" className="text-muted-foreground" testID="plans-form-currency">
-          {currencySymbol(currency)}
-        </Text>
-      </View>
-      <FormError testID="plans-form-amount-error">{fieldState.error?.message}</FormError>
-    </View>
-  )
-}
-
-/** The optional name (an empty string means an unnamed plan). */
-function NameField() {
-  const { control } = useFormContext<PlanFormValues>()
-  const { field } = useController({ name: 'name', control })
-
-  return (
-    <BottomSheetInput
-      testID="plans-form-name"
-      placeholder="Название (необязательно)"
-      value={field.value}
-      onChangeText={field.onChange}
-      onBlur={field.onBlur}
-    />
-  )
-}
-
-/** The required account row («Счёт списания» / «Счёт зачисления») + picker. */
-function AccountRow({ label }: { label: string }) {
-  const { control, setValue } = useFormContext<PlanFormValues>()
-  const { field, fieldState } = useController({ name: 'accountId', control })
-  const accounts = useAccounts().data ?? []
-  const selected = accounts.find((account) => account.id === field.value)
-  const pickerRef = useRef<BottomSheetRef>(null)
-
-  return (
-    <>
-      <PlansFieldRow
-        label={label}
-        value={selected?.name}
-        placeholder="Выберите счёт"
-        leadingIcon={
-          <Icon name="card-outline" size={20} colorClassName="accent-muted-foreground" />
-        }
-        onPress={() => pickerRef.current?.present()}
-        testID="plans-form-account"
-        invalid={Boolean(fieldState.error)}
-      />
-      <SheetContentPortal>
-        <AccountPickerSheet
-          ref={pickerRef}
-          title={label}
-          accounts={accounts}
-          selectedId={field.value ?? ''}
-          onSelect={(id) => setValue('accountId', id, { shouldValidate: true })}
-          testIDPrefix="plans-form-account"
-        />
-      </SheetContentPortal>
-    </>
-  )
-}
-
-/** The required type-matched category row (colored icon) + picker. */
-function CategoryRow() {
-  const { control, setValue } = useFormContext<PlanFormValues>()
-  const { field, fieldState } = useController({ name: 'categoryId', control })
-  const typeField = useController({ name: 'type', control })
-  const categories = useCategories(typeField.field.value).data ?? []
-  const selected = categories.find((category) => category.id === field.value)
-  const pickerRef = useRef<BottomSheetRef>(null)
-
-  return (
-    <>
-      <PlansFieldRow
-        label="Категория"
-        value={selected?.name}
-        placeholder="Выберите категорию"
-        leadingIcon={
-          <View
-            className={cn(
-              'size-5 items-center justify-center rounded-full',
-              selected ? undefined : 'bg-muted',
-            )}
-            style={selected ? { backgroundColor: selected.color } : undefined}
-          >
-            <Icon
-              name={(selected?.icon ?? 'pricetag-outline') as IconName}
-              size={12}
-              colorClassName="accent-white"
-            />
-          </View>
-        }
-        onPress={() => pickerRef.current?.present()}
-        testID="plans-form-category"
-        invalid={Boolean(fieldState.error)}
-      />
-      <SheetContentPortal>
-        <CategoryPickerSheet
-          ref={pickerRef}
-          categories={categories}
-          selectedId={field.value ?? ''}
-          onSelect={(id) => setValue('categoryId', id, { shouldValidate: true })}
-        />
-      </SheetContentPortal>
-    </>
-  )
-}
-
-type OptionField = 'regularity' | 'confirmMode' | 'reminder'
-
-/**
- * A field row opening a single-choice option sheet. It subscribes only to
- * its own field, so a pick never re-renders the rest of the form
- * (forms.md §8). `onValueChange` observes transitions before the field is
- * written (e.g. the reminder permission request).
- */
-function OptionFieldRow({
-  label,
-  icon,
-  field,
-  testID,
-  options,
-  onValueChange,
-}: {
-  label: string
-  icon: IconName
-  field: OptionField
-  testID: string
-  options: ReadonlyArray<OptionItem<PlanFormValues[OptionField]>>
-  onValueChange?: (next: PlanFormValues[OptionField], previous: PlanFormValues[OptionField]) => void
-}) {
-  const { control, setValue } = useFormContext<PlanFormValues>()
-  const { field: fieldState } = useController({ name: field, control })
-  const sheetRef = useRef<BottomSheetRef>(null)
-  const selected = options.find((option) => option.value === fieldState.value)
-
-  return (
-    <>
-      <PlansFieldRow
-        label={label}
-        value={selected?.label}
-        placeholder="—"
-        leadingIcon={<Icon name={icon} size={20} colorClassName="accent-muted-foreground" />}
-        onPress={() => sheetRef.current?.present()}
-        testID={testID}
-      />
-      <SheetContentPortal>
-        <OptionPickerSheet
-          ref={sheetRef}
-          title={label}
-          options={options}
-          selected={fieldState.value}
-          onSelect={(next) => {
-            onValueChange?.(next, fieldState.value)
-            setValue(field, next)
-          }}
-          testIDPrefix={testID}
-        />
-      </SheetContentPortal>
-    </>
-  )
-}
-
-/** The form-level (repository) error slot, isolated. */
-function RootError() {
-  const { control } = useFormContext<PlanFormValues>()
-  const { errors } = useFormState({ control })
-
-  return <FormError testID="plans-form-error">{errors.root?.message}</FormError>
 }
