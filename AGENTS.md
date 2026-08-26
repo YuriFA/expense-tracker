@@ -109,6 +109,21 @@ both apps. Backend layering is enforced by depguard rules in
 `backend/.golangci.yml` (middleware allowlist exception lives in
 `issues.exclusions` there).
 
+## Agent skills
+
+Vendored agent skills live in `.agents/skills/` (git-tracked, canonical).
+`.zcode/skills/` is a local symlink mirror for the ZCode harness - recreate it
+with `for d in .agents/skills/*/; do ln -sfn "../../${d%/}" ".zcode/skills/$(basename "$d")"; done`.
+
+`skills-lock.json` (repo root) is the manifest of vendored skills: upstream
+`source` + `skillPath` + sha256 of the vendored `SKILL.md` (`computedHash`).
+Update it whenever a skill is added, removed, or refreshed.
+
+Vendored skills are advisory reference material. Where a skill conflicts with
+an `AGENTS.md`, a conventions doc, an OpenSpec spec, or an ADR, the repo's own
+conventions win. Don't apply a skill's optimization/pattern rules without a
+measured problem.
+
 ## Repo layout
 
 ```
