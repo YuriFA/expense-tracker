@@ -1,89 +1,29 @@
 {
   "version": 1,
   "skills": {
-    "expo-data-fetching": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-data-fetching/SKILL.md",
-      "computedHash": "422197195d96fd32036f92001cebd1590caf6445ba338aabc0c0b0cff5fa8977"
-    },
-    "expo-dev-client": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-dev-client/SKILL.md",
-      "computedHash": "41496a5bb64bb753640c3a7de9d58fce81330fbba61f822dabbc04b5f1d7447d"
-    },
-    "expo-examples": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-examples/SKILL.md",
-      "computedHash": "1d525c773458f166590f40cd3575d6fca440786fc99fdf58d4704af77d1495df"
-    },
-    "expo-module": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-module/SKILL.md",
-      "computedHash": "9c968a5bcb153ccdac1edbe014145ae37d6e6dac06846bfad7b2faaf890d88f0"
-    },
-    "expo-native-ui": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-native-ui/SKILL.md",
-      "computedHash": "938f33e77410dd410b7baa25f2380b5fa104e7b7d67b0f0ca64f7a53ddedcc61"
-    },
-    "expo-project-structure": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-project-structure/SKILL.md",
-      "computedHash": "00fd1404bb984f058c97296d28dce87c701ea4213b30c864babe24ed6cf12dc0"
-    },
-    "expo-router": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-router/SKILL.md",
-      "computedHash": "b5baa66d0024536b1410136b05e83d749fb5a1c8b72326b5096193c03523361c"
-    },
-    "expo-ui": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-ui/SKILL.md",
-      "computedHash": "5cbb2f0049e4d3a51cf6450b2d0032684e0881681a8f3dcea21b94164352fe61"
-    },
-    "expo-upgrade": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-upgrade/SKILL.md",
-      "computedHash": "440ca7d3ea4a7ff6c4ee10b18288e1dd79062d002be68f7d209c33ef8fc47daf"
-    },
-    "migrate-nativewind-to-uniwind": {
-      "source": "uni-stack/uniwind",
-      "sourceType": "github",
-      "skillPath": "skills/migrate-nativewind-to-uniwind/SKILL.md",
-      "computedHash": "095066623a369bccadd62065ac44e7b4addce4cd1f9317b08fc2f8ea2d9ad4bd"
-    },
     "react-native-best-practices": {
       "source": "callstackincubator/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-native-best-practices/SKILL.md",
-      "computedHash": "4b2b9561ff7b4b9d15ff76d2dd2a6191e3cdc7f36c06d171e377bfefcbcb2bfb"
+      "computedHash": "abdbb7fc34ad739420fe43632e0baa1d646a01d097c6905211aa8b5b41957bf1"
     },
     "uniwind": {
       "source": "uni-stack/uniwind",
       "sourceType": "github",
       "skillPath": "skills/uniwind/SKILL.md",
-      "computedHash": "ecdc81b7f18b46ca48843bdf052c0f9796d9da42578471ca725c38faf74673fd"
+      "computedHash": "8291adec0479f0713dd23ad3cfee0985515d21eb1e4e5f333c1fb1ba60028b46"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-best-practices/SKILL.md",
-      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+      "computedHash": "71ed7794962fa6e803ee83030517b5b93a9f70fbfeb431ec4535c5480a8d8355"
     },
     "vercel-react-native-skills": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-native-skills/SKILL.md",
-      "computedHash": "41d24eafa7c3d82e270439808f7cfbc4d51aeb2d14f2809a2267c16275784d06"
+      "computedHash": "4012750a5ccbe064ca04af3835d5d1b011979d2d09d9b6df1c8128fac58e0a66"
     }
   }
 }
