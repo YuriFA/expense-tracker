@@ -329,6 +329,16 @@ prevent a full green run.
 
 ## Code quality rules for agents
 
+External agent skills installed under `.agents/skills/` (Callstack
+`react-native-best-practices`, Vercel `vercel-react-best-practices` /
+`vercel-react-native-skills`) are advisory reference material for
+performance and RN patterns. Where a skill conflicts with this file,
+`docs/conventions/*`, an OpenSpec spec, or an established architecture
+decision, the repo's own conventions win — e.g. Vercel's `ui-native-modals`
+(native Modal over @gorhom) is deliberately NOT adopted here. Don't apply
+their memoization/profiling rules without a measured problem (same bar as
+`components-and-state.md`).
+
 Don't optimize for smallest diff at the expense of architecture. Before
 implementing a feature, identify: what is domain state; what is server/
 repository state; what is form state; what is ephemeral UI state; where the
