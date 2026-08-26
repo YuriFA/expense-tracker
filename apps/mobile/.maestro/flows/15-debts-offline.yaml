@@ -40,11 +40,16 @@ tags:
     id: login-password-input
 - tapOn:
     text: Paste
-# iOS offers to save the password once the secure field is filled; the
-# simulator is RU-locale, so the alert's buttons are Russian («Не сейчас»).
-# Dismiss it here and again after the submit (whichever moment it appears).
+# iOS offers to save the password once the secure field is filled; dismiss
+# it here and again after the submit (whichever moment it appears). The
+# system sheet follows the SIMULATOR locale («Не сейчас» on the old RU
+# simulator, "Not Now" on the current EN one), so both variants are
+# tapped, each optional.
 - tapOn:
     text: 'Не сейчас'
+    optional: true
+- tapOn:
+    text: 'Not Now'
     optional: true
 - tapOn:
     id: screen-header
@@ -58,6 +63,9 @@ tags:
     commands:
       - tapOn:
           text: 'Не сейчас'
+          optional: true
+      - tapOn:
+          text: 'Not Now'
           optional: true
       - waitForAnimationToEnd:
           timeout: 2000
@@ -178,6 +186,13 @@ tags:
     visible:
       id: screen-debts
     timeout: 15000
+# Suite runs accumulate debtors (each green run leaves its «Борис» row in
+# the local database), so this run's row may sit below the fold - scroll
+# to it before asserting.
+- scrollUntilVisible:
+    element:
+      text: '.*Борис ${output.suffix}.*'
+    direction: DOWN
 - assertVisible:
     text: '.*Борис ${output.suffix}.*3.*500.*'
 - takeScreenshot: debts-after-restart
@@ -210,6 +225,10 @@ tags:
     visible:
       id: screen-debts
     timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: '.*Борис ${output.suffix}.*'
+    direction: DOWN
 - assertVisible:
     text: '.*Борис ${output.suffix}.*3.*500.*'
 - takeScreenshot: debts-online-converged

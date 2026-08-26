@@ -105,6 +105,7 @@ tags:
     element:
       text: '.*Нетфликс ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - assertVisible:
     text: '.*Нетфликс ${output.suffix}, 599.*каждый месяц.*'
 - takeScreenshot: plans-created
@@ -132,6 +133,7 @@ tags:
     element:
       text: '.*Нетфликс ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 # The row label (title + amount + regularity + next-due label) before confirm.
 - copyTextFrom:
     text: '.*Нетфликс ${output.suffix}, 599.*каждый месяц.*'
@@ -189,6 +191,7 @@ tags:
     element:
       text: '.*Нетфликс ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - assertVisible:
     text: '.*Нетфликс ${output.suffix}, 599.*'
 - copyTextFrom:
@@ -214,6 +217,7 @@ tags:
     element:
       text: '.*Нетфликс ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - tapOn:
     text: '.*Нетфликс ${output.suffix}, .*'
 - extendedWaitUntil:

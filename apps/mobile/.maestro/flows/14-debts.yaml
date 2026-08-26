@@ -109,9 +109,14 @@ tags:
 # the reveal row and the direction total is 0 ₽.
 - tapOn:
     point: 50%, 8%
-- extendedWaitUntil:
-    visible:
+# Suite runs accumulate active debtors in the local database (each green
+# 15-debts-offline run leaves its «Борис» row behind), which pushes this
+# section-bottom row below the fold - scroll to it instead of waiting for
+# it to be on-screen.
+- scrollUntilVisible:
+    element:
       id: debts-settled-reveal-receivable
+    direction: DOWN
     timeout: 10000
 # The reveal row appears with the settled count (accumulation-tolerant: the
 # count grows across suite runs).

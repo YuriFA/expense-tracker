@@ -41,11 +41,16 @@ tags:
     id: login-password-input
 - tapOn:
     text: Paste
-# iOS offers to save the password once the secure field is filled; the
-# simulator is RU-locale, so the alert's buttons are Russian («Не сейчас»).
-# Dismiss it here and again after the submit (whichever moment it appears).
+# iOS offers to save the password once the secure field is filled; dismiss
+# it here and again after the submit (whichever moment it appears). The
+# system sheet follows the SIMULATOR locale («Не сейчас» on the old RU
+# simulator, "Not Now" on the current EN one), so both variants are
+# tapped, each optional.
 - tapOn:
     text: 'Не сейчас'
+    optional: true
+- tapOn:
+    text: 'Not Now'
     optional: true
 - tapOn:
     id: screen-header
@@ -59,6 +64,9 @@ tags:
     commands:
       - tapOn:
           text: 'Не сейчас'
+          optional: true
+      - tapOn:
+          text: 'Not Now'
           optional: true
       - waitForAnimationToEnd:
           timeout: 2000
@@ -189,10 +197,15 @@ tags:
           point: 50%, 8%
 
 # --- Manually confirm the online-created plan OFFLINE (default amount) -------
+# centerElement keeps the row clear of the list sheet's pinned footer: a
+# row scrolled flush to the bottom sits under the footer add button, and a
+# tap there opens the create form instead of the row's target.
 - scrollUntilVisible:
     element:
       text: '.*Подписка ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
+    centerElement: true
 - tapOn:
     text: 'Подтвердить платёж: Подписка ${output.suffix}'
 - extendedWaitUntil:
@@ -214,6 +227,7 @@ tags:
     element:
       text: '.*Оффлайн ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - assertVisible:
     text: '.*Подписка ${output.suffix}, .*'
 - takeScreenshot: plans-offline-created
@@ -245,6 +259,7 @@ tags:
     element:
       text: '.*Подписка ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - assertVisible:
     text: '.*Оффлайн ${output.suffix}, .*'
 - tapOn:
@@ -292,6 +307,7 @@ tags:
     element:
       text: '.*Подписка ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - assertVisible:
     text: '.*Оффлайн ${output.suffix}, .*'
 - tapOn:
@@ -321,6 +337,7 @@ tags:
     element:
       text: '.*Подписка ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - tapOn:
     text: '.*Подписка ${output.suffix}, .*'
 - extendedWaitUntil:
@@ -346,6 +363,7 @@ tags:
     element:
       text: '.*Оффлайн ${output.suffix}, .*'
     direction: DOWN
+    centerElement: true
 - tapOn:
     text: '.*Оффлайн ${output.suffix}, .*'
 - extendedWaitUntil:
