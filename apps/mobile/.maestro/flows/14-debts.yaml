@@ -57,6 +57,16 @@ tags:
     visible:
       id: debts-debtor-.*
     timeout: 10000
+# Suite runs accumulate active debtors in the local database (a failed run
+# leaves its «Анна» row with a nonzero balance; green 15-debts-offline runs
+# leave «Борис»), which can push this run's new row below the fold - scroll
+# to it instead of waiting for it to be on-screen (the d15168a pattern).
+- scrollUntilVisible:
+    element:
+      text: '.*Анна ${output.suffix}.*5.*000.*'
+    direction: DOWN
+    centerElement: true
+    timeout: 10000
 - assertVisible:
     text: '.*Анна ${output.suffix}.*5.*000.*'
 - assertVisible:
