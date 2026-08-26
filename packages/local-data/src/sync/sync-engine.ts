@@ -647,9 +647,8 @@ export function createSyncEngine(options: SyncEngineOptions) {
       db.transaction((tx) => {
         for (const change of page.changes) applyPullChange(tx, change, outcome)
         // nextCursor is null when caught up: advance to the last applied seq.
-        const next =
-          page.nextCursor ??
-          (page.changes.length > 0 ? page.changes[page.changes.length - 1].seq : cursor)
+        const lastChange = page.changes.length > 0 ? page.changes[page.changes.length - 1] : undefined
+        const next = page.nextCursor ?? (lastChange ? lastChange.seq : cursor)
         setPullCursor(tx, next)
       })
       outcome.pulled += page.changes.length

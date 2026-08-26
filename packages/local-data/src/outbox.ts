@@ -206,6 +206,9 @@ export function coalesceUnsentOperations(
   for (const group of groups.values()) {
     if (group.length < 2) continue
     const [first, ...rest] = group
+    // Unreachable (length >= 2); satisfies stricter app tsconfigs
+    // (noUncheckedIndexedAccess) where destructuring cannot prove it.
+    if (!first) continue
     const record = readRecord(first.entity, first.entityId)
 
     if (!record) {
