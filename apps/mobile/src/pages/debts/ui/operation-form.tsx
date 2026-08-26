@@ -235,8 +235,11 @@ export function OperationForm(props: OperationFormProps) {
   const pending =
     createOperation.isPending || updateOperation.isPending || deleteOperation.isPending
 
-  // Sheets stay mounted in @gorhom, so prefill/reset must be explicit
-  // (forms.md §3); trigger() recomputes validity for the fresh defaults.
+  // The hosts outlive the sheet's open/close cycle (the create one is
+  // permanently mounted, the edit one held while editingOperation is
+  // set), so prefill/reset is explicit, never assumed from the content
+  // remounting (forms.md §3); trigger() recomputes validity for the
+  // fresh defaults.
   useEffect(() => {
     form.reset(defaults)
     void form.trigger()

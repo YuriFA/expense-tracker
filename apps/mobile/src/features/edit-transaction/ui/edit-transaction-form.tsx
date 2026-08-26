@@ -132,10 +132,11 @@ export function EditTransactionForm({
   const deleteTransaction = useDeleteTransaction()
   const pending = updateTransaction.isPending || deleteTransaction.isPending
 
-  // Sheets stay mounted in @gorhom, so prefill must be an explicit reset
-  // (forms.md §3). reset() does not re-run the resolver, so formState.isValid
-  // would keep its pre-reset value until the next edit; trigger() recomputes
-  // it against the fresh defaults.
+  // The form mounts before the query resolves, and refetches can swap
+  // the transaction object while it is alive, so prefill is an explicit
+  // reset (forms.md §3). reset() does not re-run the resolver, so
+  // formState.isValid would keep its pre-reset value until the next
+  // edit; trigger() recomputes it against the fresh defaults.
   useEffect(() => {
     if (!transaction) return
     form.reset(editTransactionDefaultValues(transaction))

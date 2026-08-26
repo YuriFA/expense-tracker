@@ -98,8 +98,10 @@ export function DebtorForm({
   const deleteDebtor = useDeleteDebtor()
   const pending = updateDebtor.isPending || deleteDebtor.isPending
 
-  // Sheets stay mounted in @gorhom, so prefill must be an explicit reset
-  // (forms.md §3); trigger() recomputes validity for the fresh defaults.
+  // The host stays mounted while editingDebtor is set (a re-tap can swap
+  // the debtor object under a living form), so prefill is an explicit
+  // reset (forms.md §3); trigger() recomputes validity for the fresh
+  // defaults.
   useEffect(() => {
     form.reset(defaults)
     void form.trigger()

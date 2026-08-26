@@ -82,8 +82,10 @@ export function ConfirmSheet({ plan }: { plan: PlannedPayment }) {
   })
   const confirmPlan = useConfirmPlannedPayment()
 
-  // Sheets stay mounted in @gorhom, so prefill/reset must be explicit
-  // (forms.md §3); trigger() recomputes validity for the fresh defaults.
+  // @gorhom v5 unmounts the sheet content on close, but this component —
+  // and with it the form store — stays mounted while the page holds
+  // confirmingPlan, so prefill is an explicit reset (forms.md §3);
+  // trigger() recomputes validity for the fresh defaults.
   useEffect(() => {
     form.reset(defaults)
     void form.trigger()
@@ -108,10 +110,11 @@ export function ConfirmSheet({ plan }: { plan: PlannedPayment }) {
           as the last child of the sheet content: with `keyboardBehavior="extend"`
           the sheet grows over the keyboard, the in-content footer's
           accessibility coordinates go stale, and taps (Maestro, XCTest) land on
-          the keyboard instead of the button. The footer needs its own
-          FormProvider — @gorhom renders the footer subtree outside the content
-          subtree, so the surrounding provider never reaches it (the
-          plan-form-sheet pattern). */}
+          the keyboard instead of the button. The footer carries its own
+          FormProvider: @gorhom/portal renders the content and the footer
+          inside its host at the app root (a registry portal, not React's
+          createPortal), so a provider above the <BottomSheet> reaches
+          neither subtree (the plan-form-sheet pattern). */}
       <BottomSheet
         ref={sheetRef}
         testID="plans-confirm-sheet"

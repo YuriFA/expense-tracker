@@ -521,9 +521,30 @@ ids depend on it).
 ### Form lifecycle and reset
 
 Reset is explicit and tied to the flow lifecycle — never assumed from
-incidental remounts, and never assumed from opening/closing the sheet
-(@gorhom keeps mounted sheets' state; a reopened sheet shows whatever the
-form still holds):
+incidental remounts, and never assumed from opening/closing the sheet.
+
+@gorhom v5 content lifecycle (`@gorhom/bottom-sheet` ^5.2 — reverify on
+upgrade): `BottomSheetModal` renders nothing until the first `present()`,
+and on every close path (gesture, backdrop, `dismiss()`) it unmounts its
+content after the close animation — `enableDismissOnClose` defaults to
+true and nothing in the app overrides it. A sheet minimized by another
+sheet's `stackBehavior: 'switch'` presentation stays mounted instead.
+
+What survives close is not the content but the form **store**: `useForm`
+usually lives in a host component that outlives the open/close cycle, and
+re-mounted content subscribes back to that surviving store — so a
+reopened sheet shows whatever the form still holds. That applies whenever
+the host is page-held (pages do not clear the subject on dismiss) or a
+permanent singleton (speed-dial `NewTransactionSheet`,
+`EditTransactionSheet` — a new flow there is a prop change on a living
+component); a reopen racing the close animation also lands on
+still-mounted content.
+
+`reset()` does not re-run the resolver — when `formState.isValid` gates
+the submit button, call `trigger()` after resetting so validity matches
+the fresh defaults.
+
+Reset points:
 
 - **After a successful submission**, explicitly return the form to its
   defaults so the next open starts clean:
