@@ -35,6 +35,37 @@ semantics, pull-from-zero merging by record id.
 - **THEN** the rebase replaces the outbox wholesale and no operation
   from the old household is ever pushed to the new one
 
+#### Scenario: Convergence with the user's other devices
+
+- **WHEN** a rebased base-0 push is answered with an already-exists
+  result because the same record was already delivered by the user's
+  other device
+- **THEN** the client adopts the server record without parking a manual
+  conflict (same lineage, not an edit-versus-edit dispute)
+
+### Requirement: Union push adopts records from memberless households
+
+A base-0 create whose record id exists in a household with no members
+(orphaned by a join or dissolution) SHALL adopt the record: the existing
+row moves into the pusher's household keeping its id, and the create is
+reported as applied. A base-0 create whose record id exists in a
+household that still has members SHALL NOT be adopted — it is rejected
+with an already-exists conflict, revealing no state to a non-member.
+
+#### Scenario: Adopting the joiner's own orphaned records
+
+- **WHEN** a joiner's rebased create pushes a record id that lives in
+  the joiner's just-orphaned personal household
+- **THEN** the server moves the row into the new household with the same
+  id and reports the create as applied
+
+#### Scenario: A live household's records are never stolen
+
+- **WHEN** a base-0 create targets a record id belonging to a household
+  that still has members (e.g. after leaving it)
+- **THEN** the create is rejected with an already-exists conflict and no
+  record state is revealed to the pusher
+
 ### Requirement: Change payloads carry authorship
 
 Pull changes SHALL include the author's user id, stamped by the server

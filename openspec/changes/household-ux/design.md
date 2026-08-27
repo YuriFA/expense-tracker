@@ -68,7 +68,17 @@ with inline validation. The home code panel shows the code with
 copy/rotate/revoke. Deep-link accept UI stays as built in
 household-join; this change only links settings to it where natural.
 
-### D5. i18n
+### D5. Leave means clean start
+
+household-join's deviations documented that leave-then-carry cannot work
+(contributions stay with the household per ADR-0002; a same-id union
+against the live left household yields per-item already-exists errors).
+The leave flow therefore offers only the clean start — local wipe and a
+fresh personal household — with copy that says plainly what stays behind
+(«записи останутся в пространстве»). The carry/clean choice dialog from
+joining is deliberately not reused here.
+
+### D6. i18n
 
 Keys under `household.*` and `profile.*` in both apps; RU copy
 authoritative, EN mirrors; strict i18n lint on web stays green.

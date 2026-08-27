@@ -167,3 +167,33 @@ revert (orphans remain harmless).
 
 - Invitation email copy/wording and the accept-link URL config —
   implementation detail, resolvable in-task.
+
+## Deviations during implementation
+
+Three issues surfaced by the two-household integration suite, all fixed
+in-change:
+
+- **Adopt-orphaned-id semantics added to the union push** (extends D4's
+  story server-side): rebased creates reuse ids that still exist in the
+  joiner's orphaned old household, hitting the global record PK. A base-0
+  create whose id lives in a memberless household now moves the row into
+  the new household (same id, per the spec delta added alongside this
+  deviation); a live household's records yield an already-exists
+  conflict with no state revealed. The server behavior is captured as a
+  sync-protocol requirement in this change's delta.
+- **Union-convergence conflicts silenced**: a base-0 push answered with
+  already-exists (the same record already delivered by the user's other
+  device) now adopts the server record instead of parking a manual
+  conflict — same lineage, not an edit-versus-edit dispute. App flows
+  invalidate queries after the sync run so pulled data shows
+  immediately.
+- **Client normalizers rejected server-omitted nulls**: Go's `omitempty`
+  omits `name`/`displayName`/`acceptedAt`, and the household normalizers
+  treated absence as malformed; nullable fields now accept both.
+
+Known wart deferred to household-ux: **leave-then-carry** — the leaver's
+fresh personal household cannot same-id-union records that still belong
+to the left (live) household, so carry after leave produces per-item
+already-exists errors. The model answer (ADR-0002: contributions stay
+with the household) is that leave offers a clean start only; the UX task
+lands in household-ux.

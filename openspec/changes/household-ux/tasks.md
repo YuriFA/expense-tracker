@@ -10,7 +10,7 @@
 
 - [ ] 2.1 Settings «Пространство» group: household name (owner rename), members list (name/email, role, joined), role-aware action visibility
 - [ ] 2.2 Owner dialogs: invite by email (validation + resend semantics), outgoing invitations with status/revoke, home code panel (copy/rotate/revoke), remove member (confirm), dissolution (confirm with record counts)
-- [ ] 2.3 Member actions: leave with confirm; join-by-code entry (links to the household-join flow)
+- [ ] 2.3 Member actions: leave with confirm — **clean start only** (no carry: contributions stay with the household per ADR-0002; same-id union would per-item fail against the live household — see household-join's deviations); copy explains what stays behind; join-by-code entry (links to the household-join flow)
 - [ ] 2.4 Authorship markers: transaction rows + detail, debtor history, plan confirm rows — per the spec's marker/detail rules
 - [ ] 2.5 Profile display-name editor with member-view preview and email fallback
 - [ ] 2.6 Unit tests per screen (mock household slice): role visibility, dialogs, markers, name editor
