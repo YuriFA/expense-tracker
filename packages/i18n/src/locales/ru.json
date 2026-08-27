@@ -67,7 +67,6 @@
   "addAccount": {
     "nameLabel": "Название",
     "namePlaceholder": "Название счёта",
-    "currencyLabel": "Валюта",
     "openingBalanceLabel": "Начальный баланс",
     "submit": "Добавить счёт",
     "newAccount": "Новый счёт",
