@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
+import { useForm, useFieldValue, useSetFieldValue, Field as VeeField } from 'vee-validate'
+import { PlusIcon } from '@lucide/vue'
 import {
   createCashflowSchema,
   type CashflowFormValues,
@@ -14,11 +15,12 @@ import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
 import { AccountSelect, useAccounts } from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
+import NewCategoryDialog from './NewCategoryDialog.vue'
 import { nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const emit = defineEmits<{
   success: []
@@ -45,6 +47,10 @@ const accountCurrency = computed<CurrencyCode>(() => {
   const account = accounts.value?.find((a) => a.id === accountIdValue.value)
   return account?.currency ?? DEFAULT_CURRENCY
 })
+
+// Inline category creation (anonymous local mode starts without categories).
+const newCategoryOpen = ref(false)
+const setCategoryId = useSetFieldValue<CashflowFormValues['categoryId']>('categoryId')
 
 const handleSubmit = handleFormSubmit(async (data) => {
   try {
@@ -108,17 +114,32 @@ const handleSubmit = handleFormSubmit(async (data) => {
     </VeeField>
 
     <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
-      <CategorySelect
-        input-id="category-id"
-        :label="t('addTransaction.categoryLabel')"
-        :placeholder="t('addTransaction.categoryPlaceholder')"
-        :type="type"
-        class="w-full md:w-auto"
-        :model-value="value"
-        :errors="errors"
-        @update:model-value="setValue"
-      />
+      <div class="flex w-full items-end gap-2 md:w-auto">
+        <CategorySelect
+          input-id="category-id"
+          :label="t('addTransaction.categoryLabel')"
+          :placeholder="t('addTransaction.categoryPlaceholder')"
+          :type="type"
+          class="w-full md:w-auto"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="setValue"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          class="mb-[2px] size-9 shrink-0"
+          :aria-label="t('addTransaction.newCategory')"
+          :title="t('addTransaction.newCategory')"
+          data-testid="open-new-category"
+          @click="newCategoryOpen = true"
+        >
+          <PlusIcon class="size-4" />
+        </Button>
+      </div>
     </VeeField>
+
+    <NewCategoryDialog v-model:open="newCategoryOpen" :type="type" @created="setCategoryId($event.id)" />
 
     <Button
       form="add-transaction-form"

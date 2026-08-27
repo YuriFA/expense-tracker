@@ -4,11 +4,7 @@ export type {
   TransferTransaction,
   TransactionType,
 } from './model/types'
-export {
-  TRANSACTION_REPOSITORY_KEY,
-  type TransactionRepository,
-} from './api/repository'
-export { createLocalStorageTransactionRepository } from './api/local-storage-repository'
+export { TRANSACTION_REPOSITORY_KEY } from './api/repository'
 export {
   useTransactions,
   
@@ -27,4 +23,3 @@ export {
 } from './model/transaction'
 export { default as TransactionListItem } from './ui/TransactionListItem.vue'
 export { default as TransactionListItemSkeleton } from './ui/TransactionListItemSkeleton.vue'
-export { createHTTPTransactionRepository } from './api/http-repository'

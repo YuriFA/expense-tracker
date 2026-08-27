@@ -1,12 +1,5 @@
 export type { Account, AccountWithBalance } from './model/types'
-export {
-  ACCOUNT_REPOSITORY_KEY,
-  
-  type AccountRepository,
-  
-  
-} from './api/repository'
-export { createLocalStorageAccountRepository } from './api/local-storage-repository'
+export { ACCOUNT_REPOSITORY_KEY } from './api/repository'
 export {
   useAccounts,
   useAccount,
@@ -16,4 +9,3 @@ export {
 } from './model/use-accounts'
 export { default as AccountSelect } from './ui/AccountSelect.vue'
 export { default as AccountCardSkeleton } from './ui/AccountCardSkeleton.vue'
-export { createHTTPAccountRepository } from './api/http-repository'

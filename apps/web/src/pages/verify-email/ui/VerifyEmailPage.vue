@@ -42,7 +42,7 @@ async function verify() {
   isSubmitting.value = true
   try {
     await sessionApi.verifyEmail(code.value)
-    await auth.fetchMe()
+    await auth.refreshUser()
     notification.success(t('auth.verifySuccess'))
     await router.push('/')
   } catch (err) {

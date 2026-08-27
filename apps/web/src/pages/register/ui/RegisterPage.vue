@@ -35,7 +35,12 @@ async function submit() {
   }
   isSubmitting.value = true
   try {
-    await auth.register(form.email, form.password)
+    const result = await auth.register(form.email, form.password)
+    if (!result.ok) {
+      // The ownership gate was cancelled: the fresh session was signed back
+      // out; the app stays in anonymous mode on the local owner's data.
+      return
+    }
     notification.success(t('auth.signUp'))
     // New accounts are not email-verified; nudge the user to verify.
     await router.push({ name: 'verify-email' })

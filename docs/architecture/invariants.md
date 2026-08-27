@@ -247,19 +247,24 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
 ### 11. The repository seam: app data access goes through `Repository` interfaces from `@expense-tracker/api`; the package never imports app code
 
 - **Statement**: UI/stores depend on repository interfaces; concrete
-  implementations (HTTP, web localStorage, mobile SQLite) are injected at
-  the app root; `packages/api` contains no imports from `apps/*` and no
-  app concerns; the only sanctioned direct `apiClient` uses are the session
-  APIs (both apps) and mobile's sync transport.
+  implementations (local SQLite via `@expense-tracker/local-data` on both
+  apps — web over a Comlink worker RPC bridge) are injected at the app
+  root; `packages/api` contains no imports from `apps/*` and no app
+  concerns; the only sanctioned direct `apiClient` uses are the session
+  APIs (both apps) and the sync transport (both apps).
 - **Evidence**: `packages/api/src/repository.ts` (`Repository<T,C,U>`) and
   `repositories/*.ts` extensions; web DI `app/repositories.ts`
-  (provide/inject, `VITE_REPO_VARIANT`); mobile DI via React context
-  providers in `src/app/_layout.tsx`; grep confirms no `apps/` imports in
-  packages; session-exception documented in `docs/architecture/overview.md`
-  (§Web) and observable in both apps' `entities/session/api/`; sync
-  transport seam in
-  `apps/mobile/src/shared/lib/sync/` (engine depends on an injected
-  transport, not the client).
+  (provide/inject of Comlink `Remote` repositories cast to the interfaces —
+  the single cast surface); the HTTP/localStorage variants and
+  `VITE_REPO_VARIANT` were removed with the local-first rework (openspec
+  change `web-local-first-core`); mobile DI via React context providers in
+  `src/app/_layout.tsx`; grep confirms no `apps/` imports in packages;
+  session-exception documented in `docs/architecture/overview.md` (§Web)
+  and observable in both apps' `entities/session/api/`; sync transport
+  seams: `packages/local-data/src/sync/sync-engine.ts`
+  (`createApiTransport`, injected client) consumed by the web worker
+  (`apps/web/src/shared/lib/local-db/local-db-worker.ts`) and mobile's
+  `shared/lib/sync/transport.ts`.
 - **Risk if violated**: Untestable data layers; app/server coupling;
   mobile's local-source-of-truth strategy becomes impossible.
 - **Current enforcement**: structure + tests (repositories tested behind
@@ -317,8 +322,9 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
 ### 15. FSD layer direction: imports point strictly downward (both apps)
 
 - **Statement**: In both apps the FSD layer order is
-  `app → pages → widgets → features → entities → shared` (web currently
-  has no widgets slice; mobile's is canonical, decided 2026-08-20).
+  `app → pages → widgets → features → entities → shared` (web gained its
+  first widgets slice — `widgets/sync-status` — with the local-first
+  rework; mobile's is canonical, decided 2026-08-20).
   `shared` MUST NOT import from entities, features, widgets, pages, or
   app; cross-layer upward imports are forbidden in general; dependencies
   point only downward. Cross-slice imports within a layer are forbidden.
@@ -351,21 +357,25 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   through the synchronization boundary; direct API access is limited to
   explicitly defined control-plane operations such as
   authentication/session management. Scope (clarified 2026-08-20):
-  **mobile implements this boundary today; web is online-first today and
-  not yet required to comply** — its future offline-first migration will
-  implement this existing architectural decision, not introduce a new
-  one. (No ADR: the decision is already carried by the existing specs and
-  this invariant; a web offline-first migration may add an OpenSpec change
-  if current web specs don't cover it.)
+  **both clients implement this boundary** — mobile since the
+  offline-first rework, web since the local-first rework (openspec change
+  `web-local-first-core`, capability spec `openspec/specs/web-local-data`).
 - **Evidence**: mobile — providers in `src/app/_layout.tsx` always mount
   local repositories; `shared/lib/query/query-client.ts` states "UI cache
   ... NOT the offline store"; row+outbox single-transaction writes in
   `packages/local-data/src/repositories/*`; engine + transport seam in
   `packages/local-data/src/sync/sync-engine.ts` / `createApiTransport`; ownership gate
   `sync_meta.owner_user_id` in `use-auth.tsx:74-113`;
-  `openspec/specs/mobile-local-data` and `sync-protocol` codify it. Web
-  today: HTTP repositories + @pinia/colada SWR (online-first) — exempt
-  until its migration.
+  `openspec/specs/mobile-local-data` and `sync-protocol` codify it. Web —
+  the whole local-data stack (SQLite-WASM/OPFS driver, repositories,
+  engine) lives in a dedicated worker
+  (`apps/web/src/shared/lib/local-db/`) behind a Comlink RPC bridge with a
+  ready handshake; @pinia/colada queries read the worker-backed
+  repositories; the ownership gate + network-tolerant restore live in
+  `entities/session/model/use-auth-store.ts`; single-tab exclusivity is
+  enforced with a Web Locks `ifAvailable` guard held for the worker's
+  lifetime (second tab: "already open" state, never opens the database).
+  `openspec/specs/web-local-data` codifies the web behavior.
 - **Risk if violated**: direct API calls from offline-first client UI
   would bypass the outbox, creating changes that never sync;
   cache-as-store confusion reintroduces online-only behavior.

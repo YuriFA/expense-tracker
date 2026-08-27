@@ -8,7 +8,7 @@ export type {
 } from './types'
 
 export { fromDateValue, toDateValue } from './date-value-bridge'
-export { getDateTimestamp, nowIsoString,  } from './datetime'
+export { nowIsoString } from './datetime'
 
 const dateAdapter = internationalizedDateAdapter
 

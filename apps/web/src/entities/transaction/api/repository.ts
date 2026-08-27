@@ -1,7 +1,6 @@
 import { inject, type InjectionKey } from 'vue'
 import type {
   CreateTransactionPayload,
-  LocalStorageTransactionRepository,
   TransactionQuery,
   TransactionRepository,
   UpdateTransactionPayload,
@@ -9,7 +8,6 @@ import type {
 
 export type {
   CreateTransactionPayload,
-  LocalStorageTransactionRepository,
   TransactionQuery,
   TransactionRepository,
   UpdateTransactionPayload,

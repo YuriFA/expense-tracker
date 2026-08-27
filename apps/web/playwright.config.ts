@@ -57,12 +57,12 @@ export default defineConfig({
         ...devices['Desktop Firefox'],
       },
     },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-      },
-    },
+
+    // webkit is excluded: Playwright's bundled WebKit exposes no OPFS at all
+    // (`navigator.storage.getDirectory()` throws UnknownError), so the
+    // local-first core cannot boot there. Real Safari >= 17 ships OPFS +
+    // sync access handles; verifying it needs a manual pass (see
+    // docs/spikes/web-sqlite-wasm-driver.md) or a WebKit build with OPFS.
 
     /* Test against mobile viewports. */
     // {

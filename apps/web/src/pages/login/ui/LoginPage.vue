@@ -35,7 +35,12 @@ async function submit() {
   isSubmitting.value = true
   retryAfter.value = undefined
   try {
-    await auth.login(form.email, form.password)
+    const result = await auth.login(form.email, form.password)
+    if (!result.ok) {
+      // The ownership gate was cancelled: the session was signed back out and
+      // the app stays in anonymous mode on the local owner's data.
+      return
+    }
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     await router.push(redirect)
   } catch (error) {

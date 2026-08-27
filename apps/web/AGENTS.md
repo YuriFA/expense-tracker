@@ -1,7 +1,10 @@
 # Web (`apps/web/`) - agent memory
 
-Vue 3 + Vite web frontend (online-first today; the offline-direction decision
-is invariant #16 in `docs/architecture/invariants.md`). Project-wide invariants
+Vue 3 + Vite web frontend, **local-first**: all account/category/transaction
+data lives in a SQLite-WASM/OPFS worker (`shared/lib/local-db/`), the app is
+fully usable anonymously, and login binds local data through the ownership
+gate + initial sync (invariant #16 in `docs/architecture/invariants.md`;
+capability spec `openspec/specs/web-local-data`). Project-wide invariants
 and the canonical documentation map live in the root `AGENTS.md`.
 
 ## Feature-Sliced Design
@@ -29,18 +32,33 @@ idiom, reactivity budget, vee-validate forms, lists/dialogs):
 - **Transactions:** PATCH update with required `version` (optimistic concurrency);
   create sends an `Idempotency-Key`; list is cursor-paginated
   (`{transactions,nextCursor}`).
-- **Auth:** `entities/session` holds the typed auth API + Pinia store; the
-  router guard bootstraps the session once and guards protected routes;
-  `main.ts` wires a 401 interceptor (`setUnauthorizedHandler`). Session APIs
-  call the apiClient directly — the one sanctioned exception to the
+- **Auth:** anonymous-first. `entities/session` holds the typed auth API +
+  Pinia store with the mobile status machine (`restoring → anonymous ⇄
+  authenticated`); restore is network-tolerant (401 or unreachable backend ⇒
+  anonymous); login/register/restored sessions pass the ownership gate
+  (different owner ⇒ wipe-or-cancel AlertDialog); logout keeps local data.
+  The router is public-by-default; `main.ts` wires the 401 interceptor
+  (`setUnauthorizedHandler` → clearSession, no redirect). Session APIs call
+  the apiClient directly — the sanctioned control-plane exception to the
   repository seam (invariant #11).
-- **Repos:** HTTP client with auth is the dev/prod default. `localStorage` repos
-  are a dev-only opt-in (`VITE_REPO_VARIANT=localStorage`). The Vite dev/preview
-  server proxies `/api` -> `localhost:8080` (same-origin cookie, no CORS).
+- **Repos:** a single `local` variant — Comlink remotes of the worker-side
+  `@expense-tracker/local-data` repositories, provided in
+  `app/repositories.ts` (calls queue behind the worker's ready handshake;
+  worker errors rehydrate into typed RepositoryErrors). The worker holds a
+  Web Locks guard for single-tab exclusivity: a second tab gets the
+  "already open in another tab" state — never assume multi-tab access to the
+  database. The Vite dev/preview server proxies `/api` -> `localhost:8080`
+  (same-origin cookie, no CORS).
 
 ## Quality bar
 
 `pnpm type-check`, `pnpm lint` (oxlint + eslint), `pnpm i18n:lint` (strict i18n),
-and `pnpm test:unit` all green. `knip` runs repo-wide from the workspace root
-(`pnpm knip`, config in the root `knip.json`). E2E (`apps/web/e2e`,
-`pnpm test:e2e`) drives the real backend.
+`pnpm test:unit`, and `pnpm exec steiger src` all green. `knip` runs repo-wide
+from the workspace root (`pnpm knip`, config in the root `knip.json`). E2E
+(`apps/web/e2e`, `pnpm test:e2e`): the default suite is backendless (local
+CRUD, reload persistence, offline via `context.setOffline`, multi-tab lock
+banner) and needs no backend; the sync suite (`sync-backend.spec.ts`) is
+env-gated on `SYNC_INTEGRATION_API` like mobile's integration tests. Playwright
+projects are chromium + firefox only: the bundled WebKit exposes no OPFS
+(`getDirectory()` throws), so the local-first core cannot boot there — real
+Safari ≥ 17 needs a manual verification pass.

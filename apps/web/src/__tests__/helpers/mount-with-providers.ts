@@ -3,12 +3,14 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { createPinia, type Pinia } from 'pinia'
 import { PiniaColada } from '@pinia/colada'
 import i18n from '@/shared/i18n'
-import { ACCOUNT_REPOSITORY_KEY, type AccountRepository } from '@/entities/account'
-import { CATEGORY_REPOSITORY_KEY, type CategoryRepository } from '@/entities/category'
-import {
-  TRANSACTION_REPOSITORY_KEY,
-  type TransactionRepository,
-} from '@/entities/transaction'
+import type {
+  AccountRepository,
+  CategoryRepository,
+  TransactionRepository,
+} from '@expense-tracker/api'
+import { ACCOUNT_REPOSITORY_KEY } from '@/entities/account'
+import { CATEGORY_REPOSITORY_KEY } from '@/entities/category'
+import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction'
 import {
   createMockAccountRepository,
   createMockCategoryRepository,

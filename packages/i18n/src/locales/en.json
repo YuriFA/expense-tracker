@@ -44,7 +44,10 @@
     "accountPlaceholder": "Account",
     "submit": "Add",
     "success": "Transaction added",
-    "error": "Error adding transaction"
+    "error": "Error adding transaction",
+    "newCategory": "New category",
+    "categoryName": "Name",
+    "categoryCreated": "Category created"
   },
   "addAccount": {
     "nameLabel": "Name",
@@ -246,7 +249,14 @@
     "resetRequested": "If that email exists, a reset link is on its way",
     "passwordReset": "Password updated. Sign in with your new password",
     "rateLimited": "Too many attempts. Try again in {seconds}s",
-    "signedOut": "Signed out"
+    "signedOut": "Signed out",
+    "guestMode": "Local mode",
+    "ownershipGate": {
+      "title": "Local data of another user",
+      "description": "This browser holds unsynced data of another account. You can only sign in after deleting it.",
+      "delete": "Delete data",
+      "cancel": "Cancel"
+    }
   },
   "seeds": {
     "categories": {
@@ -299,5 +309,38 @@
     "version": "Version",
     "categories": "Categories",
     "categoriesEmpty": "No categories yet"
+  },
+  "boot": {
+    "loading": "Loading…",
+    "busyTitle": "The app is already open in another tab",
+    "busyDescription": "Local data can only be opened in one tab at a time. Close the other tab, then reload this page.",
+    "reload": "Reload page"
+  },
+  "sync": {
+    "status": {
+      "synced": "Synced",
+      "pending": "Pending upload: {count}",
+      "running": "Syncing…",
+      "paused": "Session expired",
+      "conflicts": "Conflicts: {count}"
+    },
+    "conflicts": {
+      "title": "Sync conflicts",
+      "description": "Some records were changed on another device. Choose which version to keep.",
+      "empty": "No unresolved conflicts",
+      "keepLocal": "Keep mine",
+      "takeServer": "Take server version",
+      "dismiss": "Mark reviewed",
+      "versionChanged": "{entity} «{subject}» was changed on another device.",
+      "deletedLocally": "{entity} «{subject}» was deleted on this device and edited on another. The deletion has been applied.",
+      "deletedRemotely": "{entity} «{subject}» was deleted on another device, so the local change was reverted.",
+      "resolveError": "Failed to resolve the conflict",
+      "entity": {
+        "account": "Account",
+        "category": "Category",
+        "transaction": "Transaction",
+        "other": "Record"
+      }
+    }
   }
 }

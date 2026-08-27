@@ -15,3 +15,23 @@ export interface Session {
   expiresAt: string
   isCurrent: boolean
 }
+
+export type AuthStatus = 'restoring' | 'anonymous' | 'authenticated'
+
+/** Outcome of a login/register attempt after the ownership gate ran. */
+export interface AuthResult {
+  ok: boolean
+  /** Present when a different user's data blocks the login (user cancelled). */
+  blockedByOwner?: boolean
+}
+
+/**
+ * A different owner signed in over owned local data: the user must choose
+ * between wiping it (destructive) and cancelling the login. The auth store
+ * parks the authenticated user here until the globally mounted ownership
+ * dialog resolves it.
+ */
+export interface PendingOwnershipGate {
+  user: User
+  resolve: (result: AuthResult) => void
+}

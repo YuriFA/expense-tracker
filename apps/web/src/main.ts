@@ -35,18 +35,21 @@ app.use(PiniaColada, {
 app.use(router)
 provideRepositories(app)
 
+// Session restore runs once at startup and is network-tolerant (design D5):
+// a 401 or an unreachable backend both land in the anonymous shell - the app
+// keeps working on local data.
+void useAuthStore(pinia).ensureRestored()
+
 // 401 interceptor: when an authenticated request loses its session mid-flight,
-// clear local auth state and redirect to login. Unauthenticated calls (login/
-// register/me before sign-in) handle UnauthorizedError themselves and the
-// auth store is empty then, so this is a no-op for them.
+// drop local auth state - the app continues anonymously on local data (no
+// relocation: every route is public) and the sync engine pauses itself until
+// the next successful login. Unauthenticated calls (login/register/me before
+// sign-in) handle UnauthorizedError themselves and the auth store is empty
+// then, so this is a no-op for them.
 setUnauthorizedHandler(() => {
-  const auth = useAuthStore()
+  const auth = useAuthStore(pinia)
   if (auth.isAuthenticated) {
     auth.clearSession()
-    void router.push({
-      name: 'login',
-      query: { redirect: router.currentRoute.value.fullPath },
-    })
   }
 })
 

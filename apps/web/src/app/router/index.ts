@@ -53,23 +53,18 @@ const router = createRouter({
   routes,
 })
 
-// Restore the session once, then guard protected routes. Authenticated routes
-// require a valid session; unauthenticated entry points (login/register) bounce
-// signed-in users back to the app.
+// Anonymous-first (design D5): every route is public - data screens operate
+// on local storage without a session, so there is no auth guard. Only the
+// login/register entry points bounce already-authenticated users back into
+// the app, which needs the one-time session restore to have finished.
 router.beforeEach(async (to) => {
+  if (!to.meta.redirectIfAuthed) return true
+
   const auth = useAuthStore()
-  if (!auth.isReady) {
-    await auth.fetchMe()
-  }
-
-  if (!to.meta.public && !auth.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } }
-  }
-
-  if (to.meta.redirectIfAuthed && auth.isAuthenticated) {
+  await auth.ensureRestored()
+  if (auth.isAuthenticated) {
     return { name: 'home' }
   }
-
   return true
 })
 

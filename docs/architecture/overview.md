@@ -283,12 +283,13 @@ mobile `design-tokens-guard` and `design-tokens-sync` tests.
 
 ## Web (`apps/web/`)
 
-Vue 3 + Vite, Feature-Sliced Design: `app/ pages/ features/ entities/
-shared/` (no `widgets/` layer). Layer rules are enforced by Steiger
-(`steiger.config.ts`, run via `pnpm exec steiger`) — local only, not CI. Online-first
-today; per the decided client local data boundary (invariant #16) a future
-web offline-first migration will implement the existing decision rather
-than a new architecture.
+Vue 3 + Vite, Feature-Sliced Design: `app/ pages/ widgets/ features/
+entities/ shared/` (`widgets/sync-status` is the first widgets slice). Layer
+rules are enforced by Steiger (`steiger.config.ts`, run via `pnpm exec
+steiger`) — local only, not CI. Local-first since the `web-local-first-core`
+rework: the app is fully usable anonymously on local data, and account login
+binds it through the ownership gate + initial sync (capability spec
+`openspec/specs/web-local-data`).
 
 - **State**: server state via `@pinia/colada` (`gcTime 300s`, `staleTime
   30s`, retry ×2); auth/session state in a Pinia store
@@ -296,16 +297,41 @@ than a new architecture.
   HttpOnly cookie, so the store holds only the fetched user); UI/settings
   state in a Pinia settings store persisted to localStorage via
   `@vueuse/core`. Forms use vee-validate + zod.
-- **Repositories / DI**: `app/repositories.ts` provides the package's HTTP
-  repository implementations bound to the app's `apiClient` via Vue
-  provide/inject with Symbol keys; a dev-only localStorage variant is
-  selected by `VITE_REPO_VARIANT` and mirrors backend `*_IN_USE` semantics
-  for deletes. Session APIs call the apiClient directly — a documented,
-  deliberate exception (session is not an entity behind the seam).
-- **Auth**: router guard bootstraps `fetchMe()` once and redirects unauthed
-  users to login with a `redirect` query (`app/router/index.ts:59-74`); the
-  package's unauthorized handler clears the session and redirects on any
-  401 (`main.ts:42-51`). Same-origin `/api` via the Vite dev proxy.
+- **Local data / repositories**: the whole `@expense-tracker/local-data`
+  stack (SQLite-WASM + OPFS sahpool driver, drizzle schema, repositories,
+  sync engine) runs in a dedicated Web Worker
+  (`shared/lib/local-db/local-db-worker.ts`); the main thread talks to it
+  over a Comlink RPC bridge with a ready handshake
+  (`local-db.ts`, contract in `local-db-api.ts`). `app/repositories.ts`
+  provides Comlink remotes as the single `Repository` variant behind the
+  DI Symbol keys — forwarding proxies queue calls made before the worker
+  signals ready, and rehydrate worker-side `RepositoryError`s from their
+  surviving `name` (Comlink's throw transfer keeps message/name only).
+  Single-tab contract: the worker takes a Web Locks `ifAvailable` guard
+  (`expense-tracker-local-db`) held for its lifetime; a second tab renders
+  the "already open in another tab" state with a reload action and never
+  opens the database. `navigator.storage.persist()` is requested at boot.
+  Session APIs (and the worker's sync transport) call the apiClient
+  directly — the documented, deliberate control-plane exception.
+- **Auth**: anonymous-first. The Pinia store
+  (`entities/session/model/use-auth-store.ts`) runs the mobile status
+  machine (`restoring → anonymous ⇄ authenticated`) with a
+  network-tolerant restore (401 or unreachable backend ⇒ anonymous shell);
+  login/register/restored sessions pass the ownership gate over
+  `sync_meta.owner_user_id` (unowned/same owner binds; a different owner
+  must choose wipe-data vs cancel — reka-ui AlertDialog
+  `entities/session/ui/OwnershipGateDialog.vue`); logout keeps all local
+  data. The router is public-by-default (only login/register bounce
+  authenticated users); the 401 handler clears the session in place
+  (`main.ts`). Same-origin `/api` via the Vite dev proxy.
+- **Sync**: engine in the worker; main-thread controller
+  (`shared/lib/local-db/sync-composable.ts`, provided in AppShell with the
+  auth getter injected) publishes engine state over the RPC `subscribe`,
+  wires `visibilitychange`/`online`/post-mutation-debounce (2.5 s)
+  triggers, auth-gates every run, and maps `onDataChanged` to full colada
+  cache invalidation. `widgets/sync-status` renders the badge (hidden in
+  anonymous mode); `features/sync-conflicts` is the global conflict
+  center (keep-local/take-server via RPC).
 - **Dates**: does **not** use `@expense-tracker/dates` (not even a
   dependency) today; uses an app-local facade over `@internationalized/date`
   (`shared/lib/date/`, branded `CalendarDay`) — sanctioned as a

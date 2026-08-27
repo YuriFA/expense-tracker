@@ -2,7 +2,9 @@
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 import { computed } from 'vue'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { SyncStatusBadge } from '@/widgets/sync-status'
 import { useAuthStore } from '@/entities/session'
 import { notification } from '@/shared/services/notification'
 
@@ -20,7 +22,12 @@ const navItems = computed(() => [
 async function signOut() {
   await auth.logout()
   notification.success(t('auth.signedOut'))
-  await router.push({ name: 'login' })
+  // Logout keeps local data and the anonymous mode usable: stay right here
+  // instead of relocating to the login page.
+}
+
+function goToLogin() {
+  void router.push({ name: 'login' })
 }
 </script>
 
@@ -38,10 +45,20 @@ async function signOut() {
       </Button>
 
       <div v-if="auth.isAuthenticated" class="ml-auto flex items-center gap-3">
+        <SyncStatusBadge />
         <span class="text-sm text-muted-foreground">
           {{ t('auth.signedInAs') }} {{ auth.user?.email }}
         </span>
         <Button variant="ghost" @click="signOut">{{ t('auth.signOut') }}</Button>
+      </div>
+
+      <div v-else class="ml-auto flex items-center gap-3">
+        <!-- Anonymous (local) mode indicator: everything works on local data;
+             sign-in only adds server sync. -->
+        <Badge variant="secondary" data-testid="guest-mode-indicator">
+          {{ t('auth.guestMode') }}
+        </Badge>
+        <Button variant="ghost" @click="goToLogin">{{ t('auth.signIn') }}</Button>
       </div>
     </div>
   </nav>

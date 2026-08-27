@@ -1,4 +1,3 @@
-export { createLocalStorageAdapter } from './local-storage-adapter'
 export {
   RepositoryError,
   NotFoundError,
