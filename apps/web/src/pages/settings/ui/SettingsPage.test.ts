@@ -118,10 +118,15 @@ describe('SettingsPage', () => {
     expect(heading.text()).toBeTruthy()
   })
 
-  it('renders currency select with options', () => {
+  it('offers the locale selector but no currency option (currency-rub-only)', () => {
     const wrapper = mountPage()
+    // Only the locale Select remains; the currency selector is gone and its
+    // locale key with it (a stale t('settings.currency') would render the raw
+    // key path into the page).
     const selects = wrapper.findAllComponents({ name: 'Select' })
-    expect(selects.length).toBeGreaterThanOrEqual(2)
+    expect(selects.length).toBe(1)
+    expect(wrapper.text()).not.toContain('settings.currency')
+    expect(wrapper.text()).not.toContain('Currency')
   })
 
   it('shows the household card with the owner-prefix fallback label and members count', async () => {

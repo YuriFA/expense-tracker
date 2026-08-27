@@ -441,7 +441,6 @@
     "homeEmptyAccountsAction": "Go to Accounts"
   },
   "settings": {
-    "currency": "Currency",
     "locale": "Locale",
     "language": "Language",
     "defaultCurrency": "Default currency",

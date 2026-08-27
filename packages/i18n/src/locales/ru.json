@@ -441,7 +441,6 @@
     "homeEmptyAccountsAction": "Перейти к счетам"
   },
   "settings": {
-    "currency": "Валюта",
     "locale": "Язык",
     "language": "Язык",
     "defaultCurrency": "Валюта по умолчанию",

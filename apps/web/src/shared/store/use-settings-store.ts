@@ -5,16 +5,11 @@ import { APP_NAME } from '@/shared/config/app'
 import { DEFAULT_SETTINGS, type Settings } from '@/shared/config/settings'
 
 const LOCALE_STORAGE_KEY = `${APP_NAME}:locale`
-const CURRENCIES_STORAGE_KEY = `${APP_NAME}:currency`
 const THEME_STORAGE_KEY = `${APP_NAME}:theme`
 
 export const useSettingsStore = defineStore('settings', () => {
   const locale = useStorage<Settings['locale']>(LOCALE_STORAGE_KEY, DEFAULT_SETTINGS.locale)
-  const currency = useStorage<Settings['currency']>(
-    CURRENCIES_STORAGE_KEY,
-    DEFAULT_SETTINGS.currency,
-  )
   const theme = useStorage<Settings['theme']>(THEME_STORAGE_KEY, DEFAULT_SETTINGS.theme)
 
-  return { locale, currency, theme }
+  return { locale, theme }
 })

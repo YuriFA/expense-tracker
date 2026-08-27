@@ -11,7 +11,6 @@ describe('useSettingsStore', () => {
   it('returns default values when localStorage is empty', () => {
     const store = useSettingsStore()
     expect(store.locale).toBe(DEFAULT_SETTINGS.locale)
-    expect(store.currency).toBe(DEFAULT_SETTINGS.currency)
     expect(store.theme).toBe(DEFAULT_SETTINGS.theme)
   })
 
@@ -27,17 +26,26 @@ describe('useSettingsStore', () => {
     expect(localStorage.getItem('BudgetTracker:locale')).toBe('en')
   })
 
-  it('persists values to localStorage on change', async () => {
+  it('persists the theme to localStorage on change', async () => {
     const store = useSettingsStore()
-    store.currency = 'RUB'
+    store.theme = 'dark'
     await nextTick()
-    const stored = localStorage.getItem('BudgetTracker:currency')
-    expect(stored).toBe('RUB')
+    const stored = localStorage.getItem('BudgetTracker:theme')
+    expect(stored).toBe('dark')
   })
 
-  it('reads initial values from localStorage when present', () => {
+  it('reads initial locale from localStorage when present', () => {
+    localStorage.setItem('BudgetTracker:locale', 'en')
+    const store = useSettingsStore()
+    expect(store.locale).toBe('en')
+  })
+
+  // currency-rub-only: the currency field left the store; a stale key left
+  // by an older install is ignored, not cleaned up.
+  it('ignores a stale currency key in localStorage without removing it', () => {
     localStorage.setItem('BudgetTracker:currency', 'EUR')
     const store = useSettingsStore()
-    expect(store.currency).toBe('EUR')
+    expect(store.locale).toBe(DEFAULT_SETTINGS.locale)
+    expect(localStorage.getItem('BudgetTracker:currency')).toBe('EUR')
   })
 })
