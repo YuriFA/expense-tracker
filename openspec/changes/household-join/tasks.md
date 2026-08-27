@@ -21,7 +21,7 @@
 ## 4. Package: rebase + authorship
 
 - [x] 4.1 Local schema migration 0003: nullable `user_id` on all entity tables; pull-apply stores the author; local creates stamp the device owner when known
-- [ ] 4.2 Implement `rebaseLocalDataForHousehold(db)` per design D4 (zero versions, drop tombstones, wholesale outbox regen as creates, cursor 0) + store the `last_household` marker in sync_meta; expose over the app seams (web worker RPC, mobile direct)
+- [x] 4.2 Implement `rebaseLocalDataForHousehold(db)` per design D4 (zero versions, drop tombstones, wholesale outbox regen as creates, cursor 0) + store the `last_household` marker in sync_meta; expose over the app seams (web worker RPC, mobile direct)
 - [x] 4.3 Package tests: rebase idempotency, tombstone drop, stale-outbox replacement, union end-to-end (rebase → push-as-creates → pull merge without duplicates), `last_household` mismatch detection helper
 
 ## 5. Mobile flow
