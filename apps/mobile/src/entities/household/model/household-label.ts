@@ -3,12 +3,17 @@
 // derived from the owner's account (ADR-0002 wording: the spec's "derived
 // label from the owner's account").
 
-import type { Household } from '@expense-tracker/api'
+import type { Household, HouseholdMember } from '@expense-tracker/api'
 
 /** The local part of an email address («wife@example.com» → «wife»). */
 export function emailLocalPart(email: string): string {
   const at = email.indexOf('@')
   return at > 0 ? email.slice(0, at) : email
+}
+
+/** A member's label: display name when set, email otherwise. */
+export function memberLabel(member: HouseholdMember): string {
+  return member.displayName ?? member.email
 }
 
 /** The household's display name, or the owner's email prefix when unset. */

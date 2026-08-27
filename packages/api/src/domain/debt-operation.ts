@@ -24,6 +24,12 @@ export interface DebtOperation {
   occurredAt: string
   /** Optimistic-concurrency revision (bumped on every server update). */
   version: number
+  /**
+   * Who created/last changed the record (household authorship, household-ux):
+   * the local-data row's `userId`. Absent on the REST contract surface (only
+   * sync delivers it) and on records authored before authorship existed.
+   */
+  authorId?: string | null
 }
 
 const isDebtDirection = (value: unknown): value is DebtDirection =>
@@ -45,6 +51,7 @@ export const normalizeDebtOperation = (value: unknown): DebtOperation | null => 
   const note = asString(value.note) ?? ''
   const occurredAt = asDateTimeString(value.occurredAt)
   const version = asInteger(value.version)
+  const authorId = value.authorId == null ? undefined : asString(value.authorId)
 
   if (!id || !debtorId || !direction || !kind || !amount || !occurredAt || version === null) {
     return null
@@ -59,5 +66,6 @@ export const normalizeDebtOperation = (value: unknown): DebtOperation | null => 
     note,
     occurredAt,
     version,
+    ...(authorId !== undefined ? { authorId } : {}),
   }
 }

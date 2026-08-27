@@ -101,3 +101,33 @@ Pure client change; ships independently per app. Rollback = revert.
 ## Open Questions
 
 (none)
+
+## Deviations during implementation
+
+- **`authorId` surfaced through the packages** (extends the non-goal
+  "package changes"): household-join stored the author on every local row
+  but no read path exposed it — the spec's authorship requirement is
+  unimplementable through the repository seam otherwise. Added the optional
+  nullable `authorId` to the `Transaction`/`DebtOperation`/`PlannedPayment`
+  domain types plus the local-data read mappers. Purely additive: no
+  schema, migration, sync, or backend/OpenAPI changes; the REST surface
+  still omits it (only sync delivers authorship).
+- **Home-code panel has no "show"**: the API offers no read for an active
+  code (only generate/rotate + revoke), so the panel starts empty and
+  Create/Rotate produces the current code (i18n key `codeGenerate`, not
+  `codeShow` as first drafted).
+- **Detail-mode selector options**: task 1.3's marker rules
+  (own/unknown/single-member → null) left design D2's "detail shows the
+  author even in single-member households" unimplementable with a single
+  unconditional selector — `authorLabel` takes `{ selfLabel,
+  includeSingleMember }` options that the detail surfaces pass (own records
+  show «вами»; unknown authors still render nothing anywhere).
+- **Mobile e2e**: no new Maestro flows for the owner dialogs (they need a
+  live two-account backend); behavior is pinned by the unit suites, and
+  flows 18/19 selectors are preserved verbatim. The change's gate list
+  (5.2) covers mobile jest only.
+- **Dissolution counts** come from the local repository reads
+  (transactions/debt operations/plans), the local mirror of the shared
+  data - "summary endpoints" in the risk note overread the contract; none
+  exist, and counts are copy, not a gate (a failed count fetch proceeds
+  without them).

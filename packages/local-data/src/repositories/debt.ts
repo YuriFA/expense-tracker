@@ -55,6 +55,7 @@ function toDebtOperation(row: DebtOperationRow): DebtOperation {
     note: row.note,
     occurredAt: row.occurredAt,
     version: row.version,
+    authorId: row.userId ?? null,
   }
 }
 

@@ -50,6 +50,7 @@ function toTransaction(row: TransactionRow): Transaction {
     occurredAt: row.occurredAt,
     updatedAt: row.updatedAt ?? undefined,
     version: row.version,
+    authorId: row.userId ?? null,
   }
   if (row.type === 'transfer') {
     return {

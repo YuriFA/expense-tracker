@@ -211,7 +211,12 @@ gate, auth-expiry pause), and invariant #16 (client local data boundary).
 Household join flows: `features/household-join` (the shared carry/clean
 choice + the `last_household` startup/foreground guard),
 `entities/household` (control-plane API), `app/invite/[token]`, and the
-settings household section. This section is only the working rules and the
+settings household section. Household management (change `household-ux`):
+the settings «Пространство» group + `pages/settings/ui/profile-section.tsx`
+build on `entities/household` (`useHouseholdActions`, `authorLabel`);
+authorship markers render in cashflow rows/sheets, the edit sheet, debtor
+history, and plan rows; leave and dissolve are clean-start-only. This
+section is only the working rules and the
 code map.
 
 Hard rules:

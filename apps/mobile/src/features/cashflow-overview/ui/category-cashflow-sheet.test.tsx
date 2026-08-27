@@ -28,6 +28,17 @@ import { CategorySection } from './category-section'
 import { formatAmount } from '@/shared/lib/format/format'
 import { currentMonth, previousMonth, totalCashflow } from '../model/selectors'
 
+// Authorship markers (household-ux 2.4) resolve against the household cache;
+// these suites run anonymous with no members, so no marker ever renders.
+jest.mock('@/entities/session', () => ({
+  ...(jest.requireActual('@/entities/session') as Record<string, unknown>),
+  useAuth: () => ({ status: 'anonymous', user: null }),
+}))
+
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: undefined }),
+}))
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
 // --- Date-relative fixtures (current month has two taxi days plus a cafe

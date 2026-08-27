@@ -8,6 +8,8 @@ import {
   type Transaction,
   type TransferTransaction,
 } from '@/entities/transaction'
+import { authorLabel, useHousehold } from '@/entities/household'
+import { useAuthStore } from '@/entities/session'
 import CashflowEditForm from './CashflowEditForm.vue'
 import TransferEditForm from './TransferEditForm.vue'
 
@@ -23,6 +25,19 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
 const cashflow = computed(() => (isTransfer.value ? null : (transaction as CashflowTransaction)))
 const transfer = computed(() => (isTransfer.value ? (transaction as TransferTransaction) : null))
 
+// The detail's provenance line (household-ux 3.4): unlike the compact row
+// markers, the detail shows who created the record even alone in the
+// household («вами») - provenance, not collaboration (design D2).
+const auth = useAuthStore()
+const householdQuery = useHousehold({ enabled: () => auth.isAuthenticated })
+const author = computed(() => {
+  if (!auth.isAuthenticated) return null
+  return authorLabel(transaction.authorId, householdQuery.data.value?.members ?? [], auth.user?.id, {
+    selfLabel: t('household.authorSelf'),
+    includeSingleMember: true,
+  })
+})
+
 const handleSuccess = () => {
   open.value = false
 }
@@ -33,6 +48,13 @@ const handleSuccess = () => {
     <DialogContent>
       <DialogHeader>
         <DialogTitle>{{ t('editTransaction.title') }}</DialogTitle>
+        <p
+          v-if="author"
+          class="text-xs text-muted-foreground"
+          :data-testid="`edit-transaction-author-${transaction.id}`"
+        >
+          {{ t('household.authoredBy', { name: author }) }}
+        </p>
       </DialogHeader>
       <TransferEditForm
         v-if="transfer"

@@ -3,7 +3,7 @@
 // 599,00 monthly + 6 000,00 yearly → 1 099,00 ₽/мес), empty states, and the
 // card → list-sheet entry.
 
-import { describe, expect, it, jest } from '@jest/globals'
+import { describe, expect, it, jest, beforeEach } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -20,6 +20,29 @@ import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provi
 import { monthlyTotalText } from '../model/selectors'
 import { PlansScreen } from './plans-screen'
 
+// Authorship markers (household-ux 2.4) resolve against the household cache;
+// the defaults are anonymous with no members (no marker renders), and the
+// marker tests flip these to a multi-member household.
+let mockAuth: { status: 'authenticated' | 'anonymous'; user: { id: string } | null } = {
+  status: 'anonymous',
+  user: null,
+}
+let mockMembers: readonly import('@expense-tracker/api').HouseholdMember[] | null = null
+
+jest.mock('@/entities/session', () => ({
+  ...(jest.requireActual('@/entities/session') as Record<string, unknown>),
+  useAuth: () => mockAuth,
+}))
+
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: mockMembers ? { members: mockMembers } : undefined }),
+}))
+
+beforeEach(() => {
+  mockAuth = { status: 'anonymous', user: null }
+  mockMembers = null
+})
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
 // The reminder driver calls the (native) scheduler on every data change; its
@@ -167,5 +190,47 @@ describe('PlansScreen', () => {
     fireEvent.press(screen.getByTestId('plans-card-expense'))
     await waitFor(() => expect(screen.getByTestId('plans-row-plan-netflix')).toBeTruthy())
     expect(screen.getByTestId('plans-total-expense')).toHaveTextContent(monthlyTotalText(109_900))
+  })
+
+  it('marks sibling-authored plan rows and stays clean in a single-member household', async () => {
+    const ME = 'u-me'
+    const SIBLING = 'u-sibling'
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = [
+      {
+        userId: ME,
+        email: 'me@example.com',
+        displayName: null,
+        role: 'owner',
+        joinedAt: '2026-08-01T00:00:00.000Z',
+      },
+      {
+        userId: SIBLING,
+        email: 'wife@example.com',
+        displayName: 'Жена',
+        role: 'member',
+        joinedAt: '2026-08-02T00:00:00.000Z',
+      },
+    ]
+    renderPlans({
+      plans: [
+        { ...PLANS[0], authorId: SIBLING },
+        { ...PLANS[1], authorId: ME },
+      ],
+    })
+
+    fireEvent.press(screen.getByTestId('plans-card-expense'))
+    await waitFor(() => expect(screen.getByTestId('plans-row-plan-netflix')).toBeTruthy())
+    expect(screen.getByTestId('plans-row-plan-netflix-author')).toHaveTextContent('Жена')
+    expect(screen.queryByTestId('plans-row-plan-insurance-author')).toBeNull()
+
+    // A single-member household renders no markers at all.
+    mockMembers = mockMembers?.slice(0, 1) ?? null
+    renderPlans({
+      plans: [{ ...PLANS[0], authorId: SIBLING }],
+    })
+    fireEvent.press(screen.getByTestId('plans-card-expense'))
+    await waitFor(() => expect(screen.getByTestId('plans-row-plan-netflix')).toBeTruthy())
+    expect(screen.queryByTestId('plans-row-plan-netflix-author')).toBeNull()
   })
 })

@@ -8,7 +8,12 @@
 
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
-import type { Category, PlannedPayment, PlannedPaymentType } from '@expense-tracker/api'
+import type {
+  Category,
+  HouseholdMember,
+  PlannedPayment,
+  PlannedPaymentType,
+} from '@expense-tracker/api'
 import {
   BottomSheet,
   BottomSheetHeader,
@@ -21,6 +26,7 @@ import { IconButton } from '@/shared/ui/icon-button'
 import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import { formatAmount } from '@/shared/lib/format/format'
+import { authorLabel } from '@/entities/household'
 import { PLANS_COPY, PLANS_REGULARITY_PHRASES, PLAN_TYPE_VIEWS } from '../model/kind'
 import {
   isPlanOverdue,
@@ -37,6 +43,8 @@ export interface PlansListSheetProps {
   type: PlannedPaymentType
   plans: PlannedPayment[]
   categories: Category[]
+  /** Authorship marker context (household-ux 2.4). */
+  author?: { members: readonly HouseholdMember[]; currentUserId: string | null | undefined }
   /** Opens the keyed add form for this type (page composition). */
   onAdd: (type: PlannedPaymentType) => void
   onEdit: (plan: PlannedPayment) => void
@@ -49,6 +57,7 @@ export function PlansListSheet({
   type,
   plans,
   categories,
+  author,
   onAdd,
   onEdit,
   onConfirm,
@@ -91,6 +100,7 @@ export function PlansListSheet({
                 key={plan.id}
                 plan={plan}
                 categories={categories}
+                author={author}
                 onPress={() => onEdit(plan)}
                 onConfirm={() => onConfirm(plan)}
               />
@@ -105,17 +115,22 @@ export function PlansListSheet({
 function PlanRow({
   plan,
   categories,
+  author,
   onPress,
   onConfirm,
 }: {
   plan: PlannedPayment
   categories: Category[]
+  author?: { members: readonly HouseholdMember[]; currentUserId: string | null | undefined }
   onPress: () => void
   onConfirm: () => void
 }) {
   const overdue = isPlanOverdue(plan, utcTodayKey())
   const title = planRowTitle(plan, categories)
   const subtitle = `${PLANS_REGULARITY_PHRASES[plan.regularity]} · ${nextDueLabel(plan.nextDue)}`
+  const authorMarker = author
+    ? authorLabel(plan.authorId, author.members, author.currentUserId)
+    : null
 
   return (
     <Pressable
@@ -138,6 +153,15 @@ function PlanRow({
           <Text variant="caption" className="text-muted-foreground">
             {subtitle}
           </Text>
+          {authorMarker ? (
+            <Text
+              variant="caption"
+              className="text-muted-foreground"
+              testID={`plans-row-${plan.id}-author`}
+            >
+              {authorMarker}
+            </Text>
+          ) : null}
           {overdue ? (
             <View
               className="rounded-full bg-destructive/15 px-2 py-0.5"

@@ -8,6 +8,7 @@ import {
   type DebtOperation,
 } from '@/entities/debt-operation'
 import { debtorHistoryGroups } from '../model/selectors'
+import { useAuthorLabel } from '@/features/household-author'
 import OperationFormDialog from './OperationFormDialog.vue'
 import DebtorFormDialog from './DebtorFormDialog.vue'
 import {
@@ -37,6 +38,7 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { t, locale } = useI18n()
+const authorLabel = useAuthorLabel()
 const settings = useSettingsStore()
 const displayCurrency = computed(() => settings.currency as CurrencyCode)
 
@@ -109,8 +111,17 @@ const editDebtorOpen = ref(false)
               :data-testid="`debts-history-op-${operation.id}`"
               @click="openEdit(operation)"
             >
-              <span class="min-w-0 flex-1 truncate text-sm">
-                {{ operation.note || (operation.kind === 'debt' ? t('debts.debt') : t('debts.repayment')) }}
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm">
+                  {{ operation.note || (operation.kind === 'debt' ? t('debts.debt') : t('debts.repayment')) }}
+                </span>
+                <span
+                  v-if="authorLabel(operation.authorId)"
+                  class="block text-xs text-muted-foreground"
+                  :data-testid="`debts-history-op-${operation.id}-author`"
+                >
+                  {{ authorLabel(operation.authorId) }}
+                </span>
               </span>
               <span
                 class="text-sm font-medium"

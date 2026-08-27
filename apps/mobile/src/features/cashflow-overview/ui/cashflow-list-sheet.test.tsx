@@ -3,7 +3,7 @@
 // tapped row delegates to the page-composed edit action, and rows stay
 // non-interactive when no edit action is composed.
 
-import { describe, expect, it, jest } from '@jest/globals'
+import { describe, expect, it, jest, beforeEach } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -19,6 +19,29 @@ import { AllCashflowCard } from './all-cashflow-card'
 import { CASHFLOW_KIND_VIEWS } from './kind'
 import { currentMonth } from '../model/selectors'
 
+// Authorship markers (household-ux 2.4) resolve against the household cache;
+// the defaults are anonymous with no members (no marker renders), and the
+// marker tests flip these to a multi-member household.
+let mockAuth: { status: 'authenticated' | 'anonymous'; user: { id: string } | null } = {
+  status: 'anonymous',
+  user: null,
+}
+let mockMembers: readonly import('@expense-tracker/api').HouseholdMember[] | null = null
+
+jest.mock('@/entities/session', () => ({
+  ...(jest.requireActual('@/entities/session') as Record<string, unknown>),
+  useAuth: () => mockAuth,
+}))
+
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: mockMembers ? { members: mockMembers } : undefined }),
+}))
+
+beforeEach(() => {
+  mockAuth = { status: 'anonymous', user: null }
+  mockMembers = null
+})
 const ZERO_INSETS = { top: 0, right: 0, left: 0, bottom: 0 }
 
 function toIso(date: Date): string {
@@ -101,5 +124,78 @@ describe('CashflowListSheet', () => {
     expect(screen.getByTestId(`${ids.listRow}-tx-taxi-1`).props.accessibilityState.disabled).toBe(
       true,
     )
+  })
+})
+
+describe('CashflowListSheet · authorship markers', () => {
+  const ME = 'u-me'
+  const SIBLING = 'u-sibling'
+
+  function membersOf(...ids: string[]) {
+    return ids.map((userId) => ({
+      userId,
+      email: `${userId}@example.com`,
+      displayName: userId === SIBLING ? 'Жена' : null,
+      role: 'owner' as const,
+      joinedAt: '2026-08-01T00:00:00.000Z',
+    }))
+  }
+
+  function transactionAuthoredBy(authorId: string | null): Transaction {
+    return { ...TRANSACTIONS[0], authorId } as Transaction
+  }
+
+  function renderWithTransactions(transactions: Transaction[]) {
+    const onNewTransaction = jest.fn()
+    render(
+      <SafeAreaProvider
+        initialMetrics={{ insets: ZERO_INSETS, frame: { x: 0, y: 0, width: 375, height: 812 } }}
+      >
+        <QueryClientProvider client={createQueryClient()}>
+          <CategoryRepositoryProvider repository={createMockCategoryRepository(CATEGORIES)}>
+            <TransactionRepositoryProvider
+              repository={createMockTransactionRepository(transactions)}
+            >
+              <ThemeProvider>
+                <BottomSheetProvider>
+                  <AllCashflowCard
+                    kind="expense"
+                    cursor={currentMonth()}
+                    transactions={transactions}
+                    categories={CATEGORIES}
+                    onNewTransaction={onNewTransaction}
+                  />
+                </BottomSheetProvider>
+              </ThemeProvider>
+            </TransactionRepositoryProvider>
+          </CategoryRepositoryProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>,
+    )
+  }
+
+  it('marks a sibling-authored row with the display name', async () => {
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = membersOf(ME, SIBLING)
+    renderWithTransactions([transactionAuthoredBy(SIBLING)])
+    await openListSheet()
+
+    expect(screen.getByTestId(`${ids.listRow}-tx-taxi-1-author`)).toHaveTextContent('Жена')
+  })
+
+  it('renders no marker for own, unknown, or anonymous-era records', async () => {
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = membersOf(ME, SIBLING)
+    renderWithTransactions([transactionAuthoredBy(ME)])
+    await openListSheet()
+    expect(screen.queryByTestId(`${ids.listRow}-tx-taxi-1-author`)).toBeNull()
+  })
+
+  it('renders no marker in a single-member household', async () => {
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = membersOf(ME)
+    renderWithTransactions([transactionAuthoredBy(SIBLING)])
+    await openListSheet()
+    expect(screen.queryByTestId(`${ids.listRow}-tx-taxi-1-author`)).toBeNull()
   })
 })

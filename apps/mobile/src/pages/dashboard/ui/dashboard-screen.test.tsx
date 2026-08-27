@@ -24,6 +24,17 @@ import {
 import { DashboardScreen } from './dashboard-screen'
 import { monthlyBalance, totalBalance } from '../model/selectors'
 
+// Authorship markers (household-ux 2.4) resolve against the household cache;
+// these suites run anonymous with no members, so no marker ever renders.
+jest.mock('@/entities/session', () => ({
+  ...(jest.requireActual('@/entities/session') as Record<string, unknown>),
+  useAuth: () => ({ status: 'anonymous', user: null }),
+}))
+
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: undefined }),
+}))
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
 // The badge mounts sync/auth infrastructure the screen test does not provide;
 // it has its own test in the widget slice.

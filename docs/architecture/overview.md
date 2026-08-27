@@ -330,6 +330,13 @@ quick income page — all reachable through the persistent `AppNav`.
   a `last_household` mismatch (a stale second device) surfaces the global
   carry/clean choice dialog (`features/household-join`), and the rebase
   resets versions/cursor/outbox so the initial-sync union applies unchanged.
+  Household UX (change `household-ux`): settings carries the household
+  management block + profile display-name editor (page-local features over
+  `entities/household`'s `useHouseholdActions` mutations); shared-record
+  rows resolve `authorId` (surfaced through the local repositories since
+  that change) via `features/household-author`'s `useAuthorLabel` marker
+  selector; leave and dissolve apply only the clean-start path
+  (`applyHouseholdChoice(household, 'clean')`).
   Single-tab contract: the worker takes a Web Locks `ifAvailable` guard
   (`expense-tracker-local-db`) held for its lifetime; a second tab renders
   the "already open in another tab" state with a reload action and never
@@ -450,6 +457,12 @@ entities/ shared/`.
   (`app/invite/[token]`), join-by-code, leave, and the startup/foreground
   `last_household` mismatch guard; a base-0 push answered
   `SYNC_ALREADY_EXISTS` adopts the server record (union convergence).
+  Household UX (change `household-ux`): the settings «Пространство» group
+  and profile editor build on `entities/household`
+  (`useHouseholdActions` mutations); cashflow rows/sheets, the edit sheet,
+  debtor history, and plan rows render authorship markers via
+  `entities/household`'s `authorLabel`; leave and dissolve apply only the
+  clean-start path (`performHouseholdJoin(household, 'clean')`).
 - **Auth**: React context (`entities/session/model/use-auth.tsx`) with
   restoring/authenticated/anonymous statuses; **no router guard** — the app
   is deliberately usable anonymously on local data: decided behavior,

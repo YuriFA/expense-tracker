@@ -40,6 +40,12 @@ export interface PlannedPayment {
   note: string
   /** Optimistic-concurrency revision (bumped on every server update). */
   version: number
+  /**
+   * Who created/last changed the record (household authorship, household-ux):
+   * the local-data row's `userId`. Absent on the REST contract surface (only
+   * sync delivers it) and on records authored before authorship existed.
+   */
+  authorId?: string | null
 }
 
 const CALENDAR_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -90,6 +96,7 @@ export const normalizePlannedPayment = (value: unknown): PlannedPayment | null =
   const reminder = isPlannedPaymentReminder(value.reminder) ? value.reminder : null
   const note = asString(value.note) ?? ''
   const version = asInteger(value.version)
+  const authorId = value.authorId == null ? undefined : asString(value.authorId)
 
   if (
     !id ||
@@ -121,5 +128,6 @@ export const normalizePlannedPayment = (value: unknown): PlannedPayment | null =
     reminder,
     note,
     version,
+    ...(authorId !== undefined ? { authorId } : {}),
   }
 }

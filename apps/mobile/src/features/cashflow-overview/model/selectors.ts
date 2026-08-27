@@ -6,7 +6,7 @@
 // aggregate them. The dashboard-only balance aggregates (monthlyBalance,
 // totalBalance) live in pages/dashboard/model.
 
-import type { Category, Transaction } from '@expense-tracker/api'
+import type { Category, HouseholdMember, Transaction } from '@expense-tracker/api'
 import {
   calendarDayKey,
   fullDayLabel,
@@ -18,6 +18,7 @@ import {
 } from '@expense-tracker/dates'
 import type { IconName } from '@/shared/ui/icon'
 import { formatAmount } from '@/shared/lib/format/format'
+import { authorLabel } from '@/entities/household'
 import type { CashflowRowView } from '../ui/cashflow-list-sheet'
 
 export {
@@ -48,7 +49,21 @@ function cashflowInPeriod(
   return transactionsInPeriod(txs, cursor).filter((t) => t.type === kind)
 }
 
-function toCashflowRow(tx: Transaction, categories: Category[]): CashflowRowView {
+/**
+ * Household authorship context for row markers (household-ux 2.4): the
+ * members cache plus the current user's id resolve each record's `authorId`
+ * to a compact label (null renders nothing - own/unknown/single-member).
+ */
+export interface CashflowAuthorContext {
+  members: readonly HouseholdMember[]
+  currentUserId: string | null | undefined
+}
+
+function toCashflowRow(
+  tx: Transaction,
+  categories: Category[],
+  author?: CashflowAuthorContext,
+): CashflowRowView {
   const category = categories.find((c) => c.id === tx.categoryId)
   return {
     id: tx.id,
@@ -60,6 +75,7 @@ function toCashflowRow(tx: Transaction, categories: Category[]): CashflowRowView
     categoryColor: category?.color,
     dayLabel: relativeDayLabel(tx.occurredAt),
     amountText: formatAmount(tx.amount),
+    authorLabel: author ? authorLabel(tx.authorId, author.members, author.currentUserId) : null,
   }
 }
 
@@ -84,21 +100,25 @@ function byOccurredAtDesc(a: Transaction, b: Transaction): number {
  * Day-grouped cashflow over PRE-TRIMMED, newest-first transactions of one
  * kind (shared by the month and period variants below).
  */
-function groupCashflowByDay(matching: Transaction[], categories: Category[]): CashflowDayGroup[] {
+function groupCashflowByDay(
+  matching: Transaction[],
+  categories: Category[],
+  author?: CashflowAuthorContext,
+): CashflowDayGroup[] {
   const buckets: Array<Omit<CashflowDayGroup, 'totalText'> & { totalMinor: number }> = []
   for (const tx of matching) {
     const key = calendarDayKey(new Date(tx.occurredAt))
 
     const current = buckets[buckets.length - 1]
     if (current?.key === key) {
-      current.rows.push(toCashflowRow(tx, categories))
+      current.rows.push(toCashflowRow(tx, categories, author))
       current.totalMinor += tx.amount
     } else {
       buckets.push({
         key,
         title: fullDayLabel(tx.occurredAt),
         totalMinor: tx.amount,
-        rows: [toCashflowRow(tx, categories)],
+        rows: [toCashflowRow(tx, categories, author)],
       })
     }
   }
@@ -120,10 +140,12 @@ export function cashflowDayGroups(
   categories: Category[],
   cursor: MonthCursor,
   kind: CashflowKind,
+  author?: CashflowAuthorContext,
 ): CashflowDayGroup[] {
   return groupCashflowByDay(
     cashflowInMonth(txs, cursor, kind).slice().sort(byOccurredAtDesc),
     categories,
+    author,
   )
 }
 
@@ -133,10 +155,12 @@ export function cashflowDayGroupsInPeriod(
   categories: Category[],
   cursor: PeriodCursor,
   kind: CashflowKind,
+  author?: CashflowAuthorContext,
 ): CashflowDayGroup[] {
   return groupCashflowByDay(
     cashflowInPeriod(txs, cursor, kind).slice().sort(byOccurredAtDesc),
     categories,
+    author,
   )
 }
 

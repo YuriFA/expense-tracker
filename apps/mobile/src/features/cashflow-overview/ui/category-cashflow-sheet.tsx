@@ -45,6 +45,7 @@ import {
   type CashflowDayGroup,
   type CashflowKind,
 } from '../model/selectors'
+import { useCashflowAuthor } from '../model/use-cashflow-author'
 import { CASHFLOW_KIND_VIEWS } from './kind'
 import { EditCategorySheet } from './edit-category-sheet'
 import { SheetFooter, useSheetFooterScroll } from '@/shared/ui/sheet-footer'
@@ -119,13 +120,14 @@ export function CategoryCashflowSheet({
 
   // Depends on `categoryQuery.data` (a stable reference per fetch), not a
   // `?? []` fallback computed at render time.
+  const author = useCashflowAuthor()
   const { groups, totalText } = useMemo(() => {
     const categoryTransactions = categoryQuery.data ?? []
     return {
-      groups: cashflowDayGroupsInPeriod(categoryTransactions, categories, period, kind),
+      groups: cashflowDayGroupsInPeriod(categoryTransactions, categories, period, kind, author),
       totalText: formatAmount(totalCashflowInPeriod(categoryTransactions, period, kind)),
     }
-  }, [categoryQuery.data, categories, period, kind])
+  }, [categoryQuery.data, categories, period, kind, author])
   const orderedGroups = sortAscending ? reverseGroups(groups) : groups
   const periodLabel = isMonthMode
     ? monthRangeLabelShort(period.start.getFullYear(), period.start.getMonth())
@@ -255,9 +257,20 @@ export function CategoryCashflowSheet({
                         >
                           <Icon name={row.categoryIcon} size={20} colorClassName="accent-white" />
                         </View>
-                        <Text variant="body" className="flex-1 text-foreground" numberOfLines={1}>
-                          {row.description || row.categoryName}
-                        </Text>
+                        <View className="flex-1 gap-0.5">
+                          <Text variant="body" className="text-foreground" numberOfLines={1}>
+                            {row.description || row.categoryName}
+                          </Text>
+                          {row.authorLabel ? (
+                            <Text
+                              variant="caption"
+                              className="text-muted-foreground"
+                              testID={`${ids.categoryRowItem}-${row.id}-author`}
+                            >
+                              {row.authorLabel}
+                            </Text>
+                          ) : null}
+                        </View>
                         <Text variant="button">{row.amountText}</Text>
                       </Pressable>
                     </Fragment>

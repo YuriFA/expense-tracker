@@ -28,6 +28,7 @@ type BaseTransaction = {
   occurredAt: string
   updatedAt?: string
   version: number
+  authorId?: string | null
 }
 
 const isTransactionType = (value: unknown): value is TransactionType =>
@@ -44,6 +45,7 @@ const normalizeBaseTransaction = (value: TransactionRecord): BaseTransaction | n
   // Optimistic-concurrency version is server-provided; localStorage-created
   // transactions default to 1 so they round-trip through PATCH unchanged.
   const versionValue = typeof value.version === 'number' ? value.version : 1
+  const authorIdValue = value.authorId == null ? undefined : asString(value.authorId)
 
   if (!id || !type || !amount || description === null || !occurredAt) {
     return null
@@ -61,6 +63,7 @@ const normalizeBaseTransaction = (value: TransactionRecord): BaseTransaction | n
     occurredAt,
     version: versionValue,
     ...(updatedAtValue ? { updatedAt: updatedAtValue } : {}),
+    ...(authorIdValue !== undefined ? { authorId: authorIdValue } : {}),
   }
 }
 

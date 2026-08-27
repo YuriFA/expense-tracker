@@ -19,10 +19,16 @@ interface CategoryRef {
   icon: string
 }
 
-const { transaction, accounts = [], categories = [] } = defineProps<{
+const { transaction, accounts = [], categories = [], author = null } = defineProps<{
   transaction: Transaction
   accounts?: AccountRef[]
   categories?: CategoryRef[]
+  /**
+   * Compact authorship marker (household-ux 3.4): the author's member label;
+   * null/undefined renders nothing (own/unknown author, single-member
+   * household). Resolved by the page over the household members cache.
+   */
+  author?: string | null
 }>()
 
 const { locale, t } = useI18n()
@@ -98,6 +104,9 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
             {{ category.name }}
           </span>
           · <span v-if="account">{{ account.name }}</span> · <span>{{ formattedOccuredAt }}</span>
+        </template>
+        <template v-if="author">
+          · <span :data-testid="`transaction-row-author-${transaction.id}`" :title="t('household.authorMarkerTooltip', { name: author })">{{ author }}</span>
         </template>
       </p>
     </div>

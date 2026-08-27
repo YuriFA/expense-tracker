@@ -26,6 +26,12 @@ export interface CashflowRowView {
   categoryColor: string | undefined
   dayLabel: string
   amountText: string
+  /**
+   * Compact authorship marker (household-ux 2.4): the author's member label,
+   * or null when no marker applies (own/unknown author, single-member
+   * household).
+   */
+  authorLabel: string | null
 }
 
 export interface CashflowListSheetProps {
@@ -124,9 +130,20 @@ export function CashflowListSheet({
                           >
                             <Icon name={row.categoryIcon} size={20} colorClassName="accent-white" />
                           </View>
-                          <Text variant="body" className="flex-1 text-foreground">
-                            {row.categoryName}
-                          </Text>
+                          <View className="flex-1 gap-0.5">
+                            <Text variant="body" className="text-foreground">
+                              {row.categoryName}
+                            </Text>
+                            {row.authorLabel ? (
+                              <Text
+                                variant="caption"
+                                className="text-muted-foreground"
+                                testID={`${ids.listRow}-${row.id}-author`}
+                              >
+                                {row.authorLabel}
+                              </Text>
+                            ) : null}
+                          </View>
                           <Text variant="button">{row.amountText}</Text>
                         </Pressable>
                       </Fragment>

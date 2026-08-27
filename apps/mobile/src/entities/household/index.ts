@@ -1,3 +1,6 @@
 export { householdApi } from './api/household-api'
 export { useHousehold } from './model/use-household'
-export { emailLocalPart, householdDisplayName } from './model/household-label'
+export { useHouseholdInvitations } from './model/use-household-invitations'
+export { useHouseholdActions } from './model/use-household-actions'
+export { emailLocalPart, householdDisplayName, memberLabel } from './model/household-label'
+export { authorLabel } from './model/author-label'

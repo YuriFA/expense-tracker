@@ -6,7 +6,7 @@
 // through the native-alert confirmation.
 
 import { createRef } from 'react'
-import { describe, expect, it, jest } from '@jest/globals'
+import { describe, expect, it, jest, beforeEach } from '@jest/globals'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -29,6 +29,29 @@ import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provi
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { EditTransactionSheet } from './edit-transaction-sheet'
 
+// Authorship markers (household-ux 2.4) resolve against the household cache;
+// the defaults are anonymous with no members (no marker renders), and the
+// marker tests flip these to a multi-member household.
+let mockAuth: { status: 'authenticated' | 'anonymous'; user: { id: string } | null } = {
+  status: 'anonymous',
+  user: null,
+}
+let mockMembers: readonly import('@expense-tracker/api').HouseholdMember[] | null = null
+
+jest.mock('@/entities/session', () => ({
+  ...(jest.requireActual('@/entities/session') as Record<string, unknown>),
+  useAuth: () => mockAuth,
+}))
+
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: mockMembers ? { members: mockMembers } : undefined }),
+}))
+
+beforeEach(() => {
+  mockAuth = { status: 'anonymous', user: null }
+  mockMembers = null
+})
 const ZERO_INSETS = { top: 0, right: 0, left: 0, bottom: 0 }
 
 const ACCOUNTS: Account[] = [
@@ -267,5 +290,47 @@ describe('EditTransactionForm · delete', () => {
     fireEvent.press(screen.getByTestId('edit-transaction-delete'))
 
     await waitFor(() => expect(repository.calls.remove).toBe(1))
+  })
+})
+
+describe('EditTransactionForm · authorship detail line', () => {
+  const ME = 'u-me'
+  const SIBLING = 'u-sibling'
+
+  function membersOf(...ids: string[]) {
+    return ids.map((userId) => ({
+      userId,
+      email: `${userId}@example.com`,
+      displayName: userId === SIBLING ? 'Жена' : null,
+      role: 'owner' as const,
+      joinedAt: '2026-08-01T00:00:00.000Z',
+    }))
+  }
+
+  it('shows the sibling author in the detail', async () => {
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = membersOf(ME, SIBLING)
+    await openLoaded({ ...EXPENSE, authorId: SIBLING } as Transaction)
+
+    expect(screen.getByTestId('edit-transaction-author-tx-expense')).toHaveTextContent(
+      'Кем записано: Жена',
+    )
+  })
+
+  it('shows own provenance as «вами» even in a single-member household', async () => {
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = membersOf(ME)
+    await openLoaded({ ...EXPENSE, authorId: ME } as Transaction)
+
+    expect(screen.getByTestId('edit-transaction-author-tx-expense')).toHaveTextContent(
+      'Кем записано: вами',
+    )
+  })
+
+  it('renders no line for unknown authors or anonymous mode', async () => {
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = membersOf(ME, SIBLING)
+    await openLoaded({ ...EXPENSE, authorId: 'u-departed' } as Transaction)
+    expect(screen.queryByTestId('edit-transaction-author-tx-expense')).toBeNull()
   })
 })

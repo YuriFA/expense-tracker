@@ -16,6 +16,8 @@ import { useRef, useState } from 'react'
 import { View } from 'react-native'
 import type { DebtDirection, DebtOperation, Debtor } from '@expense-tracker/api'
 import { useDebtOperations, useDebtors } from '@/entities/debt'
+import { useHousehold } from '@/entities/household'
+import { useAuth } from '@/entities/session'
 import { Screen } from '@/shared/ui/screen'
 import { ScreenHeader, ScreenScrollView } from '@/shared/ui/screen-header'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
@@ -33,6 +35,14 @@ export function DebtsScreen() {
   const operationsQuery = useDebtOperations()
   const debtors = debtorsQuery.data ?? []
   const operations = operationsQuery.data ?? []
+
+  // Authorship markers context (household-ux 2.4): members cache + user id.
+  const { status, user } = useAuth()
+  const householdQuery = useHousehold({ enabled: status === 'authenticated' })
+  const author =
+    status === 'authenticated'
+      ? { members: householdQuery.data?.members ?? [], currentUserId: user?.id }
+      : undefined
 
   // Sheet composition state (invariant #15): the page owns every ref and the
   // selection each sheet acts on. The create-operation context starts as a
@@ -117,6 +127,7 @@ export function DebtsScreen() {
         debtor={historyDebtor}
         direction={historyContext?.direction ?? 'receivable'}
         operations={operations}
+        author={author}
         onEditOperation={openEditOperation}
         onEditDebtor={openEditDebtor}
         onNewOperation={openNewOperation}

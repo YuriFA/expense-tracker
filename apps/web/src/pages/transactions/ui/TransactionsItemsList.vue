@@ -7,6 +7,7 @@ import {
 import { useAccounts } from '@/entities/account'
 import { useCategories } from '@/entities/category'
 import { useTransactionsFilters } from '../model/use-transactions-filters'
+import { useAuthorLabel } from '@/features/household-author'
 import { useI18n } from 'vue-i18n'
 import { EditTransactionDialog } from '@/features/transaction/edit'
 import { DeleteTransactionDialog } from '@/features/transaction/delete'
@@ -23,6 +24,7 @@ import { MoreVertical, Pencil, Trash2 } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 const { t } = useI18n()
+const authorLabel = useAuthorLabel()
 const { filters } = useTransactionsFilters()
 const {
   data,
@@ -84,6 +86,7 @@ const openDelete = () => {
         :transaction="item"
         :accounts="accounts"
         :categories="categories"
+        :author="authorLabel(item.authorId)"
       >
         <template #actions="{ transaction }">
           <DropdownMenu>

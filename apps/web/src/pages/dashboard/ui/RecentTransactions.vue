@@ -8,6 +8,7 @@ import {
 } from '@/entities/transaction'
 import { useAccounts } from '@/entities/account'
 import { useCategories } from '@/entities/category'
+import { useAuthorLabel } from '@/features/household-author'
 import { EditTransactionDialog } from '@/features/transaction/edit'
 import { DeleteTransactionDialog } from '@/features/transaction/delete'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -23,6 +24,7 @@ import { MoreVertical, Pencil, Trash2 } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 const { t } = useI18n()
+const authorLabel = useAuthorLabel()
 const {
   data,
   error: transactionsError,
@@ -88,6 +90,7 @@ const openDelete = (transaction: Transaction) => {
         :transaction="item"
         :accounts="accounts"
         :categories="categories"
+        :author="authorLabel(item.authorId)"
       >
         <template #actions="{ transaction }">
           <DropdownMenu>

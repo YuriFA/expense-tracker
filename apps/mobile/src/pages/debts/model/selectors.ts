@@ -4,10 +4,17 @@
 // debtor-direction ledger. Integer money math only (minor units); formatting
 // happens only at the display edge (formatAmount).
 
-import type { DebtDirection, DebtOperation, DebtOperationKind, Debtor } from '@expense-tracker/api'
+import type {
+  DebtDirection,
+  DebtOperation,
+  DebtOperationKind,
+  Debtor,
+  HouseholdMember,
+} from '@expense-tracker/api'
 import { calendarDayKey, fullDayLabel } from '@expense-tracker/dates'
 import { formatAmount } from '@/shared/lib/format/format'
 import { balancesByDebtor, totalsByDirection } from '@expense-tracker/local-data'
+import { authorLabel } from '@/entities/household'
 
 export type { DirectionBalances } from '@expense-tracker/local-data'
 export { totalsByDirection } from '@expense-tracker/local-data'
@@ -68,6 +75,17 @@ interface DebtHistoryRowView {
   /** Signed display text: debt grows («+»), repayment shrinks («−»). */
   amountText: string
   note: string
+  /**
+   * Compact authorship marker (household-ux 2.4); null renders nothing
+   * (own/unknown author, single-member household).
+   */
+  authorLabel: string | null
+}
+
+/** Authorship context threaded from the screen (members cache + user id). */
+export interface DebtAuthorContext {
+  members: readonly HouseholdMember[]
+  currentUserId: string | null | undefined
 }
 
 export interface DebtHistoryDayGroup {
@@ -86,6 +104,7 @@ export function debtorHistoryGroups(
   operations: DebtOperation[],
   debtorId: string,
   direction: DebtDirection,
+  author?: DebtAuthorContext,
 ): DebtHistoryDayGroup[] {
   const matching = operations
     .filter((op) => op.debtorId === debtorId && op.direction === direction)
@@ -101,6 +120,7 @@ export function debtorHistoryGroups(
       kind: op.kind,
       amountText: `${op.kind === 'debt' ? '+' : '−'}\u00A0${formatAmount(op.amount)}`,
       note: op.note,
+      authorLabel: author ? authorLabel(op.authorId, author.members, author.currentUserId) : null,
     }
     const current = groups[groups.length - 1]
     if (current?.key === key) current.rows.push(row)

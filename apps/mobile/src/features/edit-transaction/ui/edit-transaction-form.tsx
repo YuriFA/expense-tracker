@@ -15,8 +15,10 @@ import { Alert, View } from 'react-native'
 import { nowIso } from '@expense-tracker/dates'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormProvider, useForm, useFormContext, useFormState } from 'react-hook-form'
-import type { TransactionType, UpdateTransactionPayload } from '@expense-tracker/api'
+import type { Transaction, TransactionType, UpdateTransactionPayload } from '@expense-tracker/api'
 import { useTransaction, useDeleteTransaction, useUpdateTransaction } from '@/entities/transaction'
+import { authorLabel, useHousehold } from '@/entities/household'
+import { useAuth } from '@/entities/session'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
 import { BottomSheetHeader } from '@/shared/ui/bottom-sheet'
@@ -57,6 +59,32 @@ const emptyExpenseValues: EditTransactionFormValues = {
   occurredAt: nowIso(),
   accountId: '',
   categoryId: '',
+}
+
+/**
+ * The detail's provenance line (household-ux 2.4): unlike the compact row
+ * markers, the detail shows who created the record even alone in the
+ * household («вами») - provenance, not collaboration (design D2). Renders
+ * nothing when the author is unknown (pre-authorship or departed member).
+ */
+function AuthorRow({ transaction }: { transaction: Transaction }) {
+  const { status, user } = useAuth()
+  const householdQuery = useHousehold({ enabled: status === 'authenticated' })
+  if (status !== 'authenticated') return null
+  const label = authorLabel(transaction.authorId, householdQuery.data?.members ?? [], user?.id, {
+    selfLabel: 'вами',
+    includeSingleMember: true,
+  })
+  if (!label) return null
+  return (
+    <Text
+      variant="caption"
+      className="text-muted-foreground px-4"
+      testID={`edit-transaction-author-${transaction.id}`}
+    >
+      {`Кем записано: ${label}`}
+    </Text>
+  )
 }
 
 function toUpdatePayload(
@@ -213,6 +241,7 @@ export function EditTransactionForm({
       />
 
       <View className="gap-1 px-4 pb-safe">
+        <AuthorRow transaction={transaction} />
         <AmountInputField
           currencySource={transaction.type === 'transfer' ? 'fromAccountId' : 'accountId'}
         />

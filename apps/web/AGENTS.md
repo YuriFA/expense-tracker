@@ -20,8 +20,13 @@ Screen set (capability `openspec/specs/web-screens` — mobile UX semantics,
 web-native presentation): dashboard (`/`), transactions, analytics overview
 (`/analytics`) + per-direction detail (`/analytics/:direction`), debts
 (`/debts`), plans (`/plans`), quick income (`/income`), accounts, settings —
-all exposed in `AppNav`. Analytics selectors live in `entities/analytics`;
-debts/plans screens own their view-model selectors under `pages/*/model/`.
+all exposed in `AppNav`. Settings also carries the household management
+section + profile display-name editor (change `household-ux`: page-local
+features under `pages/settings/features/*` over `entities/household`
+actions; authorship markers via `features/household-author` on transaction
+rows, the edit dialog, debtor history, and plan rows). Analytics selectors
+live in `entities/analytics`; debts/plans screens own their view-model
+selectors under `pages/*/model/`.
 
 ## Spec-first (contract from `docs/api/openapi.yaml`)
 
@@ -92,9 +97,11 @@ banner) and needs no backend; the PWA suite (`e2e/pwa/`,
 `pnpm test:e2e:pwa`) builds and runs against `vite preview` (the SW only
 exists in production builds); the sync suites (`sync-backend.spec.ts`,
 `household-join-sync.spec.ts` — two-household join/carry/clean/rebase) are
-env-gated on `SYNC_INTEGRATION_API` like mobile's integration tests;
-`invite-preview.spec.ts` introduced `page.route` API interception for
-backendless API-state screens. Playwright
+  env-gated on `SYNC_INTEGRATION_API` like mobile's integration tests;
+  `invite-preview.spec.ts` introduced `page.route` API interception for
+  backendless API-state screens, extended by `household-ux.spec.ts` (mocked
+  auth/household/sync control plane driving the settings section and
+  authorship markers end-to-end). Playwright
 projects are chromium + firefox only: the bundled WebKit exposes no OPFS
 (`getDirectory()` throws), so the local-first core cannot boot there — real
 Safari ≥ 17 needs a manual verification pass.

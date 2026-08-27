@@ -13,14 +13,23 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { Button } from '@/shared/ui/button'
+import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useAuthStore, sessionApi } from '@/entities/session'
-import { householdDisplayName, useHousehold } from '@/entities/household'
+import { householdDisplayName, memberLabel, useHousehold } from '@/entities/household'
+import { DissolveHouseholdDialog } from '../features/dissolve-household'
+import { DisplayNameEditor } from '../features/display-name'
+import { HouseholdCodeDialog } from '../features/household-code'
+import { HouseholdInvitationsDialog } from '../features/household-invitations'
+import { InviteMemberDialog } from '../features/invite-member'
 import { JoinHouseholdDialog } from '../features/join-household'
 import { LeaveHouseholdButton } from '../features/leave-household'
+import { RemoveMemberDialog } from '../features/remove-member'
+import { RenameHouseholdDialog } from '../features/rename-household'
 import { notification } from '@/shared/services/notification'
 import type { Session } from '@/entities/session'
+import type { HouseholdMember } from '@expense-tracker/api'
 
 const { t, locale, availableLocales } = useI18n()
 const settings = useSettingsStore()
@@ -65,15 +74,44 @@ const sessions = ref<Session[]>([])
 const sessionsLoading = ref(false)
 const revoking = ref(false)
 
-// --- Household (household-join) ---------------------------------------------
+// --- Household (household-ux 3.1) -------------------------------------------
 // Control-plane read over the API (not synced data): display name (owner
-// email prefix fallback) + members count, with the join/leave entries.
+// email prefix fallback), the member list (label/email, role, joined date),
+// and role-aware actions. Owner-only actions are hidden, not disabled; the
+// owner cannot leave while other members remain (the backend rejects it).
 const householdQuery = useHousehold({ enabled: () => auth.isAuthenticated })
-const householdLabel = computed(() => {
-  const household = householdQuery.data.value
-  return household ? householdDisplayName(household) : null
-})
-const householdMembersCount = computed(() => householdQuery.data.value?.members.length ?? 0)
+const household = computed(() => householdQuery.data.value)
+const householdLabel = computed(() =>
+  household.value ? householdDisplayName(household.value) : null,
+)
+const members = computed(() => household.value?.members ?? [])
+const myMember = computed(
+  () => household.value?.members.find((member) => member.userId === auth.user?.id) ?? null,
+)
+const isOwner = computed(() => myMember.value?.role === 'owner')
+const canLeave = computed(() => !isOwner.value || members.value.length === 1)
+
+// One remove dialog outside the members loop + the active member ref
+// (vue-patterns §4).
+const removeTarget = ref<HouseholdMember | null>(null)
+const removeOpen = ref(false)
+
+const joinedFormatter = computed(
+  () => new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }),
+)
+const formatJoined = (iso: string) => joinedFormatter.value.format(new Date(iso))
+
+const myDisplayName = computed(() => myMember.value?.displayName ?? '')
+
+// The label resolves in script over static keys - the strict i18n lint
+// bans computed keys inside templates.
+const roleLabel = (role: HouseholdMember['role']): string =>
+  role === 'owner' ? t('household.role.owner') : t('household.role.member')
+
+function openRemove(member: HouseholdMember): void {
+  removeTarget.value = member
+  removeOpen.value = true
+}
 
 async function loadSessions() {
   sessionsLoading.value = true
@@ -155,6 +193,15 @@ onMounted(() => {
         </CardContent>
       </Card>
 
+      <!-- Mounts only once the household read resolves: the editor's initial
+           form value comes from the member entry and would otherwise seed
+           empty while the query is in flight. -->
+      <DisplayNameEditor
+        v-if="auth.user && household"
+        :email="auth.user.email"
+        :initial-name="myDisplayName"
+      />
+
       <Card data-testid="settings-household-card">
         <CardHeader>
           <CardTitle>{{ t('household.title') }}</CardTitle>
@@ -162,14 +209,60 @@ onMounted(() => {
         <CardContent class="flex flex-col gap-3">
           <Skeleton v-if="householdQuery.isLoading.value" class="h-5 w-40" />
           <p v-else-if="householdLabel" class="text-sm" data-testid="settings-household-name">
-            {{ householdLabel }} · {{ t('household.membersCount', householdMembersCount) }}
+            {{ householdLabel }} · {{ t('household.membersCount', members.length) }}
           </p>
+
+          <ul
+            v-if="household"
+            class="flex flex-col gap-2 text-sm"
+            data-testid="settings-household-member-list"
+          >
+            <li
+              v-for="member in members"
+              :key="member.userId"
+              class="flex items-center gap-2 border-b border-b-muted pb-2 last:border-0 last:pb-0"
+              :data-testid="`settings-household-member-${member.userId}`"
+            >
+              <span class="flex-1">
+                {{ memberLabel(member) }}
+                <span v-if="member.userId === auth.user?.id" class="text-muted-foreground">
+                  ({{ t('household.you') }})
+                </span>
+                <span class="block text-xs text-muted-foreground">
+                  {{ member.email }} · {{ t('household.joinedAt', { date: formatJoined(member.joinedAt) }) }}
+                </span>
+              </span>
+              <Badge variant="outline">
+                {{ roleLabel(member.role) }}
+              </Badge>
+              <Button
+                v-if="isOwner && member.role !== 'owner'"
+                variant="ghost"
+                size="sm"
+                :data-testid="`settings-household-remove-${member.userId}`"
+                @click="openRemove(member)"
+              >
+                {{ t('household.removeMember') }}
+              </Button>
+            </li>
+          </ul>
+
+          <div v-if="isOwner && household" class="flex flex-wrap gap-2" data-testid="settings-household-owner-actions">
+            <InviteMemberDialog />
+            <HouseholdInvitationsDialog />
+            <HouseholdCodeDialog />
+            <RenameHouseholdDialog :initial-name="household.name" />
+            <DissolveHouseholdDialog />
+          </div>
+
           <div class="flex flex-wrap gap-2">
             <JoinHouseholdDialog />
-            <LeaveHouseholdButton />
+            <LeaveHouseholdButton v-if="canLeave" />
           </div>
         </CardContent>
       </Card>
+
+      <RemoveMemberDialog v-model="removeOpen" :member="removeTarget" />
 
       <Card>
         <CardHeader>

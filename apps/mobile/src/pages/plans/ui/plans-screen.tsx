@@ -15,6 +15,8 @@ import { ScrollView, View } from 'react-native'
 import type { PlannedPayment, PlannedPaymentType } from '@expense-tracker/api'
 import { useCategories } from '@/entities/category'
 import { usePlannedPayments, reschedule } from '@/entities/planned-payment'
+import { useHousehold } from '@/entities/household'
+import { useAuth } from '@/entities/session'
 import { Screen } from '@/shared/ui/screen'
 import { Text } from '@/shared/ui/text'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
@@ -30,6 +32,14 @@ export function PlansScreen() {
   const categoriesQuery = useCategories()
   const plans = plansQuery.data ?? []
   const categories = categoriesQuery.data ?? []
+
+  // Authorship markers context (household-ux 2.4): members cache + user id.
+  const { status, user } = useAuth()
+  const householdQuery = useHousehold({ enabled: status === 'authenticated' })
+  const author =
+    status === 'authenticated'
+      ? { members: householdQuery.data?.members ?? [], currentUserId: user?.id }
+      : undefined
 
   // Reminder driver (design D9): re-sync local notifications whenever the
   // plans or categories query data identity changes — that covers local
@@ -86,6 +96,7 @@ export function PlansScreen() {
         type={listType}
         plans={plans}
         categories={categories}
+        author={author}
         onAdd={openCreate}
         onEdit={openEdit}
         onConfirm={openConfirm}

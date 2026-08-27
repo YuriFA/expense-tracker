@@ -71,6 +71,7 @@ function toPlannedPayment(row: PlannedPaymentRow): PlannedPayment {
     reminder: row.reminder as PlannedPaymentReminder,
     note: row.note,
     version: row.version,
+    authorId: row.userId ?? null,
   }
 }
 

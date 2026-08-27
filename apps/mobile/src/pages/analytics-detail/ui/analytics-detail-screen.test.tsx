@@ -18,6 +18,17 @@ import { createMockTransactionRepository } from '@/shared/lib/testing/mock-trans
 import type { AnalyticsDirection } from '@/features/analytics'
 import { AnalyticsDetailScreen } from './analytics-detail-screen'
 
+// Authorship markers (household-ux 2.4) resolve against the household cache;
+// these suites run anonymous with no members, so no marker ever renders.
+jest.mock('@/entities/session', () => ({
+  ...(jest.requireActual('@/entities/session') as Record<string, unknown>),
+  useAuth: () => ({ status: 'anonymous', user: null }),
+}))
+
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: undefined }),
+}))
 // ScreenHeader's back affordance defaults to router.back() (mocked; this
 // screen itself never navigates programmatically).
 const mockBack = jest.fn()

@@ -4,7 +4,7 @@
 // overview renders every figure from ONE operations read, never one per
 // debtor.
 
-import { describe, expect, it, jest } from '@jest/globals'
+import { describe, expect, it, jest, beforeEach } from '@jest/globals'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -20,6 +20,29 @@ import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provi
 import { formatAmount } from '@/shared/lib/format/format'
 import { DebtsScreen } from './debts-screen'
 
+// Authorship markers (household-ux 2.4) resolve against the household cache;
+// the defaults are anonymous with no members (no marker renders), and the
+// marker tests flip these to a multi-member household.
+let mockAuth: { status: 'authenticated' | 'anonymous'; user: { id: string } | null } = {
+  status: 'anonymous',
+  user: null,
+}
+let mockMembers: readonly import('@expense-tracker/api').HouseholdMember[] | null = null
+
+jest.mock('@/entities/session', () => ({
+  ...(jest.requireActual('@/entities/session') as Record<string, unknown>),
+  useAuth: () => mockAuth,
+}))
+
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: mockMembers ? { members: mockMembers } : undefined }),
+}))
+
+beforeEach(() => {
+  mockAuth = { status: 'anonymous', user: null }
+  mockMembers = null
+})
 const mockBack = jest.fn()
 jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack }) }))
 
@@ -204,5 +227,40 @@ describe('DebtsScreen', () => {
     await waitFor(() => expect(screen.getByTestId('debts-debtor-debtor-sergey')).toBeTruthy())
 
     expect(debtOperationRepository.calls.getAll).toBe(1)
+  })
+
+  it('marks sibling-authored history rows and hides markers in single-member households', async () => {
+    const ME = 'u-me'
+    const SIBLING = 'u-sibling'
+    mockAuth = { status: 'authenticated', user: { id: ME } }
+    mockMembers = [
+      {
+        userId: ME,
+        email: 'me@example.com',
+        displayName: null,
+        role: 'owner',
+        joinedAt: '2026-08-01T00:00:00.000Z',
+      },
+      {
+        userId: SIBLING,
+        email: 'wife@example.com',
+        displayName: 'Жена',
+        role: 'member',
+        joinedAt: '2026-08-02T00:00:00.000Z',
+      },
+    ]
+    renderDebts({
+      operations: [
+        { ...OPERATIONS[0], authorId: SIBLING },
+        { ...OPERATIONS[1], authorId: ME },
+      ],
+    })
+
+    await waitFor(() => expect(screen.getByTestId('debts-debtor-debtor-anna')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('debts-debtor-debtor-anna'))
+    await waitFor(() => expect(screen.getByTestId('debts-history-op-op-1')).toBeTruthy())
+    expect(screen.getByTestId('debts-history-op-op-1-author')).toHaveTextContent('Жена')
+    // Own records carry no marker.
+    expect(screen.queryByTestId('debts-history-op-op-2-author')).toBeNull()
   })
 })

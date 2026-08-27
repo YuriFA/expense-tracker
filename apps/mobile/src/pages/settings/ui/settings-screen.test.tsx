@@ -34,6 +34,38 @@ jest.mock('@/entities/session', () => ({
   useAuth: () => mockUseAuth,
 }))
 
+// The household section (household-ux) reads the household query and the
+// dissolve-count repositories; this suite focuses on the account/sync/dev
+// cards, so both resolve empty.
+jest.mock('@/entities/household', () => ({
+  ...(jest.requireActual('@/entities/household') as Record<string, unknown>),
+  useHousehold: () => ({ data: undefined }),
+}))
+
+jest.mock('@/entities/transaction/api/repository', () => ({
+  useTransactionRepository: () => ({
+    query: jest
+      .fn<() => Promise<import('@expense-tracker/api').Transaction[]>>()
+      .mockResolvedValue([]),
+  }),
+}))
+
+jest.mock('@/entities/debt/api/repository', () => ({
+  useDebtOperationRepository: () => ({
+    getAll: jest
+      .fn<() => Promise<import('@expense-tracker/api').DebtOperation[]>>()
+      .mockResolvedValue([]),
+  }),
+}))
+
+jest.mock('@/entities/planned-payment/api/repository', () => ({
+  usePlannedPaymentRepository: () => ({
+    query: jest
+      .fn<() => Promise<import('@expense-tracker/api').PlannedPayment[]>>()
+      .mockResolvedValue([]),
+  }),
+}))
+
 jest.mock('@/shared/lib/sync/sync-context', () => ({
   useSyncController: () => mockController,
 }))

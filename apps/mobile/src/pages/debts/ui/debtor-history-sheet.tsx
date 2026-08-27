@@ -23,7 +23,7 @@ import { cn } from '@/shared/lib/utils'
 import { formatAmount } from '@/shared/lib/format/format'
 import { balanceInDirection } from '@expense-tracker/local-data'
 import { DEBTS_COPY, DEBT_DIRECTION_VIEWS, DEBT_KIND_LABELS } from '../model/kind'
-import { debtorHistoryGroups } from '../model/selectors'
+import { debtorHistoryGroups, type DebtAuthorContext } from '../model/selectors'
 
 export interface DebtorHistorySheetProps {
   ref: React.Ref<BottomSheetRef>
@@ -32,6 +32,8 @@ export interface DebtorHistorySheetProps {
   direction: DebtDirection
   /** ALL live operations (the screen's single query - D7 perf invariant). */
   operations: DebtOperation[]
+  /** Authorship context for the row markers (household-ux 2.4). */
+  author?: DebtAuthorContext
   onEditOperation: (operation: DebtOperation) => void
   onEditDebtor: (debtor: Debtor) => void
   onNewOperation: (debtorId: string, direction: DebtDirection) => void
@@ -42,6 +44,7 @@ export function DebtorHistorySheet({
   debtor,
   direction,
   operations,
+  author,
   onEditOperation,
   onEditDebtor,
   onNewOperation,
@@ -52,7 +55,7 @@ export function DebtorHistorySheet({
 
   if (!debtor) return null
 
-  const groups = debtorHistoryGroups(operations, debtor.id, direction)
+  const groups = debtorHistoryGroups(operations, debtor.id, direction, author)
 
   return (
     <BottomSheet
@@ -111,9 +114,20 @@ export function DebtorHistorySheet({
                         if (operation) onEditOperation(operation)
                       }}
                     >
-                      <Text variant="body" className="flex-1 text-foreground" numberOfLines={1}>
-                        {row.note || DEBT_KIND_LABELS[row.kind]}
-                      </Text>
+                      <View className="flex-1 gap-0.5">
+                        <Text variant="body" className="text-foreground" numberOfLines={1}>
+                          {row.note || DEBT_KIND_LABELS[row.kind]}
+                        </Text>
+                        {row.authorLabel ? (
+                          <Text
+                            variant="caption"
+                            className="text-muted-foreground"
+                            testID={`debts-history-op-${row.id}-author`}
+                          >
+                            {row.authorLabel}
+                          </Text>
+                        ) : null}
+                      </View>
                       <Text
                         variant="body"
                         className={cn(

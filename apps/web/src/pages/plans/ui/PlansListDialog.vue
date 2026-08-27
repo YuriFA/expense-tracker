@@ -25,6 +25,7 @@ import { EmptyState } from '@/shared/ui/empty-state'
 import { CheckCircle2 } from '@lucide/vue'
 import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { useAuthorLabel } from '@/features/household-author'
 
 // One type's plan list: flat next-due ascending (overdue first by
 // construction), an overdue badge, a confirm action for manual plans, and
@@ -39,6 +40,7 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { t, locale } = useI18n()
+const authorLabel = useAuthorLabel()
 const settings = useSettingsStore()
 const displayCurrency = computed(() => settings.currency as CurrencyCode)
 
@@ -113,7 +115,15 @@ const openConfirm = (plan: PlannedPayment) => {
                 <p class="truncate text-sm font-medium">
                   {{ planRowTitle(plan, categories) }}
                 </p>
-                <p class="truncate text-xs text-muted-foreground">{{ subtitleOf(plan) }}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {{ subtitleOf(plan) }}
+                  <span
+                    v-if="authorLabel(plan.authorId)"
+                    :data-testid="`plans-row-${plan.id}-author`"
+                  >
+                    · {{ authorLabel(plan.authorId) }}
+                  </span>
+                </p>
               </button>
               <Badge
                 v-if="isPlanOverdue(plan, today)"

@@ -13,6 +13,7 @@ import {
   type CashflowKind,
   type MonthCursor,
 } from '../model/selectors'
+import { useCashflowAuthor } from '../model/use-cashflow-author'
 import { CASHFLOW_KIND_VIEWS } from './kind'
 import { CashflowListSheet } from './cashflow-list-sheet'
 import { useRef } from 'react'
@@ -49,7 +50,8 @@ export function AllCashflowCard({
       }
     : null
 
-  const sheetGroups = cashflowDayGroups(transactions, categories, cursor, kind)
+  const author = useCashflowAuthor()
+  const sheetGroups = cashflowDayGroups(transactions, categories, cursor, kind, author)
   const sheetSubtitle = `${monthRangeLabelShort(cursor.year, cursor.month)}, ${formatAmount(
     totalCashflow(transactions, cursor, kind),
   )}`
