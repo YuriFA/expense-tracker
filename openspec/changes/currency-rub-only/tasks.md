@@ -10,7 +10,7 @@
 
 ## 3. Shared money package
 
-- [ ] 3.1 Change `DEFAULT_CURRENCY` from `USD` to `RUB` in `packages/money/src/currencies.ts`; update package tests; grep the workspace for other `DEFAULT_CURRENCY` consumers and align their expectations/fixtures
+- [x] 3.1 Change `DEFAULT_CURRENCY` from `USD` to `RUB` in `packages/money/src/currencies.ts`; update package tests; grep the workspace for other `DEFAULT_CURRENCY` consumers and align their expectations/fixtures
 
 ## 4. Web
 
