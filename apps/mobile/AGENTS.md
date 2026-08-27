@@ -206,9 +206,13 @@ already owns.
 Read before touching data or sync code: `openspec/specs/mobile-local-data`
 (local DB as source of truth, per-record versioning, atomic row+outbox
 writes, op coalescing), `openspec/specs/sync-protocol` (cycle ordering,
-push/pull, conflict flows, login ownership gate, auth-expiry pause), and
-invariant #16 (client local data boundary). This section is only the working
-rules and the code map.
+push/pull, conflict flows, household rebase + authorship, login ownership
+gate, auth-expiry pause), and invariant #16 (client local data boundary).
+Household join flows: `features/household-join` (the shared carry/clean
+choice + the `last_household` startup/foreground guard),
+`entities/household` (control-plane API), `app/invite/[token]`, and the
+settings household section. This section is only the working rules and the
+code map.
 
 Hard rules:
 

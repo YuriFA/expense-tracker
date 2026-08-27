@@ -41,6 +41,6 @@
 ## 7. Integration and gates
 
 - [x] 7.1 Sync integration suite (env-gated, two households): join + carry (union, no duplicates by id), join + clean, second-device rebase, authorship round-trip
-- [ ] 7.2 Docs: `apps/mobile` + `apps/web` AGENTS pointers for the new flows; overview sync section mentions rebase
+- [x] 7.2 Docs: `apps/mobile` + `apps/web` AGENTS pointers for the new flows; overview sync section mentions rebase
 - [ ] 7.3 Gates: backend suite + `make gen-check`, package vitest, mobile jest, web type-check/unit/e2e, `ts-gen-check`, arch:check, lint, knip
 - [ ] 7.4 `openspec validate household-join --strict` passes

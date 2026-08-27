@@ -323,6 +323,13 @@ quick income page — all reachable through the persistent `AppNav`.
   thin barrels over them, and `entities/analytics` holds the pure
   selectors (period totals, per-category distribution) ported from
   mobile.
+  Household join (change `household-join`): the RPC surface carries a
+  `household` segment (`rebase`/`getLastHousehold`/`setLastHousehold` over
+  the package's `rebaseLocalDataForHousehold`); the sync gate in
+  `sync-composable.ts` runs `ensureCurrentHousehold` before the engine run —
+  a `last_household` mismatch (a stale second device) surfaces the global
+  carry/clean choice dialog (`features/household-join`), and the rebase
+  resets versions/cursor/outbox so the initial-sync union applies unchanged.
   Single-tab contract: the worker takes a Web Locks `ifAvailable` guard
   (`expense-tracker-local-db`) held for its lifetime; a second tab renders
   the "already open in another tab" state with a reload action and never
@@ -437,7 +444,12 @@ entities/ shared/`.
   persisted in a `sync_conflicts` table and surfaced in
   `features/sync-conflicts/ui/conflict-center.tsx` (edit-vs-edit presented;
   delete-vs-edit resolves delete-wins). After engine writes, the entire
-  query cache is invalidated.
+  query cache is invalidated. Household join (change `household-join`):
+  `features/household-join` owns the shared carry/clean choice
+  (`rebaseLocalDataForHousehold` vs wipe+pull) used by invitation accept
+  (`app/invite/[token]`), join-by-code, leave, and the startup/foreground
+  `last_household` mismatch guard; a base-0 push answered
+  `SYNC_ALREADY_EXISTS` adopts the server record (union convergence).
 - **Auth**: React context (`entities/session/model/use-auth.tsx`) with
   restoring/authenticated/anonymous statuses; **no router guard** — the app
   is deliberately usable anonymously on local data: decided behavior,

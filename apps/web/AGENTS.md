@@ -90,8 +90,11 @@ from the workspace root (`pnpm knip`, config in the root `knip.json`). E2E
 CRUD, reload persistence, offline via `context.setOffline`, multi-tab lock
 banner) and needs no backend; the PWA suite (`e2e/pwa/`,
 `pnpm test:e2e:pwa`) builds and runs against `vite preview` (the SW only
-exists in production builds); the sync suite (`sync-backend.spec.ts`) is
-env-gated on `SYNC_INTEGRATION_API` like mobile's integration tests. Playwright
+exists in production builds); the sync suites (`sync-backend.spec.ts`,
+`household-join-sync.spec.ts` — two-household join/carry/clean/rebase) are
+env-gated on `SYNC_INTEGRATION_API` like mobile's integration tests;
+`invite-preview.spec.ts` introduced `page.route` API interception for
+backendless API-state screens. Playwright
 projects are chromium + firefox only: the bundled WebKit exposes no OPFS
 (`getDirectory()` throws), so the local-first core cannot boot there — real
 Safari ≥ 17 needs a manual verification pass.
