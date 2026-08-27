@@ -124,3 +124,25 @@ after it. Rollback = revert.
 
 - Debtor history as dialog vs routed panel can be revisited during review
   without changing the spec (both satisfy "web-native navigation").
+
+## Deviations during implementation
+
+- **Plans list shape (task 4.1)**: implemented as mobile parity — one flat
+  next-due-ascending list where overdue plans sort first with a badge; the
+  mobile twin has no due/upcoming section split, and `planned-payments`
+  governs the behavior.
+- **Donut tests (task 2.2)**: delivered as structural unit tests over the
+  rendered SVG; the repo has no visual-snapshot infrastructure.
+- **Swipe-carousel analytics detail** maps to the web-native prev/next
+  controls per this change's presentation rule; a category drill-down
+  dialog was added as required by the analytics capability the delta binds
+  to.
+- **Enabling edits beyond `apps/web` pages**: `@expense-tracker/dates`
+  became a web dependency (mandated by D2); `packages/local-data`
+  `balances.ts` parameter types widened to `readonly` (type-level only,
+  128 package tests green); `NativeSelect` emit fixed to tuple syntax;
+  steiger gained a scoped ignore for `entities/analytics` (its name
+  falsely trips the pluralization heuristic); three entity barrels now
+  export their `useXRepository` composables (consumed by restore-as-new).
+- **Docs**: stale "web is online-first" claims in
+  `docs/architecture/overview.md` corrected while updating its pointers.
