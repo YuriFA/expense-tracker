@@ -5,6 +5,7 @@ of expenses and income over a selected week, month, or year, rendered as
 donut charts with legends and per-category breakdowns, computed entirely
 from the user's local data.
 
+## Requirements
 
 ### Requirement: Analytics tab overview
 
