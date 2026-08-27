@@ -29,9 +29,9 @@ func TestSyncAppliedOperationOwnerScoped(t *testing.T) {
 			OpID:        opID,
 			HouseholdID: userAHH,
 			UserID:      userA.ID,
-			Entity:   domain.SyncEntityCategory,
-			EntityID: uuid.New(),
-			Result:   domain.SyncPushResult{OpID: opID, Status: domain.SyncStatusApplied, Version: 3},
+			Entity:      domain.SyncEntityCategory,
+			EntityID:    uuid.New(),
+			Result:      domain.SyncPushResult{OpID: opID, Status: domain.SyncStatusApplied, Version: 3},
 		})
 	})
 	require.NoError(t, err, "insert applied operation")

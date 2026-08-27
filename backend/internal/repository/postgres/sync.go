@@ -22,7 +22,11 @@ type syncTx struct {
 // Compile-time guarantee.
 var _ repository.SyncTx = (*syncTx)(nil)
 
-func (r *Repository) WithinHouseholdTx(ctx context.Context, householdID uuid.UUID, fn func(t repository.SyncTx) error) error {
+func (r *Repository) WithinHouseholdTx(
+	ctx context.Context,
+	householdID uuid.UUID,
+	fn func(t repository.SyncTx) error,
+) error {
 	const op = "repository.postgres.WithinHouseholdTx"
 
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
@@ -36,7 +40,10 @@ func (r *Repository) WithinHouseholdTx(ctx context.Context, householdID uuid.UUI
 
 // --- applied_operations -----------------------------------------------------
 
-func (t *syncTx) GetAppliedOperation(ctx context.Context, householdID, opID uuid.UUID) (*domain.AppliedOperation, error) {
+func (t *syncTx) GetAppliedOperation(
+	ctx context.Context,
+	householdID, opID uuid.UUID,
+) (*domain.AppliedOperation, error) {
 	const op = "repository.postgres.syncTx.GetAppliedOperation"
 
 	row, err := t.q.GetAppliedOperation(ctx, db.GetAppliedOperationParams{HouseholdID: householdID, OpID: opID})
@@ -326,7 +333,10 @@ func (t *syncTx) HasLivePlannedPaymentsForAccount(ctx context.Context, household
 	return inUse, nil
 }
 
-func (t *syncTx) HasLivePlannedPaymentsForCategory(ctx context.Context, householdID, categoryID uuid.UUID) (bool, error) {
+func (t *syncTx) HasLivePlannedPaymentsForCategory(
+	ctx context.Context,
+	householdID, categoryID uuid.UUID,
+) (bool, error) {
 	const op = "repository.postgres.syncTx.HasLivePlannedPaymentsForCategory"
 
 	inUse, err := t.q.HasLivePlannedPaymentsForCategory(ctx, db.HasLivePlannedPaymentsForCategoryParams{
@@ -348,7 +358,10 @@ func (t *syncTx) DueAutoPlannedPayments(
 ) ([]domain.PlannedPayment, error) {
 	const op = "repository.postgres.syncTx.DueAutoPlannedPayments"
 
-	rows, err := t.q.DueAutoPlannedPayments(ctx, db.DueAutoPlannedPaymentsParams{HouseholdID: householdID, Today: today})
+	rows, err := t.q.DueAutoPlannedPayments(
+		ctx,
+		db.DueAutoPlannedPaymentsParams{HouseholdID: householdID, Today: today},
+	)
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -425,7 +438,8 @@ func (t *syncTx) ReplaceAccount(
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, row.ID, domain.SyncEntityAccount, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, householdID, actorID, row.ID,
+		domain.SyncEntityAccount, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -485,7 +499,8 @@ func (t *syncTx) CreateCategory(ctx context.Context, params domain.CreateCategor
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, params.HouseholdID, params.UserID, row.ID, domain.SyncEntityCategory, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
+		domain.SyncEntityCategory, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -527,7 +542,8 @@ func (t *syncTx) ReplaceCategory(
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, row.ID, domain.SyncEntityCategory, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, householdID, actorID, row.ID,
+		domain.SyncEntityCategory, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -586,7 +602,8 @@ func (t *syncTx) CreateDebtor(ctx context.Context, params domain.CreateDebtorPar
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, params.HouseholdID, params.UserID, row.ID, domain.SyncEntityDebtor, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
+		domain.SyncEntityDebtor, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -624,7 +641,8 @@ func (t *syncTx) ReplaceDebtor(
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, row.ID, domain.SyncEntityDebtor, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, householdID, actorID, row.ID,
+		domain.SyncEntityDebtor, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -688,7 +706,8 @@ func (t *syncTx) CreateDebtOperation(
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, params.HouseholdID, params.UserID, row.ID, domain.SyncEntityDebtOperation, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
+		domain.SyncEntityDebtOperation, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -731,7 +750,8 @@ func (t *syncTx) ReplaceDebtOperation(
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, row.ID, domain.SyncEntityDebtOperation, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, householdID, actorID, row.ID,
+		domain.SyncEntityDebtOperation, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -868,7 +888,10 @@ func (t *syncTx) TombstonePlannedPayment( //nolint:dupl // per-entity tombstone 
 ) (*domain.PlannedPayment, error) {
 	const op = "repository.postgres.syncTx.TombstonePlannedPayment"
 
-	version, err := t.q.SoftDeletePlannedPayment(ctx, db.SoftDeletePlannedPaymentParams{ID: id, HouseholdID: householdID})
+	version, err := t.q.SoftDeletePlannedPayment(
+		ctx,
+		db.SoftDeletePlannedPaymentParams{ID: id, HouseholdID: householdID},
+	)
 	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
 		if errors.Is(err, pgx.ErrNoRows) {
 			current, err := t.GetPlannedPaymentAny(ctx, householdID, id)
@@ -955,7 +978,8 @@ func (t *syncTx) CreateTransaction(
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, params.HouseholdID, params.UserID, row.ID, domain.SyncEntityTransaction, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
+		domain.SyncEntityTransaction, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -1000,7 +1024,8 @@ func (t *syncTx) ReplaceTransaction(
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, row.ID, domain.SyncEntityTransaction, domain.SyncChangeUpsert, int(row.Version),
+		ctx, t.q, householdID, actorID, row.ID,
+		domain.SyncEntityTransaction, domain.SyncChangeUpsert, int(row.Version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -1213,7 +1238,10 @@ func (r *Repository) fetchPullStates(
 	}
 	transactionsByID := make(map[uuid.UUID]db.SyncTransactionsByIDsRow, len(txnIDs))
 	if len(txnIDs) > 0 {
-		items, err := r.q.SyncTransactionsByIDs(ctx, db.SyncTransactionsByIDsParams{HouseholdID: householdID, Ids: txnIDs})
+		items, err := r.q.SyncTransactionsByIDs(
+			ctx,
+			db.SyncTransactionsByIDsParams{HouseholdID: householdID, Ids: txnIDs},
+		)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -1262,7 +1290,10 @@ func (r *Repository) fetchDebtPullStates(
 	}
 	debtOperationsByID := make(map[uuid.UUID]db.SyncDebtOperationsByIDsRow, len(debtOpIDs))
 	if len(debtOpIDs) > 0 {
-		items, err := r.q.SyncDebtOperationsByIDs(ctx, db.SyncDebtOperationsByIDsParams{HouseholdID: householdID, Ids: debtOpIDs})
+		items, err := r.q.SyncDebtOperationsByIDs(
+			ctx,
+			db.SyncDebtOperationsByIDsParams{HouseholdID: householdID, Ids: debtOpIDs},
+		)
 		if err != nil {
 			return nil, nil, err
 		}

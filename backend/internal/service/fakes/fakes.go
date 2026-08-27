@@ -398,7 +398,14 @@ func (s *Store) CreateAccount(_ context.Context, params domain.CreateAccountPara
 		Balance: params.OpeningBalance, CreatedAt: now, UpdatedAt: now, Version: 1,
 	}
 	s.accounts[a.ID] = a
-	s.appendChange(params.HouseholdID, params.UserID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
+	s.appendChange(
+		params.HouseholdID,
+		params.UserID,
+		domain.SyncEntityAccount,
+		a.ID,
+		domain.SyncChangeUpsert,
+		a.Version,
+	)
 	c := *a
 	return &c, nil
 }
@@ -484,8 +491,10 @@ func (s *Store) DeleteAccount(_ context.Context, householdID, actorID, id uuid.U
 			return domain.ErrAccountHasPlannedPayments
 		}
 	}
-	_ = a
-	delete(s.accounts, id)
+	now := time.Now().UTC()
+	a.DeletedAt = &now
+	a.Version++
+	s.appendChange(householdID, actorID, domain.SyncEntityAccount, a.ID, domain.SyncChangeTombstone, a.Version)
 	return nil
 }
 
@@ -623,7 +632,10 @@ func (s *Store) DeleteCategory(_ context.Context, householdID, actorID, id uuid.
 		}
 	}
 	delete(s.catUnique, catUniqueKey(householdID, c.Name))
-	delete(s.categories, id)
+	now := time.Now().UTC()
+	c.DeletedAt = &now
+	c.Version++
+	s.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeTombstone, c.Version)
 	return nil
 }
 
@@ -690,7 +702,14 @@ func (s *Store) CreateTransaction(
 		ToAccountID:   params.ToAccountID,
 	}
 	s.transactions[t.ID] = t
-	s.appendChange(params.HouseholdID, params.UserID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeUpsert, t.Version)
+	s.appendChange(
+		params.HouseholdID,
+		params.UserID,
+		domain.SyncEntityTransaction,
+		t.ID,
+		domain.SyncChangeUpsert,
+		t.Version,
+	)
 	c := *t
 	return &c, nil
 }
@@ -744,7 +763,10 @@ func (s *Store) DeleteTransaction(_ context.Context, householdID, actorID, id uu
 	if !ok || !s.sameHousehold(t.UserID, householdID) {
 		return domain.ErrTransactionNotFound
 	}
-	delete(s.transactions, id)
+	now := time.Now().UTC()
+	t.DeletedAt = &now
+	t.Version++
+	s.appendChange(householdID, actorID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeTombstone, t.Version)
 	return nil
 }
 
@@ -905,7 +927,10 @@ func (s *Store) DeleteDebtor(_ context.Context, householdID, actorID, id uuid.UU
 		}
 	}
 	delete(s.debtorUnique, debtorUniqueKey(householdID, d.Name))
-	delete(s.debtors, id)
+	now := time.Now().UTC()
+	d.DeletedAt = &now
+	d.Version++
+	s.appendChange(householdID, actorID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeTombstone, d.Version)
 	return nil
 }
 
@@ -955,7 +980,14 @@ func (s *Store) CreateDebtOperation(
 		CreatedAt: now, UpdatedAt: now, Version: 1,
 	}
 	s.debtOps[o.ID] = o
-	s.appendChange(params.HouseholdID, params.UserID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
+	s.appendChange(
+		params.HouseholdID,
+		params.UserID,
+		domain.SyncEntityDebtOperation,
+		o.ID,
+		domain.SyncChangeUpsert,
+		o.Version,
+	)
 	c := *o
 	return &c, nil
 }
@@ -997,7 +1029,10 @@ func (s *Store) DeleteDebtOperation(_ context.Context, householdID, actorID, id 
 	if !ok || !s.sameHousehold(o.UserID, householdID) {
 		return domain.ErrDebtOperationNotFound
 	}
-	delete(s.debtOps, id)
+	now := time.Now().UTC()
+	o.DeletedAt = &now
+	o.Version++
+	s.appendChange(householdID, actorID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeTombstone, o.Version)
 	return nil
 }
 
@@ -1594,7 +1629,7 @@ func (t *fakeSyncTx) ReplaceCategory(
 	return &cc, nil
 }
 
-func (t *fakeSyncTx) TombstoneCategory(
+func (t *fakeSyncTx) TombstoneCategory( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
 	householdID, actorID, id uuid.UUID,
 ) (*domain.Category, error) {
@@ -1673,7 +1708,14 @@ func (t *fakeSyncTx) TombstoneTransaction(
 	now := time.Now().UTC()
 	tx.DeletedAt = &now
 	tx.Version++
-	t.store.appendChange(householdID, actorID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeTombstone, tx.Version)
+	t.store.appendChange(
+		householdID,
+		actorID,
+		domain.SyncEntityTransaction,
+		tx.ID,
+		domain.SyncChangeTombstone,
+		tx.Version,
+	)
 	c := *tx
 	return &c, nil
 }
@@ -1711,7 +1753,7 @@ func (t *fakeSyncTx) ReplaceDebtor(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneDebtor(
+func (t *fakeSyncTx) TombstoneDebtor( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
 	householdID, actorID, id uuid.UUID,
 ) (*domain.Debtor, error) {
@@ -1789,7 +1831,14 @@ func (t *fakeSyncTx) TombstoneDebtOperation(
 	now := time.Now().UTC()
 	o.DeletedAt = &now
 	o.Version++
-	t.store.appendChange(householdID, actorID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeTombstone, o.Version)
+	t.store.appendChange(
+		householdID,
+		actorID,
+		domain.SyncEntityDebtOperation,
+		o.ID,
+		domain.SyncChangeTombstone,
+		o.Version,
+	)
 	c := *o
 	return &c, nil
 }

@@ -82,9 +82,15 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 
 	t.Run("update CAS, note semantics, anchor reset", func(t *testing.T) {
 		name := "Netflix Premium"
-		updated, err := testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
-			Name: &name, Version: 1,
-		})
+		updated, err := testRepo.UpdatePlannedPayment(
+			ctx,
+			userHH,
+			user.ID,
+			created.ID,
+			domain.UpdatePlannedPaymentParams{
+				Name: &name, Version: 1,
+			},
+		)
 		require.NoError(t, err)
 		assert.Equal(t, 2, updated.Version)
 		assert.True(t, updated.AnchorDate.Equal(created.AnchorDate), "name change keeps the anchor")
@@ -104,8 +110,16 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 	})
 
 	t.Run("in-use guards count live plans only", func(t *testing.T) {
-		require.ErrorIs(t, testRepo.DeleteAccount(ctx, userHH, user.ID, account.ID), domain.ErrAccountHasPlannedPayments)
-		require.ErrorIs(t, testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID), domain.ErrCategoryHasPlannedPayments)
+		require.ErrorIs(
+			t,
+			testRepo.DeleteAccount(ctx, userHH, user.ID, account.ID),
+			domain.ErrAccountHasPlannedPayments,
+		)
+		require.ErrorIs(
+			t,
+			testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID),
+			domain.ErrCategoryHasPlannedPayments,
+		)
 
 		// Tombstone every live plan of the account (the duplicate-name subtest
 		// added a second one) through the sync surface; the guards clear.

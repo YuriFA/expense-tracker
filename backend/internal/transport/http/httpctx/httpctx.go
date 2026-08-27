@@ -29,9 +29,18 @@ func CurrentSessionID(c *gin.Context) string {
 }
 
 // CurrentHouseholdID returns the household id of the user's (single, v1)
-// membership, resolved by the auth middleware, or uuid.Nil when absent.
+// membership, resolved by the auth middleware. It panics only if the auth
+// middleware did not run (a programming error on a protected route).
 func CurrentHouseholdID(c *gin.Context) uuid.UUID {
-	return c.MustGet(keys.CurrentHouseholdKey).(uuid.UUID)
+	val, exists := c.Get(keys.CurrentHouseholdKey)
+	if !exists {
+		return uuid.Nil
+	}
+	id, ok := val.(uuid.UUID)
+	if !ok {
+		return uuid.Nil
+	}
+	return id
 }
 
 // RequestID returns the X-Request-ID for the request.

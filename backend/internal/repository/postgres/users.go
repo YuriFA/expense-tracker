@@ -133,7 +133,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Use
 	}, nil
 }
 
-// UpdateUserDisplayName sets the member-facing display name and returns the
+// UpdateDisplayName sets the member-facing display name and returns the
 // updated profile row.
 func (r *Repository) UpdateDisplayName(
 	ctx context.Context,

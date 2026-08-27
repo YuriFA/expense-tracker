@@ -180,7 +180,13 @@ func TestDebtOperationService_Rules(t *testing.T) {
 			Kind: domain.DebtOperationKindRepayment, Amount: 100, OccurredAt: time.Now().UTC(),
 		})
 		require.NoError(t, err)
-		_, err = opSvc.Update(ctx, userHH, user.ID, created.ID, domain.UpdateDebtOperationParams{Version: created.Version})
+		_, err = opSvc.Update(
+			ctx,
+			userHH,
+			user.ID,
+			created.ID,
+			domain.UpdateDebtOperationParams{Version: created.Version},
+		)
 		require.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
 	})
 

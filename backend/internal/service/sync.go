@@ -66,7 +66,12 @@ type SyncPullPage struct {
 
 // Pull returns the change-log page after afterSeq. A full page yields a
 // nextCursor; the following pull then reports caught-up (nil cursor).
-func (s *SyncService) Pull(ctx context.Context, householdID uuid.UUID, afterSeq int64, limit *int) (*SyncPullPage, error) {
+func (s *SyncService) Pull(
+	ctx context.Context,
+	householdID uuid.UUID,
+	afterSeq int64,
+	limit *int,
+) (*SyncPullPage, error) {
 	const op = "service.sync.Pull"
 
 	pageSize := defaultSyncPullLimit

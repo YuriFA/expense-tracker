@@ -25,7 +25,7 @@
 
 ## 5. Docs and gates
 
-- [ ] 5.1 Generalize invariants #5 and #7 wording to household scoping (ADR-0002 is the recorded authority); update `docs/architecture/overview.md` pointers
-- [ ] 5.2 Gates: `make gen-check` + backend test suite + e2e, `ts-gen-check`, `pnpm arch:check`, `pnpm knip`, lint; fix fallout
-- [ ] 5.3 Verify clients untouched: mobile jest + web suites green without client-code changes
-- [ ] 5.4 `openspec validate household-scoping --strict` passes
+- [x] 5.1 Generalize invariants #5 and #7 wording to household scoping (ADR-0002 is the recorded authority); update `docs/architecture/overview.md` pointers
+- [x] 5.2 Gates: `make gen-check` + backend test suite + e2e, `ts-gen-check`, `pnpm arch:check`, `pnpm knip`, lint; fix fallout
+- [x] 5.3 Verify clients untouched: mobile jest + web suites green without client-code changes
+- [x] 5.4 `openspec validate household-scoping --strict` passes

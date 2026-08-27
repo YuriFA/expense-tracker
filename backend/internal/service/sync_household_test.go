@@ -20,14 +20,14 @@ import (
 // scoped by household - the same opId in another household is a fresh
 // operation, never a replay of the first household's result.
 
-func syncFixture(t *testing.T) (*service.SyncService, *fakes.Store, *domain.User, uuid.UUID, *domain.User, uuid.UUID) {
+func syncFixture(t *testing.T) (*service.SyncService, *domain.User, uuid.UUID, *domain.User, uuid.UUID) {
 	t.Helper()
 	store := fakes.New()
 	userA := seedFakeUser(t, store)
 	hhA := householdOf(t, store, userA.ID)
 	userB := seedFakeUser(t, store)
 	hhB := householdOf(t, store, userB.ID)
-	return service.NewSyncService(store), store, userA, hhA, userB, hhB
+	return service.NewSyncService(store), userA, hhA, userB, hhB
 }
 
 func accountUpsertOp(opID, recordID uuid.UUID) domain.SyncOperation {
@@ -50,7 +50,7 @@ func mustJSON(v any) json.RawMessage {
 
 func TestSync_PerHouseholdSeqMonotonic(t *testing.T) {
 	t.Parallel()
-	syncSvc, _, userA, hhA, userB, hhB := syncFixture(t)
+	syncSvc, userA, hhA, userB, hhB := syncFixture(t)
 	ctx := context.Background()
 
 	// Interleave pushes from both households; each allocates seqs from the
@@ -86,7 +86,7 @@ func TestSync_PerHouseholdSeqMonotonic(t *testing.T) {
 
 func TestSync_PullIsolationBetweenHouseholds(t *testing.T) {
 	t.Parallel()
-	syncSvc, _, userA, hhA, userB, hhB := syncFixture(t)
+	syncSvc, userA, hhA, userB, hhB := syncFixture(t)
 	ctx := context.Background()
 
 	recordA := uuid.New()
@@ -114,7 +114,7 @@ func TestSync_PullIsolationBetweenHouseholds(t *testing.T) {
 
 func TestSync_OpIdIdempotencyScopedByHousehold(t *testing.T) {
 	t.Parallel()
-	syncSvc, _, userA, hhA, userB, hhB := syncFixture(t)
+	syncSvc, userA, hhA, userB, hhB := syncFixture(t)
 	ctx := context.Background()
 
 	// The SAME opId pushed in household A and then in household B (record ids
