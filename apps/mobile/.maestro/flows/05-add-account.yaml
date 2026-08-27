@@ -1,6 +1,7 @@
 # Accounts screen (a stack destination opened from the Home quick action -
-# no longer a tab): create an account (name / currency / opening balance in
-# major units) and see it listed with its balance.
+# no longer a tab): create an account (name / opening balance in major
+# units, always RUB - no currency picker in the ruble-only app) and see it
+# listed with its balance.
 #
 # Sheet inputs are targeted by id: the shared BottomSheet opts out of
 # @gorhom's default accessible container, which used to hide TextInputs from
@@ -30,18 +31,17 @@ tags:
     id: accounts-create-opening-balance-error
 
 - tapOn:
-    id: accounts-create-currency-USD
-- tapOn:
     id: accounts-create-name
 - inputText: 'Карта'
 - tapOn:
     id: accounts-create-opening-balance
 - inputText: '100.50'
-# Re-tap the (already selected) currency to blur the field and put the
-# keyboard away - Maestro's hideKeyboard cannot dismiss the keyboard over a
+# Dismiss the keyboard by tapping the (non-interactive) sheet header title -
+# the currency-button re-tap that used to blur the field is gone with the
+# picker, and Maestro's hideKeyboard cannot dismiss the keyboard over a
 # BottomSheetTextInput inside the sheet.
 - tapOn:
-    id: accounts-create-currency-USD
+    text: 'Новый счёт'
 - tapOn:
     id: accounts-create-submit
 

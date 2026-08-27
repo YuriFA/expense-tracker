@@ -23,8 +23,8 @@
 
 ## 5. Mobile
 
-- [ ] 5.1 New-account form: remove the currency picker, its form-schema field, and validation; the submit mapper hardcodes RUB; the account-list currency label stays; update form tests
-- [ ] 5.2 Mobile gates: type-check, unit tests, lint - all green; transfer destination same-currency filter untouched
+- [x] 5.1 New-account form: remove the currency picker, its form-schema field, and validation; the submit mapper hardcodes RUB; the account-list currency label stays; update form tests
+- [x] 5.2 Mobile gates: type-check, unit tests, lint - all green; transfer destination same-currency filter untouched
 
 ## 6. Docs and final validation
 
