@@ -28,8 +28,9 @@ VALUES (@op_id, @household_id, @user_id, @entity, @entity_id, @result);
 
 -- name: PullChangeLog :many
 -- Cursor pull: everything for the household strictly after after_seq, in seq
--- order, paginated. The caller fetches current entity state for upsert rows.
-SELECT seq, entity, entity_id, action, version
+-- order, paginated. user_id is the change's author (the acting member); the
+-- caller fetches current entity state for upsert rows.
+SELECT seq, user_id, entity, entity_id, action, version
 FROM change_log
 WHERE household_id = @household_id AND seq > @after_seq
 ORDER BY seq

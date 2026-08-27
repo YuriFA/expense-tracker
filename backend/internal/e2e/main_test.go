@@ -32,19 +32,31 @@ var (
 // captureMailer is a service.Mailer that records issued codes/tokens so tests
 // can drive the verify/reset flows without real email delivery.
 type captureMailer struct {
-	mu     sync.Mutex
-	codes  map[string]string // email -> latest code
-	tokens map[string]string // email -> latest token
+	mu              sync.Mutex
+	codes           map[string]string // email -> latest verification code
+	tokens          map[string]string // email -> latest reset token
+	invitationLinks map[string]string // email -> latest invitation accept link
 }
 
 func newCaptureMailer() *captureMailer {
-	return &captureMailer{codes: map[string]string{}, tokens: map[string]string{}}
+	return &captureMailer{
+		codes:           map[string]string{},
+		tokens:          map[string]string{},
+		invitationLinks: map[string]string{},
+	}
 }
 
 func (m *captureMailer) SendVerificationCode(_ context.Context, email, code string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.codes[email] = code
+	return nil
+}
+
+func (m *captureMailer) SendHouseholdInvitation(_ context.Context, email, link string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.invitationLinks[email] = link
 	return nil
 }
 
@@ -60,6 +72,12 @@ func (m *captureMailer) code(email string) string {
 	defer m.mu.Unlock()
 	return m.codes[email]
 }
+func (m *captureMailer) invitationLink(email string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.invitationLinks[email]
+}
+
 func (m *captureMailer) token(email string) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -122,7 +140,9 @@ func testMain(m *testing.M) int {
 	debtOpSvc := service.NewDebtOperationService(e2eRepo, e2eRepo)
 	planSvc := service.NewPlannedPaymentService(e2eRepo, e2eRepo, e2eRepo)
 	sessionSvc := service.NewSessionService(e2eRepo)
-	householdSvc := service.NewHouseholdService(e2eRepo)
+	householdSvc := service.NewHouseholdService(e2eRepo, e2eRepo, mailer, logger.NewDiscardLogger(), service.HouseholdJoinConfig{
+		WebAppBaseURL: "https://test-app.example.com",
+	})
 	syncSvc := service.NewSyncService(e2eRepo)
 
 	server := httptransport.NewServer(

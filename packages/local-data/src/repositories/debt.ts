@@ -30,6 +30,7 @@ import {
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '../types'
 import { enqueueOperation, hasSentOperations, removeOperationsFor } from '../outbox'
+import { getOwnerUserId } from '../sync/sync-meta'
 import {
   debtOperations,
   debtors,
@@ -168,6 +169,7 @@ export function createLocalDebtorRepository(db: LocalDatabase): DebtorRepository
 
         const row: DebtorRow = {
           id,
+          userId: getOwnerUserId(db),
           name,
           note: payload.note ?? '',
           version: 1,
@@ -314,6 +316,7 @@ export function createLocalDebtOperationRepository(db: LocalDatabase): DebtOpera
 
         const row: DebtOperationRow = {
           id,
+          userId: getOwnerUserId(db),
           debtorId: payload.debtorId,
           direction: payload.direction,
           kind: payload.kind,

@@ -15,6 +15,26 @@ import (
 // identity kept for readability at the call sites.
 func toUUID(u uuid.UUID) openapi_types.UUID { return u }
 
+// fromUUID converts a generated openapi_types.UUID back to a domain uuid.
+func fromUUID(u openapi_types.UUID) uuid.UUID { return uuid.UUID(u) }
+
+// toAPIEmail converts a domain email string to the generated email type.
+func toAPIEmail(e string) openapi_types.Email { return openapi_types.Email(e) }
+
+// toAPIHouseholdInvitation maps a domain invitation to its API shape with the
+// read-time status (accepted/revoked/expired/pending).
+func toAPIHouseholdInvitation(i domain.HouseholdInvitation) api.HouseholdInvitation {
+	return api.HouseholdInvitation{
+		Id:         toUUID(i.ID),
+		Email:      openapi_types.Email(i.Email),
+		Status:     api.HouseholdInvitationStatus(i.Status(time.Now())),
+		CreatedAt:  i.CreatedAt,
+		ExpiresAt:  i.ExpiresAt,
+		AcceptedAt: i.AcceptedAt,
+		RevokedAt:  i.RevokedAt,
+	}
+}
+
 func toUUIDPtr(u *uuid.UUID) *openapi_types.UUID {
 	if u == nil {
 		return nil
@@ -60,6 +80,7 @@ func toAPIHousehold(h domain.Household) api.Household {
 	return api.Household{
 		Id:        toUUID(h.ID),
 		CreatedAt: h.CreatedAt,
+		Name:      h.Name,
 		Members:   members,
 	}
 }

@@ -16,6 +16,7 @@ type Config struct {
 	Database       DatabaseConfig       `yaml:"database"`
 	Retention      RetentionConfig      `yaml:"retention"`
 	PlannedConfirm PlannedConfirmConfig `yaml:"planned_confirm"`
+	Household      HouseholdConfig      `yaml:"household"`
 }
 
 // RetentionConfig tunes the tombstone retention job: soft-deleted rows older
@@ -29,6 +30,15 @@ type RetentionConfig struct {
 // often the job sweeps for due auto plans.
 type PlannedConfirmConfig struct {
 	Interval time.Duration `yaml:"interval" env:"PLANNED_CONFIRM_INTERVAL" env-default:"1h"`
+}
+
+// HouseholdConfig tunes the join lifecycle (household-join change): the
+// invitation token TTL, the per-household/day send budget, and the web app
+// base URL used to build emailed accept links.
+type HouseholdConfig struct {
+	InvitationTTL            time.Duration `yaml:"invitation_ttl"             env:"HOUSEHOLD_INVITATION_TTL"              env-default:"168h"` // 7 days
+	MaxInvitationSendsPerDay int           `yaml:"max_invitation_sends_per_day" env:"HOUSEHOLD_MAX_INVITATION_SENDS_PER_DAY" env-default:"20"`
+	WebAppBaseURL            string        `yaml:"web_app_base_url"            env:"HOUSEHOLD_WEB_APP_BASE_URL"            env-default:""`
 }
 
 // DatabaseConfig tunes the pgxpool connection pool.

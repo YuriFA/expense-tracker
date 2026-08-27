@@ -104,6 +104,26 @@ type EmailVerificationCode struct {
 type Household struct {
 	ID        uuid.UUID
 	CreatedAt time.Time
+	Name      *string
+}
+
+type HouseholdCode struct {
+	HouseholdID uuid.UUID
+	Code        string
+	CreatedAt   time.Time
+	RevokedAt   *time.Time
+}
+
+type HouseholdInvitation struct {
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	Email       string
+	Token       uuid.UUID
+	CreatedBy   uuid.UUID
+	CreatedAt   time.Time
+	ExpiresAt   time.Time
+	AcceptedAt  *time.Time
+	RevokedAt   *time.Time
 }
 
 type HouseholdMember struct {

@@ -1170,6 +1170,7 @@ func (r *Repository) PullChanges(
 	for _, row := range rows {
 		change := domain.SyncChange{
 			Seq:     row.Seq,
+			UserID:  row.UserID,
 			Entity:  row.Entity,
 			ID:      row.EntityID,
 			Action:  row.Action,

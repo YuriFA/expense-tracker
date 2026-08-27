@@ -2,27 +2,27 @@
 
 ## 1. Contract first
 
-- [ ] 1.1 OpenAPI: invitation endpoints (create/list/revoke owner-side; preview/accept by token), home-code endpoints (generate/rotate, revoke, join), leave/remove/dissolve, household `name` (GET/PATCH), additive `userId` on the sync change item; lint + `pnpm gen:api` + `make gen`
-- [ ] 1.2 Extend `@expense-tracker/api` clients for the new endpoints and the authorship field
+- [x] 1.1 OpenAPI: invitation endpoints (create/list/revoke owner-side; preview/accept by token), home-code endpoints (generate/rotate, revoke, join), leave/remove/dissolve, household `name` (GET/PATCH), additive `userId` on the sync change item; lint + `pnpm gen:api` + `make gen`
+- [x] 1.2 Extend `@expense-tracker/api` clients for the new endpoints and the authorship field
 
 ## 2. Backend: invitations and codes
 
-- [ ] 2.1 Migration `000006_household_join`: `household_invitations`, `household_codes`, `households.name` nullable + backfill default from owner email prefix; matching down
-- [ ] 2.2 Invitation service + endpoints: create (refresh-not-duplicate for pending same-email), list, revoke; preview (matching-email auth) and accept with the join transaction (D3); 7-day expiry; per-household/day rate limit on sends
-- [ ] 2.3 Mailer: invitation template with the accept link (URL base from config, mirroring verification emails); test coverage
-- [ ] 2.4 Home code service + endpoints: one active code per household (8-char unambiguous alphabet), rotate/revoke, join-by-code (same transaction and idempotency as invitations)
+- [x] 2.1 Migration `000006_household_join`: `household_invitations`, `household_codes`, `households.name` nullable + backfill default from owner email prefix; matching down
+- [x] 2.2 Invitation service + endpoints: create (refresh-not-duplicate for pending same-email), list, revoke; preview (matching-email auth) and accept with the join transaction (D3); 7-day expiry; per-household/day rate limit on sends
+- [x] 2.3 Mailer: invitation template with the accept link (URL base from config, mirroring verification emails); test coverage
+- [x] 2.4 Home code service + endpoints: one active code per household (8-char unambiguous alphabet), rotate/revoke, join-by-code (same transaction and idempotency as invitations)
 
 ## 3. Backend: leave/remove/dissolve + name
 
-- [ ] 3.1 Leave (member; owner-with-members rejected with a clear error), remove member (owner), dissolution (owner, explicit confirm, cascading delete of household data)
-- [ ] 3.2 Household name: PATCH by owner; included in GET /api/household and the invitation preview
-- [ ] 3.3 Backend tests: invitation lifecycle (accept happy path, wrong email, expiry, revoke, refresh), code rotate/revoke/join, join idempotency, orphaning (old household inaccessible), leave/remove/dissolve guards, authorship stamped on change_log and returned in pull
+- [x] 3.1 Leave (member; owner-with-members rejected with a clear error), remove member (owner), dissolution (owner, explicit confirm, cascading delete of household data)
+- [x] 3.2 Household name: PATCH by owner; included in GET /api/household and the invitation preview
+- [x] 3.3 Backend tests: invitation lifecycle (accept happy path, wrong email, expiry, revoke, refresh), code rotate/revoke/join, join idempotency, orphaning (old household inaccessible), leave/remove/dissolve guards, authorship stamped on change_log and returned in pull
 
 ## 4. Package: rebase + authorship
 
-- [ ] 4.1 Local schema migration 0003: nullable `user_id` on all entity tables; pull-apply stores the author; local creates stamp the device owner when known
+- [x] 4.1 Local schema migration 0003: nullable `user_id` on all entity tables; pull-apply stores the author; local creates stamp the device owner when known
 - [ ] 4.2 Implement `rebaseLocalDataForHousehold(db)` per design D4 (zero versions, drop tombstones, wholesale outbox regen as creates, cursor 0) + store the `last_household` marker in sync_meta; expose over the app seams (web worker RPC, mobile direct)
-- [ ] 4.3 Package tests: rebase idempotency, tombstone drop, stale-outbox replacement, union end-to-end (rebase → push-as-creates → pull merge without duplicates), `last_household` mismatch detection helper
+- [x] 4.3 Package tests: rebase idempotency, tombstone drop, stale-outbox replacement, union end-to-end (rebase → push-as-creates → pull merge without duplicates), `last_household` mismatch detection helper
 
 ## 5. Mobile flow
 

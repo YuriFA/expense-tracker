@@ -22,6 +22,7 @@ import {
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '../types'
 import { enqueueOperation, hasSentOperations, removeOperationsFor } from '../outbox'
+import { getOwnerUserId } from '../sync/sync-meta'
 import { categories, plannedPayments, transactions, type CategoryRow } from '../schema'
 import { generateId } from '../id-factory'
 
@@ -98,6 +99,7 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
 
         const row: CategoryRow = {
           id,
+          userId: getOwnerUserId(db),
           name,
           type: payload.type,
           icon: payload.icon,

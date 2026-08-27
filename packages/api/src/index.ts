@@ -68,8 +68,22 @@ export {
 } from './domain/transaction'
 export type { Debtor } from './domain/debtor'
 export { normalizeDebtor } from './domain/debtor'
-export type { Household, HouseholdMember, HouseholdRole } from './domain/household'
-export { normalizeHousehold, normalizeHouseholdMember } from './domain/household'
+export type {
+  Household,
+  HouseholdMember,
+  HouseholdRole,
+  HouseholdInvitation,
+  HouseholdInvitationStatus,
+  HouseholdInvitationPreview,
+  HouseholdCode,
+} from './domain/household'
+export {
+  normalizeHousehold,
+  normalizeHouseholdMember,
+  normalizeHouseholdInvitation,
+  normalizeHouseholdInvitationPreview,
+  normalizeHouseholdCode,
+} from './domain/household'
 export type {
   DebtOperation,
   DebtDirection,
@@ -129,7 +143,22 @@ export { createHTTPTransactionRepository } from './http/transaction'
 export { createHTTPDebtorRepository } from './http/debtor'
 export { createHTTPDebtOperationRepository } from './http/debt-operation'
 export { createHTTPPlannedPaymentRepository } from './http/planned-payment'
-export { fetchHousehold, updateDisplayName } from './http/household'
+export {
+  fetchHousehold,
+  updateHouseholdName,
+  updateDisplayName,
+  createHouseholdInvitation,
+  listHouseholdInvitations,
+  revokeHouseholdInvitation,
+  previewHouseholdInvitation,
+  acceptHouseholdInvitation,
+  generateHouseholdCode,
+  revokeHouseholdCode,
+  joinHouseholdByCode,
+  leaveHousehold,
+  removeHouseholdMember,
+  dissolveHousehold,
+} from './http/household'
 
 // --- Sync endpoint client (offline-first push/pull) -------------------------
 export {

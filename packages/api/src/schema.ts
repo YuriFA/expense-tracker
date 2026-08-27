@@ -218,10 +218,9 @@ export interface paths {
         };
         /**
          * Хаусхолд текущего пользователя с участниками
-         * @description Возвращает household текущего пользователя: id, дату создания и полный
-         *     список участников (email, отображаемое имя, роль, дата присоединения).
-         *     В v1 каждый пользователь — единственный owner своего персонального
-         *     household.
+         * @description Возвращает household текущего пользователя: id, дату создания,
+         *     отображаемое имя (null = не задано) и полный список участников (email,
+         *     отображаемое имя, роль, дата присоединения).
          */
         get: operations["getHousehold"];
         put?: never;
@@ -229,7 +228,13 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Переименовать household (owner)
+         * @description Задаёт отображаемое имя household (member-facing подписи приглашений,
+         *     участников и join UI). Только owner; `name = null` сбрасывает имя
+         *     (потребители переключаются на производную подпись от email owner).
+         */
+        patch: operations["updateHousehold"];
         trace?: never;
     };
     "/api/me": {
@@ -252,6 +257,228 @@ export interface paths {
          *     авторство записей); при отсутствии потребители используют email.
          */
         patch: operations["updateCurrentUser"];
+        trace?: never;
+    };
+    "/api/household/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Список приглашений household (owner)
+         * @description Все приглашения household (pending/accepted/revoked/expired), свежие
+         *     первыми. `status` вычисляется на чтении: `expired` = pending с
+         *     истёкшим `expiresAt`.
+         */
+        get: operations["listHouseholdInvitations"];
+        put?: never;
+        /**
+         * Пригласить участника по email (owner)
+         * @description Создаёт приглашение с одноразовым accept-токеном (ссылка уходит письмом
+         *     на приглашённый email, TTL 7 дней). Повторная отправка pending-приглашения
+         *     на тот же email ОБНОВЛЯЕТ его (свежий токен/срок), а не дублирует.
+         *     Приглашение уже участвующему email отклоняется. Rate limit: не более
+         *     20 отправок на household в сутки (429).
+         */
+        post: operations["createHouseholdInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household/invitations/{invitationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Отозвать приглашение (owner)
+         * @description Помечает приглашение отозванным: accept-ссылка перестаёт работать.
+         *     Идемпотентно — повторный revoke уже отозванного приглашения = 204.
+         */
+        delete: operations["revokeHouseholdInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Превью приглашения по accept-токену
+         * @description Превью для экрана принятия: имя household, число участников, приглашающий.
+         *     Требует аутентификации, причём email аккаунта ДОЛЖЕН совпадать с email
+         *     приглашения (чужой аккаунт получает ясную ошибку, приглашение остаётся
+         *     pending). Неаутентифицированный запрос = 401 → клиент ведёт на
+         *     login/register с возвратом на ссылку. Истёкшее/отозванное/принятое
+         *     приглашение отклоняется с теми же кодами, что и accept.
+         */
+        get: operations["previewHouseholdInvitation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/{token}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Принять приглашение
+         * @description Атомарный join: единственное членство приглашённого переносится в
+         *     household приглашения (роль member); прежний персональный household
+         *     остаётся на сервере, доступ к нему теряется (orphan). Идемпотентно:
+         *     accept приглашения в СВОЙ текущий household = no-op (успех без
+         *     изменений). Требует совпадения email аккаунта с приглашением.
+         */
+        post: operations["acceptHouseholdInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Выдать/обновить код входа (owner)
+         * @description Многоразовый код входа для household (фолбэк «семейного» входа без
+         *     привязки к личности). Один активный код на household: повторный вызов
+         *     ротирует (заменяет) прежний. 8 символов из алфавита без неоднозначных
+         *     (без 0/O/1/I). Любой аутентифицированный пользователь может вступить,
+         *     предъявив активный код (`POST /api/household/join`).
+         */
+        post: operations["generateHouseholdCode"];
+        /**
+         * Отозвать код входа (owner)
+         * @description Деактивирует код household. Идемпотентно: отзыв при отсутствии
+         *     активного кода = 204.
+         */
+        delete: operations["revokeHouseholdCode"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Вступить в household по коду
+         * @description Тот же атомарный join, что и accept приглашения: единственное членство
+         *     переносится в household кода (роль member), прежний персональный
+         *     household orphan-ится. Идемпотентно: код своего текущего household =
+         *     no-op (успех без изменений). Отозванный/ротированный код отклоняется.
+         */
+        post: operations["joinHouseholdByCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Покинуть household
+         * @description Удаляет членство; доступ к данным household теряется, сами данные
+         *     остаются при household. Владелец не может уйти, пока в household есть
+         *     другие участники (remove/dissolve вместо этого); владелец-одиночка
+         *     может уйти. Покинувший (или удалённый) пользователь сразу получает
+         *     свежий пустой персональный household — он и возвращается в ответе.
+         */
+        post: operations["leaveHousehold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Исключить участника (owner)
+         * @description Удаляет членство участника (не owner). Данные household не меняются;
+         *     исключённый получает свежий пустой персональный household и теряет
+         *     доступ к этому.
+         */
+        delete: operations["removeHouseholdMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/household/dissolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Расформировать household (owner, явное подтверждение)
+         * @description Деструктивное действие: household удаляется вместе со ВСЕМИ данными
+         *     (счета, категории, транзакции, должники, долговые операции, плановые
+         *     платежи, change_log, applied_operations, приглашения, код). Требует
+         *     явного подтверждения (`confirm: true`); каждому участнику (включая
+         *     owner) выдаётся свежий пустой персональный household.
+         */
+        post: operations["dissolveHousehold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/transactions": {
@@ -669,6 +896,11 @@ export interface components {
             id: string;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * @description Отображаемое имя household (editor: owner). null — не задано;
+             *     потребители выводят производную подпись от аккаунта owner.
+             */
+            name?: string | null;
             members: components["schemas"]["HouseholdMember"][];
         };
         HouseholdMember: {
@@ -682,6 +914,73 @@ export interface components {
             role: "owner" | "member";
             /** Format: date-time */
             joinedAt: string;
+        };
+        /** @description `name = null` сбрасывает имя; непустая строка — задаёт (1-100 символов). */
+        UpdateHouseholdRequest: {
+            name: string | null;
+        };
+        CreateHouseholdInvitationRequest: {
+            /**
+             * Format: email
+             * @description Email приглашаемого (принять сможет только этот аккаунт).
+             */
+            email: string;
+        };
+        /**
+         * @description Приглашение household для owner-листинга. Статус вычисляется на
+         *     чтении; повторная отправка тому же email обновляет токен/срок.
+         */
+        HouseholdInvitation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            status: "pending" | "accepted" | "revoked" | "expired";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            acceptedAt?: string | null;
+            /** Format: date-time */
+            revokedAt?: string | null;
+        };
+        HouseholdInvitationList: {
+            invitations: components["schemas"]["HouseholdInvitation"][];
+        };
+        /**
+         * @description Превью приглашения для экрана принятия (имя household, состав,
+         *     приглашающий). Доступно только аккаунту с совпадающим email.
+         */
+        HouseholdInvitationPreview: {
+            /** @description Имя household; null — не задано (вывести производную подпись). */
+            householdName: string | null;
+            membersCount: number;
+            /** Format: email */
+            inviterEmail: string;
+            inviterDisplayName?: string | null;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /**
+         * @description Активный код входа household. Многоразовый, без привязки к личности;
+         *     ротация заменяет прежний код, отзыв деактивирует.
+         */
+        HouseholdCode: {
+            /** @description 8 символов алфавита без неоднозначных (без 0/O/1/I). */
+            code: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        JoinHouseholdRequest: {
+            /** @description Активный код household. */
+            code: string;
+        };
+        /** @description Явное подтверждение деструктивного расформирования. */
+        DissolveHouseholdRequest: {
+            /** @description Должно быть true — иначе 400. */
+            confirm: boolean;
         };
         /**
          * @description Cashflow-транзакция (income/expense) содержит `accountId`+`categoryId`.
@@ -1322,6 +1621,14 @@ export interface components {
              * @description Серверная версия записи после изменения.
              */
             version: number;
+            /**
+             * Format: uuid
+             * @description Автор изменения (user id участника, применившего операцию;
+             *     проставляется сервером по сессии). null/отсутствует для записей
+             *     до введения авторства. Push-направление это поле игнорирует:
+             *     сервер всегда штампует отправителя.
+             */
+            userId?: string | null;
             /** @description Полное состояние записи; присутствует для upsert. */
             data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"] | components["schemas"]["PlannedPaymentSyncData"];
         };
@@ -1375,6 +1682,24 @@ export interface components {
                  * @example {
                  *       "code": "VALIDATION_FAILED",
                  *       "message": "validation failed"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /**
+         * @description Действие не разрешено роли вызывающего (например, owner-only
+         *     операции household вызывает member) или чужой ресурс.
+         */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "FORBIDDEN",
+                 *       "message": "forbidden"
                  *     }
                  */
                 "application/json": components["schemas"]["ErrorResponse"];
@@ -2090,6 +2415,34 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    updateHousehold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHouseholdRequest"];
+            };
+        };
+        responses: {
+            /** @description Обновлённый household. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Household"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     updateCurrentUser: {
         parameters: {
             query?: never;
@@ -2114,6 +2467,412 @@ export interface operations {
             };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listHouseholdInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Список приглашений. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdInvitationList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createHouseholdInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHouseholdInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description Активное приглашение (свежее или обновлённое). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdInvitation"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Email уже участник household. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Суточный лимит отправок household исчерпан. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    revokeHouseholdInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Приглашение отозвано (или уже было отозвано). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Приглашение не найдено (в этом household). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    previewHouseholdInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Превью приглашения. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdInvitationPreview"];
+                };
+            };
+            /** @description Приглашение истёкло или отозвано. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Email аккаунта не совпадает с приглашением. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Токен неизвестен. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Приглашение уже принято. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    acceptHouseholdInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Household, в который вступил пользователь. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Household"];
+                };
+            };
+            /** @description Приглашение истёкло или отозвано. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Email аккаунта не совпадает с приглашением. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Токен неизвестен. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Приглашение уже принято другим членством. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    generateHouseholdCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Активный код household. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdCode"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    revokeHouseholdCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Код отозван (или активного кода не было). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    joinHouseholdByCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinHouseholdRequest"];
+            };
+        };
+        responses: {
+            /** @description Household, в который вступил пользователь. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Household"];
+                };
+            };
+            /** @description Код неизвестен, отозван или заменён ротацией. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    leaveHousehold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Новый персональный household пользователя. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Household"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Owner не может покинуть household с участниками. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    removeHouseholdMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Участник исключён. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Участник не найден в household. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Попытка исключить owner. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    dissolveHousehold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DissolveHouseholdRequest"];
+            };
+        };
+        responses: {
+            /** @description Household расформирован. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Отсутствует явное подтверждение. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             500: components["responses"]["InternalError"];
         };
     };

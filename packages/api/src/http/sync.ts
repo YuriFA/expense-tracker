@@ -65,6 +65,8 @@ export interface SyncChangeItem {
   action: 'upsert' | 'tombstone'
   /** Server version of the record after this change. */
   version: number
+  /** Author of the change (server-stamped from the session); null pre-authorship. */
+  userId: string | null
   /** Full record state; present for upsert changes. */
   data?: SyncOperationData
 }
@@ -142,6 +144,7 @@ export async function pullSyncChanges(
       id: change.id,
       action: change.action,
       version: change.version,
+      userId: change.userId ?? null,
       ...(change.data !== undefined ? { data: change.data as SyncOperationData } : {}),
     })),
     nextCursor: data.nextCursor ?? null,

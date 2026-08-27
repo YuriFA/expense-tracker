@@ -56,5 +56,5 @@ func (r *Repository) GetHouseholdWithMembers(ctx context.Context, householdID uu
 			JoinedAt:    row.JoinedAt,
 		})
 	}
-	return &domain.Household{ID: h.ID, CreatedAt: h.CreatedAt, Members: members}, nil
+	return &domain.Household{ID: h.ID, CreatedAt: h.CreatedAt, Name: h.Name, Members: members}, nil
 }

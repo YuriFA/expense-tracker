@@ -76,4 +76,20 @@ var (
 	ErrHouseholdNotFound                  = errors.New("household not found")
 	ErrMembershipNotFound                 = errors.New("user has no household membership")
 	ErrInvalidDisplayName                 = errors.New("display name must be 1-100 characters after trimming")
+
+	// Household join lifecycle (household-join change): invitations, home
+	// code, membership moves, dissolution.
+	ErrHouseholdOwnerRequired           = errors.New("only the household owner may perform this action")
+	ErrInvitationNotFound               = errors.New("household invitation not found")
+	ErrInvitationEmailMismatch          = errors.New("invitation was sent to a different email address")
+	ErrInvitationExpired                = errors.New("household invitation expired")
+	ErrInvitationRevoked                = errors.New("household invitation revoked")
+	ErrInvitationAlreadyAccepted        = errors.New("household invitation already accepted")
+	ErrInvitationAlreadyMember          = errors.New("email is already a member of the household")
+	ErrInvitationRateLimited            = errors.New("household invitation rate limit exceeded")
+	ErrHouseholdCodeInvalid             = errors.New("unknown or revoked household code")
+	ErrHouseholdOwnerWithMembers        = errors.New("the owner cannot leave a household with other members")
+	ErrHouseholdMemberNotFound          = errors.New("household member not found")
+	ErrHouseholdMemberIsOwner           = errors.New("the owner cannot be removed from the household")
+	ErrHouseholdDissolveConfirmRequired = errors.New("household dissolution requires an explicit confirm")
 )

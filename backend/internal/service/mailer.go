@@ -11,6 +11,7 @@ import (
 type Mailer interface {
 	SendVerificationCode(ctx context.Context, to, code string) error
 	SendPasswordResetToken(ctx context.Context, to, token string) error
+	SendHouseholdInvitation(ctx context.Context, to, link string) error
 }
 
 // logMailer is the default Mailer: it logs the code/token instead of sending.
@@ -32,5 +33,10 @@ func (m *logMailer) SendVerificationCode(ctx context.Context, to, code string) e
 
 func (m *logMailer) SendPasswordResetToken(ctx context.Context, to, token string) error {
 	m.log.InfoContext(ctx, "password reset token issued", slog.String("email", to), slog.String("reset_token", token))
+	return nil
+}
+
+func (m *logMailer) SendHouseholdInvitation(ctx context.Context, to, link string) error {
+	m.log.InfoContext(ctx, "household invitation issued", slog.String("email", to), slog.String("accept_link", link))
 	return nil
 }

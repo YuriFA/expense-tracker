@@ -286,6 +286,30 @@ func (e DebtOperationSyncDataKind) Valid() bool {
 	}
 }
 
+// Defines values for HouseholdInvitationStatus.
+const (
+	Accepted HouseholdInvitationStatus = "accepted"
+	Expired  HouseholdInvitationStatus = "expired"
+	Pending  HouseholdInvitationStatus = "pending"
+	Revoked  HouseholdInvitationStatus = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the HouseholdInvitationStatus enum.
+func (e HouseholdInvitationStatus) Valid() bool {
+	switch e {
+	case Accepted:
+		return true
+	case Expired:
+		return true
+	case Pending:
+		return true
+	case Revoked:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HouseholdMemberRole.
 const (
 	Member HouseholdMemberRole = "member"
@@ -946,6 +970,12 @@ type CategoryUpdateRequest struct {
 // CategoryUpdateRequestType defines model for CategoryUpdateRequest.Type.
 type CategoryUpdateRequestType string
 
+// CreateHouseholdInvitationRequest defines model for CreateHouseholdInvitationRequest.
+type CreateHouseholdInvitationRequest struct {
+	// Email Email приглашаемого (принять сможет только этот аккаунт).
+	Email openapi_types.Email `json:"email"`
+}
+
 // DebtOperation Запись долгового леджера. `direction` = receivable («мне должны»)
 // или payable («я должен»); kind = debt (долг растёт) или repayment
 // (списание — долг уменьшается). Баланс должника в направлении =
@@ -1060,6 +1090,12 @@ type DebtorUpdateRequest struct {
 	Version int     `json:"version"`
 }
 
+// DissolveHouseholdRequest Явное подтверждение деструктивного расформирования.
+type DissolveHouseholdRequest struct {
+	// Confirm Должно быть true — иначе 400.
+	Confirm bool `json:"confirm"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	// Code Machine-readable error code.
@@ -1077,6 +1113,50 @@ type Household struct {
 	CreatedAt time.Time          `json:"createdAt"`
 	Id        openapi_types.UUID `json:"id"`
 	Members   []HouseholdMember  `json:"members"`
+
+	// Name Отображаемое имя household (editor: owner). null — не задано;
+	// потребители выводят производную подпись от аккаунта owner.
+	Name *string `json:"name,omitempty"`
+}
+
+// HouseholdCode Активный код входа household. Многоразовый, без привязки к личности;
+// ротация заменяет прежний код, отзыв деактивирует.
+type HouseholdCode struct {
+	// Code 8 символов алфавита без неоднозначных (без 0/O/1/I).
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// HouseholdInvitation Приглашение household для owner-листинга. Статус вычисляется на
+// чтении; повторная отправка тому же email обновляет токен/срок.
+type HouseholdInvitation struct {
+	AcceptedAt *time.Time                `json:"acceptedAt,omitempty"`
+	CreatedAt  time.Time                 `json:"createdAt"`
+	Email      openapi_types.Email       `json:"email"`
+	ExpiresAt  time.Time                 `json:"expiresAt"`
+	Id         openapi_types.UUID        `json:"id"`
+	RevokedAt  *time.Time                `json:"revokedAt,omitempty"`
+	Status     HouseholdInvitationStatus `json:"status"`
+}
+
+// HouseholdInvitationStatus defines model for HouseholdInvitation.Status.
+type HouseholdInvitationStatus string
+
+// HouseholdInvitationList defines model for HouseholdInvitationList.
+type HouseholdInvitationList struct {
+	Invitations []HouseholdInvitation `json:"invitations"`
+}
+
+// HouseholdInvitationPreview Превью приглашения для экрана принятия (имя household, состав,
+// приглашающий). Доступно только аккаунту с совпадающим email.
+type HouseholdInvitationPreview struct {
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// HouseholdName Имя household; null — не задано (вывести производную подпись).
+	HouseholdName      *string             `json:"householdName"`
+	InviterDisplayName *string             `json:"inviterDisplayName,omitempty"`
+	InviterEmail       openapi_types.Email `json:"inviterEmail"`
+	MembersCount       int                 `json:"membersCount"`
 }
 
 // HouseholdMember defines model for HouseholdMember.
@@ -1091,6 +1171,12 @@ type HouseholdMember struct {
 
 // HouseholdMemberRole defines model for HouseholdMember.Role.
 type HouseholdMemberRole string
+
+// JoinHouseholdRequest defines model for JoinHouseholdRequest.
+type JoinHouseholdRequest struct {
+	// Code Активный код household.
+	Code string `json:"code"`
+}
 
 // PlannedPayment Регулярный плановый платёж (расход: подписки, платежи по кредитам;
 // доход: зарплата, премии). Подтверждение плана создаёт обычную
@@ -1257,6 +1343,12 @@ type SyncChange struct {
 
 	// Seq Монотонный порядок изменения.
 	Seq int64 `json:"seq"`
+
+	// UserId Автор изменения (user id участника, применившего операцию;
+	// проставляется сервером по сессии). null/отсутствует для записей
+	// до введения авторства. Push-направление это поле игнорирует:
+	// сервер всегда штампует отправителя.
+	UserId *openapi_types.UUID `json:"userId,omitempty"`
 
 	// Version Серверная версия записи после изменения.
 	Version int `json:"version"`
@@ -1437,6 +1529,11 @@ type TransactionUpdateRequest struct {
 	Version       int                 `json:"version"`
 }
 
+// UpdateHouseholdRequest `name = null` сбрасывает имя; непустая строка — задаёт (1-100 символов).
+type UpdateHouseholdRequest struct {
+	Name *string `json:"name"`
+}
+
 // UpdateUserRequest defines model for UpdateUserRequest.
 type UpdateUserRequest struct {
 	// DisplayName Новое отображаемое имя. Непустое после trim; в v1 способ задать
@@ -1518,6 +1615,9 @@ type DebtorInUse = ErrorResponse
 
 // DebtorNotFound defines model for DebtorNotFound.
 type DebtorNotFound = ErrorResponse
+
+// Forbidden defines model for Forbidden.
+type Forbidden = ErrorResponse
 
 // InternalError defines model for InternalError.
 type InternalError = ErrorResponse
@@ -1683,6 +1783,18 @@ type CreateDebtorJSONRequestBody = DebtorCreateRequest
 
 // UpdateDebtorJSONRequestBody defines body for UpdateDebtor for application/json ContentType.
 type UpdateDebtorJSONRequestBody = DebtorUpdateRequest
+
+// UpdateHouseholdJSONRequestBody defines body for UpdateHousehold for application/json ContentType.
+type UpdateHouseholdJSONRequestBody = UpdateHouseholdRequest
+
+// DissolveHouseholdJSONRequestBody defines body for DissolveHousehold for application/json ContentType.
+type DissolveHouseholdJSONRequestBody = DissolveHouseholdRequest
+
+// CreateHouseholdInvitationJSONRequestBody defines body for CreateHouseholdInvitation for application/json ContentType.
+type CreateHouseholdInvitationJSONRequestBody = CreateHouseholdInvitationRequest
+
+// JoinHouseholdByCodeJSONRequestBody defines body for JoinHouseholdByCode for application/json ContentType.
+type JoinHouseholdByCodeJSONRequestBody = JoinHouseholdRequest
 
 // UpdateCurrentUserJSONRequestBody defines body for UpdateCurrentUser for application/json ContentType.
 type UpdateCurrentUserJSONRequestBody = UpdateUserRequest
@@ -2298,6 +2410,42 @@ type ServerInterface interface {
 	// GetHousehold Хаусхолд текущего пользователя с участниками
 	// (GET /api/household)
 	GetHousehold(c *gin.Context)
+	// UpdateHousehold Переименовать household (owner)
+	// (PATCH /api/household)
+	UpdateHousehold(c *gin.Context)
+	// RevokeHouseholdCode Отозвать код входа (owner)
+	// (DELETE /api/household/code)
+	RevokeHouseholdCode(c *gin.Context)
+	// GenerateHouseholdCode Выдать/обновить код входа (owner)
+	// (POST /api/household/code)
+	GenerateHouseholdCode(c *gin.Context)
+	// DissolveHousehold Расформировать household (owner, явное подтверждение)
+	// (POST /api/household/dissolve)
+	DissolveHousehold(c *gin.Context)
+	// ListHouseholdInvitations Список приглашений household (owner)
+	// (GET /api/household/invitations)
+	ListHouseholdInvitations(c *gin.Context)
+	// CreateHouseholdInvitation Пригласить участника по email (owner)
+	// (POST /api/household/invitations)
+	CreateHouseholdInvitation(c *gin.Context)
+	// RevokeHouseholdInvitation Отозвать приглашение (owner)
+	// (DELETE /api/household/invitations/{invitationId})
+	RevokeHouseholdInvitation(c *gin.Context, invitationId openapi_types.UUID)
+	// JoinHouseholdByCode Вступить в household по коду
+	// (POST /api/household/join)
+	JoinHouseholdByCode(c *gin.Context)
+	// LeaveHousehold Покинуть household
+	// (POST /api/household/leave)
+	LeaveHousehold(c *gin.Context)
+	// RemoveHouseholdMember Исключить участника (owner)
+	// (DELETE /api/household/members/{userId})
+	RemoveHouseholdMember(c *gin.Context, userId openapi_types.UUID)
+	// PreviewHouseholdInvitation Превью приглашения по accept-токену
+	// (GET /api/invitations/{token})
+	PreviewHouseholdInvitation(c *gin.Context, token openapi_types.UUID)
+	// AcceptHouseholdInvitation Принять приглашение
+	// (POST /api/invitations/{token}/accept)
+	AcceptHouseholdInvitation(c *gin.Context, token openapi_types.UUID)
 	// UpdateCurrentUser Обновить профиль текущего пользователя
 	// (PATCH /api/me)
 	UpdateCurrentUser(c *gin.Context)
@@ -2936,6 +3084,210 @@ func (siw *ServerInterfaceWrapper) GetHousehold(c *gin.Context) {
 	siw.Handler.GetHousehold(c)
 }
 
+// UpdateHousehold operation middleware
+func (siw *ServerInterfaceWrapper) UpdateHousehold(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateHousehold(c)
+}
+
+// RevokeHouseholdCode operation middleware
+func (siw *ServerInterfaceWrapper) RevokeHouseholdCode(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RevokeHouseholdCode(c)
+}
+
+// GenerateHouseholdCode operation middleware
+func (siw *ServerInterfaceWrapper) GenerateHouseholdCode(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GenerateHouseholdCode(c)
+}
+
+// DissolveHousehold operation middleware
+func (siw *ServerInterfaceWrapper) DissolveHousehold(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DissolveHousehold(c)
+}
+
+// ListHouseholdInvitations operation middleware
+func (siw *ServerInterfaceWrapper) ListHouseholdInvitations(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListHouseholdInvitations(c)
+}
+
+// CreateHouseholdInvitation operation middleware
+func (siw *ServerInterfaceWrapper) CreateHouseholdInvitation(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateHouseholdInvitation(c)
+}
+
+// RevokeHouseholdInvitation operation middleware
+func (siw *ServerInterfaceWrapper) RevokeHouseholdInvitation(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invitationId" -------------
+	var invitationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invitationId", c.Param("invitationId"), &invitationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter invitationId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RevokeHouseholdInvitation(c, invitationId)
+}
+
+// JoinHouseholdByCode operation middleware
+func (siw *ServerInterfaceWrapper) JoinHouseholdByCode(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.JoinHouseholdByCode(c)
+}
+
+// LeaveHousehold operation middleware
+func (siw *ServerInterfaceWrapper) LeaveHousehold(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.LeaveHousehold(c)
+}
+
+// RemoveHouseholdMember operation middleware
+func (siw *ServerInterfaceWrapper) RemoveHouseholdMember(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", c.Param("userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter userId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RemoveHouseholdMember(c, userId)
+}
+
+// PreviewHouseholdInvitation operation middleware
+func (siw *ServerInterfaceWrapper) PreviewHouseholdInvitation(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "token" -------------
+	var token openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "token", c.Param("token"), &token, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter token: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PreviewHouseholdInvitation(c, token)
+}
+
+// AcceptHouseholdInvitation operation middleware
+func (siw *ServerInterfaceWrapper) AcceptHouseholdInvitation(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "token" -------------
+	var token openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "token", c.Param("token"), &token, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter token: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.AcceptHouseholdInvitation(c, token)
+}
+
 // UpdateCurrentUser operation middleware
 func (siw *ServerInterfaceWrapper) UpdateCurrentUser(c *gin.Context) {
 
@@ -3343,7 +3695,19 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/api/auth/password-reset/request", wrapper.RequestPasswordReset)
 	router.POST(options.BaseURL+"/api/auth/password-reset/confirm", wrapper.ConfirmPasswordReset)
 	router.GET(options.BaseURL+"/api/household", wrapper.GetHousehold)
+	router.PATCH(options.BaseURL+"/api/household", wrapper.UpdateHousehold)
 	router.PATCH(options.BaseURL+"/api/me", wrapper.UpdateCurrentUser)
+	router.GET(options.BaseURL+"/api/household/invitations", wrapper.ListHouseholdInvitations)
+	router.POST(options.BaseURL+"/api/household/invitations", wrapper.CreateHouseholdInvitation)
+	router.DELETE(options.BaseURL+"/api/household/invitations/:invitationId", wrapper.RevokeHouseholdInvitation)
+	router.GET(options.BaseURL+"/api/invitations/:token", wrapper.PreviewHouseholdInvitation)
+	router.POST(options.BaseURL+"/api/invitations/:token/accept", wrapper.AcceptHouseholdInvitation)
+	router.DELETE(options.BaseURL+"/api/household/code", wrapper.RevokeHouseholdCode)
+	router.POST(options.BaseURL+"/api/household/code", wrapper.GenerateHouseholdCode)
+	router.POST(options.BaseURL+"/api/household/join", wrapper.JoinHouseholdByCode)
+	router.POST(options.BaseURL+"/api/household/leave", wrapper.LeaveHousehold)
+	router.DELETE(options.BaseURL+"/api/household/members/:userId", wrapper.RemoveHouseholdMember)
+	router.POST(options.BaseURL+"/api/household/dissolve", wrapper.DissolveHousehold)
 	router.GET(options.BaseURL+"/api/transactions", wrapper.ListTransactions)
 	router.POST(options.BaseURL+"/api/transactions", wrapper.CreateTransaction)
 	router.DELETE(options.BaseURL+"/api/transactions/:id", wrapper.DeleteTransaction)
@@ -3404,6 +3768,8 @@ type DebtorAlreadyExistsJSONResponse ErrorResponse
 type DebtorInUseJSONResponse ErrorResponse
 
 type DebtorNotFoundJSONResponse ErrorResponse
+
+type ForbiddenJSONResponse ErrorResponse
 
 type InternalErrorJSONResponse ErrorResponse
 
@@ -5516,6 +5882,942 @@ func (response GetHousehold500JSONResponse) VisitGetHouseholdResponse(w http.Res
 	return err
 }
 
+type UpdateHouseholdRequestObject struct {
+	Body *UpdateHouseholdJSONRequestBody
+}
+
+type UpdateHouseholdResponseObject interface {
+	VisitUpdateHouseholdResponse(w http.ResponseWriter) error
+}
+
+type UpdateHousehold200JSONResponse Household
+
+func (response UpdateHousehold200JSONResponse) VisitUpdateHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateHousehold400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response UpdateHousehold400JSONResponse) VisitUpdateHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateHousehold401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateHousehold401JSONResponse) VisitUpdateHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateHousehold403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateHousehold403JSONResponse) VisitUpdateHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateHousehold500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateHousehold500JSONResponse) VisitUpdateHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeHouseholdCodeRequestObject struct {
+}
+
+type RevokeHouseholdCodeResponseObject interface {
+	VisitRevokeHouseholdCodeResponse(w http.ResponseWriter) error
+}
+
+type RevokeHouseholdCode204Response struct {
+}
+
+func (response RevokeHouseholdCode204Response) VisitRevokeHouseholdCodeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RevokeHouseholdCode401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RevokeHouseholdCode401JSONResponse) VisitRevokeHouseholdCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeHouseholdCode403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RevokeHouseholdCode403JSONResponse) VisitRevokeHouseholdCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeHouseholdCode500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response RevokeHouseholdCode500JSONResponse) VisitRevokeHouseholdCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateHouseholdCodeRequestObject struct {
+}
+
+type GenerateHouseholdCodeResponseObject interface {
+	VisitGenerateHouseholdCodeResponse(w http.ResponseWriter) error
+}
+
+type GenerateHouseholdCode200JSONResponse HouseholdCode
+
+func (response GenerateHouseholdCode200JSONResponse) VisitGenerateHouseholdCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateHouseholdCode401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GenerateHouseholdCode401JSONResponse) VisitGenerateHouseholdCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateHouseholdCode403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GenerateHouseholdCode403JSONResponse) VisitGenerateHouseholdCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GenerateHouseholdCode500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GenerateHouseholdCode500JSONResponse) VisitGenerateHouseholdCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DissolveHouseholdRequestObject struct {
+	Body *DissolveHouseholdJSONRequestBody
+}
+
+type DissolveHouseholdResponseObject interface {
+	VisitDissolveHouseholdResponse(w http.ResponseWriter) error
+}
+
+type DissolveHousehold204Response struct {
+}
+
+func (response DissolveHousehold204Response) VisitDissolveHouseholdResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DissolveHousehold400JSONResponse ErrorResponse
+
+func (response DissolveHousehold400JSONResponse) VisitDissolveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DissolveHousehold401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DissolveHousehold401JSONResponse) VisitDissolveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DissolveHousehold403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DissolveHousehold403JSONResponse) VisitDissolveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DissolveHousehold500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DissolveHousehold500JSONResponse) VisitDissolveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListHouseholdInvitationsRequestObject struct {
+}
+
+type ListHouseholdInvitationsResponseObject interface {
+	VisitListHouseholdInvitationsResponse(w http.ResponseWriter) error
+}
+
+type ListHouseholdInvitations200JSONResponse HouseholdInvitationList
+
+func (response ListHouseholdInvitations200JSONResponse) VisitListHouseholdInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListHouseholdInvitations401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHouseholdInvitations401JSONResponse) VisitListHouseholdInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListHouseholdInvitations403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHouseholdInvitations403JSONResponse) VisitListHouseholdInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListHouseholdInvitations500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListHouseholdInvitations500JSONResponse) VisitListHouseholdInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateHouseholdInvitationRequestObject struct {
+	Body *CreateHouseholdInvitationJSONRequestBody
+}
+
+type CreateHouseholdInvitationResponseObject interface {
+	VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error
+}
+
+type CreateHouseholdInvitation200JSONResponse HouseholdInvitation
+
+func (response CreateHouseholdInvitation200JSONResponse) VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateHouseholdInvitation400JSONResponse struct{ ValidationErrorJSONResponse }
+
+func (response CreateHouseholdInvitation400JSONResponse) VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateHouseholdInvitation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateHouseholdInvitation401JSONResponse) VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateHouseholdInvitation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateHouseholdInvitation403JSONResponse) VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateHouseholdInvitation409JSONResponse ErrorResponse
+
+func (response CreateHouseholdInvitation409JSONResponse) VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateHouseholdInvitation429JSONResponse ErrorResponse
+
+func (response CreateHouseholdInvitation429JSONResponse) VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateHouseholdInvitation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateHouseholdInvitation500JSONResponse) VisitCreateHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeHouseholdInvitationRequestObject struct {
+	InvitationId openapi_types.UUID `json:"invitationId"`
+}
+
+type RevokeHouseholdInvitationResponseObject interface {
+	VisitRevokeHouseholdInvitationResponse(w http.ResponseWriter) error
+}
+
+type RevokeHouseholdInvitation204Response struct {
+}
+
+func (response RevokeHouseholdInvitation204Response) VisitRevokeHouseholdInvitationResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RevokeHouseholdInvitation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RevokeHouseholdInvitation401JSONResponse) VisitRevokeHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeHouseholdInvitation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RevokeHouseholdInvitation403JSONResponse) VisitRevokeHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeHouseholdInvitation404JSONResponse ErrorResponse
+
+func (response RevokeHouseholdInvitation404JSONResponse) VisitRevokeHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeHouseholdInvitation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response RevokeHouseholdInvitation500JSONResponse) VisitRevokeHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinHouseholdByCodeRequestObject struct {
+	Body *JoinHouseholdByCodeJSONRequestBody
+}
+
+type JoinHouseholdByCodeResponseObject interface {
+	VisitJoinHouseholdByCodeResponse(w http.ResponseWriter) error
+}
+
+type JoinHouseholdByCode200JSONResponse Household
+
+func (response JoinHouseholdByCode200JSONResponse) VisitJoinHouseholdByCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinHouseholdByCode400JSONResponse ErrorResponse
+
+func (response JoinHouseholdByCode400JSONResponse) VisitJoinHouseholdByCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinHouseholdByCode401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response JoinHouseholdByCode401JSONResponse) VisitJoinHouseholdByCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinHouseholdByCode500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response JoinHouseholdByCode500JSONResponse) VisitJoinHouseholdByCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LeaveHouseholdRequestObject struct {
+}
+
+type LeaveHouseholdResponseObject interface {
+	VisitLeaveHouseholdResponse(w http.ResponseWriter) error
+}
+
+type LeaveHousehold200JSONResponse Household
+
+func (response LeaveHousehold200JSONResponse) VisitLeaveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LeaveHousehold401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response LeaveHousehold401JSONResponse) VisitLeaveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LeaveHousehold409JSONResponse ErrorResponse
+
+func (response LeaveHousehold409JSONResponse) VisitLeaveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LeaveHousehold500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response LeaveHousehold500JSONResponse) VisitLeaveHouseholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveHouseholdMemberRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+}
+
+type RemoveHouseholdMemberResponseObject interface {
+	VisitRemoveHouseholdMemberResponse(w http.ResponseWriter) error
+}
+
+type RemoveHouseholdMember204Response struct {
+}
+
+func (response RemoveHouseholdMember204Response) VisitRemoveHouseholdMemberResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveHouseholdMember401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RemoveHouseholdMember401JSONResponse) VisitRemoveHouseholdMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveHouseholdMember403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RemoveHouseholdMember403JSONResponse) VisitRemoveHouseholdMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveHouseholdMember404JSONResponse ErrorResponse
+
+func (response RemoveHouseholdMember404JSONResponse) VisitRemoveHouseholdMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveHouseholdMember409JSONResponse ErrorResponse
+
+func (response RemoveHouseholdMember409JSONResponse) VisitRemoveHouseholdMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveHouseholdMember500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response RemoveHouseholdMember500JSONResponse) VisitRemoveHouseholdMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewHouseholdInvitationRequestObject struct {
+	Token openapi_types.UUID `json:"token"`
+}
+
+type PreviewHouseholdInvitationResponseObject interface {
+	VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error
+}
+
+type PreviewHouseholdInvitation200JSONResponse HouseholdInvitationPreview
+
+func (response PreviewHouseholdInvitation200JSONResponse) VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewHouseholdInvitation400JSONResponse ErrorResponse
+
+func (response PreviewHouseholdInvitation400JSONResponse) VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewHouseholdInvitation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PreviewHouseholdInvitation401JSONResponse) VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewHouseholdInvitation403JSONResponse ErrorResponse
+
+func (response PreviewHouseholdInvitation403JSONResponse) VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewHouseholdInvitation404JSONResponse ErrorResponse
+
+func (response PreviewHouseholdInvitation404JSONResponse) VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewHouseholdInvitation409JSONResponse ErrorResponse
+
+func (response PreviewHouseholdInvitation409JSONResponse) VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewHouseholdInvitation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response PreviewHouseholdInvitation500JSONResponse) VisitPreviewHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptHouseholdInvitationRequestObject struct {
+	Token openapi_types.UUID `json:"token"`
+}
+
+type AcceptHouseholdInvitationResponseObject interface {
+	VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error
+}
+
+type AcceptHouseholdInvitation200JSONResponse Household
+
+func (response AcceptHouseholdInvitation200JSONResponse) VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptHouseholdInvitation400JSONResponse ErrorResponse
+
+func (response AcceptHouseholdInvitation400JSONResponse) VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptHouseholdInvitation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AcceptHouseholdInvitation401JSONResponse) VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptHouseholdInvitation403JSONResponse ErrorResponse
+
+func (response AcceptHouseholdInvitation403JSONResponse) VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptHouseholdInvitation404JSONResponse ErrorResponse
+
+func (response AcceptHouseholdInvitation404JSONResponse) VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptHouseholdInvitation409JSONResponse ErrorResponse
+
+func (response AcceptHouseholdInvitation409JSONResponse) VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptHouseholdInvitation500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response AcceptHouseholdInvitation500JSONResponse) VisitAcceptHouseholdInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UpdateCurrentUserRequestObject struct {
 	Body *UpdateCurrentUserJSONRequestBody
 }
@@ -6585,6 +7887,42 @@ type StrictServerInterface interface {
 	// GetHousehold Хаусхолд текущего пользователя с участниками
 	// (GET /api/household)
 	GetHousehold(ctx context.Context, request GetHouseholdRequestObject) (GetHouseholdResponseObject, error)
+	// UpdateHousehold Переименовать household (owner)
+	// (PATCH /api/household)
+	UpdateHousehold(ctx context.Context, request UpdateHouseholdRequestObject) (UpdateHouseholdResponseObject, error)
+	// RevokeHouseholdCode Отозвать код входа (owner)
+	// (DELETE /api/household/code)
+	RevokeHouseholdCode(ctx context.Context, request RevokeHouseholdCodeRequestObject) (RevokeHouseholdCodeResponseObject, error)
+	// GenerateHouseholdCode Выдать/обновить код входа (owner)
+	// (POST /api/household/code)
+	GenerateHouseholdCode(ctx context.Context, request GenerateHouseholdCodeRequestObject) (GenerateHouseholdCodeResponseObject, error)
+	// DissolveHousehold Расформировать household (owner, явное подтверждение)
+	// (POST /api/household/dissolve)
+	DissolveHousehold(ctx context.Context, request DissolveHouseholdRequestObject) (DissolveHouseholdResponseObject, error)
+	// ListHouseholdInvitations Список приглашений household (owner)
+	// (GET /api/household/invitations)
+	ListHouseholdInvitations(ctx context.Context, request ListHouseholdInvitationsRequestObject) (ListHouseholdInvitationsResponseObject, error)
+	// CreateHouseholdInvitation Пригласить участника по email (owner)
+	// (POST /api/household/invitations)
+	CreateHouseholdInvitation(ctx context.Context, request CreateHouseholdInvitationRequestObject) (CreateHouseholdInvitationResponseObject, error)
+	// RevokeHouseholdInvitation Отозвать приглашение (owner)
+	// (DELETE /api/household/invitations/{invitationId})
+	RevokeHouseholdInvitation(ctx context.Context, request RevokeHouseholdInvitationRequestObject) (RevokeHouseholdInvitationResponseObject, error)
+	// JoinHouseholdByCode Вступить в household по коду
+	// (POST /api/household/join)
+	JoinHouseholdByCode(ctx context.Context, request JoinHouseholdByCodeRequestObject) (JoinHouseholdByCodeResponseObject, error)
+	// LeaveHousehold Покинуть household
+	// (POST /api/household/leave)
+	LeaveHousehold(ctx context.Context, request LeaveHouseholdRequestObject) (LeaveHouseholdResponseObject, error)
+	// RemoveHouseholdMember Исключить участника (owner)
+	// (DELETE /api/household/members/{userId})
+	RemoveHouseholdMember(ctx context.Context, request RemoveHouseholdMemberRequestObject) (RemoveHouseholdMemberResponseObject, error)
+	// PreviewHouseholdInvitation Превью приглашения по accept-токену
+	// (GET /api/invitations/{token})
+	PreviewHouseholdInvitation(ctx context.Context, request PreviewHouseholdInvitationRequestObject) (PreviewHouseholdInvitationResponseObject, error)
+	// AcceptHouseholdInvitation Принять приглашение
+	// (POST /api/invitations/{token}/accept)
+	AcceptHouseholdInvitation(ctx context.Context, request AcceptHouseholdInvitationRequestObject) (AcceptHouseholdInvitationResponseObject, error)
 	// UpdateCurrentUser Обновить профиль текущего пользователя
 	// (PATCH /api/me)
 	UpdateCurrentUser(ctx context.Context, request UpdateCurrentUserRequestObject) (UpdateCurrentUserResponseObject, error)
@@ -7570,6 +8908,330 @@ func (sh *strictHandler) GetHousehold(ctx *gin.Context) {
 	}
 }
 
+// UpdateHousehold operation middleware
+func (sh *strictHandler) UpdateHousehold(ctx *gin.Context) {
+	var request UpdateHouseholdRequestObject
+
+	var body UpdateHouseholdJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateHousehold(ctx, request.(UpdateHouseholdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateHousehold")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateHouseholdResponseObject); ok {
+		if err := validResponse.VisitUpdateHouseholdResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeHouseholdCode operation middleware
+func (sh *strictHandler) RevokeHouseholdCode(ctx *gin.Context) {
+	var request RevokeHouseholdCodeRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeHouseholdCode(ctx, request.(RevokeHouseholdCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeHouseholdCode")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RevokeHouseholdCodeResponseObject); ok {
+		if err := validResponse.VisitRevokeHouseholdCodeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GenerateHouseholdCode operation middleware
+func (sh *strictHandler) GenerateHouseholdCode(ctx *gin.Context) {
+	var request GenerateHouseholdCodeRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GenerateHouseholdCode(ctx, request.(GenerateHouseholdCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GenerateHouseholdCode")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GenerateHouseholdCodeResponseObject); ok {
+		if err := validResponse.VisitGenerateHouseholdCodeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DissolveHousehold operation middleware
+func (sh *strictHandler) DissolveHousehold(ctx *gin.Context) {
+	var request DissolveHouseholdRequestObject
+
+	var body DissolveHouseholdJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DissolveHousehold(ctx, request.(DissolveHouseholdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DissolveHousehold")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DissolveHouseholdResponseObject); ok {
+		if err := validResponse.VisitDissolveHouseholdResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListHouseholdInvitations operation middleware
+func (sh *strictHandler) ListHouseholdInvitations(ctx *gin.Context) {
+	var request ListHouseholdInvitationsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHouseholdInvitations(ctx, request.(ListHouseholdInvitationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHouseholdInvitations")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListHouseholdInvitationsResponseObject); ok {
+		if err := validResponse.VisitListHouseholdInvitationsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateHouseholdInvitation operation middleware
+func (sh *strictHandler) CreateHouseholdInvitation(ctx *gin.Context) {
+	var request CreateHouseholdInvitationRequestObject
+
+	var body CreateHouseholdInvitationJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateHouseholdInvitation(ctx, request.(CreateHouseholdInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateHouseholdInvitation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateHouseholdInvitationResponseObject); ok {
+		if err := validResponse.VisitCreateHouseholdInvitationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeHouseholdInvitation operation middleware
+func (sh *strictHandler) RevokeHouseholdInvitation(ctx *gin.Context, invitationId openapi_types.UUID) {
+	var request RevokeHouseholdInvitationRequestObject
+
+	request.InvitationId = invitationId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeHouseholdInvitation(ctx, request.(RevokeHouseholdInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeHouseholdInvitation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RevokeHouseholdInvitationResponseObject); ok {
+		if err := validResponse.VisitRevokeHouseholdInvitationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// JoinHouseholdByCode operation middleware
+func (sh *strictHandler) JoinHouseholdByCode(ctx *gin.Context) {
+	var request JoinHouseholdByCodeRequestObject
+
+	var body JoinHouseholdByCodeJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.JoinHouseholdByCode(ctx, request.(JoinHouseholdByCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "JoinHouseholdByCode")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(JoinHouseholdByCodeResponseObject); ok {
+		if err := validResponse.VisitJoinHouseholdByCodeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LeaveHousehold operation middleware
+func (sh *strictHandler) LeaveHousehold(ctx *gin.Context) {
+	var request LeaveHouseholdRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.LeaveHousehold(ctx, request.(LeaveHouseholdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LeaveHousehold")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(LeaveHouseholdResponseObject); ok {
+		if err := validResponse.VisitLeaveHouseholdResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveHouseholdMember operation middleware
+func (sh *strictHandler) RemoveHouseholdMember(ctx *gin.Context, userId openapi_types.UUID) {
+	var request RemoveHouseholdMemberRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveHouseholdMember(ctx, request.(RemoveHouseholdMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveHouseholdMember")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RemoveHouseholdMemberResponseObject); ok {
+		if err := validResponse.VisitRemoveHouseholdMemberResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewHouseholdInvitation operation middleware
+func (sh *strictHandler) PreviewHouseholdInvitation(ctx *gin.Context, token openapi_types.UUID) {
+	var request PreviewHouseholdInvitationRequestObject
+
+	request.Token = token
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewHouseholdInvitation(ctx, request.(PreviewHouseholdInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewHouseholdInvitation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(PreviewHouseholdInvitationResponseObject); ok {
+		if err := validResponse.VisitPreviewHouseholdInvitationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcceptHouseholdInvitation operation middleware
+func (sh *strictHandler) AcceptHouseholdInvitation(ctx *gin.Context, token openapi_types.UUID) {
+	var request AcceptHouseholdInvitationRequestObject
+
+	request.Token = token
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptHouseholdInvitation(ctx, request.(AcceptHouseholdInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptHouseholdInvitation")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(AcceptHouseholdInvitationResponseObject); ok {
+		if err := validResponse.VisitAcceptHouseholdInvitationResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // UpdateCurrentUser operation middleware
 func (sh *strictHandler) UpdateCurrentUser(ctx *gin.Context) {
 	var request UpdateCurrentUserRequestObject
@@ -7949,252 +9611,315 @@ func (sh *strictHandler) UpdateTransaction(ctx *gin.Context, id TransactionId) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"AP//",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

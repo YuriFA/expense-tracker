@@ -92,7 +92,7 @@ func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin
 	debtOpSvc := service.NewDebtOperationService(store, store)
 	planSvc := service.NewPlannedPaymentService(store, store, store)
 	sessionSvc := service.NewSessionService(store)
-	householdSvc := service.NewHouseholdService(store)
+	householdSvc := service.NewHouseholdService(store, store, service.NewLogMailer(logger.NewDiscardLogger()), logger.NewDiscardLogger(), service.HouseholdJoinConfig{})
 
 	server := httptransport.NewServer(
 		cfg,

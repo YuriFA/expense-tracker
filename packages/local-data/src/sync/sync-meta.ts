@@ -20,6 +20,7 @@ type DbLike = LocalDatabase | LocalTransaction
 
 const OWNER_USER_ID_KEY = 'owner_user_id'
 const PULL_CURSOR_KEY = 'pull_cursor'
+const LAST_HOUSEHOLD_KEY = 'last_household'
 export const LAST_SYNCED_AT_KEY = 'last_synced_at'
 
 export function getMetaValue(db: DbLike, key: string): string | null {
@@ -55,6 +56,31 @@ export function setPullCursor(db: DbLike, cursor: number): void {
 }
 
 /**
+ * The household this database last rebased/started syncing against (design
+ * D7). null = never tracked (fresh install or after a wipe) - no mismatch.
+ * Stored by the join/leave flows right after the rebase/wipe choice; a
+ * mismatch against the server-reported household means this device still
+ * holds the OLD household's state and must offer the choice again.
+ */
+export function getLastHousehold(db: DbLike): string | null {
+  return getMetaValue(db, LAST_HOUSEHOLD_KEY)
+}
+
+export function setLastHousehold(db: DbLike, householdId: string): void {
+  setMetaValue(db, LAST_HOUSEHOLD_KEY, householdId)
+}
+
+/**
+ * True when the device's bookkeeping belongs to a DIFFERENT household than
+ * the one reported by the server (a stale second device of a user who
+ * joined/left elsewhere). Never true for an untracked (null) marker.
+ */
+export function householdNeedsRebase(db: DbLike, currentHouseholdId: string): boolean {
+  const last = getLastHousehold(db)
+  return last !== null && last !== currentHouseholdId
+}
+
+/**
  * Clears ALL local data (records, outbox, conflicts, owner/cursor) - the
  * explicit "clear local data" choice when a different user logs in. Callers
  * must invalidate every UI cache afterwards.
@@ -73,7 +99,14 @@ export function wipeLocalData(db: LocalDatabase): void {
     tx.delete(syncOutbox).run()
     tx.delete(syncConflicts).run()
     tx.delete(syncMeta)
-      .where(inArray(syncMeta.key, [OWNER_USER_ID_KEY, PULL_CURSOR_KEY, LAST_SYNCED_AT_KEY]))
+      .where(
+        inArray(syncMeta.key, [
+          OWNER_USER_ID_KEY,
+          PULL_CURSOR_KEY,
+          LAST_SYNCED_AT_KEY,
+          LAST_HOUSEHOLD_KEY,
+        ]),
+      )
       .run()
   })
 }

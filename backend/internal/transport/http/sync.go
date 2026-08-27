@@ -89,6 +89,7 @@ func (s *Server) SyncPull(
 		}
 		change := api.SyncChange{
 			Seq:     c.Seq,
+			UserId:  toUUIDPtr(&c.UserID),
 			Entity:  api.SyncEntity(c.Entity),
 			Id:      toUUID(c.ID),
 			Action:  api.SyncChangeAction(c.Action),

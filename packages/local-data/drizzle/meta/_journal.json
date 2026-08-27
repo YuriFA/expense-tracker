@@ -22,6 +22,13 @@
       "when": 1787591718358,
       "tag": "0002_noisy_victor_mancha",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787847429006,
+      "tag": "0003_shocking_rocket_racer",
+      "breakpoints": true
     }
   ]
 }

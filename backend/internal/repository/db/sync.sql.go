@@ -122,7 +122,7 @@ func (q *Queries) LockHouseholdChanges(ctx context.Context, householdID string) 
 }
 
 const pullChangeLog = `-- name: PullChangeLog :many
-SELECT seq, entity, entity_id, action, version
+SELECT seq, user_id, entity, entity_id, action, version
 FROM change_log
 WHERE household_id = $1 AND seq > $2
 ORDER BY seq
@@ -137,6 +137,7 @@ type PullChangeLogParams struct {
 
 type PullChangeLogRow struct {
 	Seq      int64
+	UserID   uuid.UUID
 	Entity   string
 	EntityID uuid.UUID
 	Action   string
@@ -144,7 +145,8 @@ type PullChangeLogRow struct {
 }
 
 // Cursor pull: everything for the household strictly after after_seq, in seq
-// order, paginated. The caller fetches current entity state for upsert rows.
+// order, paginated. user_id is the change's author (the acting member); the
+// caller fetches current entity state for upsert rows.
 func (q *Queries) PullChangeLog(ctx context.Context, arg PullChangeLogParams) ([]PullChangeLogRow, error) {
 	rows, err := q.db.Query(ctx, pullChangeLog, arg.HouseholdID, arg.AfterSeq, arg.Limit)
 	if err != nil {
@@ -156,6 +158,7 @@ func (q *Queries) PullChangeLog(ctx context.Context, arg PullChangeLogParams) ([
 		var i PullChangeLogRow
 		if err := rows.Scan(
 			&i.Seq,
+			&i.UserID,
 			&i.Entity,
 			&i.EntityID,
 			&i.Action,

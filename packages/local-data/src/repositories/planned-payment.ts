@@ -28,6 +28,7 @@ import {
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '../types'
 import { enqueueOperation, hasSentOperations, removeOperationsFor } from '../outbox'
+import { getOwnerUserId } from '../sync/sync-meta'
 import {
   accounts,
   categories,
@@ -204,6 +205,7 @@ export function createLocalPlannedPaymentRepository(
 
         const row: PlannedPaymentRow = {
           id,
+          userId: getOwnerUserId(db),
           type: payload.type,
           amount: payload.amount,
           name: payload.name ?? '',
@@ -381,6 +383,7 @@ export function createLocalPlannedPaymentRepository(
         const transactionId = generateId()
         const transactionRow: TransactionRow = {
           id: transactionId,
+          userId: getOwnerUserId(db),
           type,
           amount,
           description: note,

@@ -285,4 +285,67 @@ var domainErrorMap = map[error]domainErrorSpec{
 	// error: it surfaces as 500 so it is logged and noticed.
 	domain.ErrHouseholdNotFound:  {http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error"},
 	domain.ErrMembershipNotFound: {http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error"},
+
+	// --- household join lifecycle (household-join change) ---
+	domain.ErrHouseholdOwnerRequired: {http.StatusForbidden, httperr.ErrCodeForbidden, "only the household owner may perform this action"},
+	domain.ErrInvitationNotFound: {
+		http.StatusNotFound,
+		httperr.ErrCodeHouseholdInvitationNotFound,
+		"invitation not found",
+	},
+	domain.ErrInvitationEmailMismatch: {
+		http.StatusForbidden,
+		httperr.ErrCodeHouseholdInvitationEmailMismatch,
+		"this invitation was sent to a different email address",
+	},
+	domain.ErrInvitationExpired: {
+		http.StatusBadRequest,
+		httperr.ErrCodeHouseholdInvitationExpired,
+		"invitation expired",
+	},
+	domain.ErrInvitationRevoked: {
+		http.StatusBadRequest,
+		httperr.ErrCodeHouseholdInvitationRevoked,
+		"invitation revoked",
+	},
+	domain.ErrInvitationAlreadyAccepted: {
+		http.StatusConflict,
+		httperr.ErrCodeHouseholdInvitationAlreadyAccepted,
+		"invitation already accepted",
+	},
+	domain.ErrInvitationAlreadyMember: {
+		http.StatusConflict,
+		httperr.ErrCodeHouseholdInvitationAlreadyMember,
+		"this email is already a member of the household",
+	},
+	domain.ErrInvitationRateLimited: {
+		http.StatusTooManyRequests,
+		httperr.ErrCodeHouseholdInvitationRateLimited,
+		"household invitation rate limit exceeded, try again later",
+	},
+	domain.ErrHouseholdCodeInvalid: {
+		http.StatusBadRequest,
+		httperr.ErrCodeHouseholdCodeInvalid,
+		"unknown or revoked household code",
+	},
+	domain.ErrHouseholdOwnerWithMembers: {
+		http.StatusConflict,
+		httperr.ErrCodeHouseholdOwnerWithMembers,
+		"the owner cannot leave a household with other members; remove them or dissolve the household",
+	},
+	domain.ErrHouseholdMemberNotFound: {
+		http.StatusNotFound,
+		httperr.ErrCodeHouseholdMemberNotFound,
+		"member not found",
+	},
+	domain.ErrHouseholdMemberIsOwner: {
+		http.StatusConflict,
+		httperr.ErrCodeHouseholdMemberIsOwner,
+		"the owner cannot be removed; dissolve the household instead",
+	},
+	domain.ErrHouseholdDissolveConfirmRequired: {
+		http.StatusBadRequest,
+		httperr.ErrCodeHouseholdDissolveConfirmRequired,
+		"dissolution requires an explicit confirm",
+	},
 }

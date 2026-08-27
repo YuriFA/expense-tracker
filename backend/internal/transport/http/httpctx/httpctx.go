@@ -43,6 +43,21 @@ func CurrentHouseholdID(c *gin.Context) uuid.UUID {
 	return id
 }
 
+// CurrentHouseholdRole returns the requester's role in their (single, v1)
+// household, resolved by the auth middleware ("" only if the middleware did
+// not run).
+func CurrentHouseholdRole(c *gin.Context) domain.HouseholdRole {
+	val, exists := c.Get(keys.CurrentHouseholdRoleKey)
+	if !exists {
+		return ""
+	}
+	role, ok := val.(domain.HouseholdRole)
+	if !ok {
+		return ""
+	}
+	return role
+}
+
 // RequestID returns the X-Request-ID for the request.
 func RequestID(c *gin.Context) string {
 	return c.GetHeader(keys.RequestIDHeader)

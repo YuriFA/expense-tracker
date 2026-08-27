@@ -6,6 +6,10 @@
 // Invariants (root AGENTS.md + change design D10): money is INTEGER minor
 // units, timestamps are ISO-8601 UTC TEXT, ids are client-generated UUID v4.
 // Deletes are tombstones (`deletedAt`); listings never return tombstones.
+//
+// `userId` is the record's AUTHOR (who created/last changed it): stamped by
+// local creates from the device owner binding, by pull-apply from the
+// server-delivered author. Never pushed - the server stamps from the session.
 
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
@@ -33,6 +37,8 @@ export const accounts = sqliteTable('accounts', {
   serverVersion: integer('server_version').notNull().default(0),
   deletedAt: text('deleted_at'),
   createdAt: text('created_at').notNull(),
+  /** Author (device owner on local creates; server-delivered on pull). */
+  userId: text('user_id'),
 })
 
 export const categories = sqliteTable('categories', {
@@ -49,6 +55,8 @@ export const categories = sqliteTable('categories', {
   serverVersion: integer('server_version').notNull().default(0),
   deletedAt: text('deleted_at'),
   createdAt: text('created_at').notNull(),
+  /** Author (device owner on local creates; server-delivered on pull). */
+  userId: text('user_id'),
 })
 
 export const transactions = sqliteTable(
@@ -72,6 +80,8 @@ export const transactions = sqliteTable(
     version: integer('version').notNull().default(1),
     serverVersion: integer('server_version').notNull().default(0),
     deletedAt: text('deleted_at'),
+    /** Author (device owner on local creates; server-delivered on pull). */
+    userId: text('user_id'),
   },
   (table) => [
     index('idx_transactions_occurred_at').on(table.occurredAt),
@@ -89,6 +99,8 @@ export const debtors = sqliteTable('debtors', {
   serverVersion: integer('server_version').notNull().default(0),
   deletedAt: text('deleted_at'),
   createdAt: text('created_at').notNull(),
+  /** Author (device owner on local creates; server-delivered on pull). */
+  userId: text('user_id'),
 })
 
 export const debtOperations = sqliteTable(
@@ -108,6 +120,8 @@ export const debtOperations = sqliteTable(
     version: integer('version').notNull().default(1),
     serverVersion: integer('server_version').notNull().default(0),
     deletedAt: text('deleted_at'),
+    /** Author (device owner on local creates; server-delivered on pull). */
+    userId: text('user_id'),
   },
   (table) => [
     index('idx_debt_operations_debtor_id').on(table.debtorId),
@@ -142,6 +156,8 @@ export const plannedPayments = sqliteTable(
     serverVersion: integer('server_version').notNull().default(0),
     deletedAt: text('deleted_at'),
     createdAt: text('created_at').notNull(),
+    /** Author (device owner on local creates; server-delivered on pull). */
+    userId: text('user_id'),
   },
   (table) => [
     index('idx_planned_payments_next_due').on(table.nextDue),

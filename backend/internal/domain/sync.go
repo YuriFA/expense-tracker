@@ -94,7 +94,10 @@ type AppliedOperation struct {
 // *DebtorFullState / *DebtOperationFullState / *PlannedPaymentFullState,
 // nil for tombstones.
 type SyncChange struct {
-	Seq     int64
+	Seq int64
+	// UserID is the change's author (the member whose session applied the
+	// operation); delivered on pull, never accepted from clients.
+	UserID  uuid.UUID
 	Entity  string
 	ID      uuid.UUID
 	Action  string

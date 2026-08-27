@@ -84,6 +84,7 @@ func AuthRequired(
 		c.Set(keys.CurrentUserKey, user)
 		c.Set(keys.CurrentSessionIDKey, session.ID)
 		c.Set(keys.CurrentHouseholdKey, membership.HouseholdID)
+		c.Set(keys.CurrentHouseholdRoleKey, membership.Role)
 		c.Next()
 	}
 }

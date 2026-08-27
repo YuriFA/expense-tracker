@@ -439,10 +439,12 @@ export function createSyncEngine(options: SyncEngineOptions) {
     if (!patch) return
     const timestamp = now().toISOString()
 
+    const author = { userId: change.userId }
     if (change.entity === 'account') {
       tx.insert(accounts)
         .values({
           ...(patch as Partial<AccountRow>),
+          ...author,
           id: change.id,
           version: change.version,
           serverVersion: change.version,
@@ -454,6 +456,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
       tx.insert(categories)
         .values({
           ...(patch as Partial<CategoryRow>),
+          ...author,
           id: change.id,
           version: change.version,
           serverVersion: change.version,
@@ -465,6 +468,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
       tx.insert(debtors)
         .values({
           ...(patch as Partial<DebtorRow>),
+          ...author,
           id: change.id,
           version: change.version,
           serverVersion: change.version,
@@ -476,6 +480,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
       tx.insert(debtOperations)
         .values({
           ...(patch as Partial<DebtOperationRow>),
+          ...author,
           id: change.id,
           version: change.version,
           serverVersion: change.version,
@@ -486,6 +491,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
       tx.insert(plannedPayments)
         .values({
           ...(patch as Partial<PlannedPaymentRow>),
+          ...author,
           id: change.id,
           version: change.version,
           serverVersion: change.version,
@@ -497,6 +503,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
       tx.insert(transactions)
         .values({
           ...(patch as Partial<TransactionRow>),
+          ...author,
           id: change.id,
           updatedAt: null,
           version: change.version,
@@ -553,6 +560,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
       if (change.action === 'tombstone') {
         updateEntityRow(tx, change.entity, change.id, {
           deletedAt: now().toISOString(),
+          userId: change.userId,
           version: change.version,
           serverVersion: change.version,
         })
@@ -561,6 +569,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
         if (patch) {
           updateEntityRow(tx, change.entity, change.id, {
             ...patch,
+            userId: change.userId,
             deletedAt: null,
             version: change.version,
             serverVersion: change.version,

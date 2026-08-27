@@ -151,7 +151,11 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 		SessionTTL: cfg.SessionConfig.TTL,
 	})
 	sessionSvc := service.NewSessionService(repo)
-	householdSvc := service.NewHouseholdService(repo)
+	householdSvc := service.NewHouseholdService(repo, repo, service.NewLogMailer(log), log, service.HouseholdJoinConfig{
+		InvitationTTL:            cfg.Household.InvitationTTL,
+		MaxInvitationSendsPerDay: cfg.Household.MaxInvitationSendsPerDay,
+		WebAppBaseURL:            cfg.Household.WebAppBaseURL,
+	})
 	syncSvc := service.NewSyncService(repo)
 
 	server := httptransport.NewServer(

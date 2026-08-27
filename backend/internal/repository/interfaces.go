@@ -32,6 +32,22 @@ type UserRepository interface {
 type HouseholdRepository interface {
 	GetMembershipByUser(ctx context.Context, userID uuid.UUID) (*domain.Membership, error)
 	GetHouseholdWithMembers(ctx context.Context, householdID uuid.UUID) (*domain.Household, error)
+
+	// Join lifecycle (household-join change). Owner-side guards (role checks)
+	// live in the service; these are the persistence moves.
+	UpdateHouseholdName(ctx context.Context, householdID uuid.UUID, name *string) error
+	CountHouseholdInvitationSends(ctx context.Context, householdID uuid.UUID) (int, error)
+	CreateHouseholdInvitation(ctx context.Context, householdID uuid.UUID, email string, createdBy uuid.UUID, ttl time.Duration) (*domain.HouseholdInvitation, error)
+	ListHouseholdInvitations(ctx context.Context, householdID uuid.UUID) ([]domain.HouseholdInvitation, error)
+	RevokeHouseholdInvitation(ctx context.Context, householdID, invitationID uuid.UUID) error
+	GetHouseholdInvitationByToken(ctx context.Context, token uuid.UUID) (*domain.HouseholdInvitation, error)
+	JoinHousehold(ctx context.Context, userID, targetHouseholdID uuid.UUID, invitationID *uuid.UUID) (*domain.Household, error)
+	GenerateHouseholdCode(ctx context.Context, householdID uuid.UUID) (*domain.HouseholdCode, error)
+	RevokeHouseholdCode(ctx context.Context, householdID uuid.UUID) error
+	FindHouseholdByActiveCode(ctx context.Context, code string) (uuid.UUID, error)
+	LeaveHousehold(ctx context.Context, userID uuid.UUID) (*domain.Household, error)
+	RemoveHouseholdMember(ctx context.Context, householdID, targetUserID uuid.UUID) error
+	DissolveHousehold(ctx context.Context, householdID uuid.UUID) error
 }
 
 // SessionRepository owns stateful auth sessions.

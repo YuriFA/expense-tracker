@@ -2,8 +2,9 @@
 package keys
 
 const (
-	CurrentUserKey      = "currentUser"
-	CurrentSessionIDKey = "currentSessionID"
-	CurrentHouseholdKey = "currentHouseholdID"
-	RequestIDHeader     = "X-Request-ID"
+	CurrentUserKey          = "currentUser"
+	CurrentSessionIDKey     = "currentSessionID"
+	CurrentHouseholdKey     = "currentHouseholdID"
+	CurrentHouseholdRoleKey = "currentHouseholdRole"
+	RequestIDHeader         = "X-Request-ID"
 )

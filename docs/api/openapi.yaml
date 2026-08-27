@@ -457,10 +457,9 @@ paths:
       operationId: getHousehold
       summary: Хаусхолд текущего пользователя с участниками
       description: |
-        Возвращает household текущего пользователя: id, дату создания и полный
-        список участников (email, отображаемое имя, роль, дата присоединения).
-        В v1 каждый пользователь — единственный owner своего персонального
-        household.
+        Возвращает household текущего пользователя: id, дату создания,
+        отображаемое имя (null = не задано) и полный список участников (email,
+        отображаемое имя, роль, дата присоединения).
       responses:
         "200":
           description: Хаусхолд с участниками.
@@ -470,6 +469,35 @@ paths:
                 $ref: "#/components/schemas/Household"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    patch:
+      tags: [Household]
+      operationId: updateHousehold
+      summary: Переименовать household (owner)
+      description: |
+        Задаёт отображаемое имя household (member-facing подписи приглашений,
+        участников и join UI). Только owner; `name = null` сбрасывает имя
+        (потребители переключаются на производную подпись от email owner).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHouseholdRequest"
+      responses:
+        "200":
+          description: Обновлённый household.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -499,6 +527,475 @@ paths:
           $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household/invitations:
+    post:
+      tags: [Household]
+      operationId: createHouseholdInvitation
+      summary: Пригласить участника по email (owner)
+      description: |
+        Создаёт приглашение с одноразовым accept-токеном (ссылка уходит письмом
+        на приглашённый email, TTL 7 дней). Повторная отправка pending-приглашения
+        на тот же email ОБНОВЛЯЕТ его (свежий токен/срок), а не дублирует.
+        Приглашение уже участвующему email отклоняется. Rate limit: не более
+        20 отправок на household в сутки (429).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHouseholdInvitationRequest"
+      responses:
+        "200":
+          description: Активное приглашение (свежее или обновлённое).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitation"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Email уже участник household.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                alreadyMember:
+                  value:
+                    code: HOUSEHOLD_INVITATION_ALREADY_MEMBER
+                    message: this email is already a member of the household
+        "429":
+          description: Суточный лимит отправок household исчерпан.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rateLimited:
+                  value:
+                    code: HOUSEHOLD_INVITATION_RATE_LIMITED
+                    message: household invitation rate limit exceeded, try again later
+        "500":
+          $ref: "#/components/responses/InternalError"
+    get:
+      tags: [Household]
+      operationId: listHouseholdInvitations
+      summary: Список приглашений household (owner)
+      description: |
+        Все приглашения household (pending/accepted/revoked/expired), свежие
+        первыми. `status` вычисляется на чтении: `expired` = pending с
+        истёкшим `expiresAt`.
+      responses:
+        "200":
+          description: Список приглашений.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household/invitations/{invitationId}:
+    delete:
+      tags: [Household]
+      operationId: revokeHouseholdInvitation
+      summary: Отозвать приглашение (owner)
+      description: |
+        Помечает приглашение отозванным: accept-ссылка перестаёт работать.
+        Идемпотентно — повторный revoke уже отозванного приглашения = 204.
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Приглашение отозвано (или уже было отозвано).
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Приглашение не найдено (в этом household).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notFound:
+                  value:
+                    code: HOUSEHOLD_INVITATION_NOT_FOUND
+                    message: invitation not found
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/invitations/{token}:
+    get:
+      tags: [Household]
+      operationId: previewHouseholdInvitation
+      summary: Превью приглашения по accept-токену
+      description: |
+        Превью для экрана принятия: имя household, число участников, приглашающий.
+        Требует аутентификации, причём email аккаунта ДОЛЖЕН совпадать с email
+        приглашения (чужой аккаунт получает ясную ошибку, приглашение остаётся
+        pending). Неаутентифицированный запрос = 401 → клиент ведёт на
+        login/register с возвратом на ссылку. Истёкшее/отозванное/принятое
+        приглашение отклоняется с теми же кодами, что и accept.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Превью приглашения.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationPreview"
+        "400":
+          description: Приглашение истёкло или отозвано.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                expired:
+                  value:
+                    code: HOUSEHOLD_INVITATION_EXPIRED
+                    message: invitation expired
+                revoked:
+                  value:
+                    code: HOUSEHOLD_INVITATION_REVOKED
+                    message: invitation revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Email аккаунта не совпадает с приглашением.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emailMismatch:
+                  value:
+                    code: HOUSEHOLD_INVITATION_EMAIL_MISMATCH
+                    message: this invitation was sent to a different email address
+        "404":
+          description: Токен неизвестен.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notFound:
+                  value:
+                    code: HOUSEHOLD_INVITATION_NOT_FOUND
+                    message: invitation not found
+        "409":
+          description: Приглашение уже принято.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                alreadyAccepted:
+                  value:
+                    code: HOUSEHOLD_INVITATION_ALREADY_ACCEPTED
+                    message: invitation already accepted
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/invitations/{token}/accept:
+    post:
+      tags: [Household]
+      operationId: acceptHouseholdInvitation
+      summary: Принять приглашение
+      description: |
+        Атомарный join: единственное членство приглашённого переносится в
+        household приглашения (роль member); прежний персональный household
+        остаётся на сервере, доступ к нему теряется (orphan). Идемпотентно:
+        accept приглашения в СВОЙ текущий household = no-op (успех без
+        изменений). Требует совпадения email аккаунта с приглашением.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Household, в который вступил пользователь.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "400":
+          description: Приглашение истёкло или отозвано.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                expired:
+                  value:
+                    code: HOUSEHOLD_INVITATION_EXPIRED
+                    message: invitation expired
+                revoked:
+                  value:
+                    code: HOUSEHOLD_INVITATION_REVOKED
+                    message: invitation revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Email аккаунта не совпадает с приглашением.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emailMismatch:
+                  value:
+                    code: HOUSEHOLD_INVITATION_EMAIL_MISMATCH
+                    message: this invitation was sent to a different email address
+        "404":
+          description: Токен неизвестен.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notFound:
+                  value:
+                    code: HOUSEHOLD_INVITATION_NOT_FOUND
+                    message: invitation not found
+        "409":
+          description: Приглашение уже принято другим членством.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                alreadyAccepted:
+                  value:
+                    code: HOUSEHOLD_INVITATION_ALREADY_ACCEPTED
+                    message: invitation already accepted
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household/code:
+    post:
+      tags: [Household]
+      operationId: generateHouseholdCode
+      summary: Выдать/обновить код входа (owner)
+      description: |
+        Многоразовый код входа для household (фолбэк «семейного» входа без
+        привязки к личности). Один активный код на household: повторный вызов
+        ротирует (заменяет) прежний. 8 символов из алфавита без неоднозначных
+        (без 0/O/1/I). Любой аутентифицированный пользователь может вступить,
+        предъявив активный код (`POST /api/household/join`).
+      responses:
+        "200":
+          description: Активный код household.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdCode"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Household]
+      operationId: revokeHouseholdCode
+      summary: Отозвать код входа (owner)
+      description: |
+        Деактивирует код household. Идемпотентно: отзыв при отсутствии
+        активного кода = 204.
+      responses:
+        "204":
+          description: Код отозван (или активного кода не было).
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household/join:
+    post:
+      tags: [Household]
+      operationId: joinHouseholdByCode
+      summary: Вступить в household по коду
+      description: |
+        Тот же атомарный join, что и accept приглашения: единственное членство
+        переносится в household кода (роль member), прежний персональный
+        household orphan-ится. Идемпотентно: код своего текущего household =
+        no-op (успех без изменений). Отозванный/ротированный код отклоняется.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinHouseholdRequest"
+      responses:
+        "200":
+          description: Household, в который вступил пользователь.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "400":
+          description: Код неизвестен, отозван или заменён ротацией.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalidCode:
+                  value:
+                    code: HOUSEHOLD_CODE_INVALID
+                    message: unknown or revoked household code
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household/leave:
+    post:
+      tags: [Household]
+      operationId: leaveHousehold
+      summary: Покинуть household
+      description: |
+        Удаляет членство; доступ к данным household теряется, сами данные
+        остаются при household. Владелец не может уйти, пока в household есть
+        другие участники (remove/dissolve вместо этого); владелец-одиночка
+        может уйти. Покинувший (или удалённый) пользователь сразу получает
+        свежий пустой персональный household — он и возвращается в ответе.
+      responses:
+        "200":
+          description: Новый персональный household пользователя.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Owner не может покинуть household с участниками.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                ownerWithMembers:
+                  value:
+                    code: HOUSEHOLD_OWNER_WITH_MEMBERS
+                    message: the owner cannot leave a household with other members; remove them or dissolve the household
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household/members/{userId}:
+    delete:
+      tags: [Household]
+      operationId: removeHouseholdMember
+      summary: Исключить участника (owner)
+      description: |
+        Удаляет членство участника (не owner). Данные household не меняются;
+        исключённый получает свежий пустой персональный household и теряет
+        доступ к этому.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Участник исключён.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Участник не найден в household.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notFound:
+                  value:
+                    code: HOUSEHOLD_MEMBER_NOT_FOUND
+                    message: member not found
+        "409":
+          description: Попытка исключить owner.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                memberIsOwner:
+                  value:
+                    code: HOUSEHOLD_MEMBER_IS_OWNER
+                    message: the owner cannot be removed; dissolve the household instead
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household/dissolve:
+    post:
+      tags: [Household]
+      operationId: dissolveHousehold
+      summary: Расформировать household (owner, явное подтверждение)
+      description: |
+        Деструктивное действие: household удаляется вместе со ВСЕМИ данными
+        (счета, категории, транзакции, должники, долговые операции, плановые
+        платежи, change_log, applied_operations, приглашения, код). Требует
+        явного подтверждения (`confirm: true`); каждому участнику (включая
+        owner) выдаётся свежий пустой персональный household.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DissolveHouseholdRequest"
+      responses:
+        "204":
+          description: Household расформирован.
+        "400":
+          description: Отсутствует явное подтверждение.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                confirmRequired:
+                  value:
+                    code: HOUSEHOLD_DISSOLVE_CONFIRM_REQUIRED
+                    message: dissolution requires an explicit confirm
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -1616,6 +2113,17 @@ components:
           example:
             code: VALIDATION_FAILED
             message: validation failed
+    Forbidden:
+      description: |
+        Действие не разрешено роли вызывающего (например, owner-only
+        операции household вызывает member) или чужой ресурс.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: FORBIDDEN
+            message: forbidden
     TransactionNotFound:
       description: Транзакция не найдена (или чужая).
       content:
@@ -1831,6 +2339,13 @@ components:
         createdAt:
           type: string
           format: date-time
+        name:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: |
+            Отображаемое имя household (editor: owner). null — не задано;
+            потребители выводят производную подпись от аккаунта owner.
         members:
           type: array
           items:
@@ -1857,6 +2372,126 @@ components:
           type: string
           format: date-time
       required: [userId, email, role, joinedAt]
+
+    UpdateHouseholdRequest:
+      type: object
+      description: |
+        `name = null` сбрасывает имя; непустая строка — задаёт (1-100 символов).
+      properties:
+        name:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 100
+      required: [name]
+
+    CreateHouseholdInvitationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email приглашаемого (принять сможет только этот аккаунт).
+
+    HouseholdInvitation:
+      type: object
+      description: |
+        Приглашение household для owner-листинга. Статус вычисляется на
+        чтении; повторная отправка тому же email обновляет токен/срок.
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [pending, accepted, revoked, expired]
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, email, status, createdAt, expiresAt]
+
+    HouseholdInvitationList:
+      type: object
+      required: [invitations]
+      properties:
+        invitations:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdInvitation"
+
+    HouseholdInvitationPreview:
+      type: object
+      description: |
+        Превью приглашения для экрана принятия (имя household, состав,
+        приглашающий). Доступно только аккаунту с совпадающим email.
+      properties:
+        householdName:
+          type: string
+          nullable: true
+          description: Имя household; null — не задано (вывести производную подпись).
+        membersCount:
+          type: integer
+          minimum: 1
+        inviterEmail:
+          type: string
+          format: email
+        inviterDisplayName:
+          type: string
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+      required: [householdName, membersCount, inviterEmail, expiresAt]
+
+    HouseholdCode:
+      type: object
+      description: |
+        Активный код входа household. Многоразовый, без привязки к личности;
+        ротация заменяет прежний код, отзыв деактивирует.
+      properties:
+        code:
+          type: string
+          minLength: 8
+          maxLength: 8
+          description: 8 символов алфавита без неоднозначных (без 0/O/1/I).
+        createdAt:
+          type: string
+          format: date-time
+      required: [code, createdAt]
+
+    JoinHouseholdRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 8
+          maxLength: 8
+          description: Активный код household.
+
+    DissolveHouseholdRequest:
+      type: object
+      description: Явное подтверждение деструктивного расформирования.
+      required: [confirm]
+      properties:
+        confirm:
+          type: boolean
+          description: Должно быть true — иначе 400.
 
     Transaction:
       type: object
@@ -2842,6 +3477,15 @@ components:
           type: integer
           format: int
           description: Серверная версия записи после изменения.
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Автор изменения (user id участника, применившего операцию;
+            проставляется сервером по сессии). null/отсутствует для записей
+            до введения авторства. Push-направление это поле игнорирует:
+            сервер всегда штампует отправителя.
         data:
           oneOf:
             - $ref: "#/components/schemas/AccountSyncData"

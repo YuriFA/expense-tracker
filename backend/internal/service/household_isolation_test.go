@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/yurifa/expense-tracker-api/internal/domain"
+	"github.com/yurifa/expense-tracker-api/internal/logger"
 	"github.com/yurifa/expense-tracker-api/internal/service"
 	"github.com/yurifa/expense-tracker-api/internal/service/fakes"
 )
@@ -50,7 +51,7 @@ func newIsolationFixture(t *testing.T) *isolationFixture {
 		txSvc:        service.NewTransactionService(store, store, store),
 		debtorSvc:    service.NewDebtorService(store),
 		debtOpSvc:    service.NewDebtOperationService(store, store),
-		householdSvc: service.NewHouseholdService(store),
+		householdSvc: service.NewHouseholdService(store, store, service.NewLogMailer(logger.NewDiscardLogger()), logger.NewDiscardLogger(), service.HouseholdJoinConfig{}),
 	}
 	f.owner = seedFakeUser(t, store)
 	f.ownerHH = householdOf(t, store, f.owner.ID)
@@ -240,7 +241,7 @@ func TestAuthService_UpdateDisplayName(t *testing.T) {
 	assert.Equal(t, "Юра", *updated.DisplayName)
 
 	// The member listing reflects the current value.
-	householdSvc := service.NewHouseholdService(store)
+	householdSvc := service.NewHouseholdService(store, store, service.NewLogMailer(logger.NewDiscardLogger()), logger.NewDiscardLogger(), service.HouseholdJoinConfig{})
 	householdID := householdOf(t, store, user.ID)
 	h, err := householdSvc.Get(ctx, householdID)
 	require.NoError(t, err)

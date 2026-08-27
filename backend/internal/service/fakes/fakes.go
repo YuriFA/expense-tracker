@@ -27,6 +27,10 @@ import (
 type Store struct {
 	mu sync.Mutex
 
+	// now is the store's clock (invitation windows in the join-lifecycle
+	// fake); tests may replace it via SetClock.
+	now func() time.Time
+
 	users        map[uuid.UUID]*domain.User
 	emails       map[string]uuid.UUID // email -> user id
 	sessions     map[string]*domain.Session
@@ -41,6 +45,11 @@ type Store struct {
 	// exactly one household (v1), every record belongs to a household.
 	households  map[uuid.UUID]*domain.Household  // id -> household shell
 	memberships map[uuid.UUID]*domain.Membership // userID -> membership
+
+	// Join lifecycle (household-join change): invitations by id and the
+	// household's single code row.
+	invitations []*domain.HouseholdInvitation
+	codes       map[uuid.UUID]*domain.HouseholdCode // householdID -> code
 
 	// catUnique enforces UNIQUE(household_id, name) among LIVE categories.
 	catUnique map[string]struct{} // "householdID|name"
@@ -88,9 +97,13 @@ type resetToken struct {
 	createdAt time.Time
 }
 
+// SetClock replaces the store's clock (default: time.Now).
+func (s *Store) SetClock(now func() time.Time) { s.now = now }
+
 // New returns an empty Store.
 func New() *Store {
 	return &Store{
+		now: func() time.Time { return time.Now().UTC() },
 		users:        make(map[uuid.UUID]*domain.User),
 		emails:       make(map[string]uuid.UUID),
 		sessions:     make(map[string]*domain.Session),
@@ -102,6 +115,7 @@ func New() *Store {
 		plans:        make(map[uuid.UUID]*domain.PlannedPayment),
 		households:   make(map[uuid.UUID]*domain.Household),
 		memberships:  make(map[uuid.UUID]*domain.Membership),
+		codes:        make(map[uuid.UUID]*domain.HouseholdCode),
 		catUnique:    make(map[string]struct{}),
 		debtorUnique: make(map[string]struct{}),
 		appliedOps:   make(map[string]*domain.AppliedOperation),
@@ -232,34 +246,7 @@ func (s *Store) GetMembershipByUser(_ context.Context, userID uuid.UUID) (*domai
 func (s *Store) GetHouseholdWithMembers(_ context.Context, householdID uuid.UUID) (*domain.Household, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	h, ok := s.households[householdID]
-	if !ok {
-		return nil, domain.ErrHouseholdNotFound
-	}
-	var members []domain.HouseholdMember
-	for _, m := range s.memberships {
-		if m.HouseholdID != householdID {
-			continue
-		}
-		u := s.users[m.UserID]
-		if u == nil {
-			continue
-		}
-		members = append(members, domain.HouseholdMember{
-			UserID:      m.UserID,
-			Email:       u.Email,
-			DisplayName: u.DisplayName,
-			Role:        m.Role,
-			JoinedAt:    m.JoinedAt,
-		})
-	}
-	sort.Slice(members, func(i, j int) bool {
-		if !members[i].JoinedAt.Equal(members[j].JoinedAt) {
-			return members[i].JoinedAt.Before(members[j].JoinedAt)
-		}
-		return uuidLess(members[i].UserID, members[j].UserID)
-	})
-	return &domain.Household{ID: h.ID, CreatedAt: h.CreatedAt, Members: members}, nil
+	return s.householdWithMembersLocked(householdID)
 }
 
 // AddMembership inserts an additional membership row (the shape the change-2
@@ -1317,7 +1304,7 @@ func (s *Store) PullChanges(
 			break
 		}
 		change := domain.SyncChange{
-			Seq: e.seq, Entity: e.entity, ID: e.id, Action: e.action, Version: e.version,
+			Seq: e.seq, UserID: e.userID, Entity: e.entity, ID: e.id, Action: e.action, Version: e.version,
 		}
 		if e.action == domain.SyncChangeUpsert {
 			change.Data = s.currentState(householdID, e.entity, e.id)

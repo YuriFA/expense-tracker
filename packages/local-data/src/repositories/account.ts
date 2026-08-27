@@ -24,6 +24,7 @@ import {
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '../types'
 import { enqueueOperation, hasSentOperations, removeOperationsFor } from '../outbox'
+import { getOwnerUserId } from '../sync/sync-meta'
 import { accounts, plannedPayments, transactions, type AccountRow } from '../schema'
 import { generateId } from '../id-factory'
 
@@ -149,6 +150,7 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
 
         const row: AccountRow = {
           id,
+          userId: getOwnerUserId(db),
           name,
           currency: payload.currency,
           openingBalance: payload.openingBalance,

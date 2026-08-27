@@ -24,6 +24,7 @@ import {
 } from '@expense-tracker/api'
 import type { LocalDatabase } from '../types'
 import { enqueueOperation, hasSentOperations, removeOperationsFor } from '../outbox'
+import { getOwnerUserId } from '../sync/sync-meta'
 import { accounts, categories, transactions, type TransactionRow } from '../schema'
 import { generateId } from '../id-factory'
 
@@ -240,6 +241,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
           payload.type === 'transfer'
             ? {
                 id,
+                userId: getOwnerUserId(db),
                 type: 'transfer',
                 amount: payload.amount,
                 description: payload.description ?? '',
@@ -255,6 +257,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
               }
             : {
                 id,
+                userId: getOwnerUserId(db),
                 type: payload.type,
                 amount: payload.amount,
                 description: payload.description ?? '',

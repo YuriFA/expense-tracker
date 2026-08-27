@@ -14,11 +14,52 @@ export interface HouseholdMember {
 export interface Household {
   id: string
   createdAt: string
+  /** Owner-set display name; null = never set (consumers derive a label). */
+  name: string | null
   members: HouseholdMember[]
+}
+
+/** Invitation lifecycle state as reported by the owner-side listing. */
+export type HouseholdInvitationStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
+
+export interface HouseholdInvitation {
+  id: string
+  email: string
+  status: HouseholdInvitationStatus
+  createdAt: string
+  expiresAt: string
+  acceptedAt: string | null
+  revokedAt: string | null
+}
+
+/** Acceptor-side preview of an invitation (matching-email accounts only). */
+export interface HouseholdInvitationPreview {
+  householdName: string | null
+  membersCount: number
+  inviterEmail: string
+  inviterDisplayName: string | null
+  expiresAt: string
+}
+
+export interface HouseholdCode {
+  code: string
+  createdAt: string
 }
 
 const isHouseholdRole = (value: unknown): value is HouseholdRole =>
   value === 'owner' || value === 'member'
+
+const isInvitationStatus = (value: unknown): value is HouseholdInvitationStatus =>
+  value === 'pending' ||
+  value === 'accepted' ||
+  value === 'revoked' ||
+  value === 'expired'
+
+const asNullableString = (value: unknown): string | null =>
+  value === null ? null : asString(value)
+
+const asNullableDateTime = (value: unknown): string | null =>
+  value === null ? null : asDateTimeString(value)
 
 export const normalizeHouseholdMember = (value: unknown): HouseholdMember | null => {
   if (!isRecord(value)) {
@@ -27,7 +68,7 @@ export const normalizeHouseholdMember = (value: unknown): HouseholdMember | null
 
   const userId = asNonEmptyString(value.userId)
   const email = asNonEmptyString(value.email)
-  const displayName = value.displayName === null ? null : asString(value.displayName)
+  const displayName = asNullableString(value.displayName)
   const role = isHouseholdRole(value.role) ? value.role : null
   const joinedAt = asDateTimeString(value.joinedAt)
 
@@ -45,7 +86,8 @@ export const normalizeHousehold = (value: unknown): Household | null => {
 
   const id = asNonEmptyString(value.id)
   const createdAt = asDateTimeString(value.createdAt)
-  if (!id || !createdAt) {
+  const name = asNullableString(value.name)
+  if (!id || !createdAt || name === null) {
     return null
   }
 
@@ -58,5 +100,75 @@ export const normalizeHousehold = (value: unknown): Household | null => {
     members.push(member)
   }
 
-  return { id, createdAt, members }
+  return { id, createdAt, name, members }
+}
+
+export const normalizeHouseholdInvitation = (value: unknown): HouseholdInvitation | null => {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const id = asNonEmptyString(value.id)
+  const email = asNonEmptyString(value.email)
+  const status = isInvitationStatus(value.status) ? value.status : null
+  const createdAt = asDateTimeString(value.createdAt)
+  const expiresAt = asDateTimeString(value.expiresAt)
+  const acceptedAt = asNullableDateTime(value.acceptedAt)
+  const revokedAt = asNullableDateTime(value.revokedAt)
+  if (
+    !id ||
+    !email ||
+    !status ||
+    !createdAt ||
+    !expiresAt ||
+    acceptedAt === null ||
+    revokedAt === null
+  ) {
+    return null
+  }
+
+  return { id, email, status, createdAt, expiresAt, acceptedAt, revokedAt }
+}
+
+export const normalizeHouseholdInvitationPreview = (
+  value: unknown,
+): HouseholdInvitationPreview | null => {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const householdName = asNullableString(value.householdName)
+  const inviterEmail = asNonEmptyString(value.inviterEmail)
+  const inviterDisplayName = asNullableString(value.inviterDisplayName)
+  const expiresAt = asDateTimeString(value.expiresAt)
+  const membersCount =
+    typeof value.membersCount === 'number' && Number.isSafeInteger(value.membersCount)
+      ? value.membersCount
+      : null
+  if (
+    householdName === null ||
+    !inviterEmail ||
+    inviterDisplayName === null ||
+    !expiresAt ||
+    membersCount === null ||
+    membersCount < 1
+  ) {
+    return null
+  }
+
+  return { householdName, membersCount, inviterEmail, inviterDisplayName, expiresAt }
+}
+
+export const normalizeHouseholdCode = (value: unknown): HouseholdCode | null => {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const code = asNonEmptyString(value.code)
+  const createdAt = asDateTimeString(value.createdAt)
+  if (!code || !createdAt) {
+    return null
+  }
+
+  return { code, createdAt }
 }

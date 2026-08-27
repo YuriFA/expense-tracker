@@ -51,6 +51,20 @@ const (
 	ErrCodePlannedPaymentVersionConflict  = "PLANNED_PAYMENT_VERSION_CONFLICT"
 	ErrCodePlannedPaymentAccountNotFound  = "PLANNED_PAYMENT_ACCOUNT_NOT_FOUND"
 	ErrCodePlannedPaymentCategoryNotFound = "PLANNED_PAYMENT_CATEGORY_NOT_FOUND"
+
+	// Household join lifecycle (household-join change).
+	ErrCodeHouseholdInvitationNotFound        = "HOUSEHOLD_INVITATION_NOT_FOUND"
+	ErrCodeHouseholdInvitationEmailMismatch   = "HOUSEHOLD_INVITATION_EMAIL_MISMATCH"
+	ErrCodeHouseholdInvitationExpired         = "HOUSEHOLD_INVITATION_EXPIRED"
+	ErrCodeHouseholdInvitationRevoked         = "HOUSEHOLD_INVITATION_REVOKED"
+	ErrCodeHouseholdInvitationAlreadyAccepted = "HOUSEHOLD_INVITATION_ALREADY_ACCEPTED"
+	ErrCodeHouseholdInvitationAlreadyMember   = "HOUSEHOLD_INVITATION_ALREADY_MEMBER"
+	ErrCodeHouseholdInvitationRateLimited     = "HOUSEHOLD_INVITATION_RATE_LIMITED"
+	ErrCodeHouseholdCodeInvalid               = "HOUSEHOLD_CODE_INVALID"
+	ErrCodeHouseholdOwnerWithMembers          = "HOUSEHOLD_OWNER_WITH_MEMBERS"
+	ErrCodeHouseholdMemberNotFound            = "HOUSEHOLD_MEMBER_NOT_FOUND"
+	ErrCodeHouseholdMemberIsOwner             = "HOUSEHOLD_MEMBER_IS_OWNER"
+	ErrCodeHouseholdDissolveConfirmRequired   = "HOUSEHOLD_DISSOLVE_CONFIRM_REQUIRED"
 )
 
 type ErrorResponse struct {
