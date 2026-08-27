@@ -10,13 +10,15 @@ balance the system computes from the account's transactions.
 
 ### Requirement: Account ownership and scoping
 
-Every account SHALL belong to exactly one user. Reading, updating, or
-deleting another user's account SHALL behave as if the account does not
-exist (not-found), never revealing its data.
+Every account SHALL belong to exactly one household. Reading, updating, or
+deleting an account of a household the requester does not belong to SHALL
+behave as if the account does not exist (not-found), never revealing its
+data.
 
 #### Scenario: Accessing another user's account
 
-- **WHEN** a user requests an account id that belongs to a different user
+- **WHEN** a user requests an account id that belongs to a household they
+  are not a member of
 - **THEN** the response is not-found, with no account data revealed
 
 ### Requirement: Account creation
@@ -137,6 +139,7 @@ so synchronized devices learn of the deletion.
 
 - **WHEN** the user deletes an account with no referencing transactions or live planned payments
 - **THEN** the account no longer appears in listings, the balances summary, or net worth, and other devices learn of the deletion via the change feed
+
 ### Requirement: Balances summary and net worth
 
 The system SHALL provide a summary listing each account with its

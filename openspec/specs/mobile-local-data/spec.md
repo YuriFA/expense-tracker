@@ -35,7 +35,7 @@ depend on connectivity or on any backend response.
 ### Requirement: Domain rules enforced locally
 
 Local mutations SHALL enforce the same domain rules and error semantics
-as the backend: per-user unique category names, deletion guards for
+as the backend: household-unique category names, deletion guards for
 accounts and categories referenced by transactions, category type
 matching on cashflow transactions, distinct source and destination
 accounts for transfers, and valid references. Violations SHALL be

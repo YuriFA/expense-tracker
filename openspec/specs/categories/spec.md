@@ -10,19 +10,22 @@ against deletion while transactions reference them.
 
 ### Requirement: Category ownership and scoping
 
-Every category SHALL belong to exactly one user. Reading, updating, or
-deleting another user's category SHALL behave as if it does not exist
-(not-found). Category names are unique per user; a duplicate name for
-the same user SHALL be rejected with an already-exists error.
+Every category SHALL belong to exactly one household. Reading, updating,
+or deleting a category of a household the requester does not belong to
+SHALL behave as if it does not exist (not-found). Category names are
+unique per household among non-deleted categories; a duplicate name within
+the same household SHALL be rejected with an already-exists error.
 
 #### Scenario: Duplicate name for the same user
 
-- **WHEN** the user creates a category named "Food" and already has one named "Food"
+- **WHEN** any member creates a category named "Food" and the household
+  already has a non-deleted category named "Food"
 - **THEN** the request is rejected with an already-exists error
 
 #### Scenario: Same name for different users
 
-- **WHEN** two different users each create a category named "Food"
+- **WHEN** two users from different households each create a category
+  named "Food"
 - **THEN** both categories are created independently
 
 ### Requirement: Category shape
@@ -133,6 +136,7 @@ synchronized devices learn of the deletion.
 
 - **WHEN** the user deletes a category with no referencing transactions or live planned payments
 - **THEN** the category no longer appears in listings, and other devices learn of the deletion via the change feed
+
 ### Requirement: Listing
 
 Listing categories SHALL return the requesting user's non-deleted
