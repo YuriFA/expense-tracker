@@ -93,3 +93,22 @@ to network when no new worker registers).
 ## Open Questions
 
 (none — Periodic Background Sync and push are explicitly deferred.)
+
+## Deviations during implementation
+
+- **Separate PWA e2e suite** (`e2e/pwa/pwa.spec.ts` + `playwright.pwa.config.ts`,
+  `pnpm test:e2e:pwa` which builds and previews): a service worker only
+  exists in production builds, so the default dev-server suite ignores
+  `e2e/pwa/**`.
+- **Locale pinning in tests**: existing e2e/unit tests assert English copy
+  and pin EN via localStorage/vitest setup; the PWA suite asserts the RU
+  default. In `sync-backend.spec.ts` the pin sits inside each test body —
+  a `beforeEach` raced the body-level `test.skip()` teardown on Firefox.
+- **Lint gate deviation**: the tasks named a root `pnpm lint` that does not
+  exist; the gate ran as `pnpm -C apps/web lint`.
+- **`packages/i18n` gained test infrastructure** (vitest + `test` script)
+  for the new key-parity test — the package previously had no tests.
+- **Locale-watcher composition moved out of `main.ts`** into
+  `setup-i18n-locale-watcher.ts` (behavior-preserving, now unit-tested).
+- A non-standard `notes.md` (manual install checklist for Chromium + iOS
+  Safari) accompanies the archived change.
