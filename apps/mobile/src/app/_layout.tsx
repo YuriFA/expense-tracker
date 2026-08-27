@@ -33,10 +33,15 @@ import {
 } from '@/entities/planned-payment'
 import { registerBackgroundSync } from '@/shared/lib/sync/background-sync'
 import { createLocalSyncTransport } from '@/shared/lib/sync/transport'
-import { configureIdFactory, createSyncEngine, type SyncEngineState } from '@expense-tracker/local-data'
+import {
+  configureIdFactory,
+  createSyncEngine,
+  type SyncEngineState,
+} from '@expense-tracker/local-data'
 import { randomUUID } from 'expo-crypto'
 import { SyncContext, type SyncController } from '@/shared/lib/sync/sync-context'
 import { ConflictCenter } from '@/features/sync-conflicts'
+import { HouseholdRebaseGuard } from '@/features/household-join'
 
 // Hermes has no WebCrypto: bind the shared id factory to expo-crypto before
 // any database work (ids are minted inside @expense-tracker/local-data).
@@ -121,6 +126,9 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
                   <AuthProvider>
                     <SyncProvider>
                       <ConflictCenter />
+                      {/* Second-device household check (household-join D7):
+                          renders nothing, may prompt the rebase choice. */}
+                      <HouseholdRebaseGuard />
                       {children}
                     </SyncProvider>
                   </AuthProvider>
@@ -276,6 +284,8 @@ export default function RootLayout() {
             <Stack.Screen name="debts" />
             {/* Analytics tab detail screens (expense/income breakdown). */}
             <Stack.Screen name="analytics-detail" />
+            {/* Invitation accept deep link (household-join design D6). */}
+            <Stack.Screen name="invite/[token]" />
           </Stack>
         </AppShellProviders>
       </ThemeProvider>

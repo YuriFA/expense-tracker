@@ -53,6 +53,16 @@ interface LocalDbMetaApi {
   wipeLocalData(): Promise<void>
 }
 
+// Household-change bookkeeping (household-join design D4/D7): the rebase the
+// carry-data choice runs before the engine operates as the new household, and
+// the last-household marker a stale second device compares on startup.
+interface LocalDbHouseholdApi {
+  rebase(householdId: string): Promise<void>
+  /** The household this database last synced against; null = untracked. */
+  getLastHousehold(): Promise<string | null>
+  setLastHousehold(householdId: string): Promise<void>
+}
+
 export interface LocalDbApi {
   accounts: AccountRepository
   categories: CategoryRepository
@@ -62,4 +72,5 @@ export interface LocalDbApi {
   plannedPayments: LocalPlannedPaymentRepository
   sync: LocalDbSyncApi
   meta: LocalDbMetaApi
+  household: LocalDbHouseholdApi
 }

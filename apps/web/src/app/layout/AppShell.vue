@@ -5,6 +5,7 @@ import AppNav from './AppNav.vue'
 import BootGate from './BootGate.vue'
 import { OwnershipGateDialog, useAuthStore } from '@/entities/session'
 import { ConflictCenter } from '@/features/sync-conflicts'
+import { HouseholdChoiceDialog, useHouseholdJoinStore } from '@/features/household-join'
 import { provideSyncController } from '@/shared/lib/local-db'
 
 const route = useRoute()
@@ -14,9 +15,15 @@ const showNav = computed(() => !route.meta.public)
 
 // The sync controller is composed here (the FSD composition root): it needs
 // the auth state (entities) and provides itself down to the badge/conflict
-// center (widgets/features) via shared/lib/sync.
+// center (widgets/features) via shared/lib/sync. The household gate rides the
+// same injection - shared/lib must not import entities/features, so AppShell
+// closes over the join store (household-join design D7).
 const auth = useAuthStore()
-provideSyncController({ isAuthenticated: () => auth.isAuthenticated })
+const householdJoin = useHouseholdJoinStore()
+provideSyncController({
+  isAuthenticated: () => auth.isAuthenticated,
+  ensureHouseholdCurrent: () => householdJoin.ensureCurrentHousehold(),
+})
 </script>
 
 <template>
@@ -29,8 +36,10 @@ provideSyncController({ isAuthenticated: () => auth.isAuthenticated })
       </main>
 
       <!-- Global hosts: the ownership gate can trigger from any auth flow;
+           the household choice from any join/leave/startup-mismatch flow;
            the conflict center opens from the sync badge on any screen. -->
       <OwnershipGateDialog />
+      <HouseholdChoiceDialog />
       <ConflictCenter />
     </div>
   </BootGate>

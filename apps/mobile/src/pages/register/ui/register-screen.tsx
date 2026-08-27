@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Button } from '@/shared/ui/button'
 import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
@@ -14,6 +14,9 @@ import { MIN_PASSWORD_LENGTH, registerSchema, type RegisterFormValues } from '..
 
 export function RegisterScreen() {
   const { register } = useAuth()
+  // Optional return path carried over from login (e.g. an invitation deep
+  // link): wins over the default pop to Settings.
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>()
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { email: '', password: '', confirmPassword: '' },
@@ -23,8 +26,9 @@ export function RegisterScreen() {
     try {
       const result = await register(email.trim(), password)
       // register is pushed on top of login, so a plain back() would land on
-      // the login form - navigate pops the whole auth flow back to Settings.
-      if (result.ok) router.navigate('/settings')
+      // the login form - navigate pops the whole auth flow back to Settings
+      // (or to the carried return path, e.g. an invite link).
+      if (result.ok) router.navigate(redirect ?? '/settings')
       // A cancelled ownership takeover stays on this screen by design.
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })

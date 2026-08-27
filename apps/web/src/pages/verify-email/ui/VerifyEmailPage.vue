@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
@@ -10,6 +10,7 @@ import { notification } from '@/shared/services/notification'
 import { AlreadyExistsError, RateLimitedError } from '@/shared/lib/data'
 
 const { t } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -44,7 +45,10 @@ async function verify() {
     await sessionApi.verifyEmail(code.value)
     await auth.refreshUser()
     notification.success(t('auth.verifySuccess'))
-    await router.push('/')
+    // A carried `redirect` (e.g. back to an invitation link from the
+    // register entry) is honored now that verification is done.
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    await router.push(redirect)
   } catch (err) {
     error.value = errorMessage(err)
   } finally {

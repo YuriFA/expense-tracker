@@ -14,7 +14,11 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useAuthStore, sessionApi } from '@/entities/session'
+import { householdDisplayName, useHousehold } from '@/entities/household'
+import { JoinHouseholdDialog } from '../features/join-household'
+import { LeaveHouseholdButton } from '../features/leave-household'
 import { notification } from '@/shared/services/notification'
 import type { Session } from '@/entities/session'
 
@@ -60,6 +64,16 @@ const locales = computed(() => {
 const sessions = ref<Session[]>([])
 const sessionsLoading = ref(false)
 const revoking = ref(false)
+
+// --- Household (household-join) ---------------------------------------------
+// Control-plane read over the API (not synced data): display name (owner
+// email prefix fallback) + members count, with the join/leave entries.
+const householdQuery = useHousehold({ enabled: () => auth.isAuthenticated })
+const householdLabel = computed(() => {
+  const household = householdQuery.data.value
+  return household ? householdDisplayName(household) : null
+})
+const householdMembersCount = computed(() => householdQuery.data.value?.members.length ?? 0)
 
 async function loadSessions() {
   sessionsLoading.value = true
@@ -138,6 +152,22 @@ onMounted(() => {
           <Button as-child variant="outline">
             <RouterLink :to="{ name: 'verify-email' }">{{ t('auth.verifyEmailTitle') }}</RouterLink>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card data-testid="settings-household-card">
+        <CardHeader>
+          <CardTitle>{{ t('household.title') }}</CardTitle>
+        </CardHeader>
+        <CardContent class="flex flex-col gap-3">
+          <Skeleton v-if="householdQuery.isLoading.value" class="h-5 w-40" />
+          <p v-else-if="householdLabel" class="text-sm" data-testid="settings-household-name">
+            {{ householdLabel }} · {{ t('household.membersCount', householdMembersCount) }}
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <JoinHouseholdDialog />
+            <LeaveHouseholdButton />
+          </div>
         </CardContent>
       </Card>
 

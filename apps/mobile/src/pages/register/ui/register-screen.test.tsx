@@ -15,7 +15,13 @@ import { RegisterScreen } from './register-screen'
 // when the component's import of expo-router runs the factory.
 jest.mock('expo-router', () => {
   const mockRouter = { back: jest.fn(), navigate: jest.fn() }
-  return { router: mockRouter, useRouter: () => mockRouter }
+  let mockParams: { redirect?: string } = {}
+  return {
+    router: mockRouter,
+    useRouter: () => mockRouter,
+    useLocalSearchParams: () => mockParams,
+    __setParams: (params: { redirect?: string }) => void (mockParams = params),
+  }
 })
 
 jest.mock('@/entities/session', () => {
@@ -24,7 +30,10 @@ jest.mock('@/entities/session', () => {
 })
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { router } = require('expo-router') as { router: { back: jest.Mock; navigate: jest.Mock } }
+const { router, __setParams } = require('expo-router') as {
+  router: { back: jest.Mock; navigate: jest.Mock }
+  __setParams: (params: { redirect?: string }) => void
+}
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { registerMock } = require('@/entities/session') as {
@@ -108,6 +117,17 @@ describe('RegisterScreen', () => {
     // Success must leave the auth flow entirely (login sits beneath in the
     // stack), not just pop one screen.
     await waitFor(() => expect(router.navigate).toHaveBeenCalledWith('/settings'))
+  })
+
+  it('navigates to the carried redirect instead of settings after success', async () => {
+    registerMock.mockResolvedValue({ ok: true })
+    __setParams({ redirect: '/invite/abc123' })
+    renderRegister()
+
+    fillValid()
+    fireEvent.press(screen.getByTestId('register-submit-button'))
+
+    await waitFor(() => expect(router.navigate).toHaveBeenCalledWith('/invite/abc123'))
   })
 
   it('surfaces a repository error at the root slot and keeps the values', async () => {

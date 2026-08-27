@@ -1,9 +1,10 @@
 /**
  * Architecture rules for apps/mobile/src — invariant #15 (FSD layer
  * direction: strictly downward, six layers, no exceptions) and #16
- * (direct apiClient use limited to session API + sync transport).
+ * (direct apiClient use limited to the session/household control-plane APIs
+ * and the sync transport).
  *
- * No registered deviations: the A11 set was fully resolved 2026-08-20
+ * No registered deviations: the A1 set was fully resolved 2026-08-20
  * (sync provider composes in src/app/_layout.tsx with the context in
  * shared/lib/sync/sync-context.tsx; the cashflow sheets delegate
  * new-transaction actions to page-level composition; entity slices export
@@ -13,8 +14,22 @@
  * Run from the repo root: `pnpm arch:check` (see root package.json).
  */
 
-const FEATURE_SLICES = ['analytics', 'cashflow-overview', 'create-transaction', 'sync-conflicts']
-const ENTITY_SLICES = ['account', 'category', 'transaction', 'debt', 'session', 'planned-payment']
+const FEATURE_SLICES = [
+  'analytics',
+  'cashflow-overview',
+  'create-transaction',
+  'household-join',
+  'sync-conflicts',
+]
+const ENTITY_SLICES = [
+  'account',
+  'category',
+  'transaction',
+  'debt',
+  'session',
+  'planned-payment',
+  'household',
+]
 
 const crossSliceRules = (layer, slices) =>
   slices.map((slice) => ({
@@ -73,12 +88,13 @@ module.exports = {
     {
       name: 'api-client-seam',
       comment:
-        'invariant #16: direct apiClient use is limited to the session API and the sync transport',
+        'invariant #16: direct apiClient use is limited to the session and household control-plane APIs and the sync transport',
       severity: 'error',
       from: {
         path: '^src/',
         pathNot: [
           '^src/entities/session/api/',
+          '^src/entities/household/api/',
           '^src/shared/lib/sync/',
           '^src/shared/api/',
         ],

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Button } from '@/shared/ui/button'
 import { FormError, FormField, FormLabel } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
@@ -14,6 +14,9 @@ import { loginSchema, type LoginFormValues } from '../model/schema'
 
 export function LoginScreen() {
   const { login } = useAuth()
+  // Optional return path (e.g. an invitation deep link that bounced here
+  // while unauthenticated): wins over the plain back navigation.
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>()
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -22,7 +25,8 @@ export function LoginScreen() {
   const handleSubmit = async ({ email, password }: LoginFormValues) => {
     try {
       const result = await login(email.trim(), password)
-      if (result.ok) router.back()
+      if (result.ok && redirect) router.navigate(redirect)
+      else if (result.ok) router.back()
       // A cancelled ownership takeover stays on this screen by design.
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })
@@ -107,7 +111,12 @@ export function LoginScreen() {
               variant="ghost"
               text="Зарегистрироваться"
               size="sm"
-              onPress={() => router.push('/register')}
+              // Carry the return path through so post-register lands on it.
+              onPress={() =>
+                redirect
+                  ? router.push({ pathname: '/register', params: { redirect } })
+                  : router.push('/register')
+              }
               testID="login-to-register-button"
             />
           </View>

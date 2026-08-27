@@ -14,8 +14,14 @@ import { LoginScreen } from './login-screen'
 // above this module's body, so an outer `const` would still be uninitialized
 // when the component's import of expo-router runs the factory.
 jest.mock('expo-router', () => {
-  const mockRouter = { back: jest.fn(), push: jest.fn() }
-  return { router: mockRouter, useRouter: () => mockRouter }
+  const mockRouter = { back: jest.fn(), push: jest.fn(), navigate: jest.fn() }
+  let mockParams: { redirect?: string } = {}
+  return {
+    router: mockRouter,
+    useRouter: () => mockRouter,
+    useLocalSearchParams: () => mockParams,
+    __setParams: (params: { redirect?: string }) => void (mockParams = params),
+  }
 })
 
 jest.mock('@/entities/session', () => {
@@ -24,7 +30,10 @@ jest.mock('@/entities/session', () => {
 })
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { router } = require('expo-router') as { router: { back: jest.Mock; push: jest.Mock } }
+const { router, __setParams } = require('expo-router') as {
+  router: { back: jest.Mock; push: jest.Mock; navigate: jest.Mock }
+  __setParams: (params: { redirect?: string }) => void
+}
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { loginMock } = require('@/entities/session') as {
@@ -85,6 +94,32 @@ describe('LoginScreen', () => {
 
     await waitFor(() => expect(loginMock).toHaveBeenCalledWith('user@example.com', 'secret'))
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1))
+    expect(router.navigate).not.toHaveBeenCalled()
+  })
+
+  it('navigates to the carried redirect instead of back after success', async () => {
+    loginMock.mockResolvedValue({ ok: true })
+    __setParams({ redirect: '/invite/abc123' })
+    renderLogin()
+
+    fireEvent.changeText(screen.getByTestId('login-email-input'), 'user@example.com')
+    fireEvent.changeText(screen.getByTestId('login-password-input'), 'secret')
+    fireEvent.press(screen.getByTestId('login-submit-button'))
+
+    await waitFor(() => expect(router.navigate).toHaveBeenCalledWith('/invite/abc123'))
+    expect(router.back).not.toHaveBeenCalled()
+  })
+
+  it('carries the redirect through to the register screen', () => {
+    __setParams({ redirect: '/invite/abc123' })
+    renderLogin()
+
+    fireEvent.press(screen.getByTestId('login-to-register-button'))
+
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/register',
+      params: { redirect: '/invite/abc123' },
+    })
   })
 
   it('surfaces a repository error at the root slot and keeps the values', async () => {

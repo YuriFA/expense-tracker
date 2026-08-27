@@ -20,12 +20,15 @@ import {
   createLocalTransactionRepository,
   createSyncEngine,
   getConflictById,
+  getLastHousehold,
   getOwnerUserId,
   listUnresolvedConflicts,
   markConflictResolved,
+  rebaseLocalDataForHousehold,
   resolveConflictKeepLocal,
   resolveConflictTakeServer,
   readSyncStatus,
+  setLastHousehold,
   setOwnerUserId,
   wipeLocalData,
 } from '@expense-tracker/local-data'
@@ -97,6 +100,11 @@ async function boot(): Promise<void> {
         getOwnerUserId: async () => getOwnerUserId(store.db),
         setOwnerUserId: async (userId: string) => setOwnerUserId(store.db, userId),
         wipeLocalData: async () => wipeLocalData(store.db),
+      },
+      household: {
+        rebase: async (householdId: string) => rebaseLocalDataForHousehold(store.db, householdId),
+        getLastHousehold: async () => getLastHousehold(store.db),
+        setLastHousehold: async (householdId: string) => setLastHousehold(store.db, householdId),
       },
     }
 

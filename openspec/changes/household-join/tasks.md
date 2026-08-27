@@ -26,10 +26,10 @@
 
 ## 5. Mobile flow
 
-- [ ] 5.1 `/invite/[token]` route: unauthenticated → login/register with return; mismatched account error; accept screen (household name, data choice with carry default)
-- [ ] 5.2 Settings «У меня есть код» entry with the same choice dialog; leave flow with confirm
-- [ ] 5.3 Startup/foreground `last_household` check → the same choice dialog for a second device (D7)
-- [ ] 5.4 Tests: accept flow states, choice wiring (carry → rebase + run; clean → wipe + run), second-device rebas
+- [x] 5.1 `/invite/[token]` route: unauthenticated → login/register with return; mismatched account error; accept screen (household name, data choice with carry default)
+- [x] 5.2 Settings «У меня есть код» entry with the same choice dialog; leave flow with confirm
+- [x] 5.3 Startup/foreground `last_household` check → the same choice dialog for a second device (D7)
+- [x] 5.4 Tests: accept flow states, choice wiring (carry → rebase + run; clean → wipe + run), second-device rebas
 
 ## 6. Web flow
 

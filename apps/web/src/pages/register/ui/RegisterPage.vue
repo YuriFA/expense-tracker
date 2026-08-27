@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import z from 'zod'
 import { Button } from '@/shared/ui/button'
@@ -11,6 +11,7 @@ import { notification } from '@/shared/services/notification'
 import { AlreadyExistsError } from '@/shared/lib/data'
 
 const { t } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -42,8 +43,13 @@ async function submit() {
       return
     }
     notification.success(t('auth.signUp'))
-    // New accounts are not email-verified; nudge the user to verify.
-    await router.push({ name: 'verify-email' })
+    // New accounts are not email-verified; nudge the user to verify. A
+    // `redirect` query (e.g. back to an invitation link) rides along and is
+    // honored after verification completes.
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
+    await router.push(
+      redirect ? { name: 'verify-email', query: { redirect } } : { name: 'verify-email' },
+    )
   } catch (error) {
     if (error instanceof AlreadyExistsError) {
       errors.value.form = t('errors.alreadyExists')

@@ -1,0 +1,108 @@
+# Join-by-code entry from Settings (household-join): sign in like flow 09,
+# read the household card (display name + members count), then open the
+# «У меня есть код» sheet and drive its client-side alphabet validation - a
+# too-short code surfaces the field error without any API call. The actual
+# join needs a second household's code and is covered by unit tests.
+#
+# Prerequisites: the backend on :8080, the test user provisioned (see
+# _launch.js), and the simulator pasteboard primed with the test password
+# (scripts/e2e/run-maestro-ios.sh), exactly like flow 09.
+appId: com.anonymous.mobile
+---
+- runFlow: ../_launch-online.yaml
+- tapOn:
+    id: tab-settings
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 15000
+- tapOn:
+    id: settings-login-button
+- extendedWaitUntil:
+    visible:
+      id: screen-login
+    timeout: 15000
+- tapOn:
+    id: login-email-input
+- eraseText
+- inputText: ${output.testEmail}
+# The secure field only accepts the native Paste (see flow 09 for the
+# simulator-pasteboard priming rationale).
+- longPressOn:
+    id: login-password-input
+- tapOn:
+    text: Paste
+- tapOn:
+    text: 'Не сейчас'
+    optional: true
+- tapOn:
+    text: 'Not Now'
+    optional: true
+- tapOn:
+    id: screen-header
+- tapOn:
+    id: login-submit-button
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: 'Не сейчас'
+          optional: true
+      - tapOn:
+          text: 'Not Now'
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: tab-settings
+    timeout: 20000
+- tapOn:
+    id: tab-settings
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 15000
+# The household card renders for the signed-in user with its display name
+# (the owner email prefix fallback on a fresh household) and members count.
+- scrollUntilVisible:
+    element:
+      id: settings-household-section
+    direction: DOWN
+- assertVisible:
+    id: settings-household-name
+- assertVisible:
+    id: settings-household-members
+- takeScreenshot: household-card
+# Open the join-by-code sheet and drive the alphabet validation.
+- tapOn:
+    id: settings-join-by-code-button
+- extendedWaitUntil:
+    visible:
+      id: settings-join-code-sheet
+    timeout: 15000
+- tapOn:
+    id: settings-join-code-input
+- inputText: ab1
+- hideKeyboard
+- tapOn:
+    id: settings-join-code-submit
+- extendedWaitUntil:
+    visible:
+      id: settings-join-code-error
+    timeout: 15000
+- takeScreenshot: join-code-validation
+# Close the sheet via the backdrop (TODO(sheet-dismiss)) and sign out to
+# restore the anonymous-app invariant for later flows.
+- tapOn:
+    point: 50%, 8%
+- extendedWaitUntil:
+    visible:
+      id: screen-settings
+    timeout: 15000
+- tapOn:
+    id: settings-logout-button
+- extendedWaitUntil:
+    visible:
+      id: settings-login-button
+    timeout: 20000

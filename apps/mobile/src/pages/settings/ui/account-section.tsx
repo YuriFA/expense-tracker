@@ -29,11 +29,7 @@ export function AccountSection() {
   }
 
   return (
-    <Card
-      variant="elevated"
-      className="gap-3"
-      testID="settings-account-section"
-    >
+    <Card variant="elevated" className="gap-3" testID="settings-account-section">
       <Text variant="h4">Аккаунт</Text>
       {status === 'authenticated' && user ? (
         <>

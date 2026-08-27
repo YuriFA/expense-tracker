@@ -8,7 +8,11 @@
 
 import { apiClient } from '@/shared/api/client'
 import type { LocalDatabase } from '@/shared/lib/db/database'
-import { createApiTransport, isOfflineGateEnabled, type SyncTransport } from '@expense-tracker/local-data'
+import {
+  createApiTransport,
+  isOfflineGateEnabled,
+  type SyncTransport,
+} from '@expense-tracker/local-data'
 
 export function createLocalSyncTransport(db: LocalDatabase): SyncTransport {
   const apiTransport = createApiTransport(apiClient)

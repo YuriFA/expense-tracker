@@ -21,6 +21,15 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true },
   },
   {
+    // Invitation accept deep link (household-join design D6): public page
+    // (no nav chrome), but NOT redirectIfAuthed - a signed-in visitor must
+    // stay here to accept with their account.
+    path: '/invite/:token',
+    name: 'invite',
+    component: () => import('@/pages/invite').then((m) => m.InvitePage),
+    meta: { public: true },
+  },
+  {
     path: '/reset-password',
     name: 'reset-password',
     component: () => import('@/pages/reset-password').then((m) => m.ResetPasswordPage),

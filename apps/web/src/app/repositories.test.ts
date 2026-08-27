@@ -85,6 +85,11 @@ function createFakeApi(): LocalDbApi {
       setOwnerUserId: vi.fn<(userId: string) => Promise<void>>(),
       wipeLocalData: vi.fn<() => Promise<void>>(),
     },
+    household: {
+      rebase: vi.fn<(householdId: string) => Promise<void>>().mockResolvedValue(undefined),
+      getLastHousehold: vi.fn<() => Promise<string | null>>().mockResolvedValue(null),
+      setLastHousehold: vi.fn<(householdId: string) => Promise<void>>().mockResolvedValue(undefined),
+    },
   } as unknown as LocalDbApi
 }
 
@@ -167,5 +172,19 @@ describe('provideRepositories', () => {
 
     await expect(accounts.getById('missing')).rejects.toBeInstanceOf(NotFoundError)
     await expect(accounts.getById('missing')).rejects.toMatchObject({ code: 'not-found' })
+  })
+
+  it('exposes the household rebase/marker RPC over the worker bridge', async () => {
+    mountWithRepositories()
+    const { getLocalDbApi } = await import('@/shared/lib/local-db')
+    const api = await getLocalDbApi()
+
+    await api.household.rebase('h2')
+    expect(fakeApi.household.rebase).toHaveBeenCalledWith('h2')
+
+    await expect(api.household.getLastHousehold()).resolves.toBeNull()
+
+    await api.household.setLastHousehold('h2')
+    expect(fakeApi.household.setLastHousehold).toHaveBeenCalledWith('h2')
   })
 })

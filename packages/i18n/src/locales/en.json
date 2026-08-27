@@ -454,6 +454,49 @@
     "categories": "Categories",
     "categoriesEmpty": "No categories yet"
   },
+  "household": {
+    "title": "Household",
+    "membersCount": "{count} member | {count} members",
+    "joinByCode": "I have a code",
+    "joinByCodeTitle": "Join by code",
+    "codeLabel": "Code",
+    "codePlaceholder": "ABCD2345",
+    "join": "Join",
+    "leave": "Leave household",
+    "leaveTitle": "Leave household?",
+    "leaveDescription": "You will lose access to the shared budget. The household stays with its remaining members.",
+    "leaveSuccess": "You left the household",
+    "joinSuccess": "You joined the household",
+    "cancel": "Cancel",
+    "choice": {
+      "title": "New household",
+      "description": "The household changed. What should happen to this device's data?",
+      "carry": "Keep this device's data",
+      "carryHint": "Records on this device will be added to the household",
+      "clean": "Start fresh",
+      "cleanHint": "This device's data will be deleted and the household's data will load"
+    },
+    "invite": {
+      "title": "Household invitation",
+      "invitedBy": "Invited by {name}",
+      "anonymousTitle": "Sign in to accept the invitation",
+      "anonymousDescription": "The invitation was sent to your email address. Sign in or create an account with it to join.",
+      "mismatchTitle": "This invitation was sent to a different address",
+      "mismatchDescription": "Sign in with the account the invitation was emailed to.",
+      "deadTitle": "The invitation is no longer valid",
+      "backHome": "Go home",
+      "join": "Join"
+    },
+    "errors": {
+      "emailMismatch": "The invitation was sent to a different email address",
+      "invitationExpired": "This invitation has expired",
+      "invitationRevoked": "This invitation was revoked by the owner",
+      "invitationAlreadyAccepted": "This invitation has already been accepted",
+      "invitationNotFound": "This invitation does not exist",
+      "codeInvalid": "This code is invalid or revoked",
+      "ownerWithMembers": "An owner cannot leave a household that still has members. Remove the members or dissolve the household instead."
+    }
+  },
   "boot": {
     "loading": "Loading…",
     "busyTitle": "The app is already open in another tab",

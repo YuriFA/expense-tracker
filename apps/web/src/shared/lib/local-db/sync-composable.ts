@@ -20,6 +20,15 @@ const POST_MUTATION_DEBOUNCE_MS = 2_500
 interface SyncControllerOptions {
   /** Auth gate supplied by the app layer: sync runs only while true. */
   isAuthenticated: () => boolean
+  /**
+   * Household gate (household-join design D7), injected by the app layer
+   * because shared/lib must not import entities: called on login/startup
+   * BEFORE the engine runs; resolves once the local bookkeeping matches the
+   * server-reported household (a stale second device picks the carry/clean
+   * choice first through the pending dialog). Never throws - offline skips
+   * the check silently and sync proceeds.
+   */
+  ensureHouseholdCurrent?: () => Promise<void>
 }
 
 export interface SyncController {
@@ -55,13 +64,16 @@ export function provideSyncController(options: SyncControllerOptions): SyncContr
   }
 
   // Login/restore resumes the (possibly 401-paused) engine and kicks a cycle;
-  // this is also the initial sync right after the ownership gate passes.
+  // this is also the initial sync right after the ownership gate passes. The
+  // household gate composes BEFORE the run: it holds the cycle until the
+  // device's last_household marker matches the server household (design D7).
   const stopAuthWatch = watch(
     options.isAuthenticated,
     (authenticated) => {
       if (!authenticated) return
       void getLocalDbApi().then(async (api) => {
         await api.sync.resume()
+        await options.ensureHouseholdCurrent?.()
         await api.sync.run()
       })
     },

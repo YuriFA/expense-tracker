@@ -1,0 +1,33 @@
+# Invitation deep link (household-join): the emailed accept link opens the
+# /invite/<token> route. Backendless best-effort coverage: with no backend
+# reachable the preview fails, so the screen shows its dead-state card with
+# the «Понятно» way back home. (With a live backend and no session the same
+# link lands on login carrying the invite as the return path - that path is
+# covered by unit tests; asserting it here would tie the flow to a backend.)
+appId: com.anonymous.mobile
+---
+- runFlow: ../_launch.yaml
+- openLink: expensetracker://invite/maestro-token
+- tapOn:
+    text: Open
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: screen-invite
+    timeout: 30000
+- assertVisible:
+    id: screen-invite
+# The unreachable preview maps to the generic error card (invite screen
+# states), not a crash or a blank screen.
+- extendedWaitUntil:
+    visible:
+      id: invite-screen-error-text
+    timeout: 20000
+- takeScreenshot: invite-dead-card
+- tapOn:
+    id: invite-screen-ok
+- extendedWaitUntil:
+    visible:
+      id: screen-dashboard
+    timeout: 15000
+- takeScreenshot: invite-back-home

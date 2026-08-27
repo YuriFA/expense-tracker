@@ -216,8 +216,9 @@ Hard rules:
   `UI → TanStack Query hook → Repository → local DB`; the backend is reached
   only through the sync engine. TanStack Query is a UI cache, NOT the
   offline store.
-- Direct `shared/api` client use is confined to the session APIs and the
-  sync transport (dependency-cruiser `api-client-seam` rule).
+- Direct `shared/api` client use is confined to the session and household
+  control-plane APIs (`entities/session/api`, `entities/household/api`) and
+  the sync transport (dependency-cruiser `api-client-seam` rule).
 - Repositories mirror backend domain rules using the shared `RepositoryError`
   model and existing error-code mappings — don't invent ad-hoc error strings
   in screens when a shared mapping exists.
