@@ -19,7 +19,7 @@ describe('createAddAccountSchema', () => {
   it('strips a currency key instead of validating it', () => {
     const result = schema.safeParse({ name: 'Main', openingBalance: 0, currency: 'EUR' })
     expect(result.success).toBe(true)
-    if (result.success) expect('currency' in result.data).toBe(false)
+    expect(Object.keys(result.success ? result.data : {})).toEqual(['name', 'openingBalance'])
   })
 
   it('rejects empty name', () => {
