@@ -68,6 +68,8 @@ tags:
     description: Категории транзакций (per-user)
   - name: Transactions
     description: Операции с транзакциями (income / expense / transfer)
+  - name: Household
+    description: Хаусхолд (общее семейное пространство) и профиль пользователя
   - name: Sync
     description: Синхронизация offline-first клиентов (push/pull с change-log)
 
@@ -446,6 +448,57 @@ paths:
                   value:
                     code: INVALID_PASSWORD_RESET_TOKEN
                     message: invalid or expired reset token
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/household:
+    get:
+      tags: [Household]
+      operationId: getHousehold
+      summary: Хаусхолд текущего пользователя с участниками
+      description: |
+        Возвращает household текущего пользователя: id, дату создания и полный
+        список участников (email, отображаемое имя, роль, дата присоединения).
+        В v1 каждый пользователь — единственный owner своего персонального
+        household.
+      responses:
+        "200":
+          description: Хаусхолд с участниками.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/me:
+    patch:
+      tags: [Household]
+      operationId: updateCurrentUser
+      summary: Обновить профиль текущего пользователя
+      description: |
+        Меняет отображаемое имя (displayName). Имя не имеет access-control
+        смысла и предназначено для member-facing подписей (например,
+        авторство записей); при отсутствии потребители используют email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Обновлённый пользователь.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -1736,6 +1789,13 @@ components:
         email:
           type: string
           format: email
+        displayName:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: |
+            Опциональное отображаемое имя; null — не задано (потребители
+            используют email).
         emailVerified:
           type: boolean
           description: Подтверждён ли email.
@@ -1746,6 +1806,57 @@ components:
           type: string
           format: date-time
       required: [id, email, emailVerified, createdAt, updatedAt]
+
+    UpdateUserRequest:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: |
+            Новое отображаемое имя. Непустое после trim; в v1 способ задать
+            имя есть, способ сбросить (вернуть null) — нет.
+
+    Household:
+      type: object
+      description: |
+        Общее пространство данных семьи: все записи (счета, категории,
+        транзакции, ...) принадлежат household, участники имеют равный доступ.
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdMember"
+      required: [id, createdAt, members]
+
+    HouseholdMember:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          nullable: true
+          description: Отображаемое имя; null — не задано.
+        role:
+          type: string
+          enum: [owner, member]
+        joinedAt:
+          type: string
+          format: date-time
+      required: [userId, email, role, joinedAt]
 
     Transaction:
       type: object

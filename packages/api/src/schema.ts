@@ -209,6 +209,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/household": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Хаусхолд текущего пользователя с участниками
+         * @description Возвращает household текущего пользователя: id, дату создания и полный
+         *     список участников (email, отображаемое имя, роль, дата присоединения).
+         *     В v1 каждый пользователь — единственный owner своего персонального
+         *     household.
+         */
+        get: operations["getHousehold"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Обновить профиль текущего пользователя
+         * @description Меняет отображаемое имя (displayName). Имя не имеет access-control
+         *     смысла и предназначено для member-facing подписей (например,
+         *     авторство записей); при отсутствии потребители используют email.
+         */
+        patch: operations["updateCurrentUser"];
+        trace?: never;
+    };
     "/api/transactions": {
         parameters: {
             query?: never;
@@ -596,12 +641,47 @@ export interface components {
             id: string;
             /** Format: email */
             email: string;
+            /**
+             * @description Опциональное отображаемое имя; null — не задано (потребители
+             *     используют email).
+             */
+            displayName?: string | null;
             /** @description Подтверждён ли email. */
             emailVerified: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        UpdateUserRequest: {
+            /**
+             * @description Новое отображаемое имя. Непустое после trim; в v1 способ задать
+             *     имя есть, способ сбросить (вернуть null) — нет.
+             */
+            displayName: string;
+        };
+        /**
+         * @description Общее пространство данных семьи: все записи (счета, категории,
+         *     транзакции, ...) принадлежат household, участники имеют равный доступ.
+         */
+        Household: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            members: components["schemas"]["HouseholdMember"][];
+        };
+        HouseholdMember: {
+            /** Format: uuid */
+            userId: string;
+            /** Format: email */
+            email: string;
+            /** @description Отображаемое имя; null — не задано. */
+            displayName?: string | null;
+            /** @enum {string} */
+            role: "owner" | "member";
+            /** Format: date-time */
+            joinedAt: string;
         };
         /**
          * @description Cashflow-транзакция (income/expense) содержит `accountId`+`categoryId`.
@@ -1985,6 +2065,55 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getHousehold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Хаусхолд с участниками. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Household"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateCurrentUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Обновлённый пользователь. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
             500: components["responses"]["InternalError"];
         };
     };
