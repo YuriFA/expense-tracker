@@ -14,8 +14,8 @@ import (
 
 const createAccount = `-- name: CreateAccount :one
 
-INSERT INTO accounts (id, household_id, user_id, name, currency, opening_balance)
-VALUES ($1, $2, $3, $4, $5, 0)
+INSERT INTO accounts (id, household_id, user_id, name, currency, opening_balance, manual_adjustment)
+VALUES ($1, $2, $3, $4, $5, $6, 0)
 RETURNING
     id,
     user_id,
@@ -30,11 +30,12 @@ RETURNING
 `
 
 type CreateAccountParams struct {
-	ID          uuid.UUID
-	HouseholdID uuid.UUID
-	UserID      uuid.UUID
-	Name        string
-	Currency    string
+	ID             uuid.UUID
+	HouseholdID    uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
 }
 
 type CreateAccountRow struct {
@@ -65,6 +66,7 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (C
 		arg.UserID,
 		arg.Name,
 		arg.Currency,
+		arg.OpeningBalance,
 	)
 	var i CreateAccountRow
 	err := row.Scan(

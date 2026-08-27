@@ -1,7 +1,8 @@
 // Package http is the transport layer: it implements the generated
-// StrictServerInterface as thin handlers that extract the authenticated userID
-// from the request context, call a service, and map domain results/errors to
-// typed OpenAPI response objects. No business logic, no SQL lives here.
+// StrictServerInterface as thin handlers that extract the authenticated
+// householdID (scoping) and userID (authorship) from the request context, call
+// a service, and map domain results/errors to typed OpenAPI response objects.
+// No business logic, no SQL lives here.
 package http
 
 import (
@@ -9,6 +10,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
 	"github.com/yurifa/expense-tracker-api/internal/domain"
@@ -31,6 +33,7 @@ type Server struct {
 	plans      *service.PlannedPaymentService
 	auth       *service.AuthService
 	sessions   *service.SessionService
+	households *service.HouseholdService
 	sync       *service.SyncService
 }
 
@@ -45,6 +48,7 @@ func NewServer(
 	plans *service.PlannedPaymentService,
 	auth *service.AuthService,
 	sessions *service.SessionService,
+	households *service.HouseholdService,
 	sync *service.SyncService,
 ) *Server {
 	return &Server{
@@ -53,7 +57,9 @@ func NewServer(
 		accounts: accounts, categories: categories, txn: txn,
 		debtors: debtors, debtOps: debtOps,
 		plans: plans,
-		auth:  auth, sessions: sessions, sync: sync,
+		auth:  auth, sessions: sessions,
+		households: households,
+		sync:       sync,
 	}
 }
 
@@ -69,4 +75,11 @@ func ginCtx(ctx context.Context) *gin.Context {
 // on protected routes).
 func (s *Server) currentUser(ctx context.Context) *domain.User {
 	return httpctx.CurrentUser(ginCtx(ctx))
+}
+
+// currentHouseholdID returns the household id of the authenticated user's
+// (single, v1) membership, resolved by the auth middleware. It is the scoping
+// key passed to every service call.
+func (s *Server) currentHouseholdID(ctx context.Context) uuid.UUID {
+	return httpctx.CurrentHouseholdID(ginCtx(ctx))
 }

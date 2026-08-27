@@ -6,11 +6,11 @@
 // involvement.
 //
 // Idempotency is structural: the next_due advancement commits in the SAME
-// per-user transaction as the transaction it produces, so a rerun (crash
+// per-household transaction as the transaction it produces, so a rerun (crash
 // recovery, overlapping schedule) finds nothing due and creates nothing.
-// The per-user advisory lock taken by WithinUserTx serializes the job
-// against sync pushes for the same user, so an auto execution and a manual
-// confirmation of the same plan can never both advance.
+// The per-household advisory lock taken by WithinHouseholdTx serializes the
+// job against sync pushes for the same household, so an auto execution and a
+// manual confirmation of the same plan can never both advance.
 package plannedconfirm
 
 import (
@@ -37,12 +37,12 @@ const (
 	daysPerWeek = 7
 )
 
-// Store is the repository surface the job needs: the per-user locked
+// Store is the repository surface the job needs: the per-household locked
 // transaction (due scan, transaction create, plan advancement) and the
-// user work list.
+// household work list.
 type Store interface {
-	WithinUserTx(ctx context.Context, userID uuid.UUID, fn func(t repository.SyncTx) error) error
-	UsersWithDueAutoPlannedPayments(ctx context.Context, today time.Time) ([]uuid.UUID, error)
+	WithinHouseholdTx(ctx context.Context, householdID uuid.UUID, fn func(t repository.SyncTx) error) error
+	HouseholdsWithDueAutoPlannedPayments(ctx context.Context, today time.Time) ([]uuid.UUID, error)
 }
 
 type Job struct {
@@ -84,37 +84,38 @@ func (j *Job) Run(ctx context.Context) error {
 func (j *Job) runOnce(ctx context.Context) {
 	today := time.Now().UTC().Truncate(hoursPerDay * time.Hour)
 
-	userIDs, err := j.db.UsersWithDueAutoPlannedPayments(ctx, today)
+	householdIDs, err := j.db.HouseholdsWithDueAutoPlannedPayments(ctx, today)
 	if err != nil {
-		j.log.WarnContext(ctx, "failed to list users with due auto plans", logger.Error(err))
+		j.log.WarnContext(ctx, "failed to list households with due auto plans", logger.Error(err))
 		return
 	}
 
-	for _, userID := range userIDs {
-		if err := j.executeUser(ctx, userID, today); err != nil {
+	for _, householdID := range householdIDs {
+		if err := j.executeHousehold(ctx, householdID, today); err != nil {
 			j.log.WarnContext(
 				ctx, "failed to execute due auto plans",
-				logger.Error(err), slog.String("userId", userID.String()),
+				logger.Error(err), slog.String("householdId", householdID.String()),
 			)
 		}
 	}
 }
 
-// executeUser runs the due plans of one user inside the user's locked
+// executeHousehold runs the due plans of one household inside its locked
 // transaction: for every due plan, one transaction per missed occurrence
 // (catch-up never skips or merges - missed charges are real money), each
-// committed atomically with its plan advancement.
-func (j *Job) executeUser(ctx context.Context, userID uuid.UUID, today time.Time) error {
+// committed atomically with its plan advancement. Authorship of the
+// auto-created records is the plan's author (the job acts on their behalf).
+func (j *Job) executeHousehold(ctx context.Context, householdID uuid.UUID, today time.Time) error {
 	var created int
-	err := j.db.WithinUserTx(ctx, userID, func(t repository.SyncTx) error {
-		plans, err := t.DueAutoPlannedPayments(ctx, userID, today)
+	err := j.db.WithinHouseholdTx(ctx, householdID, func(t repository.SyncTx) error {
+		plans, err := t.DueAutoPlannedPayments(ctx, householdID, today)
 		if err != nil {
 			return err
 		}
 		for i := range plans {
 			plan := &plans[i]
 			for !plan.NextDue.After(today) {
-				if err := executeOccurrence(ctx, t, plan); err != nil {
+				if err := executeOccurrence(ctx, t, householdID, plan); err != nil {
 					return err
 				}
 				created++
@@ -128,7 +129,7 @@ func (j *Job) executeUser(ctx context.Context, userID uuid.UUID, today time.Time
 	if created > 0 {
 		j.log.InfoContext(
 			ctx, "auto planned payments executed",
-			slog.String("userId", userID.String()), slog.Int("count", created),
+			slog.String("householdId", householdID.String()), slog.Int("count", created),
 		)
 	}
 	return nil
@@ -141,12 +142,14 @@ func (j *Job) executeUser(ctx context.Context, userID uuid.UUID, today time.Time
 func executeOccurrence(
 	ctx context.Context,
 	t repository.SyncTx,
+	householdID uuid.UUID,
 	plan *domain.PlannedPayment,
 ) error {
 	occurredAt := plan.NextDue.UTC().Add(occurredAtTime)
 	accountID := plan.AccountID
 	categoryID := plan.CategoryID
 	if _, err := t.CreateTransaction(ctx, domain.CreateTransactionParams{
+		HouseholdID: householdID,
 		UserID:      plan.UserID,
 		Type:        plan.Type,
 		Amount:      plan.Amount,
@@ -159,7 +162,7 @@ func executeOccurrence(
 	}
 
 	next := domain.AdvanceNextDue(plan.NextDue, plan.AnchorDate, plan.Regularity)
-	advanced, err := t.AdvancePlannedPayment(ctx, plan.UserID, plan.ID, next)
+	advanced, err := t.AdvancePlannedPayment(ctx, householdID, plan.UserID, plan.ID, next)
 	if err != nil {
 		return err
 	}

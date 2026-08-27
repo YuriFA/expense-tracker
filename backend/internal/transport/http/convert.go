@@ -39,9 +39,28 @@ func toAPIUser(u domain.User) api.User {
 	return api.User{
 		Id:            toUUID(u.ID),
 		Email:         openapi_types.Email(u.Email),
+		DisplayName:   u.DisplayName,
 		EmailVerified: u.EmailVerified,
 		CreatedAt:     u.CreatedAt,
 		UpdatedAt:     u.UpdatedAt,
+	}
+}
+
+func toAPIHousehold(h domain.Household) api.Household {
+	members := make([]api.HouseholdMember, 0, len(h.Members))
+	for _, m := range h.Members {
+		members = append(members, api.HouseholdMember{
+			UserId:      toUUID(m.UserID),
+			Email:       openapi_types.Email(m.Email),
+			DisplayName: m.DisplayName,
+			Role:        api.HouseholdMemberRole(m.Role),
+			JoinedAt:    m.JoinedAt,
+		})
+	}
+	return api.Household{
+		Id:        toUUID(h.ID),
+		CreatedAt: h.CreatedAt,
+		Members:   members,
 	}
 }
 

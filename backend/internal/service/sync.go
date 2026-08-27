@@ -20,7 +20,8 @@ const (
 // SyncService owns the sync protocol rules: per-item push semantics
 // (idempotent replay by opId, CAS updates, delete-wins deletes, per-item
 // business-rule errors) and the cursor pull. The whole push batch commits
-// atomically via repository.SyncRepository.WithinUserTx.
+// atomically via repository.SyncRepository.WithinHouseholdTx; householdID is
+// the scoping key and userID the authorship stamp of the pushing member.
 type SyncService struct {
 	sync repository.SyncRepository
 }
@@ -34,15 +35,15 @@ func NewSyncService(sync repository.SyncRepository) *SyncService {
 // batch - confirmed opIds replay their stored results, so nothing duplicates).
 func (s *SyncService) Push(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	ops []domain.SyncOperation,
 ) ([]domain.SyncPushResult, error) {
 	const op = "service.sync.Push"
 
 	results := make([]domain.SyncPushResult, 0, len(ops))
-	err := s.sync.WithinUserTx(ctx, userID, func(t repository.SyncTx) error {
+	err := s.sync.WithinHouseholdTx(ctx, householdID, func(t repository.SyncTx) error {
 		for _, operation := range ops {
-			result, err := applySyncOperation(ctx, t, userID, operation)
+			result, err := applySyncOperation(ctx, t, householdID, userID, operation)
 			if err != nil {
 				return err
 			}
@@ -65,7 +66,7 @@ type SyncPullPage struct {
 
 // Pull returns the change-log page after afterSeq. A full page yields a
 // nextCursor; the following pull then reports caught-up (nil cursor).
-func (s *SyncService) Pull(ctx context.Context, userID uuid.UUID, afterSeq int64, limit *int) (*SyncPullPage, error) {
+func (s *SyncService) Pull(ctx context.Context, householdID uuid.UUID, afterSeq int64, limit *int) (*SyncPullPage, error) {
 	const op = "service.sync.Pull"
 
 	pageSize := defaultSyncPullLimit
@@ -73,7 +74,7 @@ func (s *SyncService) Pull(ctx context.Context, userID uuid.UUID, afterSeq int64
 		pageSize = min(*limit, maxSyncPullLimit)
 	}
 
-	changes, err := s.sync.PullChanges(ctx, userID, afterSeq, pageSize)
+	changes, err := s.sync.PullChanges(ctx, householdID, afterSeq, pageSize)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -92,13 +93,13 @@ func (s *SyncService) Pull(ctx context.Context, userID uuid.UUID, afterSeq int64
 func applySyncOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
 	// Persistent idempotency: an already-applied opId replays its stored
 	// result without side effects (retry after a lost response, duplicate
-	// delivery across batches), scoped to this user's applied operations.
-	if previous, err := t.GetAppliedOperation(ctx, userID, op.OpID); err != nil {
+	// delivery across batches), scoped to this household's applied operations.
+	if previous, err := t.GetAppliedOperation(ctx, householdID, op.OpID); err != nil {
 		return domain.SyncPushResult{}, err
 	} else if previous != nil {
 		return previous.Result, nil
@@ -108,17 +109,17 @@ func applySyncOperation(
 	var err error
 	switch op.Entity {
 	case domain.SyncEntityAccount:
-		result, err = applyAccountOperation(ctx, t, userID, op)
+		result, err = applyAccountOperation(ctx, t, householdID, userID, op)
 	case domain.SyncEntityCategory:
-		result, err = applyCategoryOperation(ctx, t, userID, op)
+		result, err = applyCategoryOperation(ctx, t, householdID, userID, op)
 	case domain.SyncEntityTransaction:
-		result, err = applyTransactionOperation(ctx, t, userID, op)
+		result, err = applyTransactionOperation(ctx, t, householdID, userID, op)
 	case domain.SyncEntityDebtor:
-		result, err = applyDebtorOperation(ctx, t, userID, op)
+		result, err = applyDebtorOperation(ctx, t, householdID, userID, op)
 	case domain.SyncEntityDebtOperation:
-		result, err = applyDebtOperationOperation(ctx, t, userID, op)
+		result, err = applyDebtOperationOperation(ctx, t, householdID, userID, op)
 	case domain.SyncEntityPlannedPayment:
-		result, err = applyPlannedPaymentOperation(ctx, t, userID, op)
+		result, err = applyPlannedPaymentOperation(ctx, t, householdID, userID, op)
 	default:
 		return domain.SyncPushResult{
 			OpID: op.OpID, Status: domain.SyncStatusError,
@@ -134,11 +135,12 @@ func applySyncOperation(
 	// redelivery).
 	if result.Status == domain.SyncStatusApplied {
 		if err := t.InsertAppliedOperation(ctx, domain.AppliedOperation{
-			OpID:     op.OpID,
-			UserID:   userID,
-			Entity:   op.Entity,
-			EntityID: op.ID,
-			Result:   result,
+			OpID:        op.OpID,
+			HouseholdID: householdID,
+			UserID:      userID,
+			Entity:      op.Entity,
+			EntityID:    op.ID,
+			Result:      result,
 		}); err != nil {
 			return domain.SyncPushResult{}, err
 		}
@@ -177,11 +179,11 @@ func serverStateOf(version int, deleted bool, data any) *domain.SyncServerState 
 func applyAccountOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
-		return deleteAccountOp(ctx, t, userID, op)
+		return deleteAccountOp(ctx, t, householdID, userID, op)
 	}
 	if op.Action != domain.SyncActionUpsert {
 		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
@@ -196,7 +198,7 @@ func applyAccountOperation(
 		), nil
 	}
 
-	current, err := t.GetAccountAny(ctx, userID, op.ID)
+	current, err := t.GetAccountAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -212,13 +214,13 @@ func applyAccountOperation(
 			), nil
 		}
 		created, err := t.CreateAccount(ctx, domain.CreateAccountParams{
-			ID: op.ID, UserID: userID,
+			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			Name: data.Name, Currency: data.Currency, OpeningBalance: data.OpeningBalance,
 		})
 		if errors.Is(err, domain.ErrAccountAlreadyExists) {
 			// Safety net for an id race (the advisory lock makes it unlikely):
 			// report the actual stored record as the conflict's serverState.
-			fresh, ferr := t.GetAccountAny(ctx, userID, op.ID)
+			fresh, ferr := t.GetAccountAny(ctx, householdID, op.ID)
 			if ferr != nil {
 				return domain.SyncPushResult{}, ferr
 			}
@@ -253,11 +255,11 @@ func applyAccountOperation(
 		), nil
 	}
 
-	updated, err := t.ReplaceAccount(ctx, userID, op.ID, op.BaseVersion, data)
+	updated, err := t.ReplaceAccount(ctx, householdID, userID, op.ID, op.BaseVersion, data)
 	if errors.Is(err, domain.ErrAccountVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
 		// Lost a race inside the batch (two ops touching the same record);
 		// report the conflict, the client re-pushes on the new base.
-		fresh, ferr := t.GetAccountAny(ctx, userID, op.ID)
+		fresh, ferr := t.GetAccountAny(ctx, householdID, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -279,10 +281,10 @@ func applyAccountOperation(
 func deleteAccountOp( //nolint:dupl // account/category/transaction delete twins: identical protocol shape per entity
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
-	current, err := t.GetAccountAny(ctx, userID, op.ID)
+	current, err := t.GetAccountAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -293,14 +295,14 @@ func deleteAccountOp( //nolint:dupl // account/category/transaction delete twins
 	if current.Deleted() {
 		return appliedResult(op.OpID, current.Version), nil
 	}
-	inUse, err := t.HasLiveTransactionsForAccount(ctx, userID, op.ID)
+	inUse, err := t.HasLiveTransactionsForAccount(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
 	if inUse {
 		return errorResult(op.OpID, "ACCOUNT_IN_USE", "account has transactions and cannot be deleted"), nil
 	}
-	deleted, err := t.TombstoneAccount(ctx, userID, op.ID)
+	deleted, err := t.TombstoneAccount(ctx, householdID, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -312,11 +314,11 @@ func deleteAccountOp( //nolint:dupl // account/category/transaction delete twins
 func applyCategoryOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
-		return deleteCategoryOp(ctx, t, userID, op)
+		return deleteCategoryOp(ctx, t, householdID, userID, op)
 	}
 	if op.Action != domain.SyncActionUpsert {
 		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
@@ -336,7 +338,7 @@ func applyCategoryOperation(
 
 	// Live-name uniqueness (pre-checked under the advisory lock so a
 	// violation surfaces as a per-item error, never an aborted batch).
-	nameTaken, err := t.CategoryNameTaken(ctx, userID, data.Name, op.ID)
+	nameTaken, err := t.CategoryNameTaken(ctx, householdID, data.Name, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -344,7 +346,7 @@ func applyCategoryOperation(
 		return errorResult(op.OpID, "CATEGORY_ALREADY_EXISTS", "category name already exists"), nil
 	}
 
-	current, err := t.GetCategoryAny(ctx, userID, op.ID)
+	current, err := t.GetCategoryAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -357,7 +359,7 @@ func applyCategoryOperation(
 			), nil
 		}
 		created, err := t.CreateCategory(ctx, domain.CreateCategoryParams{
-			ID: op.ID, UserID: userID,
+			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			Name: data.Name, Type: data.Type, Icon: data.Icon, Color: data.Color,
 		})
 		if err != nil {
@@ -385,9 +387,9 @@ func applyCategoryOperation(
 		), nil
 	}
 
-	updated, err := t.ReplaceCategory(ctx, userID, op.ID, op.BaseVersion, data)
+	updated, err := t.ReplaceCategory(ctx, householdID, userID, op.ID, op.BaseVersion, data)
 	if errors.Is(err, domain.ErrCategoryVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		fresh, ferr := t.GetCategoryAny(ctx, userID, op.ID)
+		fresh, ferr := t.GetCategoryAny(ctx, householdID, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -405,10 +407,10 @@ func applyCategoryOperation(
 func deleteCategoryOp( //nolint:dupl // account/category/transaction delete twins: identical protocol shape per entity
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
-	current, err := t.GetCategoryAny(ctx, userID, op.ID)
+	current, err := t.GetCategoryAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -418,14 +420,14 @@ func deleteCategoryOp( //nolint:dupl // account/category/transaction delete twin
 	if current.Deleted() {
 		return appliedResult(op.OpID, current.Version), nil
 	}
-	inUse, err := t.HasLiveTransactionsForCategory(ctx, userID, op.ID)
+	inUse, err := t.HasLiveTransactionsForCategory(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
 	if inUse {
 		return errorResult(op.OpID, "CATEGORY_IN_USE", "category has transactions and cannot be deleted"), nil
 	}
-	deleted, err := t.TombstoneCategory(ctx, userID, op.ID)
+	deleted, err := t.TombstoneCategory(ctx, householdID, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -437,11 +439,11 @@ func deleteCategoryOp( //nolint:dupl // account/category/transaction delete twin
 func applyTransactionOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
-		return deleteTransactionOp(ctx, t, userID, op)
+		return deleteTransactionOp(ctx, t, householdID, userID, op)
 	}
 	if op.Action != domain.SyncActionUpsert {
 		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
@@ -464,7 +466,7 @@ func applyTransactionOperation(
 		return errorResult(op.OpID, "VALIDATION_FAILED", "invalid transaction type"), nil
 	}
 
-	current, err := t.GetTransactionAny(ctx, userID, op.ID)
+	current, err := t.GetTransactionAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -473,7 +475,7 @@ func applyTransactionOperation(
 	// per-item unknown-references error; type mismatch / same-account
 	// transfer -> invalid-payload codes. Validated on the effective refs of
 	// the full state (update) or the new record (create).
-	if verr := validateSyncRefs(ctx, t, userID, &data); verr != "" {
+	if verr := validateSyncRefs(ctx, t, householdID, &data); verr != "" {
 		return errorResult(op.OpID, verr, syncRefMessage(verr)), nil
 	}
 
@@ -485,7 +487,7 @@ func applyTransactionOperation(
 			), nil
 		}
 		created, err := t.CreateTransaction(ctx, domain.CreateTransactionParams{
-			ID: op.ID, UserID: userID,
+			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			Type: data.Type, Amount: data.Amount, Description: data.Description, OccurredAt: data.OccurredAt,
 			AccountID: data.AccountID, CategoryID: data.CategoryID,
 			FromAccountID: data.FromAccountID, ToAccountID: data.ToAccountID,
@@ -518,9 +520,9 @@ func applyTransactionOperation(
 		), nil
 	}
 
-	updated, err := t.ReplaceTransaction(ctx, userID, op.ID, op.BaseVersion, data)
+	updated, err := t.ReplaceTransaction(ctx, householdID, userID, op.ID, op.BaseVersion, data)
 	if errors.Is(err, domain.ErrTransactionVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		fresh, ferr := t.GetTransactionAny(ctx, userID, op.ID)
+		fresh, ferr := t.GetTransactionAny(ctx, householdID, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -538,10 +540,10 @@ func applyTransactionOperation(
 func deleteTransactionOp(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
-	current, err := t.GetTransactionAny(ctx, userID, op.ID)
+	current, err := t.GetTransactionAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -551,7 +553,7 @@ func deleteTransactionOp(
 	if current.Deleted() {
 		return appliedResult(op.OpID, current.Version), nil
 	}
-	deleted, err := t.TombstoneTransaction(ctx, userID, op.ID)
+	deleted, err := t.TombstoneTransaction(ctx, householdID, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -563,11 +565,11 @@ func deleteTransactionOp(
 func applyDebtorOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
-		return deleteDebtorOp(ctx, t, userID, op)
+		return deleteDebtorOp(ctx, t, householdID, userID, op)
 	}
 	if op.Action != domain.SyncActionUpsert {
 		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
@@ -584,7 +586,7 @@ func applyDebtorOperation(
 
 	// Live-name uniqueness (pre-checked under the advisory lock so a
 	// violation surfaces as a per-item error, never an aborted batch).
-	nameTaken, err := t.DebtorNameTaken(ctx, userID, data.Name, op.ID)
+	nameTaken, err := t.DebtorNameTaken(ctx, householdID, data.Name, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -592,7 +594,7 @@ func applyDebtorOperation(
 		return errorResult(op.OpID, "DEBTOR_ALREADY_EXISTS", "debtor name already exists"), nil
 	}
 
-	current, err := t.GetDebtorAny(ctx, userID, op.ID)
+	current, err := t.GetDebtorAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -605,7 +607,7 @@ func applyDebtorOperation(
 			), nil
 		}
 		created, err := t.CreateDebtor(ctx, domain.CreateDebtorParams{
-			ID: op.ID, UserID: userID, Name: data.Name, Note: data.Note,
+			ID: op.ID, HouseholdID: householdID, UserID: userID, Name: data.Name, Note: data.Note,
 		})
 		if err != nil {
 			return domain.SyncPushResult{}, err
@@ -632,9 +634,9 @@ func applyDebtorOperation(
 		), nil
 	}
 
-	updated, err := t.ReplaceDebtor(ctx, userID, op.ID, op.BaseVersion, data)
+	updated, err := t.ReplaceDebtor(ctx, householdID, userID, op.ID, op.BaseVersion, data)
 	if errors.Is(err, domain.ErrDebtorVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		fresh, ferr := t.GetDebtorAny(ctx, userID, op.ID)
+		fresh, ferr := t.GetDebtorAny(ctx, householdID, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -655,10 +657,10 @@ func applyDebtorOperation(
 func deleteDebtorOp( //nolint:dupl // per-entity delete twins: identical protocol shape
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
-	current, err := t.GetDebtorAny(ctx, userID, op.ID)
+	current, err := t.GetDebtorAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -668,14 +670,14 @@ func deleteDebtorOp( //nolint:dupl // per-entity delete twins: identical protoco
 	if current.Deleted() {
 		return appliedResult(op.OpID, current.Version), nil
 	}
-	inUse, err := t.HasLiveDebtOperationsForDebtor(ctx, userID, op.ID)
+	inUse, err := t.HasLiveDebtOperationsForDebtor(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
 	if inUse {
 		return errorResult(op.OpID, "DEBTOR_IN_USE", "debtor has debt operations and cannot be deleted"), nil
 	}
-	deleted, err := t.TombstoneDebtor(ctx, userID, op.ID)
+	deleted, err := t.TombstoneDebtor(ctx, householdID, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -687,11 +689,11 @@ func deleteDebtorOp( //nolint:dupl // per-entity delete twins: identical protoco
 func applyDebtOperationOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
-		return deleteDebtOperationOp(ctx, t, userID, op)
+		return deleteDebtOperationOp(ctx, t, householdID, userID, op)
 	}
 	if op.Action != domain.SyncActionUpsert {
 		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
@@ -717,7 +719,7 @@ func applyDebtOperationOperation(
 
 	// Reference validation with the REST granularity: the debtor must be
 	// among the user's LIVE debtors (a tombstoned debtor is "not found").
-	live, err := t.LiveDebtorExists(ctx, userID, data.DebtorID)
+	live, err := t.LiveDebtorExists(ctx, householdID, data.DebtorID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -725,7 +727,7 @@ func applyDebtOperationOperation(
 		return errorResult(op.OpID, "DEBT_OPERATION_DEBTOR_NOT_FOUND", "debtor not found"), nil
 	}
 
-	current, err := t.GetDebtOperationAny(ctx, userID, op.ID)
+	current, err := t.GetDebtOperationAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -738,7 +740,7 @@ func applyDebtOperationOperation(
 			), nil
 		}
 		created, err := t.CreateDebtOperation(ctx, domain.CreateDebtOperationParams{
-			ID: op.ID, UserID: userID,
+			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			DebtorID: data.DebtorID, Direction: data.Direction, Kind: data.Kind,
 			Amount: data.Amount, Note: data.Note, OccurredAt: data.OccurredAt,
 		})
@@ -770,9 +772,9 @@ func applyDebtOperationOperation(
 		), nil
 	}
 
-	updated, err := t.ReplaceDebtOperation(ctx, userID, op.ID, op.BaseVersion, data)
+	updated, err := t.ReplaceDebtOperation(ctx, householdID, userID, op.ID, op.BaseVersion, data)
 	if errors.Is(err, domain.ErrDebtOperationVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		fresh, ferr := t.GetDebtOperationAny(ctx, userID, op.ID)
+		fresh, ferr := t.GetDebtOperationAny(ctx, householdID, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -790,10 +792,10 @@ func applyDebtOperationOperation(
 func deleteDebtOperationOp(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
-	current, err := t.GetDebtOperationAny(ctx, userID, op.ID)
+	current, err := t.GetDebtOperationAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -803,7 +805,7 @@ func deleteDebtOperationOp(
 	if current.Deleted() {
 		return appliedResult(op.OpID, current.Version), nil
 	}
-	deleted, err := t.TombstoneDebtOperation(ctx, userID, op.ID)
+	deleted, err := t.TombstoneDebtOperation(ctx, householdID, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -815,11 +817,11 @@ func deleteDebtOperationOp(
 func applyPlannedPaymentOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
-		return deletePlannedPaymentOp(ctx, t, userID, op)
+		return deletePlannedPaymentOp(ctx, t, householdID, userID, op)
 	}
 	if op.Action != domain.SyncActionUpsert {
 		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
@@ -838,13 +840,13 @@ func applyPlannedPaymentOperation(
 	}
 
 	// Reference validation with the REST granularity (see the helper).
-	if code, message, err := plannedPaymentRefViolation(ctx, t, userID, &data); err != nil {
+	if code, message, err := plannedPaymentRefViolation(ctx, t, householdID, &data); err != nil {
 		return domain.SyncPushResult{}, err
 	} else if code != "" {
 		return errorResult(op.OpID, code, message), nil
 	}
 
-	current, err := t.GetPlannedPaymentAny(ctx, userID, op.ID)
+	current, err := t.GetPlannedPaymentAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -857,7 +859,7 @@ func applyPlannedPaymentOperation(
 			), nil
 		}
 		created, err := t.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
-			ID: op.ID, UserID: userID,
+			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			Type: data.Type, Amount: data.Amount, Name: data.Name,
 			AccountID: data.AccountID, CategoryID: data.CategoryID,
 			NextDue: data.NextDue.Time, Regularity: data.Regularity,
@@ -891,9 +893,9 @@ func applyPlannedPaymentOperation(
 		), nil
 	}
 
-	updated, err := t.ReplacePlannedPayment(ctx, userID, op.ID, op.BaseVersion, data)
+	updated, err := t.ReplacePlannedPayment(ctx, householdID, userID, op.ID, op.BaseVersion, data)
 	if errors.Is(err, domain.ErrPlannedPaymentVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		fresh, ferr := t.GetPlannedPaymentAny(ctx, userID, op.ID)
+		fresh, ferr := t.GetPlannedPaymentAny(ctx, householdID, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -911,10 +913,10 @@ func applyPlannedPaymentOperation(
 func deletePlannedPaymentOp(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
 ) (domain.SyncPushResult, error) {
-	current, err := t.GetPlannedPaymentAny(ctx, userID, op.ID)
+	current, err := t.GetPlannedPaymentAny(ctx, householdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -924,7 +926,7 @@ func deletePlannedPaymentOp(
 	if current.Deleted() {
 		return appliedResult(op.OpID, current.Version), nil
 	}
-	deleted, err := t.TombstonePlannedPayment(ctx, userID, op.ID)
+	deleted, err := t.TombstonePlannedPayment(ctx, householdID, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -938,17 +940,17 @@ func deletePlannedPaymentOp(
 func plannedPaymentRefViolation(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	data *domain.PlannedPaymentFullState,
 ) (string, string, error) {
-	liveAccount, err := t.LiveAccountExists(ctx, userID, data.AccountID)
+	liveAccount, err := t.LiveAccountExists(ctx, householdID, data.AccountID)
 	if err != nil {
 		return "", "", err
 	}
 	if !liveAccount {
 		return "PLANNED_PAYMENT_ACCOUNT_NOT_FOUND", "account not found", nil
 	}
-	category, err := t.LiveCategory(ctx, userID, data.CategoryID)
+	category, err := t.LiveCategory(ctx, householdID, data.CategoryID)
 	if err != nil {
 		if errors.Is(err, domain.ErrCategoryNotFound) {
 			return "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", "category not found", nil
@@ -998,7 +1000,7 @@ func validatePlannedPaymentSyncData(data *domain.PlannedPaymentFullState) string
 func validateSyncRefs(
 	ctx context.Context,
 	t repository.SyncTx,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	data *domain.TransactionFullState,
 ) string {
 	switch data.Type {
@@ -1006,14 +1008,14 @@ func validateSyncRefs(
 		if data.FromAccountID != nil || data.ToAccountID != nil || data.AccountID == nil || data.CategoryID == nil {
 			return "INVALID_REFS"
 		}
-		exists, err := t.LiveAccountExists(ctx, userID, *data.AccountID)
+		exists, err := t.LiveAccountExists(ctx, householdID, *data.AccountID)
 		if err != nil {
 			return "INVALID_REFS"
 		}
 		if !exists {
 			return "ACCOUNT_NOT_FOUND"
 		}
-		category, err := t.LiveCategory(ctx, userID, *data.CategoryID)
+		category, err := t.LiveCategory(ctx, householdID, *data.CategoryID)
 		if err != nil || category == nil {
 			return "CATEGORY_NOT_FOUND"
 		}
@@ -1024,14 +1026,14 @@ func validateSyncRefs(
 		if data.AccountID != nil || data.CategoryID != nil || data.FromAccountID == nil || data.ToAccountID == nil {
 			return "INVALID_REFS"
 		}
-		fromExists, err := t.LiveAccountExists(ctx, userID, *data.FromAccountID)
+		fromExists, err := t.LiveAccountExists(ctx, householdID, *data.FromAccountID)
 		if err != nil {
 			return "INVALID_REFS"
 		}
 		if !fromExists {
 			return "ACCOUNT_NOT_FOUND"
 		}
-		toExists, err := t.LiveAccountExists(ctx, userID, *data.ToAccountID)
+		toExists, err := t.LiveAccountExists(ctx, householdID, *data.ToAccountID)
 		if err != nil {
 			return "INVALID_REFS"
 		}

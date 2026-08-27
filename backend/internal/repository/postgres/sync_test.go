@@ -18,11 +18,13 @@ func TestSyncAppliedOperationOwnerScoped(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 	userA := seedUser(t, "sync-owner-a")
+	userAHH := householdOf(t, userA.ID)
 	userB := seedUser(t, "sync-owner-b")
+	userBHH := householdOf(t, userB.ID)
 	ctx := newCtx(t)
 	opID := uuid.New()
 
-	err := testRepo.WithinUserTx(ctx, userA.ID, func(tx repository.SyncTx) error {
+	err := testRepo.WithinHouseholdTx(ctx, userAHH, func(tx repository.SyncTx) error {
 		return tx.InsertAppliedOperation(ctx, domain.AppliedOperation{
 			OpID:     opID,
 			UserID:   userA.ID,
@@ -34,8 +36,8 @@ func TestSyncAppliedOperationOwnerScoped(t *testing.T) {
 	require.NoError(t, err, "insert applied operation")
 
 	var foreign *domain.AppliedOperation
-	err = testRepo.WithinUserTx(ctx, userB.ID, func(tx repository.SyncTx) error {
-		found, getErr := tx.GetAppliedOperation(ctx, userB.ID, opID)
+	err = testRepo.WithinHouseholdTx(ctx, userBHH, func(tx repository.SyncTx) error {
+		found, getErr := tx.GetAppliedOperation(ctx, userBHH, opID)
 		foreign = found
 		return getErr
 	})
@@ -43,8 +45,8 @@ func TestSyncAppliedOperationOwnerScoped(t *testing.T) {
 	assert.Nil(t, foreign, "another user's applied operation must not replay")
 
 	var own *domain.AppliedOperation
-	err = testRepo.WithinUserTx(ctx, userA.ID, func(tx repository.SyncTx) error {
-		found, getErr := tx.GetAppliedOperation(ctx, userA.ID, opID)
+	err = testRepo.WithinHouseholdTx(ctx, userAHH, func(tx repository.SyncTx) error {
+		found, getErr := tx.GetAppliedOperation(ctx, userAHH, opID)
 		own = found
 		return getErr
 	})

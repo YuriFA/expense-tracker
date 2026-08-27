@@ -13,8 +13,8 @@ func (s *Server) ListAccounts(
 	ctx context.Context,
 	_ api.ListAccountsRequestObject,
 ) (api.ListAccountsResponseObject, error) {
-	user := s.currentUser(ctx)
-	accounts, err := s.accounts.List(ctx, user.ID)
+	householdID := s.currentHouseholdID(ctx)
+	accounts, err := s.accounts.List(ctx, householdID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,11 +30,12 @@ func (s *Server) CreateAccount(
 	req api.CreateAccountRequestObject,
 ) (api.CreateAccountResponseObject, error) {
 	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
 	}
-	a, err := s.accounts.Create(ctx, user.ID, domain.CreateAccountParams{
+	a, err := s.accounts.Create(ctx, householdID, user.ID, domain.CreateAccountParams{
 		ID:             id,
 		Name:           req.Body.Name,
 		Currency:       string(req.Body.Currency),
@@ -50,8 +51,8 @@ func (s *Server) GetAccountBalances(
 	ctx context.Context,
 	_ api.GetAccountBalancesRequestObject,
 ) (api.GetAccountBalancesResponseObject, error) {
-	user := s.currentUser(ctx)
-	res, err := s.accounts.Balances(ctx, user.ID)
+	householdID := s.currentHouseholdID(ctx)
+	res, err := s.accounts.Balances(ctx, householdID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +76,8 @@ func (s *Server) GetAccount(
 	ctx context.Context,
 	req api.GetAccountRequestObject,
 ) (api.GetAccountResponseObject, error) {
-	user := s.currentUser(ctx)
-	a, err := s.accounts.Get(ctx, user.ID, req.Id)
+	householdID := s.currentHouseholdID(ctx)
+	a, err := s.accounts.Get(ctx, householdID, req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ func (s *Server) UpdateAccount(
 		m := *req.Body.ManualAdjustment
 		manual = &m
 	}
-	a, err := s.accounts.Update(ctx, user.ID, req.Id, domain.UpdateAccountParams{
+	a, err := s.accounts.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateAccountParams{
 		Name:             name,
 		ManualAdjustment: manual,
 		Version:          req.Body.Version,
@@ -114,7 +115,7 @@ func (s *Server) DeleteAccount(
 	req api.DeleteAccountRequestObject,
 ) (api.DeleteAccountResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.accounts.Delete(ctx, user.ID, req.Id); err != nil {
+	if err := s.accounts.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeleteAccount204Response{}, nil

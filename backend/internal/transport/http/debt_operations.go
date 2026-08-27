@@ -32,6 +32,7 @@ func (s *Server) CreateDebtOperation(
 	req api.CreateDebtOperationRequestObject,
 ) (api.CreateDebtOperationResponseObject, error) {
 	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
@@ -40,7 +41,7 @@ func (s *Server) CreateDebtOperation(
 	if req.Body.Note != nil {
 		note = *req.Body.Note
 	}
-	o, err := s.debtOps.Create(ctx, user.ID, domain.CreateDebtOperationParams{
+	o, err := s.debtOps.Create(ctx, householdID, user.ID, domain.CreateDebtOperationParams{
 		ID:         id,
 		DebtorID:   req.Body.DebtorId,
 		Direction:  domain.DebtDirection(req.Body.Direction),
@@ -59,8 +60,8 @@ func (s *Server) GetDebtOperation(
 	ctx context.Context,
 	req api.GetDebtOperationRequestObject,
 ) (api.GetDebtOperationResponseObject, error) {
-	user := s.currentUser(ctx)
-	o, err := s.debtOps.Get(ctx, user.ID, req.Id)
+	householdID := s.currentHouseholdID(ctx)
+	o, err := s.debtOps.Get(ctx, householdID, req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +73,7 @@ func (s *Server) UpdateDebtOperation(
 	req api.UpdateDebtOperationRequestObject,
 ) (api.UpdateDebtOperationResponseObject, error) {
 	user := s.currentUser(ctx)
-	o, err := s.debtOps.Update(ctx, user.ID, req.Id, domain.UpdateDebtOperationParams{
+	o, err := s.debtOps.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateDebtOperationParams{
 		Amount:     req.Body.Amount,
 		Note:       req.Body.Note,
 		OccurredAt: req.Body.OccurredAt,
@@ -89,7 +90,7 @@ func (s *Server) DeleteDebtOperation(
 	req api.DeleteDebtOperationRequestObject,
 ) (api.DeleteDebtOperationResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.debtOps.Delete(ctx, user.ID, req.Id); err != nil {
+	if err := s.debtOps.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeleteDebtOperation204Response{}, nil

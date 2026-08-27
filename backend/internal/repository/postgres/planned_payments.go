@@ -11,10 +11,12 @@ import (
 )
 
 // Every mutation runs inside withinLockedTx: entity write + change_log append
-// commit atomically, and the per-user advisory lock keeps change_log seq order
-// equal to commit order. Deletes are tombstones; deletion is unguarded (a
-// plan has no child records). Name is not unique, so the only unique-violation
-// source is the PK (client id duplicate).
+// commit atomically, and the per-household advisory lock keeps change_log seq
+// order equal to commit order. Deletes are tombstones; deletion is unguarded
+// (a plan has no child records). Name is not unique, so the only
+// unique-violation source is the PK (client id duplicate). householdID scopes
+// every query; actorID is the acting member whose id lands on the change_log
+// row as authorship.
 
 func (r *Repository) CreatePlannedPayment(
 	ctx context.Context,
@@ -24,10 +26,11 @@ func (r *Repository) CreatePlannedPayment(
 
 	id := newEntityID(params.ID)
 	var row db.CreatePlannedPaymentRow
-	err := r.withinLockedTx(ctx, params.UserID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, params.HouseholdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.CreatePlannedPayment(ctx, db.CreatePlannedPaymentParams{
 			ID:          id,
+			HouseholdID: params.HouseholdID,
 			UserID:      params.UserID,
 			Type:        string(params.Type),
 			Amount:      params.Amount,
@@ -47,7 +50,7 @@ func (r *Repository) CreatePlannedPayment(
 			return err
 		}
 		return appendChangeLog(
-			ctx, q, params.UserID, row.ID,
+			ctx, q, params.HouseholdID, params.UserID, row.ID,
 			domain.SyncEntityPlannedPayment, domain.SyncChangeUpsert, int(row.Version),
 		)
 	})
@@ -63,13 +66,13 @@ func (r *Repository) CreatePlannedPayment(
 
 func (r *Repository) UpdatePlannedPayment(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
 	const op = "repository.postgres.UpdatePlannedPayment"
 
 	var row db.UpdatePlannedPaymentRow
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.UpdatePlannedPayment(ctx, db.UpdatePlannedPaymentParams{
 			Amount:      params.Amount,
@@ -82,17 +85,17 @@ func (r *Repository) UpdatePlannedPayment(
 			ConfirmMode: confirmModePtr(params.ConfirmMode),
 			Reminder:    reminderPtr(params.Reminder),
 			ID:          id,
-			UserID:      userID,
+			HouseholdID: householdID,
 			Version:     int32(params.Version), //nolint:gosec // optimistic version is a small positive int
 		})
 		if err != nil {
 			if errNoRows(err) {
-				return classifyPlannedPaymentWrite(ctx, q, userID, id)
+				return classifyPlannedPaymentWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
 		return appendChangeLog(
-			ctx, q, userID, row.ID,
+			ctx, q, householdID, actorID, row.ID,
 			domain.SyncEntityPlannedPayment, domain.SyncChangeUpsert, int(row.Version),
 		)
 	})
@@ -106,19 +109,21 @@ func (r *Repository) UpdatePlannedPayment(
 	), nil
 }
 
-func (r *Repository) DeletePlannedPayment(ctx context.Context, userID, id uuid.UUID) error {
+func (r *Repository) DeletePlannedPayment(ctx context.Context, householdID, actorID, id uuid.UUID) error {
 	const op = "repository.postgres.DeletePlannedPayment"
 
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
-		version, err := q.SoftDeletePlannedPayment(ctx, db.SoftDeletePlannedPaymentParams{ID: id, UserID: userID})
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
+		version, err := q.SoftDeletePlannedPayment(
+			ctx, db.SoftDeletePlannedPaymentParams{ID: id, HouseholdID: householdID},
+		)
 		if err != nil {
 			if errNoRows(err) {
-				return classifyPlannedPaymentWrite(ctx, q, userID, id)
+				return classifyPlannedPaymentWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
 		return appendChangeLog(
-			ctx, q, userID, id,
+			ctx, q, householdID, actorID, id,
 			domain.SyncEntityPlannedPayment, domain.SyncChangeTombstone, int(version),
 		)
 	})
@@ -132,18 +137,21 @@ func (r *Repository) DeletePlannedPayment(ctx context.Context, userID, id uuid.U
 // write for the REST surface: never-existed and tombstoned both read as
 // not-found, a live row that did not match the expected version is a version
 // conflict.
-func classifyPlannedPaymentWrite(ctx context.Context, q *db.Queries, userID, id uuid.UUID) error {
-	row, err := q.GetPlannedPaymentAny(ctx, db.GetPlannedPaymentAnyParams{ID: id, UserID: userID})
+func classifyPlannedPaymentWrite(ctx context.Context, q *db.Queries, householdID, id uuid.UUID) error {
+	row, err := q.GetPlannedPaymentAny(ctx, db.GetPlannedPaymentAnyParams{ID: id, HouseholdID: householdID})
 	if err != nil || row.DeletedAt != nil {
 		return domain.ErrPlannedPaymentNotFound
 	}
 	return domain.ErrPlannedPaymentVersionConflict
 }
 
-func (r *Repository) GetPlannedPayment(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error) {
+func (r *Repository) GetPlannedPayment(
+	ctx context.Context,
+	householdID, id uuid.UUID,
+) (*domain.PlannedPayment, error) {
 	const op = "repository.postgres.GetPlannedPayment"
 
-	row, err := r.q.GetPlannedPayment(ctx, db.GetPlannedPaymentParams{ID: id, UserID: userID})
+	row, err := r.q.GetPlannedPayment(ctx, db.GetPlannedPaymentParams{ID: id, HouseholdID: householdID})
 	if err != nil {
 		if errNoRows(err) {
 			return nil, domain.ErrPlannedPaymentNotFound
@@ -159,7 +167,7 @@ func (r *Repository) GetPlannedPayment(ctx context.Context, userID, id uuid.UUID
 
 func (r *Repository) GetPlannedPayments(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetPlannedPaymentsParams,
 ) ([]domain.PlannedPayment, error) {
 	const op = "repository.postgres.GetPlannedPayments"
@@ -168,7 +176,7 @@ func (r *Repository) GetPlannedPayments(
 	if params.Type != nil {
 		typePtr = (*string)(params.Type)
 	}
-	rows, err := r.q.GetPlannedPayments(ctx, db.GetPlannedPaymentsParams{UserID: userID, Type: typePtr})
+	rows, err := r.q.GetPlannedPayments(ctx, db.GetPlannedPaymentsParams{HouseholdID: householdID, Type: typePtr})
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -183,12 +191,13 @@ func (r *Repository) GetPlannedPayments(
 	return out, nil
 }
 
-// UsersWithDueAutoPlannedPayments lists the users owning at least one due
-// auto plan — the auto-confirm job's per-user work list.
-func (r *Repository) UsersWithDueAutoPlannedPayments(ctx context.Context, today time.Time) ([]uuid.UUID, error) {
-	const op = "repository.postgres.UsersWithDueAutoPlannedPayments"
+// HouseholdsWithDueAutoPlannedPayments lists the households owning at least
+// one due auto plan — the auto-confirm job's per-household work list (v1
+// households are personal, one user each).
+func (r *Repository) HouseholdsWithDueAutoPlannedPayments(ctx context.Context, today time.Time) ([]uuid.UUID, error) {
+	const op = "repository.postgres.HouseholdsWithDueAutoPlannedPayments"
 
-	ids, err := r.q.UsersWithDueAutoPlannedPayments(ctx, today)
+	ids, err := r.q.HouseholdsWithDueAutoPlannedPayments(ctx, today)
 	if err != nil {
 		return nil, opWrap(op, err)
 	}

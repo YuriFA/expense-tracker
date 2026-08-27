@@ -16,16 +16,18 @@ func TestTransactionCursorPagination(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 	user := seedUser(t, "cursor")
+	userHH := householdOf(t, user.ID)
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, user.ID)
-	cat := seedCategory(t, user.ID, "CustomIncome")
+	acct := seedAccount(t, userHH, user.ID)
+	cat := seedCategory(t, userHH, user.ID, "CustomIncome")
 
 	// Insert 5 transactions with distinct occurred_at (oldest first).
 	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	ids := make([]string, 5)
 	for i := range 5 {
 		tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+			HouseholdID: userHH,
 			UserID:      user.ID,
 			Type:        domain.TransactionTypeIncome,
 			Amount:      int64(100 + i),
@@ -43,7 +45,7 @@ func TestTransactionCursorPagination(t *testing.T) {
 
 	// Page 1 (fetch): newest 3 = ids[4], ids[3], ids[2]. Service trims to the
 	// first 2 and encodes the cursor from the 2nd item (ids[3]).
-	first, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: &fetch})
+	first, err := testRepo.GetTransactions(ctx, userHH, domain.GetTransactionsParams{Limit: &fetch})
 	require.NoError(t, err)
 	require.Len(t, first, 3)
 	assert.Equal(t, ids[4], first[0].ID.String())
@@ -54,7 +56,7 @@ func TestTransactionCursorPagination(t *testing.T) {
 	remaining := 10
 	second, err := testRepo.GetTransactions(
 		ctx,
-		user.ID,
+		userHH,
 		domain.GetTransactionsParams{Limit: &remaining, Cursor: cursor},
 	)
 	require.NoError(t, err)
@@ -69,25 +71,28 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 	user := seedUser(t, "tie")
+	userHH := householdOf(t, user.ID)
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, user.ID)
-	cat := seedCategory(t, user.ID, "Sal")
+	acct := seedAccount(t, userHH, user.ID)
+	cat := seedCategory(t, userHH, user.ID, "Sal")
 
 	// Two transactions with the SAME occurred_at - id DESC breaks the tie.
 	same := time.Date(2026, 2, 1, 12, 0, 0, 0, time.UTC)
 	_, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
-		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: same,
+		HouseholdID: userHH,
+		UserID:      user.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: same,
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
 	_, err = testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
-		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 2, OccurredAt: same,
+		HouseholdID: userHH,
+		UserID:      user.ID, Type: domain.TransactionTypeIncome, Amount: 2, OccurredAt: same,
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
 
-	rows, err := testRepo.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{Limit: ptrInt(10)})
+	rows, err := testRepo.GetTransactions(ctx, userHH, domain.GetTransactionsParams{Limit: ptrInt(10)})
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	// Both share occurred_at; the lex-higher id comes first (DESC).
@@ -99,7 +104,7 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 	cursor := &domain.TransactionCursor{OccurredAt: same, ID: higher}
 	rows2, err := testRepo.GetTransactions(
 		ctx,
-		user.ID,
+		userHH,
 		domain.GetTransactionsParams{Limit: ptrInt(10), Cursor: cursor},
 	)
 	require.NoError(t, err)
@@ -112,13 +117,15 @@ func TestTransactionOptimisticConcurrency(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 	user := seedUser(t, "occ")
+	userHH := householdOf(t, user.ID)
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, user.ID)
-	cat := seedCategory(t, user.ID, "Sal")
+	acct := seedAccount(t, userHH, user.ID)
+	cat := seedCategory(t, userHH, user.ID, "Sal")
 
 	tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
-		UserID: user.ID, Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: mustNow(),
+		HouseholdID: userHH,
+		UserID:      user.ID, Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: mustNow(),
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
@@ -127,7 +134,7 @@ func TestTransactionOptimisticConcurrency(t *testing.T) {
 	// Wrong version -> conflict.
 	_, err = testRepo.UpdateTransaction(
 		ctx,
-		user.ID,
+		userHH, user.ID,
 		tx.ID,
 		domain.UpdateTransactionParams{Version: 999, Amount: ptrInt64(200)},
 	)
@@ -137,7 +144,7 @@ func TestTransactionOptimisticConcurrency(t *testing.T) {
 	desc := "updated"
 	updated, err := testRepo.UpdateTransaction(
 		ctx,
-		user.ID,
+		userHH, user.ID,
 		tx.ID,
 		domain.UpdateTransactionParams{Version: 1, Description: &desc},
 	)
@@ -151,22 +158,25 @@ func TestTransactionIDORScoping(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 	owner := seedUser(t, "tx-owner")
+	ownerHH := householdOf(t, owner.ID)
 	intruder := seedUser(t, "tx-intruder")
+	intruderHH := householdOf(t, intruder.ID)
 	ctx := newCtx(t)
 
-	acct := seedAccount(t, owner.ID)
-	cat := seedCategory(t, owner.ID, "Sal")
+	acct := seedAccount(t, ownerHH, owner.ID)
+	cat := seedCategory(t, ownerHH, owner.ID, "Sal")
 
 	tx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
-		UserID: owner.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: mustNow(),
+		HouseholdID: ownerHH,
+		UserID:      owner.ID, Type: domain.TransactionTypeIncome, Amount: 1, OccurredAt: mustNow(),
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
 
-	_, err = testRepo.GetTransaction(ctx, intruder.ID, tx.ID)
+	_, err = testRepo.GetTransaction(ctx, intruderHH, tx.ID)
 	require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 
-	err = testRepo.DeleteTransaction(ctx, intruder.ID, tx.ID)
+	err = testRepo.DeleteTransaction(ctx, intruderHH, intruder.ID, tx.ID)
 	require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 }
 

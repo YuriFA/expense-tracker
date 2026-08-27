@@ -19,6 +19,11 @@ import (
 // Store is an in-memory fake implementing every repository interface. It
 // approximates Postgres semantics enough to exercise service logic: unique
 // constraints, FK existence, optimistic concurrency, and not-found mapping.
+//
+// Scoping is household-based like the real schema: every record keeps its
+// author UserID, and a record belongs to the household its author was a member
+// of when it was created (v1 memberships are immutable, so the resolution via
+// the memberships map is exact).
 type Store struct {
 	mu sync.Mutex
 
@@ -32,10 +37,15 @@ type Store struct {
 	debtOps      map[uuid.UUID]*domain.DebtOperation
 	plans        map[uuid.UUID]*domain.PlannedPayment
 
-	// catUnique enforces UNIQUE(user_id, name) among LIVE categories.
-	catUnique map[string]struct{} // "userID|name"
-	// debtorUnique enforces UNIQUE(user_id, name) among LIVE debtors.
-	debtorUnique map[string]struct{} // "userID|name"
+	// households + memberships mirror the scoping tables: every user owns
+	// exactly one household (v1), every record belongs to a household.
+	households  map[uuid.UUID]*domain.Household  // id -> household shell
+	memberships map[uuid.UUID]*domain.Membership // userID -> membership
+
+	// catUnique enforces UNIQUE(household_id, name) among LIVE categories.
+	catUnique map[string]struct{} // "householdID|name"
+	// debtorUnique enforces UNIQUE(household_id, name) among LIVE debtors.
+	debtorUnique map[string]struct{} // "householdID|name"
 
 	// Sync plumbing: an in-memory change log (monotonic seq) and applied
 	// operations, mirroring the Postgres tables closely enough to exercise
@@ -56,12 +66,13 @@ type Store struct {
 }
 
 type changeEntry struct {
-	seq     int64
-	userID  uuid.UUID
-	entity  string
-	id      uuid.UUID
-	action  string
-	version int
+	seq         int64
+	householdID uuid.UUID
+	userID      uuid.UUID // author/actor of the change
+	entity      string
+	id          uuid.UUID
+	action      string
+	version     int
 }
 
 type verifyCode struct {
@@ -89,6 +100,8 @@ func New() *Store {
 		debtors:      make(map[uuid.UUID]*domain.Debtor),
 		debtOps:      make(map[uuid.UUID]*domain.DebtOperation),
 		plans:        make(map[uuid.UUID]*domain.PlannedPayment),
+		households:   make(map[uuid.UUID]*domain.Household),
+		memberships:  make(map[uuid.UUID]*domain.Membership),
 		catUnique:    make(map[string]struct{}),
 		debtorUnique: make(map[string]struct{}),
 		appliedOps:   make(map[uuid.UUID]*domain.AppliedOperation),
@@ -109,6 +122,22 @@ func cloneUser(u *domain.User) *domain.User {
 	return &c
 }
 
+// sameHousehold reports whether the record author (by membership) belongs to
+// the household. Caller must hold s.mu.
+func (s *Store) sameHousehold(authorUserID, householdID uuid.UUID) bool {
+	m, ok := s.memberships[authorUserID]
+	return ok && m.HouseholdID == householdID
+}
+
+// householdOf resolves the user's (single, v1) household id.
+func (s *Store) householdOf(userID uuid.UUID) (uuid.UUID, bool) {
+	m, ok := s.memberships[userID]
+	if !ok {
+		return uuid.Nil, false
+	}
+	return m.HouseholdID, true
+}
+
 // --- UserRepository -------------------------------------------------------
 
 func (s *Store) RegisterUser(_ context.Context, params domain.RegisterUserParams) (*domain.User, error) {
@@ -124,6 +153,15 @@ func (s *Store) RegisterUser(_ context.Context, params domain.RegisterUserParams
 	}
 	s.users[u.ID] = u
 	s.emails[u.Email] = u.ID
+
+	// Every registration creates the personal household + owner membership in
+	// the same step (ADR-0002), mirroring the transactional Postgres flow.
+	householdID := uuid.New()
+	s.households[householdID] = &domain.Household{ID: householdID, CreatedAt: now}
+	s.memberships[u.ID] = &domain.Membership{
+		HouseholdID: householdID, UserID: u.ID, Role: domain.HouseholdRoleOwner, JoinedAt: now,
+	}
+
 	if params.SeedCategories {
 		for _, c := range domain.DefaultCategories {
 			cat := &domain.Category{
@@ -138,8 +176,8 @@ func (s *Store) RegisterUser(_ context.Context, params domain.RegisterUserParams
 				Version:   1,
 			}
 			s.categories[cat.ID] = cat
-			s.catUnique[u.ID.String()+"|"+c.Name] = struct{}{}
-			s.appendChange(u.ID, domain.SyncEntityCategory, cat.ID, domain.SyncChangeUpsert, cat.Version)
+			s.catUnique[householdID.String()+"|"+c.Name] = struct{}{}
+			s.appendChange(householdID, u.ID, domain.SyncEntityCategory, cat.ID, domain.SyncChangeUpsert, cat.Version)
 		}
 	}
 	return cloneUser(u), nil
@@ -163,6 +201,65 @@ func (s *Store) GetUserByID(_ context.Context, id uuid.UUID) (*domain.User, erro
 		return nil, domain.ErrUserNotFound
 	}
 	return cloneUser(u), nil
+}
+
+func (s *Store) UpdateDisplayName(_ context.Context, userID uuid.UUID, displayName string) (*domain.User, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	u, ok := s.users[userID]
+	if !ok {
+		return nil, domain.ErrUserNotFound
+	}
+	name := displayName
+	u.DisplayName = &name
+	u.UpdatedAt = time.Now().UTC()
+	return cloneUser(u), nil
+}
+
+// --- HouseholdRepository --------------------------------------------------
+
+func (s *Store) GetMembershipByUser(_ context.Context, userID uuid.UUID) (*domain.Membership, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m, ok := s.memberships[userID]
+	if !ok {
+		return nil, domain.ErrMembershipNotFound
+	}
+	c := *m
+	return &c, nil
+}
+
+func (s *Store) GetHouseholdWithMembers(_ context.Context, householdID uuid.UUID) (*domain.Household, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h, ok := s.households[householdID]
+	if !ok {
+		return nil, domain.ErrHouseholdNotFound
+	}
+	var members []domain.HouseholdMember
+	for _, m := range s.memberships {
+		if m.HouseholdID != householdID {
+			continue
+		}
+		u := s.users[m.UserID]
+		if u == nil {
+			continue
+		}
+		members = append(members, domain.HouseholdMember{
+			UserID:      m.UserID,
+			Email:       u.Email,
+			DisplayName: u.DisplayName,
+			Role:        m.Role,
+			JoinedAt:    m.JoinedAt,
+		})
+	}
+	sort.Slice(members, func(i, j int) bool {
+		if !members[i].JoinedAt.Equal(members[j].JoinedAt) {
+			return members[i].JoinedAt.Before(members[j].JoinedAt)
+		}
+		return uuidLess(members[i].UserID, members[j].UserID)
+	})
+	return &domain.Household{ID: h.ID, CreatedAt: h.CreatedAt, Members: members}, nil
 }
 
 // --- SessionRepository ----------------------------------------------------
@@ -286,15 +383,19 @@ func (s *Store) CreateAccount(_ context.Context, params domain.CreateAccountPara
 		Balance: params.OpeningBalance, CreatedAt: now, UpdatedAt: now, Version: 1,
 	}
 	s.accounts[a.ID] = a
-	s.appendChange(params.UserID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
+	s.appendChange(params.HouseholdID, params.UserID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
 	c := *a
 	return &c, nil
 }
 
 func (s *Store) recomputeBalance(a *domain.Account) int64 {
 	bal := a.OpeningBalance + a.ManualAdjustment
+	householdID, ok := s.householdOf(a.UserID)
+	if !ok {
+		return bal
+	}
 	for _, t := range s.transactions {
-		if t.UserID != a.UserID || t.Deleted() {
+		if !s.sameHousehold(t.UserID, householdID) || t.Deleted() {
 			continue
 		}
 		switch t.Type {
@@ -320,13 +421,13 @@ func (s *Store) recomputeBalance(a *domain.Account) int64 {
 
 func (s *Store) UpdateAccount(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateAccountParams,
 ) (*domain.Account, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
-	if !ok || a.UserID != userID || a.Deleted() {
+	if !ok || !s.sameHousehold(a.UserID, householdID) || a.Deleted() {
 		return nil, domain.ErrAccountNotFound
 	}
 	if a.Version != params.Version {
@@ -341,19 +442,22 @@ func (s *Store) UpdateAccount(
 	a.UpdatedAt = time.Now().UTC()
 	a.Version++
 	a.Balance = s.recomputeBalance(a)
-	s.appendChange(userID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
+	s.appendChange(householdID, actorID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
 	c := *a
 	return &c, nil
 }
 
-func (s *Store) DeleteAccount(_ context.Context, userID, id uuid.UUID) error {
+func (s *Store) DeleteAccount(_ context.Context, householdID, actorID, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
-	if !ok || a.UserID != userID {
+	if !ok || !s.sameHousehold(a.UserID, householdID) {
 		return domain.ErrAccountNotFound
 	}
 	for _, t := range s.transactions {
+		if !s.sameHousehold(t.UserID, householdID) {
+			continue
+		}
 		if (t.AccountID != nil && *t.AccountID == id) ||
 			(t.FromAccountID != nil && *t.FromAccountID == id) ||
 			(t.ToAccountID != nil && *t.ToAccountID == id) {
@@ -361,7 +465,7 @@ func (s *Store) DeleteAccount(_ context.Context, userID, id uuid.UUID) error {
 		}
 	}
 	for _, p := range s.plans {
-		if p.UserID == userID && p.AccountID == id && !p.Deleted() {
+		if s.sameHousehold(p.UserID, householdID) && p.AccountID == id && !p.Deleted() {
 			return domain.ErrAccountHasPlannedPayments
 		}
 	}
@@ -370,11 +474,11 @@ func (s *Store) DeleteAccount(_ context.Context, userID, id uuid.UUID) error {
 	return nil
 }
 
-func (s *Store) GetAccount(_ context.Context, userID, id uuid.UUID) (*domain.Account, error) {
+func (s *Store) GetAccount(_ context.Context, householdID, id uuid.UUID) (*domain.Account, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
-	if !ok || a.UserID != userID || a.Deleted() {
+	if !ok || !s.sameHousehold(a.UserID, householdID) || a.Deleted() {
 		return nil, domain.ErrAccountNotFound
 	}
 	a.Balance = s.recomputeBalance(a)
@@ -382,12 +486,12 @@ func (s *Store) GetAccount(_ context.Context, userID, id uuid.UUID) (*domain.Acc
 	return &c, nil
 }
 
-func (s *Store) GetAccounts(_ context.Context, userID uuid.UUID) ([]domain.Account, error) {
+func (s *Store) GetAccounts(_ context.Context, householdID uuid.UUID) ([]domain.Account, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Account
 	for _, a := range s.accounts {
-		if a.UserID == userID && !a.Deleted() {
+		if s.sameHousehold(a.UserID, householdID) && !a.Deleted() {
 			a.Balance = s.recomputeBalance(a)
 			out = append(out, *a)
 		}
@@ -395,12 +499,12 @@ func (s *Store) GetAccounts(_ context.Context, userID uuid.UUID) ([]domain.Accou
 	return out, nil
 }
 
-func (s *Store) GetAccountBalances(_ context.Context, userID uuid.UUID) ([]domain.AccountBalance, error) {
+func (s *Store) GetAccountBalances(_ context.Context, householdID uuid.UUID) ([]domain.AccountBalance, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.AccountBalance
 	for _, a := range s.accounts {
-		if a.UserID == userID && !a.Deleted() {
+		if s.sameHousehold(a.UserID, householdID) && !a.Deleted() {
 			out = append(
 				out,
 				domain.AccountBalance{
@@ -418,12 +522,14 @@ func (s *Store) GetAccountBalances(_ context.Context, userID uuid.UUID) ([]domai
 
 // --- CategoryRepository ---------------------------------------------------
 
-func catUniqueKey(userID uuid.UUID, name string) string { return userID.String() + "|" + name }
+func catUniqueKey(householdID uuid.UUID, name string) string {
+	return householdID.String() + "|" + name
+}
 
 func (s *Store) CreateCategory(_ context.Context, params domain.CreateCategoryParams) (*domain.Category, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, exists := s.catUnique[catUniqueKey(params.UserID, params.Name)]; exists {
+	if _, exists := s.catUnique[catUniqueKey(params.HouseholdID, params.Name)]; exists {
 		return nil, domain.ErrCategoryAlreadyExists
 	}
 	now := time.Now().UTC()
@@ -438,32 +544,32 @@ func (s *Store) CreateCategory(_ context.Context, params domain.CreateCategoryPa
 		UpdatedAt: now,
 	}
 	s.categories[c.ID] = c
-	s.catUnique[catUniqueKey(params.UserID, params.Name)] = struct{}{}
+	s.catUnique[catUniqueKey(params.HouseholdID, params.Name)] = struct{}{}
 	cc := *c
 	return &cc, nil
 }
 
 func (s *Store) UpdateCategory(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateCategoryParams,
 ) (*domain.Category, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
-	if !ok || c.UserID != userID || c.Deleted() {
+	if !ok || !s.sameHousehold(c.UserID, householdID) || c.Deleted() {
 		return nil, domain.ErrCategoryNotFound
 	}
 	if c.Version != params.Version {
 		return nil, domain.ErrCategoryVersionConflict
 	}
 	if params.Name != nil {
-		if _, exists := s.catUnique[catUniqueKey(userID, *params.Name)]; exists && c.Name != *params.Name {
+		if _, exists := s.catUnique[catUniqueKey(householdID, *params.Name)]; exists && c.Name != *params.Name {
 			return nil, domain.ErrCategoryAlreadyExists
 		}
-		delete(s.catUnique, catUniqueKey(userID, c.Name))
+		delete(s.catUnique, catUniqueKey(householdID, c.Name))
 		c.Name = *params.Name
-		s.catUnique[catUniqueKey(userID, c.Name)] = struct{}{}
+		s.catUnique[catUniqueKey(householdID, c.Name)] = struct{}{}
 	}
 	if params.Type != nil {
 		c.Type = *params.Type
@@ -476,38 +582,41 @@ func (s *Store) UpdateCategory(
 	}
 	c.UpdatedAt = time.Now().UTC()
 	c.Version++
-	s.appendChange(userID, domain.SyncEntityCategory, c.ID, domain.SyncChangeUpsert, c.Version)
+	s.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeUpsert, c.Version)
 	cc := *c
 	return &cc, nil
 }
 
-func (s *Store) DeleteCategory(_ context.Context, userID, id uuid.UUID) error {
+func (s *Store) DeleteCategory(_ context.Context, householdID, actorID, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
-	if !ok || c.UserID != userID {
+	if !ok || !s.sameHousehold(c.UserID, householdID) {
 		return domain.ErrCategoryNotFound
 	}
 	for _, t := range s.transactions {
+		if !s.sameHousehold(t.UserID, householdID) {
+			continue
+		}
 		if t.CategoryID != nil && *t.CategoryID == id {
 			return domain.ErrCategoryHasTransactions
 		}
 	}
 	for _, p := range s.plans {
-		if p.UserID == userID && p.CategoryID == id && !p.Deleted() {
+		if s.sameHousehold(p.UserID, householdID) && p.CategoryID == id && !p.Deleted() {
 			return domain.ErrCategoryHasPlannedPayments
 		}
 	}
-	delete(s.catUnique, catUniqueKey(userID, c.Name))
+	delete(s.catUnique, catUniqueKey(householdID, c.Name))
 	delete(s.categories, id)
 	return nil
 }
 
-func (s *Store) GetCategory(_ context.Context, userID, id uuid.UUID) (*domain.Category, error) {
+func (s *Store) GetCategory(_ context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
-	if !ok || c.UserID != userID || c.Deleted() {
+	if !ok || !s.sameHousehold(c.UserID, householdID) || c.Deleted() {
 		return nil, domain.ErrCategoryNotFound
 	}
 	cc := *c
@@ -516,14 +625,14 @@ func (s *Store) GetCategory(_ context.Context, userID, id uuid.UUID) (*domain.Ca
 
 func (s *Store) GetCategories(
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetCategoriesParams,
 ) ([]domain.Category, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Category
 	for _, c := range s.categories {
-		if c.UserID != userID || c.Deleted() {
+		if !s.sameHousehold(c.UserID, householdID) || c.Deleted() {
 			continue
 		}
 		if params.Type != nil && c.Type != *params.Type {
@@ -566,20 +675,20 @@ func (s *Store) CreateTransaction(
 		ToAccountID:   params.ToAccountID,
 	}
 	s.transactions[t.ID] = t
-	s.appendChange(params.UserID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeUpsert, t.Version)
+	s.appendChange(params.HouseholdID, params.UserID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeUpsert, t.Version)
 	c := *t
 	return &c, nil
 }
 
 func (s *Store) UpdateTransaction(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateTransactionParams,
 ) (*domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
-	if !ok || t.UserID != userID || t.Deleted() {
+	if !ok || !s.sameHousehold(t.UserID, householdID) || t.Deleted() {
 		return nil, domain.ErrTransactionNotFound
 	}
 	if t.Version != params.Version {
@@ -608,27 +717,27 @@ func (s *Store) UpdateTransaction(
 	}
 	t.Version++
 	t.UpdatedAt = time.Now().UTC()
-	s.appendChange(userID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeUpsert, t.Version)
+	s.appendChange(householdID, actorID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeUpsert, t.Version)
 	c := *t
 	return &c, nil
 }
 
-func (s *Store) DeleteTransaction(_ context.Context, userID, id uuid.UUID) error {
+func (s *Store) DeleteTransaction(_ context.Context, householdID, actorID, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
-	if !ok || t.UserID != userID {
+	if !ok || !s.sameHousehold(t.UserID, householdID) {
 		return domain.ErrTransactionNotFound
 	}
 	delete(s.transactions, id)
 	return nil
 }
 
-func (s *Store) GetTransaction(_ context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
+func (s *Store) GetTransaction(_ context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
-	if !ok || t.UserID != userID || t.Deleted() {
+	if !ok || !s.sameHousehold(t.UserID, householdID) || t.Deleted() {
 		return nil, domain.ErrTransactionNotFound
 	}
 	c := *t
@@ -637,14 +746,14 @@ func (s *Store) GetTransaction(_ context.Context, userID, id uuid.UUID) (*domain
 
 func (s *Store) GetTransactions(
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetTransactionsParams,
 ) ([]domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Transaction
 	for _, t := range s.transactions {
-		if t.UserID == userID && !t.Deleted() && transactionMatchesFilters(*t, params) {
+		if s.sameHousehold(t.UserID, householdID) && !t.Deleted() && transactionMatchesFilters(*t, params) {
 			out = append(out, *t)
 		}
 	}
@@ -706,7 +815,9 @@ func uuidLess(a, b uuid.UUID) bool {
 
 // --- DebtorRepository -----------------------------------------------------
 
-func debtorUniqueKey(userID uuid.UUID, name string) string { return userID.String() + "|" + name }
+func debtorUniqueKey(householdID uuid.UUID, name string) string {
+	return householdID.String() + "|" + name
+}
 
 func (s *Store) CreateDebtor(_ context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error) {
 	s.mu.Lock()
@@ -718,7 +829,7 @@ func (s *Store) CreateDebtor(_ context.Context, params domain.CreateDebtorParams
 	if _, exists := s.debtors[id]; exists {
 		return nil, domain.ErrDebtorAlreadyExists
 	}
-	if _, exists := s.debtorUnique[debtorUniqueKey(params.UserID, params.Name)]; exists {
+	if _, exists := s.debtorUnique[debtorUniqueKey(params.HouseholdID, params.Name)]; exists {
 		return nil, domain.ErrDebtorAlreadyExists
 	}
 	now := time.Now().UTC()
@@ -727,79 +838,79 @@ func (s *Store) CreateDebtor(_ context.Context, params domain.CreateDebtorParams
 		CreatedAt: now, UpdatedAt: now, Version: 1,
 	}
 	s.debtors[d.ID] = d
-	s.debtorUnique[debtorUniqueKey(params.UserID, d.Name)] = struct{}{}
-	s.appendChange(params.UserID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
+	s.debtorUnique[debtorUniqueKey(params.HouseholdID, d.Name)] = struct{}{}
+	s.appendChange(params.HouseholdID, params.UserID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
 	c := *d
 	return &c, nil
 }
 
 func (s *Store) UpdateDebtor(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateDebtorParams,
 ) (*domain.Debtor, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.debtors[id]
-	if !ok || d.UserID != userID || d.Deleted() {
+	if !ok || !s.sameHousehold(d.UserID, householdID) || d.Deleted() {
 		return nil, domain.ErrDebtorNotFound
 	}
 	if d.Version != params.Version {
 		return nil, domain.ErrDebtorVersionConflict
 	}
 	if params.Name != nil {
-		if _, exists := s.debtorUnique[debtorUniqueKey(userID, *params.Name)]; exists && d.Name != *params.Name {
+		if _, exists := s.debtorUnique[debtorUniqueKey(householdID, *params.Name)]; exists && d.Name != *params.Name {
 			return nil, domain.ErrDebtorAlreadyExists
 		}
-		delete(s.debtorUnique, debtorUniqueKey(userID, d.Name))
+		delete(s.debtorUnique, debtorUniqueKey(householdID, d.Name))
 		d.Name = *params.Name
-		s.debtorUnique[debtorUniqueKey(userID, d.Name)] = struct{}{}
+		s.debtorUnique[debtorUniqueKey(householdID, d.Name)] = struct{}{}
 	}
 	if params.Note != nil {
 		d.Note = *params.Note
 	}
 	d.UpdatedAt = time.Now().UTC()
 	d.Version++
-	s.appendChange(userID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
+	s.appendChange(householdID, actorID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
 	c := *d
 	return &c, nil
 }
 
-func (s *Store) DeleteDebtor(_ context.Context, userID, id uuid.UUID) error {
+func (s *Store) DeleteDebtor(_ context.Context, householdID, actorID, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.debtors[id]
-	if !ok || d.UserID != userID {
+	if !ok || !s.sameHousehold(d.UserID, householdID) {
 		return domain.ErrDebtorNotFound
 	}
 	// In-use counts LIVE operations only: tombstoned ops never block.
 	for _, o := range s.debtOps {
-		if o.UserID == userID && !o.Deleted() && o.DebtorID == id {
+		if s.sameHousehold(o.UserID, householdID) && !o.Deleted() && o.DebtorID == id {
 			return domain.ErrDebtorHasOperations
 		}
 	}
-	delete(s.debtorUnique, debtorUniqueKey(userID, d.Name))
+	delete(s.debtorUnique, debtorUniqueKey(householdID, d.Name))
 	delete(s.debtors, id)
 	return nil
 }
 
-func (s *Store) GetDebtor(_ context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+func (s *Store) GetDebtor(_ context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.debtors[id]
-	if !ok || d.UserID != userID || d.Deleted() {
+	if !ok || !s.sameHousehold(d.UserID, householdID) || d.Deleted() {
 		return nil, domain.ErrDebtorNotFound
 	}
 	c := *d
 	return &c, nil
 }
 
-func (s *Store) GetDebtors(_ context.Context, userID uuid.UUID) ([]domain.Debtor, error) {
+func (s *Store) GetDebtors(_ context.Context, householdID uuid.UUID) ([]domain.Debtor, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Debtor
 	for _, d := range s.debtors {
-		if d.UserID == userID && !d.Deleted() {
+		if s.sameHousehold(d.UserID, householdID) && !d.Deleted() {
 			out = append(out, *d)
 		}
 	}
@@ -829,20 +940,20 @@ func (s *Store) CreateDebtOperation(
 		CreatedAt: now, UpdatedAt: now, Version: 1,
 	}
 	s.debtOps[o.ID] = o
-	s.appendChange(params.UserID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
+	s.appendChange(params.HouseholdID, params.UserID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
 	c := *o
 	return &c, nil
 }
 
 func (s *Store) UpdateDebtOperation(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateDebtOperationParams,
 ) (*domain.DebtOperation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, ok := s.debtOps[id]
-	if !ok || o.UserID != userID || o.Deleted() {
+	if !ok || !s.sameHousehold(o.UserID, householdID) || o.Deleted() {
 		return nil, domain.ErrDebtOperationNotFound
 	}
 	if o.Version != params.Version {
@@ -859,27 +970,27 @@ func (s *Store) UpdateDebtOperation(
 	}
 	o.UpdatedAt = time.Now().UTC()
 	o.Version++
-	s.appendChange(userID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
+	s.appendChange(householdID, actorID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
 	c := *o
 	return &c, nil
 }
 
-func (s *Store) DeleteDebtOperation(_ context.Context, userID, id uuid.UUID) error {
+func (s *Store) DeleteDebtOperation(_ context.Context, householdID, actorID, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, ok := s.debtOps[id]
-	if !ok || o.UserID != userID {
+	if !ok || !s.sameHousehold(o.UserID, householdID) {
 		return domain.ErrDebtOperationNotFound
 	}
 	delete(s.debtOps, id)
 	return nil
 }
 
-func (s *Store) GetDebtOperation(_ context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error) {
+func (s *Store) GetDebtOperation(_ context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, ok := s.debtOps[id]
-	if !ok || o.UserID != userID || o.Deleted() {
+	if !ok || !s.sameHousehold(o.UserID, householdID) || o.Deleted() {
 		return nil, domain.ErrDebtOperationNotFound
 	}
 	c := *o
@@ -888,14 +999,14 @@ func (s *Store) GetDebtOperation(_ context.Context, userID, id uuid.UUID) (*doma
 
 func (s *Store) GetDebtOperations( //nolint:dupl // per-entity list twins: identical filter/sort shape
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetDebtOperationsParams,
 ) ([]domain.DebtOperation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.DebtOperation
 	for _, o := range s.debtOps {
-		if o.UserID != userID || o.Deleted() {
+		if !s.sameHousehold(o.UserID, householdID) || o.Deleted() {
 			continue
 		}
 		if params.DebtorID != nil && o.DebtorID != *params.DebtorID {
@@ -1111,10 +1222,14 @@ var _ = pgx.ErrNoRows
 
 // appendChange records a change-log entry (seq is monotonic). Caller must
 // hold s.mu.
-func (s *Store) appendChange(userID uuid.UUID, entity string, id uuid.UUID, action string, version int) {
+func (s *Store) appendChange(
+	householdID, actorID uuid.UUID,
+	entity string, id uuid.UUID, action string, version int,
+) {
 	s.nextSeq++
 	s.changeLog = append(s.changeLog, changeEntry{
-		seq: s.nextSeq, userID: userID, entity: entity, id: id, action: action, version: version,
+		seq: s.nextSeq, householdID: householdID, userID: actorID,
+		entity: entity, id: id, action: action, version: version,
 	})
 }
 
@@ -1127,13 +1242,17 @@ type fakeSyncTx struct {
 
 var _ repository.SyncTx = (*fakeSyncTx)(nil)
 
-func (s *Store) WithinUserTx(_ context.Context, _ uuid.UUID, fn func(t repository.SyncTx) error) error {
+func (s *Store) WithinHouseholdTx(
+	_ context.Context,
+	_ uuid.UUID,
+	fn func(t repository.SyncTx) error,
+) error {
 	return fn(&fakeSyncTx{store: s})
 }
 
 func (s *Store) PullChanges(
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	afterSeq int64,
 	limit int,
 ) ([]domain.SyncChange, error) {
@@ -1141,7 +1260,7 @@ func (s *Store) PullChanges(
 	defer s.mu.Unlock()
 	var out []domain.SyncChange
 	for _, e := range s.changeLog {
-		if e.userID != userID || e.seq <= afterSeq {
+		if e.householdID != householdID || e.seq <= afterSeq {
 			continue
 		}
 		if len(out) == limit {
@@ -1151,7 +1270,7 @@ func (s *Store) PullChanges(
 			Seq: e.seq, Entity: e.entity, ID: e.id, Action: e.action, Version: e.version,
 		}
 		if e.action == domain.SyncChangeUpsert {
-			change.Data = s.currentState(e.userID, e.entity, e.id)
+			change.Data = s.currentState(householdID, e.entity, e.id)
 		}
 		out = append(out, change)
 	}
@@ -1160,36 +1279,43 @@ func (s *Store) PullChanges(
 
 // currentState returns the record's full state for pull data (nil when the
 // record no longer exists).
-func (s *Store) currentState(userID uuid.UUID, entity string, id uuid.UUID) any {
+func (s *Store) currentState(householdID uuid.UUID, entity string, id uuid.UUID) any {
 	switch entity {
 	case domain.SyncEntityAccount:
-		if a, ok := s.accounts[id]; ok && a.UserID == userID {
+		if a, ok := s.accounts[id]; ok && s.sameHousehold(a.UserID, householdID) {
 			return a.FullState()
 		}
 	case domain.SyncEntityCategory:
-		if c, ok := s.categories[id]; ok && c.UserID == userID {
+		if c, ok := s.categories[id]; ok && s.sameHousehold(c.UserID, householdID) {
 			return c.FullState()
 		}
 	case domain.SyncEntityTransaction:
-		if t, ok := s.transactions[id]; ok && t.UserID == userID {
+		if t, ok := s.transactions[id]; ok && s.sameHousehold(t.UserID, householdID) {
 			return t.FullState()
 		}
 	case domain.SyncEntityDebtor:
-		if d, ok := s.debtors[id]; ok && d.UserID == userID {
+		if d, ok := s.debtors[id]; ok && s.sameHousehold(d.UserID, householdID) {
 			return d.FullState()
 		}
 	case domain.SyncEntityDebtOperation:
-		if o, ok := s.debtOps[id]; ok && o.UserID == userID {
+		if o, ok := s.debtOps[id]; ok && s.sameHousehold(o.UserID, householdID) {
 			return o.FullState()
+		}
+	case domain.SyncEntityPlannedPayment:
+		if p, ok := s.plans[id]; ok && s.sameHousehold(p.UserID, householdID) {
+			return p.FullState()
 		}
 	}
 	return nil
 }
 
-func (t *fakeSyncTx) GetAppliedOperation(_ context.Context, userID, opID uuid.UUID) (*domain.AppliedOperation, error) {
+func (t *fakeSyncTx) GetAppliedOperation(
+	_ context.Context,
+	householdID, opID uuid.UUID,
+) (*domain.AppliedOperation, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
-	if op, ok := t.store.appliedOps[opID]; ok && op.UserID == userID {
+	if op, ok := t.store.appliedOps[opID]; ok && op.HouseholdID == householdID {
 		c := *op
 		return &c, nil
 	}
@@ -1204,68 +1330,68 @@ func (t *fakeSyncTx) InsertAppliedOperation(_ context.Context, op domain.Applied
 	return nil
 }
 
-func (t *fakeSyncTx) GetAccountAny(_ context.Context, userID, id uuid.UUID) (*domain.Account, error) {
+func (t *fakeSyncTx) GetAccountAny(_ context.Context, householdID, id uuid.UUID) (*domain.Account, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	a, ok := t.store.accounts[id]
-	if !ok || a.UserID != userID {
+	if !ok || !t.store.sameHousehold(a.UserID, householdID) {
 		return nil, nil //nolint:nilnil // (nil, nil) = never created
 	}
 	c := *a
 	return &c, nil
 }
 
-func (t *fakeSyncTx) GetCategoryAny(_ context.Context, userID, id uuid.UUID) (*domain.Category, error) {
+func (t *fakeSyncTx) GetCategoryAny(_ context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	c, ok := t.store.categories[id]
-	if !ok || c.UserID != userID {
+	if !ok || !t.store.sameHousehold(c.UserID, householdID) {
 		return nil, nil //nolint:nilnil // (nil, nil) = never created
 	}
 	cc := *c
 	return &cc, nil
 }
 
-func (t *fakeSyncTx) GetTransactionAny(_ context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
+func (t *fakeSyncTx) GetTransactionAny(_ context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	tx, ok := t.store.transactions[id]
-	if !ok || tx.UserID != userID {
+	if !ok || !t.store.sameHousehold(tx.UserID, householdID) {
 		return nil, nil //nolint:nilnil // (nil, nil) = never created
 	}
 	c := *tx
 	return &c, nil
 }
 
-func (t *fakeSyncTx) GetDebtorAny(_ context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+func (t *fakeSyncTx) GetDebtorAny(_ context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	d, ok := t.store.debtors[id]
-	if !ok || d.UserID != userID {
+	if !ok || !t.store.sameHousehold(d.UserID, householdID) {
 		return nil, nil //nolint:nilnil // (nil, nil) = never created
 	}
 	c := *d
 	return &c, nil
 }
 
-func (t *fakeSyncTx) GetDebtOperationAny(_ context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error) {
+func (t *fakeSyncTx) GetDebtOperationAny(_ context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	o, ok := t.store.debtOps[id]
-	if !ok || o.UserID != userID {
+	if !ok || !t.store.sameHousehold(o.UserID, householdID) {
 		return nil, nil //nolint:nilnil // (nil, nil) = never created
 	}
 	c := *o
 	return &c, nil
 }
 
-func (t *fakeSyncTx) LiveAccountExists(_ context.Context, userID, id uuid.UUID) (bool, error) {
-	a, _ := t.GetAccountAny(context.Background(), userID, id)
+func (t *fakeSyncTx) LiveAccountExists(_ context.Context, householdID, id uuid.UUID) (bool, error) {
+	a, _ := t.GetAccountAny(context.Background(), householdID, id)
 	return a != nil && !a.Deleted(), nil
 }
 
-func (t *fakeSyncTx) LiveCategory(_ context.Context, userID, id uuid.UUID) (*domain.Category, error) {
-	c, _ := t.GetCategoryAny(context.Background(), userID, id)
+func (t *fakeSyncTx) LiveCategory(_ context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
+	c, _ := t.GetCategoryAny(context.Background(), householdID, id)
 	if c == nil || c.Deleted() {
 		return nil, domain.ErrCategoryNotFound
 	}
@@ -1274,25 +1400,28 @@ func (t *fakeSyncTx) LiveCategory(_ context.Context, userID, id uuid.UUID) (*dom
 
 func (t *fakeSyncTx) CategoryNameTaken(
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	name string,
 	exceptID uuid.UUID,
 ) (bool, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, c := range t.store.categories {
-		if c.UserID == userID && !c.Deleted() && c.Name == name && c.ID != exceptID {
+		if t.store.sameHousehold(c.UserID, householdID) && !c.Deleted() && c.Name == name && c.ID != exceptID {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func (t *fakeSyncTx) HasLiveTransactionsForAccount(_ context.Context, userID, accountID uuid.UUID) (bool, error) {
+func (t *fakeSyncTx) HasLiveTransactionsForAccount(
+	_ context.Context,
+	householdID, accountID uuid.UUID,
+) (bool, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, tx := range t.store.transactions {
-		if tx.Deleted() || tx.UserID != userID {
+		if tx.Deleted() || !t.store.sameHousehold(tx.UserID, householdID) {
 			continue
 		}
 		if (tx.AccountID != nil && *tx.AccountID == accountID) ||
@@ -1304,43 +1433,50 @@ func (t *fakeSyncTx) HasLiveTransactionsForAccount(_ context.Context, userID, ac
 	return false, nil
 }
 
-func (t *fakeSyncTx) HasLiveTransactionsForCategory(_ context.Context, userID, categoryID uuid.UUID) (bool, error) {
+func (t *fakeSyncTx) HasLiveTransactionsForCategory(
+	_ context.Context,
+	householdID, categoryID uuid.UUID,
+) (bool, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, tx := range t.store.transactions {
-		if !tx.Deleted() && tx.UserID == userID && tx.CategoryID != nil && *tx.CategoryID == categoryID {
+		if !tx.Deleted() && t.store.sameHousehold(tx.UserID, householdID) &&
+			tx.CategoryID != nil && *tx.CategoryID == categoryID {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func (t *fakeSyncTx) LiveDebtorExists(_ context.Context, userID, id uuid.UUID) (bool, error) {
-	d, _ := t.GetDebtorAny(context.Background(), userID, id)
+func (t *fakeSyncTx) LiveDebtorExists(_ context.Context, householdID, id uuid.UUID) (bool, error) {
+	d, _ := t.GetDebtorAny(context.Background(), householdID, id)
 	return d != nil && !d.Deleted(), nil
 }
 
 func (t *fakeSyncTx) DebtorNameTaken(
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	name string,
 	exceptID uuid.UUID,
 ) (bool, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, d := range t.store.debtors {
-		if d.UserID == userID && !d.Deleted() && d.Name == name && d.ID != exceptID {
+		if t.store.sameHousehold(d.UserID, householdID) && !d.Deleted() && d.Name == name && d.ID != exceptID {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func (t *fakeSyncTx) HasLiveDebtOperationsForDebtor(_ context.Context, userID, debtorID uuid.UUID) (bool, error) {
+func (t *fakeSyncTx) HasLiveDebtOperationsForDebtor(
+	_ context.Context,
+	householdID, debtorID uuid.UUID,
+) (bool, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, o := range t.store.debtOps {
-		if !o.Deleted() && o.UserID == userID && o.DebtorID == debtorID {
+		if !o.Deleted() && t.store.sameHousehold(o.UserID, householdID) && o.DebtorID == debtorID {
 			return true, nil
 		}
 	}
@@ -1353,14 +1489,14 @@ func (t *fakeSyncTx) CreateAccount(_ context.Context, params domain.CreateAccoun
 
 func (t *fakeSyncTx) ReplaceAccount(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	baseVersion int,
 	st domain.AccountFullState,
 ) (*domain.Account, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	a, ok := t.store.accounts[id]
-	if !ok || a.UserID != userID {
+	if !ok || !t.store.sameHousehold(a.UserID, householdID) {
 		return nil, domain.ErrAccountNotFound
 	}
 	if a.Deleted() {
@@ -1376,16 +1512,19 @@ func (t *fakeSyncTx) ReplaceAccount(
 	a.UpdatedAt = time.Now().UTC()
 	a.Version++
 	a.Balance = t.store.recomputeBalance(a)
-	t.store.appendChange(userID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityAccount, a.ID, domain.SyncChangeUpsert, a.Version)
 	c := *a
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneAccount(_ context.Context, userID, id uuid.UUID) (*domain.Account, error) {
+func (t *fakeSyncTx) TombstoneAccount(
+	_ context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.Account, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	a, ok := t.store.accounts[id]
-	if !ok || a.UserID != userID {
+	if !ok || !t.store.sameHousehold(a.UserID, householdID) {
 		return nil, domain.ErrAccountNotFound
 	}
 	if a.Deleted() {
@@ -1395,7 +1534,7 @@ func (t *fakeSyncTx) TombstoneAccount(_ context.Context, userID, id uuid.UUID) (
 	now := time.Now().UTC()
 	a.DeletedAt = &now
 	a.Version++
-	t.store.appendChange(userID, domain.SyncEntityAccount, a.ID, domain.SyncChangeTombstone, a.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityAccount, a.ID, domain.SyncChangeTombstone, a.Version)
 	c := *a
 	return &c, nil
 }
@@ -1406,14 +1545,14 @@ func (t *fakeSyncTx) CreateCategory(_ context.Context, params domain.CreateCateg
 
 func (t *fakeSyncTx) ReplaceCategory(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	baseVersion int,
 	st domain.CategoryFullState,
 ) (*domain.Category, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	c, ok := t.store.categories[id]
-	if !ok || c.UserID != userID {
+	if !ok || !t.store.sameHousehold(c.UserID, householdID) {
 		return nil, domain.ErrCategoryNotFound
 	}
 	if c.Deleted() {
@@ -1422,35 +1561,38 @@ func (t *fakeSyncTx) ReplaceCategory(
 	if c.Version != baseVersion {
 		return nil, domain.ErrCategoryVersionConflict
 	}
-	delete(t.store.catUnique, catUniqueKey(userID, c.Name))
+	delete(t.store.catUnique, catUniqueKey(householdID, c.Name))
 	c.Name = st.Name
 	c.Type = st.Type
 	c.Icon = st.Icon
 	c.Color = st.Color
 	c.UpdatedAt = time.Now().UTC()
 	c.Version++
-	t.store.catUnique[catUniqueKey(userID, c.Name)] = struct{}{}
-	t.store.appendChange(userID, domain.SyncEntityCategory, c.ID, domain.SyncChangeUpsert, c.Version)
+	t.store.catUnique[catUniqueKey(householdID, c.Name)] = struct{}{}
+	t.store.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeUpsert, c.Version)
 	cc := *c
 	return &cc, nil
 }
 
-func (t *fakeSyncTx) TombstoneCategory(_ context.Context, userID, id uuid.UUID) (*domain.Category, error) {
+func (t *fakeSyncTx) TombstoneCategory(
+	_ context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.Category, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	c, ok := t.store.categories[id]
-	if !ok || c.UserID != userID {
+	if !ok || !t.store.sameHousehold(c.UserID, householdID) {
 		return nil, domain.ErrCategoryNotFound
 	}
 	if c.Deleted() {
 		cc := *c
 		return &cc, nil // idempotent
 	}
-	delete(t.store.catUnique, catUniqueKey(userID, c.Name))
+	delete(t.store.catUnique, catUniqueKey(householdID, c.Name))
 	now := time.Now().UTC()
 	c.DeletedAt = &now
 	c.Version++
-	t.store.appendChange(userID, domain.SyncEntityCategory, c.ID, domain.SyncChangeTombstone, c.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeTombstone, c.Version)
 	cc := *c
 	return &cc, nil
 }
@@ -1464,14 +1606,14 @@ func (t *fakeSyncTx) CreateTransaction(
 
 func (t *fakeSyncTx) ReplaceTransaction(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	baseVersion int,
 	st domain.TransactionFullState,
 ) (*domain.Transaction, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	tx, ok := t.store.transactions[id]
-	if !ok || tx.UserID != userID {
+	if !ok || !t.store.sameHousehold(tx.UserID, householdID) {
 		return nil, domain.ErrTransactionNotFound
 	}
 	if tx.Deleted() {
@@ -1489,16 +1631,19 @@ func (t *fakeSyncTx) ReplaceTransaction(
 	tx.ToAccountID = st.ToAccountID
 	tx.Version++
 	tx.UpdatedAt = time.Now().UTC()
-	t.store.appendChange(userID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeUpsert, tx.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeUpsert, tx.Version)
 	c := *tx
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneTransaction(_ context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
+func (t *fakeSyncTx) TombstoneTransaction(
+	_ context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.Transaction, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	tx, ok := t.store.transactions[id]
-	if !ok || tx.UserID != userID {
+	if !ok || !t.store.sameHousehold(tx.UserID, householdID) {
 		return nil, domain.ErrTransactionNotFound
 	}
 	if tx.Deleted() {
@@ -1508,7 +1653,7 @@ func (t *fakeSyncTx) TombstoneTransaction(_ context.Context, userID, id uuid.UUI
 	now := time.Now().UTC()
 	tx.DeletedAt = &now
 	tx.Version++
-	t.store.appendChange(userID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeTombstone, tx.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityTransaction, tx.ID, domain.SyncChangeTombstone, tx.Version)
 	c := *tx
 	return &c, nil
 }
@@ -1519,14 +1664,14 @@ func (t *fakeSyncTx) CreateDebtor(_ context.Context, params domain.CreateDebtorP
 
 func (t *fakeSyncTx) ReplaceDebtor(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	baseVersion int,
 	st domain.DebtorFullState,
 ) (*domain.Debtor, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	d, ok := t.store.debtors[id]
-	if !ok || d.UserID != userID {
+	if !ok || !t.store.sameHousehold(d.UserID, householdID) {
 		return nil, domain.ErrDebtorNotFound
 	}
 	if d.Deleted() {
@@ -1535,33 +1680,36 @@ func (t *fakeSyncTx) ReplaceDebtor(
 	if d.Version != baseVersion {
 		return nil, domain.ErrDebtorVersionConflict
 	}
-	delete(t.store.debtorUnique, debtorUniqueKey(userID, d.Name))
+	delete(t.store.debtorUnique, debtorUniqueKey(householdID, d.Name))
 	d.Name = st.Name
 	d.Note = st.Note
 	d.UpdatedAt = time.Now().UTC()
 	d.Version++
-	t.store.debtorUnique[debtorUniqueKey(userID, d.Name)] = struct{}{}
-	t.store.appendChange(userID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
+	t.store.debtorUnique[debtorUniqueKey(householdID, d.Name)] = struct{}{}
+	t.store.appendChange(householdID, actorID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeUpsert, d.Version)
 	c := *d
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneDebtor(_ context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+func (t *fakeSyncTx) TombstoneDebtor(
+	_ context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.Debtor, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	d, ok := t.store.debtors[id]
-	if !ok || d.UserID != userID {
+	if !ok || !t.store.sameHousehold(d.UserID, householdID) {
 		return nil, domain.ErrDebtorNotFound
 	}
 	if d.Deleted() {
 		c := *d
 		return &c, nil // idempotent
 	}
-	delete(t.store.debtorUnique, debtorUniqueKey(userID, d.Name))
+	delete(t.store.debtorUnique, debtorUniqueKey(householdID, d.Name))
 	now := time.Now().UTC()
 	d.DeletedAt = &now
 	d.Version++
-	t.store.appendChange(userID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeTombstone, d.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeTombstone, d.Version)
 	c := *d
 	return &c, nil
 }
@@ -1575,14 +1723,14 @@ func (t *fakeSyncTx) CreateDebtOperation(
 
 func (t *fakeSyncTx) ReplaceDebtOperation(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	baseVersion int,
 	st domain.DebtOperationFullState,
 ) (*domain.DebtOperation, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	o, ok := t.store.debtOps[id]
-	if !ok || o.UserID != userID {
+	if !ok || !t.store.sameHousehold(o.UserID, householdID) {
 		return nil, domain.ErrDebtOperationNotFound
 	}
 	if o.Deleted() {
@@ -1599,16 +1747,19 @@ func (t *fakeSyncTx) ReplaceDebtOperation(
 	o.OccurredAt = st.OccurredAt
 	o.Version++
 	o.UpdatedAt = time.Now().UTC()
-	t.store.appendChange(userID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeUpsert, o.Version)
 	c := *o
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneDebtOperation(_ context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error) {
+func (t *fakeSyncTx) TombstoneDebtOperation(
+	_ context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.DebtOperation, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	o, ok := t.store.debtOps[id]
-	if !ok || o.UserID != userID {
+	if !ok || !t.store.sameHousehold(o.UserID, householdID) {
 		return nil, domain.ErrDebtOperationNotFound
 	}
 	if o.Deleted() {
@@ -1618,7 +1769,7 @@ func (t *fakeSyncTx) TombstoneDebtOperation(_ context.Context, userID, id uuid.U
 	now := time.Now().UTC()
 	o.DeletedAt = &now
 	o.Version++
-	t.store.appendChange(userID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeTombstone, o.Version)
+	t.store.appendChange(householdID, actorID, domain.SyncEntityDebtOperation, o.ID, domain.SyncChangeTombstone, o.Version)
 	c := *o
 	return &c, nil
 }

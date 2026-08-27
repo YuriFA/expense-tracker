@@ -30,6 +30,7 @@ func NewEngine(
 	ssi api.StrictServerInterface,
 	sessions repository.SessionRepository,
 	users repository.UserRepository,
+	households repository.HouseholdRepository,
 	idempotency repository.IdempotencyRepository,
 ) *gin.Engine {
 	router := gin.New()
@@ -94,7 +95,7 @@ func NewEngine(
 
 	// Auth (path-aware), rate limit (login + verify), idempotency (create txn).
 	publicRoutes := publicRouteSet()
-	router.Use(pathAwareAuth(sessions, users, log, cfg, publicRoutes))
+	router.Use(pathAwareAuth(sessions, users, households, log, cfg, publicRoutes))
 	loginRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
 	verifyRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
 	router.Use(pathAwareRateLimit(map[string]*middleware.FailureRateLimiter{
@@ -134,11 +135,12 @@ func publicRouteSet() map[string]bool {
 func pathAwareAuth(
 	sessions repository.SessionRepository,
 	users repository.UserRepository,
+	households repository.HouseholdRepository,
 	log *slog.Logger,
 	cfg *config.HTTPServer,
 	publicRoutes map[string]bool,
 ) gin.HandlerFunc {
-	inner := middleware.AuthRequired(sessions, users, log, cfg)
+	inner := middleware.AuthRequired(sessions, users, households, log, cfg)
 	return func(c *gin.Context) {
 		if isPublic(c, publicRoutes) || !strings.HasPrefix(c.Request.URL.Path, "/api/") {
 			c.Next()

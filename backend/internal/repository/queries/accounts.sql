@@ -8,8 +8,8 @@
 
 -- name: CreateAccount :one
 -- id is the optional client-generated id (offline-first clients).
-INSERT INTO accounts (id, household_id, user_id, name, currency, opening_balance)
-VALUES ($1, $2, $3, $4, $5, 0)
+INSERT INTO accounts (id, household_id, user_id, name, currency, opening_balance, manual_adjustment)
+VALUES ($1, $2, $3, $4, $5, $6, 0)
 RETURNING
     id,
     user_id,

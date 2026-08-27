@@ -24,10 +24,21 @@ func seedFakeUser(t *testing.T, store *fakes.Store) *domain.User {
 	return u
 }
 
-func seedFakeAccount(t *testing.T, store *fakes.Store, userID uuid.UUID) *domain.Account {
+// householdOf resolves the user's (single, v1) personal household id - the
+// scoping key every service call takes.
+func householdOf(t *testing.T, store *fakes.Store, userID uuid.UUID) uuid.UUID {
+	t.Helper()
+	m, err := store.GetMembershipByUser(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("householdOf: %v", err)
+	}
+	return m.HouseholdID
+}
+
+func seedFakeAccount(t *testing.T, store *fakes.Store, householdID, userID uuid.UUID) *domain.Account {
 	t.Helper()
 	a, err := store.CreateAccount(context.Background(), domain.CreateAccountParams{
-		UserID: userID, Name: "A", Currency: "USD", OpeningBalance: 0,
+		HouseholdID: householdID, UserID: userID, Name: "A", Currency: "USD", OpeningBalance: 0,
 	})
 	if err != nil {
 		t.Fatalf("seedFakeAccount: %v", err)
@@ -38,13 +49,13 @@ func seedFakeAccount(t *testing.T, store *fakes.Store, userID uuid.UUID) *domain
 func seedFakeCategory(
 	t *testing.T,
 	store *fakes.Store,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	name string,
 	typ domain.TransactionType,
 ) *domain.Category {
 	t.Helper()
 	c, err := store.CreateCategory(context.Background(), domain.CreateCategoryParams{
-		UserID: userID, Name: name, Type: typ, Icon: "i", Color: "#fff",
+		HouseholdID: householdID, UserID: userID, Name: name, Type: typ, Icon: "i", Color: "#fff",
 	})
 	if err != nil {
 		t.Fatalf("seedFakeCategory: %v", err)

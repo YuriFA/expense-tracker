@@ -12,7 +12,7 @@ import (
 )
 
 // PlannedPaymentService owns planned-payment business rules. The account and
-// category references must be LIVE records of the same user, and the category
+// category references must be LIVE records of the same household, and the category
 // type must match the plan type; `next_due` may be in the past (a plan can
 // start out overdue). Type is immutable. The repository handles the
 // optimistic-concurrency version check (returns
@@ -33,16 +33,16 @@ func NewPlannedPaymentService(
 
 func (s *PlannedPaymentService) Create(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	params domain.CreatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.Create"
 
-	if err := s.validateRefs(ctx, userID, params.AccountID, params.CategoryID, params.Type); err != nil {
+	if err := s.validateRefs(ctx, householdID, params.AccountID, params.CategoryID, params.Type); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	params.UserID = userID
+	params.HouseholdID, params.UserID = householdID, userID
 	p, err := s.plans.CreatePlannedPayment(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -52,7 +52,7 @@ func (s *PlannedPaymentService) Create(
 
 func (s *PlannedPaymentService) Update(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, userID, id uuid.UUID,
 	params domain.UpdatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.Update"
@@ -66,7 +66,7 @@ func (s *PlannedPaymentService) Update(
 	if params.AccountID != nil || params.CategoryID != nil {
 		// Type is immutable and comes from the stored plan; re-reading also
 		// surfaces not-found before any ref work.
-		current, err := s.plans.GetPlannedPayment(ctx, userID, id)
+		current, err := s.plans.GetPlannedPayment(ctx, householdID, id)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -78,29 +78,29 @@ func (s *PlannedPaymentService) Update(
 		if params.CategoryID != nil {
 			categoryID = *params.CategoryID
 		}
-		if err := s.validateRefs(ctx, userID, accountID, categoryID, current.Type); err != nil {
+		if err := s.validateRefs(ctx, householdID, accountID, categoryID, current.Type); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
 
-	p, err := s.plans.UpdatePlannedPayment(ctx, userID, id, params)
+	p, err := s.plans.UpdatePlannedPayment(ctx, householdID, userID, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return p, nil
 }
 
-func (s *PlannedPaymentService) Delete(ctx context.Context, userID, id uuid.UUID) error {
+func (s *PlannedPaymentService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
 	const op = "service.plannedPayment.Delete"
-	if err := s.plans.DeletePlannedPayment(ctx, userID, id); err != nil {
+	if err := s.plans.DeletePlannedPayment(ctx, householdID, userID, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (s *PlannedPaymentService) Get(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error) {
+func (s *PlannedPaymentService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.Get"
-	p, err := s.plans.GetPlannedPayment(ctx, userID, id)
+	p, err := s.plans.GetPlannedPayment(ctx, householdID, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -109,32 +109,32 @@ func (s *PlannedPaymentService) Get(ctx context.Context, userID, id uuid.UUID) (
 
 func (s *PlannedPaymentService) List(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetPlannedPaymentsParams,
 ) ([]domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.List"
-	p, err := s.plans.GetPlannedPayments(ctx, userID, params)
+	p, err := s.plans.GetPlannedPayments(ctx, householdID, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return p, nil
 }
 
-// validateRefs verifies the account and category exist, belong to userID, and
+// validateRefs verifies the account and category exist, belong to householdID, and
 // that the category type matches the plan type (the plan type domain is
 // expense|income; transfer is rejected at the contract layer).
 func (s *PlannedPaymentService) validateRefs(
 	ctx context.Context,
-	userID, accountID, categoryID uuid.UUID,
+	householdID, accountID, categoryID uuid.UUID,
 	typ domain.TransactionType,
 ) error {
-	if _, err := s.accounts.GetAccount(ctx, userID, accountID); err != nil {
+	if _, err := s.accounts.GetAccount(ctx, householdID, accountID); err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			return domain.ErrPlannedPaymentAccountNotFound
 		}
 		return err
 	}
-	cat, err := s.categories.GetCategory(ctx, userID, categoryID)
+	cat, err := s.categories.GetCategory(ctx, householdID, categoryID)
 	if err != nil {
 		if errors.Is(err, domain.ErrCategoryNotFound) {
 			return domain.ErrPlannedPaymentCategoryNotFound

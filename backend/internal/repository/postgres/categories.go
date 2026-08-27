@@ -12,22 +12,25 @@ import (
 
 // Every mutation runs inside withinLockedTx (entity write + change_log append
 // in one committed transaction). Deletes are tombstones guarded by the in-use
-// check; the live-name uniqueness is enforced by the partial unique index.
+// check; the live-name uniqueness is enforced by the per-household partial
+// unique index. householdID scopes every query; actorID is the acting member
+// whose id lands on the change_log row as authorship.
 
 func (r *Repository) CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error) {
 	const op = "repository.postgres.CreateCategory"
 
 	id := newEntityID(params.ID)
 	var row db.CreateCategoryRow
-	err := r.withinLockedTx(ctx, params.UserID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, params.HouseholdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.CreateCategory(ctx, db.CreateCategoryParams{
-			ID:     id,
-			UserID: params.UserID,
-			Name:   params.Name,
-			Type:   string(params.Type),
-			Icon:   params.Icon,
-			Color:  params.Color,
+			ID:          id,
+			HouseholdID: params.HouseholdID,
+			UserID:      params.UserID,
+			Name:        params.Name,
+			Type:        string(params.Type),
+			Icon:        params.Icon,
+			Color:       params.Color,
 		})
 		if err != nil {
 			if pgUniqueViolation(err) {
@@ -40,6 +43,7 @@ func (r *Repository) CreateCategory(ctx context.Context, params domain.CreateCat
 		return appendChangeLog(
 			ctx,
 			q,
+			params.HouseholdID,
 			params.UserID,
 			row.ID,
 			domain.SyncEntityCategory,
@@ -65,7 +69,7 @@ func (r *Repository) CreateCategory(ctx context.Context, params domain.CreateCat
 
 func (r *Repository) UpdateCategory(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateCategoryParams,
 ) (*domain.Category, error) {
 	const op = "repository.postgres.UpdateCategory"
@@ -77,30 +81,31 @@ func (r *Repository) UpdateCategory(
 	}
 
 	var row db.UpdateCategoryRow
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.UpdateCategory(ctx, db.UpdateCategoryParams{
-			ID:      id,
-			UserID:  userID,
-			Name:    params.Name,
-			Type:    typ,
-			Icon:    params.Icon,
-			Color:   params.Color,
-			Version: int32(params.Version), //nolint:gosec // optimistic version is a small positive int
+			ID:          id,
+			HouseholdID: householdID,
+			Name:        params.Name,
+			Type:        typ,
+			Icon:        params.Icon,
+			Color:       params.Color,
+			Version:     int32(params.Version), //nolint:gosec // optimistic version is a small positive int
 		})
 		if err != nil {
 			if pgUniqueViolation(err) {
 				return domain.ErrCategoryAlreadyExists
 			}
 			if errNoRows(err) {
-				return classifyCategoryWrite(ctx, q, userID, id)
+				return classifyCategoryWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
 		return appendChangeLog(
 			ctx,
 			q,
-			userID,
+			householdID,
+			actorID,
 			row.ID,
 			domain.SyncEntityCategory,
 			domain.SyncChangeUpsert,
@@ -125,14 +130,14 @@ func (r *Repository) UpdateCategory(
 
 func (r *Repository) DeleteCategory( //nolint:dupl // account/category delete twins: identical guard shape
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 ) error {
 	const op = "repository.postgres.DeleteCategory"
 
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		inUse, err := q.HasLiveTransactionsForCategory(ctx, db.HasLiveTransactionsForCategoryParams{
-			UserID:     userID,
-			CategoryID: &id,
+			HouseholdID: householdID,
+			CategoryID:  &id,
 		})
 		if err != nil {
 			return err
@@ -141,8 +146,8 @@ func (r *Repository) DeleteCategory( //nolint:dupl // account/category delete tw
 			return domain.ErrCategoryHasTransactions
 		}
 		plansInUse, err := q.HasLivePlannedPaymentsForCategory(ctx, db.HasLivePlannedPaymentsForCategoryParams{
-			UserID:     userID,
-			CategoryID: id,
+			HouseholdID: householdID,
+			CategoryID:  id,
 		})
 		if err != nil {
 			return err
@@ -150,14 +155,16 @@ func (r *Repository) DeleteCategory( //nolint:dupl // account/category delete tw
 		if plansInUse {
 			return domain.ErrCategoryHasPlannedPayments
 		}
-		version, err := q.SoftDeleteCategory(ctx, db.SoftDeleteCategoryParams{ID: id, UserID: userID})
+		version, err := q.SoftDeleteCategory(ctx, db.SoftDeleteCategoryParams{ID: id, HouseholdID: householdID})
 		if err != nil {
 			if errNoRows(err) {
-				return classifyCategoryWrite(ctx, q, userID, id)
+				return classifyCategoryWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
-		return appendChangeLog(ctx, q, userID, id, domain.SyncEntityCategory, domain.SyncChangeTombstone, int(version))
+		return appendChangeLog(
+			ctx, q, householdID, actorID, id, domain.SyncEntityCategory, domain.SyncChangeTombstone, int(version),
+		)
 	})
 	if err != nil {
 		return opWrap(op, err)
@@ -167,18 +174,18 @@ func (r *Repository) DeleteCategory( //nolint:dupl // account/category delete tw
 
 // classifyCategoryWrite distinguishes the zero-row outcomes of a CAS write for
 // the REST surface (deleted == not found; live mismatch == version conflict).
-func classifyCategoryWrite(ctx context.Context, q *db.Queries, userID, id uuid.UUID) error {
-	row, err := q.GetCategoryAny(ctx, db.GetCategoryAnyParams{ID: id, UserID: userID})
+func classifyCategoryWrite(ctx context.Context, q *db.Queries, householdID, id uuid.UUID) error {
+	row, err := q.GetCategoryAny(ctx, db.GetCategoryAnyParams{ID: id, HouseholdID: householdID})
 	if err != nil || row.DeletedAt != nil {
 		return domain.ErrCategoryNotFound
 	}
 	return domain.ErrCategoryVersionConflict
 }
 
-func (r *Repository) GetCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error) {
+func (r *Repository) GetCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
 	const op = "repository.postgres.GetCategory"
 
-	row, err := r.q.GetCategory(ctx, db.GetCategoryParams{ID: id, UserID: userID})
+	row, err := r.q.GetCategory(ctx, db.GetCategoryParams{ID: id, HouseholdID: householdID})
 	if err != nil {
 		if errNoRows(err) {
 			return nil, domain.ErrCategoryNotFound
@@ -200,7 +207,7 @@ func (r *Repository) GetCategory(ctx context.Context, userID, id uuid.UUID) (*do
 
 func (r *Repository) GetCategories(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetCategoriesParams,
 ) ([]domain.Category, error) {
 	const op = "repository.postgres.GetCategories"
@@ -211,7 +218,7 @@ func (r *Repository) GetCategories(
 		typ = &s
 	}
 
-	rows, err := r.q.GetCategories(ctx, db.GetCategoriesParams{UserID: userID, Type: typ})
+	rows, err := r.q.GetCategories(ctx, db.GetCategoriesParams{HouseholdID: householdID, Type: typ})
 	if err != nil {
 		return nil, opWrap(op, err)
 	}

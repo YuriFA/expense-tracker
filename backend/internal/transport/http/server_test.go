@@ -92,6 +92,7 @@ func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin
 	debtOpSvc := service.NewDebtOperationService(store, store)
 	planSvc := service.NewPlannedPaymentService(store, store, store)
 	sessionSvc := service.NewSessionService(store)
+	householdSvc := service.NewHouseholdService(store)
 
 	server := httptransport.NewServer(
 		cfg,
@@ -104,9 +105,10 @@ func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin
 		planSvc,
 		authSvc,
 		sessionSvc,
+		householdSvc,
 		service.NewSyncService(store),
 	)
-	return httptransport.NewEngine(cfg, log, server, store, store, store)
+	return httptransport.NewEngine(cfg, log, server, store, store, store, store)
 }
 
 func testHTTPConfig() *config.HTTPServer {

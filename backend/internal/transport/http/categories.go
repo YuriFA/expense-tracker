@@ -13,13 +13,13 @@ func (s *Server) ListCategories(
 	ctx context.Context,
 	req api.ListCategoriesRequestObject,
 ) (api.ListCategoriesResponseObject, error) {
-	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 	var typ *domain.TransactionType
 	if req.Params.Type != nil {
 		t := domain.TransactionType(*req.Params.Type)
 		typ = &t
 	}
-	cats, err := s.categories.List(ctx, user.ID, domain.GetCategoriesParams{Type: typ})
+	cats, err := s.categories.List(ctx, householdID, domain.GetCategoriesParams{Type: typ})
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +35,12 @@ func (s *Server) CreateCategory(
 	req api.CreateCategoryRequestObject,
 ) (api.CreateCategoryResponseObject, error) {
 	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
 	}
-	c, err := s.categories.Create(ctx, user.ID, domain.CreateCategoryParams{
+	c, err := s.categories.Create(ctx, householdID, user.ID, domain.CreateCategoryParams{
 		ID:    id,
 		Name:  req.Body.Name,
 		Type:  domain.TransactionType(req.Body.Type),
@@ -56,8 +57,8 @@ func (s *Server) GetCategory(
 	ctx context.Context,
 	req api.GetCategoryRequestObject,
 ) (api.GetCategoryResponseObject, error) {
-	user := s.currentUser(ctx)
-	c, err := s.categories.Get(ctx, user.ID, req.Id)
+	householdID := s.currentHouseholdID(ctx)
+	c, err := s.categories.Get(ctx, householdID, req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (s *Server) UpdateCategory(
 		t := domain.TransactionType(*req.Body.Type)
 		typ = &t
 	}
-	c, err := s.categories.Update(ctx, user.ID, req.Id, domain.UpdateCategoryParams{
+	c, err := s.categories.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateCategoryParams{
 		Name: name, Type: typ, Icon: icon, Color: color, Version: req.Body.Version,
 	})
 	if err != nil {
@@ -101,7 +102,7 @@ func (s *Server) DeleteCategory(
 	req api.DeleteCategoryRequestObject,
 ) (api.DeleteCategoryResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.categories.Delete(ctx, user.ID, req.Id); err != nil {
+	if err := s.categories.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeleteCategory204Response{}, nil

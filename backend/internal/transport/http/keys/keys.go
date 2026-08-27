@@ -4,5 +4,6 @@ package keys
 const (
 	CurrentUserKey      = "currentUser"
 	CurrentSessionIDKey = "currentSessionID"
+	CurrentHouseholdKey = "currentHouseholdID"
 	RequestIDHeader     = "X-Request-ID"
 )

@@ -122,6 +122,7 @@ func testMain(m *testing.M) int {
 	debtOpSvc := service.NewDebtOperationService(e2eRepo, e2eRepo)
 	planSvc := service.NewPlannedPaymentService(e2eRepo, e2eRepo, e2eRepo)
 	sessionSvc := service.NewSessionService(e2eRepo)
+	householdSvc := service.NewHouseholdService(e2eRepo)
 	syncSvc := service.NewSyncService(e2eRepo)
 
 	server := httptransport.NewServer(
@@ -135,9 +136,10 @@ func testMain(m *testing.M) int {
 		planSvc,
 		authSvc,
 		sessionSvc,
+		householdSvc,
 		syncSvc,
 	)
-	e2eEngine = httptransport.NewEngine(testCfg(), discardLogger(), server, e2eRepo, e2eRepo, e2eRepo)
+	e2eEngine = httptransport.NewEngine(testCfg(), discardLogger(), server, e2eRepo, e2eRepo, e2eRepo, e2eRepo)
 
 	return m.Run()
 }

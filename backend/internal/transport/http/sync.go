@@ -18,6 +18,7 @@ func (s *Server) SyncPush(
 	req api.SyncPushRequestObject,
 ) (api.SyncPushResponseObject, error) {
 	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 
 	ops := make([]domain.SyncOperation, 0, len(req.Body.Operations))
 	for _, o := range req.Body.Operations {
@@ -39,7 +40,7 @@ func (s *Server) SyncPush(
 		})
 	}
 
-	results, err := s.sync.Push(ctx, user.ID, ops)
+	results, err := s.sync.Push(ctx, householdID, user.ID, ops)
 	if err != nil {
 		return nil, err
 	}
@@ -68,14 +69,14 @@ func (s *Server) SyncPull(
 	ctx context.Context,
 	req api.SyncPullRequestObject,
 ) (api.SyncPullResponseObject, error) {
-	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 
 	var afterSeq int64
 	if req.Params.Cursor != nil {
 		afterSeq = *req.Params.Cursor
 	}
 
-	page, err := s.sync.Pull(ctx, user.ID, afterSeq, req.Params.Limit)
+	page, err := s.sync.Pull(ctx, householdID, afterSeq, req.Params.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (s *Server) SyncPull(
 		changes = append(changes, change)
 	}
 	s.log.InfoContext(ctx, "sync pull metrics",
-		slog.String("user_id", user.ID.String()),
+		slog.String("household_id", householdID.String()),
 		slog.String("request_id", httpctx.RequestID(ginCtx(ctx))),
 		slog.Int64("cursor", afterSeq),
 		slog.Int("changes", len(page.Changes)),

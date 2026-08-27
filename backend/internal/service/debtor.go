@@ -10,9 +10,11 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
-// DebtorService owns per-user debtor business rules. The repository handles
-// the optimistic-concurrency version check (returns ErrDebtorVersionConflict
-// on mismatch) and the live-name uniqueness (partial unique index).
+// DebtorService owns household debtor business rules. householdID (scoping)
+// and the acting userID (authorship) are always passed explicitly from the
+// transport layer. The repository handles the optimistic-concurrency version
+// check (returns ErrDebtorVersionConflict on mismatch) and the live-name
+// uniqueness (per-household partial unique index).
 type DebtorService struct {
 	debtors repository.DebtorRepository
 }
@@ -23,11 +25,11 @@ func NewDebtorService(debtors repository.DebtorRepository) *DebtorService {
 
 func (s *DebtorService) Create(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	params domain.CreateDebtorParams,
 ) (*domain.Debtor, error) {
 	const op = "service.debtor.Create"
-	params.UserID = userID
+	params.HouseholdID, params.UserID = householdID, userID
 	d, err := s.debtors.CreateDebtor(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -37,40 +39,40 @@ func (s *DebtorService) Create(
 
 func (s *DebtorService) Update(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, userID, id uuid.UUID,
 	params domain.UpdateDebtorParams,
 ) (*domain.Debtor, error) {
 	const op = "service.debtor.Update"
 	if params.Name == nil && params.Note == nil {
 		return nil, ErrNoFieldsToUpdate
 	}
-	d, err := s.debtors.UpdateDebtor(ctx, userID, id, params)
+	d, err := s.debtors.UpdateDebtor(ctx, householdID, userID, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return d, nil
 }
 
-func (s *DebtorService) Delete(ctx context.Context, userID, id uuid.UUID) error {
+func (s *DebtorService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
 	const op = "service.debtor.Delete"
-	if err := s.debtors.DeleteDebtor(ctx, userID, id); err != nil {
+	if err := s.debtors.DeleteDebtor(ctx, householdID, userID, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (s *DebtorService) Get(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+func (s *DebtorService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
 	const op = "service.debtor.Get"
-	d, err := s.debtors.GetDebtor(ctx, userID, id)
+	d, err := s.debtors.GetDebtor(ctx, householdID, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return d, nil
 }
 
-func (s *DebtorService) List(ctx context.Context, userID uuid.UUID) ([]domain.Debtor, error) {
+func (s *DebtorService) List(ctx context.Context, householdID uuid.UUID) ([]domain.Debtor, error) {
 	const op = "service.debtor.List"
-	d, err := s.debtors.GetDebtors(ctx, userID)
+	d, err := s.debtors.GetDebtors(ctx, householdID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

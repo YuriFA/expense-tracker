@@ -52,7 +52,8 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 
 	ctx := newCtx(t)
 	user := seedUser(t, "plans")
-	account := seedAccount(t, user.ID)
+	userHH := householdOf(t, user.ID)
+	account := seedAccount(t, userHH, user.ID)
 	category := seedExpenseCategory(t, user.ID, "Подписки")
 
 	created, err := testRepo.CreatePlannedPayment(ctx, planParams(user.ID, account.ID, category.ID))
@@ -72,13 +73,14 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 
 	t.Run("scoping: another user sees not-found", func(t *testing.T) {
 		intruder := seedUser(t, "plans-intruder")
-		_, err := testRepo.GetPlannedPayment(ctx, intruder.ID, created.ID)
+		intruderHH := householdOf(t, intruder.ID)
+		_, err := testRepo.GetPlannedPayment(ctx, intruderHH, created.ID)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
 	})
 
 	t.Run("update CAS, note semantics, anchor reset", func(t *testing.T) {
 		name := "Netflix Premium"
-		updated, err := testRepo.UpdatePlannedPayment(ctx, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
+		updated, err := testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
 			Name: &name, Version: 1,
 		})
 		require.NoError(t, err)
@@ -86,42 +88,42 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 		assert.True(t, updated.AnchorDate.Equal(created.AnchorDate), "name change keeps the anchor")
 
 		newDue := time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC)
-		reset, err := testRepo.UpdatePlannedPayment(ctx, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
+		reset, err := testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
 			NextDue: &newDue, Version: 2,
 		})
 		require.NoError(t, err)
 		assert.True(t, reset.AnchorDate.Equal(newDue), "next_due change resets the anchor")
 
 		stale := int64(1)
-		_, err = testRepo.UpdatePlannedPayment(ctx, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
+		_, err = testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
 			Amount: &stale, Version: 1,
 		})
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentVersionConflict)
 	})
 
 	t.Run("in-use guards count live plans only", func(t *testing.T) {
-		require.ErrorIs(t, testRepo.DeleteAccount(ctx, user.ID, account.ID), domain.ErrAccountHasPlannedPayments)
-		require.ErrorIs(t, testRepo.DeleteCategory(ctx, user.ID, category.ID), domain.ErrCategoryHasPlannedPayments)
+		require.ErrorIs(t, testRepo.DeleteAccount(ctx, userHH, user.ID, account.ID), domain.ErrAccountHasPlannedPayments)
+		require.ErrorIs(t, testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID), domain.ErrCategoryHasPlannedPayments)
 
 		// Tombstone every live plan of the account (the duplicate-name subtest
 		// added a second one) through the sync surface; the guards clear.
-		plans, err := testRepo.GetPlannedPayments(ctx, user.ID, domain.GetPlannedPaymentsParams{})
+		plans, err := testRepo.GetPlannedPayments(ctx, userHH, domain.GetPlannedPaymentsParams{})
 		require.NoError(t, err)
 		for _, p := range plans {
 			planID := p.ID
-			require.NoError(t, testRepo.WithinUserTx(ctx, user.ID, func(tx repository.SyncTx) error {
-				_, err := tx.TombstonePlannedPayment(ctx, user.ID, planID)
+			require.NoError(t, testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
+				_, err := tx.TombstonePlannedPayment(ctx, userHH, user.ID, planID)
 				return err
 			}))
 		}
-		require.NoError(t, testRepo.DeleteAccount(ctx, user.ID, account.ID))
+		require.NoError(t, testRepo.DeleteAccount(ctx, userHH, user.ID, account.ID))
 	})
 
 	t.Run("tombstoned reads classify as not-found", func(t *testing.T) {
-		_, err := testRepo.GetPlannedPayment(ctx, user.ID, created.ID)
+		_, err := testRepo.GetPlannedPayment(ctx, userHH, created.ID)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
 		amount := int64(1)
-		_, err = testRepo.UpdatePlannedPayment(ctx, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
+		_, err = testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
 			Amount: &amount, Version: 4,
 		})
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
@@ -135,7 +137,8 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 
 	ctx := newCtx(t)
 	user := seedUser(t, "plans-checks")
-	account := seedAccount(t, user.ID)
+	userHH := householdOf(t, user.ID)
+	account := seedAccount(t, userHH, user.ID)
 	category := seedExpenseCategory(t, user.ID, "Развлечения")
 
 	// CHECK constraints reject invalid enums and non-positive amounts.
@@ -154,7 +157,7 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 
 	// REST update + delete are versioned mutations that land in the change log.
 	name := "Netflix 2027"
-	_, err = testRepo.UpdatePlannedPayment(ctx, user.ID, plan.ID, domain.UpdatePlannedPaymentParams{
+	_, err = testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, plan.ID, domain.UpdatePlannedPaymentParams{
 		Name: &name, Version: 1,
 	})
 	require.NoError(t, err)
@@ -162,9 +165,9 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	// The sync-tx advancement (auto-confirm job path) bumps next_due and the
 	// version and appends its own change-log row.
 	var advanced *domain.PlannedPayment
-	err = testRepo.WithinUserTx(ctx, user.ID, func(tx repository.SyncTx) error {
+	err = testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
 		next := domain.AdvanceNextDue(plan.NextDue, plan.AnchorDate, plan.Regularity)
-		advanced, err = tx.AdvancePlannedPayment(ctx, user.ID, plan.ID, next)
+		advanced, err = tx.AdvancePlannedPayment(ctx, userHH, user.ID, plan.ID, next)
 		return err
 	})
 	require.NoError(t, err)
@@ -172,9 +175,9 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	assert.Equal(t, 3, advanced.Version)
 
 	// Unguarded delete is a tombstone with a version bump.
-	require.NoError(t, testRepo.DeletePlannedPayment(ctx, user.ID, plan.ID))
+	require.NoError(t, testRepo.DeletePlannedPayment(ctx, userHH, user.ID, plan.ID))
 
-	changes, err := testRepo.PullChanges(ctx, user.ID, 0, 100)
+	changes, err := testRepo.PullChanges(ctx, userHH, 0, 100)
 	require.NoError(t, err)
 	var upserts, tombstones, accounts, categories int
 	for _, change := range changes {
@@ -204,7 +207,8 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	// Type-filtered listing.
 	expenseType := domain.TransactionTypeExpense
 	incomeCategory, err := testRepo.CreateCategory(ctx, domain.CreateCategoryParams{
-		UserID: user.ID, Name: "Работа", Type: domain.TransactionTypeIncome, Icon: "x", Color: "#fff",
+		HouseholdID: userHH,
+		UserID:      user.ID, Name: "Работа", Type: domain.TransactionTypeIncome, Icon: "x", Color: "#fff",
 	})
 	require.NoError(t, err)
 	income := planParams(user.ID, account.ID, incomeCategory.ID)
@@ -212,7 +216,7 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	_, err = testRepo.CreatePlannedPayment(ctx, income)
 	require.NoError(t, err)
 
-	expenses, err := testRepo.GetPlannedPayments(ctx, user.ID, domain.GetPlannedPaymentsParams{Type: &expenseType})
+	expenses, err := testRepo.GetPlannedPayments(ctx, userHH, domain.GetPlannedPaymentsParams{Type: &expenseType})
 	require.NoError(t, err)
 	for _, p := range expenses {
 		assert.Equal(t, domain.TransactionTypeExpense, p.Type)

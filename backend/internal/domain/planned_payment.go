@@ -102,7 +102,10 @@ func (p *PlannedPayment) Deleted() bool { return p.DeletedAt != nil }
 type CreatePlannedPaymentParams struct {
 	// ID is the optional client-generated id (offline-first clients). Zero
 	// means "server generates".
-	ID         uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	// UserID is the authorship stamp (the acting member), never trusted from
+	// the wire.
 	UserID     uuid.UUID
 	Type       TransactionType
 	Amount     int64

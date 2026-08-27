@@ -73,4 +73,7 @@ var (
 	ErrPasswordResetTokenNotFound         = errors.New("password reset token not found")
 	ErrEmailAlreadyVerified               = errors.New("email already verified")
 	ErrInvalidCredentials                 = errors.New("invalid credentials")
+	ErrHouseholdNotFound                  = errors.New("household not found")
+	ErrMembershipNotFound                 = errors.New("user has no household membership")
+	ErrInvalidDisplayName                 = errors.New("display name must be 1-100 characters after trimming")
 )

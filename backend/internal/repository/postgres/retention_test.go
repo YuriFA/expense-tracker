@@ -18,28 +18,30 @@ func TestTombstoneRetentionDeletesOnlyExpiredTombstones(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 	user := seedUser(t, "retention")
+	userHH := householdOf(t, user.ID)
 	ctx := newCtx(t)
 
-	oldCategory := seedCategory(t, user.ID, "old-cat")
-	oldAccount := seedAccount(t, user.ID)
+	oldCategory := seedCategory(t, userHH, user.ID, "old-cat")
+	oldAccount := seedAccount(t, userHH, user.ID)
 	oldTxn, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
-		UserID:     user.ID,
-		Type:       domain.TransactionTypeExpense,
-		Amount:     100,
-		OccurredAt: mustNow(),
-		AccountID:  &oldAccount.ID,
-		CategoryID: &oldCategory.ID,
+		HouseholdID: userHH,
+		UserID:      user.ID,
+		Type:        domain.TransactionTypeExpense,
+		Amount:      100,
+		OccurredAt:  mustNow(),
+		AccountID:   &oldAccount.ID,
+		CategoryID:  &oldCategory.ID,
 	})
 	require.NoError(t, err, "seed old transaction")
 
-	recentCategory := seedCategory(t, user.ID, "recent-cat")
-	liveAccount := seedAccount(t, user.ID)
+	recentCategory := seedCategory(t, userHH, user.ID, "recent-cat")
+	liveAccount := seedAccount(t, userHH, user.ID)
 
 	// Soft-delete in dependency order (guards reject deletes while referenced).
-	require.NoError(t, testRepo.DeleteTransaction(ctx, user.ID, oldTxn.ID), "delete old transaction")
-	require.NoError(t, testRepo.DeleteCategory(ctx, user.ID, oldCategory.ID), "delete old category")
-	require.NoError(t, testRepo.DeleteAccount(ctx, user.ID, oldAccount.ID), "delete old account")
-	require.NoError(t, testRepo.DeleteCategory(ctx, user.ID, recentCategory.ID), "delete recent category")
+	require.NoError(t, testRepo.DeleteTransaction(ctx, userHH, user.ID, oldTxn.ID), "delete old transaction")
+	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, oldCategory.ID), "delete old category")
+	require.NoError(t, testRepo.DeleteAccount(ctx, userHH, user.ID, oldAccount.ID), "delete old account")
+	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, recentCategory.ID), "delete recent category")
 
 	// Backdate the old tombstones beyond the 90-day cutoff; leave the recent
 	// tombstone at now().
@@ -109,10 +111,11 @@ func TestTombstoneRetentionIsIdempotent(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 	user := seedUser(t, "retention-idem")
+	userHH := householdOf(t, user.ID)
 	ctx := newCtx(t)
 
-	category := seedCategory(t, user.ID, "idem-cat")
-	require.NoError(t, testRepo.DeleteCategory(ctx, user.ID, category.ID))
+	category := seedCategory(t, userHH, user.ID, "idem-cat")
+	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID))
 	_, err := testPool.Exec(ctx,
 		"UPDATE categories SET deleted_at = now() - interval '100 days' WHERE id = $1", category.ID)
 	require.NoError(t, err)

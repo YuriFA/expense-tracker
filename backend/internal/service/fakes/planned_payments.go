@@ -36,6 +36,7 @@ func (s *Store) CreatePlannedPayment(
 	}
 	s.plans[p.ID] = p
 	s.appendChange(
+		params.HouseholdID,
 		params.UserID,
 		domain.SyncEntityPlannedPayment,
 		p.ID,
@@ -48,13 +49,13 @@ func (s *Store) CreatePlannedPayment(
 
 func (s *Store) UpdatePlannedPayment(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, ok := s.plans[id]
-	if !ok || p.UserID != userID || p.Deleted() {
+	if !ok || !s.sameHousehold(p.UserID, householdID) || p.Deleted() {
 		return nil, domain.ErrPlannedPaymentNotFound
 	}
 	if p.Version != params.Version {
@@ -91,7 +92,8 @@ func (s *Store) UpdatePlannedPayment(
 	p.UpdatedAt = time.Now().UTC()
 	p.Version++
 	s.appendChange(
-		userID,
+		householdID,
+		actorID,
 		domain.SyncEntityPlannedPayment,
 		p.ID,
 		domain.SyncChangeUpsert,
@@ -101,11 +103,11 @@ func (s *Store) UpdatePlannedPayment(
 	return &c, nil
 }
 
-func (s *Store) DeletePlannedPayment(_ context.Context, userID, id uuid.UUID) error {
+func (s *Store) DeletePlannedPayment(_ context.Context, householdID, actorID, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, ok := s.plans[id]
-	if !ok || p.UserID != userID {
+	if !ok || !s.sameHousehold(p.UserID, householdID) {
 		return domain.ErrPlannedPaymentNotFound
 	}
 	if !p.Deleted() {
@@ -113,7 +115,8 @@ func (s *Store) DeletePlannedPayment(_ context.Context, userID, id uuid.UUID) er
 		p.DeletedAt = &now
 		p.Version++
 		s.appendChange(
-			userID,
+			householdID,
+			actorID,
 			domain.SyncEntityPlannedPayment,
 			p.ID,
 			domain.SyncChangeTombstone,
@@ -125,12 +128,12 @@ func (s *Store) DeletePlannedPayment(_ context.Context, userID, id uuid.UUID) er
 
 func (s *Store) GetPlannedPayment(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, ok := s.plans[id]
-	if !ok || p.UserID != userID || p.Deleted() {
+	if !ok || !s.sameHousehold(p.UserID, householdID) || p.Deleted() {
 		return nil, domain.ErrPlannedPaymentNotFound
 	}
 	c := *p
@@ -139,14 +142,14 @@ func (s *Store) GetPlannedPayment(
 
 func (s *Store) GetPlannedPayments( //nolint:dupl // per-entity list twins: identical filter/sort shape
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetPlannedPaymentsParams,
 ) ([]domain.PlannedPayment, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.PlannedPayment
 	for _, p := range s.plans {
-		if p.UserID != userID || p.Deleted() {
+		if !s.sameHousehold(p.UserID, householdID) || p.Deleted() {
 			continue
 		}
 		if params.Type != nil && p.Type != *params.Type {
@@ -173,12 +176,12 @@ func dayStart(t time.Time) time.Time {
 
 func (t *fakeSyncTx) GetPlannedPaymentAny(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]
-	if !ok || p.UserID != userID {
+	if !ok || !t.store.sameHousehold(p.UserID, householdID) {
 		return nil, nil //nolint:nilnil // (nil, nil) is the documented "never created" signal
 	}
 	c := *p
@@ -187,12 +190,12 @@ func (t *fakeSyncTx) GetPlannedPaymentAny(
 
 func (t *fakeSyncTx) HasLivePlannedPaymentsForAccount(
 	_ context.Context,
-	userID, accountID uuid.UUID,
+	householdID, accountID uuid.UUID,
 ) (bool, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, p := range t.store.plans {
-		if p.UserID == userID && p.AccountID == accountID && !p.Deleted() {
+		if t.store.sameHousehold(p.UserID, householdID) && p.AccountID == accountID && !p.Deleted() {
 			return true, nil
 		}
 	}
@@ -201,12 +204,12 @@ func (t *fakeSyncTx) HasLivePlannedPaymentsForAccount(
 
 func (t *fakeSyncTx) HasLivePlannedPaymentsForCategory(
 	_ context.Context,
-	userID, categoryID uuid.UUID,
+	householdID, categoryID uuid.UUID,
 ) (bool, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, p := range t.store.plans {
-		if p.UserID == userID && p.CategoryID == categoryID && !p.Deleted() {
+		if t.store.sameHousehold(p.UserID, householdID) && p.CategoryID == categoryID && !p.Deleted() {
 			return true, nil
 		}
 	}
@@ -215,7 +218,7 @@ func (t *fakeSyncTx) HasLivePlannedPaymentsForCategory(
 
 func (t *fakeSyncTx) DueAutoPlannedPayments(
 	_ context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	today time.Time,
 ) ([]domain.PlannedPayment, error) {
 	t.store.mu.Lock()
@@ -223,7 +226,8 @@ func (t *fakeSyncTx) DueAutoPlannedPayments(
 	var out []domain.PlannedPayment
 	cutoff := dayStart(today)
 	for _, p := range t.store.plans {
-		if p.UserID == userID && !p.Deleted() && p.ConfirmMode == domain.PlannedConfirmAuto &&
+		if t.store.sameHousehold(p.UserID, householdID) && !p.Deleted() &&
+			p.ConfirmMode == domain.PlannedConfirmAuto &&
 			!dayStart(p.NextDue).After(cutoff) {
 			out = append(out, *p)
 		}
@@ -246,14 +250,14 @@ func (t *fakeSyncTx) CreatePlannedPayment(
 
 func (t *fakeSyncTx) ReplacePlannedPayment(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	baseVersion int,
 	st domain.PlannedPaymentFullState,
 ) (*domain.PlannedPayment, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]
-	if !ok || p.UserID != userID {
+	if !ok || !t.store.sameHousehold(p.UserID, householdID) {
 		return nil, domain.ErrPlannedPaymentNotFound
 	}
 	if p.Deleted() {
@@ -276,7 +280,8 @@ func (t *fakeSyncTx) ReplacePlannedPayment(
 	p.Version++
 	p.UpdatedAt = time.Now().UTC()
 	t.store.appendChange(
-		userID,
+		householdID,
+		actorID,
 		domain.SyncEntityPlannedPayment,
 		p.ID,
 		domain.SyncChangeUpsert,
@@ -286,11 +291,14 @@ func (t *fakeSyncTx) ReplacePlannedPayment(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstonePlannedPayment(_ context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error) {
+func (t *fakeSyncTx) TombstonePlannedPayment(
+	_ context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.PlannedPayment, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]
-	if !ok || p.UserID != userID {
+	if !ok || !t.store.sameHousehold(p.UserID, householdID) {
 		return nil, domain.ErrPlannedPaymentNotFound
 	}
 	if p.Deleted() {
@@ -301,7 +309,8 @@ func (t *fakeSyncTx) TombstonePlannedPayment(_ context.Context, userID, id uuid.
 	p.DeletedAt = &now
 	p.Version++
 	t.store.appendChange(
-		userID,
+		householdID,
+		actorID,
 		domain.SyncEntityPlannedPayment,
 		p.ID,
 		domain.SyncChangeTombstone,
@@ -313,20 +322,21 @@ func (t *fakeSyncTx) TombstonePlannedPayment(_ context.Context, userID, id uuid.
 
 func (t *fakeSyncTx) AdvancePlannedPayment(
 	_ context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	nextDue time.Time,
 ) (*domain.PlannedPayment, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]
-	if !ok || p.UserID != userID || p.Deleted() {
+	if !ok || !t.store.sameHousehold(p.UserID, householdID) || p.Deleted() {
 		return nil, domain.ErrPlannedPaymentNotFound
 	}
 	p.NextDue = dayStart(nextDue)
 	p.Version++
 	p.UpdatedAt = time.Now().UTC()
 	t.store.appendChange(
-		userID,
+		householdID,
+		actorID,
 		domain.SyncEntityPlannedPayment,
 		p.ID,
 		domain.SyncChangeUpsert,
@@ -336,9 +346,9 @@ func (t *fakeSyncTx) AdvancePlannedPayment(
 	return &c, nil
 }
 
-// UsersWithDueAutoPlannedPayments lists users owning at least one due auto
-// plan (the auto-confirm job's work list).
-func (s *Store) UsersWithDueAutoPlannedPayments(
+// HouseholdsWithDueAutoPlannedPayments lists households owning at least one due
+// auto plan (the auto-confirm job's work list).
+func (s *Store) HouseholdsWithDueAutoPlannedPayments(
 	_ context.Context,
 	today time.Time,
 ) ([]uuid.UUID, error) {
@@ -348,12 +358,16 @@ func (s *Store) UsersWithDueAutoPlannedPayments(
 	var out []uuid.UUID
 	cutoff := dayStart(today)
 	for _, p := range s.plans {
-		if !p.Deleted() && p.ConfirmMode == domain.PlannedConfirmAuto &&
-			!dayStart(p.NextDue).After(cutoff) {
-			if _, ok := seen[p.UserID]; !ok {
-				seen[p.UserID] = struct{}{}
-				out = append(out, p.UserID)
-			}
+		if p.Deleted() || p.ConfirmMode != domain.PlannedConfirmAuto || dayStart(p.NextDue).After(cutoff) {
+			continue
+		}
+		householdID, ok := s.householdOf(p.UserID)
+		if !ok {
+			continue
+		}
+		if _, dup := seen[householdID]; !dup {
+			seen[householdID] = struct{}{}
+			out = append(out, householdID)
 		}
 	}
 	return out, nil

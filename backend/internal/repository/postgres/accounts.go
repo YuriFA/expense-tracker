@@ -11,18 +11,21 @@ import (
 )
 
 // Every mutation runs inside withinLockedTx: entity write + change_log append
-// commit atomically, and the per-user advisory lock keeps change_log seq order
-// equal to commit order. Deletes are tombstones guarded by the in-use check.
+// commit atomically, and the per-household advisory lock keeps change_log seq
+// order equal to commit order. Deletes are tombstones guarded by the in-use
+// check. householdID scopes every query; actorID is the acting member whose id
+// lands on the change_log row as authorship.
 
 func (r *Repository) CreateAccount(ctx context.Context, params domain.CreateAccountParams) (*domain.Account, error) {
 	const op = "repository.postgres.CreateAccount"
 
 	id := newEntityID(params.ID)
 	var row db.CreateAccountRow
-	err := r.withinLockedTx(ctx, params.UserID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, params.HouseholdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.CreateAccount(ctx, db.CreateAccountParams{
 			ID:             id,
+			HouseholdID:    params.HouseholdID,
 			UserID:         params.UserID,
 			Name:           params.Name,
 			Currency:       params.Currency,
@@ -37,6 +40,7 @@ func (r *Repository) CreateAccount(ctx context.Context, params domain.CreateAcco
 		return appendChangeLog(
 			ctx,
 			q,
+			params.HouseholdID,
 			params.UserID,
 			row.ID,
 			domain.SyncEntityAccount,
@@ -55,31 +59,32 @@ func (r *Repository) CreateAccount(ctx context.Context, params domain.CreateAcco
 
 func (r *Repository) UpdateAccount(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateAccountParams,
 ) (*domain.Account, error) {
 	const op = "repository.postgres.UpdateAccount"
 
 	var row db.UpdateAccountRow
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.UpdateAccount(ctx, db.UpdateAccountParams{
 			ID:               id,
-			UserID:           userID,
+			HouseholdID:      householdID,
 			Name:             params.Name,
 			ManualAdjustment: params.ManualAdjustment,
 			Version:          int32(params.Version), //nolint:gosec // optimistic version is a small positive int
 		})
 		if err != nil {
 			if errNoRows(err) {
-				return classifyAccountWrite(ctx, q, userID, id)
+				return classifyAccountWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
 		return appendChangeLog(
 			ctx,
 			q,
-			userID,
+			householdID,
+			actorID,
 			row.ID,
 			domain.SyncEntityAccount,
 			domain.SyncChangeUpsert,
@@ -97,14 +102,14 @@ func (r *Repository) UpdateAccount(
 
 func (r *Repository) DeleteAccount( //nolint:dupl // account/category delete twins: identical guard shape
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 ) error {
 	const op = "repository.postgres.DeleteAccount"
 
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		inUse, err := q.HasLiveTransactionsForAccount(ctx, db.HasLiveTransactionsForAccountParams{
-			UserID:    userID,
-			AccountID: &id,
+			HouseholdID: householdID,
+			AccountID:   &id,
 		})
 		if err != nil {
 			return err
@@ -113,8 +118,8 @@ func (r *Repository) DeleteAccount( //nolint:dupl // account/category delete twi
 			return domain.ErrAccountHasTransactions
 		}
 		plansInUse, err := q.HasLivePlannedPaymentsForAccount(ctx, db.HasLivePlannedPaymentsForAccountParams{
-			UserID:    userID,
-			AccountID: id,
+			HouseholdID: householdID,
+			AccountID:   id,
 		})
 		if err != nil {
 			return err
@@ -122,14 +127,16 @@ func (r *Repository) DeleteAccount( //nolint:dupl // account/category delete twi
 		if plansInUse {
 			return domain.ErrAccountHasPlannedPayments
 		}
-		version, err := q.SoftDeleteAccount(ctx, db.SoftDeleteAccountParams{ID: id, UserID: userID})
+		version, err := q.SoftDeleteAccount(ctx, db.SoftDeleteAccountParams{ID: id, HouseholdID: householdID})
 		if err != nil {
 			if errNoRows(err) {
-				return classifyAccountWrite(ctx, q, userID, id)
+				return classifyAccountWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
-		return appendChangeLog(ctx, q, userID, id, domain.SyncEntityAccount, domain.SyncChangeTombstone, int(version))
+		return appendChangeLog(
+			ctx, q, householdID, actorID, id, domain.SyncEntityAccount, domain.SyncChangeTombstone, int(version),
+		)
 	})
 	if err != nil {
 		return opWrap(op, err)
@@ -140,18 +147,18 @@ func (r *Repository) DeleteAccount( //nolint:dupl // account/category delete twi
 // classifyAccountWrite distinguishes the zero-row outcomes of a CAS write for
 // the REST surface: never-existed and tombstoned both read as not-found, a
 // live row that did not match the expected version is a version conflict.
-func classifyAccountWrite(ctx context.Context, q *db.Queries, userID, id uuid.UUID) error {
-	row, err := q.GetAccountAny(ctx, db.GetAccountAnyParams{ID: id, UserID: userID})
+func classifyAccountWrite(ctx context.Context, q *db.Queries, householdID, id uuid.UUID) error {
+	row, err := q.GetAccountAny(ctx, db.GetAccountAnyParams{ID: id, HouseholdID: householdID})
 	if err != nil || row.DeletedAt != nil {
 		return domain.ErrAccountNotFound
 	}
 	return domain.ErrAccountVersionConflict
 }
 
-func (r *Repository) GetAccount(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error) {
+func (r *Repository) GetAccount(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error) {
 	const op = "repository.postgres.GetAccount"
 
-	row, err := r.q.GetAccount(ctx, db.GetAccountParams{ID: id, UserID: userID})
+	row, err := r.q.GetAccount(ctx, db.GetAccountParams{ID: id, HouseholdID: householdID})
 	if err != nil {
 		if errNoRows(err) {
 			return nil, domain.ErrAccountNotFound
@@ -164,10 +171,10 @@ func (r *Repository) GetAccount(ctx context.Context, userID, id uuid.UUID) (*dom
 	), nil
 }
 
-func (r *Repository) GetAccounts(ctx context.Context, userID uuid.UUID) ([]domain.Account, error) {
+func (r *Repository) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]domain.Account, error) {
 	const op = "repository.postgres.GetAccounts"
 
-	rows, err := r.q.GetAccounts(ctx, userID)
+	rows, err := r.q.GetAccounts(ctx, householdID)
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -181,10 +188,10 @@ func (r *Repository) GetAccounts(ctx context.Context, userID uuid.UUID) ([]domai
 	return out, nil
 }
 
-func (r *Repository) GetAccountBalances(ctx context.Context, userID uuid.UUID) ([]domain.AccountBalance, error) {
+func (r *Repository) GetAccountBalances(ctx context.Context, householdID uuid.UUID) ([]domain.AccountBalance, error) {
 	const op = "repository.postgres.GetAccountBalances"
 
-	rows, err := r.q.GetAccountBalances(ctx, userID)
+	rows, err := r.q.GetAccountBalances(ctx, householdID)
 	if err != nil {
 		return nil, opWrap(op, err)
 	}

@@ -1,9 +1,11 @@
 // Package repository defines the data-access interfaces implemented by the
 // Postgres layer and consumed by the service layer.
 //
-// Every resource query is scoped by the authenticated userID (IDOR protection:
-// a cross-user access returns "not found", never the row). Services always pass
-// userID explicitly - never from a request body.
+// Every resource query is scoped by the householdID of the authenticated
+// member (IDOR protection: an access from outside the household returns
+// "not found", never the row). The userID of the acting member is passed
+// alongside on write paths as the authorship/actor stamp - always explicit
+// from the transport layer, never from a request body.
 package repository
 
 import (
@@ -15,12 +17,21 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 )
 
-// UserRepository owns the users table (identity). Not user-scoped (the user IS
-// the identity).
+// UserRepository owns the users table (identity). Not household-scoped (the
+// user IS the identity).
 type UserRepository interface {
 	RegisterUser(ctx context.Context, params domain.RegisterUserParams) (*domain.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	UpdateDisplayName(ctx context.Context, userID uuid.UUID, displayName string) (*domain.User, error)
+}
+
+// HouseholdRepository owns households + membership (the scoping unit). The
+// by-user membership lookup is the auth middleware's single-hop household
+// resolution.
+type HouseholdRepository interface {
+	GetMembershipByUser(ctx context.Context, userID uuid.UUID) (*domain.Membership, error)
+	GetHouseholdWithMembers(ctx context.Context, householdID uuid.UUID) (*domain.Household, error)
 }
 
 // SessionRepository owns stateful auth sessions.
@@ -38,24 +49,32 @@ type SessionRepository interface {
 // AccountRepository owns accounts + their computed balances.
 type AccountRepository interface {
 	CreateAccount(ctx context.Context, params domain.CreateAccountParams) (*domain.Account, error)
-	UpdateAccount(ctx context.Context, userID, id uuid.UUID, params domain.UpdateAccountParams) (*domain.Account, error)
-	DeleteAccount(ctx context.Context, userID, id uuid.UUID) error
-	GetAccount(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error)
-	GetAccounts(ctx context.Context, userID uuid.UUID) ([]domain.Account, error)
-	GetAccountBalances(ctx context.Context, userID uuid.UUID) ([]domain.AccountBalance, error)
+	UpdateAccount(
+		ctx context.Context,
+		householdID, actorID, id uuid.UUID,
+		params domain.UpdateAccountParams,
+	) (*domain.Account, error)
+	DeleteAccount(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	GetAccount(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error)
+	GetAccounts(ctx context.Context, householdID uuid.UUID) ([]domain.Account, error)
+	GetAccountBalances(ctx context.Context, householdID uuid.UUID) ([]domain.AccountBalance, error)
 }
 
-// CategoryRepository owns per-user categories.
+// CategoryRepository owns household categories.
 type CategoryRepository interface {
 	CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error)
 	UpdateCategory(
 		ctx context.Context,
-		userID, id uuid.UUID,
+		householdID, actorID, id uuid.UUID,
 		params domain.UpdateCategoryParams,
 	) (*domain.Category, error)
-	DeleteCategory(ctx context.Context, userID, id uuid.UUID) error
-	GetCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
-	GetCategories(ctx context.Context, userID uuid.UUID, params domain.GetCategoriesParams) ([]domain.Category, error)
+	DeleteCategory(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	GetCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	GetCategories(
+		ctx context.Context,
+		householdID uuid.UUID,
+		params domain.GetCategoriesParams,
+	) ([]domain.Category, error)
 }
 
 // TransactionRepository owns transactions (keyset-cursor pagination, optimistic
@@ -64,30 +83,30 @@ type TransactionRepository interface {
 	CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error)
 	UpdateTransaction(
 		ctx context.Context,
-		userID, id uuid.UUID,
+		householdID, actorID, id uuid.UUID,
 		params domain.UpdateTransactionParams,
 	) (*domain.Transaction, error)
-	DeleteTransaction(ctx context.Context, userID, id uuid.UUID) error
-	GetTransaction(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
+	DeleteTransaction(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	GetTransaction(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error)
 	GetTransactions(
 		ctx context.Context,
-		userID uuid.UUID,
+		householdID uuid.UUID,
 		params domain.GetTransactionsParams,
 	) ([]domain.Transaction, error)
 }
 
-// DebtorRepository owns per-user debtors. Balances are derived (never stored);
-// delete is guarded by the live-operations in-use check.
+// DebtorRepository owns household debtors. Balances are derived (never
+// stored); delete is guarded by the live-operations in-use check.
 type DebtorRepository interface {
 	CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error)
 	UpdateDebtor(
 		ctx context.Context,
-		userID, id uuid.UUID,
+		householdID, actorID, id uuid.UUID,
 		params domain.UpdateDebtorParams,
 	) (*domain.Debtor, error)
-	DeleteDebtor(ctx context.Context, userID, id uuid.UUID) error
-	GetDebtor(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error)
-	GetDebtors(ctx context.Context, userID uuid.UUID) ([]domain.Debtor, error)
+	DeleteDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	GetDebtor(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error)
+	GetDebtors(ctx context.Context, householdID uuid.UUID) ([]domain.Debtor, error)
 }
 
 // DebtOperationRepository owns debt-operation ledger records (optimistic
@@ -96,14 +115,14 @@ type DebtOperationRepository interface {
 	CreateDebtOperation(ctx context.Context, params domain.CreateDebtOperationParams) (*domain.DebtOperation, error)
 	UpdateDebtOperation(
 		ctx context.Context,
-		userID, id uuid.UUID,
+		householdID, actorID, id uuid.UUID,
 		params domain.UpdateDebtOperationParams,
 	) (*domain.DebtOperation, error)
-	DeleteDebtOperation(ctx context.Context, userID, id uuid.UUID) error
-	GetDebtOperation(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
+	DeleteDebtOperation(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	GetDebtOperation(ctx context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error)
 	GetDebtOperations(
 		ctx context.Context,
-		userID uuid.UUID,
+		householdID uuid.UUID,
 		params domain.GetDebtOperationsParams,
 	) ([]domain.DebtOperation, error)
 }
@@ -115,48 +134,48 @@ type PlannedPaymentRepository interface {
 	CreatePlannedPayment(ctx context.Context, params domain.CreatePlannedPaymentParams) (*domain.PlannedPayment, error)
 	UpdatePlannedPayment(
 		ctx context.Context,
-		userID, id uuid.UUID,
+		householdID, actorID, id uuid.UUID,
 		params domain.UpdatePlannedPaymentParams,
 	) (*domain.PlannedPayment, error)
-	DeletePlannedPayment(ctx context.Context, userID, id uuid.UUID) error
-	GetPlannedPayment(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error)
+	DeletePlannedPayment(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	GetPlannedPayment(ctx context.Context, householdID, id uuid.UUID) (*domain.PlannedPayment, error)
 	GetPlannedPayments(
 		ctx context.Context,
-		userID uuid.UUID,
+		householdID uuid.UUID,
 		params domain.GetPlannedPaymentsParams,
 	) ([]domain.PlannedPayment, error)
 }
 
-// SyncTx is the unit-of-work handed to SyncRepository.WithinUserTx: every
+// SyncTx is the unit-of-work handed to SyncRepository.WithinHouseholdTx: every
 // method operates on the SAME open database transaction (which holds the
-// user's change-log advisory lock), so a whole push batch commits atomically
-// and its change_log rows order with commit visibility.
+// household's change-log advisory lock), so a whole push batch commits
+// atomically and its change_log rows order with commit visibility.
 type SyncTx interface {
-	GetAppliedOperation(ctx context.Context, userID, opID uuid.UUID) (*domain.AppliedOperation, error)
-	InsertAppliedOperation(ctx context.Context, op domain.AppliedOperation) error
+	GetAppliedOperation(ctx context.Context, householdID, opID uuid.UUID) (*domain.AppliedOperation, error)
+	InsertAppliedOperation(ctx context.Context, rec domain.AppliedOperation) error
 
 	// Reads including tombstones (nil, nil when the id was never created).
-	GetAccountAny(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error)
-	GetCategoryAny(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
-	GetTransactionAny(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
-	GetDebtorAny(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error)
-	GetDebtOperationAny(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
-	GetPlannedPaymentAny(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error)
+	GetAccountAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error)
+	GetCategoryAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	GetTransactionAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error)
+	GetDebtorAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error)
+	GetDebtOperationAny(ctx context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error)
+	GetPlannedPaymentAny(ctx context.Context, householdID, id uuid.UUID) (*domain.PlannedPayment, error)
 
 	// Live-only reads for reference validation.
-	LiveAccountExists(ctx context.Context, userID, id uuid.UUID) (bool, error)
-	LiveCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
-	CategoryNameTaken(ctx context.Context, userID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
-	HasLiveTransactionsForAccount(ctx context.Context, userID, accountID uuid.UUID) (bool, error)
-	HasLiveTransactionsForCategory(ctx context.Context, userID, categoryID uuid.UUID) (bool, error)
-	LiveDebtorExists(ctx context.Context, userID, id uuid.UUID) (bool, error)
-	DebtorNameTaken(ctx context.Context, userID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
-	HasLiveDebtOperationsForDebtor(ctx context.Context, userID, debtorID uuid.UUID) (bool, error)
-	HasLivePlannedPaymentsForAccount(ctx context.Context, userID, accountID uuid.UUID) (bool, error)
-	HasLivePlannedPaymentsForCategory(ctx context.Context, userID, categoryID uuid.UUID) (bool, error)
+	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	CategoryNameTaken(ctx context.Context, householdID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
+	HasLiveTransactionsForAccount(ctx context.Context, householdID, accountID uuid.UUID) (bool, error)
+	HasLiveTransactionsForCategory(ctx context.Context, householdID, categoryID uuid.UUID) (bool, error)
+	LiveDebtorExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	DebtorNameTaken(ctx context.Context, householdID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
+	HasLiveDebtOperationsForDebtor(ctx context.Context, householdID, debtorID uuid.UUID) (bool, error)
+	HasLivePlannedPaymentsForAccount(ctx context.Context, householdID, accountID uuid.UUID) (bool, error)
+	HasLivePlannedPaymentsForCategory(ctx context.Context, householdID, categoryID uuid.UUID) (bool, error)
 
 	// The auto-confirm job's due scan (live auto plans, next_due <= today).
-	DueAutoPlannedPayments(ctx context.Context, userID uuid.UUID, today time.Time) ([]domain.PlannedPayment, error)
+	DueAutoPlannedPayments(ctx context.Context, householdID uuid.UUID, today time.Time) ([]domain.PlannedPayment, error)
 
 	// Writes; each appends its change_log row on the same transaction. The
 	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
@@ -164,54 +183,57 @@ type SyncTx interface {
 	// ErrRecordDeleted, Err*NotFound).
 	CreateAccount(ctx context.Context, params domain.CreateAccountParams) (*domain.Account, error)
 	ReplaceAccount(
-		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.AccountFullState,
+		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.AccountFullState,
 	) (*domain.Account, error)
-	TombstoneAccount(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error)
+	TombstoneAccount(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Account, error)
 	CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error)
 	ReplaceCategory(
-		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.CategoryFullState,
+		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.CategoryFullState,
 	) (*domain.Category, error)
-	TombstoneCategory(ctx context.Context, userID, id uuid.UUID) (*domain.Category, error)
+	TombstoneCategory(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Category, error)
 	CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error)
 	ReplaceTransaction(
-		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.TransactionFullState,
+		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.TransactionFullState,
 	) (*domain.Transaction, error)
-	TombstoneTransaction(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error)
+	TombstoneTransaction(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Transaction, error)
 	CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error)
 	ReplaceDebtor(
-		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.DebtorFullState,
+		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.DebtorFullState,
 	) (*domain.Debtor, error)
-	TombstoneDebtor(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error)
+	TombstoneDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Debtor, error)
 	CreateDebtOperation(ctx context.Context, params domain.CreateDebtOperationParams) (*domain.DebtOperation, error)
 	ReplaceDebtOperation(
-		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.DebtOperationFullState,
+		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.DebtOperationFullState,
 	) (*domain.DebtOperation, error)
-	TombstoneDebtOperation(ctx context.Context, userID, id uuid.UUID) (*domain.DebtOperation, error)
+	TombstoneDebtOperation(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.DebtOperation, error)
 	CreatePlannedPayment(ctx context.Context, params domain.CreatePlannedPaymentParams) (*domain.PlannedPayment, error)
 	ReplacePlannedPayment(
-		ctx context.Context, userID, id uuid.UUID, baseVersion int, st domain.PlannedPaymentFullState,
+		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.PlannedPaymentFullState,
 	) (*domain.PlannedPayment, error)
-	TombstonePlannedPayment(ctx context.Context, userID, id uuid.UUID) (*domain.PlannedPayment, error)
+	TombstonePlannedPayment(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.PlannedPayment, error)
 	// AdvancePlannedPayment moves next_due to the already-computed next
-	// occurrence (auto-confirm job only; runs under the advisory lock).
+	// occurrence (auto-confirm job only; runs under the advisory lock). The
+	// actor stamp is the plan's author (the job acts on their behalf).
 	AdvancePlannedPayment(
-		ctx context.Context, userID, id uuid.UUID, nextDue time.Time,
+		ctx context.Context, householdID, actorID, id uuid.UUID, nextDue time.Time,
 	) (*domain.PlannedPayment, error)
 }
 
 // SyncRepository backs /api/sync: batched pushes (one transaction per batch)
 // and the cursor pull.
 type SyncRepository interface {
-	// WithinUserTx opens the per-batch transaction, takes the user's
+	// WithinHouseholdTx opens the per-batch transaction, takes the household's
 	// change-log advisory lock, runs fn, and commits iff fn succeeds.
-	WithinUserTx(ctx context.Context, userID uuid.UUID, fn func(t SyncTx) error) error
+	WithinHouseholdTx(ctx context.Context, householdID uuid.UUID, fn func(t SyncTx) error) error
 	// PullChanges returns up to limit changes with seq > afterSeq in seq
 	// order. The caller derives nextCursor (last seq when the page is full,
 	// nil when caught up).
-	PullChanges(ctx context.Context, userID uuid.UUID, afterSeq int64, limit int) ([]domain.SyncChange, error)
+	PullChanges(ctx context.Context, householdID uuid.UUID, afterSeq int64, limit int) ([]domain.SyncChange, error)
 }
 
 // IdempotencyRepository caches POST /api/transactions responses for replay.
+// User-scoped (keyed by the requester), not household-scoped: a replayed
+// cached response is per-requester by definition.
 type IdempotencyRepository interface {
 	CreateIdempotencyKey(ctx context.Context, params domain.CreateIdempotencyKeyParams) (*domain.IdempotencyKey, error)
 	UpdateIdempotencyKey(

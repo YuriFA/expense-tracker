@@ -18,11 +18,15 @@ import (
 )
 
 // AuthRequired validates the session_id cookie against the SessionRepository,
-// loads the user, applies sliding expiration, and stores the user + session id
-// in the gin context for handlers.
+// loads the user, resolves the user's (single, v1) household membership,
+// applies sliding expiration, and stores the user + household id + session id
+// in the gin context for handlers. A user without a membership is a violated
+// data invariant (every user owns exactly one household), not an auth failure:
+// it surfaces as 500 so it is logged and noticed.
 func AuthRequired(
 	sessions repository.SessionRepository,
 	users repository.UserRepository,
+	households repository.HouseholdRepository,
 	log *slog.Logger,
 	cfg *config.HTTPServer,
 ) gin.HandlerFunc {
@@ -59,6 +63,13 @@ func AuthRequired(
 			return
 		}
 
+		membership, err := households.GetMembershipByUser(c.Request.Context(), user.ID)
+		if err != nil {
+			log.Error("failed to resolve household membership", slog.String("error", err.Error()))
+			httperr.Write(c, http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error")
+			return
+		}
+
 		// Sliding expiration: extend if < 25% of the TTL remains.
 		if cfg.SessionConfig.SlidingExpiration && time.Until(session.ExpiresAt) < cfg.SessionConfig.TTL/4 {
 			newExpiresAt := time.Now().UTC().Add(cfg.SessionConfig.TTL)
@@ -72,6 +83,7 @@ func AuthRequired(
 
 		c.Set(keys.CurrentUserKey, user)
 		c.Set(keys.CurrentSessionIDKey, session.ID)
+		c.Set(keys.CurrentHouseholdKey, membership.HouseholdID)
 		c.Next()
 	}
 }

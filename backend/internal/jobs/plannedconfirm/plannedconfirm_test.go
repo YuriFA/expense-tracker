@@ -51,15 +51,15 @@ func TestJob_ExecutesDueAutoPlansWithCatchUp(t *testing.T) {
 	store := fakes.New()
 	ctx := context.Background()
 
-	user := seedFakePlansUser(t, store)
-	account := seedFakePlansAccount(t, store, user.ID)
-	category := seedFakePlansCategory(t, store, user.ID)
+	user, householdID := seedFakePlansUser(t, store)
+	account := seedFakePlansAccount(t, store, householdID, user.ID)
+	category := seedFakePlansCategory(t, store, householdID, user.ID)
 
 	today := dayStart(time.Now())
 	start := today.AddDate(0, 0, -3)
 
 	plan, err := store.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
-		UserID: user.ID, Type: domain.TransactionTypeExpense, Amount: 59900,
+		HouseholdID: householdID, UserID: user.ID, Type: domain.TransactionTypeExpense, Amount: 59900,
 		Name: "Netflix", AccountID: account.ID, CategoryID: category.ID,
 		NextDue: start, Regularity: domain.PlannedRegularityDaily,
 		ConfirmMode: domain.PlannedConfirmAuto, Reminder: domain.PlannedReminderOff,
@@ -68,7 +68,7 @@ func TestJob_ExecutesDueAutoPlansWithCatchUp(t *testing.T) {
 
 	// A manual plan due long ago must NOT be auto-executed.
 	manual, err := store.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
-		UserID: user.ID, Type: domain.TransactionTypeExpense, Amount: 240000,
+		HouseholdID: householdID, UserID: user.ID, Type: domain.TransactionTypeExpense, Amount: 240000,
 		Name: "ЖКХ", AccountID: account.ID, CategoryID: category.ID,
 		NextDue: start, Regularity: domain.PlannedRegularityDaily,
 		ConfirmMode: domain.PlannedConfirmManual, Reminder: domain.PlannedReminderOff,
@@ -78,7 +78,7 @@ func TestJob_ExecutesDueAutoPlansWithCatchUp(t *testing.T) {
 	runJobUntilSettled(t, store)
 
 	// Daily occurrences due: today-3, today-2, today-1, today = four.
-	transactions, err := store.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{})
+	transactions, err := store.GetTransactions(ctx, householdID, domain.GetTransactionsParams{})
 	require.NoError(t, err)
 	require.Len(t, transactions, 4)
 	for _, txn := range transactions {
@@ -95,13 +95,13 @@ func TestJob_ExecutesDueAutoPlansWithCatchUp(t *testing.T) {
 		assert.Equal(t, plan.CategoryID, *txn.CategoryID)
 	}
 
-	updated, err := store.GetPlannedPayment(ctx, user.ID, plan.ID)
+	updated, err := store.GetPlannedPayment(ctx, householdID, plan.ID)
 	require.NoError(t, err)
 	assert.True(t, updated.NextDue.Equal(today.AddDate(0, 0, 1)),
 		"next_due lands on the first future occurrence")
 	assert.Equal(t, 5, updated.Version, "one version bump per executed occurrence")
 
-	manualPlan, err := store.GetPlannedPayment(ctx, user.ID, manual.ID)
+	manualPlan, err := store.GetPlannedPayment(ctx, householdID, manual.ID)
 	require.NoError(t, err)
 	assert.True(t, manualPlan.NextDue.Equal(start), "manual plans are never auto-executed")
 	assert.Equal(t, 1, manualPlan.Version)
@@ -116,50 +116,52 @@ func TestJob_RerunIsIdempotentAndDeletedPlansProduceNothing(t *testing.T) {
 	store := fakes.New()
 	ctx := context.Background()
 
-	user := seedFakePlansUser(t, store)
-	account := seedFakePlansAccount(t, store, user.ID)
-	category := seedFakePlansCategory(t, store, user.ID)
+	user, householdID := seedFakePlansUser(t, store)
+	account := seedFakePlansAccount(t, store, householdID, user.ID)
+	category := seedFakePlansCategory(t, store, householdID, user.ID)
 
 	today := dayStart(time.Now())
 	plan, err := store.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
-		UserID: user.ID, Type: domain.TransactionTypeExpense, Amount: 1000,
+		HouseholdID: householdID, UserID: user.ID, Type: domain.TransactionTypeExpense, Amount: 1000,
 		AccountID: account.ID, CategoryID: category.ID,
 		NextDue: today.AddDate(0, 0, -1), Regularity: domain.PlannedRegularityDaily,
 		ConfirmMode: domain.PlannedConfirmAuto, Reminder: domain.PlannedReminderOff,
 	})
 	require.NoError(t, err)
-	require.NoError(t, store.DeletePlannedPayment(ctx, user.ID, plan.ID))
+	require.NoError(t, store.DeletePlannedPayment(ctx, householdID, user.ID, plan.ID))
 
 	runJobUntilSettled(t, store)
 
-	transactions, err := store.GetTransactions(ctx, user.ID, domain.GetTransactionsParams{})
+	transactions, err := store.GetTransactions(ctx, householdID, domain.GetTransactionsParams{})
 	require.NoError(t, err)
 	assert.Empty(t, transactions, "a deleted overdue plan produces nothing")
 }
 
-func seedFakePlansUser(t *testing.T, store *fakes.Store) *domain.User {
+func seedFakePlansUser(t *testing.T, store *fakes.Store) (*domain.User, uuid.UUID) {
 	t.Helper()
 	u, err := store.RegisterUser(context.Background(), domain.RegisterUserParams{
 		Email:        time.Now().Format("150405.000000000") + "@plans.example.com",
 		PasswordHash: "hashed",
 	})
 	require.NoError(t, err)
-	return u
+	m, err := store.GetMembershipByUser(context.Background(), u.ID)
+	require.NoError(t, err)
+	return u, m.HouseholdID
 }
 
-func seedFakePlansAccount(t *testing.T, store *fakes.Store, userID uuid.UUID) *domain.Account {
+func seedFakePlansAccount(t *testing.T, store *fakes.Store, householdID, userID uuid.UUID) *domain.Account {
 	t.Helper()
 	a, err := store.CreateAccount(context.Background(), domain.CreateAccountParams{
-		UserID: userID, Name: "Карта", Currency: "RUB",
+		HouseholdID: householdID, UserID: userID, Name: "Карта", Currency: "RUB",
 	})
 	require.NoError(t, err)
 	return a
 }
 
-func seedFakePlansCategory(t *testing.T, store *fakes.Store, userID uuid.UUID) *domain.Category {
+func seedFakePlansCategory(t *testing.T, store *fakes.Store, householdID, userID uuid.UUID) *domain.Category {
 	t.Helper()
 	c, err := store.CreateCategory(context.Background(), domain.CreateCategoryParams{
-		UserID: userID, Name: "Подписки", Type: domain.TransactionTypeExpense,
+		HouseholdID: householdID, UserID: userID, Name: "Подписки", Type: domain.TransactionTypeExpense,
 	})
 	require.NoError(t, err)
 	return c

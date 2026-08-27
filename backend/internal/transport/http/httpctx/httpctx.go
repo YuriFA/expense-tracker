@@ -4,6 +4,7 @@ package httpctx
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/keys"
@@ -25,6 +26,12 @@ func CurrentUser(c *gin.Context) *domain.User {
 // CurrentSessionID returns the current session id set by the auth middleware.
 func CurrentSessionID(c *gin.Context) string {
 	return c.GetString(keys.CurrentSessionIDKey)
+}
+
+// CurrentHouseholdID returns the household id of the user's (single, v1)
+// membership, resolved by the auth middleware, or uuid.Nil when absent.
+func CurrentHouseholdID(c *gin.Context) uuid.UUID {
+	return c.MustGet(keys.CurrentHouseholdKey).(uuid.UUID)
 }
 
 // RequestID returns the X-Request-ID for the request.

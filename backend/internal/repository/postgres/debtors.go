@@ -11,22 +11,25 @@ import (
 )
 
 // Every mutation runs inside withinLockedTx: entity write + change_log append
-// commit atomically, and the per-user advisory lock keeps change_log seq order
-// equal to commit order. Deletes are tombstones guarded by the live-operations
-// in-use check; live-name uniqueness is enforced by the partial unique index.
+// commit atomically, and the per-household advisory lock keeps change_log seq
+// order equal to commit order. Deletes are tombstones guarded by the
+// live-operations in-use check; live-name uniqueness is enforced by the
+// per-household partial unique index. householdID scopes every query; actorID
+// is the acting member whose id lands on the change_log row as authorship.
 
 func (r *Repository) CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error) {
 	const op = "repository.postgres.CreateDebtor"
 
 	id := newEntityID(params.ID)
 	var row db.CreateDebtorRow
-	err := r.withinLockedTx(ctx, params.UserID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, params.HouseholdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.CreateDebtor(ctx, db.CreateDebtorParams{
-			ID:     id,
-			UserID: params.UserID,
-			Name:   params.Name,
-			Note:   params.Note,
+			ID:          id,
+			HouseholdID: params.HouseholdID,
+			UserID:      params.UserID,
+			Name:        params.Name,
+			Note:        params.Note,
 		})
 		if err != nil {
 			if pgUniqueViolation(err) {
@@ -39,6 +42,7 @@ func (r *Repository) CreateDebtor(ctx context.Context, params domain.CreateDebto
 		return appendChangeLog(
 			ctx,
 			q,
+			params.HouseholdID,
 			params.UserID,
 			row.ID,
 			domain.SyncEntityDebtor,
@@ -54,34 +58,35 @@ func (r *Repository) CreateDebtor(ctx context.Context, params domain.CreateDebto
 
 func (r *Repository) UpdateDebtor(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateDebtorParams,
 ) (*domain.Debtor, error) {
 	const op = "repository.postgres.UpdateDebtor"
 
 	var row db.UpdateDebtorRow
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.UpdateDebtor(ctx, db.UpdateDebtorParams{
-			ID:      id,
-			UserID:  userID,
-			Name:    params.Name,
-			Note:    params.Note,
-			Version: int32(params.Version), //nolint:gosec // optimistic version is a small positive int
+			ID:          id,
+			HouseholdID: householdID,
+			Name:        params.Name,
+			Note:        params.Note,
+			Version:     int32(params.Version), //nolint:gosec // optimistic version is a small positive int
 		})
 		if err != nil {
 			if pgUniqueViolation(err) {
 				return domain.ErrDebtorAlreadyExists
 			}
 			if errNoRows(err) {
-				return classifyDebtorWrite(ctx, q, userID, id)
+				return classifyDebtorWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
 		return appendChangeLog(
 			ctx,
 			q,
-			userID,
+			householdID,
+			actorID,
 			row.ID,
 			domain.SyncEntityDebtor,
 			domain.SyncChangeUpsert,
@@ -94,13 +99,13 @@ func (r *Repository) UpdateDebtor(
 	return debtorFromFields(row.ID, row.UserID, row.Name, row.Note, row.CreatedAt, row.UpdatedAt, int(row.Version)), nil
 }
 
-func (r *Repository) DeleteDebtor(ctx context.Context, userID, id uuid.UUID) error {
+func (r *Repository) DeleteDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) error {
 	const op = "repository.postgres.DeleteDebtor"
 
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		inUse, err := q.HasLiveDebtOperationsForDebtor(ctx, db.HasLiveDebtOperationsForDebtorParams{
-			UserID:   userID,
-			DebtorID: id,
+			HouseholdID: householdID,
+			DebtorID:    id,
 		})
 		if err != nil {
 			return err
@@ -108,14 +113,16 @@ func (r *Repository) DeleteDebtor(ctx context.Context, userID, id uuid.UUID) err
 		if inUse {
 			return domain.ErrDebtorHasOperations
 		}
-		version, err := q.SoftDeleteDebtor(ctx, db.SoftDeleteDebtorParams{ID: id, UserID: userID})
+		version, err := q.SoftDeleteDebtor(ctx, db.SoftDeleteDebtorParams{ID: id, HouseholdID: householdID})
 		if err != nil {
 			if errNoRows(err) {
-				return classifyDebtorWrite(ctx, q, userID, id)
+				return classifyDebtorWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
-		return appendChangeLog(ctx, q, userID, id, domain.SyncEntityDebtor, domain.SyncChangeTombstone, int(version))
+		return appendChangeLog(
+			ctx, q, householdID, actorID, id, domain.SyncEntityDebtor, domain.SyncChangeTombstone, int(version),
+		)
 	})
 	if err != nil {
 		return opWrap(op, err)
@@ -126,18 +133,18 @@ func (r *Repository) DeleteDebtor(ctx context.Context, userID, id uuid.UUID) err
 // classifyDebtorWrite distinguishes the zero-row outcomes of a CAS write for
 // the REST surface: never-existed and tombstoned both read as not-found, a
 // live row that did not match the expected version is a version conflict.
-func classifyDebtorWrite(ctx context.Context, q *db.Queries, userID, id uuid.UUID) error {
-	row, err := q.GetDebtorAny(ctx, db.GetDebtorAnyParams{ID: id, UserID: userID})
+func classifyDebtorWrite(ctx context.Context, q *db.Queries, householdID, id uuid.UUID) error {
+	row, err := q.GetDebtorAny(ctx, db.GetDebtorAnyParams{ID: id, HouseholdID: householdID})
 	if err != nil || row.DeletedAt != nil {
 		return domain.ErrDebtorNotFound
 	}
 	return domain.ErrDebtorVersionConflict
 }
 
-func (r *Repository) GetDebtor(ctx context.Context, userID, id uuid.UUID) (*domain.Debtor, error) {
+func (r *Repository) GetDebtor(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
 	const op = "repository.postgres.GetDebtor"
 
-	row, err := r.q.GetDebtor(ctx, db.GetDebtorParams{ID: id, UserID: userID})
+	row, err := r.q.GetDebtor(ctx, db.GetDebtorParams{ID: id, HouseholdID: householdID})
 	if err != nil {
 		if errNoRows(err) {
 			return nil, domain.ErrDebtorNotFound
@@ -147,10 +154,10 @@ func (r *Repository) GetDebtor(ctx context.Context, userID, id uuid.UUID) (*doma
 	return debtorFromFields(row.ID, row.UserID, row.Name, row.Note, row.CreatedAt, row.UpdatedAt, int(row.Version)), nil
 }
 
-func (r *Repository) GetDebtors(ctx context.Context, userID uuid.UUID) ([]domain.Debtor, error) {
+func (r *Repository) GetDebtors(ctx context.Context, householdID uuid.UUID) ([]domain.Debtor, error) {
 	const op = "repository.postgres.GetDebtors"
 
-	rows, err := r.q.GetDebtors(ctx, userID)
+	rows, err := r.q.GetDebtors(ctx, householdID)
 	if err != nil {
 		return nil, opWrap(op, err)
 	}

@@ -14,7 +14,7 @@ func (s *Server) ListTransactions(
 	ctx context.Context,
 	req api.ListTransactionsRequestObject,
 ) (api.ListTransactionsResponseObject, error) {
-	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 
 	q := service.TransactionListQuery{
 		AccountID:  req.Params.AccountId,
@@ -35,7 +35,7 @@ func (s *Server) ListTransactions(
 		q.ToDate = &to
 	}
 
-	page, err := s.txn.List(ctx, user.ID, q)
+	page, err := s.txn.List(ctx, householdID, q)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +54,7 @@ func (s *Server) CreateTransaction(
 	req api.CreateTransactionRequestObject,
 ) (api.CreateTransactionResponseObject, error) {
 	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 
 	var id uuid.UUID
 	if req.Body.Id != nil {
@@ -62,6 +63,7 @@ func (s *Server) CreateTransaction(
 
 	params := domain.CreateTransactionParams{
 		ID:            id,
+		HouseholdID:   householdID,
 		UserID:        user.ID,
 		Type:          domain.TransactionType(req.Body.Type),
 		Amount:        req.Body.Amount,
@@ -75,7 +77,7 @@ func (s *Server) CreateTransaction(
 		params.Description = *req.Body.Description
 	}
 
-	tx, err := s.txn.Create(ctx, user.ID, params)
+	tx, err := s.txn.Create(ctx, householdID, user.ID, params)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +88,8 @@ func (s *Server) GetTransaction(
 	ctx context.Context,
 	req api.GetTransactionRequestObject,
 ) (api.GetTransactionResponseObject, error) {
-	user := s.currentUser(ctx)
-	tx, err := s.txn.Get(ctx, user.ID, req.Id)
+	householdID := s.currentHouseholdID(ctx)
+	tx, err := s.txn.Get(ctx, householdID, req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +112,7 @@ func (s *Server) UpdateTransaction(
 		FromAccountID: fromUUIDPtr(req.Body.FromAccountId),
 		ToAccountID:   fromUUIDPtr(req.Body.ToAccountId),
 	}
-	tx, err := s.txn.Update(ctx, user.ID, req.Id, params)
+	tx, err := s.txn.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +124,7 @@ func (s *Server) DeleteTransaction(
 	req api.DeleteTransactionRequestObject,
 ) (api.DeleteTransactionResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.txn.Delete(ctx, user.ID, req.Id); err != nil {
+	if err := s.txn.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeleteTransaction204Response{}, nil

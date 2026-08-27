@@ -273,4 +273,16 @@ var domainErrorMap = map[error]domainErrorSpec{
 	// --- transport/service errors ---
 	service.ErrNoFieldsToUpdate: {http.StatusBadRequest, httperr.ErrCodeValidationFailed, "no fields to update"},
 	service.ErrInvalidCursor:    {http.StatusBadRequest, httperr.ErrCodeInvalidRequest, "invalid cursor"},
+
+	// --- household / profile ---
+	domain.ErrInvalidDisplayName: {
+		http.StatusBadRequest,
+		httperr.ErrCodeValidationFailed,
+		"display name must be 1-100 characters after trimming",
+	},
+	// The household endpoints operate on the middleware-resolved membership, so
+	// a missing household/membership is a violated data invariant, not a client
+	// error: it surfaces as 500 so it is logged and noticed.
+	domain.ErrHouseholdNotFound:  {http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error"},
+	domain.ErrMembershipNotFound: {http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error"},
 }

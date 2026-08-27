@@ -8,12 +8,12 @@ import (
 	db "github.com/yurifa/expense-tracker-api/internal/repository/db"
 )
 
-// withinLockedTx runs fn inside ONE database transaction that holds the user's
-// change-log advisory lock from start to commit. Every REST mutation (entity
-// write + change_log append) and every sync push batch goes through here, so
-// a mutation is never committed without its change-log row and a user's
-// change_log seq order equals commit-visibility order.
-func (r *Repository) withinLockedTx(ctx context.Context, userID uuid.UUID, fn func(q *db.Queries) error) error {
+// withinLockedTx runs fn inside ONE database transaction that holds the
+// household's change-log advisory lock from start to commit. Every REST
+// mutation (entity write + change_log append) and every sync push batch goes
+// through here, so a mutation is never committed without its change-log row
+// and a household's change_log seq order equals commit-visibility order.
+func (r *Repository) withinLockedTx(ctx context.Context, householdID uuid.UUID, fn func(q *db.Queries) error) error {
 	const op = "repository.postgres.withinLockedTx"
 
 	tx, err := r.pool.Begin(ctx)
@@ -23,7 +23,7 @@ func (r *Repository) withinLockedTx(ctx context.Context, userID uuid.UUID, fn fu
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	q := r.q.WithTx(tx)
-	if err := q.LockUserChanges(ctx, userID.String()); err != nil {
+	if err := q.LockHouseholdChanges(ctx, householdID.String()); err != nil {
 		return opWrap(op, err)
 	}
 	if err := fn(q); err != nil {
@@ -37,19 +37,21 @@ func (r *Repository) withinLockedTx(ctx context.Context, userID uuid.UUID, fn fu
 
 // appendChangeLog writes the change-log row for a committed mutation. Callers
 // MUST be inside withinLockedTx (the advisory lock orders the seq allocation).
+// actorID is the member performing the mutation (authorship of the change).
 func appendChangeLog(
 	ctx context.Context,
 	q *db.Queries,
-	userID, entityID uuid.UUID,
+	householdID, actorID, entityID uuid.UUID,
 	entity, action string,
 	version int,
 ) error {
 	_, err := q.AppendChangeLog(ctx, db.AppendChangeLogParams{
-		UserID:   userID,
-		Entity:   entity,
-		EntityID: entityID,
-		Action:   action,
-		Version:  int32(version), //nolint:gosec // entity versions are small positive ints
+		HouseholdID: householdID,
+		UserID:      actorID,
+		Entity:      entity,
+		EntityID:    entityID,
+		Action:      action,
+		Version:     int32(version), //nolint:gosec // entity versions are small positive ints
 	})
 	return err
 }

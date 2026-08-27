@@ -30,6 +30,7 @@ func (s *Server) CreateDebtor(
 	req api.CreateDebtorRequestObject,
 ) (api.CreateDebtorResponseObject, error) {
 	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
@@ -38,7 +39,7 @@ func (s *Server) CreateDebtor(
 	if req.Body.Note != nil {
 		note = *req.Body.Note
 	}
-	d, err := s.debtors.Create(ctx, user.ID, domain.CreateDebtorParams{
+	d, err := s.debtors.Create(ctx, householdID, user.ID, domain.CreateDebtorParams{
 		ID:   id,
 		Name: req.Body.Name,
 		Note: note,
@@ -53,8 +54,8 @@ func (s *Server) GetDebtor(
 	ctx context.Context,
 	req api.GetDebtorRequestObject,
 ) (api.GetDebtorResponseObject, error) {
-	user := s.currentUser(ctx)
-	d, err := s.debtors.Get(ctx, user.ID, req.Id)
+	householdID := s.currentHouseholdID(ctx)
+	d, err := s.debtors.Get(ctx, householdID, req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func (s *Server) UpdateDebtor(
 		v := *req.Body.Note
 		note = &v
 	}
-	d, err := s.debtors.Update(ctx, user.ID, req.Id, domain.UpdateDebtorParams{
+	d, err := s.debtors.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateDebtorParams{
 		Name: name, Note: note, Version: req.Body.Version,
 	})
 	if err != nil {
@@ -89,7 +90,7 @@ func (s *Server) DeleteDebtor(
 	req api.DeleteDebtorRequestObject,
 ) (api.DeleteDebtorResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.debtors.Delete(ctx, user.ID, req.Id); err != nil {
+	if err := s.debtors.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeleteDebtor204Response{}, nil

@@ -21,6 +21,9 @@ type User struct {
 	ID            uuid.UUID
 	Email         string
 	EmailVerified bool
+	// DisplayName is the optional member-facing label (nil = never set;
+	// consumers fall back to Email). It carries no access-control meaning.
+	DisplayName *string
 	// PasswordHash is the bcrypt hash. It is never serialized to clients; it is
 	// only populated by email-keyed lookups (login / reset).
 	PasswordHash string
@@ -36,3 +39,9 @@ type RegisterUserParams struct {
 	PasswordHash   string
 	SeedCategories bool
 }
+
+// DisplayName validation bounds (enforced by the profile update service).
+const (
+	DisplayNameMinLength = 1
+	DisplayNameMaxLength = 100
+)

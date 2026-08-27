@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 
@@ -137,6 +139,29 @@ func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
 func (s *AuthService) Me(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
 	const op = "service.auth.Me"
 	user, err := s.users.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return user, nil
+}
+
+// UpdateDisplayName sets the user's member-facing display name. The name is
+// trimmed and must be non-empty within the length cap; it carries no
+// access-control meaning (consumers fall back to the email when unset).
+func (s *AuthService) UpdateDisplayName(
+	ctx context.Context,
+	userID uuid.UUID,
+	displayName string,
+) (*domain.User, error) {
+	const op = "service.auth.UpdateDisplayName"
+
+	name := strings.TrimSpace(displayName)
+	if utf8.RuneCountInString(name) < domain.DisplayNameMinLength ||
+		utf8.RuneCountInString(name) > domain.DisplayNameMaxLength {
+		return nil, fmt.Errorf("%s: %w", op, domain.ErrInvalidDisplayName)
+	}
+
+	user, err := s.users.UpdateDisplayName(ctx, userID, name)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

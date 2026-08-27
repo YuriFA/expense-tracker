@@ -15,7 +15,9 @@ import (
 const defaultListTransactionsLimit = 50
 
 // Every mutation runs inside withinLockedTx (entity write + change_log append
-// in one committed transaction); deletes are tombstones.
+// in one committed transaction); deletes are tombstones. householdID scopes
+// every query; actorID is the acting member whose id lands on the change_log
+// row as authorship.
 
 func (r *Repository) CreateTransaction(
 	ctx context.Context,
@@ -25,10 +27,11 @@ func (r *Repository) CreateTransaction(
 
 	id := newEntityID(params.ID)
 	var row db.CreateTransactionRow
-	err := r.withinLockedTx(ctx, params.UserID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, params.HouseholdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.CreateTransaction(ctx, db.CreateTransactionParams{
 			ID:            id,
+			HouseholdID:   params.HouseholdID,
 			UserID:        params.UserID,
 			Type:          string(params.Type),
 			Amount:        params.Amount,
@@ -48,6 +51,7 @@ func (r *Repository) CreateTransaction(
 		return appendChangeLog(
 			ctx,
 			q,
+			params.HouseholdID,
 			params.UserID,
 			row.ID,
 			domain.SyncEntityTransaction,
@@ -67,17 +71,17 @@ func (r *Repository) CreateTransaction(
 
 func (r *Repository) UpdateTransaction(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, actorID, id uuid.UUID,
 	params domain.UpdateTransactionParams,
 ) (*domain.Transaction, error) {
 	const op = "repository.postgres.UpdateTransaction"
 
 	var row db.UpdateTransactionRow
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.UpdateTransaction(ctx, db.UpdateTransactionParams{
 			ID:            id,
-			UserID:        userID,
+			HouseholdID:   householdID,
 			Version:       int32(params.Version), //nolint:gosec // optimistic version is a small positive int
 			Amount:        params.Amount,
 			Description:   params.Description,
@@ -89,14 +93,15 @@ func (r *Repository) UpdateTransaction(
 		})
 		if err != nil {
 			if errNoRows(err) {
-				return classifyTransactionWrite(ctx, q, userID, id)
+				return classifyTransactionWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
 		return appendChangeLog(
 			ctx,
 			q,
-			userID,
+			householdID,
+			actorID,
 			row.ID,
 			domain.SyncEntityTransaction,
 			domain.SyncChangeUpsert,
@@ -113,21 +118,22 @@ func (r *Repository) UpdateTransaction(
 	), nil
 }
 
-func (r *Repository) DeleteTransaction(ctx context.Context, userID, id uuid.UUID) error {
+func (r *Repository) DeleteTransaction(ctx context.Context, householdID, actorID, id uuid.UUID) error {
 	const op = "repository.postgres.DeleteTransaction"
 
-	err := r.withinLockedTx(ctx, userID, func(q *db.Queries) error {
-		version, err := q.SoftDeleteTransaction(ctx, db.SoftDeleteTransactionParams{ID: id, UserID: userID})
+	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
+		version, err := q.SoftDeleteTransaction(ctx, db.SoftDeleteTransactionParams{ID: id, HouseholdID: householdID})
 		if err != nil {
 			if errNoRows(err) {
-				return classifyTransactionWrite(ctx, q, userID, id)
+				return classifyTransactionWrite(ctx, q, householdID, id)
 			}
 			return err
 		}
 		return appendChangeLog(
 			ctx,
 			q,
-			userID,
+			householdID,
+			actorID,
 			id,
 			domain.SyncEntityTransaction,
 			domain.SyncChangeTombstone,
@@ -143,18 +149,18 @@ func (r *Repository) DeleteTransaction(ctx context.Context, userID, id uuid.UUID
 // classifyTransactionWrite distinguishes the zero-row outcomes of a CAS write:
 // tombstoned reads as not-found for the REST surface (delete is idempotent at
 // the sync layer instead), a live version mismatch is a version conflict.
-func classifyTransactionWrite(ctx context.Context, q *db.Queries, userID, id uuid.UUID) error {
-	row, err := q.GetTransactionAny(ctx, db.GetTransactionAnyParams{ID: id, UserID: userID})
+func classifyTransactionWrite(ctx context.Context, q *db.Queries, householdID, id uuid.UUID) error {
+	row, err := q.GetTransactionAny(ctx, db.GetTransactionAnyParams{ID: id, HouseholdID: householdID})
 	if err != nil || row.DeletedAt != nil {
 		return domain.ErrTransactionNotFound
 	}
 	return domain.ErrTransactionVersionConflict
 }
 
-func (r *Repository) GetTransaction(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
+func (r *Repository) GetTransaction(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
 	const op = "repository.postgres.GetTransaction"
 
-	row, err := r.q.GetTransaction(ctx, db.GetTransactionParams{ID: id, UserID: userID})
+	row, err := r.q.GetTransaction(ctx, db.GetTransactionParams{ID: id, HouseholdID: householdID})
 	if err != nil {
 		if errNoRows(err) {
 			return nil, domain.ErrTransactionNotFound
@@ -170,7 +176,7 @@ func (r *Repository) GetTransaction(ctx context.Context, userID, id uuid.UUID) (
 
 func (r *Repository) GetTransactions(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	params domain.GetTransactionsParams,
 ) ([]domain.Transaction, error) {
 	const op = "repository.postgres.GetTransactions"
@@ -187,9 +193,9 @@ func (r *Repository) GetTransactions(
 	}
 
 	qparams := db.ListTransactionsParams{
-		UserID: userID,
-		Type:   typ,
-		Limit:  limit,
+		HouseholdID: householdID,
+		Type:        typ,
+		Limit:       limit,
 	}
 	if params.AccountID != nil {
 		id := *params.AccountID

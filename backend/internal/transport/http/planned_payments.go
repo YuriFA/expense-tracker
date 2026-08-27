@@ -19,13 +19,13 @@ func (s *Server) ListPlannedPayments(
 	ctx context.Context,
 	req api.ListPlannedPaymentsRequestObject,
 ) (api.ListPlannedPaymentsResponseObject, error) {
-	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 	var typeFilter *domain.TransactionType
 	if req.Params.Type != nil {
 		t := domain.TransactionType(*req.Params.Type)
 		typeFilter = &t
 	}
-	plans, err := s.plans.List(ctx, user.ID, domain.GetPlannedPaymentsParams{Type: typeFilter})
+	plans, err := s.plans.List(ctx, householdID, domain.GetPlannedPaymentsParams{Type: typeFilter})
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +41,7 @@ func (s *Server) CreatePlannedPayment(
 	req api.CreatePlannedPaymentRequestObject,
 ) (api.CreatePlannedPaymentResponseObject, error) {
 	user := s.currentUser(ctx)
+	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
@@ -61,7 +62,7 @@ func (s *Server) CreatePlannedPayment(
 	if err != nil {
 		return nil, err
 	}
-	p, err := s.plans.Create(ctx, user.ID, domain.CreatePlannedPaymentParams{
+	p, err := s.plans.Create(ctx, householdID, user.ID, domain.CreatePlannedPaymentParams{
 		ID:          id,
 		Type:        domain.TransactionType(req.Body.Type),
 		Amount:      req.Body.Amount,
@@ -84,8 +85,8 @@ func (s *Server) GetPlannedPayment(
 	ctx context.Context,
 	req api.GetPlannedPaymentRequestObject,
 ) (api.GetPlannedPaymentResponseObject, error) {
-	user := s.currentUser(ctx)
-	p, err := s.plans.Get(ctx, user.ID, req.Id)
+	householdID := s.currentHouseholdID(ctx)
+	p, err := s.plans.Get(ctx, householdID, req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func (s *Server) UpdatePlannedPayment(
 		v := domain.PlannedReminder(*req.Body.Reminder)
 		params.Reminder = &v
 	}
-	p, err := s.plans.Update(ctx, user.ID, req.Id, params)
+	p, err := s.plans.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +147,7 @@ func (s *Server) DeletePlannedPayment(
 	req api.DeletePlannedPaymentRequestObject,
 ) (api.DeletePlannedPaymentResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.plans.Delete(ctx, user.ID, req.Id); err != nil {
+	if err := s.plans.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeletePlannedPayment204Response{}, nil

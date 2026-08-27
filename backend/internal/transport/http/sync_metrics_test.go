@@ -50,8 +50,8 @@ func (h *captureHandler) find(message string) map[string]any {
 
 // The sync handlers emit structured metrics events (the dashboard feed):
 // per-batch status counts, the conflict rate, and the conflict-code breakdown
-// on push; page shape on pull. Both carry user_id and request_id for joining
-// with the request log.
+// on push; page shape on pull. Both carry the acting household/user id and
+// request_id for joining with the request log.
 func TestTransport_SyncMetricsLogEvents(t *testing.T) {
 	t.Parallel()
 
@@ -125,6 +125,6 @@ func TestTransport_SyncMetricsLogEvents(t *testing.T) {
 	assert.EqualValues(t, 1, pullMetrics["changes"])
 	assert.EqualValues(t, 0, pullMetrics["tombstones"])
 	assert.Equal(t, true, pullMetrics["caught_up"])
-	assert.NotEmpty(t, pullMetrics["user_id"])
+	assert.NotEmpty(t, pullMetrics["household_id"])
 	assert.NotEmpty(t, pullMetrics["request_id"])
 }

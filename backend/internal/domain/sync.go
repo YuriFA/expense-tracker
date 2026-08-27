@@ -76,14 +76,17 @@ type SyncPushResult struct {
 }
 
 // AppliedOperation is the durable opId idempotency record; Result replays
-// verbatim on redelivery of the same opId.
+// verbatim on redelivery of the same opId. HouseholdID is the scoping key
+// (opIds are client-generated, so lookups stay household-scoped); UserID is
+// the member who applied the operation.
 type AppliedOperation struct {
-	OpID      uuid.UUID
-	UserID    uuid.UUID
-	Entity    string
-	EntityID  uuid.UUID
-	Result    SyncPushResult
-	AppliedAt time.Time
+	OpID        uuid.UUID
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	Entity      string
+	EntityID    uuid.UUID
+	Result      SyncPushResult
+	AppliedAt   time.Time
 }
 
 // SyncChange is one change-log entry delivered by a pull. Data is one of

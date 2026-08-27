@@ -39,14 +39,14 @@ func NewTransactionService(
 
 func (s *TransactionService) Create(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	params domain.CreateTransactionParams,
 ) (*domain.Transaction, error) {
 	const op = "service.transaction.Create"
 
 	if err := s.validateRefs(
 		ctx,
-		userID,
+		householdID,
 		params.Type,
 		params.AccountID,
 		params.CategoryID,
@@ -56,7 +56,7 @@ func (s *TransactionService) Create(
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	params.UserID = userID
+	params.HouseholdID, params.UserID = householdID, userID
 	tx, err := s.transactions.CreateTransaction(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -66,7 +66,7 @@ func (s *TransactionService) Create(
 
 func (s *TransactionService) Update(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, userID, id uuid.UUID,
 	params domain.UpdateTransactionParams,
 ) (*domain.Transaction, error) {
 	const op = "service.transaction.Update"
@@ -77,7 +77,7 @@ func (s *TransactionService) Update(
 		return nil, ErrNoFieldsToUpdate
 	}
 
-	current, err := s.transactions.GetTransaction(ctx, userID, id)
+	current, err := s.transactions.GetTransaction(ctx, householdID, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -100,30 +100,30 @@ func (s *TransactionService) Update(
 		effectiveToAccountID = params.ToAccountID
 	}
 
-	if err := s.validateRefs(ctx, userID, current.Type,
+	if err := s.validateRefs(ctx, householdID, current.Type,
 		effectiveAccountID, effectiveCategoryID, effectiveFromAccountID, effectiveToAccountID,
 	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	tx, err := s.transactions.UpdateTransaction(ctx, userID, id, params)
+	tx, err := s.transactions.UpdateTransaction(ctx, householdID, userID, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return tx, nil
 }
 
-func (s *TransactionService) Delete(ctx context.Context, userID, id uuid.UUID) error {
+func (s *TransactionService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
 	const op = "service.transaction.Delete"
-	if err := s.transactions.DeleteTransaction(ctx, userID, id); err != nil {
+	if err := s.transactions.DeleteTransaction(ctx, householdID, userID, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (s *TransactionService) Get(ctx context.Context, userID, id uuid.UUID) (*domain.Transaction, error) {
+func (s *TransactionService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
 	const op = "service.transaction.Get"
-	tx, err := s.transactions.GetTransaction(ctx, userID, id)
+	tx, err := s.transactions.GetTransaction(ctx, householdID, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -154,7 +154,7 @@ type TransactionListQuery struct {
 // item of the page and trims to pageSize.
 func (s *TransactionService) List(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	q TransactionListQuery,
 ) (*TransactionListPage, error) {
 	const op = "service.transaction.List"
@@ -171,7 +171,7 @@ func (s *TransactionService) List(
 	}
 
 	fetchLimit := pageSize + 1
-	rows, err := s.transactions.GetTransactions(ctx, userID, domain.GetTransactionsParams{
+	rows, err := s.transactions.GetTransactions(ctx, householdID, domain.GetTransactionsParams{
 		Type:       q.Type,
 		AccountID:  q.AccountID,
 		CategoryID: q.CategoryID,
@@ -209,13 +209,13 @@ func boundPageSize(requested *int) int {
 }
 
 // validateRefs enforces the cashflow-vs-transfer reference rules and that every
-// referenced account/category exists and belongs to userID, and that a
+// referenced account/category exists and belongs to householdID, and that a
 // cashflow category's type matches the transaction type. The not-found errors
 // for FK references are DISTINCT from the by-id fetch errors so the transport
 // error mapper stays a pure 1:1 function (422 inside a transaction vs 404 by id).
 func (s *TransactionService) validateRefs(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID uuid.UUID,
 	typ domain.TransactionType,
 	accountID, categoryID, fromAccountID, toAccountID *uuid.UUID,
 ) error {
@@ -224,30 +224,31 @@ func (s *TransactionService) validateRefs(
 		if fromAccountID != nil || toAccountID != nil || accountID == nil || categoryID == nil {
 			return domain.ErrInvalidRefs
 		}
-		return s.validateCashflowRefs(ctx, userID, *accountID, *categoryID, typ)
+		return s.validateCashflowRefs(ctx, householdID, *accountID, *categoryID, typ)
 	case domain.TransactionTypeTransfer:
 		if accountID != nil || categoryID != nil || fromAccountID == nil || toAccountID == nil {
 			return domain.ErrInvalidRefs
 		}
-		return s.validateTransferRefs(ctx, userID, *fromAccountID, *toAccountID)
+		return s.validateTransferRefs(ctx, householdID, *fromAccountID, *toAccountID)
 	}
 	return nil
 }
 
 // validateCashflowRefs verifies the income/expense account + category exist,
-// belong to userID, and that the category type matches the transaction type.
+// belong to householdID, and that the category type matches the transaction
+// type.
 func (s *TransactionService) validateCashflowRefs(
 	ctx context.Context,
-	userID, accountID, categoryID uuid.UUID,
+	householdID, accountID, categoryID uuid.UUID,
 	typ domain.TransactionType,
 ) error {
-	if _, err := s.accounts.GetAccount(ctx, userID, accountID); err != nil {
+	if _, err := s.accounts.GetAccount(ctx, householdID, accountID); err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			return domain.ErrTransactionAccountNotFound
 		}
 		return err
 	}
-	cat, err := s.categories.GetCategory(ctx, userID, categoryID)
+	cat, err := s.categories.GetCategory(ctx, householdID, categoryID)
 	if err != nil {
 		if errors.Is(err, domain.ErrCategoryNotFound) {
 			return domain.ErrTransactionCategoryNotFound
@@ -261,18 +262,18 @@ func (s *TransactionService) validateCashflowRefs(
 }
 
 // validateTransferRefs verifies both transfer endpoints exist and belong to
-// userID, and rejects same-account transfers.
+// householdID, and rejects same-account transfers.
 func (s *TransactionService) validateTransferRefs(
 	ctx context.Context,
-	userID, fromAccountID, toAccountID uuid.UUID,
+	householdID, fromAccountID, toAccountID uuid.UUID,
 ) error {
-	if _, err := s.accounts.GetAccount(ctx, userID, fromAccountID); err != nil {
+	if _, err := s.accounts.GetAccount(ctx, householdID, fromAccountID); err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			return domain.ErrTransactionFromAccountNotFound
 		}
 		return err
 	}
-	if _, err := s.accounts.GetAccount(ctx, userID, toAccountID); err != nil {
+	if _, err := s.accounts.GetAccount(ctx, householdID, toAccountID); err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			return domain.ErrTransactionToAccountNotFound
 		}

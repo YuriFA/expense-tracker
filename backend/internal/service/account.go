@@ -11,8 +11,9 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
-// AccountService owns account business rules. userID is always passed
-// explicitly from the transport layer (never from a request body).
+// AccountService owns account business rules. householdID (scoping) and the
+// acting userID (authorship) are always passed explicitly from the transport
+// layer (never from a request body).
 type AccountService struct {
 	accounts repository.AccountRepository
 }
@@ -23,11 +24,11 @@ func NewAccountService(accounts repository.AccountRepository) *AccountService {
 
 func (s *AccountService) Create(
 	ctx context.Context,
-	userID uuid.UUID,
+	householdID, userID uuid.UUID,
 	params domain.CreateAccountParams,
 ) (*domain.Account, error) {
 	const op = "service.account.Create"
-	params.UserID = userID
+	params.HouseholdID, params.UserID = householdID, userID
 	a, err := s.accounts.CreateAccount(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -37,40 +38,40 @@ func (s *AccountService) Create(
 
 func (s *AccountService) Update(
 	ctx context.Context,
-	userID, id uuid.UUID,
+	householdID, userID, id uuid.UUID,
 	params domain.UpdateAccountParams,
 ) (*domain.Account, error) {
 	const op = "service.account.Update"
 	if params.Name == nil && params.ManualAdjustment == nil {
 		return nil, ErrNoFieldsToUpdate
 	}
-	a, err := s.accounts.UpdateAccount(ctx, userID, id, params)
+	a, err := s.accounts.UpdateAccount(ctx, householdID, userID, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return a, nil
 }
 
-func (s *AccountService) Delete(ctx context.Context, userID, id uuid.UUID) error {
+func (s *AccountService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
 	const op = "service.account.Delete"
-	if err := s.accounts.DeleteAccount(ctx, userID, id); err != nil {
+	if err := s.accounts.DeleteAccount(ctx, householdID, userID, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (s *AccountService) Get(ctx context.Context, userID, id uuid.UUID) (*domain.Account, error) {
+func (s *AccountService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error) {
 	const op = "service.account.Get"
-	a, err := s.accounts.GetAccount(ctx, userID, id)
+	a, err := s.accounts.GetAccount(ctx, householdID, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return a, nil
 }
 
-func (s *AccountService) List(ctx context.Context, userID uuid.UUID) ([]domain.Account, error) {
+func (s *AccountService) List(ctx context.Context, householdID uuid.UUID) ([]domain.Account, error) {
 	const op = "service.account.List"
-	a, err := s.accounts.GetAccounts(ctx, userID)
+	a, err := s.accounts.GetAccounts(ctx, householdID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -83,9 +84,9 @@ type AccountBalances struct {
 	NetWorth int64
 }
 
-func (s *AccountService) Balances(ctx context.Context, userID uuid.UUID) (*AccountBalances, error) {
+func (s *AccountService) Balances(ctx context.Context, householdID uuid.UUID) (*AccountBalances, error) {
 	const op = "service.account.Balances"
-	bs, err := s.accounts.GetAccountBalances(ctx, userID)
+	bs, err := s.accounts.GetAccountBalances(ctx, householdID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

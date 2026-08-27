@@ -19,12 +19,13 @@ func TestTransactionService_RefValidation(t *testing.T) {
 	ctx := context.Background()
 
 	user := seedFakeUser(t, store)
-	acct := seedFakeAccount(t, store, user.ID)
-	cat := seedFakeCategory(t, store, user.ID, "CustomIncome", domain.TransactionTypeIncome)
+	userHH := householdOf(t, store, user.ID)
+	acct := seedFakeAccount(t, store, userHH, user.ID)
+	cat := seedFakeCategory(t, store, userHH, user.ID, "CustomIncome", domain.TransactionTypeIncome)
 
 	t.Run("income requires account+category", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 		})
 		require.ErrorIs(t, err, domain.ErrInvalidRefs)
@@ -32,7 +33,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("income with transfer refs rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 			FromAccountID: &acct.ID, ToAccountID: &acct.ID,
 		})
@@ -42,7 +43,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 	t.Run("income account not owned -> transaction account not found", func(t *testing.T) {
 		t.Parallel()
 		other := uuid.New()
-		_, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 			AccountID: &other, CategoryID: &cat.ID,
 		})
@@ -51,8 +52,8 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("income category type mismatch", func(t *testing.T) {
 		t.Parallel()
-		expenseCat := seedFakeCategory(t, store, user.ID, "CustomExpense", domain.TransactionTypeExpense)
-		_, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		expenseCat := seedFakeCategory(t, store, userHH, user.ID, "CustomExpense", domain.TransactionTypeExpense)
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &expenseCat.ID,
 		})
@@ -61,7 +62,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("transfer same account rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeTransfer, Amount: 100, OccurredAt: time.Now().UTC(),
 			FromAccountID: &acct.ID, ToAccountID: &acct.ID,
 		})
@@ -70,7 +71,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("transfer with account+category rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeTransfer, Amount: 100, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &cat.ID,
 		})
@@ -79,7 +80,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("valid income creates", func(t *testing.T) {
 		t.Parallel()
-		created, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &cat.ID,
 		})
@@ -109,13 +110,14 @@ func TestTransactionService_PaginationLogic(t *testing.T) {
 	ctx := context.Background()
 
 	user := seedFakeUser(t, store)
-	acct := seedFakeAccount(t, store, user.ID)
-	cat := seedFakeCategory(t, store, user.ID, "P", domain.TransactionTypeIncome)
+	userHH := householdOf(t, store, user.ID)
+	acct := seedFakeAccount(t, store, userHH, user.ID)
+	cat := seedFakeCategory(t, store, userHH, user.ID, "P", domain.TransactionTypeIncome)
 
 	// 5 transactions, distinct occurred_at.
 	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	for i := range 5 {
-		_, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type:       domain.TransactionTypeIncome,
 			Amount:     int64(i + 1),
 			OccurredAt: base.Add(time.Duration(i) * time.Hour),
@@ -127,21 +129,21 @@ func TestTransactionService_PaginationLogic(t *testing.T) {
 
 	pageSize := 2
 	// Page 1: 2 items + nextCursor.
-	p1, err := txSvc.List(ctx, user.ID, service.TransactionListQuery{Limit: &pageSize})
+	p1, err := txSvc.List(ctx, userHH, service.TransactionListQuery{Limit: &pageSize})
 	require.NoError(t, err)
 	require.Len(t, p1.Transactions, 2)
 	require.NotNil(t, p1.NextCursor)
 	assert.Equal(t, int64(5), p1.Transactions[0].Amount) // newest first
 
 	// Page 2 with the cursor.
-	p2, err := txSvc.List(ctx, user.ID, service.TransactionListQuery{Limit: &pageSize, Cursor: p1.NextCursor})
+	p2, err := txSvc.List(ctx, userHH, service.TransactionListQuery{Limit: &pageSize, Cursor: p1.NextCursor})
 	require.NoError(t, err)
 	require.Len(t, p2.Transactions, 2)
 	require.NotNil(t, p2.NextCursor)
 	assert.Equal(t, int64(3), p2.Transactions[0].Amount)
 
 	// Page 3: 1 item, no nextCursor.
-	p3, err := txSvc.List(ctx, user.ID, service.TransactionListQuery{Limit: &pageSize, Cursor: p2.NextCursor})
+	p3, err := txSvc.List(ctx, userHH, service.TransactionListQuery{Limit: &pageSize, Cursor: p2.NextCursor})
 	require.NoError(t, err)
 	require.Len(t, p3.Transactions, 1)
 	assert.Nil(t, p3.NextCursor)
@@ -152,8 +154,9 @@ func TestTransactionService_InvalidCursor(t *testing.T) {
 	_, _, txSvc, _, _, store := services(t)
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
+	userHH := householdOf(t, store, user.ID)
 
-	_, err := txSvc.List(ctx, user.ID, service.TransactionListQuery{Cursor: strPtr("!!!invalid!!!")})
+	_, err := txSvc.List(ctx, userHH, service.TransactionListQuery{Cursor: strPtr("!!!invalid!!!")})
 	require.ErrorIs(t, err, service.ErrInvalidCursor)
 }
 
@@ -162,20 +165,21 @@ func TestTransactionService_UpdateNoFields(t *testing.T) {
 	_, _, txSvc, _, _, store := services(t)
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
-	acct := seedFakeAccount(t, store, user.ID)
-	cat := seedFakeCategory(t, store, user.ID, "U", domain.TransactionTypeIncome)
+	userHH := householdOf(t, store, user.ID)
+	acct := seedFakeAccount(t, store, userHH, user.ID)
+	cat := seedFakeCategory(t, store, userHH, user.ID, "U", domain.TransactionTypeIncome)
 
-	tx, err := txSvc.Create(ctx, user.ID, domain.CreateTransactionParams{
+	tx, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 		Type: domain.TransactionTypeIncome, Amount: 10, OccurredAt: time.Now().UTC(),
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
 
-	_, err = txSvc.Update(ctx, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 1})
+	_, err = txSvc.Update(ctx, userHH, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 1})
 	require.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
 
 	// Optimistic concurrency mismatch surfaces the version-conflict domain error.
-	_, err = txSvc.Update(ctx, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 999, Amount: i64(20)})
+	_, err = txSvc.Update(ctx, userHH, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 999, Amount: i64(20)})
 	require.Error(t, err)
 	require.ErrorIs(t, err, domain.ErrTransactionVersionConflict)
 }
