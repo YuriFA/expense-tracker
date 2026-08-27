@@ -67,7 +67,6 @@
   "addAccount": {
     "nameLabel": "Name",
     "namePlaceholder": "Account name",
-    "currencyLabel": "Currency",
     "openingBalanceLabel": "Opening balance",
     "submit": "Add account",
     "newAccount": "New account",
