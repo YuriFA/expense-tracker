@@ -560,23 +560,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/accounts/balances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Сводка балансов + netWorth */
-        get: operations["getAccountBalances"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/accounts/{id}": {
         parameters: {
             query?: never;
@@ -1123,22 +1106,6 @@ export interface components {
              * @description Версия счёта (optimistic concurrency).
              */
             version: number;
-        };
-        AccountBalance: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            userId: string;
-            name: string;
-            /** @enum {string} */
-            currency: "USD" | "EUR" | "RUB";
-            /** Format: int64 */
-            balance: number;
-        };
-        AccountBalancesResponse: {
-            balances: components["schemas"]["AccountBalance"][];
-            /** Format: int64 */
-            netWorth: number;
         };
         AccountCreateRequest: {
             /**
@@ -3109,28 +3076,6 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["AccountAlreadyExists"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    getAccountBalances: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Балансы всех счетов и net worth. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccountBalancesResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
             500: components["responses"]["InternalError"];
         };
     };
