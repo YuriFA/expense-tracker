@@ -12,8 +12,8 @@ describe('currencies', () => {
     expect(AVAILABLE_CURRENCIES).toEqual(['USD', 'EUR', 'RUB'])
   })
 
-  it('defaults to USD', () => {
-    expect(DEFAULT_CURRENCY).toBe('USD')
+  it("defaults to RUB (app display currency, currency-rub-only)", () => {
+    expect(DEFAULT_CURRENCY).toBe('RUB')
   })
 
   it('maps each code to a dinero currency with code/base/exponent', () => {
