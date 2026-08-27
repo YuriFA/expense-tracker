@@ -12,10 +12,10 @@
 
 ## 3. Backend re-key
 
-- [ ] 3.1 Auth middleware: resolve session → user → (single) membership, carry `householdID` in the request context; enforce membership on the household endpoints
-- [ ] 3.2 Services (`account`, `category`, `transaction`, `debtor`, `debt_operation`, `planned_payment`, `sync`): first parameter `userID` → `householdID`; writes stamp authorship `user_id` from the session
-- [ ] 3.3 Household read service + profile update: `GET /api/household` (members with email/displayName/role/joinedAt) and `PATCH /api/me` (display-name validation: non-empty trimmed, length cap)
-- [ ] 3.4 Registration: create user + household + owner membership in one transaction
+- [x] 3.1 Auth middleware: resolve session → user → (single) membership, carry `householdID` in the request context; enforce membership on the household endpoints
+- [x] 3.2 Services (`account`, `category`, `transaction`, `debtor`, `debt_operation`, `planned_payment`, `sync`): first parameter `userID` → `householdID`; writes stamp authorship `user_id` from the session
+- [x] 3.3 Household read service + profile update: `GET /api/household` (members with email/displayName/role/joinedAt) and `PATCH /api/me` (display-name validation: non-empty trimmed, length cap)
+- [x] 3.4 Registration: create user + household + owner membership in one transaction
 
 ## 4. Tests
 
