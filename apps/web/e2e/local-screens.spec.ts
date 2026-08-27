@@ -6,6 +6,12 @@ import { test, expect } from '@playwright/test'
 // test, seeded through the UI. These flows double as the deep-link and
 // back-button checks for the new routes (web-native navigation requirement).
 
+test.beforeEach(({ page }) => {
+  // The product default locale is RU (web-locales); this suite's copy
+  // assertions are English, so pin the stored locale choice to EN.
+  page.addInitScript(() => localStorage.setItem('BudgetTracker:locale', 'en'))
+})
+
 /** One account named `name` on the accounts page. */
 async function seedAccount(page: import('@playwright/test').Page, name: string) {
   await page.goto('/accounts')

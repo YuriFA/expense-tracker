@@ -5,6 +5,12 @@ import { test, expect } from '@playwright/test'
 // runs against the local SQLite/OPFS worker. Each Playwright context gets a
 // fresh browser profile, so storage is isolated per test.
 
+test.beforeEach(({ page }) => {
+  // The product default locale is RU (web-locales); this suite's copy
+  // assertions are English, so pin the stored locale choice to EN.
+  page.addInitScript(() => localStorage.setItem('BudgetTracker:locale', 'en'))
+})
+
 test('opens a data screen directly without a session (no login redirect)', async ({ page }) => {
   await page.goto('/transactions')
   await expect(page.getByTestId('guest-mode-indicator')).toBeVisible()

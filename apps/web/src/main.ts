@@ -1,5 +1,5 @@
-import { createApp, watch } from 'vue'
-import { createPinia, storeToRefs } from 'pinia'
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import { PiniaColada } from '@pinia/colada'
 import { PiniaColadaRetry } from '@pinia/colada-plugin-retry'
 
@@ -10,13 +10,11 @@ import { provideRepositories } from './app/repositories'
 import { setUnauthorizedHandler } from './shared/api'
 import { useAuthStore } from './entities/session'
 import './style.css'
-import { useSettingsStore } from './shared/store/use-settings-store'
 import { setupI18nLocaleWatcher } from './app/setup-i18n-locale-watcher'
+import { registerServiceWorker } from './app/register-service-worker'
 
 const app = createApp(App)
 const pinia = createPinia()
-const settingsStore = useSettingsStore(pinia)
-const { locale } = storeToRefs(settingsStore)
 
 app.use(i18n)
 app.use(pinia)
@@ -53,13 +51,9 @@ setUnauthorizedHandler(() => {
   }
 })
 
-watch(
-  locale,
-  (value) => {
-    i18n.global.locale.value = value
-  },
-  { immediate: true },
-)
-
 setupI18nLocaleWatcher()
 app.mount('#app')
+
+// The app-shell service worker exists only in production builds; in dev its
+// /sw.js would 404 (vite-plugin-pwa emits nothing without devOptions).
+if (import.meta.env.PROD) registerServiceWorker()

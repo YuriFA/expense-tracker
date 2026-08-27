@@ -257,14 +257,14 @@ only `globalThis.fetch` and injected `fetch`.
   `nowIso`/`isoDaysAgo`. Consumed only by mobile today; decided end-state
   (2026-08-20): both apps use this package as the canonical date layer —
   web's app-local adapter is temporary, extend the package API when web
-  needs more. Product default locale is RU — a decided direction pending
-  implementation (canonical record: `docs/assumptions.md`).
-- **`i18n`** (leaf) — EN/RU bundles, `MessageSchema` (EN is source of
-  truth), `mapCategory(s)` with an injected `Translator`, 24 seed-category
-  slug→key mappings. **Consumed only by web**; mobile does not install it
-  (see Mobile section). Product default locale RU — decided direction
-  pending implementation: `DEFAULT_LOCALE` is still en today (canonical
-  record: `docs/assumptions.md`).
+  needs more. Product default locale is RU (implemented 2026-08-27 in
+  `DEFAULT_LOCALE`, change `web-pwa-i18n`).
+- **`i18n`** (leaf) — EN/RU bundles in key parity (unit-tested in
+  `src/locales.test.ts`), `MessageSchema` (EN is source of truth),
+  `mapCategory(s)` with an injected `Translator`, 24 seed-category
+  slug→key mappings, `DEFAULT_LOCALE = 'ru'` (flipped en→ru 2026-08-27,
+  change `web-pwa-i18n`). **Consumed only by web**; mobile does not install
+  it (see Mobile section).
 - **`tokens`** (leaf, css-only) — two copies kept in sync **by machine**:
   `src/index.css` (web) and `src/mobile.css` (mobile, Uniwind); the mobile
   palette is canonical (decided 2026-08-20). Synced 2026-08-20 (light
@@ -356,9 +356,21 @@ quick income page — all reachable through the persistent `AppNav`.
   exactly once at the mapper seam (`toMinorUnits(data.amount)`, five
   verified sites); storage/transport/sync/calculation stay integer.
   Mobile's stricter digit-string convention remains valid, not mandatory.
-- **i18n**: vue-i18n over `@expense-tracker/i18n` bundles; locale persisted
-  in the settings store; locale change invalidates the categories query
-  cache (category names are localized); strict i18n lint (`lint:i18n`).
+- **i18n**: vue-i18n over `@expense-tracker/i18n` bundles; RU is the
+  default locale (`web-locales` capability), a RU/EN switcher lives in
+  settings; `app/setup-i18n-locale-watcher.ts` applies the persisted choice
+  immediately and invalidates the categories query cache (category names
+  are localized); strict i18n lint (`lint:i18n`) plus a package-level
+  EN/RU key-parity test.
+- **PWA** (`web-pwa` capability): `vite-plugin-pwa` generateSW in
+  `vite.config.ts` — app-shell-only precache (js/css/html/wasm/worker
+  assets; unused emscripten side files excluded), `navigateFallback` with
+  an `/api` denylist, NO runtime caching (API responses never come from
+  cache), prompted updates (`app/register-service-worker.ts` →
+  «Доступно обновление» toast, never auto-reload). Manifest is
+  hand-maintained at `public/site.webmanifest`. PWA e2e (`e2e/pwa/`,
+  `playwright.pwa.config.ts`, `pnpm test:e2e:pwa`) runs against the
+  production build; the dev-server suite ignores `pwa/**`.
 - **Errors**: package-level mapping produces `RepositoryError` subclasses;
   UI surfaces them via toasts (`vue-sonner`), inline form field errors, and
   retry-capable `ErrorState` blocks; a handful of screens special-case
@@ -368,8 +380,9 @@ quick income page — all reachable through the persistent `AppNav`.
   with a mount-with-providers helper; Playwright e2e covers backendless
   local flows (CRUD, reload persistence, offline, single-tab lock, and the
   web-screens-parity screens: analytics render, debts create→history→edit,
-  plan create→confirm→transaction, quick income) plus an env-gated sync
-  suite. Steiger runs via `pnpm exec steiger`.
+  plan create→confirm→transaction, quick income), the production-build PWA
+  suite (offline cold start, no cached API), and an env-gated sync suite.
+  Steiger runs via `pnpm exec steiger`.
 
 ## Mobile (`apps/mobile/`)
 

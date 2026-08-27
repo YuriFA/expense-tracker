@@ -12,6 +12,10 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './e2e',
+  // The PWA specs (e2e/pwa/) need the production build's service worker -
+  // they run via playwright.pwa.config.ts (`pnpm test:e2e:pwa`) instead of
+  // this dev-server suite.
+  testIgnore: '**/pwa/**',
   /* Maximum time one test can run for. */
   timeout: 30 * 1000,
   expect: {

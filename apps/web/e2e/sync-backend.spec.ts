@@ -11,6 +11,13 @@ import { test, expect } from '@playwright/test'
 
 const API_URL = process.env.SYNC_INTEGRATION_API ?? ''
 
+// Pin the stored locale to EN (product default is RU, web-locales): added
+// per-test after the env-gated skip - a beforeEach hook would race the
+// body-level test.skip() teardown on Firefox.
+async function pinEnglishLocale(page: import('@playwright/test').Page) {
+  await page.addInitScript(() => localStorage.setItem('BudgetTracker:locale', 'en'))
+}
+
 function uniqueEmail(): string {
   return `e2e+${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`
 }
@@ -19,6 +26,7 @@ const PASSWORD = 'strong-password'
 
 test('register binds anonymous local data and pushes it to the server', async ({ page }) => {
   test.skip(!API_URL, 'requires SYNC_INTEGRATION_API and a running backend')
+  await pinEnglishLocale(page)
   const email = uniqueEmail()
 
   // Anonymous local data first: an account (accounts page) and a category.
@@ -63,6 +71,7 @@ test('register binds anonymous local data and pushes it to the server', async ({
 
 test('logout keeps local data and returns to anonymous mode', async ({ page }) => {
   test.skip(!API_URL, 'requires SYNC_INTEGRATION_API and a running backend')
+  await pinEnglishLocale(page)
   const email = uniqueEmail()
   await page.goto('/register')
   await page.getByLabel('Email').fill(email)
@@ -87,6 +96,7 @@ test('logout keeps local data and returns to anonymous mode', async ({ page }) =
 
 test('an expired session pauses sync and logging in resumes it', async ({ page }) => {
   test.skip(!API_URL, 'requires SYNC_INTEGRATION_API and a running backend')
+  await pinEnglishLocale(page)
   const email = uniqueEmail()
   await page.goto('/register')
   await page.getByLabel('Email').fill(email)

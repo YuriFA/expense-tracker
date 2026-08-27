@@ -34,6 +34,30 @@ debts/plans screens own their view-model selectors under `pages/*/model/`.
 - Error mapping is code-driven: every non-2xx -> `RepositoryError` keyed on
   `ErrorResponse.code`, not HTTP status.
 
+## PWA (`web-pwa` capability)
+
+- `vite-plugin-pwa` generateSW is configured in `vite.config.ts`: app-shell
+  precache (incl. the SQLite-WASM binary and worker chunk; unused emscripten
+  side files excluded), `navigateFallback` with an `/api` denylist, NO
+  runtime caching — API responses are never served from cache. The manifest
+  is hand-maintained at `public/site.webmanifest` (token-derived colors
+  synced by review).
+- Prompted updates: `app/register-service-worker.ts` (prod-only) shows the
+  «Доступно обновление» toast via vue-sonner; never auto-reloads.
+- PWA e2e specs live in `e2e/pwa/` with their own
+  `playwright.pwa.config.ts` (`pnpm test:e2e:pwa`) — they need the
+  production build's service worker; the dev-server e2e suite ignores
+  `pwa/**`. Manual install checklist: the change notes of `web-pwa-i18n`.
+
+## i18n (`web-locales` capability)
+
+- RU is the product default (`DEFAULT_LOCALE` in `@expense-tracker/i18n`);
+  EN is complete (strict `pnpm i18n:lint` + a package key-parity test).
+  The settings screen has a RU/EN switcher; the choice persists in
+  localStorage and `app/setup-i18n-locale-watcher.ts` applies it
+  immediately (and rehydrates it at startup). Component/unit tests and the
+  dev-server e2e suite pin EN; the PWA e2e suite asserts the RU default.
+
 ## Domain conventions
 
 - **Transactions:** PATCH update with required `version` (optimistic concurrency);
@@ -64,7 +88,9 @@ debts/plans screens own their view-model selectors under `pages/*/model/`.
 from the workspace root (`pnpm knip`, config in the root `knip.json`). E2E
 (`apps/web/e2e`, `pnpm test:e2e`): the default suite is backendless (local
 CRUD, reload persistence, offline via `context.setOffline`, multi-tab lock
-banner) and needs no backend; the sync suite (`sync-backend.spec.ts`) is
+banner) and needs no backend; the PWA suite (`e2e/pwa/`,
+`pnpm test:e2e:pwa`) builds and runs against `vite preview` (the SW only
+exists in production builds); the sync suite (`sync-backend.spec.ts`) is
 env-gated on `SYNC_INTEGRATION_API` like mobile's integration tests. Playwright
 projects are chromium + firefox only: the bundled WebKit exposes no OPFS
 (`getDirectory()` throws), so the local-first core cannot boot there — real

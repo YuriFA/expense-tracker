@@ -1,6 +1,8 @@
 {
   "common": {
     "close": "Закрыть",
+    "updateAvailable": "Доступно обновление",
+    "updateNow": "Обновить",
     "errorState": {
       "title": "Не удалось загрузить",
       "retry": "Повторить"

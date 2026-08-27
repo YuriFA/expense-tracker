@@ -1,6 +1,8 @@
 {
   "common": {
     "close": "Close",
+    "updateAvailable": "Update available",
+    "updateNow": "Update",
     "errorState": {
       "title": "Failed to load",
       "retry": "Retry"

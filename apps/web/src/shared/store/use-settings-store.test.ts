@@ -15,6 +15,18 @@ describe('useSettingsStore', () => {
     expect(store.theme).toBe(DEFAULT_SETTINGS.theme)
   })
 
+  it('defaults the locale to Russian (product default, web-locales)', () => {
+    const store = useSettingsStore()
+    expect(store.locale).toBe('ru')
+  })
+
+  it('persists the chosen locale to localStorage on change', async () => {
+    const store = useSettingsStore()
+    store.locale = 'en'
+    await nextTick()
+    expect(localStorage.getItem('BudgetTracker:locale')).toBe('en')
+  })
+
   it('persists values to localStorage on change', async () => {
     const store = useSettingsStore()
     store.currency = 'RUB'

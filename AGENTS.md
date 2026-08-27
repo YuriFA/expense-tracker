@@ -91,8 +91,7 @@ The first three rules are enforced by `pnpm arch:check` (see below). App-local
 concerns stay OUT of packages: web keeps its vue-i18n instance, Vite base-URL
 resolution, localStorage repos, Vue DI/composables, and Zod schemas; mobile
 keeps its native wiring. Decided-direction-but-pending items (web migration
-onto `@expense-tracker/dates`, `i18n` `DEFAULT_LOCALE` en→ru) are tracked in
-`docs/assumptions.md`.
+onto `@expense-tracker/dates`) are tracked in `docs/assumptions.md`.
 
 ## Monorepo tooling
 
