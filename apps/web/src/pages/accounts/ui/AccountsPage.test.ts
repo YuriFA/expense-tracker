@@ -78,5 +78,8 @@ describe('AccountsPage', () => {
     })
     await flushPromises()
     expect(wrapper.findAllComponents(AccountCard)).toHaveLength(0)
+    // The empty-state total formats in the fixed app currency, not USD
+    // (currency-rub-only).
+    expect(wrapper.text()).toContain('₽0.00')
   })
 })

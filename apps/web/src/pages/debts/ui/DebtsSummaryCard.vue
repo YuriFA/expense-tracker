@@ -3,8 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ArrowDown, ArrowUp } from '@lucide/vue'
 import { Card, CardContent } from '@/shared/ui/card'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 import type { DirectionBalances } from '@/entities/debt-operation'
 
 // Direction totals: each is the sum of that direction's per-debtor balances
@@ -15,8 +14,9 @@ defineProps<{
 }>()
 
 const { t, locale } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Debts carry no currency of their own; the app display currency is fixed
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const format = (value: number) => formatMoney(value, displayCurrency.value, locale.value)
 </script>

@@ -6,8 +6,7 @@ import type { PlannedPayment } from '@expense-tracker/api'
 import { monthlyTotal } from '@/entities/planned-payment'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 // One plan type's summary card: the plan count and the normalized monthly
 // figure (monthlyAmount from the package - the only recurrence math).
@@ -22,8 +21,9 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Plans carry no currency of their own; the app display currency is fixed
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const cardTitle = computed(() =>
   props.type === 'expense' ? t('plans.expensesTitle') : t('plans.incomeTitle'),

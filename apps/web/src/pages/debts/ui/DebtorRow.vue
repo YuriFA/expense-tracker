@@ -4,8 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { ChevronRight } from '@lucide/vue'
 import type { Debtor } from '@expense-tracker/api'
 import { debtorAvatarColor, initialsOf } from '../model/selectors'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 const props = defineProps<{
   debtor: Debtor
@@ -13,8 +12,9 @@ const props = defineProps<{
 }>()
 
 const { locale } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Debts carry no currency of their own; the app display currency is fixed
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const balanceText = computed(() =>
   formatMoney(props.balance, displayCurrency.value, locale.value),

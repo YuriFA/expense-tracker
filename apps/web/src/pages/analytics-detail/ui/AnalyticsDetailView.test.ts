@@ -64,11 +64,11 @@ describe('AnalyticsDetailView', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="analytics-period-month"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="analytics-detail-total"]').text()).toBe('$303.25')
+    expect(wrapper.find('[data-testid="analytics-detail-total"]').text()).toBe('₽303.25')
 
     // The summary row carries the full total and 100%; rows show percentages
     // against the FULL total (spec scenario: 20 113 of 30 325 = 66,32%).
-    expect(wrapper.find('[data-testid="analytics-total-amount"]').text()).toBe('$303.25')
+    expect(wrapper.find('[data-testid="analytics-total-amount"]').text()).toBe('₽303.25')
     const list = wrapper.find('[data-testid="analytics-category-list"]')
     expect(list.text()).toContain('66.32%')
     expect(list.text()).toContain('33.68%')
@@ -110,8 +110,8 @@ describe('AnalyticsDetailView', () => {
     const { wrapper } = mountView([])
     await flushPromises()
 
-    expect(wrapper.text()).toContain('$0.00')
-    expect(wrapper.find('[data-testid="analytics-total-amount"]').text()).toBe('$0.00')
+    expect(wrapper.text()).toContain('₽0.00')
+    expect(wrapper.find('[data-testid="analytics-total-amount"]').text()).toBe('₽0.00')
     // Both expense categories keep their rows at 0 / 0%.
     expect(wrapper.find('[data-testid="analytics-category-check-c1"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="analytics-category-check-c2"]').exists()).toBe(true)
@@ -132,7 +132,7 @@ describe('AnalyticsDetailView', () => {
     // Only c1 remains charted; c2's row still shows the FULL-total amount.
     const segments = wrapper.findAll('[data-testid="donut-segment"]')
     expect(segments).toHaveLength(1)
-    expect(wrapper.text()).toContain('$30.00')
+    expect(wrapper.text()).toContain('₽30.00')
   })
 
   it('the master checkbox excludes/restores every category', async () => {

@@ -3,7 +3,7 @@ import { useAccounts, AccountCardSkeleton } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/shared/ui/card'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
+import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
 import { ErrorState } from '@/shared/ui/error-state'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { computed } from 'vue'
@@ -40,7 +40,7 @@ const format = (value: number, currency: CurrencyCode) =>
       <CardContent>
         <p class="text-sm">{{ t('accounts.totalBalance') }}</p>
         <div v-if="totalsByCurrency.length === 0" class="text-2xl font-semibold">
-          {{ format(0, 'USD') }}
+          {{ format(0, DEFAULT_CURRENCY) }}
         </div>
         <div v-else class="flex flex-col gap-1">
           <p

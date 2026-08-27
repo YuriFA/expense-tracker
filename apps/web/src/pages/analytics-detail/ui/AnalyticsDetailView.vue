@@ -25,8 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 import CategoryCashflowDialog from './CategoryCashflowDialog.vue'
 
 // Per-direction detail (analytics capability): period selector, prev/next
@@ -39,10 +38,10 @@ const props = defineProps<{
 }>()
 
 const { t, locale } = useI18n()
-// Minor-unit sums with no conversion (analytics capability); display currency
-// is the user's preference (the settings UI only offers known codes).
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Minor-unit sums with no conversion (analytics capability); the currency-
+// less total is formatted in the fixed app display currency
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const PERIOD_KINDS: readonly AnalyticsPeriodKind[] = ['week', 'month', 'year']
 

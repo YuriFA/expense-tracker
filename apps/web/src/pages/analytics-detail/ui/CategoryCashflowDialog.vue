@@ -24,8 +24,7 @@ import {
 import { Button } from '@/shared/ui/button'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { ChevronLeft, ChevronRight, Trash2 } from '@lucide/vue'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 // Category drill-down (analytics capability): the selected category's
 // transactions for the detail screen's period, with the period navigable
@@ -41,8 +40,9 @@ const props = defineProps<{
 
 const open = defineModel<boolean>('open', { default: false })
 const { t, locale } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Analytics totals carry no currency of their own; the app display currency
+// is fixed (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const localCursor = ref<PeriodCursor>(props.cursor)
 const newestFirst = ref(true)

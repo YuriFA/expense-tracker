@@ -68,8 +68,8 @@ describe('AnalyticsPage', () => {
     expect(incomeCard.attributes('href')).toBe('/analytics/income')
 
     expect(expenseCard.find('[data-testid="donut-chart"]').exists()).toBe(true)
-    expect(expenseCard.text()).toContain('$303.25')
-    expect(incomeCard.text()).toContain('$500.00')
+    expect(expenseCard.text()).toContain('₽303.25')
+    expect(incomeCard.text()).toContain('₽500.00')
     expect(expenseCard.find('[data-testid="chart-legend"]').text()).toContain('Такси')
   })
 

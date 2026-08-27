@@ -57,5 +57,8 @@ describe('NetWorthCard', () => {
     await flushPromises()
     // Should still render without errors
     expect(wrapper.find('a').exists()).toBe(false)
+    // The empty-state figure formats in the fixed app currency, not USD
+    // (currency-rub-only).
+    expect(wrapper.text()).toContain('₽0.00')
   })
 })

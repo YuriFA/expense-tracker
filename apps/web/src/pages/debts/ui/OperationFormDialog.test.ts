@@ -93,7 +93,9 @@ describe('OperationFormDialog', () => {
     expect(
       (inDialog('[data-testid="debts-operation-dialog"] form input:not([type="date"])') as HTMLInputElement)
         .value,
-    ).toBe('$5,000.00')
+    // reka-ui formats the input via Intl: en + RUB renders the ISO code
+    // (no common en symbol) with a no-break space separator.
+    ).toBe('RUB\u00A05,000.00')
     expect((inDialog('#debts-operation-date') as HTMLInputElement).value).toBe(
       new Date('2026-08-20T12:00:00.000Z').toLocaleDateString('sv'),
     )
@@ -101,13 +103,13 @@ describe('OperationFormDialog', () => {
   })
 
   it('warns (without blocking) when a repayment exceeds the remaining balance', async () => {
-    // The debtor's balance is $5,000.00; the edited repayment is $6,000.00.
+    // The debtor's balance is ₽5,000.00; the edited repayment is ₽6,000.00.
     mountDialog({ operation: overRepaymentOperation, operations: [debtOperation] })
     await flushPromises()
 
     expect(inDialog('[data-testid="debts-operation-over-repayment"]')).not.toBeNull()
     expect(inDialog('[data-testid="debts-operation-over-repayment"]')!.textContent).toContain(
-      '$5,000.00',
+      '₽5,000.00',
     )
     // The submit button stays enabled: over-repayment is a warning, not a block.
     expect(

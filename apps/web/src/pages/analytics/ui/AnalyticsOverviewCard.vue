@@ -14,8 +14,7 @@ import {
 import { DonutChart, type DonutChartEntry } from '@/shared/ui/donut-chart'
 import { ChartLegend } from '@/shared/ui/donut-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 const props = defineProps<{
   direction: AnalyticsDirection
@@ -25,10 +24,9 @@ const props = defineProps<{
 
 const { t, locale } = useI18n()
 // Analytics totals are plain minor-unit sums with no conversion (analytics
-// capability); the mixed-currency display currency is the user's preference
-// (the settings UI only offers AVAILABLE_CURRENCIES values).
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// capability); the currency-less total is formatted in the fixed app
+// display currency (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 // The overview always shows the current device-local month; week/month/year
 // selection lives on the detail screen (analytics capability).
