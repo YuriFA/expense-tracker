@@ -14,20 +14,21 @@ import (
 
 const createDebtOperation = `-- name: CreateDebtOperation :one
 
-INSERT INTO debt_operations (id, user_id, debtor_id, direction, kind, amount, note, occurred_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO debt_operations (id, household_id, user_id, debtor_id, direction, kind, amount, note, occurred_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id, user_id, debtor_id, direction, kind, amount, note, occurred_at, created_at, updated_at, version
 `
 
 type CreateDebtOperationParams struct {
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	DebtorID   uuid.UUID
-	Direction  string
-	Kind       string
-	Amount     int64
-	Note       string
-	OccurredAt time.Time
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	DebtorID    uuid.UUID
+	Direction   string
+	Kind        string
+	Amount      int64
+	Note        string
+	OccurredAt  time.Time
 }
 
 type CreateDebtOperationRow struct {
@@ -44,14 +45,16 @@ type CreateDebtOperationRow struct {
 	Version    int32
 }
 
-// debt_operations (per-user ledger records referencing a debtor; direction
-// and kind are immutable, amount is a positive int64 in minor units).
-// Deletes are soft (deleted_at tombstone); balances are derived from the
-// live operation history, never stored.
+// debt_operations (household-scoped ledger records referencing a debtor;
+// direction and kind are immutable, amount is a positive int64 in minor
+// units). user_id stays on rows as authorship. Deletes are soft (deleted_at
+// tombstone); balances are derived from the live operation history, never
+// stored.
 // id is the optional client-generated id (offline-first clients).
 func (q *Queries) CreateDebtOperation(ctx context.Context, arg CreateDebtOperationParams) (CreateDebtOperationRow, error) {
 	row := q.db.QueryRow(ctx, createDebtOperation,
 		arg.ID,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.DebtorID,
 		arg.Direction,
@@ -80,12 +83,12 @@ func (q *Queries) CreateDebtOperation(ctx context.Context, arg CreateDebtOperati
 const getDebtOperation = `-- name: GetDebtOperation :one
 SELECT id, user_id, debtor_id, direction, kind, amount, note, occurred_at, created_at, updated_at, version
 FROM debt_operations
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
 
 type GetDebtOperationParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetDebtOperationRow struct {
@@ -103,7 +106,7 @@ type GetDebtOperationRow struct {
 }
 
 func (q *Queries) GetDebtOperation(ctx context.Context, arg GetDebtOperationParams) (GetDebtOperationRow, error) {
-	row := q.db.QueryRow(ctx, getDebtOperation, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getDebtOperation, arg.ID, arg.HouseholdID)
 	var i GetDebtOperationRow
 	err := row.Scan(
 		&i.ID,
@@ -124,18 +127,33 @@ func (q *Queries) GetDebtOperation(ctx context.Context, arg GetDebtOperationPara
 const getDebtOperationAny = `-- name: GetDebtOperationAny :one
 SELECT id, user_id, debtor_id, direction, kind, amount, note, occurred_at, created_at, updated_at, version, deleted_at
 FROM debt_operations
-WHERE id = $1 AND user_id = $2
+WHERE id = $1 AND household_id = $2
 `
 
 type GetDebtOperationAnyParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+}
+
+type GetDebtOperationAnyRow struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	DebtorID   uuid.UUID
+	Direction  string
+	Kind       string
+	Amount     int64
+	Note       string
+	OccurredAt time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
+	DeletedAt  *time.Time
 }
 
 // Includes tombstoned rows (sync push + conflict classification).
-func (q *Queries) GetDebtOperationAny(ctx context.Context, arg GetDebtOperationAnyParams) (DebtOperation, error) {
-	row := q.db.QueryRow(ctx, getDebtOperationAny, arg.ID, arg.UserID)
-	var i DebtOperation
+func (q *Queries) GetDebtOperationAny(ctx context.Context, arg GetDebtOperationAnyParams) (GetDebtOperationAnyRow, error) {
+	row := q.db.QueryRow(ctx, getDebtOperationAny, arg.ID, arg.HouseholdID)
+	var i GetDebtOperationAnyRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -157,15 +175,15 @@ const getDebtOperations = `-- name: GetDebtOperations :many
 SELECT id, user_id, debtor_id, direction, kind, amount, note, occurred_at, created_at, updated_at, version
 FROM debt_operations
 WHERE
-    user_id = $1
+    household_id = $1
     AND deleted_at IS NULL
     AND ($2::uuid IS NULL OR debtor_id = $2)
 ORDER BY occurred_at DESC, id DESC
 `
 
 type GetDebtOperationsParams struct {
-	UserID   uuid.UUID
-	DebtorID *uuid.UUID
+	HouseholdID uuid.UUID
+	DebtorID    *uuid.UUID
 }
 
 type GetDebtOperationsRow struct {
@@ -183,7 +201,7 @@ type GetDebtOperationsRow struct {
 }
 
 func (q *Queries) GetDebtOperations(ctx context.Context, arg GetDebtOperationsParams) ([]GetDebtOperationsRow, error) {
-	rows, err := q.db.Query(ctx, getDebtOperations, arg.UserID, arg.DebtorID)
+	rows, err := q.db.Query(ctx, getDebtOperations, arg.HouseholdID, arg.DebtorID)
 	if err != nil {
 		return nil, err
 	}
@@ -217,17 +235,17 @@ func (q *Queries) GetDebtOperations(ctx context.Context, arg GetDebtOperationsPa
 const softDeleteDebtOperation = `-- name: SoftDeleteDebtOperation :one
 UPDATE debt_operations
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version
 `
 
 type SoftDeleteDebtOperationParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 func (q *Queries) SoftDeleteDebtOperation(ctx context.Context, arg SoftDeleteDebtOperationParams) (int32, error) {
-	row := q.db.QueryRow(ctx, softDeleteDebtOperation, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, softDeleteDebtOperation, arg.ID, arg.HouseholdID)
 	var version int32
 	err := row.Scan(&version)
 	return version, err
@@ -236,12 +254,12 @@ func (q *Queries) SoftDeleteDebtOperation(ctx context.Context, arg SoftDeleteDeb
 const syncDebtOperationsByIDs = `-- name: SyncDebtOperationsByIDs :many
 SELECT id, user_id, debtor_id, direction, kind, amount, note, occurred_at, version, deleted_at
 FROM debt_operations
-WHERE user_id = $1 AND id = ANY($2::uuid[])
+WHERE household_id = $1 AND id = ANY($2::uuid[])
 `
 
 type SyncDebtOperationsByIDsParams struct {
-	UserID uuid.UUID
-	Ids    []uuid.UUID
+	HouseholdID uuid.UUID
+	Ids         []uuid.UUID
 }
 
 type SyncDebtOperationsByIDsRow struct {
@@ -258,7 +276,7 @@ type SyncDebtOperationsByIDsRow struct {
 }
 
 func (q *Queries) SyncDebtOperationsByIDs(ctx context.Context, arg SyncDebtOperationsByIDsParams) ([]SyncDebtOperationsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, syncDebtOperationsByIDs, arg.UserID, arg.Ids)
+	rows, err := q.db.Query(ctx, syncDebtOperationsByIDs, arg.HouseholdID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +317,7 @@ SET
     occurred_at = $6,
     version     = version + 1,
     updated_at  = now()
-WHERE id = $7 AND user_id = $8 AND deleted_at IS NULL AND version = $9
+WHERE id = $7 AND household_id = $8 AND deleted_at IS NULL AND version = $9
 RETURNING id, user_id, debtor_id, direction, kind, amount, note, occurred_at, created_at, updated_at, version
 `
 
@@ -311,7 +329,7 @@ type SyncReplaceDebtOperationParams struct {
 	Note        string
 	OccurredAt  time.Time
 	ID          uuid.UUID
-	UserID      uuid.UUID
+	HouseholdID uuid.UUID
 	BaseVersion int32
 }
 
@@ -339,7 +357,7 @@ func (q *Queries) SyncReplaceDebtOperation(ctx context.Context, arg SyncReplaceD
 		arg.Note,
 		arg.OccurredAt,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.BaseVersion,
 	)
 	var i SyncReplaceDebtOperationRow
@@ -367,17 +385,17 @@ SET
     occurred_at = COALESCE($3, occurred_at),
     version     = version + 1,
     updated_at  = now()
-WHERE id = $4 AND user_id = $5 AND deleted_at IS NULL AND version = $6
+WHERE id = $4 AND household_id = $5 AND deleted_at IS NULL AND version = $6
 RETURNING id, user_id, debtor_id, direction, kind, amount, note, occurred_at, created_at, updated_at, version
 `
 
 type UpdateDebtOperationParams struct {
-	Amount     *int64
-	Note       *string
-	OccurredAt *time.Time
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	Version    int32
+	Amount      *int64
+	Note        *string
+	OccurredAt  *time.Time
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	Version     int32
 }
 
 type UpdateDebtOperationRow struct {
@@ -403,7 +421,7 @@ func (q *Queries) UpdateDebtOperation(ctx context.Context, arg UpdateDebtOperati
 		arg.Note,
 		arg.OccurredAt,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.Version,
 	)
 	var i UpdateDebtOperationRow

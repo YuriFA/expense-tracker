@@ -14,17 +14,17 @@ import (
 
 const advancePlannedPayment = `-- name: AdvancePlannedPayment :one
 UPDATE planned_payments
-SET next_due = $1, version = version + 1, updated_at = now()
-WHERE id = $2 AND user_id = $3 AND deleted_at IS NULL
+SET next_due = $3, version = version + 1, updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version
 `
 
 type AdvancePlannedPaymentParams struct {
-	NextDue time.Time
-	ID      uuid.UUID
-	UserID  uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	NextDue     time.Time
 }
 
 type AdvancePlannedPaymentRow struct {
@@ -48,10 +48,10 @@ type AdvancePlannedPaymentRow struct {
 
 // Server-side occurrence advancement (auto-confirm job): bumps next_due to
 // the already-computed next occurrence. Optimistic-concurrency-free on
-// purpose - the job runs under the per-user advisory lock and owns the row
-// for the duration of the transaction that creates the payment.
+// purpose - the job runs under the per-household advisory lock and owns the
+// row for the duration of the transaction that creates the payment.
 func (q *Queries) AdvancePlannedPayment(ctx context.Context, arg AdvancePlannedPaymentParams) (AdvancePlannedPaymentRow, error) {
-	row := q.db.QueryRow(ctx, advancePlannedPayment, arg.NextDue, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, advancePlannedPayment, arg.ID, arg.HouseholdID, arg.NextDue)
 	var i AdvancePlannedPaymentRow
 	err := row.Scan(
 		&i.ID,
@@ -77,10 +77,10 @@ func (q *Queries) AdvancePlannedPayment(ctx context.Context, arg AdvancePlannedP
 const createPlannedPayment = `-- name: CreatePlannedPayment :one
 
 INSERT INTO planned_payments (
-    id, user_id, type, amount, name, account_id, category_id,
+    id, household_id, user_id, type, amount, name, account_id, category_id,
     next_due, anchor_date, regularity, confirm_mode, reminder, note
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, $10, $11, $12)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $10, $11, $12, $13)
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version
@@ -88,6 +88,7 @@ RETURNING id, user_id, type, amount, name, account_id, category_id,
 
 type CreatePlannedPaymentParams struct {
 	ID          uuid.UUID
+	HouseholdID uuid.UUID
 	UserID      uuid.UUID
 	Type        string
 	Amount      int64
@@ -120,16 +121,17 @@ type CreatePlannedPaymentRow struct {
 	Version     int32
 }
 
-// planned_payments (per-user recurring expense/income rules). Name is NOT
-// unique (two live "Netflix" plans are legal). Scoped by user_id everywhere;
-// deletes are soft (deleted_at tombstone). next_due/anchor_date are
-// day-granularity dates; advancement touches next_due only, so the anchor
-// survives clamped months.
+// planned_payments (household-scoped recurring expense/income rules). Name is
+// NOT unique (two live "Netflix" plans are legal). Scoped by household_id
+// everywhere; user_id stays on rows as authorship; deletes are soft
+// (deleted_at tombstone). next_due/anchor_date are day-granularity dates;
+// advancement touches next_due only, so the anchor survives clamped months.
 // id is the optional client-generated id (offline-first clients). next_due
 // doubles as the initial anchor.
 func (q *Queries) CreatePlannedPayment(ctx context.Context, arg CreatePlannedPaymentParams) (CreatePlannedPaymentRow, error) {
 	row := q.db.QueryRow(ctx, createPlannedPayment,
 		arg.ID,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.Type,
 		arg.Amount,
@@ -169,7 +171,7 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        created_at, updated_at, version
 FROM planned_payments
-WHERE user_id = $1
+WHERE household_id = $1
   AND deleted_at IS NULL
   AND confirm_mode = 'auto'
   AND next_due <= $2
@@ -177,8 +179,8 @@ ORDER BY next_due ASC, id ASC
 `
 
 type DueAutoPlannedPaymentsParams struct {
-	UserID uuid.UUID
-	Today  time.Time
+	HouseholdID uuid.UUID
+	Today       time.Time
 }
 
 type DueAutoPlannedPaymentsRow struct {
@@ -200,10 +202,10 @@ type DueAutoPlannedPaymentsRow struct {
 	Version     int32
 }
 
-// The auto-confirm job's due scan: live auto plans whose next occurrence
-// date has arrived (UTC today inclusive).
+// The auto-confirm job's due scan: live auto plans of one household whose
+// next occurrence date has arrived (UTC today inclusive).
 func (q *Queries) DueAutoPlannedPayments(ctx context.Context, arg DueAutoPlannedPaymentsParams) ([]DueAutoPlannedPaymentsRow, error) {
-	rows, err := q.db.Query(ctx, dueAutoPlannedPayments, arg.UserID, arg.Today)
+	rows, err := q.db.Query(ctx, dueAutoPlannedPayments, arg.HouseholdID, arg.Today)
 	if err != nil {
 		return nil, err
 	}
@@ -244,12 +246,12 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        created_at, updated_at, version
 FROM planned_payments
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
 
 type GetPlannedPaymentParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetPlannedPaymentRow struct {
@@ -272,7 +274,7 @@ type GetPlannedPaymentRow struct {
 }
 
 func (q *Queries) GetPlannedPayment(ctx context.Context, arg GetPlannedPaymentParams) (GetPlannedPaymentRow, error) {
-	row := q.db.QueryRow(ctx, getPlannedPayment, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getPlannedPayment, arg.ID, arg.HouseholdID)
 	var i GetPlannedPaymentRow
 	err := row.Scan(
 		&i.ID,
@@ -300,18 +302,38 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        created_at, updated_at, version, deleted_at
 FROM planned_payments
-WHERE id = $1 AND user_id = $2
+WHERE id = $1 AND household_id = $2
 `
 
 type GetPlannedPaymentAnyParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+}
+
+type GetPlannedPaymentAnyRow struct {
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Type        string
+	Amount      int64
+	Name        string
+	AccountID   uuid.UUID
+	CategoryID  uuid.UUID
+	NextDue     time.Time
+	AnchorDate  time.Time
+	Regularity  string
+	ConfirmMode string
+	Reminder    string
+	Note        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Version     int32
+	DeletedAt   *time.Time
 }
 
 // Includes tombstoned rows (sync push + conflict classification).
-func (q *Queries) GetPlannedPaymentAny(ctx context.Context, arg GetPlannedPaymentAnyParams) (PlannedPayment, error) {
-	row := q.db.QueryRow(ctx, getPlannedPaymentAny, arg.ID, arg.UserID)
-	var i PlannedPayment
+func (q *Queries) GetPlannedPaymentAny(ctx context.Context, arg GetPlannedPaymentAnyParams) (GetPlannedPaymentAnyRow, error) {
+	row := q.db.QueryRow(ctx, getPlannedPaymentAny, arg.ID, arg.HouseholdID)
+	var i GetPlannedPaymentAnyRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -340,15 +362,15 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        created_at, updated_at, version
 FROM planned_payments
 WHERE
-    user_id = $1
+    household_id = $1
     AND deleted_at IS NULL
     AND ($2::text IS NULL OR type = $2)
 ORDER BY next_due ASC, id ASC
 `
 
 type GetPlannedPaymentsParams struct {
-	UserID uuid.UUID
-	Type   *string
+	HouseholdID uuid.UUID
+	Type        *string
 }
 
 type GetPlannedPaymentsRow struct {
@@ -371,7 +393,7 @@ type GetPlannedPaymentsRow struct {
 }
 
 func (q *Queries) GetPlannedPayments(ctx context.Context, arg GetPlannedPaymentsParams) ([]GetPlannedPaymentsRow, error) {
-	rows, err := q.db.Query(ctx, getPlannedPayments, arg.UserID, arg.Type)
+	rows, err := q.db.Query(ctx, getPlannedPayments, arg.HouseholdID, arg.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -411,19 +433,19 @@ const hasLivePlannedPaymentsForAccount = `-- name: HasLivePlannedPaymentsForAcco
 SELECT EXISTS(
     SELECT 1
     FROM planned_payments
-    WHERE user_id = $1 AND deleted_at IS NULL AND account_id = $2
+    WHERE household_id = $1 AND deleted_at IS NULL AND account_id = $2
 ) AS in_use
 `
 
 type HasLivePlannedPaymentsForAccountParams struct {
-	UserID    uuid.UUID
-	AccountID uuid.UUID
+	HouseholdID uuid.UUID
+	AccountID   uuid.UUID
 }
 
 // In-use guard counts LIVE plans only: tombstoned plans never block account
 // deletion.
 func (q *Queries) HasLivePlannedPaymentsForAccount(ctx context.Context, arg HasLivePlannedPaymentsForAccountParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasLivePlannedPaymentsForAccount, arg.UserID, arg.AccountID)
+	row := q.db.QueryRow(ctx, hasLivePlannedPaymentsForAccount, arg.HouseholdID, arg.AccountID)
 	var in_use bool
 	err := row.Scan(&in_use)
 	return in_use, err
@@ -433,36 +455,66 @@ const hasLivePlannedPaymentsForCategory = `-- name: HasLivePlannedPaymentsForCat
 SELECT EXISTS(
     SELECT 1
     FROM planned_payments
-    WHERE user_id = $1 AND deleted_at IS NULL AND category_id = $2
+    WHERE household_id = $1 AND deleted_at IS NULL AND category_id = $2
 ) AS in_use
 `
 
 type HasLivePlannedPaymentsForCategoryParams struct {
-	UserID     uuid.UUID
-	CategoryID uuid.UUID
+	HouseholdID uuid.UUID
+	CategoryID  uuid.UUID
 }
 
 func (q *Queries) HasLivePlannedPaymentsForCategory(ctx context.Context, arg HasLivePlannedPaymentsForCategoryParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasLivePlannedPaymentsForCategory, arg.UserID, arg.CategoryID)
+	row := q.db.QueryRow(ctx, hasLivePlannedPaymentsForCategory, arg.HouseholdID, arg.CategoryID)
 	var in_use bool
 	err := row.Scan(&in_use)
 	return in_use, err
 }
 
+const householdsWithDueAutoPlannedPayments = `-- name: HouseholdsWithDueAutoPlannedPayments :many
+SELECT DISTINCT household_id
+FROM planned_payments
+WHERE deleted_at IS NULL
+  AND confirm_mode = 'auto'
+  AND next_due <= $1
+`
+
+// Households owning at least one due auto plan (the job's per-household work
+// list; v1 households are personal, one user each).
+func (q *Queries) HouseholdsWithDueAutoPlannedPayments(ctx context.Context, today time.Time) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, householdsWithDueAutoPlannedPayments, today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var household_id uuid.UUID
+		if err := rows.Scan(&household_id); err != nil {
+			return nil, err
+		}
+		items = append(items, household_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const softDeletePlannedPayment = `-- name: SoftDeletePlannedPayment :one
 UPDATE planned_payments
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version
 `
 
 type SoftDeletePlannedPaymentParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 func (q *Queries) SoftDeletePlannedPayment(ctx context.Context, arg SoftDeletePlannedPaymentParams) (int32, error) {
-	row := q.db.QueryRow(ctx, softDeletePlannedPayment, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, softDeletePlannedPayment, arg.ID, arg.HouseholdID)
 	var version int32
 	err := row.Scan(&version)
 	return version, err
@@ -473,12 +525,12 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        version, deleted_at
 FROM planned_payments
-WHERE user_id = $1 AND id = ANY($2::uuid[])
+WHERE household_id = $1 AND id = ANY($2::uuid[])
 `
 
 type SyncPlannedPaymentsByIDsParams struct {
-	UserID uuid.UUID
-	Ids    []uuid.UUID
+	HouseholdID uuid.UUID
+	Ids         []uuid.UUID
 }
 
 type SyncPlannedPaymentsByIDsRow struct {
@@ -500,7 +552,7 @@ type SyncPlannedPaymentsByIDsRow struct {
 }
 
 func (q *Queries) SyncPlannedPaymentsByIDs(ctx context.Context, arg SyncPlannedPaymentsByIDsParams) ([]SyncPlannedPaymentsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, syncPlannedPaymentsByIDs, arg.UserID, arg.Ids)
+	rows, err := q.db.Query(ctx, syncPlannedPaymentsByIDs, arg.HouseholdID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
@@ -551,7 +603,7 @@ SET
     note         = $11,
     version      = version + 1,
     updated_at   = now()
-WHERE id = $12 AND user_id = $13 AND deleted_at IS NULL AND version = $14
+WHERE id = $12 AND household_id = $13 AND deleted_at IS NULL AND version = $14
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version
@@ -570,7 +622,7 @@ type SyncReplacePlannedPaymentParams struct {
 	Reminder    string
 	Note        string
 	ID          uuid.UUID
-	UserID      uuid.UUID
+	HouseholdID uuid.UUID
 	BaseVersion int32
 }
 
@@ -608,7 +660,7 @@ func (q *Queries) SyncReplacePlannedPayment(ctx context.Context, arg SyncReplace
 		arg.Reminder,
 		arg.Note,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.BaseVersion,
 	)
 	var i SyncReplacePlannedPaymentRow
@@ -648,7 +700,7 @@ SET
     reminder     = COALESCE($9, reminder),
     version      = version + 1,
     updated_at   = now()
-WHERE id = $10 AND user_id = $11 AND deleted_at IS NULL AND version = $12
+WHERE id = $10 AND household_id = $11 AND deleted_at IS NULL AND version = $12
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version
@@ -665,7 +717,7 @@ type UpdatePlannedPaymentParams struct {
 	ConfirmMode *string
 	Reminder    *string
 	ID          uuid.UUID
-	UserID      uuid.UUID
+	HouseholdID uuid.UUID
 	Version     int32
 }
 
@@ -704,7 +756,7 @@ func (q *Queries) UpdatePlannedPayment(ctx context.Context, arg UpdatePlannedPay
 		arg.ConfirmMode,
 		arg.Reminder,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.Version,
 	)
 	var i UpdatePlannedPaymentRow
@@ -727,33 +779,4 @@ func (q *Queries) UpdatePlannedPayment(ctx context.Context, arg UpdatePlannedPay
 		&i.Version,
 	)
 	return i, err
-}
-
-const usersWithDueAutoPlannedPayments = `-- name: UsersWithDueAutoPlannedPayments :many
-SELECT DISTINCT user_id
-FROM planned_payments
-WHERE deleted_at IS NULL
-  AND confirm_mode = 'auto'
-  AND next_due <= $1
-`
-
-// Users owning at least one due auto plan (the job's per-user work list).
-func (q *Queries) UsersWithDueAutoPlannedPayments(ctx context.Context, today time.Time) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, usersWithDueAutoPlannedPayments, today)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []uuid.UUID
-	for rows.Next() {
-		var user_id uuid.UUID
-		if err := rows.Scan(&user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, user_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

@@ -1,17 +1,17 @@
--- planned_payments (per-user recurring expense/income rules). Name is NOT
--- unique (two live "Netflix" plans are legal). Scoped by user_id everywhere;
--- deletes are soft (deleted_at tombstone). next_due/anchor_date are
--- day-granularity dates; advancement touches next_due only, so the anchor
--- survives clamped months.
+-- planned_payments (household-scoped recurring expense/income rules). Name is
+-- NOT unique (two live "Netflix" plans are legal). Scoped by household_id
+-- everywhere; user_id stays on rows as authorship; deletes are soft
+-- (deleted_at tombstone). next_due/anchor_date are day-granularity dates;
+-- advancement touches next_due only, so the anchor survives clamped months.
 
 -- name: CreatePlannedPayment :one
 -- id is the optional client-generated id (offline-first clients). next_due
 -- doubles as the initial anchor.
 INSERT INTO planned_payments (
-    id, user_id, type, amount, name, account_id, category_id,
+    id, household_id, user_id, type, amount, name, account_id, category_id,
     next_due, anchor_date, regularity, confirm_mode, reminder, note
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, $10, $11, $12)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $10, $11, $12, $13)
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version;
@@ -35,7 +35,7 @@ SET
     reminder     = COALESCE(sqlc.narg('reminder'), reminder),
     version      = version + 1,
     updated_at   = now()
-WHERE id = @id AND user_id = @user_id AND deleted_at IS NULL AND version = @version
+WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @version
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version;
@@ -43,11 +43,11 @@ RETURNING id, user_id, type, amount, name, account_id, category_id,
 -- name: AdvancePlannedPayment :one
 -- Server-side occurrence advancement (auto-confirm job): bumps next_due to
 -- the already-computed next occurrence. Optimistic-concurrency-free on
--- purpose - the job runs under the per-user advisory lock and owns the row
--- for the duration of the transaction that creates the payment.
+-- purpose - the job runs under the per-household advisory lock and owns the
+-- row for the duration of the transaction that creates the payment.
 UPDATE planned_payments
 SET next_due = @next_due, version = version + 1, updated_at = now()
-WHERE id = @id AND user_id = @user_id AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version;
@@ -55,7 +55,7 @@ RETURNING id, user_id, type, amount, name, account_id, category_id,
 -- name: SoftDeletePlannedPayment :one
 UPDATE planned_payments
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version;
 
 -- name: GetPlannedPayment :one
@@ -63,7 +63,7 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        created_at, updated_at, version
 FROM planned_payments
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
 
 -- name: GetPlannedPaymentAny :one
 -- Includes tombstoned rows (sync push + conflict classification).
@@ -71,7 +71,7 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        created_at, updated_at, version, deleted_at
 FROM planned_payments
-WHERE id = $1 AND user_id = $2;
+WHERE id = $1 AND household_id = $2;
 
 -- name: GetPlannedPayments :many
 SELECT id, user_id, type, amount, name, account_id, category_id,
@@ -79,27 +79,28 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        created_at, updated_at, version
 FROM planned_payments
 WHERE
-    user_id = @user_id
+    household_id = @household_id
     AND deleted_at IS NULL
     AND (sqlc.narg('type')::text IS NULL OR type = sqlc.narg('type'))
 ORDER BY next_due ASC, id ASC;
 
 -- name: DueAutoPlannedPayments :many
--- The auto-confirm job's due scan: live auto plans whose next occurrence
--- date has arrived (UTC today inclusive).
+-- The auto-confirm job's due scan: live auto plans of one household whose
+-- next occurrence date has arrived (UTC today inclusive).
 SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        created_at, updated_at, version
 FROM planned_payments
-WHERE user_id = @user_id
+WHERE household_id = @household_id
   AND deleted_at IS NULL
   AND confirm_mode = 'auto'
   AND next_due <= @today
 ORDER BY next_due ASC, id ASC;
 
--- name: UsersWithDueAutoPlannedPayments :many
--- Users owning at least one due auto plan (the job's per-user work list).
-SELECT DISTINCT user_id
+-- name: HouseholdsWithDueAutoPlannedPayments :many
+-- Households owning at least one due auto plan (the job's per-household work
+-- list; v1 households are personal, one user each).
+SELECT DISTINCT household_id
 FROM planned_payments
 WHERE deleted_at IS NULL
   AND confirm_mode = 'auto'
@@ -111,14 +112,14 @@ WHERE deleted_at IS NULL
 SELECT EXISTS(
     SELECT 1
     FROM planned_payments
-    WHERE user_id = @user_id AND deleted_at IS NULL AND account_id = @account_id
+    WHERE household_id = @household_id AND deleted_at IS NULL AND account_id = @account_id
 ) AS in_use;
 
 -- name: HasLivePlannedPaymentsForCategory :one
 SELECT EXISTS(
     SELECT 1
     FROM planned_payments
-    WHERE user_id = @user_id AND deleted_at IS NULL AND category_id = @category_id
+    WHERE household_id = @household_id AND deleted_at IS NULL AND category_id = @category_id
 ) AS in_use;
 
 -- name: SyncReplacePlannedPayment :one
@@ -138,7 +139,7 @@ SET
     note         = @note,
     version      = version + 1,
     updated_at   = now()
-WHERE id = @id AND user_id = @user_id AND deleted_at IS NULL AND version = @base_version
+WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @base_version
 RETURNING id, user_id, type, amount, name, account_id, category_id,
           next_due, anchor_date, regularity, confirm_mode, reminder, note,
           created_at, updated_at, version;
@@ -148,4 +149,4 @@ SELECT id, user_id, type, amount, name, account_id, category_id,
        next_due, anchor_date, regularity, confirm_mode, reminder, note,
        version, deleted_at
 FROM planned_payments
-WHERE user_id = @user_id AND id = ANY(@ids::uuid[]);
+WHERE household_id = @household_id AND id = ANY(@ids::uuid[]);

@@ -7,26 +7,29 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 const appendChangeLog = `-- name: AppendChangeLog :one
-INSERT INTO change_log (user_id, entity, entity_id, action, version)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO change_log (household_id, user_id, entity, entity_id, action, version)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING seq
 `
 
 type AppendChangeLogParams struct {
-	UserID   uuid.UUID
-	Entity   string
-	EntityID uuid.UUID
-	Action   string
-	Version  int32
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	Entity      string
+	EntityID    uuid.UUID
+	Action      string
+	Version     int32
 }
 
 func (q *Queries) AppendChangeLog(ctx context.Context, arg AppendChangeLogParams) (int64, error) {
 	row := q.db.QueryRow(ctx, appendChangeLog,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.Entity,
 		arg.EntityID,
@@ -41,17 +44,26 @@ func (q *Queries) AppendChangeLog(ctx context.Context, arg AppendChangeLogParams
 const getAppliedOperation = `-- name: GetAppliedOperation :one
 SELECT op_id, user_id, entity, entity_id, result, applied_at
 FROM applied_operations
-WHERE op_id = $1 AND user_id = $2
+WHERE op_id = $1 AND household_id = $2
 `
 
 type GetAppliedOperationParams struct {
-	OpID   uuid.UUID
-	UserID uuid.UUID
+	OpID        uuid.UUID
+	HouseholdID uuid.UUID
 }
 
-func (q *Queries) GetAppliedOperation(ctx context.Context, arg GetAppliedOperationParams) (AppliedOperation, error) {
-	row := q.db.QueryRow(ctx, getAppliedOperation, arg.OpID, arg.UserID)
-	var i AppliedOperation
+type GetAppliedOperationRow struct {
+	OpID      uuid.UUID
+	UserID    uuid.UUID
+	Entity    string
+	EntityID  uuid.UUID
+	Result    []byte
+	AppliedAt time.Time
+}
+
+func (q *Queries) GetAppliedOperation(ctx context.Context, arg GetAppliedOperationParams) (GetAppliedOperationRow, error) {
+	row := q.db.QueryRow(ctx, getAppliedOperation, arg.OpID, arg.HouseholdID)
+	var i GetAppliedOperationRow
 	err := row.Scan(
 		&i.OpID,
 		&i.UserID,
@@ -64,21 +76,23 @@ func (q *Queries) GetAppliedOperation(ctx context.Context, arg GetAppliedOperati
 }
 
 const insertAppliedOperation = `-- name: InsertAppliedOperation :exec
-INSERT INTO applied_operations (op_id, user_id, entity, entity_id, result)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO applied_operations (op_id, household_id, user_id, entity, entity_id, result)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertAppliedOperationParams struct {
-	OpID     uuid.UUID
-	UserID   uuid.UUID
-	Entity   string
-	EntityID uuid.UUID
-	Result   []byte
+	OpID        uuid.UUID
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	Entity      string
+	EntityID    uuid.UUID
+	Result      []byte
 }
 
 func (q *Queries) InsertAppliedOperation(ctx context.Context, arg InsertAppliedOperationParams) error {
 	_, err := q.db.Exec(ctx, insertAppliedOperation,
 		arg.OpID,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.Entity,
 		arg.EntityID,
@@ -87,35 +101,38 @@ func (q *Queries) InsertAppliedOperation(ctx context.Context, arg InsertAppliedO
 	return err
 }
 
-const lockUserChanges = `-- name: LockUserChanges :exec
+const lockHouseholdChanges = `-- name: LockHouseholdChanges :exec
 
 SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))
 `
 
-// Sync plumbing: the per-user change-log advisory lock, change_log appends
-// (one row per committed mutation, written in the SAME transaction),
-// applied_operations idempotency, and the cursor pull.
-// Serializes a user's change_log writes for the rest of the transaction: seq
-// values are allocated while the lock is held and the lock releases only at
-// commit, so seq order equals commit-visibility order (no skipped changes for
-// a stored cursor). hashtextextended maps the user id to a bigint lock key.
-func (q *Queries) LockUserChanges(ctx context.Context, userID string) error {
-	_, err := q.db.Exec(ctx, lockUserChanges, userID)
+// Sync plumbing: the per-household change-log advisory lock, change_log
+// appends (one row per committed mutation, written in the SAME transaction),
+// applied_operations idempotency, and the cursor pull. change_log.user_id and
+// applied_operations.user_id stay on the rows as authorship (the acting
+// member); household_id is the scoping key.
+// Serializes a household's change_log writes for the rest of the transaction:
+// seq values are allocated while the lock is held and the lock releases only
+// at commit, so seq order equals commit-visibility order (no skipped changes
+// for a stored cursor). hashtextextended maps the household id to a bigint
+// lock key.
+func (q *Queries) LockHouseholdChanges(ctx context.Context, householdID string) error {
+	_, err := q.db.Exec(ctx, lockHouseholdChanges, householdID)
 	return err
 }
 
 const pullChangeLog = `-- name: PullChangeLog :many
 SELECT seq, entity, entity_id, action, version
 FROM change_log
-WHERE user_id = $1 AND seq > $2
+WHERE household_id = $1 AND seq > $2
 ORDER BY seq
 LIMIT $3
 `
 
 type PullChangeLogParams struct {
-	UserID   uuid.UUID
-	AfterSeq int64
-	Limit    int32
+	HouseholdID uuid.UUID
+	AfterSeq    int64
+	Limit       int32
 }
 
 type PullChangeLogRow struct {
@@ -126,10 +143,10 @@ type PullChangeLogRow struct {
 	Version  int32
 }
 
-// Cursor pull: everything for the user strictly after after_seq, in seq
+// Cursor pull: everything for the household strictly after after_seq, in seq
 // order, paginated. The caller fetches current entity state for upsert rows.
 func (q *Queries) PullChangeLog(ctx context.Context, arg PullChangeLogParams) ([]PullChangeLogRow, error) {
-	rows, err := q.db.Query(ctx, pullChangeLog, arg.UserID, arg.AfterSeq, arg.Limit)
+	rows, err := q.db.Query(ctx, pullChangeLog, arg.HouseholdID, arg.AfterSeq, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

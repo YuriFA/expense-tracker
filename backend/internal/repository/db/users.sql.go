@@ -19,6 +19,7 @@ SELECT
     email,
     password_hash,
     (email_verified_at IS NOT NULL)::boolean AS email_verified,
+    display_name,
     created_at,
     updated_at
 FROM users
@@ -30,15 +31,16 @@ type GetUserByEmailRow struct {
 	Email         string
 	PasswordHash  string
 	EmailVerified bool
+	DisplayName   *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
 
 // users
 //
-// Note: user_id scoping is not needed on the user table itself (the PK is the
-// identity). All resource tables (accounts/categories/transactions/sessions/...)
-// scope every query by user_id (IDOR protection - see their query files).
+// Note: scoping is not needed on the user table itself (the PK is the
+// identity). All resource tables scope every query by household_id (IDOR
+// protection - see their query files).
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i GetUserByEmailRow
@@ -47,6 +49,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 		&i.Email,
 		&i.PasswordHash,
 		&i.EmailVerified,
+		&i.DisplayName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -59,6 +62,7 @@ SELECT
     email,
     '' AS password_hash,
     (email_verified_at IS NOT NULL)::boolean AS email_verified,
+    display_name,
     created_at,
     updated_at
 FROM users
@@ -70,6 +74,7 @@ type GetUserByIDRow struct {
 	Email         string
 	PasswordHash  string
 	EmailVerified bool
+	DisplayName   *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -82,6 +87,51 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow
 		&i.Email,
 		&i.PasswordHash,
 		&i.EmailVerified,
+		&i.DisplayName,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserDisplayName = `-- name: UpdateUserDisplayName :one
+UPDATE users
+SET display_name = $2,
+    updated_at   = now()
+WHERE id = $1
+RETURNING
+    id,
+    email,
+    (email_verified_at IS NOT NULL)::boolean AS email_verified,
+    display_name,
+    created_at,
+    updated_at
+`
+
+type UpdateUserDisplayNameParams struct {
+	ID          uuid.UUID
+	DisplayName *string
+}
+
+type UpdateUserDisplayNameRow struct {
+	ID            uuid.UUID
+	Email         string
+	EmailVerified bool
+	DisplayName   *string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+// Profile edit: sets the member-facing display name. Non-empty trimmed and
+// length-capped by the service layer before it gets here.
+func (q *Queries) UpdateUserDisplayName(ctx context.Context, arg UpdateUserDisplayNameParams) (UpdateUserDisplayNameRow, error) {
+	row := q.db.QueryRow(ctx, updateUserDisplayName, arg.ID, arg.DisplayName)
+	var i UpdateUserDisplayNameRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.EmailVerified,
+		&i.DisplayName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

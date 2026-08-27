@@ -1,17 +1,18 @@
--- transactions. Scoped by user_id everywhere (IDOR protection). Deletes are
--- soft (deleted_at tombstone): balances (via the account_contributions view)
--- and listings filter tombstones; the *Any reads include them for sync.
+-- transactions. Scoped by household_id everywhere (IDOR protection); user_id
+-- stays on rows as authorship. Deletes are soft (deleted_at tombstone):
+-- balances (via the account_contributions view) and listings filter
+-- tombstones; the *Any reads include them for sync.
 --
--- The keyset-cursor index transactions(user_id, occurred_at DESC, id DESC)
--- serves ListTransactions directly.
+-- The keyset-cursor index transactions(household_id, occurred_at DESC, id
+-- DESC) serves ListTransactions directly.
 
 -- name: CreateTransaction :one
 -- id is the optional client-generated id (offline-first clients).
 INSERT INTO transactions (
-    id, user_id, type, amount, description, occurred_at,
+    id, household_id, user_id, type, amount, description, occurred_at,
     account_id, category_id, from_account_id, to_account_id
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING
     id, user_id, type, amount, description, occurred_at,
     created_at, updated_at, version,
@@ -32,7 +33,7 @@ SET
     to_account_id    = COALESCE(sqlc.narg('to_account_id'), to_account_id),
     version          = version + 1,
     updated_at       = now()
-WHERE id = @id AND user_id = @user_id AND deleted_at IS NULL AND version = @version
+WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @version
 RETURNING
     id, user_id, type, amount, description, occurred_at,
     created_at, updated_at, version,
@@ -41,7 +42,7 @@ RETURNING
 -- name: SoftDeleteTransaction :one
 UPDATE transactions
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version;
 
 -- name: GetTransaction :one
@@ -50,7 +51,7 @@ SELECT
     created_at, updated_at, version,
     account_id, category_id, from_account_id, to_account_id
 FROM transactions
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
 
 -- name: GetTransactionAny :one
 -- Includes tombstoned rows (sync push + conflict classification).
@@ -60,7 +61,7 @@ SELECT
     account_id, category_id, from_account_id, to_account_id,
     deleted_at
 FROM transactions
-WHERE id = $1 AND user_id = $2;
+WHERE id = $1 AND household_id = $2;
 
 -- name: ListTransactions :many
 -- Keyset cursor pagination (occurred_at DESC, id DESC). Each optional filter is
@@ -73,7 +74,7 @@ SELECT
     account_id, category_id, from_account_id, to_account_id
 FROM transactions
 WHERE
-    user_id = @user_id
+    household_id = @household_id
     AND deleted_at IS NULL
     AND (sqlc.narg('type')::text IS NULL OR type = sqlc.narg('type'))
     AND (
@@ -106,7 +107,7 @@ SET
     to_account_id   = @to_account_id,
     version         = version + 1,
     updated_at      = now()
-WHERE id = @id AND user_id = @user_id AND deleted_at IS NULL AND version = @base_version
+WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @base_version
 RETURNING
     id, user_id, type, amount, description, occurred_at,
     created_at, updated_at, version,
@@ -119,4 +120,4 @@ SELECT
     account_id, category_id, from_account_id, to_account_id,
     deleted_at
 FROM transactions
-WHERE user_id = @user_id AND id = ANY(@ids::uuid[]);
+WHERE household_id = @household_id AND id = ANY(@ids::uuid[]);

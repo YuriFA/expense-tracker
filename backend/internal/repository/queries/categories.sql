@@ -1,11 +1,12 @@
--- categories (per-user, unique name among LIVE rows only - the partial unique
--- index ignores tombstones so a deleted name can be recreated). Scoped by
--- user_id everywhere; deletes are soft (deleted_at tombstone).
+-- categories (household-scoped, unique name among LIVE rows only - the
+-- partial unique index ignores tombstones so a deleted name can be recreated).
+-- Scoped by household_id everywhere; user_id stays on rows as authorship;
+-- deletes are soft (deleted_at tombstone).
 
 -- name: CreateCategory :one
 -- id is the optional client-generated id (offline-first clients).
-INSERT INTO categories (id, user_id, name, type, icon, color)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO categories (id, household_id, user_id, name, type, icon, color)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version;
 
 -- name: UpdateCategory :one
@@ -20,50 +21,50 @@ SET
     color      = COALESCE(sqlc.narg('color'), color),
     version    = version + 1,
     updated_at = now()
-WHERE id = @id AND user_id = @user_id AND deleted_at IS NULL AND version = @version
+WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @version
 RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version;
 
 -- name: SoftDeleteCategory :one
 UPDATE categories
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version;
 
 -- name: GetCategory :one
 SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
 FROM categories
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL;
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
 
 -- name: GetCategoryAny :one
 -- Includes tombstoned rows (sync push + conflict classification).
 SELECT id, user_id, name, type, icon, color, created_at, updated_at, version, deleted_at
 FROM categories
-WHERE id = $1 AND user_id = $2;
+WHERE id = $1 AND household_id = $2;
 
 -- name: GetCategories :many
 SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
 FROM categories
 WHERE
-    user_id = @user_id
+    household_id = @household_id
     AND deleted_at IS NULL
     AND (sqlc.narg('type')::text IS NULL OR type = sqlc.narg('type'))
 ORDER BY created_at, id;
 
 -- name: CategoryNameTaken :one
--- Live-name uniqueness pre-check (race-free under the per-user change-log
--- advisory lock); used by the sync path where a constraint violation would
--- abort the shared batch transaction.
+-- Live-name uniqueness pre-check (race-free under the per-household
+-- change-log advisory lock); used by the sync path where a constraint
+-- violation would abort the shared batch transaction.
 SELECT EXISTS(
     SELECT 1
     FROM categories
-    WHERE user_id = @user_id AND name = @name AND deleted_at IS NULL AND id <> sqlc.arg('except_id')
+    WHERE household_id = @household_id AND name = @name AND deleted_at IS NULL AND id <> sqlc.arg('except_id')
 ) AS taken;
 
 -- name: HasLiveTransactionsForCategory :one
 SELECT EXISTS(
     SELECT 1
     FROM transactions
-    WHERE user_id = @user_id AND deleted_at IS NULL AND category_id = @category_id
+    WHERE household_id = @household_id AND deleted_at IS NULL AND category_id = @category_id
 ) AS in_use;
 
 -- name: SyncReplaceCategory :one
@@ -76,10 +77,10 @@ SET
     color      = @color,
     version    = version + 1,
     updated_at = now()
-WHERE id = @id AND user_id = @user_id AND deleted_at IS NULL AND version = @base_version
+WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @base_version
 RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version;
 
 -- name: SyncCategoriesByIDs :many
 SELECT id, user_id, name, type, icon, color, version, deleted_at
 FROM categories
-WHERE user_id = @user_id AND id = ANY(@ids::uuid[]);
+WHERE household_id = @household_id AND id = ANY(@ids::uuid[]);

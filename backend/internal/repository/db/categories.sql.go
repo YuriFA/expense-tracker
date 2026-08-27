@@ -16,21 +16,21 @@ const categoryNameTaken = `-- name: CategoryNameTaken :one
 SELECT EXISTS(
     SELECT 1
     FROM categories
-    WHERE user_id = $1 AND name = $2 AND deleted_at IS NULL AND id <> $3
+    WHERE household_id = $1 AND name = $2 AND deleted_at IS NULL AND id <> $3
 ) AS taken
 `
 
 type CategoryNameTakenParams struct {
-	UserID   uuid.UUID
-	Name     string
-	ExceptID uuid.UUID
+	HouseholdID uuid.UUID
+	Name        string
+	ExceptID    uuid.UUID
 }
 
-// Live-name uniqueness pre-check (race-free under the per-user change-log
-// advisory lock); used by the sync path where a constraint violation would
-// abort the shared batch transaction.
+// Live-name uniqueness pre-check (race-free under the per-household
+// change-log advisory lock); used by the sync path where a constraint
+// violation would abort the shared batch transaction.
 func (q *Queries) CategoryNameTaken(ctx context.Context, arg CategoryNameTakenParams) (bool, error) {
-	row := q.db.QueryRow(ctx, categoryNameTaken, arg.UserID, arg.Name, arg.ExceptID)
+	row := q.db.QueryRow(ctx, categoryNameTaken, arg.HouseholdID, arg.Name, arg.ExceptID)
 	var taken bool
 	err := row.Scan(&taken)
 	return taken, err
@@ -38,18 +38,19 @@ func (q *Queries) CategoryNameTaken(ctx context.Context, arg CategoryNameTakenPa
 
 const createCategory = `-- name: CreateCategory :one
 
-INSERT INTO categories (id, user_id, name, type, icon, color)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO categories (id, household_id, user_id, name, type, icon, color)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
 `
 
 type CreateCategoryParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
-	Name   string
-	Type   string
-	Icon   string
-	Color  string
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Type        string
+	Icon        string
+	Color       string
 }
 
 type CreateCategoryRow struct {
@@ -64,13 +65,15 @@ type CreateCategoryRow struct {
 	Version   int32
 }
 
-// categories (per-user, unique name among LIVE rows only - the partial unique
-// index ignores tombstones so a deleted name can be recreated). Scoped by
-// user_id everywhere; deletes are soft (deleted_at tombstone).
+// categories (household-scoped, unique name among LIVE rows only - the
+// partial unique index ignores tombstones so a deleted name can be recreated).
+// Scoped by household_id everywhere; user_id stays on rows as authorship;
+// deletes are soft (deleted_at tombstone).
 // id is the optional client-generated id (offline-first clients).
 func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (CreateCategoryRow, error) {
 	row := q.db.QueryRow(ctx, createCategory,
 		arg.ID,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.Name,
 		arg.Type,
@@ -96,15 +99,15 @@ const getCategories = `-- name: GetCategories :many
 SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
 FROM categories
 WHERE
-    user_id = $1
+    household_id = $1
     AND deleted_at IS NULL
     AND ($2::text IS NULL OR type = $2)
 ORDER BY created_at, id
 `
 
 type GetCategoriesParams struct {
-	UserID uuid.UUID
-	Type   *string
+	HouseholdID uuid.UUID
+	Type        *string
 }
 
 type GetCategoriesRow struct {
@@ -120,7 +123,7 @@ type GetCategoriesRow struct {
 }
 
 func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([]GetCategoriesRow, error) {
-	rows, err := q.db.Query(ctx, getCategories, arg.UserID, arg.Type)
+	rows, err := q.db.Query(ctx, getCategories, arg.HouseholdID, arg.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -152,12 +155,12 @@ func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([
 const getCategory = `-- name: GetCategory :one
 SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
 FROM categories
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
 
 type GetCategoryParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetCategoryRow struct {
@@ -173,7 +176,7 @@ type GetCategoryRow struct {
 }
 
 func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (GetCategoryRow, error) {
-	row := q.db.QueryRow(ctx, getCategory, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getCategory, arg.ID, arg.HouseholdID)
 	var i GetCategoryRow
 	err := row.Scan(
 		&i.ID,
@@ -192,12 +195,12 @@ func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (GetCa
 const getCategoryAny = `-- name: GetCategoryAny :one
 SELECT id, user_id, name, type, icon, color, created_at, updated_at, version, deleted_at
 FROM categories
-WHERE id = $1 AND user_id = $2
+WHERE id = $1 AND household_id = $2
 `
 
 type GetCategoryAnyParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetCategoryAnyRow struct {
@@ -215,7 +218,7 @@ type GetCategoryAnyRow struct {
 
 // Includes tombstoned rows (sync push + conflict classification).
 func (q *Queries) GetCategoryAny(ctx context.Context, arg GetCategoryAnyParams) (GetCategoryAnyRow, error) {
-	row := q.db.QueryRow(ctx, getCategoryAny, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getCategoryAny, arg.ID, arg.HouseholdID)
 	var i GetCategoryAnyRow
 	err := row.Scan(
 		&i.ID,
@@ -236,17 +239,17 @@ const hasLiveTransactionsForCategory = `-- name: HasLiveTransactionsForCategory 
 SELECT EXISTS(
     SELECT 1
     FROM transactions
-    WHERE user_id = $1 AND deleted_at IS NULL AND category_id = $2
+    WHERE household_id = $1 AND deleted_at IS NULL AND category_id = $2
 ) AS in_use
 `
 
 type HasLiveTransactionsForCategoryParams struct {
-	UserID     uuid.UUID
-	CategoryID *uuid.UUID
+	HouseholdID uuid.UUID
+	CategoryID  *uuid.UUID
 }
 
 func (q *Queries) HasLiveTransactionsForCategory(ctx context.Context, arg HasLiveTransactionsForCategoryParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasLiveTransactionsForCategory, arg.UserID, arg.CategoryID)
+	row := q.db.QueryRow(ctx, hasLiveTransactionsForCategory, arg.HouseholdID, arg.CategoryID)
 	var in_use bool
 	err := row.Scan(&in_use)
 	return in_use, err
@@ -255,17 +258,17 @@ func (q *Queries) HasLiveTransactionsForCategory(ctx context.Context, arg HasLiv
 const softDeleteCategory = `-- name: SoftDeleteCategory :one
 UPDATE categories
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version
 `
 
 type SoftDeleteCategoryParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 func (q *Queries) SoftDeleteCategory(ctx context.Context, arg SoftDeleteCategoryParams) (int32, error) {
-	row := q.db.QueryRow(ctx, softDeleteCategory, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, softDeleteCategory, arg.ID, arg.HouseholdID)
 	var version int32
 	err := row.Scan(&version)
 	return version, err
@@ -274,12 +277,12 @@ func (q *Queries) SoftDeleteCategory(ctx context.Context, arg SoftDeleteCategory
 const syncCategoriesByIDs = `-- name: SyncCategoriesByIDs :many
 SELECT id, user_id, name, type, icon, color, version, deleted_at
 FROM categories
-WHERE user_id = $1 AND id = ANY($2::uuid[])
+WHERE household_id = $1 AND id = ANY($2::uuid[])
 `
 
 type SyncCategoriesByIDsParams struct {
-	UserID uuid.UUID
-	Ids    []uuid.UUID
+	HouseholdID uuid.UUID
+	Ids         []uuid.UUID
 }
 
 type SyncCategoriesByIDsRow struct {
@@ -294,7 +297,7 @@ type SyncCategoriesByIDsRow struct {
 }
 
 func (q *Queries) SyncCategoriesByIDs(ctx context.Context, arg SyncCategoriesByIDsParams) ([]SyncCategoriesByIDsRow, error) {
-	rows, err := q.db.Query(ctx, syncCategoriesByIDs, arg.UserID, arg.Ids)
+	rows, err := q.db.Query(ctx, syncCategoriesByIDs, arg.HouseholdID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +334,7 @@ SET
     color      = $4,
     version    = version + 1,
     updated_at = now()
-WHERE id = $5 AND user_id = $6 AND deleted_at IS NULL AND version = $7
+WHERE id = $5 AND household_id = $6 AND deleted_at IS NULL AND version = $7
 RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
 `
 
@@ -341,7 +344,7 @@ type SyncReplaceCategoryParams struct {
 	Icon        string
 	Color       string
 	ID          uuid.UUID
-	UserID      uuid.UUID
+	HouseholdID uuid.UUID
 	BaseVersion int32
 }
 
@@ -365,7 +368,7 @@ func (q *Queries) SyncReplaceCategory(ctx context.Context, arg SyncReplaceCatego
 		arg.Icon,
 		arg.Color,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.BaseVersion,
 	)
 	var i SyncReplaceCategoryRow
@@ -392,18 +395,18 @@ SET
     color      = COALESCE($4, color),
     version    = version + 1,
     updated_at = now()
-WHERE id = $5 AND user_id = $6 AND deleted_at IS NULL AND version = $7
+WHERE id = $5 AND household_id = $6 AND deleted_at IS NULL AND version = $7
 RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
 `
 
 type UpdateCategoryParams struct {
-	Name    *string
-	Type    *string
-	Icon    *string
-	Color   *string
-	ID      uuid.UUID
-	UserID  uuid.UUID
-	Version int32
+	Name        *string
+	Type        *string
+	Icon        *string
+	Color       *string
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	Version     int32
 }
 
 type UpdateCategoryRow struct {
@@ -428,7 +431,7 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 		arg.Icon,
 		arg.Color,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.Version,
 	)
 	var i UpdateCategoryRow

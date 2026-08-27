@@ -14,7 +14,7 @@ import (
 
 const createAccount = `-- name: CreateAccount :one
 
-INSERT INTO accounts (id, user_id, name, currency, opening_balance, manual_adjustment)
+INSERT INTO accounts (id, household_id, user_id, name, currency, opening_balance)
 VALUES ($1, $2, $3, $4, $5, 0)
 RETURNING
     id,
@@ -30,11 +30,11 @@ RETURNING
 `
 
 type CreateAccountParams struct {
-	ID             uuid.UUID
-	UserID         uuid.UUID
-	Name           string
-	Currency       string
-	OpeningBalance int64
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Currency    string
 }
 
 type CreateAccountRow struct {
@@ -50,20 +50,21 @@ type CreateAccountRow struct {
 	Version          int32
 }
 
-// accounts. Every query scopes by user_id (IDOR-safe: a cross-user access
-// returns "not found", never the row). Balance is computed via the
-// account_contributions view (opening + manual + sum(signed)). Deletes are
-// soft (deleted_at tombstone); every read path that feeds listings/summaries
-// filters tombstones, while the *Any reads (sync + conflict classification)
-// include them.
+// accounts. Every query scopes by household_id (IDOR-safe: an access from
+// outside the household returns "not found", never the row). user_id stays on
+// the rows as authorship (stamped from the session on create). Balance is
+// computed via the account_contributions view (opening + manual + sum(signed)).
+// Deletes are soft (deleted_at tombstone); every read path that feeds
+// listings/summaries filters tombstones, while the *Any reads (sync + conflict
+// classification) include them.
 // id is the optional client-generated id (offline-first clients).
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (CreateAccountRow, error) {
 	row := q.db.QueryRow(ctx, createAccount,
 		arg.ID,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.Name,
 		arg.Currency,
-		arg.OpeningBalance,
 	)
 	var i CreateAccountRow
 	err := row.Scan(
@@ -95,13 +96,13 @@ SELECT
     a.version
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.id = $1 AND a.user_id = $2 AND a.deleted_at IS NULL
+WHERE a.id = $1 AND a.household_id = $2 AND a.deleted_at IS NULL
 GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at, a.version
 `
 
 type GetAccountParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetAccountRow struct {
@@ -118,7 +119,7 @@ type GetAccountRow struct {
 }
 
 func (q *Queries) GetAccount(ctx context.Context, arg GetAccountParams) (GetAccountRow, error) {
-	row := q.db.QueryRow(ctx, getAccount, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getAccount, arg.ID, arg.HouseholdID)
 	var i GetAccountRow
 	err := row.Scan(
 		&i.ID,
@@ -151,12 +152,12 @@ SELECT
     version,
     deleted_at
 FROM accounts
-WHERE id = $1 AND user_id = $2
+WHERE id = $1 AND household_id = $2
 `
 
 type GetAccountAnyParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetAccountAnyRow struct {
@@ -176,7 +177,7 @@ type GetAccountAnyRow struct {
 // Includes tombstoned rows; used by sync push (serverState / idempotent
 // delete) and REST conflict classification.
 func (q *Queries) GetAccountAny(ctx context.Context, arg GetAccountAnyParams) (GetAccountAnyRow, error) {
-	row := q.db.QueryRow(ctx, getAccountAny, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getAccountAny, arg.ID, arg.HouseholdID)
 	var i GetAccountAnyRow
 	err := row.Scan(
 		&i.ID,
@@ -203,7 +204,7 @@ SELECT
     (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.user_id = $1 AND a.deleted_at IS NULL
+WHERE a.household_id = $1 AND a.deleted_at IS NULL
 GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment
 ORDER BY a.created_at, a.id
 `
@@ -216,8 +217,8 @@ type GetAccountBalancesRow struct {
 	Balance  int64
 }
 
-func (q *Queries) GetAccountBalances(ctx context.Context, userID uuid.UUID) ([]GetAccountBalancesRow, error) {
-	rows, err := q.db.Query(ctx, getAccountBalances, userID)
+func (q *Queries) GetAccountBalances(ctx context.Context, householdID uuid.UUID) ([]GetAccountBalancesRow, error) {
+	rows, err := q.db.Query(ctx, getAccountBalances, householdID)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +257,7 @@ SELECT
     a.version
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.user_id = $1 AND a.deleted_at IS NULL
+WHERE a.household_id = $1 AND a.deleted_at IS NULL
 GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at, a.version
 ORDER BY a.created_at, a.id
 `
@@ -274,8 +275,8 @@ type GetAccountsRow struct {
 	Version          int32
 }
 
-func (q *Queries) GetAccounts(ctx context.Context, userID uuid.UUID) ([]GetAccountsRow, error) {
-	rows, err := q.db.Query(ctx, getAccounts, userID)
+func (q *Queries) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]GetAccountsRow, error) {
+	rows, err := q.db.Query(ctx, getAccounts, householdID)
 	if err != nil {
 		return nil, err
 	}
@@ -309,21 +310,21 @@ const hasLiveTransactionsForAccount = `-- name: HasLiveTransactionsForAccount :o
 SELECT EXISTS(
     SELECT 1
     FROM transactions
-    WHERE user_id = $1
+    WHERE household_id = $1
       AND deleted_at IS NULL
       AND (account_id = $2 OR from_account_id = $2 OR to_account_id = $2)
 ) AS in_use
 `
 
 type HasLiveTransactionsForAccountParams struct {
-	UserID    uuid.UUID
-	AccountID *uuid.UUID
+	HouseholdID uuid.UUID
+	AccountID   *uuid.UUID
 }
 
 // In-use guard for deletion: any non-deleted transaction referencing the
 // account (as cashflow account or transfer endpoint) blocks the tombstone.
 func (q *Queries) HasLiveTransactionsForAccount(ctx context.Context, arg HasLiveTransactionsForAccountParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasLiveTransactionsForAccount, arg.UserID, arg.AccountID)
+	row := q.db.QueryRow(ctx, hasLiveTransactionsForAccount, arg.HouseholdID, arg.AccountID)
 	var in_use bool
 	err := row.Scan(&in_use)
 	return in_use, err
@@ -332,18 +333,18 @@ func (q *Queries) HasLiveTransactionsForAccount(ctx context.Context, arg HasLive
 const softDeleteAccount = `-- name: SoftDeleteAccount :one
 UPDATE accounts
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version
 `
 
 type SoftDeleteAccountParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 // Tombstone (never a hard DELETE): excluded from listings, retained for sync.
 func (q *Queries) SoftDeleteAccount(ctx context.Context, arg SoftDeleteAccountParams) (int32, error) {
-	row := q.db.QueryRow(ctx, softDeleteAccount, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, softDeleteAccount, arg.ID, arg.HouseholdID)
 	var version int32
 	err := row.Scan(&version)
 	return version, err
@@ -362,12 +363,12 @@ SELECT
     version,
     deleted_at
 FROM accounts
-WHERE user_id = $1 AND id = ANY($2::uuid[])
+WHERE household_id = $1 AND id = ANY($2::uuid[])
 `
 
 type SyncAccountsByIDsParams struct {
-	UserID uuid.UUID
-	Ids    []uuid.UUID
+	HouseholdID uuid.UUID
+	Ids         []uuid.UUID
 }
 
 type SyncAccountsByIDsRow struct {
@@ -385,7 +386,7 @@ type SyncAccountsByIDsRow struct {
 
 // Batch fetch for pull data (current state of records named by change rows).
 func (q *Queries) SyncAccountsByIDs(ctx context.Context, arg SyncAccountsByIDsParams) ([]SyncAccountsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, syncAccountsByIDs, arg.UserID, arg.Ids)
+	rows, err := q.db.Query(ctx, syncAccountsByIDs, arg.HouseholdID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +425,7 @@ SET
     manual_adjustment = $4,
     version           = version + 1,
     updated_at        = now()
-WHERE id = $5 AND user_id = $6 AND deleted_at IS NULL AND version = $7
+WHERE id = $5 AND household_id = $6 AND deleted_at IS NULL AND version = $7
 RETURNING
     id,
     user_id,
@@ -446,7 +447,7 @@ type SyncReplaceAccountParams struct {
 	OpeningBalance   int64
 	ManualAdjustment int64
 	ID               uuid.UUID
-	UserID           uuid.UUID
+	HouseholdID      uuid.UUID
 	BaseVersion      int32
 }
 
@@ -472,7 +473,7 @@ func (q *Queries) SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccount
 		arg.OpeningBalance,
 		arg.ManualAdjustment,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.BaseVersion,
 	)
 	var i SyncReplaceAccountRow
@@ -498,7 +499,7 @@ SET
     manual_adjustment = COALESCE($2, manual_adjustment),
     version           = version + 1,
     updated_at        = now()
-WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL AND version = $5
+WHERE id = $3 AND household_id = $4 AND deleted_at IS NULL AND version = $5
 RETURNING
     id,
     user_id,
@@ -518,7 +519,7 @@ type UpdateAccountParams struct {
 	Name             *string
 	ManualAdjustment *int64
 	ID               uuid.UUID
-	UserID           uuid.UUID
+	HouseholdID      uuid.UUID
 	Version          int32
 }
 
@@ -543,7 +544,7 @@ func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (U
 		arg.Name,
 		arg.ManualAdjustment,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.Version,
 	)
 	var i UpdateAccountRow

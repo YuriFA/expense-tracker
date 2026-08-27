@@ -15,10 +15,10 @@ import (
 const createTransaction = `-- name: CreateTransaction :one
 
 INSERT INTO transactions (
-    id, user_id, type, amount, description, occurred_at,
+    id, household_id, user_id, type, amount, description, occurred_at,
     account_id, category_id, from_account_id, to_account_id
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING
     id, user_id, type, amount, description, occurred_at,
     created_at, updated_at, version,
@@ -27,6 +27,7 @@ RETURNING
 
 type CreateTransactionParams struct {
 	ID            uuid.UUID
+	HouseholdID   uuid.UUID
 	UserID        uuid.UUID
 	Type          string
 	Amount        int64
@@ -54,16 +55,18 @@ type CreateTransactionRow struct {
 	ToAccountID   *uuid.UUID
 }
 
-// transactions. Scoped by user_id everywhere (IDOR protection). Deletes are
-// soft (deleted_at tombstone): balances (via the account_contributions view)
-// and listings filter tombstones; the *Any reads include them for sync.
+// transactions. Scoped by household_id everywhere (IDOR protection); user_id
+// stays on rows as authorship. Deletes are soft (deleted_at tombstone):
+// balances (via the account_contributions view) and listings filter
+// tombstones; the *Any reads include them for sync.
 //
-// The keyset-cursor index transactions(user_id, occurred_at DESC, id DESC)
-// serves ListTransactions directly.
+// The keyset-cursor index transactions(household_id, occurred_at DESC, id
+// DESC) serves ListTransactions directly.
 // id is the optional client-generated id (offline-first clients).
 func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (CreateTransactionRow, error) {
 	row := q.db.QueryRow(ctx, createTransaction,
 		arg.ID,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.Type,
 		arg.Amount,
@@ -99,12 +102,12 @@ SELECT
     created_at, updated_at, version,
     account_id, category_id, from_account_id, to_account_id
 FROM transactions
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
 
 type GetTransactionParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetTransactionRow struct {
@@ -124,7 +127,7 @@ type GetTransactionRow struct {
 }
 
 func (q *Queries) GetTransaction(ctx context.Context, arg GetTransactionParams) (GetTransactionRow, error) {
-	row := q.db.QueryRow(ctx, getTransaction, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getTransaction, arg.ID, arg.HouseholdID)
 	var i GetTransactionRow
 	err := row.Scan(
 		&i.ID,
@@ -151,18 +154,35 @@ SELECT
     account_id, category_id, from_account_id, to_account_id,
     deleted_at
 FROM transactions
-WHERE id = $1 AND user_id = $2
+WHERE id = $1 AND household_id = $2
 `
 
 type GetTransactionAnyParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+}
+
+type GetTransactionAnyRow struct {
+	ID            uuid.UUID
+	UserID        uuid.UUID
+	Type          string
+	Amount        int64
+	Description   string
+	OccurredAt    time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	Version       int32
+	AccountID     *uuid.UUID
+	CategoryID    *uuid.UUID
+	FromAccountID *uuid.UUID
+	ToAccountID   *uuid.UUID
+	DeletedAt     *time.Time
 }
 
 // Includes tombstoned rows (sync push + conflict classification).
-func (q *Queries) GetTransactionAny(ctx context.Context, arg GetTransactionAnyParams) (Transaction, error) {
-	row := q.db.QueryRow(ctx, getTransactionAny, arg.ID, arg.UserID)
-	var i Transaction
+func (q *Queries) GetTransactionAny(ctx context.Context, arg GetTransactionAnyParams) (GetTransactionAnyRow, error) {
+	row := q.db.QueryRow(ctx, getTransactionAny, arg.ID, arg.HouseholdID)
+	var i GetTransactionAnyRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -189,7 +209,7 @@ SELECT
     account_id, category_id, from_account_id, to_account_id
 FROM transactions
 WHERE
-    user_id = $1
+    household_id = $1
     AND deleted_at IS NULL
     AND ($2::text IS NULL OR type = $2)
     AND (
@@ -211,7 +231,7 @@ LIMIT $9
 `
 
 type ListTransactionsParams struct {
-	UserID           uuid.UUID
+	HouseholdID      uuid.UUID
 	Type             *string
 	AccountID        *uuid.UUID
 	CategoryID       *uuid.UUID
@@ -244,7 +264,7 @@ type ListTransactionsRow struct {
 // preserving the original OR-across-refs semantics.
 func (q *Queries) ListTransactions(ctx context.Context, arg ListTransactionsParams) ([]ListTransactionsRow, error) {
 	rows, err := q.db.Query(ctx, listTransactions,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.Type,
 		arg.AccountID,
 		arg.CategoryID,
@@ -289,17 +309,17 @@ func (q *Queries) ListTransactions(ctx context.Context, arg ListTransactionsPara
 const softDeleteTransaction = `-- name: SoftDeleteTransaction :one
 UPDATE transactions
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version
 `
 
 type SoftDeleteTransactionParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 func (q *Queries) SoftDeleteTransaction(ctx context.Context, arg SoftDeleteTransactionParams) (int32, error) {
-	row := q.db.QueryRow(ctx, softDeleteTransaction, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, softDeleteTransaction, arg.ID, arg.HouseholdID)
 	var version int32
 	err := row.Scan(&version)
 	return version, err
@@ -317,7 +337,7 @@ SET
     to_account_id   = $7,
     version         = version + 1,
     updated_at      = now()
-WHERE id = $8 AND user_id = $9 AND deleted_at IS NULL AND version = $10
+WHERE id = $8 AND household_id = $9 AND deleted_at IS NULL AND version = $10
 RETURNING
     id, user_id, type, amount, description, occurred_at,
     created_at, updated_at, version,
@@ -333,7 +353,7 @@ type SyncReplaceTransactionParams struct {
 	FromAccountID *uuid.UUID
 	ToAccountID   *uuid.UUID
 	ID            uuid.UUID
-	UserID        uuid.UUID
+	HouseholdID   uuid.UUID
 	BaseVersion   int32
 }
 
@@ -364,7 +384,7 @@ func (q *Queries) SyncReplaceTransaction(ctx context.Context, arg SyncReplaceTra
 		arg.FromAccountID,
 		arg.ToAccountID,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.BaseVersion,
 	)
 	var i SyncReplaceTransactionRow
@@ -393,23 +413,40 @@ SELECT
     account_id, category_id, from_account_id, to_account_id,
     deleted_at
 FROM transactions
-WHERE user_id = $1 AND id = ANY($2::uuid[])
+WHERE household_id = $1 AND id = ANY($2::uuid[])
 `
 
 type SyncTransactionsByIDsParams struct {
-	UserID uuid.UUID
-	Ids    []uuid.UUID
+	HouseholdID uuid.UUID
+	Ids         []uuid.UUID
 }
 
-func (q *Queries) SyncTransactionsByIDs(ctx context.Context, arg SyncTransactionsByIDsParams) ([]Transaction, error) {
-	rows, err := q.db.Query(ctx, syncTransactionsByIDs, arg.UserID, arg.Ids)
+type SyncTransactionsByIDsRow struct {
+	ID            uuid.UUID
+	UserID        uuid.UUID
+	Type          string
+	Amount        int64
+	Description   string
+	OccurredAt    time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	Version       int32
+	AccountID     *uuid.UUID
+	CategoryID    *uuid.UUID
+	FromAccountID *uuid.UUID
+	ToAccountID   *uuid.UUID
+	DeletedAt     *time.Time
+}
+
+func (q *Queries) SyncTransactionsByIDs(ctx context.Context, arg SyncTransactionsByIDsParams) ([]SyncTransactionsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, syncTransactionsByIDs, arg.HouseholdID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Transaction
+	var items []SyncTransactionsByIDsRow
 	for rows.Next() {
-		var i Transaction
+		var i SyncTransactionsByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -448,7 +485,7 @@ SET
     to_account_id    = COALESCE($7, to_account_id),
     version          = version + 1,
     updated_at       = now()
-WHERE id = $8 AND user_id = $9 AND deleted_at IS NULL AND version = $10
+WHERE id = $8 AND household_id = $9 AND deleted_at IS NULL AND version = $10
 RETURNING
     id, user_id, type, amount, description, occurred_at,
     created_at, updated_at, version,
@@ -464,7 +501,7 @@ type UpdateTransactionParams struct {
 	FromAccountID *uuid.UUID
 	ToAccountID   *uuid.UUID
 	ID            uuid.UUID
-	UserID        uuid.UUID
+	HouseholdID   uuid.UUID
 	Version       int32
 }
 
@@ -497,7 +534,7 @@ func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionPa
 		arg.FromAccountID,
 		arg.ToAccountID,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.Version,
 	)
 	var i UpdateTransactionRow

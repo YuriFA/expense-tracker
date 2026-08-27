@@ -14,16 +14,17 @@ import (
 
 const createDebtor = `-- name: CreateDebtor :one
 
-INSERT INTO debtors (id, user_id, name, note)
-VALUES ($1, $2, $3, $4)
+INSERT INTO debtors (id, household_id, user_id, name, note)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, user_id, name, note, created_at, updated_at, version
 `
 
 type CreateDebtorParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
-	Name   string
-	Note   string
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Note        string
 }
 
 type CreateDebtorRow struct {
@@ -36,13 +37,15 @@ type CreateDebtorRow struct {
 	Version   int32
 }
 
-// debtors (per-user, unique name among LIVE rows only - the partial unique
-// index ignores tombstones so a deleted name can be recreated). Scoped by
-// user_id everywhere; deletes are soft (deleted_at tombstone).
+// debtors (household-scoped, unique name among LIVE rows only - the partial
+// unique index ignores tombstones so a deleted name can be recreated). Scoped
+// by household_id everywhere; user_id stays on rows as authorship; deletes
+// are soft (deleted_at tombstone).
 // id is the optional client-generated id (offline-first clients).
 func (q *Queries) CreateDebtor(ctx context.Context, arg CreateDebtorParams) (CreateDebtorRow, error) {
 	row := q.db.QueryRow(ctx, createDebtor,
 		arg.ID,
+		arg.HouseholdID,
 		arg.UserID,
 		arg.Name,
 		arg.Note,
@@ -64,21 +67,21 @@ const debtorNameTaken = `-- name: DebtorNameTaken :one
 SELECT EXISTS(
     SELECT 1
     FROM debtors
-    WHERE user_id = $1 AND name = $2 AND deleted_at IS NULL AND id <> $3
+    WHERE household_id = $1 AND name = $2 AND deleted_at IS NULL AND id <> $3
 ) AS taken
 `
 
 type DebtorNameTakenParams struct {
-	UserID   uuid.UUID
-	Name     string
-	ExceptID uuid.UUID
+	HouseholdID uuid.UUID
+	Name        string
+	ExceptID    uuid.UUID
 }
 
-// Live-name uniqueness pre-check (race-free under the per-user change-log
-// advisory lock); used by the sync path where a constraint violation would
-// abort the shared batch transaction.
+// Live-name uniqueness pre-check (race-free under the per-household
+// change-log advisory lock); used by the sync path where a constraint
+// violation would abort the shared batch transaction.
 func (q *Queries) DebtorNameTaken(ctx context.Context, arg DebtorNameTakenParams) (bool, error) {
-	row := q.db.QueryRow(ctx, debtorNameTaken, arg.UserID, arg.Name, arg.ExceptID)
+	row := q.db.QueryRow(ctx, debtorNameTaken, arg.HouseholdID, arg.Name, arg.ExceptID)
 	var taken bool
 	err := row.Scan(&taken)
 	return taken, err
@@ -87,12 +90,12 @@ func (q *Queries) DebtorNameTaken(ctx context.Context, arg DebtorNameTakenParams
 const getDebtor = `-- name: GetDebtor :one
 SELECT id, user_id, name, note, created_at, updated_at, version
 FROM debtors
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
 
 type GetDebtorParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 type GetDebtorRow struct {
@@ -106,7 +109,7 @@ type GetDebtorRow struct {
 }
 
 func (q *Queries) GetDebtor(ctx context.Context, arg GetDebtorParams) (GetDebtorRow, error) {
-	row := q.db.QueryRow(ctx, getDebtor, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, getDebtor, arg.ID, arg.HouseholdID)
 	var i GetDebtorRow
 	err := row.Scan(
 		&i.ID,
@@ -123,18 +126,29 @@ func (q *Queries) GetDebtor(ctx context.Context, arg GetDebtorParams) (GetDebtor
 const getDebtorAny = `-- name: GetDebtorAny :one
 SELECT id, user_id, name, note, created_at, updated_at, version, deleted_at
 FROM debtors
-WHERE id = $1 AND user_id = $2
+WHERE id = $1 AND household_id = $2
 `
 
 type GetDebtorAnyParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+}
+
+type GetDebtorAnyRow struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Name      string
+	Note      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Version   int32
+	DeletedAt *time.Time
 }
 
 // Includes tombstoned rows (sync push + conflict classification).
-func (q *Queries) GetDebtorAny(ctx context.Context, arg GetDebtorAnyParams) (Debtor, error) {
-	row := q.db.QueryRow(ctx, getDebtorAny, arg.ID, arg.UserID)
-	var i Debtor
+func (q *Queries) GetDebtorAny(ctx context.Context, arg GetDebtorAnyParams) (GetDebtorAnyRow, error) {
+	row := q.db.QueryRow(ctx, getDebtorAny, arg.ID, arg.HouseholdID)
+	var i GetDebtorAnyRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -151,7 +165,7 @@ func (q *Queries) GetDebtorAny(ctx context.Context, arg GetDebtorAnyParams) (Deb
 const getDebtors = `-- name: GetDebtors :many
 SELECT id, user_id, name, note, created_at, updated_at, version
 FROM debtors
-WHERE user_id = $1 AND deleted_at IS NULL
+WHERE household_id = $1 AND deleted_at IS NULL
 ORDER BY created_at, id
 `
 
@@ -165,8 +179,8 @@ type GetDebtorsRow struct {
 	Version   int32
 }
 
-func (q *Queries) GetDebtors(ctx context.Context, userID uuid.UUID) ([]GetDebtorsRow, error) {
-	rows, err := q.db.Query(ctx, getDebtors, userID)
+func (q *Queries) GetDebtors(ctx context.Context, householdID uuid.UUID) ([]GetDebtorsRow, error) {
+	rows, err := q.db.Query(ctx, getDebtors, householdID)
 	if err != nil {
 		return nil, err
 	}
@@ -197,19 +211,19 @@ const hasLiveDebtOperationsForDebtor = `-- name: HasLiveDebtOperationsForDebtor 
 SELECT EXISTS(
     SELECT 1
     FROM debt_operations
-    WHERE user_id = $1 AND deleted_at IS NULL AND debtor_id = $2
+    WHERE household_id = $1 AND deleted_at IS NULL AND debtor_id = $2
 ) AS in_use
 `
 
 type HasLiveDebtOperationsForDebtorParams struct {
-	UserID   uuid.UUID
-	DebtorID uuid.UUID
+	HouseholdID uuid.UUID
+	DebtorID    uuid.UUID
 }
 
 // In-use guard counts LIVE operations only: tombstoned operations never
 // block debtor deletion.
 func (q *Queries) HasLiveDebtOperationsForDebtor(ctx context.Context, arg HasLiveDebtOperationsForDebtorParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasLiveDebtOperationsForDebtor, arg.UserID, arg.DebtorID)
+	row := q.db.QueryRow(ctx, hasLiveDebtOperationsForDebtor, arg.HouseholdID, arg.DebtorID)
 	var in_use bool
 	err := row.Scan(&in_use)
 	return in_use, err
@@ -218,17 +232,17 @@ func (q *Queries) HasLiveDebtOperationsForDebtor(ctx context.Context, arg HasLiv
 const softDeleteDebtor = `-- name: SoftDeleteDebtor :one
 UPDATE debtors
 SET deleted_at = now(), version = version + 1, updated_at = now()
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING version
 `
 
 type SoftDeleteDebtorParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
 }
 
 func (q *Queries) SoftDeleteDebtor(ctx context.Context, arg SoftDeleteDebtorParams) (int32, error) {
-	row := q.db.QueryRow(ctx, softDeleteDebtor, arg.ID, arg.UserID)
+	row := q.db.QueryRow(ctx, softDeleteDebtor, arg.ID, arg.HouseholdID)
 	var version int32
 	err := row.Scan(&version)
 	return version, err
@@ -237,12 +251,12 @@ func (q *Queries) SoftDeleteDebtor(ctx context.Context, arg SoftDeleteDebtorPara
 const syncDebtorsByIDs = `-- name: SyncDebtorsByIDs :many
 SELECT id, user_id, name, note, version, deleted_at
 FROM debtors
-WHERE user_id = $1 AND id = ANY($2::uuid[])
+WHERE household_id = $1 AND id = ANY($2::uuid[])
 `
 
 type SyncDebtorsByIDsParams struct {
-	UserID uuid.UUID
-	Ids    []uuid.UUID
+	HouseholdID uuid.UUID
+	Ids         []uuid.UUID
 }
 
 type SyncDebtorsByIDsRow struct {
@@ -255,7 +269,7 @@ type SyncDebtorsByIDsRow struct {
 }
 
 func (q *Queries) SyncDebtorsByIDs(ctx context.Context, arg SyncDebtorsByIDsParams) ([]SyncDebtorsByIDsRow, error) {
-	rows, err := q.db.Query(ctx, syncDebtorsByIDs, arg.UserID, arg.Ids)
+	rows, err := q.db.Query(ctx, syncDebtorsByIDs, arg.HouseholdID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +302,7 @@ SET
     note       = $2,
     version    = version + 1,
     updated_at = now()
-WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL AND version = $5
+WHERE id = $3 AND household_id = $4 AND deleted_at IS NULL AND version = $5
 RETURNING id, user_id, name, note, created_at, updated_at, version
 `
 
@@ -296,7 +310,7 @@ type SyncReplaceDebtorParams struct {
 	Name        string
 	Note        string
 	ID          uuid.UUID
-	UserID      uuid.UUID
+	HouseholdID uuid.UUID
 	BaseVersion int32
 }
 
@@ -316,7 +330,7 @@ func (q *Queries) SyncReplaceDebtor(ctx context.Context, arg SyncReplaceDebtorPa
 		arg.Name,
 		arg.Note,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.BaseVersion,
 	)
 	var i SyncReplaceDebtorRow
@@ -339,16 +353,16 @@ SET
     note       = COALESCE($2, note),
     version    = version + 1,
     updated_at = now()
-WHERE id = $3 AND user_id = $4 AND deleted_at IS NULL AND version = $5
+WHERE id = $3 AND household_id = $4 AND deleted_at IS NULL AND version = $5
 RETURNING id, user_id, name, note, created_at, updated_at, version
 `
 
 type UpdateDebtorParams struct {
-	Name    *string
-	Note    *string
-	ID      uuid.UUID
-	UserID  uuid.UUID
-	Version int32
+	Name        *string
+	Note        *string
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	Version     int32
 }
 
 type UpdateDebtorRow struct {
@@ -369,7 +383,7 @@ func (q *Queries) UpdateDebtor(ctx context.Context, arg UpdateDebtorParams) (Upd
 		arg.Name,
 		arg.Note,
 		arg.ID,
-		arg.UserID,
+		arg.HouseholdID,
 		arg.Version,
 	)
 	var i UpdateDebtorRow

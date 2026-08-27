@@ -21,6 +21,7 @@ type Account struct {
 	UpdatedAt        time.Time
 	DeletedAt        *time.Time
 	Version          int32
+	HouseholdID      uuid.UUID
 }
 
 type AccountContribution struct {
@@ -29,61 +30,66 @@ type AccountContribution struct {
 }
 
 type AppliedOperation struct {
-	OpID      uuid.UUID
-	UserID    uuid.UUID
-	Entity    string
-	EntityID  uuid.UUID
-	Result    []byte
-	AppliedAt time.Time
+	OpID        uuid.UUID
+	UserID      uuid.UUID
+	Entity      string
+	EntityID    uuid.UUID
+	Result      []byte
+	AppliedAt   time.Time
+	HouseholdID uuid.UUID
 }
 
 type Category struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time
-	Version   int32
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Type        string
+	Icon        string
+	Color       string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   *time.Time
+	Version     int32
+	HouseholdID uuid.UUID
 }
 
 type ChangeLog struct {
-	Seq       int64
-	UserID    uuid.UUID
-	Entity    string
-	EntityID  uuid.UUID
-	Action    string
-	Version   int32
-	CreatedAt time.Time
+	Seq         int64
+	UserID      uuid.UUID
+	Entity      string
+	EntityID    uuid.UUID
+	Action      string
+	Version     int32
+	CreatedAt   time.Time
+	HouseholdID uuid.UUID
 }
 
 type DebtOperation struct {
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	DebtorID   uuid.UUID
-	Direction  string
-	Kind       string
-	Amount     int64
-	Note       string
-	OccurredAt time.Time
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Version    int32
-	DeletedAt  *time.Time
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	DebtorID    uuid.UUID
+	Direction   string
+	Kind        string
+	Amount      int64
+	Note        string
+	OccurredAt  time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Version     int32
+	DeletedAt   *time.Time
+	HouseholdID uuid.UUID
 }
 
 type Debtor struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Note      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Version   int32
-	DeletedAt *time.Time
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Note        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Version     int32
+	DeletedAt   *time.Time
+	HouseholdID uuid.UUID
 }
 
 type EmailVerificationCode struct {
@@ -93,6 +99,18 @@ type EmailVerificationCode struct {
 	Attempts  int32
 	ExpiresAt time.Time
 	CreatedAt time.Time
+}
+
+type Household struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+}
+
+type HouseholdMember struct {
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	Role        string
+	JoinedAt    time.Time
 }
 
 type IdempotencyKey struct {
@@ -134,6 +152,7 @@ type PlannedPayment struct {
 	UpdatedAt   time.Time
 	Version     int32
 	DeletedAt   *time.Time
+	HouseholdID uuid.UUID
 }
 
 type Session struct {
@@ -159,6 +178,7 @@ type Transaction struct {
 	FromAccountID *uuid.UUID
 	ToAccountID   *uuid.UUID
 	DeletedAt     *time.Time
+	HouseholdID   uuid.UUID
 }
 
 type User struct {
@@ -168,4 +188,5 @@ type User struct {
 	EmailVerifiedAt *time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	DisplayName     *string
 }
