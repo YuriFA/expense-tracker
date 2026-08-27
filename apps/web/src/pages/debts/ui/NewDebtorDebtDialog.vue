@@ -20,8 +20,7 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { AmountField } from '@/shared/ui/amount-field'
 import { notification } from '@/shared/services/notification'
-import { toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, toMinorUnits } from '@/shared/lib/money'
 
 // New debtor with the first debt (mobile design D9): the direction is a prop
 // from the tapped section (never a form value); submitting creates the
@@ -36,8 +35,9 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Debts carry no currency of their own; the app display currency is fixed
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const { mutateAsync: createDebtor } = useCreateDebtor()
 const { mutateAsync: createOperation } = useCreateDebtOperation()

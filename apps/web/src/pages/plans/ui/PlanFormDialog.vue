@@ -40,8 +40,7 @@ import {
 } from '@/shared/ui/native-select'
 import { Trash2 } from '@lucide/vue'
 import { notification } from '@/shared/services/notification'
-import { toMajorUnits, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, toMajorUnits, toMinorUnits } from '@/shared/lib/money'
 
 // Create/edit a planned payment. The type is a prop (immutable per the
 // planned-payments capability). Updating nextDue resets the anchor - that is
@@ -56,8 +55,9 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Plans carry no currency of their own; the app display currency is fixed
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const { mutateAsync: createPlan } = useCreatePlannedPayment()
 const { mutateAsync: updatePlan } = useUpdatePlannedPayment()

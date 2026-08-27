@@ -18,8 +18,7 @@ import { Field, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { AmountField } from '@/shared/ui/amount-field'
 import { notification } from '@/shared/services/notification'
-import { toMajorUnits, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, toMajorUnits, toMinorUnits } from '@/shared/lib/money'
 
 // Confirm flow (planned-payments capability): review the upcoming occurrence
 // - amount and date may be adjusted - then confirm. The repository's
@@ -35,8 +34,9 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Plans carry no currency of their own; the app display currency is fixed
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const { mutateAsync: confirmPlannedPayment, asyncStatus } = useConfirmPlannedPayment()
 const { data: accounts } = useAccounts()

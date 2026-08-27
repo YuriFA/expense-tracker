@@ -75,14 +75,14 @@ describe('DebtsPage', () => {
     await flushPromises()
 
     // Direction totals are independent (no netting).
-    expect(wrapper.find('[data-testid="debts-total-receivable"]').text()).toBe('$3,500.00')
-    expect(wrapper.find('[data-testid="debts-total-payable"]').text()).toBe('$2,000.00')
+    expect(wrapper.find('[data-testid="debts-total-receivable"]').text()).toBe('₽3,500.00')
+    expect(wrapper.find('[data-testid="debts-total-payable"]').text()).toBe('₽2,000.00')
 
     // Debtor rows with derived balances in their direction's section.
     const receivable = wrapper.find('[data-testid="debts-section-add-receivable"]').element
       .closest('section')!
     expect(receivable.textContent).toContain('Анна')
-    expect(receivable.textContent).toContain('$3,500.00')
+    expect(receivable.textContent).toContain('₽3,500.00')
     expect(wrapper.find('[data-testid="debts-debtor-d2"]').text()).toContain('Борис')
 
     // The payable direction has its own add action.
@@ -108,7 +108,7 @@ describe('DebtsPage', () => {
     expect(history).not.toBeNull()
     expect(
       document.querySelector('[data-testid="debts-history-balance"]')!.textContent,
-    ).toBe('$3,500.00')
+    ).toBe('₽3,500.00')
     expect(history!.textContent).toContain('Займ')
     // The repayment's amount renders signed.
     expect(history!.textContent).toContain('−')

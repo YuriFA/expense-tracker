@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { formatMoney, type CurrencyCode } from '@/shared/lib/money'
+import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
 import { useAccounts } from '@/entities/account'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -31,7 +31,7 @@ const format = (value: number, currency: CurrencyCode) =>
       <template v-if="!error">
         <Skeleton v-if="isLoading" class="h-8 w-32" />
         <div v-else-if="totalsByCurrency.length === 0" class="text-2xl font-bold">
-          {{ format(0, 'USD') }}
+          {{ format(0, DEFAULT_CURRENCY) }}
         </div>
         <div v-else class="flex flex-col gap-1">
           <p

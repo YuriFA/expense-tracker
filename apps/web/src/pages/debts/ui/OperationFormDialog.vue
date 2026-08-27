@@ -40,8 +40,7 @@ import { Input } from '@/shared/ui/input'
 import { AmountField } from '@/shared/ui/amount-field'
 import { Trash2 } from '@lucide/vue'
 import { notification } from '@/shared/services/notification'
-import { formatMoney, toMajorUnits, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { DEFAULT_CURRENCY, formatMoney, toMajorUnits, toMinorUnits } from '@/shared/lib/money'
 
 // Create/edit a debt operation. Direction, kind, and debtor are immutable
 // (debts capability): create fixes them from the calling context; edit shows
@@ -65,8 +64,9 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const settings = useSettingsStore()
-const displayCurrency = computed(() => settings.currency as CurrencyCode)
+// Debts carry no currency of their own; the app display currency is fixed
+// (currency-rub-only).
+const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const isEdit = computed(() => props.operation !== null)
 

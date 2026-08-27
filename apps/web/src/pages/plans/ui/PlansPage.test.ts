@@ -86,8 +86,8 @@ describe('PlansPage', () => {
     const expenseCard = wrapper.find('[data-testid="plans-card-expense"]')
     expect(expenseCard.exists()).toBe(true)
     expect(expenseCard.text()).toContain('2 plans')
-    expect(wrapper.find('[data-testid="plans-total-expense"]').text()).toBe('$964.00/mo')
-    expect(wrapper.find('[data-testid="plans-total-income"]').text()).toBe('$5,000.00/mo')
+    expect(wrapper.find('[data-testid="plans-total-expense"]').text()).toBe('₽964.00/mo')
+    expect(wrapper.find('[data-testid="plans-total-income"]').text()).toBe('₽5,000.00/mo')
   })
 
   it('opens the type list dialog with rows sorted by next due, overdue badge, and manual confirm actions', async () => {
