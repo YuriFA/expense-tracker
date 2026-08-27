@@ -118,3 +118,20 @@ down migration.
 ## Open Questions
 
 (none)
+
+## Deviations during implementation
+
+- **`applied_operations` PK is `(household_id, op_id)`, not a global
+  `op_id` PK.** ADR-0002 said "re-key to household_id" without fixing the
+  PK; client-generated op ids must be idempotent per household (the
+  sync-protocol's persistent-idempotency requirement is scope-neutral),
+  and a global PK would falsely collide across households.
+- **Backfill uses the owner's user id as the household id** — stable,
+  debuggable, no extra id generation in SQL.
+- **Two hardening fixes beyond the task list**, both surfaced by the new
+  two-household tests: a missing `household_id` stamp on the sync-path
+  planned-payment create, and a nil-dereference when a client-generated
+  id collides with a record of another household (now an already-exists
+  conflict with no serverState — IDOR-safe).
+- **Docs**: the backend AGENTS middleware allowlist now names
+  `HouseholdRepository` (the auth middleware resolves memberships).
