@@ -33,10 +33,10 @@
 
 ## 6. Web flow
 
-- [ ] 6.1 `/invite/:token` route mirroring mobile (public page, auth composition with the anonymous-first shell)
-- [ ] 6.2 Settings: join-by-code entry, leave flow; household name display
-- [ ] 6.3 Worker RPC: expose rebase/`last_household`; startup `db-busy`-style gate composes with the rebase choice
-- [ ] 6.4 Unit tests (choice wiring, RPC surface) + backendless e2e for the invitation preview states where possible
+- [x] 6.1 `/invite/:token` route mirroring mobile (public page, auth composition with the anonymous-first shell)
+- [x] 6.2 Settings: join-by-code entry, leave flow; household name display
+- [x] 6.3 Worker RPC: expose rebase/`last_household`; startup `db-busy`-style gate composes with the rebase choice
+- [x] 6.4 Unit tests (choice wiring, RPC surface) + backendless e2e for the invitation preview states where possible
 
 ## 7. Integration and gates
 
