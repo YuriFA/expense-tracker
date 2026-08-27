@@ -8,7 +8,7 @@
 ## 2. Database migration
 
 - [x] 2.1 Write `000005_household.up.sql`: `households`, `household_members` (role owner|member, PK pair), `household_id NOT NULL` on the six entity tables + `change_log` + `applied_operations`, with the SQL backfill (household per user, owner memberships, row stamps); write the matching `.down.sql`
-- [ ] 2.2 Update `sqlc` queries: scoping `WHERE household_id` everywhere user-scoping exists today (11 query files), authorship `user_id` retained on inserts; advisory lock and seq allocation re-key to `household_id`; `make gen` regenerates
+- [x] 2.2 Update `sqlc` queries: scoping `WHERE household_id` everywhere user-scoping exists today (11 query files), authorship `user_id` retained on inserts; advisory lock and seq allocation re-key to `household_id`; `make gen` regenerates
 
 ## 3. Backend re-key
 
