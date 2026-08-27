@@ -1,5 +1,6 @@
 // Create-account form behavior: submit-driven per-field validation (the
-// opening-balance field gains the error affordance), major->minor money
+// opening-balance field gains the error affordance), the ruble-only payload
+// (currency always RUB with no picker rendered), major->minor money
 // conversion through the payload mapper, server errors at the root slot
 // with values preserved, reset after success, and pending blocking
 // duplicates. The form renders standalone - under jest the @gorhom mock
@@ -39,13 +40,24 @@ function renderForm(repository?: MockRepository) {
 
 function fillValid() {
   fireEvent.changeText(screen.getByTestId('accounts-create-name'), 'Наличные')
-  fireEvent.press(screen.getByTestId('accounts-create-currency-USD'))
   fireEvent.changeText(screen.getByTestId('accounts-create-opening-balance'), '100,50')
 }
 
 describe('NewAccountForm', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  it('offers no currency choice and always submits RUB', async () => {
+    const repository = renderForm()
+
+    expect(screen.queryByTestId('accounts-create-currencies')).toBeNull()
+
+    fillValid()
+    fireEvent.press(screen.getByTestId('accounts-create-submit'))
+
+    await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
+    expect(repository.snapshot()[0].currency).toBe('RUB')
   })
 
   it('blocks an empty submit with both field errors and no create call', async () => {
@@ -84,7 +96,7 @@ describe('NewAccountForm', () => {
     await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
     expect(repository.snapshot()[0]).toMatchObject({
       name: 'Наличные',
-      currency: 'USD',
+      currency: 'RUB',
       openingBalance: 10_050,
     })
     expect(onSuccess).toHaveBeenCalledTimes(1)
@@ -151,7 +163,7 @@ describe('NewAccountForm', () => {
     resolveCreate({
       id: 'acc-new',
       name: 'Наличные',
-      currency: 'USD',
+      currency: 'RUB',
       openingBalance: 10_050,
       manualAdjustment: 0,
       balance: 10_050,

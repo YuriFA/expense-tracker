@@ -73,14 +73,13 @@ describe('AccountsScreen', () => {
 
     fireEvent.press(screen.getByTestId('accounts-add'))
     fireEvent.changeText(screen.getByTestId('accounts-create-name'), 'Наличные')
-    fireEvent.press(screen.getByTestId('accounts-create-currency-USD'))
     fireEvent.changeText(screen.getByTestId('accounts-create-opening-balance'), '100,50')
     fireEvent.press(screen.getByTestId('accounts-create-submit'))
 
     await waitFor(() => expect(repository.snapshot()).toHaveLength(3))
     expect(repository.snapshot().at(-1)).toMatchObject({
       name: 'Наличные',
-      currency: 'USD',
+      currency: 'RUB',
       openingBalance: 10_050,
     })
   })

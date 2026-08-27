@@ -1,17 +1,16 @@
-// Create-account form: name, currency (USD/EUR/RUB), and the opening
-// balance entered in MAJOR units and converted to integer minor units via
-// the shared money helpers in `toAccountPayload` (never float arithmetic on
-// stored values; the single x100 rounding happens at the boundary).
+// Create-account form: name and the opening balance entered in MAJOR units
+// and converted to integer minor units via the shared money helpers in
+// `toAccountPayload` (never float arithmetic on stored values; the single
+// x100 rounding happens at the boundary). The app is ruble-only (openspec
+// app-currency): no currency picker - the mapper always submits RUB.
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { View } from 'react-native'
-import { AVAILABLE_CURRENCIES } from '@expense-tracker/money'
 import type { CreateAccountPayload } from '@expense-tracker/api'
 import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
 import { FormError, FormField, FormLabel } from '@/shared/ui/form'
-import { Text } from '@/shared/ui/text'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 import { parseMajorUnitsToMinor } from '@/shared/lib/money/parse'
 import { useCreateAccount } from '@/entities/account'
@@ -19,14 +18,14 @@ import { newAccountSchema, type NewAccountFormValues } from '../model/schema'
 
 const defaultValues: NewAccountFormValues = {
   name: '',
-  currency: 'RUB',
   openingBalance: '',
 }
 
 function toAccountPayload(values: NewAccountFormValues): CreateAccountPayload {
   return {
     name: values.name,
-    currency: values.currency,
+    // Ruble-only app (openspec app-currency); the API enum stays wider.
+    currency: 'RUB',
     // The schema's refine guarantees parseability; the fallback only
     // satisfies the parser's `number | null` return type.
     openingBalance: parseMajorUnitsToMinor(values.openingBalance) ?? 0,
@@ -74,28 +73,6 @@ export function NewAccountForm({ onSuccess }: NewAccountFormProps) {
             />
             <FormError testID="accounts-create-name-error">{fieldState.error?.message}</FormError>
           </FormField>
-        )}
-      />
-
-      <Controller
-        control={form.control}
-        name="currency"
-        render={({ field }) => (
-          <View className="gap-2">
-            <Text variant="label">Валюта</Text>
-            <View className="flex-row gap-2" testID="accounts-create-currencies">
-              {AVAILABLE_CURRENCIES.map((code) => (
-                <Button
-                  key={code}
-                  variant={field.value === code ? 'primary' : 'outline'}
-                  text={code}
-                  className="flex-1"
-                  onPress={() => field.onChange(code)}
-                  testID={`accounts-create-currency-${code}`}
-                />
-              ))}
-            </View>
-          </View>
         )}
       />
 
