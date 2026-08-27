@@ -189,3 +189,33 @@ branch — nothing to clean on main). Rollback = revert the commit.
 - Exact colada invalidation API shape (mutation-cache subscription vs query
   cache walk) — resolvable during implementation without changing this
   design.
+
+## Deviations during implementation
+
+- **Inline category creation added beyond the task list**
+  (`features/transaction/add/ui/NewCategoryDialog.vue`). The deleted
+  localStorage repository used to bundle default categories, and the web
+  never had category CRUD UI — without this dialog an anonymous user could
+  not create transactions at all, contradicting this change's own spec.
+  Local seeding was rejected: the backend seeds categories opt-in on
+  registration, so seeded locals would push as duplicates after the initial
+  sync. The dialog mirrors mobile's new-category-sheet and creates ordinary
+  syncable records.
+- **`sync-composable` landed in `shared/lib/local-db/`** (task 4.1 named
+  `shared/lib/sync/`): a second `shared/lib` group would cross steiger's
+  grouping threshold, and the sync controller belongs to the same subsystem
+  as the bridge.
+- **Comlink seam realities encoded in code**: awaiting a path-extended
+  proxy triggers a wire GET, so forwarding proxies only await the root
+  remote; Comlink's throw transfer preserves only message/name, so
+  worker-side `RepositoryError` subclasses are rehydrated from `name`
+  (`shared/lib/local-db/rehydrate-repository-error.ts`) — `code` survives,
+  `apiCode`/`retryAfter` do not cross (nothing on web consumes them from
+  repositories).
+- **Playwright WebKit excluded** (config comment): the bundled WebKit build
+  exposes no OPFS at all; real Safari ≥ 17 ships it — the manual
+  verification flagged by the spike remains open.
+- **Deleted-kind conflicts ship without restore-as-new**: review/dismiss
+  only; `localState` is preserved so no data is lost. `sync-protocol`
+  requires the restore option — scheduled as task 7.1 of
+  web-screens-parity (design D7 there).

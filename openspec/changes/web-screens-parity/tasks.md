@@ -40,9 +40,13 @@
 - [ ] 6.2 Add vue-i18n keys for all new screens/nav in the existing message files (RU authoritative from mobile copy, EN entries where the structure expects them)
 - [ ] 6.3 Deep-link and back-button behavior check for all new routes
 
-## 7. e2e, gates, docs
+## 7. Conflict center completion
 
-- [ ] 7.1 Backendless e2e flows: analytics renders from local data; debts create→history→edit; plan create→confirm→transaction appears; income entry→cashflow update
-- [ ] 7.2 Full gates: `pnpm -C apps/web type-check test:unit test:e2e`, `pnpm arch:check` (new slices pass FSD rules), `pnpm lint`, `pnpm knip`
-- [ ] 7.3 Update `apps/web/AGENTS.md` screen map and architecture overview pointers
-- [ ] 7.4 `openspec validate web-screens-parity --strict` passes
+- [ ] 7.1 Restore-as-new flow for deleted-kind conflicts: from a delete-vs-edit conflict, offer restoring the preserved `localState` as a new record with a new id (satisfies the `sync-protocol` SHALL; web-local-first-core shipped the record with `localState` and review/dismiss only)
+
+## 8. e2e, gates, docs
+
+- [ ] 8.1 Backendless e2e flows: analytics renders from local data; debts create→history→edit; plan create→confirm→transaction appears; income entry→cashflow update
+- [ ] 8.2 Full gates: `pnpm -C apps/web type-check test:unit test:e2e`, `pnpm arch:check` (new slices pass FSD rules), `pnpm lint`, `pnpm knip`
+- [ ] 8.3 Update `apps/web/AGENTS.md` screen map and architecture overview pointers
+- [ ] 8.4 `openspec validate web-screens-parity --strict` passes

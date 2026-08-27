@@ -92,6 +92,17 @@ mobile screens' RU strings), EN entries are added where the file structure
 already expects them — full EN coverage and default-locale flip remain
 change 3's scope.
 
+### D7. Conflict center completion: restore-as-new
+
+web-local-first-core shipped the conflict center with keep/take for
+version-kind conflicts and review/dismiss for deleted-kind (delete-vs-edit),
+preserving the lost edit's `localState` in the conflict record but deferring
+the restore UI. `sync-protocol` requires "an option to restore it as a new
+record with a new id" for those conflicts, so this change completes the flow:
+restore-as-new reads the preserved `localState`, creates a fresh record
+(new client UUID), and resolves the conflict — UI over already-stored data,
+no engine changes.
+
 ## Risks / Trade-offs
 
 - [Port drift: web screens quietly diverge from mobile semantics] → spec
