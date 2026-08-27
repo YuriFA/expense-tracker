@@ -9,11 +9,18 @@
   "nav": {
     "dashboard": "Дашборд",
     "transactions": "Транзакции",
+    "analytics": "Аналитика",
+    "debts": "Долги",
+    "plans": "Планы",
     "accounts": "Счета",
     "settings": "Настройки"
   },
   "pages": {
     "transactions": "Транзакции",
+    "analytics": "Аналитика",
+    "debts": "Долги",
+    "plans": "Планы",
+    "income": "Доходы",
     "accounts": "Счета",
     "settings": "Настройки"
   },
@@ -21,7 +28,13 @@
     "create": "Создать"
   },
   "dashboard": {
-    "netWorth": "Капитал"
+    "netWorth": "Капитал",
+    "quickActions": {
+      "title": "Быстрые действия",
+      "expense": "Добавить расход",
+      "transfer": "Добавить перевод",
+      "income": "Добавить доход"
+    }
   },
   "home": {
     "balance": "Баланс",
@@ -126,6 +139,135 @@
   },
   "recentTransactions": {
     "title": "Последние транзакции"
+  },
+  "analytics": {
+    "expenses": "Расходы",
+    "income": "Доходы",
+    "other": "Прочие",
+    "amountCaption": "Сумма",
+    "emptyExpense": "Нет расходов за этот период",
+    "emptyIncome": "Нет доходов за этот период",
+    "week": "Неделя",
+    "month": "Месяц",
+    "year": "Год",
+    "totalCaption": "всего",
+    "prevPeriod": "Предыдущий период",
+    "nextPeriod": "Следующий период",
+    "allExpenses": "Все расходы",
+    "allIncome": "Все доходы",
+    "noData": "нет данных за период",
+    "showOnChart": "{name}, показывать на графике",
+    "showAllCategories": "{label}, показывать все категории",
+    "category": "Категория",
+    "sortNewestFirst": "Сначала новые",
+    "sortOldestFirst": "Сначала старые",
+    "spentWord": "потрачено",
+    "receivedWord": "получено",
+    "emptyMonthExpense": "В этом месяце расходов нет",
+    "emptyPeriodExpense": "За этот период расходов нет",
+    "emptyMonthIncome": "В этом месяце доходов нет",
+    "emptyPeriodIncome": "За этот период доходов нет",
+    "byCategory": "по категориям"
+  },
+  "debts": {
+    "receivable": "Мне должны",
+    "payable": "Я должен",
+    "receivableEmpty": "Вам никто не должен",
+    "payableEmpty": "Вы никому не должны",
+    "receivableAddTitle": "Кто должен",
+    "payableAddTitle": "Кому должен",
+    "debt": "Долг",
+    "repayment": "Списание",
+    "contact": "Контакт",
+    "direction": "Направление",
+    "newOperation": "Новая операция",
+    "operation": "Операция",
+    "historyEmpty": "Операций пока нет",
+    "overRepayment": "Списание больше остатка долга ({remaining}). Баланс станет отрицательным.",
+    "showSettled": "Показать рассчитавшихся ({count})",
+    "hideSettled": "Скрыть рассчитавшихся",
+    "editContact": "Редактировать контакт",
+    "deleteContact": "Удалить контакт",
+    "deleteContactTitle": "Удалить контакт?",
+    "deleteOperation": "Удалить операцию",
+    "deleteOperationTitle": "Удалить операцию?",
+    "delete": "Удалить",
+    "cancel": "Отмена",
+    "saveOperation": "Сохранить операцию",
+    "addOperation": "Добавить операцию",
+    "addDebt": "Добавить долг",
+    "save": "Сохранить",
+    "namePlaceholder": "Имя",
+    "notePlaceholder": "Заметка",
+    "noteOptionalPlaceholder": "Заметка (необязательно)",
+    "operationAdded": "Операция добавлена",
+    "operationUpdated": "Операция обновлена",
+    "operationDeleted": "Операция удалена",
+    "debtAdded": "Долг добавлен",
+    "contactUpdated": "Контакт обновлён",
+    "contactDeleted": "Контакт удалён",
+    "error": "Что-то пошло не так"
+  },
+  "plans": {
+    "expensesTitle": "Расходы",
+    "expensesDescription": "Подписки, платежи по кредитам и прочее",
+    "incomeTitle": "Доходы",
+    "incomeDescription": "Зарплата, премии и прочее",
+    "addExpense": "Добавить расход",
+    "addIncome": "Добавить доход",
+    "newExpense": "Новый расход",
+    "newIncome": "Новый доход",
+    "editExpense": "Расход",
+    "editIncome": "Доход",
+    "planCount": "{count} план | {count} плана | {count} планов",
+    "perMonth": "/мес",
+    "overdue": "Просрочен",
+    "empty": "Планов пока нет",
+    "confirmTitle": "Подтвердить платёж",
+    "confirmAmountLabel": "Сумма",
+    "confirmSubmit": "Подтвердить",
+    "confirmSuccess": "Платёж подтверждён",
+    "deletePlan": "Удалить план",
+    "deleteTitle": "Удалить план?",
+    "delete": "Удалить",
+    "cancel": "Отмена",
+    "withdrawalAccount": "Счёт списания",
+    "depositAccount": "Счёт зачисления",
+    "namePlaceholder": "Название (необязательно)",
+    "notePlaceholder": "Заметка",
+    "regularity": "Повтор",
+    "regularityLabel": {
+      "daily": "Каждый день",
+      "weekly": "Каждую неделю",
+      "monthly": "Каждый месяц",
+      "yearly": "Каждый год"
+    },
+    "regularityPhrase": {
+      "daily": "каждый день",
+      "weekly": "каждую неделю",
+      "monthly": "каждый месяц",
+      "yearly": "каждый год"
+    },
+    "confirmMode": "Подтверждение",
+    "confirmModeLabel": {
+      "manual": "Ручное",
+      "auto": "Авто"
+    },
+    "confirmModeCaption": {
+      "manual": "Платёж создаётся по подтверждению",
+      "auto": "Платёж создаётся автоматически"
+    },
+    "reminder": "Напоминание",
+    "reminderLabel": {
+      "off": "Выкл",
+      "day_before": "За день",
+      "on_day": "В день"
+    },
+    "save": "Сохранить",
+    "planCreated": "План создан",
+    "planUpdated": "План обновлён",
+    "planDeleted": "План удалён",
+    "confirmModeOption": "{label} — {caption}"
   },
   "transactions": {
     "filter": "Фильтр",
@@ -331,6 +473,10 @@
       "keepLocal": "Оставить мою",
       "takeServer": "Принять серверную",
       "dismiss": "Отметить прочитанным",
+      "restoreAsNew": "Восстановить как новую запись",
+      "restoreSuccess": "Восстановлено как новая запись",
+      "restoreError": "Не удалось восстановить запись",
+      "restoreUnavailable": "Эту запись больше нельзя восстановить",
       "versionChanged": "{entity} «{subject}» изменена на другом устройстве.",
       "deletedLocally": "{entity} «{subject}» удалена на этом устройстве и изменена на другом. Удаление применено.",
       "deletedRemotely": "{entity} «{subject}» удалена на другом устройстве, поэтому локальное изменение отменено.",
@@ -339,6 +485,9 @@
         "account": "Счёт",
         "category": "Категория",
         "transaction": "Транзакция",
+        "debtor": "Должник",
+        "debt_operation": "Операция долга",
+        "planned_payment": "Плановый платёж",
         "other": "Запись"
       }
     }

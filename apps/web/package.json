@@ -23,6 +23,7 @@
   "dependencies": {
     "@bprogress/vue": "^1.1.5",
     "@expense-tracker/api": "workspace:*",
+    "@expense-tracker/dates": "workspace:*",
     "@expense-tracker/i18n": "workspace:*",
     "@expense-tracker/local-data": "workspace:*",
     "@expense-tracker/money": "workspace:*",

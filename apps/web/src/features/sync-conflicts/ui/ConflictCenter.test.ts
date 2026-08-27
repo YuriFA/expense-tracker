@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import type { LocalSyncConflict } from '@expense-tracker/local-data'
@@ -27,7 +27,33 @@ const deletedConflict: LocalSyncConflict = {
   kind: 'deleted',
   baseVersion: 3,
   serverVersion: 4,
-  localState: { name: 'Карта' },
+  localState: { id: 'acc-1', name: 'Карта', currency: 'RUB', openingBalance: 100000, manualAdjustment: 0 },
+  serverState: { version: 4, deleted: true },
+  createdAt: '2026-01-01T00:00:00Z',
+}
+
+const deletedDebtorConflict: LocalSyncConflict = {
+  id: 'c3',
+  entity: 'debtor',
+  entityId: 'deb-1',
+  opId: null,
+  kind: 'deleted',
+  baseVersion: 1,
+  serverVersion: 2,
+  localState: { id: 'deb-1', name: 'Анна', note: 'colleague' },
+  serverState: { version: 2, deleted: true },
+  createdAt: '2026-01-01T00:00:00Z',
+}
+
+const deletedWithoutState: LocalSyncConflict = {
+  id: 'c4',
+  entity: 'account',
+  entityId: 'acc-2',
+  opId: null,
+  kind: 'deleted',
+  baseVersion: 3,
+  serverVersion: 4,
+  localState: null,
   serverState: { version: 4, deleted: true },
   createdAt: '2026-01-01T00:00:00Z',
 }
@@ -67,8 +93,18 @@ vi.mock('@/shared/lib/local-db/local-db', () => ({
 
 const { ConflictCenter } = await import('@/features/sync-conflicts')
 const { provideSyncController } = await import('@/shared/lib/local-db')
+const {
+  createMockAccountRepository,
+  createMockDebtorRepository,
+} = await import('@/__tests__/helpers/mock-repositories')
 
 const hostState: { controller: SyncController | null } = { controller: null }
+
+// The restore-as-new flow injects the entity repositories.
+const accountsRepo = createMockAccountRepository()
+const debtorsRepo = createMockDebtorRepository()
+
+const mounted: { unmount: () => void }[] = []
 
 function mountConflictCenter() {
   const Host = defineComponent({
@@ -77,7 +113,9 @@ function mountConflictCenter() {
       return () => h('div', [h(ConflictCenter)])
     },
   })
-  mountWithProviders(Host)
+  mounted.push(mountWithProviders(Host, {
+    repositories: { accounts: accountsRepo, debtors: debtorsRepo },
+  }))
 }
 
 // reka-ui teleports the open dialog to document.body, so assertions query
@@ -111,6 +149,15 @@ describe('ConflictCenter', () => {
     takeServerMock.mockReset().mockResolvedValue(undefined)
     markResolvedMock.mockReset().mockResolvedValue(undefined)
     listMock.mockReset()
+  })
+
+  afterEach(async () => {
+    // Stale teleported dialogs from earlier mounts would shadow queries.
+    for (const wrapper of mounted.splice(0)) {
+      wrapper.unmount()
+    }
+    await flushPromises()
+    document.body.innerHTML = ''
   })
 
   it('lists unresolved conflicts with their subjects', async () => {
@@ -147,6 +194,43 @@ describe('ConflictCenter', () => {
     await flushPromises()
     expect(markResolvedMock).toHaveBeenCalledWith('c2')
     expect(keepLocalMock).not.toHaveBeenCalled()
+  })
+
+  it('restores a deleted-kind conflict as a new record and resolves it', async () => {
+    await mountOpenWithConflicts([deletedConflict])
+
+    const restore = document.querySelector<HTMLElement>('[data-testid="conflict-restore-as-new"]')
+    expect(restore).not.toBeNull()
+    restore!.click()
+    await flushPromises()
+
+    // The preserved local state is re-created WITHOUT the old id (fresh UUID)
+    // and the conflict is marked resolved.
+    expect(accountsRepo.create).toHaveBeenCalledWith({
+      name: 'Карта',
+      currency: 'RUB',
+      openingBalance: 100000,
+    })
+    const payload = accountsRepo.create.mock.calls[0]![0] as Record<string, unknown>
+    expect('id' in payload && payload.id === 'acc-1').toBe(false)
+    expect(markResolvedMock).toHaveBeenCalledWith('c2')
+    expect(runMock).toHaveBeenCalled()
+  })
+
+  it('routes the restore to the conflict entity kind', async () => {
+    await mountOpenWithConflicts([deletedDebtorConflict])
+
+    document.querySelector<HTMLElement>('[data-testid="conflict-restore-as-new"]')!.click()
+    await flushPromises()
+
+    expect(debtorsRepo.create).toHaveBeenCalledWith({ name: 'Анна', note: 'colleague' })
+    expect(markResolvedMock).toHaveBeenCalledWith('c3')
+  })
+
+  it('hides the restore action when no local state was preserved', async () => {
+    await mountOpenWithConflicts([deletedWithoutState])
+    expect(document.querySelector('[data-testid="conflict-restore-as-new"]')).toBeNull()
+    expect(findButton('Mark reviewed')).toBeDefined()
   })
 
   it('shows the empty state when nothing is unresolved', async () => {

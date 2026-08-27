@@ -1,0 +1,156 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
+import PlansPage from './PlansPage.vue'
+import type { PlannedPayment } from '@/entities/planned-payment'
+import {
+  createMockAccountRepository,
+  createMockCategoryRepository,
+  createMockPlannedPaymentRepository,
+  createMockTransactionRepository,
+} from '@/__tests__/helpers/mock-repositories'
+import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
+
+const today = new Date()
+const todayKey = today.toISOString().slice(0, 10)
+
+function plan(overrides: Partial<PlannedPayment>): PlannedPayment {
+  return {
+    id: 'p1',
+    type: 'expense',
+    amount: 59900,
+    name: 'Netflix',
+    accountId: 'a1',
+    categoryId: 'c1',
+    nextDue: todayKey,
+    anchorDate: todayKey,
+    regularity: 'monthly',
+    confirmMode: 'manual',
+    reminder: 'off',
+    note: '',
+    version: 1,
+    ...overrides,
+  }
+}
+
+import type { Category } from '@expense-tracker/api'
+
+const categories: Category[] = [
+  { id: 'c1', name: 'Развлечения', type: 'expense', icon: 'tv', color: '#7c5cff', version: 1 },
+]
+
+const mounted: ReturnType<typeof mountWithProviders>[] = []
+
+describe('PlansPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+  afterEach(async () => {
+    for (const wrapper of mounted.splice(0)) {
+      wrapper.unmount()
+    }
+    await flushPromises()
+    document.body.innerHTML = ''
+  })
+
+  function mountPage(plans: PlannedPayment[]) {
+    const plannedPaymentsRepo = createMockPlannedPaymentRepository()
+    plannedPaymentsRepo.query.mockResolvedValue(plans)
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue(categories)
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([
+      { id: 'a1', name: 'Cash', currency: 'USD', openingBalance: 0, manualAdjustment: 0, balance: 0, version: 1 },
+    ])
+
+    const wrapper = mountWithProviders(PlansPage, {
+      repositories: {
+        plannedPayments: plannedPaymentsRepo,
+        categories: categoriesRepo,
+        accounts: accountsRepo,
+        transactions: createMockTransactionRepository(),
+      },
+    })
+    mounted.push(wrapper)
+    return { wrapper, plannedPaymentsRepo, accountsRepo }
+  }
+
+  it('renders both type cards with plan counts and normalized monthly totals', async () => {
+    const { wrapper } = mountPage([
+      plan({ id: 'p1', type: 'expense', amount: 59900 }),
+      // 599/mo + 12/day (×365/12 = 365/mo) = 964/mo total for expenses.
+      plan({ id: 'p2', type: 'expense', amount: 1200, regularity: 'daily' }),
+      plan({ id: 'p3', type: 'income', amount: 500000, regularity: 'monthly' }),
+    ])
+    await flushPromises()
+
+    const expenseCard = wrapper.find('[data-testid="plans-card-expense"]')
+    expect(expenseCard.exists()).toBe(true)
+    expect(expenseCard.text()).toContain('2 plans')
+    expect(wrapper.find('[data-testid="plans-total-expense"]').text()).toBe('$964.00/mo')
+    expect(wrapper.find('[data-testid="plans-total-income"]').text()).toBe('$5,000.00/mo')
+  })
+
+  it('opens the type list dialog with rows sorted by next due, overdue badge, and manual confirm actions', async () => {
+    const future = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const { wrapper } = mountPage([
+      plan({ id: 'p-future', nextDue: future }),
+      plan({ id: 'p-due', nextDue: todayKey }),
+    ])
+    await flushPromises()
+
+    await wrapper.find('[data-testid="plans-card-expense"]').trigger('click')
+    await flushPromises()
+
+    const listDialog = document.querySelector('[data-testid="plans-list-dialog"]')
+    expect(listDialog).not.toBeNull()
+    const rows = [...document.querySelectorAll('div[data-testid^="plans-row-p-"]')].filter(
+      (row) => !row.getAttribute('data-testid')!.endsWith('-overdue'),
+    )
+    expect(rows.map((row) => row.getAttribute('data-testid'))).toEqual([
+      'plans-row-p-due',
+      'plans-row-p-future',
+    ])
+    // Only the due plan carries the overdue badge.
+    expect(document.querySelector('[data-testid="plans-row-p-due-overdue"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="plans-row-p-future-overdue"]')).toBeNull()
+    expect(document.querySelector('[data-testid="plans-row-p-due-confirm"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="plans-list-add"]')).not.toBeNull()
+  })
+
+  it('shows the empty state when a type has no plans', async () => {
+    const { wrapper } = mountPage([])
+    await flushPromises()
+
+    await wrapper.find('[data-testid="plans-card-expense"]').trigger('click')
+    await flushPromises()
+
+    expect(document.querySelector('[data-testid="plans-list-dialog"]')!.textContent).toContain(
+      'No plans yet',
+    )
+  })
+
+  it('confirm generates a transaction and advances the plan', async () => {
+    const { wrapper, plannedPaymentsRepo } = mountPage([plan({ nextDue: todayKey })])
+    await flushPromises()
+
+    await wrapper.find('[data-testid="plans-card-expense"]').trigger('click')
+    await flushPromises()
+
+    ;(document.querySelector('[data-testid="plans-row-p1-confirm"]') as HTMLElement).click()
+    await flushPromises()
+
+    const confirmDialog = document.querySelector('[data-testid="plans-confirm-dialog"]')
+    expect(confirmDialog).not.toBeNull()
+    expect(confirmDialog!.textContent).toContain('Netflix')
+
+    ;(document.querySelector('[data-testid="plans-confirm-submit"]') as HTMLElement).click()
+    await flushPromises()
+
+    expect(plannedPaymentsRepo.confirmPlannedPayment).toHaveBeenCalledWith({
+      planId: 'p1',
+      amount: 59900,
+      occurredAt: `${todayKey}T12:00:00.000Z`,
+      note: 'Netflix',
+    })
+  })
+})

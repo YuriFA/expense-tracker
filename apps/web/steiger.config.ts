@@ -15,7 +15,17 @@ export default defineConfig([
     },
   },
   {
-    // Custom rule: отключаем проверку public-api для файлов в shared, т.к. там
+    // `entities/analytics` — название слайса задано спекой web-screens-parity
+    // (мобильный двойник: features/analytics). Слово заканчивается на «s», но
+    // семантически единственное; эвристика множественного числа его ложно
+    // помечает.
+    files: ['./src/entities/analytics/**'],
+    rules: {
+      'fsd/inconsistent-naming': 'off',
+    },
+  },
+  {
+    // Custom rule: отключаем проверку public-api для файлов в shared, t.к. там
     // своя структура и не всегда есть index.ts на верхнем уровне
     files: ['./src/shared/**'],
     rules: {

@@ -13,7 +13,7 @@ export interface DirectionBalances {
 
 /** Balance of one debtor in one direction: Σ debt − Σ repayment. */
 export function balanceInDirection(
-  operations: DebtOperation[],
+  operations: readonly DebtOperation[],
   debtorId: string,
   direction: DebtDirection,
 ): number {
@@ -24,7 +24,7 @@ export function balanceInDirection(
 }
 
 /** Per-debtor balances in both directions; debtors with no operations are absent. */
-export function balancesByDebtor(operations: DebtOperation[]): Map<string, DirectionBalances> {
+export function balancesByDebtor(operations: readonly DebtOperation[]): Map<string, DirectionBalances> {
   const balances = new Map<string, DirectionBalances>()
   for (const op of operations) {
     const current = balances.get(op.debtorId) ?? { receivable: 0, payable: 0 }
@@ -36,7 +36,7 @@ export function balancesByDebtor(operations: DebtOperation[]): Map<string, Direc
 }
 
 /** Direction totals: the sum of every debtor's balance in each direction. */
-export function totalsByDirection(operations: DebtOperation[]): DirectionBalances {
+export function totalsByDirection(operations: readonly DebtOperation[]): DirectionBalances {
   const totals: DirectionBalances = { receivable: 0, payable: 0 }
   for (const op of operations) {
     totals[op.direction] =

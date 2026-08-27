@@ -2,10 +2,19 @@ import type { App } from 'vue'
 import { ACCOUNT_REPOSITORY_KEY } from '@/entities/account'
 import { CATEGORY_REPOSITORY_KEY } from '@/entities/category'
 import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction'
+import { DEBTOR_REPOSITORY_KEY } from '@/entities/debtor'
+import { DEBT_OPERATION_REPOSITORY_KEY } from '@/entities/debt-operation'
+import { PLANNED_PAYMENT_REPOSITORY_KEY } from '@/entities/planned-payment'
 import { getLocalDbApi, rehydrateRepositoryError } from '@/shared/lib/local-db'
 import type { LocalDbApi } from '@/shared/lib/local-db'
 
-type RepositorySegment = 'accounts' | 'categories' | 'transactions'
+type RepositorySegment =
+  | 'accounts'
+  | 'categories'
+  | 'transactions'
+  | 'debtors'
+  | 'debtOperations'
+  | 'plannedPayments'
 
 /**
  * The single repository variant (design D4): Comlink `Remote` repositories
@@ -59,4 +68,7 @@ export function provideRepositories(app: App): void {
   app.provide(ACCOUNT_REPOSITORY_KEY, localRepository('accounts'))
   app.provide(CATEGORY_REPOSITORY_KEY, localRepository('categories'))
   app.provide(TRANSACTION_REPOSITORY_KEY, localRepository('transactions'))
+  app.provide(DEBTOR_REPOSITORY_KEY, localRepository('debtors'))
+  app.provide(DEBT_OPERATION_REPOSITORY_KEY, localRepository('debtOperations'))
+  app.provide(PLANNED_PAYMENT_REPOSITORY_KEY, localRepository('plannedPayments'))
 }

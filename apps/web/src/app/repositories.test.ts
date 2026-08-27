@@ -5,6 +5,9 @@ import { provideRepositories } from './repositories'
 import { ACCOUNT_REPOSITORY_KEY } from '@/entities/account'
 import { CATEGORY_REPOSITORY_KEY } from '@/entities/category'
 import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction'
+import { DEBTOR_REPOSITORY_KEY } from '@/entities/debtor'
+import { DEBT_OPERATION_REPOSITORY_KEY } from '@/entities/debt-operation'
+import { PLANNED_PAYMENT_REPOSITORY_KEY } from '@/entities/planned-payment'
 import type { LocalDbApi } from '@/shared/lib/local-db'
 
 // A deferred handshake: the worker's ready signal resolves late, so calls
@@ -40,6 +43,30 @@ function createFakeApi(): LocalDbApi {
       update: vi.fn<(id: string, payload: unknown) => Promise<unknown>>(),
       remove: vi.fn<(id: string) => Promise<void>>(),
       query: vi.fn<() => Promise<{ transactions: unknown[]; nextCursor: null }>>(() => Promise.resolve({ transactions: [], nextCursor: null })),
+    },
+    debtors: {
+      getAll: vi.fn<() => Promise<Array<{ id: string; name: string }>>>(() => Promise.resolve([{ id: 'd1', name: 'Ann' }])),
+      getById: vi.fn<(id: string) => Promise<null>>(() => Promise.resolve(null)),
+      create: vi.fn<(payload: unknown) => Promise<unknown>>(),
+      update: vi.fn<(id: string, payload: unknown) => Promise<unknown>>(),
+      remove: vi.fn<(id: string) => Promise<void>>(),
+    },
+    debtOperations: {
+      getAll: vi.fn<() => Promise<unknown[]>>(() => Promise.resolve([])),
+      getById: vi.fn<(id: string) => Promise<null>>(() => Promise.resolve(null)),
+      create: vi.fn<(payload: unknown) => Promise<unknown>>(),
+      update: vi.fn<(id: string, payload: unknown) => Promise<unknown>>(),
+      remove: vi.fn<(id: string) => Promise<void>>(),
+      query: vi.fn<() => Promise<unknown[]>>(() => Promise.resolve([])),
+    },
+    plannedPayments: {
+      getAll: vi.fn<() => Promise<unknown[]>>(() => Promise.resolve([])),
+      getById: vi.fn<(id: string) => Promise<null>>(() => Promise.resolve(null)),
+      create: vi.fn<(payload: unknown) => Promise<unknown>>(),
+      update: vi.fn<(id: string, payload: unknown) => Promise<unknown>>(),
+      remove: vi.fn<(id: string) => Promise<void>>(),
+      query: vi.fn<() => Promise<unknown[]>>(() => Promise.resolve([])),
+      confirmPlannedPayment: vi.fn<(input: unknown) => Promise<void>>(),
     },
     sync: {
       run: vi.fn<(force?: boolean) => Promise<unknown>>(),
@@ -77,11 +104,37 @@ function mountWithRepositories() {
 }
 
 describe('provideRepositories', () => {
-  it('registers all three repository keys on the app', () => {
+  it('registers all six repository keys on the app', () => {
     const provides = mountWithRepositories()
     expect(provides[ACCOUNT_REPOSITORY_KEY as unknown as symbol]).toBeDefined()
     expect(provides[CATEGORY_REPOSITORY_KEY as unknown as symbol]).toBeDefined()
     expect(provides[TRANSACTION_REPOSITORY_KEY as unknown as symbol]).toBeDefined()
+    expect(provides[DEBTOR_REPOSITORY_KEY as unknown as symbol]).toBeDefined()
+    expect(provides[DEBT_OPERATION_REPOSITORY_KEY as unknown as symbol]).toBeDefined()
+    expect(provides[PLANNED_PAYMENT_REPOSITORY_KEY as unknown as symbol]).toBeDefined()
+  })
+
+  it('exposes the debt and planned-payment repositories over the worker RPC', async () => {
+    const provides = mountWithRepositories()
+    const debtors = provides[DEBTOR_REPOSITORY_KEY as unknown as symbol] as {
+      getAll: () => Promise<Array<{ id: string; name: string }>>
+    }
+    const plannedPayments = provides[PLANNED_PAYMENT_REPOSITORY_KEY as unknown as symbol] as {
+      confirmPlannedPayment: (input: { planId: string }) => Promise<void>
+    }
+
+    handshake.resolve(fakeApi)
+    await expect(debtors.getAll()).resolves.toEqual([{ id: 'd1', name: 'Ann' }])
+    expect(fakeApi.debtors.getAll).toHaveBeenCalledTimes(1)
+
+    await expect(plannedPayments.confirmPlannedPayment({ planId: 'p1' })).resolves.toBeUndefined()
+    expect(fakeApi.plannedPayments.confirmPlannedPayment).toHaveBeenCalledWith({ planId: 'p1' })
+
+    const debtOperations = provides[DEBT_OPERATION_REPOSITORY_KEY as unknown as symbol] as {
+      query: (options: { debtorId?: string }) => Promise<unknown[]>
+    }
+    await expect(debtOperations.query({ debtorId: 'd1' })).resolves.toEqual([])
+    expect(fakeApi.debtOperations.query).toHaveBeenCalledWith({ debtorId: 'd1' })
   })
 
   it('queues calls made before the ready handshake, then forwards to the worker RPC', async () => {

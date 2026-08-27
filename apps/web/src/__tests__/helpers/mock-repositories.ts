@@ -3,7 +3,10 @@ import type {
   AccountRepository,
   CategoryRepository,
   TransactionRepository,
+  DebtorRepository,
+  DebtOperationRepository,
 } from '@expense-tracker/api'
+import type { LocalPlannedPaymentRepository } from '@expense-tracker/local-data'
 
 export type MockedAccountRepository = {
   [K in keyof AccountRepository]: MockedFunction<AccountRepository[K]>
@@ -13,6 +16,15 @@ export type MockedCategoryRepository = {
 }
 export type MockedTransactionRepository = {
   [K in keyof TransactionRepository]: MockedFunction<TransactionRepository[K]>
+}
+export type MockedDebtorRepository = {
+  [K in keyof DebtorRepository]: MockedFunction<DebtorRepository[K]>
+}
+export type MockedDebtOperationRepository = {
+  [K in keyof DebtOperationRepository]: MockedFunction<DebtOperationRepository[K]>
+}
+export type MockedPlannedPaymentRepository = {
+  [K in keyof LocalPlannedPaymentRepository]: MockedFunction<LocalPlannedPaymentRepository[K]>
 }
 
 export function createMockAccountRepository(
@@ -56,10 +68,55 @@ export function createMockTransactionRepository(
   }
 }
 
+export function createMockDebtorRepository(
+  overrides: Partial<MockedDebtorRepository> = {},
+): MockedDebtorRepository {
+  return {
+    getAll: vi.fn<DebtorRepository['getAll']>(),
+    getById: vi.fn<DebtorRepository['getById']>(),
+    create: vi.fn<DebtorRepository['create']>(),
+    update: vi.fn<DebtorRepository['update']>(),
+    remove: vi.fn<DebtorRepository['remove']>(),
+    ...overrides,
+  }
+}
+
+export function createMockDebtOperationRepository(
+  overrides: Partial<MockedDebtOperationRepository> = {},
+): MockedDebtOperationRepository {
+  return {
+    getAll: vi.fn<DebtOperationRepository['getAll']>(),
+    getById: vi.fn<DebtOperationRepository['getById']>(),
+    query: vi.fn<DebtOperationRepository['query']>(),
+    create: vi.fn<DebtOperationRepository['create']>(),
+    update: vi.fn<DebtOperationRepository['update']>(),
+    remove: vi.fn<DebtOperationRepository['remove']>(),
+    ...overrides,
+  }
+}
+
+export function createMockPlannedPaymentRepository(
+  overrides: Partial<MockedPlannedPaymentRepository> = {},
+): MockedPlannedPaymentRepository {
+  return {
+    getAll: vi.fn<LocalPlannedPaymentRepository['getAll']>(),
+    getById: vi.fn<LocalPlannedPaymentRepository['getById']>(),
+    query: vi.fn<LocalPlannedPaymentRepository['query']>(),
+    create: vi.fn<LocalPlannedPaymentRepository['create']>(),
+    update: vi.fn<LocalPlannedPaymentRepository['update']>(),
+    remove: vi.fn<LocalPlannedPaymentRepository['remove']>(),
+    confirmPlannedPayment: vi.fn<LocalPlannedPaymentRepository['confirmPlannedPayment']>(),
+    ...overrides,
+  }
+}
+
 export function createMockRepositoryBundle() {
   return {
     accounts: createMockAccountRepository(),
     categories: createMockCategoryRepository(),
     transactions: createMockTransactionRepository(),
+    debtors: createMockDebtorRepository(),
+    debtOperations: createMockDebtOperationRepository(),
+    plannedPayments: createMockPlannedPaymentRepository(),
   }
 }

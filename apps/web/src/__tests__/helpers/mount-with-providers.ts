@@ -7,14 +7,23 @@ import type {
   AccountRepository,
   CategoryRepository,
   TransactionRepository,
+  DebtorRepository,
+  DebtOperationRepository,
 } from '@expense-tracker/api'
+import type { LocalPlannedPaymentRepository } from '@expense-tracker/local-data'
 import { ACCOUNT_REPOSITORY_KEY } from '@/entities/account'
 import { CATEGORY_REPOSITORY_KEY } from '@/entities/category'
 import { TRANSACTION_REPOSITORY_KEY } from '@/entities/transaction'
+import { DEBTOR_REPOSITORY_KEY } from '@/entities/debtor'
+import { DEBT_OPERATION_REPOSITORY_KEY } from '@/entities/debt-operation'
+import { PLANNED_PAYMENT_REPOSITORY_KEY } from '@/entities/planned-payment'
 import {
   createMockAccountRepository,
   createMockCategoryRepository,
   createMockTransactionRepository,
+  createMockDebtorRepository,
+  createMockDebtOperationRepository,
+  createMockPlannedPaymentRepository,
 } from './mock-repositories'
 
 export interface MountWithProvidersOptions {
@@ -24,6 +33,9 @@ export interface MountWithProvidersOptions {
     accounts?: AccountRepository
     categories?: CategoryRepository
     transactions?: TransactionRepository
+    debtors?: DebtorRepository
+    debtOperations?: DebtOperationRepository
+    plannedPayments?: LocalPlannedPaymentRepository
   }
   props?: Record<string, unknown>
   attrs?: Record<string, unknown>
@@ -45,6 +57,12 @@ export function mountWithProviders<T>(
       repositories?.categories ?? createMockCategoryRepository()
     provide[TRANSACTION_REPOSITORY_KEY as unknown as symbol] =
       repositories?.transactions ?? createMockTransactionRepository()
+    provide[DEBTOR_REPOSITORY_KEY as unknown as symbol] =
+      repositories?.debtors ?? createMockDebtorRepository()
+    provide[DEBT_OPERATION_REPOSITORY_KEY as unknown as symbol] =
+      repositories?.debtOperations ?? createMockDebtOperationRepository()
+    provide[PLANNED_PAYMENT_REPOSITORY_KEY as unknown as symbol] =
+      repositories?.plannedPayments ?? createMockPlannedPaymentRepository()
   }
 
   const memoryRouter =

@@ -37,6 +37,31 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/transactions').then((m) => m.TransactionsPage),
   },
   {
+    path: '/analytics',
+    name: 'analytics',
+    component: () => import('@/pages/analytics').then((m) => m.AnalyticsPage),
+  },
+  {
+    path: '/analytics/:direction',
+    name: 'analytics-detail',
+    component: () => import('@/pages/analytics-detail').then((m) => m.AnalyticsDetailPage),
+  },
+  {
+    path: '/debts',
+    name: 'debts',
+    component: () => import('@/pages/debts').then((m) => m.DebtsPage),
+  },
+  {
+    path: '/plans',
+    name: 'plans',
+    component: () => import('@/pages/plans').then((m) => m.PlansPage),
+  },
+  {
+    path: '/income',
+    name: 'income',
+    component: () => import('@/pages/income').then((m) => m.IncomePage),
+  },
+  {
     path: '/accounts',
     name: 'accounts',
     component: () => import('@/pages/accounts').then((m) => m.AccountsPage),

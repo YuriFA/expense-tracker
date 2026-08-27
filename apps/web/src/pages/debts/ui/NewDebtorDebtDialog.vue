@@ -1,0 +1,163 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useForm, Field as VeeField } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import { calendarDayKey } from '@expense-tracker/dates'
+import type { Debtor } from '@/entities/debtor'
+import { useCreateDebtor } from '@/entities/debtor'
+import { useCreateDebtOperation, type DebtDirection } from '@/entities/debt-operation'
+import { createDebtorDebtSchema, type DebtorDebtFormValues } from '../model/schemas'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
+import { Button } from '@/shared/ui/button'
+import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
+import { Input } from '@/shared/ui/input'
+import { AmountField } from '@/shared/ui/amount-field'
+import { notification } from '@/shared/services/notification'
+import { toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
+import { useSettingsStore } from '@/shared/store/use-settings-store'
+
+// New debtor with the first debt (mobile design D9): the direction is a prop
+// from the tapped section (never a form value); submitting creates the
+// contact and then a `debt` operation for it. If the contact was created but
+// the operation failed, a retry reuses the created contact id instead of
+// creating a duplicate.
+
+const props = defineProps<{
+  direction: DebtDirection
+}>()
+
+const open = defineModel<boolean>('open', { default: false })
+
+const { t } = useI18n()
+const settings = useSettingsStore()
+const displayCurrency = computed(() => settings.currency as CurrencyCode)
+
+const { mutateAsync: createDebtor } = useCreateDebtor()
+const { mutateAsync: createOperation } = useCreateDebtOperation()
+
+const { handleSubmit: handleFormSubmit, isSubmitting, resetForm } = useForm<DebtorDebtFormValues>({
+  validationSchema: toTypedSchema(createDebtorDebtSchema()),
+  initialValues: {
+    name: '',
+    amount: undefined,
+    occurredAt: calendarDayKey(new Date()),
+    note: '',
+  },
+})
+
+// Set when the contact exists but the operation failed: a retry reuses it.
+const createdDebtorId = ref<string | null>(null)
+
+const title = computed(() =>
+  props.direction === 'receivable' ? t('debts.receivableAddTitle') : t('debts.payableAddTitle'),
+)
+const subtitle = computed(() =>
+  props.direction === 'receivable' ? t('debts.receivable') : t('debts.payable'),
+)
+
+const handleSubmit = handleFormSubmit(async (data) => {
+  const occurredAt = new Date(`${data.occurredAt}T12:00:00.000Z`).toISOString()
+  try {
+    const debtor: Debtor = createdDebtorId.value
+      ? ({ id: createdDebtorId.value } as Debtor)
+      : await createDebtor({ name: data.name.trim() })
+    createdDebtorId.value = debtor.id
+    await createOperation({
+      debtorId: debtor.id,
+      direction: props.direction,
+      kind: 'debt',
+      amount: toMinorUnits(data.amount),
+      note: data.note.trim(),
+      occurredAt,
+    })
+    notification.success(t('debts.debtAdded'))
+    createdDebtorId.value = null
+    resetForm()
+    open.value = false
+  } catch (error) {
+    notification.mutationError(error, {
+      title: t('debts.error'),
+      feature: 'debt',
+      action: 'create',
+    })
+  }
+})
+</script>
+
+<template>
+  <Dialog v-model:open="open">
+    <DialogContent class="sm:max-w-sm" data-testid="debts-new-debtor-dialog">
+      <DialogHeader>
+        <DialogTitle>{{ title }}</DialogTitle>
+        <p class="text-sm text-muted-foreground">{{ subtitle }}</p>
+      </DialogHeader>
+
+      <form class="flex flex-col gap-3" @submit="handleSubmit">
+        <VeeField v-slot="{ value, setValue, errors }" name="name">
+          <Field :data-invalid="!!errors.length">
+            <FieldLabel for="debts-new-debt-name">{{ t('fields.name') }}</FieldLabel>
+            <Input
+              id="debts-new-debt-name"
+              type="text"
+              :placeholder="t('debts.namePlaceholder')"
+              :model-value="value"
+              :aria-invalid="!!errors.length"
+              @update:model-value="setValue"
+            />
+            <FieldError v-if="errors.length" :errors="errors" />
+          </Field>
+        </VeeField>
+
+        <VeeField v-slot="{ value, setValue, errors }" name="amount">
+          <AmountField
+            class="w-full"
+            :currency="displayCurrency"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="(v) => setValue(v as number)"
+          />
+        </VeeField>
+
+        <VeeField v-slot="{ value, setValue, errors }" name="occurredAt">
+          <Field :data-invalid="!!errors.length">
+            <FieldLabel for="debts-new-debt-date">{{ t('fields.date') }}</FieldLabel>
+            <Input
+              id="debts-new-debt-date"
+              type="date"
+              :model-value="value"
+              :aria-invalid="!!errors.length"
+              @update:model-value="setValue"
+            />
+            <FieldError v-if="errors.length" :errors="errors" />
+          </Field>
+        </VeeField>
+
+        <VeeField v-slot="{ value, setValue }" name="note">
+          <Field>
+            <FieldLabel for="debts-new-debt-note">{{ t('fields.description') }}</FieldLabel>
+            <Input
+              id="debts-new-debt-note"
+              type="text"
+              :placeholder="t('debts.notePlaceholder')"
+              :model-value="value"
+              @update:model-value="setValue"
+            />
+          </Field>
+        </VeeField>
+
+        <DialogFooter class="flex-row">
+          <Button type="submit" class="w-full" :loading="isSubmitting" data-testid="debts-new-debt-submit">
+            {{ t('debts.addDebt') }}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
+</template>

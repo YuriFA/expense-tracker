@@ -9,11 +9,18 @@
   "nav": {
     "dashboard": "Dashboard",
     "transactions": "Transactions",
+    "analytics": "Analytics",
+    "debts": "Debts",
+    "plans": "Plans",
     "accounts": "Accounts",
     "settings": "Settings"
   },
   "pages": {
     "transactions": "Transactions",
+    "analytics": "Analytics",
+    "debts": "Debts",
+    "plans": "Plans",
+    "income": "Income",
     "accounts": "Accounts",
     "settings": "Settings"
   },
@@ -21,7 +28,13 @@
     "create": "Create"
   },
   "dashboard": {
-    "netWorth": "Net worth"
+    "netWorth": "Net worth",
+    "quickActions": {
+      "title": "Quick actions",
+      "expense": "Add expense",
+      "transfer": "Add transfer",
+      "income": "Add income"
+    }
   },
   "home": {
     "balance": "Balance",
@@ -126,6 +139,135 @@
   },
   "recentTransactions": {
     "title": "Recent Transactions"
+  },
+  "analytics": {
+    "expenses": "Expenses",
+    "income": "Income",
+    "other": "Other",
+    "amountCaption": "Amount",
+    "emptyExpense": "No expenses for this period",
+    "emptyIncome": "No income for this period",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "totalCaption": "total",
+    "prevPeriod": "Previous period",
+    "nextPeriod": "Next period",
+    "allExpenses": "All expenses",
+    "allIncome": "All income",
+    "noData": "no data for this period",
+    "showOnChart": "Show {name} on the chart",
+    "showAllCategories": "{label}, show all categories",
+    "category": "Category",
+    "sortNewestFirst": "Newest first",
+    "sortOldestFirst": "Oldest first",
+    "spentWord": "spent",
+    "receivedWord": "received",
+    "emptyMonthExpense": "No expenses this month",
+    "emptyPeriodExpense": "No expenses for this period",
+    "emptyMonthIncome": "No income this month",
+    "emptyPeriodIncome": "No income for this period",
+    "byCategory": "by category"
+  },
+  "debts": {
+    "receivable": "Owed to me",
+    "payable": "I owe",
+    "receivableEmpty": "Nobody owes you",
+    "payableEmpty": "You don't owe anyone",
+    "receivableAddTitle": "Who owes",
+    "payableAddTitle": "Who I owe",
+    "debt": "Debt",
+    "repayment": "Repayment",
+    "contact": "Contact",
+    "direction": "Direction",
+    "newOperation": "New operation",
+    "operation": "Operation",
+    "historyEmpty": "No operations yet",
+    "overRepayment": "The repayment exceeds the remaining debt ({remaining}). The balance will go negative.",
+    "showSettled": "Show settled ({count})",
+    "hideSettled": "Hide settled",
+    "editContact": "Edit contact",
+    "deleteContact": "Delete contact",
+    "deleteContactTitle": "Delete contact?",
+    "deleteOperation": "Delete operation",
+    "deleteOperationTitle": "Delete operation?",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "saveOperation": "Save operation",
+    "addOperation": "Add operation",
+    "addDebt": "Add debt",
+    "save": "Save",
+    "namePlaceholder": "Name",
+    "notePlaceholder": "Note",
+    "noteOptionalPlaceholder": "Note (optional)",
+    "operationAdded": "Operation added",
+    "operationUpdated": "Operation updated",
+    "operationDeleted": "Operation deleted",
+    "debtAdded": "Debt added",
+    "contactUpdated": "Contact updated",
+    "contactDeleted": "Contact deleted",
+    "error": "Something went wrong"
+  },
+  "plans": {
+    "expensesTitle": "Expenses",
+    "expensesDescription": "Subscriptions, loan payments and more",
+    "incomeTitle": "Income",
+    "incomeDescription": "Salary, bonuses and more",
+    "addExpense": "Add expense",
+    "addIncome": "Add income",
+    "newExpense": "New expense",
+    "newIncome": "New income",
+    "editExpense": "Expense",
+    "editIncome": "Income",
+    "planCount": "{count} plan | {count} plans",
+    "perMonth": "/mo",
+    "overdue": "Overdue",
+    "empty": "No plans yet",
+    "confirmTitle": "Confirm payment",
+    "confirmAmountLabel": "Amount",
+    "confirmSubmit": "Confirm",
+    "confirmSuccess": "Payment confirmed",
+    "deletePlan": "Delete plan",
+    "deleteTitle": "Delete plan?",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "withdrawalAccount": "Debit account",
+    "depositAccount": "Credit account",
+    "namePlaceholder": "Name (optional)",
+    "notePlaceholder": "Note",
+    "regularity": "Repeat",
+    "regularityLabel": {
+      "daily": "Every day",
+      "weekly": "Every week",
+      "monthly": "Every month",
+      "yearly": "Every year"
+    },
+    "regularityPhrase": {
+      "daily": "every day",
+      "weekly": "every week",
+      "monthly": "every month",
+      "yearly": "every year"
+    },
+    "confirmMode": "Confirmation",
+    "confirmModeLabel": {
+      "manual": "Manual",
+      "auto": "Automatic"
+    },
+    "confirmModeCaption": {
+      "manual": "The transaction is created on confirmation",
+      "auto": "The transaction is created automatically"
+    },
+    "reminder": "Reminder",
+    "reminderLabel": {
+      "off": "Off",
+      "day_before": "Day before",
+      "on_day": "On the day"
+    },
+    "save": "Save",
+    "planCreated": "Plan created",
+    "planUpdated": "Plan updated",
+    "planDeleted": "Plan deleted",
+    "confirmModeOption": "{label} — {caption}"
   },
   "transactions": {
     "filter": "Filter",
@@ -331,6 +473,10 @@
       "keepLocal": "Keep mine",
       "takeServer": "Take server version",
       "dismiss": "Mark reviewed",
+      "restoreAsNew": "Restore as new record",
+      "restoreSuccess": "Restored as a new record",
+      "restoreError": "Failed to restore the record",
+      "restoreUnavailable": "This record can no longer be restored",
       "versionChanged": "{entity} «{subject}» was changed on another device.",
       "deletedLocally": "{entity} «{subject}» was deleted on this device and edited on another. The deletion has been applied.",
       "deletedRemotely": "{entity} «{subject}» was deleted on another device, so the local change was reverted.",
@@ -339,6 +485,9 @@
         "account": "Account",
         "category": "Category",
         "transaction": "Transaction",
+        "debtor": "Debtor",
+        "debt_operation": "Debt operation",
+        "planned_payment": "Planned payment",
         "other": "Record"
       }
     }

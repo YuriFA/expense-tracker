@@ -6,9 +6,12 @@
 import type {
   AccountRepository,
   CategoryRepository,
+  DebtorRepository,
+  DebtOperationRepository,
   TransactionRepository,
 } from '@expense-tracker/api'
 import type {
+  LocalPlannedPaymentRepository,
   LocalSyncConflict,
   SyncEngineState,
   SyncRunOutcome,
@@ -54,6 +57,9 @@ export interface LocalDbApi {
   accounts: AccountRepository
   categories: CategoryRepository
   transactions: TransactionRepository
+  debtors: DebtorRepository
+  debtOperations: DebtOperationRepository
+  plannedPayments: LocalPlannedPaymentRepository
   sync: LocalDbSyncApi
   meta: LocalDbMetaApi
 }

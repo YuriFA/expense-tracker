@@ -31,26 +31,23 @@ docs/api/openapi.yaml ── single HTTP contract source (OpenAPI 3.0.3, 18 path
    ├─→ backend       oapi-codegen    → internal/api/api.gen.go   (make gen; CI drift gate)
    └─→ packages/api  openapi-typescript → src/schema.ts          (pnpm gen:api; CI gate: ts-gen-check)
 
-packages:  money (leaf) ←── api ←── web       web uses   api, money, i18n, tokens (NOT dates)
-           dates (leaf) ←────────── mobile    mobile uses api, dates, money, tokens (NOT i18n)
+packages:  money (leaf) ←── api ←── web       web uses   api, money, i18n, tokens, dates, local-data
+           dates (leaf) ←────────── mobile    mobile uses api, dates, money, tokens, local-data (NOT i18n)
            i18n  (leaf) ←── web
            tokens (leaf) ←── web + mobile
 
-web    ── same-origin /api (Vite dev proxy), session_id cookie ──→ backend   (online-first)
+web    ── local-first (SQLite-WASM worker + sync engine, anonymous mode) ──→ backend
 mobile ── SQLite source of truth; sync engine push/pull over HTTP ──→ backend (offline-first)
 ```
 
-One Go backend serves two clients of the same product with different data
-strategies: **web is online-first** (server is the source of truth,
-`@pinia/colada` SWR cache), **mobile is offline-first** (on-device SQLite is
-the source of truth, the backend is reached through a sync engine). Both
-consume the same generated contract types and the same error-mapping layer
-from `@expense-tracker/api`. Decided direction (2026-08-20, invariant
-#16): the **client local data boundary** is general — local repositories
-are the source of truth for offline-first clients, with direct API access
-limited to control-plane operations; mobile implements it today, and web
-is slated to migrate onto the same boundary as an implementation of this
-existing decision (not a new one).
+One Go backend serves two clients of the same product: **both are
+local-first** under the client local data boundary (decided 2026-08-20,
+invariant #16) — local repositories over on-device storage are the source of
+truth for domain data, with direct API access limited to control-plane
+operations; the sync engine reconciles with the backend (web: SQLite-WASM in
+a worker, anonymous mode included; mobile: on-device SQLite). Both consume
+the same generated contract types and the same error-mapping layer from
+`@expense-tracker/api`.
 
 CI reality (`.github/workflows/ci.yml`, 6 jobs): redocly spec lint +
 PR-only `oasdiff breaking`; backend codegen drift gate (`make gen-check`);
@@ -289,7 +286,11 @@ rules are enforced by Steiger (`steiger.config.ts`, run via `pnpm exec
 steiger`) — local only, not CI. Local-first since the `web-local-first-core`
 rework: the app is fully usable anonymously on local data, and account login
 binds it through the ownership gate + initial sync (capability spec
-`openspec/specs/web-local-data`).
+`openspec/specs/web-local-data`). Screen inventory and navigation contract
+(screen set parity with mobile, web-native presentation) are specified by the
+`web-screens` capability: dashboard, transactions, analytics (overview +
+`/analytics/:direction` detail), debts, plans, accounts, settings, and the
+quick income page — all reachable through the persistent `AppNav`.
 
 - **State**: server state via `@pinia/colada` (`gcTime 300s`, `staleTime
   30s`, retry ×2); auth/session state in a Pinia store
@@ -307,6 +308,13 @@ binds it through the ownership gate + initial sync (capability spec
   DI Symbol keys — forwarding proxies queue calls made before the worker
   signals ready, and rehydrate worker-side `RepositoryError`s from their
   surviving `name` (Comlink's throw transfer keeps message/name only).
+  The RPC surface carries all six repository segments (accounts,
+  categories, transactions, debtors, debt operations, planned payments —
+  the last including the client-only `confirmPlannedPayment` composite);
+  entity slices `entities/{debtor,debt-operation,planned-payment}` are
+  thin barrels over them, and `entities/analytics` holds the pure
+  selectors (period totals, per-category distribution) ported from
+  mobile.
   Single-tab contract: the worker takes a Web Locks `ifAvailable` guard
   (`expense-tracker-local-db`) held for its lifetime; a second tab renders
   the "already open in another tab" state with a reload action and never
@@ -331,13 +339,16 @@ binds it through the ownership gate + initial sync (capability spec
   triggers, auth-gates every run, and maps `onDataChanged` to full colada
   cache invalidation. `widgets/sync-status` renders the badge (hidden in
   anonymous mode); `features/sync-conflicts` is the global conflict
-  center (keep-local/take-server via RPC).
-- **Dates**: does **not** use `@expense-tracker/dates` (not even a
-  dependency) today; uses an app-local facade over `@internationalized/date`
-  (`shared/lib/date/`, branded `CalendarDay`) — sanctioned as a
-  **temporary** adapter: the decided end-state (2026-08-20) is migration
-  onto `@expense-tracker/dates`, extending the package API when web needs
-  more.
+  center (keep-local/take-server for version conflicts via RPC;
+  deleted-kind conflicts offer dismiss plus restore-as-new — re-creating
+  the preserved `localState` as a fresh record).
+- **Dates**: `@expense-tracker/dates` is a dependency since the analytics
+  screens (web-screens-parity): their period cursors, day keys, and labels
+  go through the package directly. The older app-local facade over
+  `@internationalized/date` (`shared/lib/date/`, branded `CalendarDay`)
+  still backs the transactions date filter and transfers — the sanctioned
+  **temporary** adapter; the decided end-state (2026-08-20) remains full
+  migration onto `@expense-tracker/dates`.
 - **Money**: `shared/lib/money/*` are pure re-export barrels over
   `@expense-tracker/money`. Per the refined money rule (decided
   2026-08-20), `AmountField.vue` (reka-ui NumberField) keeps float major
@@ -352,10 +363,13 @@ binds it through the ownership gate + initial sync (capability spec
   UI surfaces them via toasts (`vue-sonner`), inline form field errors, and
   retry-capable `ErrorState` blocks; a handful of screens special-case
   classes (Unauthorized/RateLimited on login, AlreadyExists on register).
-- **Testing**: 64 vitest files — repositories (via `globalThis.fetch`
+- **Testing**: 71 vitest files — repositories (via `globalThis.fetch`
   spies), DI wiring, stores/composables, and extensive component/page tests
-  with a mount-with-providers helper; Playwright e2e covers the auth flow
-  only. Steiger runs via `pnpm exec steiger`.
+  with a mount-with-providers helper; Playwright e2e covers backendless
+  local flows (CRUD, reload persistence, offline, single-tab lock, and the
+  web-screens-parity screens: analytics render, debts create→history→edit,
+  plan create→confirm→transaction, quick income) plus an env-gated sync
+  suite. Steiger runs via `pnpm exec steiger`.
 
 ## Mobile (`apps/mobile/`)
 

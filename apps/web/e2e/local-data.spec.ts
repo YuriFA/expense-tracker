@@ -20,10 +20,14 @@ test('anonymous local CRUD: account -> category -> transaction', async ({ page }
   await page.getByRole('button', { name: 'Add account' }).click()
   await expect(page.getByText('Account added')).toBeVisible()
 
-  // The dashboard's expense form with an inline new category (anonymous
-  // local mode starts with no categories).
+  // The dashboard's expense quick action with an inline new category
+  // (anonymous local mode starts with no categories).
   await page.goto('/')
-  await page.getByTestId('open-new-category').click()
+  await page.getByTestId('quick-action-expense').click()
+  // Let the dialog mount settle (Firefox re-attaches nodes mid-animation).
+  const expenseDialog = page.getByRole('dialog')
+  await expect(expenseDialog).toBeVisible()
+  await expenseDialog.getByTestId('open-new-category').click()
   await page.getByTestId('new-category-name').fill('Groceries')
   await page
     .getByTestId('new-category-dialog')

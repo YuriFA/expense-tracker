@@ -11,13 +11,18 @@ import { useOptimisticMutation } from '@/shared/lib/use-optimistic-mutation'
 
 type GetTransactionsOptions = TransactionQuery
 
-export const useTransactions = (options: MaybeRefOrGetter<GetTransactionsOptions> = {}) => {
+export const useTransactions = (
+  options: MaybeRefOrGetter<GetTransactionsOptions> = {},
+  queryOptions: { enabled?: MaybeRefOrGetter<boolean> } = {},
+) => {
   const transactions = useTransactionRepository()
   return useQuery({
     key: () => ['transactions', toValue(options)],
     query: () => {
       return transactions.query(toValue(options))
     },
+    // `toValue(undefined)` disables a colada query, so default to true.
+    enabled: queryOptions.enabled ?? true,
   })
 }
 

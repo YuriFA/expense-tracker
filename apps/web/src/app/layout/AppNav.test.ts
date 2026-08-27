@@ -6,7 +6,7 @@ describe('AppNav', () => {
   it('renders navigation links from i18n', () => {
     const wrapper = mountWithProviders(AppNav)
     const links = wrapper.findAll('a')
-    expect(links.length).toBeGreaterThanOrEqual(4)
+    expect(links.length).toBeGreaterThanOrEqual(7)
   })
 
   it('renders RouterLink components with hrefs', () => {
@@ -14,6 +14,9 @@ describe('AppNav', () => {
     const hrefs = wrapper.findAll('a').map((a) => a.attributes('href'))
     expect(hrefs).toContain('/')
     expect(hrefs).toContain('/transactions')
+    expect(hrefs).toContain('/analytics')
+    expect(hrefs).toContain('/debts')
+    expect(hrefs).toContain('/plans')
     expect(hrefs).toContain('/accounts')
     expect(hrefs).toContain('/settings')
   })

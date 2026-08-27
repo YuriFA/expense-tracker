@@ -1,5 +1,5 @@
 export type { Category } from './model/types'
-export { CATEGORY_REPOSITORY_KEY } from './api/repository'
+export { CATEGORY_REPOSITORY_KEY, useCategoryRepository } from './api/repository'
 export {
   useCategories,
   useCategory,

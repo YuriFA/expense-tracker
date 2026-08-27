@@ -18,22 +18,26 @@ import {
   useUnresolvedConflicts,
   type ConflictAction,
 } from '../model/use-sync-conflicts'
+import { canRestoreAsNew, useRestoreConflictAsNew } from '../model/restore-as-new'
 
 // Global conflict center (design D7): lists unresolved sync conflicts from
 // the persistent sync_conflicts table and resolves them in place -
 // keep-local re-pushes on the server's current version, take-server applies
-// the server state and drops pending operations (sync-protocol). Mounted
-// once in the app shell; the sync badge opens it.
+// the server state and drops pending operations (sync-protocol). Deleted-kind
+// conflicts additionally offer restore-as-new: the preserved local state is
+// re-created as a fresh record with a new id. Mounted once in the app shell;
+// the sync badge opens it.
 
 const { t } = useI18n()
 const { conflictsOpen } = useSyncController()
 const { data, status } = useUnresolvedConflicts()
 const { mutateAsync: resolve, asyncStatus } = useResolveConflict()
+const { mutateAsync: restoreAsNew, asyncStatus: restoreStatus } = useRestoreConflictAsNew()
 
 const conflicts = computed(() => data.value ?? [])
 
-// Literal keys per branch (the i18n lint bans dynamic keys); entity kinds
-// without web screens fall back to the generic record label.
+// Literal keys per branch (the i18n lint bans dynamic keys); every synced
+// entity kind now has a web surface.
 function entityLabel(conflict: LocalSyncConflict): string {
   switch (conflict.entity) {
     case 'account':
@@ -42,6 +46,12 @@ function entityLabel(conflict: LocalSyncConflict): string {
       return t('sync.conflicts.entity.category')
     case 'transaction':
       return t('sync.conflicts.entity.transaction')
+    case 'debtor':
+      return t('sync.conflicts.entity.debtor')
+    case 'debt_operation':
+      return t('sync.conflicts.entity.debt_operation')
+    case 'planned_payment':
+      return t('sync.conflicts.entity.planned_payment')
     default:
       return t('sync.conflicts.entity.other')
   }
@@ -68,6 +78,21 @@ async function handleResolve(action: ConflictAction, conflict: LocalSyncConflict
       title: t('sync.conflicts.resolveError'),
       feature: 'sync',
       action,
+    })
+  }
+}
+
+async function handleRestore(conflict: LocalSyncConflict) {
+  try {
+    await restoreAsNew(conflict)
+    notification.success(t('sync.conflicts.restoreSuccess'))
+  } catch (error) {
+    notification.mutationError(error, {
+      title: canRestoreAsNew(conflict)
+        ? t('sync.conflicts.restoreError')
+        : t('sync.conflicts.restoreUnavailable'),
+      feature: 'sync',
+      action: 'restore',
     })
   }
 }
@@ -119,11 +144,21 @@ async function handleResolve(action: ConflictAction, conflict: LocalSyncConflict
               {{ t('sync.conflicts.takeServer') }}
             </Button>
           </div>
-          <div v-else class="mt-3 flex justify-end">
+          <div v-else class="mt-3 flex flex-wrap justify-end gap-2">
+            <Button
+              v-if="canRestoreAsNew(conflict)"
+              size="sm"
+              variant="outline"
+              :disabled="asyncStatus === 'loading' || restoreStatus === 'loading'"
+              data-testid="conflict-restore-as-new"
+              @click="handleRestore(conflict)"
+            >
+              {{ t('sync.conflicts.restoreAsNew') }}
+            </Button>
             <Button
               size="sm"
               variant="ghost"
-              :disabled="asyncStatus === 'loading'"
+              :disabled="asyncStatus === 'loading' || restoreStatus === 'loading'"
               @click="handleResolve('dismiss', conflict)"
             >
               {{ t('sync.conflicts.dismiss') }}

@@ -15,6 +15,9 @@ const auth = useAuthStore()
 const navItems = computed(() => [
   { to: '/', label: t('nav.dashboard') },
   { to: '/transactions', label: t('nav.transactions') },
+  { to: '/analytics', label: t('nav.analytics') },
+  { to: '/debts', label: t('nav.debts') },
+  { to: '/plans', label: t('nav.plans') },
   { to: '/accounts', label: t('nav.accounts') },
   { to: '/settings', label: t('nav.settings') },
 ])

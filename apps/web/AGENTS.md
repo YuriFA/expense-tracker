@@ -16,6 +16,13 @@ layout, segment conventions, and placement decision trees:
 idiom, reactivity budget, vee-validate forms, lists/dialogs):
 `apps/web/docs/conventions/vue-patterns.md`.
 
+Screen set (capability `openspec/specs/web-screens` — mobile UX semantics,
+web-native presentation): dashboard (`/`), transactions, analytics overview
+(`/analytics`) + per-direction detail (`/analytics/:direction`), debts
+(`/debts`), plans (`/plans`), quick income (`/income`), accounts, settings —
+all exposed in `AppNav`. Analytics selectors live in `entities/analytics`;
+debts/plans screens own their view-model selectors under `pages/*/model/`.
+
 ## Spec-first (contract from `docs/api/openapi.yaml`)
 
 - Never hand-write fetch/types. `pnpm gen:api` regenerates

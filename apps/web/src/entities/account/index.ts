@@ -1,5 +1,5 @@
 export type { Account, AccountWithBalance } from './model/types'
-export { ACCOUNT_REPOSITORY_KEY } from './api/repository'
+export { ACCOUNT_REPOSITORY_KEY, useAccountRepository } from './api/repository'
 export {
   useAccounts,
   useAccount,

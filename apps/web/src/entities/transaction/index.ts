@@ -4,7 +4,7 @@ export type {
   TransferTransaction,
   TransactionType,
 } from './model/types'
-export { TRANSACTION_REPOSITORY_KEY } from './api/repository'
+export { TRANSACTION_REPOSITORY_KEY, useTransactionRepository } from './api/repository'
 export {
   useTransactions,
   
