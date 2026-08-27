@@ -224,6 +224,12 @@ func applyAccountOperation(
 			if ferr != nil {
 				return domain.SyncPushResult{}, ferr
 			}
+			if fresh == nil {
+				// The id is taken OUTSIDE this household (a cross-household
+				// collision): an already-exists conflict with no serverState -
+				// the foreign record must not be revealed.
+				return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "account already exists", nil), nil
+			}
 			return conflictResult(
 				op.OpID, domain.SyncCodeAlreadyExists, "account already exists",
 				serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),

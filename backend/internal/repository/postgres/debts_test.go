@@ -33,12 +33,12 @@ func TestRepository_Debtors_CRUDAndGuards(t *testing.T) {
 	assert.Equal(t, "colleague", created.Note)
 
 	t.Run("duplicate live name rejected", func(t *testing.T) {
-		_, err := testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{UserID: user.ID, Name: "Анна"})
+		_, err := testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{HouseholdID: userHH, UserID: user.ID, Name: "Анна"})
 		require.ErrorIs(t, err, domain.ErrDebtorAlreadyExists)
 	})
 
 	t.Run("duplicate client id rejected", func(t *testing.T) {
-		_, err := testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{ID: created.ID, UserID: user.ID, Name: "Другой"})
+		_, err := testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{ID: created.ID, HouseholdID: userHH, UserID: user.ID, Name: "Другой"})
 		require.ErrorIs(t, err, domain.ErrDebtorAlreadyExists)
 	})
 
@@ -95,7 +95,7 @@ func TestRepository_Debtors_CRUDAndGuards(t *testing.T) {
 		require.ErrorIs(t, testRepo.DeleteDebtor(ctx, userHH, user.ID, created.ID), domain.ErrDebtorNotFound)
 
 		// The freed name can be recreated.
-		_, err = testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{UserID: user.ID, Name: "Анна"})
+		_, err = testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{HouseholdID: userHH, UserID: user.ID, Name: "Анна"})
 		require.NoError(t, err)
 	})
 }
@@ -108,7 +108,7 @@ func TestRepository_DebtOperations_CheckConstraintsAndChangeLog(t *testing.T) {
 	ctx := newCtx(t)
 	user := seedUser(t, "debt-ops")
 	userHH := householdOf(t, user.ID)
-	debtor, err := testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{UserID: user.ID, Name: "Михаил"})
+	debtor, err := testRepo.CreateDebtor(ctx, domain.CreateDebtorParams{HouseholdID: userHH, UserID: user.ID, Name: "Михаил"})
 	require.NoError(t, err)
 
 	// CHECK constraints reject invalid direction/kind/amount at the DB level.

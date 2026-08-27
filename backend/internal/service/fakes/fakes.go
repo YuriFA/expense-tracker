@@ -52,7 +52,7 @@ type Store struct {
 	// the sync service rules in hermetic tests.
 	changeLog  []changeEntry
 	nextSeq    int64
-	appliedOps map[uuid.UUID]*domain.AppliedOperation
+	appliedOps map[string]*domain.AppliedOperation // "householdID|opID"
 
 	// idempotency: keyed by "userID|key"
 	idemKeys map[string]*domain.IdempotencyKey
@@ -104,7 +104,7 @@ func New() *Store {
 		memberships:  make(map[uuid.UUID]*domain.Membership),
 		catUnique:    make(map[string]struct{}),
 		debtorUnique: make(map[string]struct{}),
-		appliedOps:   make(map[uuid.UUID]*domain.AppliedOperation),
+		appliedOps:   make(map[string]*domain.AppliedOperation),
 		idemKeys:     make(map[string]*domain.IdempotencyKey),
 		verifyCodes:  make(map[uuid.UUID]*verifyCode),
 		resetTokens:  make(map[string]*resetToken),
@@ -260,6 +260,21 @@ func (s *Store) GetHouseholdWithMembers(_ context.Context, householdID uuid.UUID
 		return uuidLess(members[i].UserID, members[j].UserID)
 	})
 	return &domain.Household{ID: h.ID, CreatedAt: h.CreatedAt, Members: members}, nil
+}
+
+// AddMembership inserts an additional membership row (the shape the change-2
+// join flow will write). Test-only: v1 registration creates exactly one owner
+// membership per user; this helper lets isolation tests place a second user
+// into an existing household.
+func (s *Store) AddMembership(userID, householdID uuid.UUID, role domain.HouseholdRole) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.households[householdID]; !exists {
+		panic("fakes: AddMembership into unknown household")
+	}
+	s.memberships[userID] = &domain.Membership{
+		HouseholdID: householdID, UserID: userID, Role: role, JoinedAt: time.Now().UTC(),
+	}
 }
 
 // --- SessionRepository ----------------------------------------------------
@@ -1315,7 +1330,7 @@ func (t *fakeSyncTx) GetAppliedOperation(
 ) (*domain.AppliedOperation, error) {
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
-	if op, ok := t.store.appliedOps[opID]; ok && op.HouseholdID == householdID {
+	if op, ok := t.store.appliedOps[idemOpKey(householdID, opID)]; ok {
 		c := *op
 		return &c, nil
 	}
@@ -1326,8 +1341,13 @@ func (t *fakeSyncTx) InsertAppliedOperation(_ context.Context, op domain.Applied
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	c := op
-	t.store.appliedOps[op.OpID] = &c
+	t.store.appliedOps[idemOpKey(op.HouseholdID, op.OpID)] = &c
 	return nil
+}
+
+// idemOpKey mirrors the applied_operations PK (household_id, op_id).
+func idemOpKey(householdID, opID uuid.UUID) string {
+	return householdID.String() + "|" + opID.String()
 }
 
 func (t *fakeSyncTx) GetAccountAny(_ context.Context, householdID, id uuid.UUID) (*domain.Account, error) {

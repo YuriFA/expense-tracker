@@ -26,8 +26,9 @@ func TestSyncAppliedOperationOwnerScoped(t *testing.T) {
 
 	err := testRepo.WithinHouseholdTx(ctx, userAHH, func(tx repository.SyncTx) error {
 		return tx.InsertAppliedOperation(ctx, domain.AppliedOperation{
-			OpID:     opID,
-			UserID:   userA.ID,
+			OpID:        opID,
+			HouseholdID: userAHH,
+			UserID:      userA.ID,
 			Entity:   domain.SyncEntityCategory,
 			EntityID: uuid.New(),
 			Result:   domain.SyncPushResult{OpID: opID, Status: domain.SyncStatusApplied, Version: 3},

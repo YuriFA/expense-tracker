@@ -18,11 +18,12 @@ import (
 // unguarded delete, CHECK constraints, and change-log participation
 // (including the sync-tx advancement used by the auto-confirm job).
 
-func seedExpenseCategory(t *testing.T, userID uuid.UUID, name string) *domain.Category {
+func seedExpenseCategory(t *testing.T, householdID, userID uuid.UUID, name string) *domain.Category {
 	t.Helper()
 	ctx := newCtx(t)
 	c, err := testRepo.CreateCategory(ctx, domain.CreateCategoryParams{
-		UserID: userID, Name: name, Type: domain.TransactionTypeExpense, Icon: "x", Color: "#fff",
+		HouseholdID: householdID, UserID: userID,
+		Name: name, Type: domain.TransactionTypeExpense, Icon: "x", Color: "#fff",
 	})
 	if err != nil {
 		t.Fatalf("seedExpenseCategory: %v", err)
@@ -30,8 +31,9 @@ func seedExpenseCategory(t *testing.T, userID uuid.UUID, name string) *domain.Ca
 	return c
 }
 
-func planParams(userID, accountID, categoryID uuid.UUID) domain.CreatePlannedPaymentParams {
+func planParams(householdID, userID, accountID, categoryID uuid.UUID) domain.CreatePlannedPaymentParams {
 	return domain.CreatePlannedPaymentParams{
+		HouseholdID: householdID,
 		UserID:      userID,
 		Type:        domain.TransactionTypeExpense,
 		Amount:      59900,
@@ -54,20 +56,20 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 	user := seedUser(t, "plans")
 	userHH := householdOf(t, user.ID)
 	account := seedAccount(t, userHH, user.ID)
-	category := seedExpenseCategory(t, user.ID, "Подписки")
+	category := seedExpenseCategory(t, userHH, user.ID, "Подписки")
 
-	created, err := testRepo.CreatePlannedPayment(ctx, planParams(user.ID, account.ID, category.ID))
+	created, err := testRepo.CreatePlannedPayment(ctx, planParams(userHH, user.ID, account.ID, category.ID))
 	require.NoError(t, err)
 	assert.Equal(t, 1, created.Version)
 	assert.True(t, created.AnchorDate.Equal(created.NextDue), "create anchors at next_due")
 
 	t.Run("duplicate client id rejected, duplicate names legal", func(t *testing.T) {
-		params := planParams(user.ID, account.ID, category.ID)
+		params := planParams(userHH, user.ID, account.ID, category.ID)
 		params.ID = created.ID
 		_, err := testRepo.CreatePlannedPayment(ctx, params)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentAlreadyExists)
 
-		_, err = testRepo.CreatePlannedPayment(ctx, planParams(user.ID, account.ID, category.ID))
+		_, err = testRepo.CreatePlannedPayment(ctx, planParams(userHH, user.ID, account.ID, category.ID))
 		require.NoError(t, err, "two live plans may share a name")
 	})
 
@@ -139,20 +141,20 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	user := seedUser(t, "plans-checks")
 	userHH := householdOf(t, user.ID)
 	account := seedAccount(t, userHH, user.ID)
-	category := seedExpenseCategory(t, user.ID, "Развлечения")
+	category := seedExpenseCategory(t, userHH, user.ID, "Развлечения")
 
 	// CHECK constraints reject invalid enums and non-positive amounts.
-	invalid := planParams(user.ID, account.ID, category.ID)
+	invalid := planParams(userHH, user.ID, account.ID, category.ID)
 	invalid.Regularity = "biweekly"
 	_, err := testRepo.CreatePlannedPayment(ctx, invalid)
 	require.Error(t, err, "invalid regularity must fail the CHECK constraint")
 
-	invalid = planParams(user.ID, account.ID, category.ID)
+	invalid = planParams(userHH, user.ID, account.ID, category.ID)
 	invalid.Amount = 0
 	_, err = testRepo.CreatePlannedPayment(ctx, invalid)
 	require.Error(t, err, "non-positive amount must fail the CHECK constraint")
 
-	plan, err := testRepo.CreatePlannedPayment(ctx, planParams(user.ID, account.ID, category.ID))
+	plan, err := testRepo.CreatePlannedPayment(ctx, planParams(userHH, user.ID, account.ID, category.ID))
 	require.NoError(t, err)
 
 	// REST update + delete are versioned mutations that land in the change log.
@@ -211,7 +213,7 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 		UserID:      user.ID, Name: "Работа", Type: domain.TransactionTypeIncome, Icon: "x", Color: "#fff",
 	})
 	require.NoError(t, err)
-	income := planParams(user.ID, account.ID, incomeCategory.ID)
+	income := planParams(userHH, user.ID, account.ID, incomeCategory.ID)
 	income.Type = domain.TransactionTypeIncome
 	_, err = testRepo.CreatePlannedPayment(ctx, income)
 	require.NoError(t, err)

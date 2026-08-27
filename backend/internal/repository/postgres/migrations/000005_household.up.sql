@@ -139,5 +139,10 @@ CREATE INDEX idx_planned_payments_household_category  ON planned_payments (house
 DROP INDEX idx_change_log_user_seq;
 CREATE INDEX idx_change_log_household_seq ON change_log (household_id, seq);
 
+-- Push idempotency keys are scoped by household: the PK becomes the pair, so
+-- the same client opId in two different households is two independent
+-- operations (a global op_id PK would collide across households).
 DROP INDEX idx_applied_operations_user;
-CREATE INDEX idx_applied_operations_household ON applied_operations (household_id);
+ALTER TABLE applied_operations
+    DROP CONSTRAINT applied_operations_pkey,
+    ADD PRIMARY KEY (household_id, op_id);

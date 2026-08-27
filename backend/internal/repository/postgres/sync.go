@@ -780,6 +780,7 @@ func (t *syncTx) CreatePlannedPayment(
 
 	row, err := t.q.CreatePlannedPayment(ctx, db.CreatePlannedPaymentParams{
 		ID:          newEntityID(params.ID),
+		HouseholdID: params.HouseholdID,
 		UserID:      params.UserID,
 		Type:        string(params.Type),
 		Amount:      params.Amount,

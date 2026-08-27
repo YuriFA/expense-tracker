@@ -19,9 +19,9 @@
 
 ## 4. Tests
 
-- [ ] 4.1 Service tests: two-household fixtures — member sees sibling's records, non-member gets not-found, household-unique names (categories, debtors) reject duplicates inside a household and allow equal names across households
-- [ ] 4.2 Sync tests: per-household `seq` monotonicity under the re-keyed advisory lock; pull isolation between households; push idempotency keys scoped by household
-- [ ] 4.3 Registration/backfill tests: new user auto-household; migration backfills every pre-existing user with all rows stamped
+- [x] 4.1 Service tests: two-household fixtures — member sees sibling's records, non-member gets not-found, household-unique names (categories, debtors) reject duplicates inside a household and allow equal names across households
+- [x] 4.2 Sync tests: per-household `seq` monotonicity under the re-keyed advisory lock; pull isolation between households; push idempotency keys scoped by household
+- [x] 4.3 Registration/backfill tests: new user auto-household; migration backfills every pre-existing user with all rows stamped
 
 ## 5. Docs and gates
 

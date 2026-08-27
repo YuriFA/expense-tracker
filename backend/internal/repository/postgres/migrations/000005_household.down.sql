@@ -3,7 +3,11 @@
 -- user each, so user-scoping is equivalent for all live data). Membership,
 -- households, and display names are dropped.
 
-DROP INDEX idx_applied_operations_household;
+-- No standalone household index to drop: the (household_id, op_id) PK (and
+-- its backing index) goes with the constraint below.
+ALTER TABLE applied_operations
+    DROP CONSTRAINT applied_operations_pkey,
+    ADD PRIMARY KEY (op_id);
 CREATE INDEX idx_applied_operations_user ON applied_operations (user_id);
 
 DROP INDEX idx_change_log_household_seq;
