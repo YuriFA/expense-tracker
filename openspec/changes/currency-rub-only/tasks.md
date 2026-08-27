@@ -5,8 +5,8 @@
 
 ## 2. Backend endpoint removal
 
-- [ ] 2.1 Delete the balances-summary code path: transport handler (`transport/http/accounts.go`), service `Balances` + `AccountBalances` struct, repository `GetAccountBalances`, the sqlc query, and `domain.AccountBalance`; drop now-unused imports
-- [ ] 2.2 Update backend tests that referenced the endpoint or type (`server_test.go` and friends); `go build ./...`, golangci-lint, and the backend test suite pass
+- [x] 2.1 Delete the balances-summary code path: transport handler (`transport/http/accounts.go`), service `Balances` + `AccountBalances` struct, repository `GetAccountBalances`, the sqlc query, and `domain.AccountBalance`; drop now-unused imports
+- [x] 2.2 Update backend tests that referenced the endpoint or type (`server_test.go` and friends); `go build ./...`, golangci-lint, and the backend test suite pass
 
 ## 3. Shared money package
 

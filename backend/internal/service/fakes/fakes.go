@@ -510,27 +510,6 @@ func (s *Store) GetAccounts(_ context.Context, householdID uuid.UUID) ([]domain.
 	return out, nil
 }
 
-func (s *Store) GetAccountBalances(_ context.Context, householdID uuid.UUID) ([]domain.AccountBalance, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	var out []domain.AccountBalance
-	for _, a := range s.accounts {
-		if s.sameHousehold(a.UserID, householdID) && !a.Deleted() {
-			out = append(
-				out,
-				domain.AccountBalance{
-					ID:       a.ID,
-					UserID:   a.UserID,
-					Name:     a.Name,
-					Currency: a.Currency,
-					Balance:  s.recomputeBalance(a),
-				},
-			)
-		}
-	}
-	return out, nil
-}
-
 // --- CategoryRepository ---------------------------------------------------
 
 func catUniqueKey(householdID uuid.UUID, name string) string {

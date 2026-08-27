@@ -188,26 +188,6 @@ func (r *Repository) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]
 	return out, nil
 }
 
-func (r *Repository) GetAccountBalances(ctx context.Context, householdID uuid.UUID) ([]domain.AccountBalance, error) {
-	const op = "repository.postgres.GetAccountBalances"
-
-	rows, err := r.q.GetAccountBalances(ctx, householdID)
-	if err != nil {
-		return nil, opWrap(op, err)
-	}
-	out := make([]domain.AccountBalance, 0, len(rows))
-	for _, row := range rows {
-		out = append(out, domain.AccountBalance{
-			ID:       row.ID,
-			UserID:   row.UserID,
-			Name:     row.Name,
-			Currency: row.Currency,
-			Balance:  row.Balance,
-		})
-	}
-	return out, nil
-}
-
 // accountRow assembles a domain.Account from its fields. The account SELECT
 // queries return structurally-identical generated Row types (they differ only
 // in name), so the construction is centralized here.

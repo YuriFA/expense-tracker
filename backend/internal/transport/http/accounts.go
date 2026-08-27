@@ -47,31 +47,6 @@ func (s *Server) CreateAccount(
 	return api.CreateAccount201JSONResponse(toAPIAccount(*a)), nil
 }
 
-func (s *Server) GetAccountBalances(
-	ctx context.Context,
-	_ api.GetAccountBalancesRequestObject,
-) (api.GetAccountBalancesResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	res, err := s.accounts.Balances(ctx, householdID)
-	if err != nil {
-		return nil, err
-	}
-	balances := make([]api.AccountBalance, 0, len(res.Balances))
-	for _, b := range res.Balances {
-		balances = append(balances, api.AccountBalance{
-			Id:       toUUID(b.ID),
-			UserId:   toUUID(b.UserID),
-			Name:     b.Name,
-			Currency: api.AccountBalanceCurrency(b.Currency),
-			Balance:  b.Balance,
-		})
-	}
-	return api.GetAccountBalances200JSONResponse(api.AccountBalancesResponse{
-		Balances: balances,
-		NetWorth: res.NetWorth,
-	}), nil
-}
-
 func (s *Server) GetAccount(
 	ctx context.Context,
 	req api.GetAccountRequestObject,

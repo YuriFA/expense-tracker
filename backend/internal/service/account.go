@@ -78,24 +78,5 @@ func (s *AccountService) List(ctx context.Context, householdID uuid.UUID) ([]dom
 	return a, nil
 }
 
-// AccountBalances is the per-account balance summary + net worth.
-type AccountBalances struct {
-	Balances []domain.AccountBalance
-	NetWorth int64
-}
-
-func (s *AccountService) Balances(ctx context.Context, householdID uuid.UUID) (*AccountBalances, error) {
-	const op = "service.account.Balances"
-	bs, err := s.accounts.GetAccountBalances(ctx, householdID)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	var net int64
-	for _, b := range bs {
-		net += b.Balance
-	}
-	return &AccountBalances{Balances: bs, NetWorth: net}, nil
-}
-
 // ErrNoFieldsToUpdate is returned by PATCH services when the body sets nothing.
 var ErrNoFieldsToUpdate = errors.New("no fields to update")

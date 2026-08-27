@@ -383,7 +383,7 @@ func TestE2E_RestTombstonesFeedTheChangeLog(t *testing.T) {
 	assert.Equal(t, accountID, changes[0]["id"])
 	assert.Equal(t, "upsert", changes[0]["action"])
 
-	// REST delete -> tombstone change; the account leaves listings/balances.
+	// REST delete -> tombstone change; the account leaves listings.
 	_, cursor = pullAll(t, c, 0)
 	deleted := c.do("DELETE", "/api/accounts/"+accountID, nil)
 	require.Equal(t, 204, deleted["__status"])
