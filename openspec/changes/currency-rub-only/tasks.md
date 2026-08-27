@@ -1,7 +1,7 @@
 ## 1. OpenAPI contract (source of truth first)
 
-- [ ] 1.1 Remove the `GET /accounts/balances` path and the `AccountBalancesResponse` / `AccountBalance` schemas from `docs/api/openapi.yaml`; re-check that no app/package code consumes the endpoint; `npx @redocly/cli lint --config docs/api/redocly.yaml docs/api/openapi.yaml`
-- [ ] 1.2 Regenerate: `make gen` (backend) and `pnpm gen:api` (`packages/api`); verify `make gen-check` and the `ts-gen-check` inputs are clean
+- [x] 1.1 Remove the `GET /accounts/balances` path and the `AccountBalancesResponse` / `AccountBalance` schemas from `docs/api/openapi.yaml`; re-check that no app/package code consumes the endpoint; `npx @redocly/cli lint --config docs/api/redocly.yaml docs/api/openapi.yaml`
+- [x] 1.2 Regenerate: `make gen` (backend) and `pnpm gen:api` (`packages/api`); verify `make gen-check` and the `ts-gen-check` inputs are clean
 
 ## 2. Backend endpoint removal
 

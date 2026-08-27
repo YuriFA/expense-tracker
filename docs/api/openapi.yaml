@@ -1295,23 +1295,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api/accounts/balances:
-    get:
-      tags: [Accounts]
-      operationId: getAccountBalances
-      summary: Сводка балансов + netWorth
-      responses:
-        "200":
-          description: Балансы всех счетов и net worth.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AccountBalancesResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
-
   /api/accounts/{id}:
     parameters:
       - $ref: "#/components/parameters/AccountId"
@@ -2696,37 +2679,6 @@ components:
           format: int
           description: Версия счёта (optimistic concurrency).
       required: [id, userId, name, currency, openingBalance, manualAdjustment, balance, createdAt, updatedAt, version]
-
-    AccountBalance:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        userId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        currency:
-          type: string
-          enum: [USD, EUR, RUB]
-        balance:
-          type: integer
-          format: int64
-      required: [id, userId, name, currency, balance]
-
-    AccountBalancesResponse:
-      type: object
-      properties:
-        balances:
-          type: array
-          items:
-            $ref: "#/components/schemas/AccountBalance"
-        netWorth:
-          type: integer
-          format: int64
-      required: [balances, netWorth]
 
     AccountCreateRequest:
       type: object
