@@ -19,7 +19,7 @@
 - [x] 4.3 Add-account form: drop `currency` from the form model and validation; the submit mapper sends `currency: DEFAULT_CURRENCY`; remove the `addAccount.currency*` locale keys; update form tests
 - [x] 4.4 Debts, plans, and analytics-detail dialogs: replace `settings.currency as CurrencyCode` with `DEFAULT_CURRENCY` imported from `@/shared/lib/money`; no template changes beyond the binding source
 - [x] 4.5 Dashboard net-worth empty state: `format(0, 'USD')` → `format(0, DEFAULT_CURRENCY)`; update affected tests
-- [ ] 4.6 Web gates: `type-check`, unit tests, lint - all green; transfer forms keep their same-currency validation untouched
+- [x] 4.6 Web gates: `type-check`, unit tests, lint - all green; transfer forms keep their same-currency validation untouched
 
 ## 5. Mobile
 
