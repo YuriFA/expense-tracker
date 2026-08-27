@@ -11,7 +11,9 @@ context: |
   PRODUCT:
   Expense Tracker — personal finance app. Users manage accounts
   (USD/EUR/RUB), per-user categories, and income/expense/transfer
-  transactions; the backend computes account balances and net worth.
+  transactions; the backend serves per-account balances with the
+  account listing. Apps are ruble-only over the multi-currency-ready
+  contract.
   Domain entities: User, Account, Category, Transaction.
   One backend serves two clients of the same product: a Vue 3 web app
   and a React Native (Expo) mobile app.
