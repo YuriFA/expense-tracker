@@ -21,13 +21,6 @@ spec, ADRs, invariants, openspec specs) is established.
 
 ## Assumptions
 
-- **Multi-currency aggregation is undefined; target model is decided.**
-  The API has no exchange rates and its balances endpoint sums across
-  currencies as-is. Product direction (decided for the mobile Home
-  screen, `docs/product/mobile-home.md`): v1 assumes the user's
-  accounts are in a single currency; the intended model is conversion
-  into a primary currency once an exchange-rate subsystem exists
-  (future work, unbuilt).
 - **Deployment is single-replica** (accepted constraint, decided
   2026-08-20). The backend runs as one replica, which makes the in-memory
   per-IP rate limiter (`middleware/ratelimit.go`) sufficient. Revisit
@@ -61,3 +54,17 @@ spec, ADRs, invariants, openspec specs) is established.
   consumes api/dates/money/tokens); RU strings stay hardcoded with
   `TODO(i18n)` markers until the wiring lands. This entry is the
   canonical record of the decision.
+- **Multi-currency direction** — decided 2026-08-28 (change
+  `currency-rub-only`); this entry is the canonical record until the
+  implementing change lands. Both apps are ruble-only over a
+  multi-currency-ready contract (`openspec/specs/app-currency`); no
+  exchange rates exist, and currency-less aggregates (debts, plans,
+  analytics totals) are plain minor-unit sums. The decided direction:
+  transfers carry two amounts (one per account currency) plus a
+  snapshot of the exchange rate used; aggregates are computed per
+  currency and converted into a single display currency for
+  presentation. Rates are sourced externally; the rate source and its
+  storage/precision model are undecided. Whether debts and planned
+  payments stay currency-less or gain a currency of their own is an
+  open question. The undecided points belong to the implementing
+  change (with its own ADR if the rationale needs preserving).

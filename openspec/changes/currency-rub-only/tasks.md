@@ -28,6 +28,6 @@
 
 ## 6. Docs and final validation
 
-- [ ] 6.1 Add the multi-currency direction entry to `docs/assumptions.md`: two-amount transfers with a rate snapshot, per-currency totals converted into a display currency, rates sourced externally (source/storage undecided), currency-lessness of debts/plans flagged open
-- [ ] 6.2 Sweep `docs/architecture/` (overview, invariants) and area AGENTS files for references to the removed balances endpoint or API `netWorth`; update stale mentions
-- [ ] 6.3 Full workspace gates: `pnpm arch:check`, `pnpm knip`, `openspec validate currency-rub-only --strict`
+- [x] 6.1 Add the multi-currency direction entry to `docs/assumptions.md`: two-amount transfers with a rate snapshot, per-currency totals converted into a display currency, rates sourced externally (source/storage undecided), currency-lessness of debts/plans flagged open
+- [x] 6.2 Sweep `docs/architecture/` (overview, invariants) and area AGENTS files for references to the removed balances endpoint or API `netWorth`; update stale mentions
+- [x] 6.3 Full workspace gates: `pnpm arch:check`, `pnpm knip`, `openspec validate currency-rub-only --strict`
