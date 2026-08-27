@@ -120,19 +120,27 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   some mappings; the spec examples document codes.
 - **Automated**: no.
 
-### 5. Per-user ownership: every resource query is scoped by `user_id`, and the userID originates only from the auth context
+### 5. Household ownership: every shared-resource query is scoped by `household_id` (resolved from the auth context), and identities never come from the wire
 
-- **Statement**: No account/category/transaction/idempotency/sync query
-  reads or writes without a `user_id` filter; handlers never trust a
-  client-supplied user identity.
+- **Statement**: No account/category/transaction/debtor/debt-operation/
+  planned-payment/sync query reads or writes without a `household_id`
+  filter; the scoping id originates only from the auth middleware's
+  membership resolution (session → user → household), and handlers never
+  trust a client-supplied identity. `user_id` columns on entity rows are
+  authorship stamps (the acting member), set server-side on create/act, and
+  never scope a query. (Generalized from per-user scoping by the
+  household-scoping change; ADR-0002 is the recorded authority. Every user
+  owns exactly one personal household in v1, so behavior for single users
+  is unchanged.)
 - **Evidence**: `backend/internal/repository/queries/{accounts,categories,
-  transactions,idempotency,sync,retention}.sql` all filter `user_id`;
-  handlers source the user via `currentUser(ctx)` from the auth middleware
-  (`transport/http/handler.go:62-64`); userID-from-context rule is stated in
-  `backend/AGENTS.md`; IDOR integration tests assert cross-user access
-  returns not-found (`postgres/accounts_test.go:72`,
-  `transactions_test.go:149`, `sync_test.go:16`).
-- **Risk if violated**: Cross-account data leaks (IDOR) — the most severe
+  transactions,debtors,debt_operations,planned_payments,sync}.sql` all
+  filter `household_id`; handlers source householdID + user via
+  `currentHouseholdID(ctx)`/`currentUser(ctx)` from the auth middleware
+  (`transport/http/handler.go`, `middleware/auth.go` — membership resolution);
+  two-household isolation tests assert sibling visibility and non-member
+  not-found (`service/household_isolation_test.go`,
+  `postgres/household_backfill_test.go`, `e2e/household_test.go`).
+- **Risk if violated**: Cross-household data leaks (IDOR) — the most severe
   failure mode of this system.
 - **Current enforcement**: integration tests run in CI (`go test -race`).
 - **Automated**: yes (backend; a new unscoped query would only be caught if
@@ -165,28 +173,34 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   latter.
 - **Automated**: backend yes (CI); mobile no.
 
-### 7. Every mutation appends to `change_log` atomically with the entity write, under a per-user advisory lock
+### 7. Every mutation appends to `change_log` atomically with the entity write, under a per-household advisory lock
 
 - **Statement**: Entity writes and their change-log append happen in one
-  DB transaction guarded by `pg_advisory_xact_lock(hashtext(user_id))`, so
-  `change_log.seq` per user equals commit order — the ordering the sync
-  pull protocol relies on. A `change_log` entry is **mandatory** for every
-  mutation of a synced entity — REST create/update/remove, sync push
+  DB transaction guarded by `pg_advisory_xact_lock(hashtext(household_id))`,
+  so `change_log.seq` per household equals commit order — the ordering the
+  sync pull protocol relies on (generalized from per-user by the
+  household-scoping change; the scoping unit is the household, ADR-0002).
+  A `change_log` entry is **mandatory** for every mutation of a synced
+  entity — REST create/update/remove, sync push
   create/replace/tombstone, and registration seeding: a mutation must
   never commit without its log row (clarified 2026-08-20; verified at
-  every write site).
-- **Evidence**: `postgres/tx.go:16-36` (`withinLockedTx`) + `tx.go:40-55`
-  (`appendChangeLog` on the same tx); every sync write appends on the same
-  tx — section contract at `sync.go:220` ("writes (each appends change_log
-  on the same tx)") and per-method calls through `sync.go:534`; seeding
-  logs each row (`users.go:47-70`); rationale documented in
-  `migrations/000002_sync.up.sql:6-11`; sync push/pull tests in
-  `internal/e2e/sync_test.go` and `openspec/specs/sync-protocol` describe
-  the seq-based pull.
+  every write site). `change_log.user_id` is the author of the change (the
+  acting member); pulls deliver a household's stream to each of its
+  members' devices.
+- **Evidence**: `postgres/tx.go` (`withinLockedTx` takes
+  `LockHouseholdChanges`) + `appendChangeLog` on the same tx; every sync
+  write appends on the same tx — section contract in
+  `repository/interfaces.go` ("writes (each appends change_log on the same
+  tx)") and per-method calls through `postgres/sync.go`; seeding logs each
+  row (`postgres/users.go` RegisterUser); rationale documented in
+  `migrations/000002_sync.up.sql` (per-scoping-unit lock) and re-keyed in
+  `000005_household.up.sql`; per-household seq monotonicity + pull
+  isolation + household-scoped opId idempotency tested in
+  `service/sync_household_test.go`.
 - **Risk if violated**: Gaps/reordered `change_log.seq` would make sync
   pull miss or misorder changes; offline clients silently diverge.
 - **Current enforcement**: all REST mutations and sync push go through
-  `withinLockedTx` (structure); e2e sync tests cover the happy paths.
+  `withinLockedTx` (structure); e2e + service sync tests cover the paths.
 - **Automated**: yes (backend tests in CI); but nothing forces a *new*
   mutation to use the helper — that part is convention.
 

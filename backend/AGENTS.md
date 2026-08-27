@@ -25,11 +25,13 @@ source of truth.
 - Middleware exception: middleware implementing a cross-cutting infrastructure
   concern that needs no service business logic may depend directly on
   repository interfaces. Allowed (explicit): `SessionRepository` +
-  `UserRepository` (auth middleware), `IdempotencyRepository` (idempotency
-  middleware). Any NEW middleware -> repository dependency requires a separate
-  architectural decision (invariant #17).
-- The authenticated `userID` is passed **explicitly** handler -> service, from
-  the auth middleware via the request context; never read from a request body.
+  `UserRepository` + `HouseholdRepository` (auth middleware: session -> user ->
+  single v1 membership), `IdempotencyRepository` (idempotency middleware). Any
+  NEW middleware -> repository dependency requires a separate architectural
+  decision (invariant #17).
+- The authenticated `householdID` (scoping) and `userID` (authorship) are
+  passed **explicitly** handler -> service, from the auth middleware via the
+  request context; never read from a request body.
 
 ## Data (PostgreSQL only, no SQLite)
 
@@ -37,17 +39,23 @@ source of truth.
 - Migrations via `golang-migrate`, one numbered up/down pair per change, embedded
   in the binary (`//go:embed`). **Never edit a merged migration** - add a new one.
   `make migrate-up` / `make migrate-create name=...`.
-- **Multi-user scoping is mandatory:** every resource query includes `user_id`;
-  cross-user access returns "not found" (IDOR-safe). User-owned resources:
-  accounts, categories, transactions, idempotency keys, sync change_log /
-  applied operations, tombstones. Sanctioned exceptions (no user_id filter):
+- **Household scoping is mandatory (ADR-0002):** every shared-resource query
+  includes `household_id`; access from outside the household returns
+  "not found" (IDOR-safe). Household-scoped resources: accounts, categories,
+  transactions, debtors, debt operations, planned payments, sync change_log /
+  applied operations. `user_id` columns on entity rows are authorship stamps
+  (the acting member, set server-side, never scoped by). Sanctioned exceptions
+  (no household_id filter):
   (a) `users` lookups keyed by unique identity - email for login (pre-auth),
   id for the auth middleware (the PK is the identity; see the `queries/users.sql`
   header); (b) capability-keyed auth rows where possessing the secret IS the
   authorization: `sessions` by token id (expiry-checked),
   `password_reset_tokens` by token hash (single-use; `ResetPassword` derives
   user_id from the consumed token and scopes the rest of the tx); (c) time-based
-  cleanup of expired rows (expired sessions, expired idempotency keys).
+  cleanup of expired rows (expired sessions, expired idempotency keys); (d)
+  per-requester rows that predate the household model and stay user-scoped:
+  `idempotency_keys` (a replayed cached response is per-requester by
+  definition).
   FK refs inside a transaction use distinct errors
   (`ErrTransactionAccountNotFound` ...) so the transport error mapper stays 1:1
   (422 in a transaction vs 404 by id).

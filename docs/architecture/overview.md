@@ -120,20 +120,23 @@ transport/http (gin)  →  service  →  repository (interfaces)  ←  repositor
    validation (from the embedded spec) → path-aware auth → rate limit
    (login/verify-email only) → path-aware idempotency (this route only).
 2. Auth middleware resolves the `session_id` cookie to a session (SQL
-   enforces `expires_at > now()`), loads the user, applies sliding expiry
-   (extend when <25% TTL remains), sets user/session in the gin context.
+   enforces `expires_at > now()`), loads the user, resolves the user's
+   (single, v1) household membership, applies sliding expiry (extend when
+   <25% TTL remains), sets user/householdID/session in the gin context.
 3. Idempotency middleware requires an `Idempotency-Key` header, hashes the
    body, and replays stored responses for repeated keys (per-user scope).
-4. Handler (`transport/http/transactions.go:52-83`) takes the user from
-   context (never the body), maps to `domain.CreateTransactionParams`,
-   calls `TransactionService.Create`.
-5. Service validates references and business rules (ownership of
-   account/category, cashflow-vs-transfer rules — `service/transaction.go:216-285`).
+4. Handler (`transport/http/transactions.go`) takes the householdID
+   (scoping) and user (authorship) from context (never the body), maps to
+   `domain.CreateTransactionParams`, calls `TransactionService.Create`.
+5. Service validates references and business rules (household ownership of
+   account/category, cashflow-vs-transfer rules — `service/transaction.go`).
 6. Repository wraps the write in `withinLockedTx`
-   (`postgres/tx.go:16-36`): begin → per-user advisory lock
+   (`postgres/tx.go`): begin → per-household advisory lock
    (`pg_advisory_xact_lock`) → entity write + `change_log` append in one
    transaction → commit. The lock makes `change_log.seq` order equal commit
-   order (rationale documented in `migrations/000002_sync.up.sql:6-11`).
+   order within a household (rationale documented in
+   `migrations/000002_sync.up.sql`, re-keyed to households by
+   `000005_household.up.sql`).
 7. Errors flow back to `writeDomainError` (see below); success is converted
    to generated response types.
 
@@ -182,10 +185,15 @@ request+confirm; everything else under `/api/` requires a session
 (`server.go:100-108`). Password reset tokens are stored SHA-256-hashed,
 single-use, and atomically revoke all sessions.
 
-Ownership: every resource query filters `user_id` (verified across
-`queries/{accounts,categories,transactions,idempotency,sync,retention}.sql`);
-the userID originates only from the auth middleware context. Cross-user
-access returns not-found; IDOR behavior is asserted by integration tests.
+Ownership (household model, ADR-0002): every shared-resource query filters
+`household_id` (verified across
+`queries/{accounts,categories,transactions,debtors,debt_operations,planned_payments,sync}.sql`);
+the householdID originates only from the auth middleware's membership
+resolution, and `user_id` on entity rows is an authorship stamp set
+server-side. Cross-household access returns not-found; IDOR behavior is
+asserted by two-household isolation tests. Every user owns exactly one
+personal household (v1); `households`/`household_members` live in
+`migrations/000005_household.up.sql`.
 Sanctioned unscoped exceptions (clarified 2026-08-20; invariant #5
 unchanged): `users` lookups by unique
 identity — login + auth middleware, the PK is the identity

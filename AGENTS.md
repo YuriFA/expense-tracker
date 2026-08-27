@@ -57,7 +57,7 @@ non-negotiables an agent must see before touching code.
   errors to `ErrorResponse{code,message}` in ONE place; frontends map every
   non-2xx to a `RepositoryError` by `code` (e.g. 409 `ACCOUNT_IN_USE` vs
   `TRANSACTION_VERSION_CONFLICT`), not by HTTP status.
-- Backend-only invariants (user_id scoping, change_log atomicity, tombstones,
+- Backend-only invariants (household scoping per ADR-0002, change_log atomicity, tombstones,
   layering) are stated in `backend/AGENTS.md` (invariants #5-#8, #17-#18).
 
 ## Shared workspace packages (`packages/*`)
