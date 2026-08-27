@@ -76,8 +76,10 @@ export function rebaseLocalDataForHousehold(db: LocalDatabase, householdId: stri
   })
 }
 
+type LocalTx = Parameters<Parameters<LocalDatabase['transaction']>[0]>[0]
+
 /** Enqueues one fresh base-0 upsert per surviving row (new opIds throughout). */
-function regenerateAsCreates(tx: Parameters<Parameters<LocalDatabase['transaction']>[0]>[0], entity: SyncEntity, rows: { id: string }[] & EntityRow[]): void {
+function regenerateAsCreates(tx: LocalTx, entity: SyncEntity, rows: EntityRow[]): void {
   for (const row of rows) {
     enqueueOperation(tx, {
       entity,

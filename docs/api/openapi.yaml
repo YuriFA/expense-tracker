@@ -49,9 +49,11 @@ info:
     `POST /api/sync/push` применяет пакет клиентских операций с per-item
     результатами (applied / conflict / error) и постоянной идемпотентностью по
     `opId`. `GET /api/sync/pull` отдаёт изменения из change-log по курсору
-    (seq), включая tombstone-записи. Коды `SYNC_VERSION_CONFLICT`,
-    `SYNC_ALREADY_EXISTS` и `SYNC_DELETED_CONFLICT` живут внутри per-item
-    результатов (HTTP 200), а не в ErrorResponse endpoint-уровня.
+    (seq), включая tombstone-записи; каждая запись несёт `userId` автора
+    (штамп сервера; push-направление авторство не принимает). Коды
+    `SYNC_VERSION_CONFLICT`, `SYNC_ALREADY_EXISTS` и `SYNC_DELETED_CONFLICT`
+    живут внутри per-item результатов (HTTP 200), а не в ErrorResponse
+    endpoint-уровня.
 
 servers:
   - url: http://localhost:8080

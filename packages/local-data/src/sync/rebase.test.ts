@@ -6,7 +6,12 @@
 // server-delivered author).
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { SyncPushOperation, SyncPushResultItem } from '@expense-tracker/api'
+import type {
+  SyncPushOperation,
+  SyncPullPage,
+  SyncPushResultItem,
+  SyncOperationData,
+} from '@expense-tracker/api'
 import { createLocalAccountRepository } from '../repositories/account'
 import { createTestDatabase } from '../testing/test-database'
 import type { LocalDatabase } from '../types'
@@ -29,15 +34,7 @@ import { rebaseLocalDataForHousehold } from './rebase'
 class UnionServer implements SyncTransport {
   records = new Map<string, { version: number; data: Record<string, unknown> }>()
   applied = new Map<string, number>()
-  pullLog: {
-    seq: number
-    entity: SyncEntity
-    id: string
-    action: 'upsert' | 'tombstone'
-    version: number
-    userId: string | null
-    data?: Record<string, unknown>
-  }[] = []
+  pullLog: SyncPullPage['changes'] = []
 
   async push(operations: SyncPushOperation[]): Promise<SyncPushResultItem[]> {
     return operations.map((op) => {
@@ -56,10 +53,18 @@ class UnionServer implements SyncTransport {
   seedFromServer(entity: SyncEntity, id: string, data: Record<string, unknown>, userId: string) {
     const version = 1
     this.records.set(id, { version, data })
-    this.pullLog.push({ seq: this.pullLog.length + 1, entity, id, action: 'upsert', version, userId, data })
+    this.pullLog.push({
+      seq: this.pullLog.length + 1,
+      entity,
+      id,
+      action: 'upsert',
+      version,
+      userId,
+      data: data as SyncOperationData,
+    })
   }
 
-  async pull(cursor: number) {
+  async pull(cursor: number): Promise<SyncPullPage> {
     const changes = this.pullLog.filter((c) => c.seq > cursor)
     const last = changes.length > 0 ? changes[changes.length - 1].seq : null
     return { changes, nextCursor: last }
