@@ -51,19 +51,17 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 	assert.Equal(t, "Wallet Pro", updated.Name)
 	assert.Equal(t, int64(7500), updated.Balance)
 
-	// Get + list.
+	// Get + list; the listing carries the computed balance (clients sum
+	// per currency client-side since the balances endpoint was removed).
 	got, err := testRepo.GetAccount(ctx, userHH, created.ID)
 	require.NoError(t, err)
 	assert.Equal(t, updated.Name, got.Name)
+	assert.Equal(t, int64(7500), got.Balance)
 
 	all, err := testRepo.GetAccounts(ctx, userHH)
 	require.NoError(t, err)
 	require.Len(t, all, 1)
-
-	balances, err := testRepo.GetAccountBalances(ctx, userHH)
-	require.NoError(t, err)
-	require.Len(t, balances, 1)
-	assert.Equal(t, int64(7500), balances[0].Balance)
+	assert.Equal(t, int64(7500), all[0].Balance)
 
 	// Delete.
 	require.NoError(t, testRepo.DeleteAccount(ctx, userHH, user.ID, created.ID))

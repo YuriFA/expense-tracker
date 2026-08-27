@@ -109,19 +109,6 @@ WHERE a.household_id = $1 AND a.deleted_at IS NULL
 GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at, a.version
 ORDER BY a.created_at, a.id;
 
--- name: GetAccountBalances :many
-SELECT
-    a.id,
-    a.user_id,
-    a.name,
-    a.currency,
-    (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance
-FROM accounts a
-LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.household_id = $1 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment
-ORDER BY a.created_at, a.id;
-
 -- name: HasLiveTransactionsForAccount :one
 -- In-use guard for deletion: any non-deleted transaction referencing the
 -- account (as cashflow account or transfer endpoint) blocks the tombstone.

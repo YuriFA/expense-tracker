@@ -197,54 +197,6 @@ func (q *Queries) GetAccountAny(ctx context.Context, arg GetAccountAnyParams) (G
 	return i, err
 }
 
-const getAccountBalances = `-- name: GetAccountBalances :many
-SELECT
-    a.id,
-    a.user_id,
-    a.name,
-    a.currency,
-    (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance
-FROM accounts a
-LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.household_id = $1 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment
-ORDER BY a.created_at, a.id
-`
-
-type GetAccountBalancesRow struct {
-	ID       uuid.UUID
-	UserID   uuid.UUID
-	Name     string
-	Currency string
-	Balance  int64
-}
-
-func (q *Queries) GetAccountBalances(ctx context.Context, householdID uuid.UUID) ([]GetAccountBalancesRow, error) {
-	rows, err := q.db.Query(ctx, getAccountBalances, householdID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAccountBalancesRow
-	for rows.Next() {
-		var i GetAccountBalancesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.Name,
-			&i.Currency,
-			&i.Balance,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getAccounts = `-- name: GetAccounts :many
 SELECT
     a.id,

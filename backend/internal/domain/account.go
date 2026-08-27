@@ -28,15 +28,6 @@ type Account struct {
 // Deleted reports whether the account is tombstoned.
 func (a *Account) Deleted() bool { return a.DeletedAt != nil }
 
-// AccountBalance is the per-account balance summary (no opening/manual split).
-type AccountBalance struct {
-	ID       uuid.UUID
-	UserID   uuid.UUID
-	Name     string
-	Currency string
-	Balance  int64
-}
-
 type CreateAccountParams struct {
 	// ID is the optional client-generated id (offline-first clients). Zero
 	// means "server generates".

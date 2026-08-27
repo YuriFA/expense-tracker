@@ -110,12 +110,12 @@ func TestHouseholdScoping_MemberSeesSiblingRecords(t *testing.T) {
 	require.Len(t, listed.Transactions, 1)
 	assert.Equal(t, f.sibling.ID, listed.Transactions[0].UserID)
 
-	// Balances are household-wide: the sibling sees the owner's account balance
-	// including their own transaction.
-	balances, err := f.acctSvc.Balances(ctx, f.ownerHH)
+	// Balances are household-wide: the sibling sees the owner's account
+	// balance (via the listing) including their own transaction.
+	relisted, err := f.acctSvc.List(ctx, f.ownerHH)
 	require.NoError(t, err)
-	require.Len(t, balances.Balances, 1)
-	assert.Equal(t, int64(500), balances.Balances[0].Balance)
+	require.Len(t, relisted, 1)
+	assert.Equal(t, int64(500), relisted[0].Balance)
 }
 
 func TestHouseholdScoping_NonMemberGetsNotFound(t *testing.T) {

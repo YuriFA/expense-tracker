@@ -83,7 +83,6 @@ type AccountRepository interface {
 	DeleteAccount(ctx context.Context, householdID, actorID, id uuid.UUID) error
 	GetAccount(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error)
 	GetAccounts(ctx context.Context, householdID uuid.UUID) ([]domain.Account, error)
-	GetAccountBalances(ctx context.Context, householdID uuid.UUID) ([]domain.AccountBalance, error)
 }
 
 // CategoryRepository owns household categories.
