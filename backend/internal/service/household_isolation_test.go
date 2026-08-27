@@ -45,13 +45,19 @@ func newIsolationFixture(t *testing.T) *isolationFixture {
 	t.Helper()
 	store := fakes.New()
 	f := &isolationFixture{
-		store:        store,
-		acctSvc:      service.NewAccountService(store),
-		catSvc:       service.NewCategoryService(store),
-		txSvc:        service.NewTransactionService(store, store, store),
-		debtorSvc:    service.NewDebtorService(store),
-		debtOpSvc:    service.NewDebtOperationService(store, store),
-		householdSvc: service.NewHouseholdService(store, store, service.NewLogMailer(logger.NewDiscardLogger()), logger.NewDiscardLogger(), service.HouseholdJoinConfig{}),
+		store:     store,
+		acctSvc:   service.NewAccountService(store),
+		catSvc:    service.NewCategoryService(store),
+		txSvc:     service.NewTransactionService(store, store, store),
+		debtorSvc: service.NewDebtorService(store),
+		debtOpSvc: service.NewDebtOperationService(store, store),
+		householdSvc: service.NewHouseholdService(
+			store,
+			store,
+			service.NewLogMailer(logger.NewDiscardLogger()),
+			logger.NewDiscardLogger(),
+			service.HouseholdJoinConfig{},
+		),
 	}
 	f.owner = seedFakeUser(t, store)
 	f.ownerHH = householdOf(t, store, f.owner.ID)
@@ -241,7 +247,13 @@ func TestAuthService_UpdateDisplayName(t *testing.T) {
 	assert.Equal(t, "Юра", *updated.DisplayName)
 
 	// The member listing reflects the current value.
-	householdSvc := service.NewHouseholdService(store, store, service.NewLogMailer(logger.NewDiscardLogger()), logger.NewDiscardLogger(), service.HouseholdJoinConfig{})
+	householdSvc := service.NewHouseholdService(
+		store,
+		store,
+		service.NewLogMailer(logger.NewDiscardLogger()),
+		logger.NewDiscardLogger(),
+		service.HouseholdJoinConfig{},
+	)
 	householdID := householdOf(t, store, user.ID)
 	h, err := householdSvc.Get(ctx, householdID)
 	require.NoError(t, err)

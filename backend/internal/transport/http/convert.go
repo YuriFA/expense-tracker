@@ -16,7 +16,7 @@ import (
 func toUUID(u uuid.UUID) openapi_types.UUID { return u }
 
 // fromUUID converts a generated openapi_types.UUID back to a domain uuid.
-func fromUUID(u openapi_types.UUID) uuid.UUID { return uuid.UUID(u) }
+func fromUUID(u openapi_types.UUID) uuid.UUID { return u }
 
 // toAPIEmail converts a domain email string to the generated email type.
 func toAPIEmail(e string) openapi_types.Email { return openapi_types.Email(e) }

@@ -14,19 +14,14 @@ import (
 
 // registerAndJoin prepares a two-member household: an owner and a joiner who
 // enters via the home code. Returns the owner's and joiner's clients.
-func registerAndJoin(t *testing.T) (owner, joiner *client, householdID, joinerOldHouseholdID string) {
+func registerAndJoin(t *testing.T) (*client, *client, string) {
 	t.Helper()
-	owner = &client{t: t, jar: map[string]string{}}
+	owner := &client{t: t, jar: map[string]string{}}
 	r := owner.do("POST", "/api/auth/register", map[string]string{"email": uniqueEmail(), "password": "supersecret1"})
 	require.Equal(t, 201, r["__status"], "%v", r["__body"])
-	joiner = &client{t: t, jar: map[string]string{}}
+	joiner := &client{t: t, jar: map[string]string{}}
 	r = joiner.do("POST", "/api/auth/register", map[string]string{"email": uniqueEmail(), "password": "supersecret1"})
 	require.Equal(t, 201, r["__status"], "%v", r["__body"])
-
-	// The joiner's pre-join personal household (to verify orphaning).
-	r = joiner.do("GET", "/api/household", nil)
-	require.Equal(t, 200, r["__status"], "%v", r["__body"])
-	joinerOldHouseholdID = r["id"].(string)
 
 	r = owner.do("POST", "/api/household/code", nil)
 	require.Equal(t, 200, r["__status"], "%v", r["__body"])
@@ -34,12 +29,12 @@ func registerAndJoin(t *testing.T) (owner, joiner *client, householdID, joinerOl
 
 	r = joiner.do("POST", "/api/household/join", map[string]string{"code": code})
 	require.Equal(t, 200, r["__status"], "%v", r["__body"])
-	householdID = r["id"].(string)
+	householdID := r["id"].(string)
 
 	r = owner.do("GET", "/api/household", nil)
 	require.Equal(t, 200, r["__status"])
 	assert.Equal(t, householdID, r["id"], "the owner sees the joined household")
-	return owner, joiner, householdID, joinerOldHouseholdID
+	return owner, joiner, householdID
 }
 
 // pushCreate pushes one baseVersion-0 upsert via /api/sync/push and asserts
@@ -249,7 +244,7 @@ func TestE2E_HomeCodeLifecycle(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 
-	owner, joiner, householdID, _ := registerAndJoin(t)
+	owner, joiner, householdID := registerAndJoin(t)
 
 	// The active code joins; joining the current household is a no-op.
 	r := owner.do("POST", "/api/household/code", nil)
@@ -289,7 +284,11 @@ func TestE2E_HomeCodeLifecycle(t *testing.T) {
 	assert.Equal(t, 204, r["__status"], "code revoke is idempotent")
 
 	latecomer := &client{t: t, jar: map[string]string{}}
-	r = latecomer.do("POST", "/api/auth/register", map[string]string{"email": uniqueEmail(), "password": "supersecret1"})
+	r = latecomer.do(
+		"POST",
+		"/api/auth/register",
+		map[string]string{"email": uniqueEmail(), "password": "supersecret1"},
+	)
 	require.Equal(t, 201, r["__status"])
 	r = latecomer.do("POST", "/api/household/join", map[string]string{"code": code2})
 	require.Equal(t, 400, r["__status"])
@@ -309,7 +308,7 @@ func TestE2E_LeaveRemoveDissolve(t *testing.T) {
 	}
 
 	t.Run("member leaves", func(t *testing.T) {
-		owner, joiner, householdID, _ := registerAndJoin(t)
+		owner, joiner, householdID := registerAndJoin(t)
 
 		// Owner cannot leave while members remain.
 		r := owner.do("POST", "/api/household/leave", nil)
@@ -344,7 +343,7 @@ func TestE2E_LeaveRemoveDissolve(t *testing.T) {
 	})
 
 	t.Run("owner removes member", func(t *testing.T) {
-		owner, joiner, householdID, _ := registerAndJoin(t)
+		owner, joiner, householdID := registerAndJoin(t)
 		r := owner.do("GET", "/api/household", nil)
 		require.Equal(t, 200, r["__status"])
 		var joinerID string
@@ -395,7 +394,7 @@ func TestE2E_LeaveRemoveDissolve(t *testing.T) {
 	})
 
 	t.Run("dissolve", func(t *testing.T) {
-		owner, joiner, householdID, _ := registerAndJoin(t)
+		owner, joiner, householdID := registerAndJoin(t)
 		sharedID := "cccccccc-0000-4000-8000-000000000001"
 		pushCreate(t, owner, "cccccccc-0000-4000-8000-000000000002", sharedID)
 
@@ -432,7 +431,7 @@ func TestE2E_SyncAuthorshipRoundTrip(t *testing.T) {
 		t.Skip("requires Docker for testcontainers")
 	}
 
-	owner, joiner, _, _ := registerAndJoin(t)
+	owner, joiner, _ := registerAndJoin(t)
 
 	r := owner.do("GET", "/api/auth/me", nil)
 	require.Equal(t, 200, r["__status"])
@@ -451,7 +450,12 @@ func TestE2E_SyncAuthorshipRoundTrip(t *testing.T) {
 		authors[id] = userID
 	}
 	assert.Equal(t, ownerID, authors["dddddddd-0000-4000-8000-000000000002"], "owner's record carries the owner's id")
-	assert.Equal(t, joinerID, authors["dddddddd-0000-4000-8000-000000000004"], "joiner's record carries the joiner's id")
+	assert.Equal(
+		t,
+		joinerID,
+		authors["dddddddd-0000-4000-8000-000000000004"],
+		"joiner's record carries the joiner's id",
+	)
 
 	// The push direction ignores client-sent authorship: pushing with an
 	// author field still stamps the session user.

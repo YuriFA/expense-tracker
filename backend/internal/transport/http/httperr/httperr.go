@@ -52,7 +52,8 @@ const (
 	ErrCodePlannedPaymentAccountNotFound  = "PLANNED_PAYMENT_ACCOUNT_NOT_FOUND"
 	ErrCodePlannedPaymentCategoryNotFound = "PLANNED_PAYMENT_CATEGORY_NOT_FOUND"
 
-	// Household join lifecycle (household-join change).
+	// ErrCodeHouseholdInvitationNotFound and the codes below it carry the
+	// household join lifecycle (household-join change).
 	ErrCodeHouseholdInvitationNotFound        = "HOUSEHOLD_INVITATION_NOT_FOUND"
 	ErrCodeHouseholdInvitationEmailMismatch   = "HOUSEHOLD_INVITATION_EMAIL_MISMATCH"
 	ErrCodeHouseholdInvitationExpired         = "HOUSEHOLD_INVITATION_EXPIRED"

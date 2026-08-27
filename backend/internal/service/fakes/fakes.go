@@ -97,7 +97,7 @@ type resetToken struct {
 	createdAt time.Time
 }
 
-// SetClock replaces the store's clock (default: time.Now).
+// SetClock replaces the store's clock (default: [time.Now]).
 func (s *Store) SetClock(now func() time.Time) { s.now = now }
 
 // New returns an empty Store.
@@ -1351,7 +1351,7 @@ func (s *Store) currentState(householdID uuid.UUID, entity string, id uuid.UUID)
 // free to create. The cross-household semantics live in the Postgres layer
 // (global PK) and are covered by its e2e tests.
 func (t *fakeSyncTx) AdoptOrphanedID(_ context.Context, _ string, _, _ uuid.UUID) (*domain.SyncServerState, error) {
-	return nil, nil
+	return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 }
 
 func (t *fakeSyncTx) GetAppliedOperation(

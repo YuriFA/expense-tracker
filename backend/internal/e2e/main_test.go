@@ -140,9 +140,15 @@ func testMain(m *testing.M) int {
 	debtOpSvc := service.NewDebtOperationService(e2eRepo, e2eRepo)
 	planSvc := service.NewPlannedPaymentService(e2eRepo, e2eRepo, e2eRepo)
 	sessionSvc := service.NewSessionService(e2eRepo)
-	householdSvc := service.NewHouseholdService(e2eRepo, e2eRepo, mailer, logger.NewDiscardLogger(), service.HouseholdJoinConfig{
-		WebAppBaseURL: "https://test-app.example.com",
-	})
+	householdSvc := service.NewHouseholdService(
+		e2eRepo,
+		e2eRepo,
+		mailer,
+		logger.NewDiscardLogger(),
+		service.HouseholdJoinConfig{
+			WebAppBaseURL: "https://test-app.example.com",
+		},
+	)
 	syncSvc := service.NewSyncService(e2eRepo)
 
 	server := httptransport.NewServer(

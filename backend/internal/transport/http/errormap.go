@@ -287,7 +287,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 	domain.ErrMembershipNotFound: {http.StatusInternalServerError, httperr.ErrCodeInternal, "internal server error"},
 
 	// --- household join lifecycle (household-join change) ---
-	domain.ErrHouseholdOwnerRequired: {http.StatusForbidden, httperr.ErrCodeForbidden, "only the household owner may perform this action"},
+	domain.ErrHouseholdOwnerRequired: {
+		http.StatusForbidden,
+		httperr.ErrCodeForbidden,
+		"only the household owner may perform this action",
+	},
 	domain.ErrInvitationNotFound: {
 		http.StatusNotFound,
 		httperr.ErrCodeHouseholdInvitationNotFound,

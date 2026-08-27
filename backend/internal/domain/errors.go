@@ -77,7 +77,8 @@ var (
 	ErrMembershipNotFound                 = errors.New("user has no household membership")
 	ErrInvalidDisplayName                 = errors.New("display name must be 1-100 characters after trimming")
 
-	// Household join lifecycle (household-join change): invitations, home
+	// ErrHouseholdOwnerRequired and the sentinels below it carry the
+	// household join lifecycle (household-join change): invitations, home
 	// code, membership moves, dissolution.
 	ErrHouseholdOwnerRequired           = errors.New("only the household owner may perform this action")
 	ErrInvitationNotFound               = errors.New("household invitation not found")

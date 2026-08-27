@@ -243,8 +243,8 @@ function SyncProvider({ children }: { children: React.ReactNode }) {
     () => ({
       engine,
       engineState,
-      runNow: () => {
-        void engine.run({ force: true })
+      runNow: async () => {
+        await engine.run({ force: true })
       },
       presentConflicts,
       registerConflictPresenter,

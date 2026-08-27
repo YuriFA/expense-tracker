@@ -37,11 +37,21 @@ type HouseholdRepository interface {
 	// live in the service; these are the persistence moves.
 	UpdateHouseholdName(ctx context.Context, householdID uuid.UUID, name *string) error
 	CountHouseholdInvitationSends(ctx context.Context, householdID uuid.UUID) (int, error)
-	CreateHouseholdInvitation(ctx context.Context, householdID uuid.UUID, email string, createdBy uuid.UUID, ttl time.Duration) (*domain.HouseholdInvitation, error)
+	CreateHouseholdInvitation(
+		ctx context.Context,
+		householdID uuid.UUID,
+		email string,
+		createdBy uuid.UUID,
+		ttl time.Duration,
+	) (*domain.HouseholdInvitation, error)
 	ListHouseholdInvitations(ctx context.Context, householdID uuid.UUID) ([]domain.HouseholdInvitation, error)
 	RevokeHouseholdInvitation(ctx context.Context, householdID, invitationID uuid.UUID) error
 	GetHouseholdInvitationByToken(ctx context.Context, token uuid.UUID) (*domain.HouseholdInvitation, error)
-	JoinHousehold(ctx context.Context, userID, targetHouseholdID uuid.UUID, invitationID *uuid.UUID) (*domain.Household, error)
+	JoinHousehold(
+		ctx context.Context,
+		userID, targetHouseholdID uuid.UUID,
+		invitationID *uuid.UUID,
+	) (*domain.Household, error)
 	GenerateHouseholdCode(ctx context.Context, householdID uuid.UUID) (*domain.HouseholdCode, error)
 	RevokeHouseholdCode(ctx context.Context, householdID uuid.UUID) error
 	FindHouseholdByActiveCode(ctx context.Context, code string) (uuid.UUID, error)
@@ -177,7 +187,11 @@ type SyncTx interface {
 	// into the pusher's household. A row in a still-live household is never
 	// stolen: the call reports that row's state for an already-exists
 	// conflict. Nil return = free to create.
-	AdoptOrphanedID(ctx context.Context, entity string, entityID, householdID uuid.UUID) (*domain.SyncServerState, error)
+	AdoptOrphanedID(
+		ctx context.Context,
+		entity string,
+		entityID, householdID uuid.UUID,
+	) (*domain.SyncServerState, error)
 
 	// Reads including tombstones (nil, nil when the id was never created).
 	GetAccountAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error)

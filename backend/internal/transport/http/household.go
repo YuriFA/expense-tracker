@@ -100,7 +100,11 @@ func (s *Server) RevokeHouseholdInvitation(
 	req api.RevokeHouseholdInvitationRequestObject,
 ) (api.RevokeHouseholdInvitationResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.households.RevokeInvitation(ctx, s.currentMembership(ctx, user), fromUUID(req.InvitationId)); err != nil {
+	if err := s.households.RevokeInvitation(
+		ctx,
+		s.currentMembership(ctx, user),
+		fromUUID(req.InvitationId),
+	); err != nil {
 		return nil, err
 	}
 	return api.RevokeHouseholdInvitation204Response{}, nil

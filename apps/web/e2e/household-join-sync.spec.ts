@@ -104,8 +104,8 @@ test('join with carry unions both households without duplicates by id', async ({
   await joinerPage.goto('/accounts')
   await expect(joinerPage.getByText('Owner account')).toBeVisible()
   await expect(joinerPage.getByText('Joiner account')).toBeVisible()
-  expect(await joinerPage.getByText('Owner account').count()).toBe(1)
-  expect(await joinerPage.getByText('Joiner account').count()).toBe(1)
+  await expect(joinerPage.getByText('Owner account')).toHaveCount(1)
+  await expect(joinerPage.getByText('Joiner account')).toHaveCount(1)
 
   // No duplicates by id, and the joiner's record really crossed over.
   const joinerAccounts = await apiAccounts(joinerPage)
@@ -223,7 +223,7 @@ test('a stale second device rebases onto the new household (last_household misma
   await expect(deviceTwoPage.getByText('Device one account')).toBeVisible()
   await expect(deviceTwoPage.getByText('Device two account')).toBeVisible()
   await expect(deviceTwoPage.getByText('Shared account')).toBeVisible()
-  expect(await deviceTwoPage.getByText('Device two account').count()).toBe(1)
+  await expect(deviceTwoPage.getByText('Device two account')).toHaveCount(1)
 
   // The household (owner's view) ended up with everything exactly once.
   const ownerAccounts = await apiAccounts(ownerPage)

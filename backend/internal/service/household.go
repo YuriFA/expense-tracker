@@ -27,6 +27,9 @@ type HouseholdService struct {
 	now        func() time.Time
 }
 
+// defaultInvitationTTL is the spec's 7-day accept-token validity.
+const defaultInvitationTTL = 7 * 24 * time.Hour
+
 // HouseholdJoinConfig tunes the join lifecycle (design D1/D2 + the mailer
 // risk trade-off).
 type HouseholdJoinConfig struct {
@@ -43,7 +46,7 @@ type HouseholdJoinConfig struct {
 
 func (c HouseholdJoinConfig) withDefaults() HouseholdJoinConfig {
 	if c.InvitationTTL <= 0 {
-		c.InvitationTTL = 7 * 24 * time.Hour
+		c.InvitationTTL = defaultInvitationTTL
 	}
 	if c.MaxInvitationSendsPerDay <= 0 {
 		c.MaxInvitationSendsPerDay = 20

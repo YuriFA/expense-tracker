@@ -78,6 +78,7 @@ func (f *householdJoinFixture) membershipOf(t *testing.T, userID uuid.UUID) *dom
 }
 
 func TestHouseholdService_InvitationExpiry(t *testing.T) {
+	t.Parallel()
 	f := newHouseholdJoinFixture(t, service.HouseholdJoinConfig{})
 	ctx := context.Background()
 
@@ -87,7 +88,7 @@ func TestHouseholdService_InvitationExpiry(t *testing.T) {
 
 	// Before expiry: preview + accept work.
 	_, err = f.svc.PreviewInvitation(ctx, invitee, invitation.Token)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Advance past the 7-day TTL: both preview and accept refuse.
 	f.now = f.now.Add(8 * 24 * time.Hour)
@@ -105,11 +106,12 @@ func TestHouseholdService_InvitationExpiry(t *testing.T) {
 }
 
 func TestHouseholdService_InvitationRateLimit(t *testing.T) {
+	t.Parallel()
 	f := newHouseholdJoinFixture(t, service.HouseholdJoinConfig{MaxInvitationSendsPerDay: 2})
 	ctx := context.Background()
 	m := f.ownerMembership(t)
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		_, err := f.svc.CreateInvitation(ctx, m, "friend"+string(rune('a'+i))+"@example.com")
 		require.NoError(t, err)
 	}
@@ -122,10 +124,11 @@ func TestHouseholdService_InvitationRateLimit(t *testing.T) {
 	// A day passes: the budget resets.
 	f.now = f.now.Add(25 * time.Hour)
 	_, err = f.svc.CreateInvitation(ctx, m, "friendd@example.com")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestHouseholdService_JoinOrphansOldHousehold(t *testing.T) {
+	t.Parallel()
 	f := newHouseholdJoinFixture(t, service.HouseholdJoinConfig{})
 	ctx := context.Background()
 
@@ -150,6 +153,7 @@ func TestHouseholdService_JoinOrphansOldHousehold(t *testing.T) {
 }
 
 func TestHouseholdService_JoinByCodeInvalid(t *testing.T) {
+	t.Parallel()
 	f := newHouseholdJoinFixture(t, service.HouseholdJoinConfig{})
 	ctx := context.Background()
 
@@ -176,6 +180,7 @@ func TestHouseholdService_JoinByCodeInvalid(t *testing.T) {
 }
 
 func TestHouseholdService_OwnerGuards(t *testing.T) {
+	t.Parallel()
 	f := newHouseholdJoinFixture(t, service.HouseholdJoinConfig{})
 	ctx := context.Background()
 
@@ -187,28 +192,28 @@ func TestHouseholdService_OwnerGuards(t *testing.T) {
 	memberMembership := f.membershipOf(t, f.member.ID)
 
 	_, err = f.svc.CreateInvitation(ctx, memberMembership, "x@example.com")
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 	_, err = f.svc.ListInvitations(ctx, memberMembership)
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 	err = f.svc.RevokeInvitation(ctx, memberMembership, uuid.New())
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 	_, err = f.svc.GenerateCode(ctx, memberMembership)
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 	err = f.svc.RevokeCode(ctx, memberMembership)
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 	_, err = f.svc.UpdateName(ctx, memberMembership, strPtr("Захват"))
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 	err = f.svc.RemoveMember(ctx, memberMembership, f.owner.ID)
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 	err = f.svc.Dissolve(ctx, memberMembership, true)
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerRequired)
 
 	// The owner cannot leave with members; can remove the member; then can leave.
 	_, err = f.svc.Leave(ctx, f.ownerMembership(t))
-	assert.ErrorIs(t, err, domain.ErrHouseholdOwnerWithMembers)
+	require.ErrorIs(t, err, domain.ErrHouseholdOwnerWithMembers)
 
 	err = f.svc.RemoveMember(ctx, f.ownerMembership(t), f.member.ID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, memberMembership.HouseholdID, f.membershipOf(t, f.member.ID).HouseholdID)
 
 	fresh, err := f.svc.Leave(ctx, f.ownerMembership(t))
@@ -217,16 +222,18 @@ func TestHouseholdService_OwnerGuards(t *testing.T) {
 }
 
 func TestHouseholdService_DissolveRequiresConfirm(t *testing.T) {
+	t.Parallel()
 	f := newHouseholdJoinFixture(t, service.HouseholdJoinConfig{})
 	ctx := context.Background()
 
 	err := f.svc.Dissolve(ctx, f.ownerMembership(t), false)
-	assert.ErrorIs(t, err, domain.ErrHouseholdDissolveConfirmRequired)
+	require.ErrorIs(t, err, domain.ErrHouseholdDissolveConfirmRequired)
 	err = f.svc.Dissolve(ctx, f.ownerMembership(t), true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestHouseholdService_InvitationEmailBestEffort(t *testing.T) {
+	t.Parallel()
 	f := newHouseholdJoinFixture(t, service.HouseholdJoinConfig{WebAppBaseURL: "https://app.example.com"})
 	ctx := context.Background()
 

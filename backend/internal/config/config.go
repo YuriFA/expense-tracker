@@ -36,9 +36,9 @@ type PlannedConfirmConfig struct {
 // invitation token TTL, the per-household/day send budget, and the web app
 // base URL used to build emailed accept links.
 type HouseholdConfig struct {
-	InvitationTTL            time.Duration `yaml:"invitation_ttl"             env:"HOUSEHOLD_INVITATION_TTL"              env-default:"168h"` // 7 days
+	InvitationTTL            time.Duration `yaml:"invitation_ttl"               env:"HOUSEHOLD_INVITATION_TTL"               env-default:"168h"` // 7 days
 	MaxInvitationSendsPerDay int           `yaml:"max_invitation_sends_per_day" env:"HOUSEHOLD_MAX_INVITATION_SENDS_PER_DAY" env-default:"20"`
-	WebAppBaseURL            string        `yaml:"web_app_base_url"            env:"HOUSEHOLD_WEB_APP_BASE_URL"            env-default:""`
+	WebAppBaseURL            string        `yaml:"web_app_base_url"             env:"HOUSEHOLD_WEB_APP_BASE_URL"             env-default:""`
 }
 
 // DatabaseConfig tunes the pgxpool connection pool.

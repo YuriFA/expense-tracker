@@ -75,7 +75,10 @@ func (s *Store) CreateHouseholdInvitation(
 	return &c, nil
 }
 
-func (s *Store) ListHouseholdInvitations(_ context.Context, householdID uuid.UUID) ([]domain.HouseholdInvitation, error) {
+func (s *Store) ListHouseholdInvitations(
+	_ context.Context,
+	householdID uuid.UUID,
+) ([]domain.HouseholdInvitation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	out := make([]domain.HouseholdInvitation, 0)
@@ -117,7 +120,7 @@ func (s *Store) GetHouseholdInvitationByToken(_ context.Context, token uuid.UUID
 			return &c, nil
 		}
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 }
 
 // householdWithMembersLocked builds the household listing while the store
@@ -177,20 +180,30 @@ func (s *Store) JoinHousehold(
 	}
 	if m.HouseholdID != targetHouseholdID {
 		if invitationID != nil {
-			for _, inv := range s.invitations {
-				if inv.ID == *invitationID {
-					if inv.AcceptedAt != nil || inv.RevokedAt != nil {
-						return nil, domain.ErrInvitationAlreadyAccepted
-					}
-					now := s.now()
-					inv.AcceptedAt = &now
-				}
+			if err := s.claimInvitationLocked(*invitationID); err != nil {
+				return nil, err
 			}
 		}
 		m.HouseholdID = targetHouseholdID
 		m.Role = domain.HouseholdRoleMember
 	}
 	return s.householdWithMembersLocked(targetHouseholdID)
+}
+
+// claimInvitationLocked marks a pending invitation accepted inside the store
+// lock (the join transaction's invitation claim).
+func (s *Store) claimInvitationLocked(invitationID uuid.UUID) error {
+	for _, inv := range s.invitations {
+		if inv.ID != invitationID {
+			continue
+		}
+		if inv.AcceptedAt != nil || inv.RevokedAt != nil {
+			return domain.ErrInvitationAlreadyAccepted
+		}
+		now := s.now()
+		inv.AcceptedAt = &now
+	}
+	return nil
 }
 
 func (s *Store) GenerateHouseholdCode(_ context.Context, householdID uuid.UUID) (*domain.HouseholdCode, error) {

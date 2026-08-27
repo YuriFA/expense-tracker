@@ -136,7 +136,7 @@ func (r *Repository) GetPendingInvitationByEmail(
 	inv, err := scanInvitation(row)
 	if err != nil {
 		if errNoRows(err) {
-			return nil, nil
+			return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 		}
 		return nil, opWrap(op, err)
 	}
@@ -227,7 +227,7 @@ func (r *Repository) GetHouseholdInvitationByToken(
 	inv, err := scanInvitation(row)
 	if err != nil {
 		if errNoRows(err) {
-			return nil, nil
+			return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 		}
 		return nil, opWrap(op, err)
 	}
@@ -313,8 +313,11 @@ func (r *Repository) JoinHousehold(
 // householdCodeAlphabet is the unambiguous 8-char code alphabet (no 0/O/1/I).
 const householdCodeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 
+// householdCodeLength matches the contract's 8-char join code.
+const householdCodeLength = 8
+
 func generateHouseholdCode() (string, error) {
-	out := make([]byte, 8)
+	out := make([]byte, householdCodeLength)
 	for i := range out {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(householdCodeAlphabet))))
 		if err != nil {
@@ -331,7 +334,7 @@ func generateHouseholdCode() (string, error) {
 // active code retry with a fresh draw.
 func (r *Repository) GenerateHouseholdCode(ctx context.Context, householdID uuid.UUID) (*domain.HouseholdCode, error) {
 	const op = "repository.postgres.GenerateHouseholdCode"
-	for attempt := 0; attempt < 5; attempt++ {
+	for range 5 {
 		code, err := generateHouseholdCode()
 		if err != nil {
 			return nil, opWrap(op, err)
@@ -494,7 +497,11 @@ func (r *Repository) DissolveHousehold(ctx context.Context, householdID uuid.UUI
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`, householdID.String()); err != nil {
+	if _, err := tx.Exec(
+		ctx,
+		`SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
+		householdID.String(),
+	); err != nil {
 		return opWrap(op, err)
 	}
 

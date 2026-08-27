@@ -55,6 +55,8 @@ func (r *Repository) WithinHouseholdTx(
 
 // syncEntityTables maps the wire entity kinds to their tables for
 // AdoptOrphanedID's polymorphic SQL.
+//
+//nolint:gochecknoglobals // immutable lookup table; the idiomatic home for constant dispatch data
 var syncEntityTables = map[string]string{
 	domain.SyncEntityAccount:        "accounts",
 	domain.SyncEntityCategory:       "categories",
@@ -94,13 +96,13 @@ func (t *syncTx) AdoptOrphanedID(
 	if err != nil {
 		if errNoRows(err) {
 			// The id is free everywhere - a plain create.
-			return nil, nil
+			return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 		}
 		return nil, opWrap(op, err)
 	}
 	if owner == householdID {
 		// Same household: the caller's household-scoped read governs.
-		return nil, nil
+		return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 	}
 
 	// A household that still has members keeps its records; the pusher's
@@ -128,7 +130,7 @@ func (t *syncTx) AdoptOrphanedID(
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
-	return nil, nil
+	return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 }
 
 // --- applied_operations -----------------------------------------------------

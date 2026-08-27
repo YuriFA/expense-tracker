@@ -47,8 +47,8 @@ type Membership struct {
 	JoinedAt    time.Time
 }
 
-// Household invitation states as reported by the owner-side listing. Expired
-// is derived at read time (pending + past ExpiresAt).
+// HouseholdInvitationStatus is the owner-side listing state of an
+// invitation; Expired is derived at read time (pending + past ExpiresAt).
 type HouseholdInvitationStatus string
 
 const (
