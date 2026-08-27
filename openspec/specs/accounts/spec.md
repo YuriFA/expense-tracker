@@ -122,8 +122,8 @@ Deleting an account that is referenced by any transaction of the user
 payment of the user SHALL be rejected with an account-in-use error. An
 account with no such references SHALL be deletable. Deletion SHALL be
 soft: the account is marked as deleted (a tombstone) and excluded from
-listings, the balances summary, and net worth; the tombstone is retained
-so synchronized devices learn of the deletion.
+listings; the tombstone is retained so synchronized devices learn of
+the deletion.
 
 #### Scenario: Delete an account with history
 
@@ -138,19 +138,7 @@ so synchronized devices learn of the deletion.
 #### Scenario: Deleted account disappears from summaries
 
 - **WHEN** the user deletes an account with no referencing transactions or live planned payments
-- **THEN** the account no longer appears in listings, the balances summary, or net worth, and other devices learn of the deletion via the change feed
-
-### Requirement: Balances summary and net worth
-
-The system SHALL provide a summary listing each account with its
-computed balance and a net worth figure. Net worth is the arithmetic
-sum of all the user's account balances. The summary contains only the
-requesting user's accounts.
-
-#### Scenario: Net worth across accounts
-
-- **WHEN** the user has two accounts with computed balances 15000 and -2000
-- **THEN** the balances summary lists both accounts and reports a net worth of 13000
+- **THEN** the account no longer appears in listings and other devices learn of the deletion via the change feed
 
 ### Requirement: Listing
 
