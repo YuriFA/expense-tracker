@@ -170,6 +170,15 @@ type SyncTx interface {
 	GetAppliedOperation(ctx context.Context, householdID, opID uuid.UUID) (*domain.AppliedOperation, error)
 	InsertAppliedOperation(ctx context.Context, rec domain.AppliedOperation) error
 
+	// AdoptOrphanedID (household-join D3/D4): a base-0 create whose id exists
+	// in ANOTHER household is legal only when that household is orphaned (no
+	// members left - typically the pusher's former personal household): the
+	// row is deleted so the caller's create re-inserts it with the same id
+	// into the pusher's household. A row in a still-live household is never
+	// stolen: the call reports that row's state for an already-exists
+	// conflict. Nil return = free to create.
+	AdoptOrphanedID(ctx context.Context, entity string, entityID, householdID uuid.UUID) (*domain.SyncServerState, error)
+
 	// Reads including tombstones (nil, nil when the id was never created).
 	GetAccountAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error)
 	GetCategoryAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)

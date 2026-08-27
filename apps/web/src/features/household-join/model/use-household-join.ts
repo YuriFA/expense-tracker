@@ -57,9 +57,10 @@ export const useHouseholdJoinStore = defineStore('household-join', () => {
       if (userId) await db.meta.setOwnerUserId(userId)
       await db.household.setLastHousehold(household.id)
     }
-    // Everything cached belonged to the previous household's dataset.
-    await queryCache.invalidateQueries()
+    // Run FIRST, invalidate LAST: the pulled household data must be on the
+    // device before cached queries refetch, or they serve the pre-sync set.
     await db.sync.run()
+    await queryCache.invalidateQueries()
   }
 
   /**

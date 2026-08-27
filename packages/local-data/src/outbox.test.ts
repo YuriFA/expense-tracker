@@ -209,8 +209,11 @@ describe('outbox: unborn records', () => {
     expect(row?.version).toBe(2)
     const ops = db.transaction((tx) => pendingOperations(tx))
     expect(ops).toHaveLength(2)
-    expect(ops[0].opId).toBe(createOp.opId)
-    expect(ops[0].sentAt).not.toBeNull()
-    expect(ops[1]).toMatchObject({ op: 'delete', entityId: category.id, baseVersion: 0 })
+    // Same-millisecond createdAt falls back to opId order, so identify the
+    // operations by kind instead of index.
+    const createAfterDelete = ops.find((o) => o.opId === createOp.opId)
+    const deleteOp = ops.find((o) => o.op === 'delete')
+    expect(createAfterDelete?.sentAt).not.toBeNull()
+    expect(deleteOp).toMatchObject({ entityId: category.id, baseVersion: 0 })
   })
 })

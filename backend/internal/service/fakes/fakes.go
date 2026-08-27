@@ -103,7 +103,7 @@ func (s *Store) SetClock(now func() time.Time) { s.now = now }
 // New returns an empty Store.
 func New() *Store {
 	return &Store{
-		now: func() time.Time { return time.Now().UTC() },
+		now:          func() time.Time { return time.Now().UTC() },
 		users:        make(map[uuid.UUID]*domain.User),
 		emails:       make(map[string]uuid.UUID),
 		sessions:     make(map[string]*domain.Session),
@@ -1344,6 +1344,14 @@ func (s *Store) currentState(householdID uuid.UUID, entity string, id uuid.UUID)
 		}
 	}
 	return nil
+}
+
+// AdoptOrphanedID: the fake's records are keyed per household, so a base-0
+// create with an id used in another household cannot collide here - always
+// free to create. The cross-household semantics live in the Postgres layer
+// (global PK) and are covered by its e2e tests.
+func (t *fakeSyncTx) AdoptOrphanedID(_ context.Context, _ string, _, _ uuid.UUID) (*domain.SyncServerState, error) {
+	return nil, nil
 }
 
 func (t *fakeSyncTx) GetAppliedOperation(

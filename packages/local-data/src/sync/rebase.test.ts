@@ -42,6 +42,16 @@ class UnionServer implements SyncTransport {
       if (replay !== undefined) return { opId: op.opId, status: 'applied', version: replay }
       if (!op.data) return { opId: op.opId, status: 'applied', version: 0 }
       const existing = this.records.get(op.id)
+      // Mirror the real server's idempotent-create rule: a base-0 create
+      // for an id that already exists (different opId) conflicts.
+      if (op.baseVersion === 0 && existing) {
+        return {
+          opId: op.opId,
+          status: 'conflict',
+          code: 'SYNC_ALREADY_EXISTS',
+          serverState: { version: existing.version, deleted: false, data: existing.data as never },
+        }
+      }
       const version = existing ? existing.version + 1 : 1
       this.records.set(op.id, { version, data: op.data as Record<string, unknown> })
       this.applied.set(op.opId, version)
@@ -171,6 +181,32 @@ describe('rebaseLocalDataForHousehold', () => {
 
     // The rebase marker survived the sync.
     expect(getLastHousehold(db)).toBe('household-b')
+  })
+})
+
+describe('idempotent-create convergence', () => {
+  it('a rebased base-0 create met with SYNC_ALREADY_EXISTS adopts the server record', async () => {
+    const accountsRepo = createLocalAccountRepository(db)
+    const mine = await accountsRepo.create({ name: 'Mine', currency: 'USD', openingBalance: 500 })
+
+    // Another device of the union already pushed this id into the household.
+    const server = new UnionServer()
+    server.records.set(mine.id, {
+      version: 3,
+      data: { name: 'Theirs', currency: 'EUR', openingBalance: 900, manualAdjustment: 0 },
+    })
+    server.applied.set('their-op', 3)
+
+    rebaseLocalDataForHousehold(db, 'household-b')
+    const engine = createSyncEngine({ db, transport: server })
+    const outcome = await engine.run()
+
+    expect(outcome.conflicts).toBe(0)
+    const row = db.select().from(accounts).all().find((r) => r.id === mine.id)
+    expect(row).toMatchObject({ name: 'Theirs', currency: 'EUR', openingBalance: 900 })
+    expect(row?.version).toBe(3)
+    expect(row?.serverVersion).toBe(3)
+    expect(db.select().from(syncOutbox).all()).toHaveLength(0)
   })
 })
 

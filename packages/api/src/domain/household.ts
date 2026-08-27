@@ -55,11 +55,13 @@ const isInvitationStatus = (value: unknown): value is HouseholdInvitationStatus 
   value === 'revoked' ||
   value === 'expired'
 
+// Nullable-but-optional field: the Go server omits nil pointers (omitempty),
+// so "absent" and JSON null are the same thing here - both mean "not set".
 const asNullableString = (value: unknown): string | null =>
-  value === null ? null : asString(value)
+  value === null || value === undefined ? null : asString(value)
 
 const asNullableDateTime = (value: unknown): string | null =>
-  value === null ? null : asDateTimeString(value)
+  value === null || value === undefined ? null : asDateTimeString(value)
 
 export const normalizeHouseholdMember = (value: unknown): HouseholdMember | null => {
   if (!isRecord(value)) {
@@ -68,11 +70,11 @@ export const normalizeHouseholdMember = (value: unknown): HouseholdMember | null
 
   const userId = asNonEmptyString(value.userId)
   const email = asNonEmptyString(value.email)
-  const displayName = asNullableString(value.displayName)
+  const displayName = value.displayName == null ? null : asString(value.displayName)
   const role = isHouseholdRole(value.role) ? value.role : null
   const joinedAt = asDateTimeString(value.joinedAt)
 
-  if (!userId || !email || displayName === null || !role || !joinedAt) {
+  if (!userId || !email || !role || !joinedAt) {
     return null
   }
 
@@ -87,7 +89,7 @@ export const normalizeHousehold = (value: unknown): Household | null => {
   const id = asNonEmptyString(value.id)
   const createdAt = asDateTimeString(value.createdAt)
   const name = asNullableString(value.name)
-  if (!id || !createdAt || name === null) {
+  if (!id || !createdAt) {
     return null
   }
 
@@ -115,15 +117,7 @@ export const normalizeHouseholdInvitation = (value: unknown): HouseholdInvitatio
   const expiresAt = asDateTimeString(value.expiresAt)
   const acceptedAt = asNullableDateTime(value.acceptedAt)
   const revokedAt = asNullableDateTime(value.revokedAt)
-  if (
-    !id ||
-    !email ||
-    !status ||
-    !createdAt ||
-    !expiresAt ||
-    acceptedAt === null ||
-    revokedAt === null
-  ) {
+  if (!id || !email || !status || !createdAt || !expiresAt) {
     return null
   }
 
@@ -145,14 +139,7 @@ export const normalizeHouseholdInvitationPreview = (
     typeof value.membersCount === 'number' && Number.isSafeInteger(value.membersCount)
       ? value.membersCount
       : null
-  if (
-    householdName === null ||
-    !inviterEmail ||
-    inviterDisplayName === null ||
-    !expiresAt ||
-    membersCount === null ||
-    membersCount < 1
-  ) {
+  if (!inviterEmail || !expiresAt || membersCount === null || membersCount < 1) {
     return null
   }
 

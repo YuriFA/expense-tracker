@@ -10,7 +10,7 @@ export interface SyncController {
   engine: SyncEngine
   engineState: SyncEngineState
   /** Manual refresh: bypasses backoff and runs a full cycle now. */
-  runNow: () => void
+  runNow: () => Promise<void>
   /** Asks the mounted conflict presenter to surface unresolved conflicts. */
   presentConflicts: () => void
   /** Registers the conflict presenter (the conflict center mounts it). */

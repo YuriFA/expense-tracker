@@ -337,6 +337,34 @@ export function createSyncEngine(options: SyncEngineOptions) {
     const serverState = result.serverState ?? { version: 0, deleted: false }
     const row = readEntityRow(tx, wire.entity, wire.id)
 
+    // Idempotent-create convergence (household-join union semantics): a
+    // base-0 create answered SYNC_ALREADY_EXISTS means the record with this
+    // id already exists server-side. Client ids are UUIDs, so that is this
+    // same logical record - created from another device of the union (the
+    // rebase's push-all-as-creates runs on every device) or a create whose
+    // response was lost and whose retry got a new opId. The server copy IS
+    // the record: adopt it wholesale instead of parking a manual conflict.
+    if (
+      result.code === 'SYNC_ALREADY_EXISTS' &&
+      wire.baseVersion === 0 &&
+      wire.action === 'upsert' &&
+      serverState.version > 0 &&
+      !serverState.deleted &&
+      serverState.data
+    ) {
+      const patch = syncDataToRowPatch(wire.entity, serverState.data)
+      if (patch) {
+        updateEntityRow(tx, wire.entity, wire.id, {
+          ...patch,
+          deletedAt: null,
+          version: serverState.version,
+          serverVersion: serverState.version,
+        })
+        dropOperationsFor(tx, wire.entity, wire.id)
+        return
+      }
+    }
+
     if (result.code === 'SYNC_DELETED_CONFLICT' || serverState.deleted) {
       // Delete-vs-edit: delete-wins applies immediately; the lost edit is
       // preserved in the conflict record for restore-as-new.

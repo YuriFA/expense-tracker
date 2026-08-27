@@ -56,8 +56,10 @@ export function useHouseholdJoin(): HouseholdJoinController {
         if (user) setOwnerUserId(db, user.id)
         setLastHousehold(db, household.id)
       }
+      // Run FIRST, invalidate LAST: the pulled household data must be on the
+      // device before cached queries refetch, or they serve the pre-sync set.
+      await runNow()
       await queryClient.invalidateQueries()
-      runNow()
     },
     [db, queryClient, runNow, user],
   )

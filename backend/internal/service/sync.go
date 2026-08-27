@@ -218,6 +218,11 @@ func applyAccountOperation(
 				serverStateOf(current.Version, current.Deleted(), current.FullState()),
 			), nil
 		}
+		if blocked, err := t.AdoptOrphanedID(ctx, domain.SyncEntityAccount, op.ID, householdID); err != nil {
+			return domain.SyncPushResult{}, err
+		} else if blocked != nil {
+			return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "account already exists in another household", blocked), nil
+		}
 		created, err := t.CreateAccount(ctx, domain.CreateAccountParams{
 			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			Name: data.Name, Currency: data.Currency, OpeningBalance: data.OpeningBalance,
@@ -369,6 +374,11 @@ func applyCategoryOperation(
 				serverStateOf(current.Version, current.Deleted(), current.FullState()),
 			), nil
 		}
+		if blocked, err := t.AdoptOrphanedID(ctx, domain.SyncEntityCategory, op.ID, householdID); err != nil {
+			return domain.SyncPushResult{}, err
+		} else if blocked != nil {
+			return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "category already exists in another household", blocked), nil
+		}
 		created, err := t.CreateCategory(ctx, domain.CreateCategoryParams{
 			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			Name: data.Name, Type: data.Type, Icon: data.Icon, Color: data.Color,
@@ -497,6 +507,11 @@ func applyTransactionOperation(
 				serverStateOf(current.Version, current.Deleted(), current.FullState()),
 			), nil
 		}
+		if blocked, err := t.AdoptOrphanedID(ctx, domain.SyncEntityTransaction, op.ID, householdID); err != nil {
+			return domain.SyncPushResult{}, err
+		} else if blocked != nil {
+			return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "transaction already exists in another household", blocked), nil
+		}
 		created, err := t.CreateTransaction(ctx, domain.CreateTransactionParams{
 			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			Type: data.Type, Amount: data.Amount, Description: data.Description, OccurredAt: data.OccurredAt,
@@ -616,6 +631,11 @@ func applyDebtorOperation(
 				op.OpID, domain.SyncCodeAlreadyExists, "debtor already exists",
 				serverStateOf(current.Version, current.Deleted(), current.FullState()),
 			), nil
+		}
+		if blocked, err := t.AdoptOrphanedID(ctx, domain.SyncEntityDebtor, op.ID, householdID); err != nil {
+			return domain.SyncPushResult{}, err
+		} else if blocked != nil {
+			return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "debtor already exists in another household", blocked), nil
 		}
 		created, err := t.CreateDebtor(ctx, domain.CreateDebtorParams{
 			ID: op.ID, HouseholdID: householdID, UserID: userID, Name: data.Name, Note: data.Note,
@@ -750,6 +770,11 @@ func applyDebtOperationOperation(
 				serverStateOf(current.Version, current.Deleted(), current.FullState()),
 			), nil
 		}
+		if blocked, err := t.AdoptOrphanedID(ctx, domain.SyncEntityDebtOperation, op.ID, householdID); err != nil {
+			return domain.SyncPushResult{}, err
+		} else if blocked != nil {
+			return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "debt operation already exists in another household", blocked), nil
+		}
 		created, err := t.CreateDebtOperation(ctx, domain.CreateDebtOperationParams{
 			ID: op.ID, HouseholdID: householdID, UserID: userID,
 			DebtorID: data.DebtorID, Direction: data.Direction, Kind: data.Kind,
@@ -868,6 +893,11 @@ func applyPlannedPaymentOperation(
 				op.OpID, domain.SyncCodeAlreadyExists, "planned payment already exists",
 				serverStateOf(current.Version, current.Deleted(), current.FullState()),
 			), nil
+		}
+		if blocked, err := t.AdoptOrphanedID(ctx, domain.SyncEntityPlannedPayment, op.ID, householdID); err != nil {
+			return domain.SyncPushResult{}, err
+		} else if blocked != nil {
+			return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "planned payment already exists in another household", blocked), nil
 		}
 		created, err := t.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
 			ID: op.ID, HouseholdID: householdID, UserID: userID,

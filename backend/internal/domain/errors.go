@@ -92,4 +92,5 @@ var (
 	ErrHouseholdMemberNotFound          = errors.New("household member not found")
 	ErrHouseholdMemberIsOwner           = errors.New("the owner cannot be removed from the household")
 	ErrHouseholdDissolveConfirmRequired = errors.New("household dissolution requires an explicit confirm")
+	ErrUnknownSyncEntity                = errors.New("unknown sync entity kind")
 )

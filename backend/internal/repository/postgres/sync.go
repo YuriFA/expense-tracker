@@ -16,7 +16,8 @@ import (
 
 // syncTx implements repository.SyncTx over the open batch transaction.
 type syncTx struct {
-	q *db.Queries
+	q  *db.Queries
+	tx pgx.Tx
 }
 
 // Compile-time guarantee.
@@ -29,13 +30,105 @@ func (r *Repository) WithinHouseholdTx(
 ) error {
 	const op = "repository.postgres.WithinHouseholdTx"
 
-	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
-		return fn(&syncTx{q: q})
-	})
+	// Same shape as withinLockedTx (tx + per-household advisory lock + fn +
+	// commit) but hands the syncTx both the sqlc Queries and the raw pgx.Tx
+	// (AdoptOrphanedID runs table-polymorphic SQL the generated layer has no
+	// method for).
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return opWrap(op, err)
 	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := r.q.WithTx(tx)
+	if err := q.LockHouseholdChanges(ctx, householdID.String()); err != nil {
+		return opWrap(op, err)
+	}
+	if err := fn(&syncTx{q: q, tx: tx}); err != nil {
+		return opWrap(op, err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return opWrap(op, err)
+	}
 	return nil
+}
+
+// syncEntityTables maps the wire entity kinds to their tables for
+// AdoptOrphanedID's polymorphic SQL.
+var syncEntityTables = map[string]string{
+	domain.SyncEntityAccount:        "accounts",
+	domain.SyncEntityCategory:       "categories",
+	domain.SyncEntityTransaction:    "transactions",
+	domain.SyncEntityDebtor:         "debtors",
+	domain.SyncEntityDebtOperation:  "debt_operations",
+	domain.SyncEntityPlannedPayment: "planned_payments",
+}
+
+// AdoptOrphanedID implements the household-join union semantics (design
+// D3/D4) for base-0 creates whose id exists in ANOTHER household: ids are
+// globally unique (PK), so the create can only land when the id's current
+// household is orphaned - no members left, i.e. the pusher's former personal
+// household after a join swap. The orphaned row is deleted in this
+// transaction and the caller's create re-inserts it (same id, new household,
+// pushed state). A row in a still-live household is never stolen: its state
+// is returned as an already-exists conflict.
+func (t *syncTx) AdoptOrphanedID(
+	ctx context.Context,
+	entity string,
+	entityID, householdID uuid.UUID,
+) (*domain.SyncServerState, error) {
+	const op = "repository.postgres.syncTx.AdoptOrphanedID"
+
+	table, ok := syncEntityTables[entity]
+	if !ok {
+		return nil, opWrap(op, domain.ErrUnknownSyncEntity)
+	}
+
+	var owner uuid.UUID
+	var version int32
+	var deletedAt *time.Time
+	err := t.tx.QueryRow(ctx, `
+		SELECT household_id, version, deleted_at FROM `+table+` WHERE id = $1`,
+		entityID,
+	).Scan(&owner, &version, &deletedAt)
+	if err != nil {
+		if errNoRows(err) {
+			// The id is free everywhere - a plain create.
+			return nil, nil
+		}
+		return nil, opWrap(op, err)
+	}
+	if owner == householdID {
+		// Same household: the caller's household-scoped read governs.
+		return nil, nil
+	}
+
+	// A household that still has members keeps its records; the pusher's
+	// create reports already-exists with the live row's state.
+	var hasMembers bool
+	if err := t.tx.QueryRow(ctx, `
+		SELECT EXISTS (SELECT 1 FROM household_members WHERE household_id = $1)`,
+		owner,
+	).Scan(&hasMembers); err != nil {
+		return nil, opWrap(op, err)
+	}
+	if hasMembers {
+		return &domain.SyncServerState{
+			Version: int(version),
+			Deleted: deletedAt != nil,
+		}, nil
+	}
+
+	// Orphaned: drop the row so the caller's create re-inserts it here. No
+	// member can observe the disappearance (the household has none), and the
+	// new household's change_log will carry the record from its create.
+	if _, err := t.tx.Exec(ctx, `
+		DELETE FROM `+table+` WHERE id = $1 AND household_id = $2`,
+		entityID, owner,
+	); err != nil {
+		return nil, opWrap(op, err)
+	}
+	return nil, nil
 }
 
 // --- applied_operations -----------------------------------------------------
