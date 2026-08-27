@@ -68,6 +68,8 @@ export {
 } from './domain/transaction'
 export type { Debtor } from './domain/debtor'
 export { normalizeDebtor } from './domain/debtor'
+export type { Household, HouseholdMember, HouseholdRole } from './domain/household'
+export { normalizeHousehold, normalizeHouseholdMember } from './domain/household'
 export type {
   DebtOperation,
   DebtDirection,
@@ -127,6 +129,7 @@ export { createHTTPTransactionRepository } from './http/transaction'
 export { createHTTPDebtorRepository } from './http/debtor'
 export { createHTTPDebtOperationRepository } from './http/debt-operation'
 export { createHTTPPlannedPaymentRepository } from './http/planned-payment'
+export { fetchHousehold, updateDisplayName } from './http/household'
 
 // --- Sync endpoint client (offline-first push/pull) -------------------------
 export {
