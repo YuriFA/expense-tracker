@@ -6,7 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { AVAILABLE_CURRENCIES } from '@/shared/lib/money'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
 import { computed, onMounted, ref } from 'vue'
@@ -34,31 +33,6 @@ import type { HouseholdMember } from '@expense-tracker/api'
 const { t, locale, availableLocales } = useI18n()
 const settings = useSettingsStore()
 const auth = useAuthStore()
-
-const formatNumber = (
-  locale: string,
-  currency: string,
-  currencyDisplay?: Intl.NumberFormatOptionsCurrencyDisplay,
-) => {
-  const symbol = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currencyDisplay,
-    currency,
-  })
-    .formatToParts(1)
-    .find((x) => x.type === 'currency')?.value
-
-  return symbol ? symbol[0]?.toUpperCase() + symbol.slice(1) : symbol
-}
-
-const currencies = computed(() => {
-  const displayNames = new Intl.DisplayNames(locale.value, { type: 'currency' })
-
-  return AVAILABLE_CURRENCIES.map((value) => ({
-    id: value,
-    label: `${capitalizeFirstLetter(displayNames.of(value) ?? '')} ${value} (${formatNumber(locale.value, value)})`,
-  }))
-})
 
 const locales = computed(() => {
   const displayNames = new Intl.DisplayNames(locale.value, { type: 'language' })
@@ -152,20 +126,6 @@ onMounted(() => {
 <template>
   <section class="flex flex-col gap-6">
     <h1 class="text-2xl font-semibold">{{ t('pages.settings') }}</h1>
-
-    <label class="flex items-center gap-2">
-      <p>{{ t('settings.currency') }}:</p>
-      <Select v-model="settings.currency" class="w-full">
-        <SelectTrigger>
-          <SelectValue :placeholder="t('settings.currency')" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="item in currencies" :key="item.id" :value="item.id">
-            {{ item.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </label>
 
     <label class="flex items-center gap-2">
       <p>{{ t('settings.locale') }}:</p>

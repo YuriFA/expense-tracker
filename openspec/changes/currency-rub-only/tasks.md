@@ -14,8 +14,8 @@
 
 ## 4. Web
 
-- [ ] 4.1 Settings store: remove the `currency` field and its storage key from `use-settings-store` / `shared/config/settings.ts`; update store tests (stale localStorage key is ignored, not cleaned)
-- [ ] 4.2 Settings page: remove the currency selector, the `currencies` computed, and the `formatNumber` helper; remove the `settings.currency` locale keys (ru + en); update page tests
+- [x] 4.1 Settings store: remove the `currency` field and its storage key from `use-settings-store` / `shared/config/settings.ts`; update store tests (stale localStorage key is ignored, not cleaned)
+- [x] 4.2 Settings page: remove the currency selector, the `currencies` computed, and the `formatNumber` helper; remove the `settings.currency` locale keys (ru + en); update page tests
 - [ ] 4.3 Add-account form: drop `currency` from the form model and validation; the submit mapper sends `currency: DEFAULT_CURRENCY`; remove the `addAccount.currency*` locale keys; update form tests
 - [ ] 4.4 Debts, plans, and analytics-detail dialogs: replace `settings.currency as CurrencyCode` with `DEFAULT_CURRENCY` imported from `@/shared/lib/money`; no template changes beyond the binding source
 - [ ] 4.5 Dashboard net-worth empty state: `format(0, 'USD')` → `format(0, DEFAULT_CURRENCY)`; update affected tests
