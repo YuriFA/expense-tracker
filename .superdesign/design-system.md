@@ -14,7 +14,7 @@ JTBD: record a spend in seconds; see where money goes this month; keep balances/
 
 - Every text goes through i18n (ru default, en) — drafts must use the Russian strings of the current UI (nav: Главная, Операции, Аналитика, Долги, Планы, Счета, Настройки; actions: Добавить операцию, Расход/Доход/Перевод).
 - Money is RUB only, formatted like `26 813 ₽` (narrow space groups); income `+`, expense `−` with green/red.
-- Category identity = emoji glyph on a pastel tinted circle (category color is data). Accounts = letter avatar on hashed pastel.
+- Category identity = emoji glyph on a pastel tinted circle (the category's own color at ~15% opacity). Icon and color are a PRE-PAIRED closed set: 20 emojis, each with its own strongly distinct hue (20-color palette, one color per icon). Creation asks for the emoji only and assigns the paired color, shifting to the nearest free hue when it is already taken — colors stay stored (API field `color`), never picked by the user. Accounts = letter avatar on hashed pastel.
 - Visible states everywhere: skeletons while loading, empty states, error + retry, sync badge (synced / pending N / paused / conflicts), guest-mode badge for anonymous users.
 - Accessible focus rings, one dialog instance per flow, icons from lucide only.
 
@@ -55,13 +55,15 @@ Outfit 400/500/600/700 only. Scale: 12 / 14 (body) / 16 / 20 (card titles) / 24 
 Fast and utilitarian: color/opacity transitions `0.15s cubic-bezier(0.4, 0, 0.2, 1)`, transform-based movement `0.3s` same curve; dialogs fade+zoom (tw-animate), drawers slide, hover lift on cards ≤2px. Route-change top progress bar stays. No parallax, no decorative loops.
 
 ### Spacing & shape
-4px base grid; card padding 20–24px; list row height ~56px; icon tiles 40–44px; sidebar width 248px; pill buttons for primary CTA, rounded-xl (12px) for inputs.
+4px base grid; card padding 20–24px; list row height ~56px; icon tiles 40–44px; sidebar width 248px; controls (buttons, inputs, selects) share the 12px control radius; cards and the big sidebar CTA use the 14px card radius; full-round pills are reserved for badges, chips and status pills.
 
 ## Component rules
 
-- Buttons: primary = accent fill pill; outline = hairline border white; ghost for nav/row actions; destructive red. Sizes h-9 default, h-10 CTA.
+- Buttons: 12px control radius — primary = accent fill; outline = hairline border white; ghost for nav/row actions; destructive red. Sizes h-9 default, h-10 CTA. NOT pills — pills are only badges/chips/status.
+- Settings row-card: flat card whose header row is «title (14px semibold) + description (12px muted)» on the left and the control (bordered select) on the right; heavier sections (profile, household, sessions) use the same header row above hairline-divided content.
+- Delete confirmation: centered dialog (max-w ~320px), 48px terracotta-tint circle with a trash glyph, title «Удалить …?», one-line muted description, footer «Отмена» (outline) + «Удалить» (solid red), both flex-1 with the 12px radius.
 - Cards compose: Card (white surface) / Card tinted (info) / list-card (rows with dividers).
-- Checkbox: custom-drawn native input — 16×16, radius 4, 1.5px border in the surface border color, transparent fill (no native accent-color tint). Checked = border AND an 8×8 rounded-2px inner dot take the row's accent color via currentColor: teal (primary) for the «Все расходы/доходы» master, the category's own color for its row. State coupling: unchecked (excluded) rows dim to 50% opacity; the selected row gets a warm muted wash instead of a tint.
+- Checkbox: custom-drawn native input — 16×16, radius 4, 1.5px border in the surface border color, transparent fill (no native accent-color tint). Checked = border AND an 8×8 rounded-2px inner dot take the row's accent color via currentColor: teal (primary) for the «Все расходы/доходы» master, the category's own color for its row. State coupling: unchecked (excluded) rows dim to 50% opacity; the selected row gets a warm muted wash instead of a tint. A second, standalone-filter variant exists in the specimen: 20×20, rounded-md, 2px border, checked = teal fill + white check glyph (for future filter surfaces).
 - Segmented control (Расходы/Доходы on analytics, Add tabs): pill group on muted track, active = white raised.
 - Date-range navigation (analytics): pill with ‹ › chevrons and centered label («1 авг. — 31 авг.»).
 - Donut chart keeps its selectable-segment behavior; colors from category data or palette tints.

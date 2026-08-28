@@ -25,8 +25,9 @@ const forwardedProps = useForwardProps(delegatedProps)
     :class="
       cn(
         buttonVariants({ variant: 'ghost' }),
-        'size-8 p-0 font-normal aria-selected:opacity-100 cursor-default',
-        '[&[data-today]:not([data-selected])]:bg-accent [&[data-today]:not([data-selected])]:text-accent-foreground',
+        'size-8 rounded-full p-0 font-normal aria-selected:opacity-100 cursor-default',
+        // Today: outlined circle (draft), never filled
+        '[&[data-today]:not([data-selected])]:border [&[data-today]:not([data-selected])]:border-primary [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-primary',
         // Selected
         'data-selected:bg-primary data-selected:text-primary-foreground data-selected:opacity-100 [&[data-selected]:hover]:bg-primary data-selected:hover:text-primary-foreground data-selected:focus:bg-primary data-selected:focus:text-primary-foreground',
         // Disabled
@@ -34,7 +35,7 @@ const forwardedProps = useForwardProps(delegatedProps)
         // Unavailable
         'data-unavailable:text-destructive-foreground data-unavailable:line-through',
         // Outside months
-        'data-outside-view:text-muted-foreground',
+        'data-outside-view:text-muted-foreground/50',
         props.class,
       )
     "

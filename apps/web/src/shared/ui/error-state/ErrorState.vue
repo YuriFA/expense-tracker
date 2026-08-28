@@ -17,7 +17,7 @@ const { t } = useI18n()
 
 <template>
   <div class="flex flex-col items-center gap-3 py-8 text-center">
-    <AlertCircleIcon class="size-8 text-muted-foreground" />
+    <AlertCircleIcon class="size-8 text-destructive" />
     <div class="space-y-1">
       <p class="text-sm font-medium">{{ title ?? t('common.errorState.title') }}</p>
       <p v-if="description" class="text-xs text-muted-foreground">{{ description }}</p>
