@@ -26,3 +26,6 @@ node_modules/
 
 # --- Agent harness workspace (session plans, local commands/skills) ---
 /.zcode/
+
+# --- Superdesign (design canvas) ---
+/.superdesign/tmp/

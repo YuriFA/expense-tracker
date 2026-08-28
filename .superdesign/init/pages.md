@@ -1,0 +1,868 @@
+# pages.md — page dependency trees (candidate --context-file sets)
+
+Traced from each page's entry through ALL local imports (`@/` alias and relative), tests excluded. A file is expanded in full only at its first occurrence; later occurrences are marked `(expanded above)`. Apply the payload budget when selecting files for a design call.
+
+
+## / (home/dashboard)
+Entry: apps/web/src/pages/dashboard/index.ts
+Dependencies:
+- apps/web/src/pages/dashboard/index.ts
+  - apps/web/src/pages/dashboard/ui/DashboardPage.vue
+    - apps/web/src/pages/dashboard/ui/QuickActionsCard.vue
+      - apps/web/src/features/transaction/add/index.ts
+        - apps/web/src/features/transaction/add/ui/CashflowForm.vue
+          - apps/web/src/features/transaction/add/model/cashflow-schema.ts
+            - apps/web/src/shared/i18n/index.ts
+          - apps/web/src/features/transaction/add/model/last-account-ids.ts
+            - apps/web/src/shared/config/app.ts
+          - apps/web/src/entities/transaction/index.ts
+            - apps/web/src/entities/transaction/model/types.ts
+            - apps/web/src/entities/transaction/api/repository.ts
+            - apps/web/src/entities/transaction/model/use-transactions.ts
+              - apps/web/src/entities/transaction/model/types.ts (expanded above)
+              - apps/web/src/entities/transaction/api/repository.ts (expanded above)
+              - apps/web/src/shared/lib/use-optimistic-mutation.ts
+            - apps/web/src/entities/transaction/model/constants.ts
+              - apps/web/src/shared/i18n/index.ts (expanded above)
+            - apps/web/src/entities/transaction/model/transaction.ts
+            - apps/web/src/entities/transaction/ui/TransactionListItem.vue
+              - apps/web/src/shared/lib/money/index.ts
+              - apps/web/src/entities/transaction/model/transaction.ts (expanded above)
+              - apps/web/src/entities/transaction/model/types.ts (expanded above)
+            - apps/web/src/entities/transaction/ui/TransactionListItemSkeleton.vue
+              - apps/web/src/shared/ui/skeleton/index.ts
+                - apps/web/src/shared/ui/skeleton/Skeleton.vue
+                  - apps/web/src/shared/lib/utils.ts
+          - apps/web/src/shared/ui/button/index.ts
+            - apps/web/src/shared/ui/button/Button.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/ui/spinner/index.ts
+                - apps/web/src/shared/ui/spinner/Spinner.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/field/index.ts
+            - apps/web/src/shared/ui/field/Field.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldContent.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldDescription.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldError.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldGroup.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldLabel.vue
+              - apps/web/src/shared/ui/label/index.ts
+                - apps/web/src/shared/ui/label/Label.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldLegend.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldSeparator.vue
+              - apps/web/src/shared/ui/separator/index.ts
+                - apps/web/src/shared/ui/separator/Separator.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldSet.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/field/FieldTitle.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/input/index.ts
+            - apps/web/src/shared/ui/input/Input.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/amount-field/index.ts
+            - apps/web/src/shared/ui/amount-field/AmountField.vue
+              - apps/web/src/shared/ui/field/index.ts (expanded above)
+              - apps/web/src/shared/ui/number-field/index.ts
+                - apps/web/src/shared/ui/number-field/NumberField.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/number-field/NumberFieldContent.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/number-field/NumberFieldDecrement.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/number-field/NumberFieldIncrement.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/number-field/NumberFieldInput.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/lib/money/index.ts (expanded above)
+          - apps/web/src/entities/account/index.ts
+            - apps/web/src/entities/account/model/types.ts
+            - apps/web/src/entities/account/api/repository.ts
+            - apps/web/src/entities/account/model/use-accounts.ts
+              - apps/web/src/entities/account/api/repository.ts (expanded above)
+              - apps/web/src/shared/lib/use-optimistic-mutation.ts (expanded above)
+              - apps/web/src/entities/account/model/types.ts (expanded above)
+            - apps/web/src/entities/account/ui/AccountSelect.vue
+              - apps/web/src/shared/ui/select/index.ts
+                - apps/web/src/shared/ui/select/Select.vue
+                - apps/web/src/shared/ui/select/SelectContent.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/select/SelectGroup.vue
+                - apps/web/src/shared/ui/select/SelectItem.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/select/SelectItemText.vue
+                - apps/web/src/shared/ui/select/SelectLabel.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/select/SelectScrollDownButton.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/select/SelectScrollUpButton.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/select/SelectSeparator.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/select/SelectTrigger.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/select/SelectValue.vue
+              - apps/web/src/shared/ui/field/index.ts (expanded above)
+              - apps/web/src/entities/account/model/use-accounts.ts (expanded above)
+            - apps/web/src/entities/account/ui/AccountCardSkeleton.vue
+              - apps/web/src/shared/ui/card/index.ts
+                - apps/web/src/shared/ui/card/Card.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/card/CardAction.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/card/CardContent.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/card/CardDescription.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/card/CardFooter.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/card/CardHeader.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/card/CardTitle.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+          - apps/web/src/entities/category/index.ts
+            - apps/web/src/entities/category/model/types.ts
+            - apps/web/src/entities/category/api/repository.ts
+            - apps/web/src/entities/category/model/use-categories.ts
+              - apps/web/src/entities/category/api/repository.ts (expanded above)
+              - apps/web/src/shared/lib/use-optimistic-mutation.ts (expanded above)
+              - apps/web/src/entities/category/model/types.ts (expanded above)
+              - apps/web/src/entities/category/model/map-categories.ts
+                - apps/web/src/shared/i18n/index.ts (expanded above)
+                - apps/web/src/entities/category/model/types.ts (expanded above)
+            - apps/web/src/entities/category/ui/CategorySelect.vue
+              - apps/web/src/shared/ui/select/index.ts (expanded above)
+              - apps/web/src/shared/ui/field/index.ts (expanded above)
+              - apps/web/src/entities/category/model/use-categories.ts (expanded above)
+          - apps/web/src/features/transaction/add/ui/NewCategoryDialog.vue
+            - apps/web/src/entities/category/index.ts (expanded above)
+            - apps/web/src/shared/ui/button/index.ts (expanded above)
+            - apps/web/src/shared/ui/dialog/index.ts
+              - apps/web/src/shared/ui/dialog/Dialog.vue
+              - apps/web/src/shared/ui/dialog/DialogClose.vue
+              - apps/web/src/shared/ui/dialog/DialogContent.vue
+                - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/dialog/DialogOverlay.vue
+                  - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/ui/dialog/DialogDescription.vue
+                - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/ui/dialog/DialogFooter.vue
+                - apps/web/src/shared/lib/utils.ts (expanded above)
+                - apps/web/src/shared/ui/button/index.ts (expanded above)
+              - apps/web/src/shared/ui/dialog/DialogHeader.vue
+                - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/ui/dialog/DialogOverlay.vue (expanded above)
+              - apps/web/src/shared/ui/dialog/DialogScrollContent.vue
+                - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/ui/dialog/DialogTitle.vue
+                - apps/web/src/shared/lib/utils.ts (expanded above)
+              - apps/web/src/shared/ui/dialog/DialogTrigger.vue
+            - apps/web/src/shared/ui/field/index.ts (expanded above)
+            - apps/web/src/shared/ui/input/index.ts (expanded above)
+            - apps/web/src/shared/services/notification/index.ts
+              - apps/web/src/shared/services/notification/notification.ts
+                - apps/web/src/shared/services/notification/types.ts
+                - apps/web/src/shared/lib/data/index.ts
+                  - apps/web/src/shared/lib/data/repository-i18n.ts
+                    - apps/web/src/shared/i18n/index.ts (expanded above)
+                - apps/web/src/shared/services/notification/log-error.ts
+                  - apps/web/src/shared/services/notification/types.ts (expanded above)
+          - apps/web/src/shared/lib/date/index.ts
+            - apps/web/src/shared/lib/date/adapters/internationalized-date-adapter.ts
+              - apps/web/src/shared/lib/date/business-date-adapter.ts
+                - apps/web/src/shared/lib/date/types.ts
+              - apps/web/src/shared/lib/date/types.ts (expanded above)
+            - apps/web/src/shared/lib/date/types.ts (expanded above)
+            - apps/web/src/shared/lib/date/date-value-bridge.ts
+              - apps/web/src/shared/lib/date/types.ts (expanded above)
+            - apps/web/src/shared/lib/date/datetime.ts
+              - apps/web/src/shared/lib/date/types.ts (expanded above)
+          - apps/web/src/shared/services/notification/index.ts (expanded above)
+          - apps/web/src/shared/lib/money/index.ts (expanded above)
+        - apps/web/src/features/transaction/add/ui/TransferForm.vue
+          - apps/web/src/features/transaction/add/model/transfer-schema.ts
+            - apps/web/src/shared/i18n/index.ts (expanded above)
+          - apps/web/src/features/transaction/add/model/last-account-ids.ts (expanded above)
+          - apps/web/src/entities/transaction/index.ts (expanded above)
+          - apps/web/src/shared/ui/button/index.ts (expanded above)
+          - apps/web/src/shared/ui/field/index.ts (expanded above)
+          - apps/web/src/shared/ui/input/index.ts (expanded above)
+          - apps/web/src/shared/ui/amount-field/index.ts (expanded above)
+          - apps/web/src/entities/account/index.ts (expanded above)
+          - apps/web/src/shared/lib/date/index.ts (expanded above)
+          - apps/web/src/shared/services/notification/index.ts (expanded above)
+          - apps/web/src/shared/lib/money/index.ts (expanded above)
+        - apps/web/src/features/transaction/add/ui/AddTransactionTabs.vue
+          - apps/web/src/shared/ui/tabs/index.ts
+            - apps/web/src/shared/ui/tabs/Tabs.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/tabs/TabsContent.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/tabs/TabsList.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/tabs/TabsTrigger.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/entities/transaction/index.ts (expanded above)
+          - apps/web/src/features/transaction/add/ui/CashflowForm.vue (expanded above)
+          - apps/web/src/features/transaction/add/ui/TransferForm.vue (expanded above)
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+      - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+    - apps/web/src/pages/dashboard/ui/NetWorthCard.vue
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/entities/account/index.ts (expanded above)
+      - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+      - apps/web/src/shared/ui/error-state/index.ts
+        - apps/web/src/shared/ui/error-state/ErrorState.vue
+          - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/pages/dashboard/ui/RecentTransactions.vue
+        - apps/web/src/entities/transaction/index.ts (expanded above)
+        - apps/web/src/entities/account/index.ts (expanded above)
+        - apps/web/src/entities/category/index.ts (expanded above)
+        - apps/web/src/features/household-author/index.ts
+          - apps/web/src/features/household-author/model/use-author-label.ts
+            - apps/web/src/entities/household/index.ts
+              - apps/web/src/entities/household/api/household-api.ts
+                - apps/web/src/shared/api/index.ts
+                  - apps/web/src/shared/api/client.ts
+              - apps/web/src/entities/household/model/use-household.ts
+                - apps/web/src/entities/household/api/household-api.ts (expanded above)
+              - apps/web/src/entities/household/model/use-household-invitations.ts
+                - apps/web/src/entities/household/api/household-api.ts (expanded above)
+              - apps/web/src/entities/household/model/use-household-actions.ts
+                - apps/web/src/entities/household/api/household-api.ts (expanded above)
+              - apps/web/src/entities/household/model/household-label.ts
+              - apps/web/src/entities/household/model/author-label.ts
+              - apps/web/src/entities/household/model/household-errors.ts
+                - apps/web/src/shared/i18n/index.ts (expanded above)
+                - apps/web/src/shared/lib/data/index.ts (expanded above)
+            - apps/web/src/entities/session/index.ts
+              - apps/web/src/entities/session/model/types.ts
+              - apps/web/src/entities/session/api/session-api.ts
+                - apps/web/src/shared/api/index.ts (expanded above)
+                - apps/web/src/entities/session/model/types.ts (expanded above)
+              - apps/web/src/entities/session/model/use-auth-store.ts
+                - apps/web/src/entities/session/api/session-api.ts (expanded above)
+                - apps/web/src/entities/session/model/types.ts (expanded above)
+                - apps/web/src/shared/lib/local-db/index.ts
+                  - apps/web/src/shared/lib/local-db/local-db.ts
+                    - apps/web/src/shared/lib/local-db/local-db-api.ts
+                  - apps/web/src/shared/lib/local-db/local-db-api.ts (expanded above)
+                  - apps/web/src/shared/lib/local-db/rehydrate-repository-error.ts
+                  - apps/web/src/shared/lib/local-db/sync-composable.ts
+                    - apps/web/src/shared/lib/local-db/index.ts (cycle)
+              - apps/web/src/entities/session/ui/OwnershipGateDialog.vue
+                - apps/web/src/shared/ui/alert-dialog/index.ts
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialog.vue
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogAction.vue
+                    - apps/web/src/shared/lib/utils.ts (expanded above)
+                    - apps/web/src/shared/ui/button/index.ts (expanded above)
+                    - apps/web/src/shared/ui/spinner/index.ts (expanded above)
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogCancel.vue
+                    - apps/web/src/shared/lib/utils.ts (expanded above)
+                    - apps/web/src/shared/ui/button/index.ts (expanded above)
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogContent.vue
+                    - apps/web/src/shared/lib/utils.ts (expanded above)
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogDescription.vue
+                    - apps/web/src/shared/lib/utils.ts (expanded above)
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogFooter.vue
+                    - apps/web/src/shared/lib/utils.ts (expanded above)
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogHeader.vue
+                    - apps/web/src/shared/lib/utils.ts (expanded above)
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogTitle.vue
+                    - apps/web/src/shared/lib/utils.ts (expanded above)
+                  - apps/web/src/shared/ui/alert-dialog/AlertDialogTrigger.vue
+                - apps/web/src/entities/session/model/use-auth-store.ts (expanded above)
+        - apps/web/src/features/transaction/edit/index.ts
+          - apps/web/src/features/transaction/edit/ui/EditTransactionDialog.vue
+            - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+            - apps/web/src/entities/transaction/index.ts (expanded above)
+            - apps/web/src/entities/household/index.ts (expanded above)
+            - apps/web/src/entities/session/index.ts (expanded above)
+            - apps/web/src/features/transaction/edit/ui/CashflowEditForm.vue
+              - apps/web/src/entities/transaction/index.ts (expanded above)
+              - apps/web/src/shared/ui/button/index.ts (expanded above)
+              - apps/web/src/shared/ui/field/index.ts (expanded above)
+              - apps/web/src/shared/ui/input/index.ts (expanded above)
+              - apps/web/src/shared/ui/amount-field/index.ts (expanded above)
+              - apps/web/src/entities/account/index.ts (expanded above)
+              - apps/web/src/entities/category/index.ts (expanded above)
+              - apps/web/src/shared/services/notification/index.ts (expanded above)
+              - apps/web/src/features/transaction/edit/model/cashflow-schema.ts
+                - apps/web/src/shared/i18n/index.ts (expanded above)
+              - apps/web/src/shared/lib/money/index.ts (expanded above)
+            - apps/web/src/features/transaction/edit/ui/TransferEditForm.vue
+              - apps/web/src/entities/transaction/index.ts (expanded above)
+              - apps/web/src/shared/ui/button/index.ts (expanded above)
+              - apps/web/src/shared/ui/field/index.ts (expanded above)
+              - apps/web/src/shared/ui/input/index.ts (expanded above)
+              - apps/web/src/shared/ui/amount-field/index.ts (expanded above)
+              - apps/web/src/entities/account/index.ts (expanded above)
+              - apps/web/src/shared/services/notification/index.ts (expanded above)
+              - apps/web/src/features/transaction/edit/model/transfer-schema.ts
+                - apps/web/src/shared/i18n/index.ts (expanded above)
+              - apps/web/src/shared/lib/money/index.ts (expanded above)
+        - apps/web/src/features/transaction/delete/index.ts
+          - apps/web/src/features/transaction/delete/ui/DeleteTransactionDialog.vue
+            - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+            - apps/web/src/entities/transaction/index.ts (expanded above)
+            - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+        - apps/web/src/shared/ui/empty-state/index.ts
+          - apps/web/src/shared/ui/empty-state/EmptyState.vue
+        - apps/web/src/shared/ui/dropdown-menu/index.ts
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenu.vue
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuCheckboxItem.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuContent.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuGroup.vue
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuItem.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuLabel.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuRadioGroup.vue
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuRadioItem.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuSeparator.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuShortcut.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuSub.vue
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuSubContent.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuSubTrigger.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/dropdown-menu/DropdownMenuTrigger.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+
+## / (transactions)
+Entry: apps/web/src/pages/transactions/index.ts
+Dependencies:
+- apps/web/src/pages/transactions/index.ts
+  - apps/web/src/pages/transactions/ui/TransactionsPage.vue
+    - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+    - apps/web/src/features/transaction/add/index.ts (expanded above)
+    - apps/web/src/pages/transactions/ui/TransactionsBrowser.vue
+      - apps/web/src/pages/transactions/ui/TransactionsActiveFilters.vue
+        - apps/web/src/entities/transaction/index.ts (expanded above)
+        - apps/web/src/entities/account/index.ts (expanded above)
+        - apps/web/src/pages/transactions/model/use-transactions-filters.ts
+          - apps/web/src/pages/transactions/lib/transactions-query.ts
+            - apps/web/src/entities/transaction/index.ts (expanded above)
+            - apps/web/src/shared/lib/date/index.ts (expanded above)
+        - apps/web/src/shared/ui/chip/index.ts
+          - apps/web/src/shared/ui/chip/Chip.vue
+            - apps/web/src/shared/ui/badge/index.ts
+              - apps/web/src/shared/ui/badge/Badge.vue
+                - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/entities/category/index.ts (expanded above)
+      - apps/web/src/pages/transactions/ui/TransactionsDateFilter.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/popover/index.ts
+          - apps/web/src/shared/ui/popover/Popover.vue
+          - apps/web/src/shared/ui/popover/PopoverAnchor.vue
+          - apps/web/src/shared/ui/popover/PopoverContent.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/popover/PopoverTrigger.vue
+        - apps/web/src/shared/ui/range-calendar/index.ts
+          - apps/web/src/shared/ui/range-calendar/RangeCalendar.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarCell.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarCellTrigger.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/button/index.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarGrid.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarGridBody.vue
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarGridHead.vue
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarGridRow.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarHeadCell.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarHeader.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarHeading.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarNextButton.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/button/index.ts (expanded above)
+          - apps/web/src/shared/ui/range-calendar/RangeCalendarPrevButton.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/pages/transactions/model/use-transactions-filters.ts (expanded above)
+        - apps/web/src/shared/lib/date/index.ts (expanded above)
+      - apps/web/src/pages/transactions/ui/TransactionsFiltersSheet.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/sheet/index.ts
+          - apps/web/src/shared/ui/sheet/Sheet.vue
+          - apps/web/src/shared/ui/sheet/SheetClose.vue
+          - apps/web/src/shared/ui/sheet/SheetContent.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+            - apps/web/src/shared/ui/sheet/SheetOverlay.vue
+              - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/sheet/SheetDescription.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/sheet/SheetFooter.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/sheet/SheetHeader.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/sheet/SheetTitle.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/sheet/SheetTrigger.vue
+        - apps/web/src/pages/transactions/ui/TransactionsFilters.vue
+          - apps/web/src/shared/ui/button/index.ts (expanded above)
+          - apps/web/src/pages/transactions/model/transactions-filter-schema.ts
+            - apps/web/src/shared/i18n/index.ts (expanded above)
+          - apps/web/src/pages/transactions/model/use-transactions-filters.ts (expanded above)
+          - apps/web/src/pages/transactions/ui/TransactionTypeField.vue
+            - apps/web/src/shared/ui/select/index.ts (expanded above)
+            - apps/web/src/shared/ui/field/index.ts (expanded above)
+            - apps/web/src/entities/transaction/index.ts (expanded above)
+          - apps/web/src/pages/transactions/ui/TransactionCategoriesField.vue
+            - apps/web/src/shared/ui/select/index.ts (expanded above)
+            - apps/web/src/shared/ui/field/index.ts (expanded above)
+            - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+            - apps/web/src/entities/category/index.ts (expanded above)
+          - apps/web/src/pages/transactions/ui/TransactionAccountField.vue
+            - apps/web/src/shared/ui/select/index.ts (expanded above)
+            - apps/web/src/shared/ui/field/index.ts (expanded above)
+            - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+            - apps/web/src/entities/account/index.ts (expanded above)
+      - apps/web/src/pages/transactions/ui/TransactionsItemsList.vue
+        - apps/web/src/entities/transaction/index.ts (expanded above)
+        - apps/web/src/entities/account/index.ts (expanded above)
+        - apps/web/src/entities/category/index.ts (expanded above)
+        - apps/web/src/pages/transactions/model/use-transactions-filters.ts (expanded above)
+        - apps/web/src/features/household-author/index.ts (expanded above)
+        - apps/web/src/features/transaction/edit/index.ts (expanded above)
+        - apps/web/src/features/transaction/delete/index.ts (expanded above)
+        - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+        - apps/web/src/shared/ui/empty-state/index.ts (expanded above)
+        - apps/web/src/shared/ui/dropdown-menu/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+
+## / (analytics)
+Entry: apps/web/src/pages/analytics/index.ts
+Dependencies:
+- apps/web/src/pages/analytics/index.ts
+  - apps/web/src/pages/analytics/ui/AnalyticsPage.vue
+    - apps/web/src/entities/transaction/index.ts (expanded above)
+    - apps/web/src/entities/category/index.ts (expanded above)
+    - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+    - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+    - apps/web/src/pages/analytics/ui/AnalyticsOverviewCard.vue
+      - apps/web/src/entities/analytics/index.ts
+        - apps/web/src/entities/analytics/model/selectors.ts
+          - apps/web/src/entities/analytics/model/other-entry.ts
+      - apps/web/src/shared/ui/donut-chart/index.ts
+        - apps/web/src/shared/ui/donut-chart/DonutChart.vue
+        - apps/web/src/shared/ui/donut-chart/ChartLegend.vue
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+
+## / (analytics-detail)
+Entry: apps/web/src/pages/analytics-detail/index.ts
+Dependencies:
+- apps/web/src/pages/analytics-detail/index.ts
+  - apps/web/src/pages/analytics-detail/ui/AnalyticsDetailPage.vue
+    - apps/web/src/entities/analytics/index.ts (expanded above)
+    - apps/web/src/pages/analytics-detail/ui/AnalyticsDetailView.vue
+      - apps/web/src/entities/analytics/index.ts (expanded above)
+      - apps/web/src/entities/transaction/index.ts (expanded above)
+      - apps/web/src/entities/category/index.ts (expanded above)
+      - apps/web/src/shared/ui/donut-chart/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+      - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/pages/analytics-detail/ui/CategoryCashflowDialog.vue
+        - apps/web/src/entities/analytics/index.ts (expanded above)
+        - apps/web/src/entities/transaction/index.ts (expanded above)
+        - apps/web/src/features/transaction/edit/index.ts (expanded above)
+        - apps/web/src/features/transaction/delete/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/empty-state/index.ts (expanded above)
+        - apps/web/src/shared/lib/money/index.ts (expanded above)
+
+## / (debts)
+Entry: apps/web/src/pages/debts/index.ts
+Dependencies:
+- apps/web/src/pages/debts/index.ts
+  - apps/web/src/pages/debts/ui/DebtsPage.vue
+    - apps/web/src/entities/debtor/index.ts
+      - apps/web/src/entities/debtor/model/types.ts
+      - apps/web/src/entities/debtor/api/repository.ts
+      - apps/web/src/entities/debtor/model/use-debtors.ts
+        - apps/web/src/entities/debtor/api/repository.ts (expanded above)
+    - apps/web/src/entities/debt-operation/index.ts
+      - apps/web/src/entities/debt-operation/model/types.ts
+      - apps/web/src/entities/debt-operation/api/repository.ts
+      - apps/web/src/entities/debt-operation/model/use-debt-operations.ts
+        - apps/web/src/entities/debt-operation/api/repository.ts (expanded above)
+    - apps/web/src/pages/debts/ui/DebtsSummaryCard.vue
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/entities/debt-operation/index.ts (expanded above)
+    - apps/web/src/pages/debts/ui/DebtorSection.vue
+      - apps/web/src/entities/debt-operation/index.ts (expanded above)
+      - apps/web/src/pages/debts/model/selectors.ts
+        - apps/web/src/entities/debt-operation/index.ts (expanded above)
+      - apps/web/src/pages/debts/ui/DebtorRow.vue
+        - apps/web/src/pages/debts/model/selectors.ts (expanded above)
+        - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/pages/debts/ui/DebtorHistoryDialog.vue
+      - apps/web/src/entities/debtor/index.ts (expanded above)
+      - apps/web/src/entities/debt-operation/index.ts (expanded above)
+      - apps/web/src/pages/debts/model/selectors.ts (expanded above)
+      - apps/web/src/features/household-author/index.ts (expanded above)
+      - apps/web/src/pages/debts/ui/OperationFormDialog.vue
+        - apps/web/src/entities/debtor/index.ts (expanded above)
+        - apps/web/src/entities/debt-operation/index.ts (expanded above)
+        - apps/web/src/pages/debts/model/schemas.ts
+          - apps/web/src/shared/i18n/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/shared/ui/amount-field/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/pages/debts/ui/DebtorFormDialog.vue
+        - apps/web/src/entities/debtor/index.ts (expanded above)
+        - apps/web/src/pages/debts/model/schemas.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+      - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+      - apps/web/src/shared/ui/empty-state/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+    - apps/web/src/pages/debts/ui/NewDebtorDebtDialog.vue
+      - apps/web/src/entities/debtor/index.ts (expanded above)
+      - apps/web/src/entities/debt-operation/index.ts (expanded above)
+      - apps/web/src/pages/debts/model/schemas.ts (expanded above)
+      - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+      - apps/web/src/shared/ui/field/index.ts (expanded above)
+      - apps/web/src/shared/ui/input/index.ts (expanded above)
+      - apps/web/src/shared/ui/amount-field/index.ts (expanded above)
+      - apps/web/src/shared/services/notification/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+    - apps/web/src/shared/ui/card/index.ts (expanded above)
+    - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+    - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+
+## / (plans)
+Entry: apps/web/src/pages/plans/index.ts
+Dependencies:
+- apps/web/src/pages/plans/index.ts
+  - apps/web/src/pages/plans/ui/PlansPage.vue
+    - apps/web/src/entities/planned-payment/index.ts
+      - apps/web/src/entities/planned-payment/model/types.ts
+      - apps/web/src/entities/planned-payment/api/repository.ts
+      - apps/web/src/entities/planned-payment/model/use-planned-payments.ts
+        - apps/web/src/entities/planned-payment/api/repository.ts (expanded above)
+    - apps/web/src/entities/category/index.ts (expanded above)
+    - apps/web/src/pages/plans/ui/PlansTypeCard.vue
+      - apps/web/src/entities/planned-payment/index.ts (expanded above)
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+    - apps/web/src/pages/plans/ui/PlansListDialog.vue
+      - apps/web/src/entities/planned-payment/index.ts (expanded above)
+      - apps/web/src/pages/plans/model/selectors.ts
+        - apps/web/src/entities/planned-payment/index.ts (expanded above)
+      - apps/web/src/pages/plans/ui/PlanFormDialog.vue
+        - apps/web/src/entities/planned-payment/index.ts (expanded above)
+        - apps/web/src/entities/account/index.ts (expanded above)
+        - apps/web/src/entities/category/index.ts (expanded above)
+        - apps/web/src/pages/plans/model/plan-schema.ts
+          - apps/web/src/shared/i18n/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/shared/ui/amount-field/index.ts (expanded above)
+        - apps/web/src/shared/ui/native-select/index.ts
+          - apps/web/src/shared/ui/native-select/NativeSelect.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/native-select/NativeSelectOptGroup.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+          - apps/web/src/shared/ui/native-select/NativeSelectOption.vue
+            - apps/web/src/shared/lib/utils.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/pages/plans/ui/ConfirmPlanDialog.vue
+        - apps/web/src/entities/planned-payment/index.ts (expanded above)
+        - apps/web/src/entities/account/index.ts (expanded above)
+        - apps/web/src/pages/plans/model/selectors.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/shared/ui/amount-field/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+      - apps/web/src/shared/ui/badge/index.ts (expanded above)
+      - apps/web/src/shared/ui/empty-state/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/features/household-author/index.ts (expanded above)
+    - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+    - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+
+## / (income)
+Entry: apps/web/src/pages/income/index.ts
+Dependencies:
+- apps/web/src/pages/income/index.ts
+  - apps/web/src/pages/income/ui/IncomePage.vue
+    - apps/web/src/features/transaction/add/index.ts (expanded above)
+
+## / (accounts)
+Entry: apps/web/src/pages/accounts/index.ts
+Dependencies:
+- apps/web/src/pages/accounts/index.ts
+  - apps/web/src/pages/accounts/ui/AccountsPage.vue
+    - apps/web/src/entities/account/index.ts (expanded above)
+    - apps/web/src/pages/accounts/ui/AccountCard.vue
+      - apps/web/src/shared/ui/card/index.ts (expanded above)
+      - apps/web/src/shared/lib/money/index.ts (expanded above)
+      - apps/web/src/shared/lib/hash-generator.ts
+      - apps/web/src/entities/account/index.ts (expanded above)
+      - apps/web/src/pages/accounts/features/delete-account/index.ts
+        - apps/web/src/pages/accounts/features/delete-account/ui/DeleteAccountDialog.vue
+          - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+          - apps/web/src/entities/account/index.ts (expanded above)
+          - apps/web/src/shared/services/notification/index.ts (expanded above)
+      - apps/web/src/shared/ui/dropdown-menu/index.ts (expanded above)
+      - apps/web/src/shared/ui/button/index.ts (expanded above)
+      - apps/web/src/pages/accounts/features/edit-account/ui/EditAccountDialog.vue
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/pages/accounts/features/edit-account/ui/EditAccountForm.vue
+          - apps/web/src/pages/accounts/features/edit-account/model/edit-account-schema.ts
+            - apps/web/src/shared/i18n/index.ts (expanded above)
+          - apps/web/src/shared/ui/button/index.ts (expanded above)
+          - apps/web/src/shared/ui/field/index.ts (expanded above)
+          - apps/web/src/shared/ui/input/index.ts (expanded above)
+          - apps/web/src/shared/ui/number-field/index.ts (expanded above)
+          - apps/web/src/entities/account/index.ts (expanded above)
+          - apps/web/src/shared/services/notification/index.ts (expanded above)
+          - apps/web/src/shared/lib/money/index.ts (expanded above)
+        - apps/web/src/entities/account/index.ts (expanded above)
+    - apps/web/src/shared/ui/card/index.ts (expanded above)
+    - apps/web/src/shared/lib/money/index.ts (expanded above)
+    - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+    - apps/web/src/shared/ui/empty-state/index.ts (expanded above)
+    - apps/web/src/pages/accounts/features/add-account/index.ts
+      - apps/web/src/pages/accounts/features/add-account/ui/AddAccountDialog.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/pages/accounts/features/add-account/ui/AddAccountForm.vue
+          - apps/web/src/pages/accounts/features/add-account/model/add-account-schema.ts
+            - apps/web/src/shared/i18n/index.ts (expanded above)
+          - apps/web/src/shared/ui/button/index.ts (expanded above)
+          - apps/web/src/shared/ui/field/index.ts (expanded above)
+          - apps/web/src/shared/ui/input/index.ts (expanded above)
+          - apps/web/src/shared/ui/number-field/index.ts (expanded above)
+          - apps/web/src/shared/lib/money/index.ts (expanded above)
+          - apps/web/src/entities/account/index.ts (expanded above)
+          - apps/web/src/shared/services/notification/index.ts (expanded above)
+      - apps/web/src/pages/accounts/features/add-account/ui/AddAccountForm.vue (expanded above)
+
+## / (settings)
+Entry: apps/web/src/pages/settings/index.ts
+Dependencies:
+- apps/web/src/pages/settings/index.ts
+  - apps/web/src/pages/settings/ui/SettingsPage.vue
+    - apps/web/src/shared/ui/select/index.ts (expanded above)
+    - apps/web/src/shared/lib/capitalize.ts
+    - apps/web/src/shared/store/use-settings-store.ts
+      - apps/web/src/shared/config/app.ts (expanded above)
+      - apps/web/src/shared/config/settings.ts
+        - apps/web/src/shared/config/locale.ts
+    - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/shared/ui/badge/index.ts (expanded above)
+    - apps/web/src/shared/ui/card/index.ts (expanded above)
+    - apps/web/src/shared/ui/skeleton/index.ts (expanded above)
+    - apps/web/src/entities/session/index.ts (expanded above)
+    - apps/web/src/entities/household/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/dissolve-household/index.ts
+      - apps/web/src/pages/settings/features/dissolve-household/ui/DissolveHouseholdDialog.vue
+        - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/entities/transaction/index.ts (expanded above)
+        - apps/web/src/entities/debt-operation/index.ts (expanded above)
+        - apps/web/src/entities/planned-payment/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/features/household-join/index.ts
+          - apps/web/src/features/household-join/model/use-household-join.ts
+            - apps/web/src/shared/i18n/index.ts (expanded above)
+            - apps/web/src/shared/lib/local-db/index.ts (expanded above)
+            - apps/web/src/entities/household/index.ts (expanded above)
+            - apps/web/src/entities/session/index.ts (expanded above)
+            - apps/web/src/shared/services/notification/index.ts (expanded above)
+          - apps/web/src/features/household-join/ui/HouseholdChoiceDialog.vue
+            - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+            - apps/web/src/shared/ui/button/index.ts (expanded above)
+            - apps/web/src/features/household-join/model/use-household-join.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/display-name/index.ts
+      - apps/web/src/pages/settings/features/display-name/ui/DisplayNameEditor.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/card/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/pages/settings/features/display-name/model/display-name-schema.ts
+          - apps/web/src/shared/i18n/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/household-code/index.ts
+      - apps/web/src/pages/settings/features/household-code/ui/HouseholdCodeDialog.vue
+        - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/household-invitations/index.ts
+      - apps/web/src/pages/settings/features/household-invitations/ui/HouseholdInvitationsDialog.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/badge/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/invite-member/index.ts
+      - apps/web/src/pages/settings/features/invite-member/ui/InviteMemberDialog.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/pages/settings/features/invite-member/model/invite-member-schema.ts
+          - apps/web/src/shared/i18n/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/join-household/index.ts
+      - apps/web/src/pages/settings/features/join-household/ui/JoinHouseholdDialog.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/features/household-join/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/pages/settings/features/join-household/model/join-by-code-schema.ts
+          - apps/web/src/shared/i18n/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/leave-household/index.ts
+      - apps/web/src/pages/settings/features/leave-household/ui/LeaveHouseholdButton.vue
+        - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/features/household-join/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/remove-member/index.ts
+      - apps/web/src/pages/settings/features/remove-member/ui/RemoveMemberDialog.vue
+        - apps/web/src/shared/ui/alert-dialog/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/pages/settings/features/rename-household/index.ts
+      - apps/web/src/pages/settings/features/rename-household/ui/RenameHouseholdDialog.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/shared/ui/dialog/index.ts (expanded above)
+        - apps/web/src/shared/ui/field/index.ts (expanded above)
+        - apps/web/src/shared/ui/input/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/shared/services/notification/index.ts (expanded above)
+        - apps/web/src/pages/settings/features/rename-household/model/rename-household-schema.ts
+          - apps/web/src/shared/i18n/index.ts (expanded above)
+    - apps/web/src/shared/services/notification/index.ts (expanded above)
+
+## / (login)
+Entry: apps/web/src/pages/login/index.ts
+Dependencies:
+- apps/web/src/pages/login/index.ts
+  - apps/web/src/pages/login/ui/LoginPage.vue
+    - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/shared/ui/field/index.ts (expanded above)
+    - apps/web/src/shared/ui/input/index.ts (expanded above)
+    - apps/web/src/entities/session/index.ts (expanded above)
+    - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/shared/lib/data/index.ts (expanded above)
+
+## / (register)
+Entry: apps/web/src/pages/register/index.ts
+Dependencies:
+- apps/web/src/pages/register/index.ts
+  - apps/web/src/pages/register/ui/RegisterPage.vue
+    - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/shared/ui/field/index.ts (expanded above)
+    - apps/web/src/shared/ui/input/index.ts (expanded above)
+    - apps/web/src/entities/session/index.ts (expanded above)
+    - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/shared/lib/data/index.ts (expanded above)
+
+## / (verify-email)
+Entry: apps/web/src/pages/verify-email/index.ts
+Dependencies:
+- apps/web/src/pages/verify-email/index.ts
+  - apps/web/src/pages/verify-email/ui/VerifyEmailPage.vue
+    - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/shared/ui/field/index.ts (expanded above)
+    - apps/web/src/shared/ui/input/index.ts (expanded above)
+    - apps/web/src/entities/session/index.ts (expanded above)
+    - apps/web/src/shared/services/notification/index.ts (expanded above)
+    - apps/web/src/shared/lib/data/index.ts (expanded above)
+
+## / (invite)
+Entry: apps/web/src/pages/invite/index.ts
+Dependencies:
+- apps/web/src/pages/invite/index.ts
+  - apps/web/src/pages/invite/ui/InvitePage.vue
+    - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/shared/ui/card/index.ts (expanded above)
+    - apps/web/src/shared/ui/error-state/index.ts (expanded above)
+    - apps/web/src/shared/ui/spinner/index.ts (expanded above)
+    - apps/web/src/entities/household/index.ts (expanded above)
+    - apps/web/src/entities/session/index.ts (expanded above)
+    - apps/web/src/shared/lib/data/index.ts (expanded above)
+    - apps/web/src/pages/invite/features/accept-invitation/index.ts
+      - apps/web/src/pages/invite/features/accept-invitation/ui/AcceptInvitationForm.vue
+        - apps/web/src/shared/ui/button/index.ts (expanded above)
+        - apps/web/src/entities/household/index.ts (expanded above)
+        - apps/web/src/entities/session/index.ts (expanded above)
+        - apps/web/src/features/household-join/index.ts (expanded above)
+
+## / (reset-password)
+Entry: apps/web/src/pages/reset-password/index.ts
+Dependencies:
+- apps/web/src/pages/reset-password/index.ts
+  - apps/web/src/pages/reset-password/ui/ResetPasswordPage.vue
+    - apps/web/src/shared/ui/button/index.ts (expanded above)
+    - apps/web/src/shared/ui/field/index.ts (expanded above)
+    - apps/web/src/shared/ui/input/index.ts (expanded above)
+    - apps/web/src/entities/session/index.ts (expanded above)
+    - apps/web/src/shared/services/notification/index.ts (expanded above)
