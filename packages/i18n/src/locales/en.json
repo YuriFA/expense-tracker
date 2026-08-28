@@ -219,7 +219,10 @@
     "contactDeleted": "Contact deleted",
     "error": "Something went wrong",
     "debtAction": "Record debt",
-    "repaymentAction": "Record repayment"
+    "repaymentAction": "Record repayment",
+    "add": "Add",
+    "lastOperation": "Last operation: {date}",
+    "balance": "Balance"
   },
   "plans": {
     "expensesTitle": "Expenses",

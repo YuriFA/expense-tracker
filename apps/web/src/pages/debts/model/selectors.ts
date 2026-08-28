@@ -74,17 +74,6 @@ export function debtorHistoryGroups(
   }))
 }
 
-/** Debtor avatar color: id hashed over the brand palette (token values as data). */
-const AVATAR_COLORS = ['#6366f1', '#7c5cff', '#a78bfa', '#f97316', '#22c55e', '#16a34a']
-
-export function debtorAvatarColor(id: string): string {
-  let hash = 0
-  for (const character of id) {
-    hash = (hash * 31 + character.charCodeAt(0)) | 0
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]!
-}
-
 /** Initials of the first and last word, uppercased; '?' for an empty name. */
 export function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean)
@@ -92,4 +81,20 @@ export function initialsOf(name: string): string {
   const first = words[0]![0]!
   const last = words.length > 1 ? words[words.length - 1]![0]! : ''
   return (first + last).toUpperCase()
+}
+
+/** The debtor's latest operation timestamp in one direction (null when none). */
+export function lastOperationAt(
+  operations: readonly DebtOperation[],
+  debtorId: string,
+  direction: DebtDirection,
+): string | null {
+  const own = operations.filter(
+    (operation) => operation.debtorId === debtorId && operation.direction === direction,
+  )
+  if (own.length === 0) return null
+  return own.reduce(
+    (latest, operation) => (operation.occurredAt > latest ? operation.occurredAt : latest),
+    own[0]!.occurredAt,
+  )
 }

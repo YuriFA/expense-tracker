@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest'
 import type { Debtor } from '@expense-tracker/api'
 import type { DebtOperation } from '@/entities/debt-operation'
 import {
-  debtorAvatarColor,
   debtorHistoryGroups,
   debtorSection,
   initialsOf,
+  lastOperationAt,
 } from './selectors'
 
 const debtors: Debtor[] = [
@@ -97,11 +97,18 @@ describe('debtor avatar helpers', () => {
     expect(initialsOf('Борис')).toBe('Б')
     expect(initialsOf('   ')).toBe('?')
   })
+})
 
-  it('hashes the id stably over the palette', () => {
-    expect(debtorAvatarColor('d1')).toBe(debtorAvatarColor('d1'))
-    expect(['#6366f1', '#7c5cff', '#a78bfa', '#f97316', '#22c55e', '#16a34a']).toContain(
-      debtorAvatarColor('d1'),
-    )
+describe('lastOperationAt', () => {
+  it('returns the latest timestamp of the debtor+direction, null when absent', () => {
+    const operations = [
+      op({ id: 'o1', debtorId: 'd1', direction: 'receivable', occurredAt: '2026-08-20T12:00:00.000Z' }),
+      op({ id: 'o2', debtorId: 'd1', direction: 'receivable', occurredAt: '2026-08-24T09:00:00.000Z' }),
+      // Other debtor / other direction never leak into the meta line.
+      op({ id: 'o3', debtorId: 'd2', direction: 'receivable', occurredAt: '2026-08-25T09:00:00.000Z' }),
+      op({ id: 'o4', debtorId: 'd1', direction: 'payable', occurredAt: '2026-08-26T09:00:00.000Z' }),
+    ]
+    expect(lastOperationAt(operations, 'd1', 'receivable')).toBe('2026-08-24T09:00:00.000Z')
+    expect(lastOperationAt(operations, 'd3', 'receivable')).toBeNull()
   })
 })

@@ -12,7 +12,6 @@ import DebtsSummaryCard from './DebtsSummaryCard.vue'
 import DebtorSection from './DebtorSection.vue'
 import DebtorHistoryDialog from './DebtorHistoryDialog.vue'
 import NewDebtorDebtDialog from './NewDebtorDebtDialog.vue'
-import { Card, CardContent } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -77,19 +76,24 @@ const openNewDebtor = (direction: DebtDirection) => {
         <DebtsSummaryCard :totals="totals" />
       </div>
 
-      <Card class="mt-4">
-        <CardContent class="flex flex-col gap-4 pb-6">
+      <!-- Composite list card: full-bleed sections, paper band between them
+           (warm-minimal design D1). -->
+      <div class="mt-4 overflow-hidden rounded-lg border bg-card text-card-foreground">
+        <template v-for="direction in (['receivable', 'payable'] as const)" :key="direction">
+          <div
+            v-if="direction === 'payable'"
+            class="h-4 border-y border-border bg-background"
+            aria-hidden="true"
+          />
           <DebtorSection
-            v-for="direction in (['receivable', 'payable'] as const)"
-            :key="direction"
             :direction="direction"
             :debtors="debtors ?? []"
             :operations="operations ?? []"
             @add="openNewDebtor"
             @select="openHistory"
           />
-        </CardContent>
-      </Card>
+        </template>
+      </div>
     </template>
 
     <DebtorHistoryDialog

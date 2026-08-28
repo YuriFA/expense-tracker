@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowDown, ArrowUp } from '@lucide/vue'
 import { Card, CardContent } from '@/shared/ui/card'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 import type { DirectionBalances } from '@/entities/debt-operation'
 
-// Direction totals: each is the sum of that direction's per-debtor balances
-// (no netting across directions - debts capability). The two directions get
-// their own semantic tints (green receivable / terracotta payable).
+// Direction totals (debts capability): each is the sum of that direction's
+// per-debtor balances, no netting across directions. Two eyebrow columns on
+// one card with a hairline divider; receivable is signed «+», payable «−».
 
-defineProps<{
+const props = defineProps<{
   totals: DirectionBalances
 }>()
 
@@ -20,34 +19,33 @@ const { t, locale } = useI18n()
 const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
 const format = (value: number) => formatMoney(value, displayCurrency.value, locale.value)
+
+// Literal sign strings per branch (the i18n lint bans raw text in templates).
+const receivableSign = '+'
+const payableSign = '−'
 </script>
 
 <template>
   <Card>
-    <CardContent class="flex flex-col gap-3 pb-6 sm:flex-row">
-      <div class="flex flex-1 items-center gap-3">
-        <span
-          class="flex size-9 items-center justify-center rounded-full bg-success/10 text-success"
-          aria-hidden="true"
-        >
-          <ArrowDown class="size-4" />
-        </span>
-        <span class="flex-1 text-sm font-medium">{{ t('debts.receivable') }}</span>
-        <span class="font-semibold text-success" data-testid="debts-total-receivable">
-          {{ format(totals.receivable) }}
-        </span>
+    <CardContent class="flex flex-col gap-4 pb-6 sm:flex-row sm:gap-12">
+      <div class="flex-1">
+        <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {{ t('debts.receivable') }}
+        </p>
+        <p class="mt-1 text-2xl font-bold tabular-nums text-success">
+          <span aria-hidden="true">{{ receivableSign }}</span
+          ><span data-testid="debts-total-receivable">{{ format(props.totals.receivable) }}</span>
+        </p>
       </div>
-      <div class="flex flex-1 items-center gap-3">
-        <span
-          class="flex size-9 items-center justify-center rounded-full bg-warning/10 text-warning"
-          aria-hidden="true"
-        >
-          <ArrowUp class="size-4" />
-        </span>
-        <span class="flex-1 text-sm font-medium">{{ t('debts.payable') }}</span>
-        <span class="font-semibold text-warning" data-testid="debts-total-payable">
-          {{ format(totals.payable) }}
-        </span>
+      <div class="hidden w-px bg-border sm:block" aria-hidden="true" />
+      <div class="flex-1">
+        <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {{ t('debts.payable') }}
+        </p>
+        <p class="mt-1 text-2xl font-bold tabular-nums text-warning">
+          <span aria-hidden="true">{{ payableSign }}</span
+          ><span data-testid="debts-total-payable">{{ format(props.totals.payable) }}</span>
+        </p>
       </div>
     </CardContent>
   </Card>

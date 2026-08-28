@@ -6,10 +6,10 @@ import type { Debtor } from '@expense-tracker/api'
 import type { DebtDirection, DebtOperation } from '@/entities/debt-operation'
 import { debtorSection } from '../model/selectors'
 import DebtorRow from './DebtorRow.vue'
-import { Button } from '@/shared/ui/button'
 
-// One direction's section: header with the combined contact+debt add action,
-// visible debtor rows, and settled (zero-balance) debtors behind a reveal.
+// One direction's section of the composite debts card: eyebrow header with
+// the direction-tinted «add» pill, full-bleed debtor rows, and settled
+// (zero-balance) debtors behind a reveal.
 
 const props = defineProps<{
   direction: DebtDirection
@@ -41,55 +41,59 @@ const showSettled = ref(false)
 
 <template>
   <section>
-    <div class="flex items-center justify-between">
-      <h2 class="text-sm font-medium text-muted-foreground">{{ title }}</h2>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="size-7 rounded-full"
+    <div class="flex items-center justify-between border-b border-border px-4 py-4 md:px-6">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">{{ title }}</h2>
+      <button
+        type="button"
+        class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors"
+        :class="
+          direction === 'receivable' ? 'text-primary hover:bg-accent' : 'text-warning hover:bg-warning/10'
+        "
         :aria-label="addTitle"
         :data-testid="`debts-section-add-${direction}`"
         @click="emit('add', direction)"
       >
-        <Plus class="size-4" />
-      </Button>
+        <Plus class="size-3.5" aria-hidden="true" />
+        {{ t('debts.add') }}
+      </button>
     </div>
 
-    <div class="mt-1">
-      <p v-if="section.visible.length === 0 && section.settled.length === 0" class="py-2 text-sm text-muted-foreground">
-        {{ emptyText }}
-      </p>
+    <p
+      v-if="section.visible.length === 0 && section.settled.length === 0"
+      class="px-4 py-4 text-sm text-muted-foreground md:px-6"
+    >
+      {{ emptyText }}
+    </p>
+    <DebtorRow
+      v-for="view in section.visible"
+      :key="view.debtor.id"
+      :debtor="view.debtor"
+      :balance="view.balance"
+      :direction="direction"
+      :operations="operations"
+      @click="emit('select', view.debtor, direction)"
+    />
+    <button
+      v-if="section.settled.length > 0"
+      type="button"
+      class="w-full px-4 py-2.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:underline md:px-6"
+      :data-testid="`debts-settled-reveal-${direction}`"
+      @click="showSettled = !showSettled"
+    >
+      {{
+        showSettled ? t('debts.hideSettled') : t('debts.showSettled', { count: section.settled.length })
+      }}
+    </button>
+    <template v-if="showSettled">
       <DebtorRow
-        v-for="view in section.visible"
+        v-for="view in section.settled"
         :key="view.debtor.id"
         :debtor="view.debtor"
         :balance="view.balance"
         :direction="direction"
+        :operations="operations"
         @click="emit('select', view.debtor, direction)"
       />
-      <button
-        v-if="section.settled.length > 0"
-        type="button"
-        class="px-2 py-1 text-xs text-muted-foreground hover:underline"
-        :data-testid="`debts-settled-reveal-${direction}`"
-        @click="showSettled = !showSettled"
-      >
-        {{
-          showSettled
-            ? t('debts.hideSettled')
-            : t('debts.showSettled', { count: section.settled.length })
-        }}
-      </button>
-      <template v-if="showSettled">
-        <DebtorRow
-          v-for="view in section.settled"
-          :key="view.debtor.id"
-          :debtor="view.debtor"
-          :balance="view.balance"
-          :direction="direction"
-          @click="emit('select', view.debtor, direction)"
-        />
-      </template>
-    </div>
+    </template>
   </section>
 </template>

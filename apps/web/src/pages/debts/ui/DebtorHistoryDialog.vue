@@ -24,9 +24,9 @@ import { Pencil } from '@lucide/vue'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 // Debtor history (debts capability): the debtor's operation history for one
-// direction with the derived balance header, day-grouped newest first, and
-// actions to add/edit operations and edit the contact - a web dialog instead
-// of the mobile bottom sheet (web-screens-parity design D1).
+// direction as full-bleed day bands with kind-titled rows (note as the meta
+// line); the derived balance sits in the footer above the two actions - a
+// web dialog instead of the mobile bottom sheet (web-screens-parity D1).
 
 const props = defineProps<{
   debtor: Debtor
@@ -55,6 +55,9 @@ const groups = computed(() =>
   debtorHistoryGroups(props.operations, props.debtor.id, props.direction, locale.value),
 )
 
+const kindLabel = (operation: DebtOperation) =>
+  operation.kind === 'debt' ? t('debts.debt') : t('debts.repayment')
+
 const operationText = (operation: DebtOperation) =>
   `${operation.kind === 'debt' ? '+' : '−'}\u00A0${formatMoney(operation.amount, displayCurrency.value, locale.value)}`
 
@@ -80,8 +83,13 @@ const editDebtorOpen = ref(false)
 <template>
   <Dialog v-model:open="open">
     <DialogContent class="sm:max-w-md" data-testid="debts-history-dialog">
-      <DialogHeader class="flex-row items-center justify-between space-y-0">
-        <DialogTitle>{{ debtor.name }}</DialogTitle>
+      <DialogHeader class="flex-row items-start justify-between space-y-0">
+        <div>
+          <DialogTitle>{{ debtor.name }}</DialogTitle>
+          <p class="mt-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {{ directionLabel }}
+          </p>
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -93,41 +101,41 @@ const editDebtorOpen = ref(false)
         </Button>
       </DialogHeader>
 
-      <div class="text-center">
-        <p class="text-xs font-medium uppercase text-muted-foreground">{{ directionLabel }}</p>
-        <p class="text-2xl font-bold" :class="{ 'text-destructive': balance < 0 }" data-testid="debts-history-balance">
-          {{ balanceText }}
-        </p>
-      </div>
-
-      <div class="max-h-72 space-y-4 overflow-y-auto">
+      <div class="-mx-6 max-h-80 overflow-y-auto">
         <EmptyState v-if="groups.length === 0" :title="t('debts.historyEmpty')" />
         <div v-for="group in groups" :key="group.key" :data-testid="`debts-history-day-${group.key}`">
-          <p class="text-xs font-medium uppercase text-muted-foreground">{{ group.title }}</p>
-          <div class="mt-1 space-y-1">
+          <div class="border-y border-border bg-muted/50 px-6 py-2.5 first:border-t-0">
+            <span class="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              {{ group.title }}
+            </span>
+          </div>
+          <div class="divide-y divide-border/60">
             <button
               v-for="operation in group.operations"
               :key="operation.id"
               type="button"
-              class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted/70"
+              class="flex w-full items-center justify-between gap-3 px-6 py-3.5 text-left transition-colors hover:bg-muted/40"
               :data-testid="`debts-history-op-${operation.id}`"
               @click="openEdit(operation)"
             >
-              <span class="min-w-0 flex-1">
-                <span class="block truncate text-sm">
-                  {{ operation.note || (operation.kind === 'debt' ? t('debts.debt') : t('debts.repayment')) }}
-                </span>
+              <span class="min-w-0">
+                <span class="block truncate text-sm font-semibold">{{ kindLabel(operation) }}</span>
                 <span
-                  v-if="authorLabel(operation.authorId)"
-                  class="block text-xs text-muted-foreground"
-                  :data-testid="`debts-history-op-${operation.id}-author`"
+                  v-if="operation.note || authorLabel(operation.authorId)"
+                  class="mt-0.5 block truncate text-[11px] text-muted-foreground"
                 >
-                  {{ authorLabel(operation.authorId) }}
+                  {{ operation.note }}
+                  <span
+                    v-if="authorLabel(operation.authorId)"
+                    :data-testid="`debts-history-op-${operation.id}-author`"
+                  >
+                    · {{ authorLabel(operation.authorId) }}
+                  </span>
                 </span>
               </span>
               <span
-                class="text-sm font-medium"
-                :class="operation.kind === 'debt' ? 'text-[var(--success)]' : 'text-destructive'"
+                class="shrink-0 text-sm font-bold tabular-nums"
+                :class="operation.kind === 'debt' ? 'text-success' : 'text-warning'"
               >
                 {{ operationText(operation) }}
               </span>
@@ -136,18 +144,31 @@ const editDebtorOpen = ref(false)
         </div>
       </div>
 
-      <DialogFooter class="flex-row gap-2">
-        <Button
-          variant="outline"
-          class="flex-1"
-          data-testid="debts-new-repayment"
-          @click="openCreate('repayment')"
-        >
-          {{ t('debts.repaymentAction') }}
-        </Button>
-        <Button class="flex-1" data-testid="debts-new-operation" @click="openCreate('debt')">
-          {{ t('debts.debtAction') }}
-        </Button>
+      <DialogFooter class="flex-col gap-4 sm:flex-col">
+        <div class="flex w-full items-center justify-between">
+          <span class="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            {{ t('debts.balance') }}
+          </span>
+          <span
+            class="text-xl font-bold tabular-nums"
+            :class="{ 'text-destructive': balance < 0 }"
+            data-testid="debts-history-balance"
+          >
+            {{ balanceText }}
+          </span>
+        </div>
+        <div class="grid w-full grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            data-testid="debts-new-repayment"
+            @click="openCreate('repayment')"
+          >
+            {{ t('debts.repaymentAction') }}
+          </Button>
+          <Button data-testid="debts-new-operation" @click="openCreate('debt')">
+            {{ t('debts.debtAction') }}
+          </Button>
+        </div>
       </DialogFooter>
 
       <OperationFormDialog

@@ -188,7 +188,7 @@
     "receivableAddTitle": "Кто должен",
     "payableAddTitle": "Кому должен",
     "debt": "Долг",
-    "repayment": "Списание",
+    "repayment": "Погашение",
     "contact": "Контакт",
     "direction": "Направление",
     "newOperation": "Новая операция",
@@ -219,7 +219,10 @@
     "contactDeleted": "Контакт удалён",
     "error": "Что-то пошло не так",
     "debtAction": "Добавить долг",
-    "repaymentAction": "Внести погашение"
+    "repaymentAction": "Внести погашение",
+    "add": "Добавить",
+    "lastOperation": "Последняя операция: {date}",
+    "balance": "Баланс"
   },
   "plans": {
     "expensesTitle": "Расходы",
