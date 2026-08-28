@@ -2,7 +2,12 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlusIcon } from '@lucide/vue'
-import type { Category } from '@/entities/category'
+import {
+  CATEGORY_ICONS,
+  DEFAULT_CATEGORY_ICON,
+  pickCategoryColor,
+  type Category,
+} from '@/entities/category'
 import { useCategories, useCreateCategory } from '@/entities/category'
 import { Button } from '@/shared/ui/button'
 import {
@@ -21,7 +26,9 @@ import { notification } from '@/shared/services/notification'
 // registration, so anonymous local mode starts with no categories - without
 // this affordance an income/expense transaction cannot be created at all.
 // User-created categories are ordinary local records: they sync as creates
-// on first login, exactly like mobile.
+// on first login, exactly like mobile. Icon and color are a pre-paired set
+// (category-appearance config): the user picks only the emoji, the color is
+// assigned automatically and stored on the record.
 
 const { type } = defineProps<{
   type: 'expense' | 'income'
@@ -37,21 +44,7 @@ const { t } = useI18n()
 const { mutateAsync: createCategory, asyncStatus } = useCreateCategory()
 const { data: categories } = useCategories()
 const name = ref('')
-
-// The closed color palette of the mobile category-appearance config (same
-// set, kept in sync by hand). Web creation has no picker yet, so new
-// categories cycle through it by the current category count - consecutive
-// categories differ. Order starts with the vivid colors: nearly-white
-// aliceblue goes last, a chart segment in it would be invisible.
-const CATEGORY_COLORS = [
-  '#6366f1', // brand-indigo
-  '#f97316', // brand-orange
-  '#22c55e', // brand-green
-  '#7c5cff', // brand-violet
-  '#a78bfa', // brand-lilac
-  '#16a34a', // brand-leaf
-  '#f1f3fd', // brand-aliceblue
-] as const
+const icon = ref<string>(DEFAULT_CATEGORY_ICON.icon)
 
 async function submit() {
   const trimmed = name.value.trim()
@@ -60,14 +53,16 @@ async function submit() {
     const category = await createCategory({
       name: trimmed,
       type,
-      icon: '🏷️',
-      color:
-        CATEGORY_COLORS[(categories.value?.length ?? 0) % CATEGORY_COLORS.length] ??
-        CATEGORY_COLORS[1],
+      icon: icon.value,
+      color: pickCategoryColor(
+        icon.value,
+        categories.value?.map((existing) => existing.color) ?? [],
+      ),
     })
     notification.success(t('addTransaction.categoryCreated'))
     emit('created', category)
     name.value = ''
+    icon.value = DEFAULT_CATEGORY_ICON.icon
     open.value = false
   } catch (error) {
     notification.mutationError(error, {
@@ -94,6 +89,31 @@ async function submit() {
             data-testid="new-category-name"
             :placeholder="t('addTransaction.categoryName')"
           />
+        </Field>
+        <Field>
+          <FieldLabel>{{ t('addTransaction.categoryIcon') }}</FieldLabel>
+          <!-- Picker tiles are live previews: each emoji on the pastel tint
+               of its own paired color (design-system identity rule). -->
+          <div
+            class="flex flex-wrap gap-2"
+            role="radiogroup"
+            :aria-label="t('addTransaction.categoryIcon')"
+          >
+            <button
+              v-for="(option, index) in CATEGORY_ICONS"
+              :key="option.icon"
+              type="button"
+              role="radio"
+              :aria-checked="icon === option.icon"
+              :data-testid="`new-category-icon-${index}`"
+              class="flex size-10 items-center justify-center rounded-full text-lg transition-shadow"
+              :class="icon === option.icon ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''"
+              :style="{ backgroundColor: `color-mix(in srgb, ${option.color} 15%, transparent)` }"
+              @click="icon = option.icon"
+            >
+              {{ option.icon }}
+            </button>
+          </div>
         </Field>
         <DialogFooter>
           <Button type="submit" :loading="asyncStatus === 'loading'" :disabled="!name.trim()">

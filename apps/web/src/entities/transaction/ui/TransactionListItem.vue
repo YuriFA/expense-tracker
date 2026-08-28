@@ -6,6 +6,7 @@ import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { CategoryAvatar } from '@/entities/category'
 
 interface AccountRef {
   id: string
@@ -17,6 +18,7 @@ interface CategoryRef {
   id: string
   name: string
   icon: string
+  color?: string
 }
 
 const { transaction, accounts = [], categories = [], author = null } = defineProps<{
@@ -71,21 +73,26 @@ const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH
 })
 
 const isTransfer = computed(() => isTransferTransaction(transaction))
+
+// Draft meta uses a bullet separator and an arrow for transfers; kept as
+// script constants (i18n lint bans raw non-text glyphs in templates).
+const SEPARATOR = '•'
+const ARROW = '→'
 </script>
 
 <template>
   <!-- Flat divider-separated row (warm-minimal system): the list wrapper
        owns the dividers, the row stays unboxed. -->
   <li class="flex items-center gap-3 px-1 py-2.5">
-    <div
+    <CategoryAvatar
       v-if="category"
-      class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm"
-    >
-      {{ category.icon }}
-    </div>
+      :icon="category.icon"
+      :color="category.color"
+      class="size-8 text-sm"
+    />
     <div
       v-if="isTransfer"
-      class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm"
+      class="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground"
     >
       <RepeatIcon class="size-4" />
     </div>
@@ -96,24 +103,26 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
       <p class="text-xs text-muted-foreground">
         <template v-if="isTransfer">
           <span v-if="fromAccount && toAccount">
-            {{ fromAccount.name }} -> {{ toAccount.name }}
+            {{ fromAccount.name }} {{ ARROW }} {{ toAccount.name }}
           </span>
           <span v-else>{{ t('transactions.types.transfer') }}</span>
-          · <span>{{ formattedOccuredAt }}</span>
+          {{ SEPARATOR }} <span>{{ formattedOccuredAt }}</span>
         </template>
         <template v-else>
           <span v-if="category">
             {{ category.name }}
           </span>
-          · <span v-if="account">{{ account.name }}</span> · <span>{{ formattedOccuredAt }}</span>
+          {{ SEPARATOR }} <span v-if="account">{{ account.name }}</span> {{ SEPARATOR }}
+          <span>{{ formattedOccuredAt }}</span>
         </template>
         <template v-if="author">
-          · <span :data-testid="`transaction-row-author-${transaction.id}`" :title="t('household.authorMarkerTooltip', { name: author })">{{ author }}</span>
+          {{ SEPARATOR }}
+          <span :data-testid="`transaction-row-author-${transaction.id}`" :title="t('household.authorMarkerTooltip', { name: author })">{{ author }}</span>
         </template>
       </p>
     </div>
     <p
-      class="text-sm font-medium"
+      class="text-sm font-semibold"
       :class="{
         'text-success': transaction.type === 'income',
         'text-destructive': transaction.type === 'expense',

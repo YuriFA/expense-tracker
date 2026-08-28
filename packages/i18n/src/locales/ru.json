@@ -71,6 +71,7 @@
     "error": "Ошибка при добавлении транзакции",
     "newCategory": "Новая категория",
     "categoryName": "Название",
+    "categoryIcon": "Иконка",
     "categoryCreated": "Категория создана"
   },
   "addAccount": {

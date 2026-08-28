@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { currentPeriod, periodToUtcDayRange } from '@expense-tracker/dates'
 import { categoryTotals, periodTotal, percentLabel } from '@/entities/analytics'
 import { useTransactions } from '@/entities/transaction'
-import { useCategories } from '@/entities/category'
+import { CategoryAvatar, useCategories } from '@/entities/category'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -66,12 +66,11 @@ const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.va
           :key="row.category.id"
           class="flex items-center gap-3 border-b border-border/60 py-2.5 last:border-0"
         >
-          <span
-            class="bg-muted flex size-9 shrink-0 items-center justify-center rounded-full text-base"
-            aria-hidden="true"
-          >
-            {{ row.category.icon }}
-          </span>
+          <CategoryAvatar
+            :icon="row.category.icon"
+            :color="row.category.color"
+            class="size-9"
+          />
           <p class="min-w-0 flex-1 truncate text-sm font-medium">{{ row.category.name }}</p>
           <p class="text-sm font-semibold tabular-nums">{{ format(row.totalMinor) }}</p>
           <p class="w-14 text-right text-xs text-muted-foreground tabular-nums">

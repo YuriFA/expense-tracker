@@ -8,6 +8,7 @@ import {
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { useCategories } from '../model/use-categories'
+import CategoryAvatar from './CategoryAvatar.vue'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -37,7 +38,10 @@ const filteredCategories = computed(() =>
       </SelectTrigger>
       <SelectContent position="item-aligned">
         <SelectItem v-for="category in filteredCategories" :key="category.id" :value="category.id">
-          {{ category.icon }} {{ category.name }}
+          <span>
+            <CategoryAvatar :icon="category.icon" :color="category.color" class="size-5 text-xs" />
+            {{ category.name }}
+          </span>
         </SelectItem>
       </SelectContent>
     </Select>

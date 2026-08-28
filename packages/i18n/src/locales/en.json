@@ -71,6 +71,7 @@
     "error": "Error adding transaction",
     "newCategory": "New category",
     "categoryName": "Name",
+    "categoryIcon": "Icon",
     "categoryCreated": "Category created"
   },
   "addAccount": {

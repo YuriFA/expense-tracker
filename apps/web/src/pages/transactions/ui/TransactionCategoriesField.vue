@@ -8,7 +8,7 @@ import {
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { useCategories } from '@/entities/category'
+import { CategoryAvatar, useCategories } from '@/entities/category'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -57,7 +57,10 @@ const filteredCategories = computed(() => {
           :key="category.id"
           :value="category.id"
         >
-          {{ category.icon }} {{ category.name }}
+          <span>
+            <CategoryAvatar :icon="category.icon" :color="category.color" class="size-5 text-xs" />
+            {{ category.name }}
+          </span>
         </SelectItem>
       </SelectContent>
     </Select>

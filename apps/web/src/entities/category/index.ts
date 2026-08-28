@@ -6,3 +6,9 @@ export {
   useCreateCategory,
 } from './model/use-categories'
 export { default as CategorySelect } from './ui/CategorySelect.vue'
+export { default as CategoryAvatar } from './ui/CategoryAvatar.vue'
+export {
+  CATEGORY_ICONS,
+  DEFAULT_CATEGORY_ICON,
+  pickCategoryColor,
+} from './config/category-appearance'

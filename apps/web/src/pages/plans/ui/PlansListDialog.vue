@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { Category } from '@expense-tracker/api'
 import type { PlannedPayment } from '@/entities/planned-payment'
 import { monthlyTotal } from '@/entities/planned-payment'
+import { CategoryAvatar } from '@/entities/category'
 import {
   isPlanOverdue,
   nextDueLabel,
@@ -71,9 +72,8 @@ const regularityPhrases = computed<Record<PlannedPayment['regularity'], string>>
 const subtitleOf = (plan: PlannedPayment) =>
   `${regularityPhrases.value[plan.regularity]} · ${t('plans.nextDuePrefix')} ${nextDueLabel(plan.nextDue, locale.value)}`
 
-const iconOf = (plan: PlannedPayment) =>
-  props.categories.find((category) => category.id === plan.categoryId)?.icon ||
-  FALLBACK_CATEGORY_ICON
+const categoryOf = (plan: PlannedPayment) =>
+  props.categories.find((category) => category.id === plan.categoryId)
 
 // Anonymous local mode may have no category for a plan yet.
 const FALLBACK_CATEGORY_ICON = '🏷️'
@@ -122,12 +122,11 @@ const openConfirm = (plan: PlannedPayment) => {
                   class="flex min-w-0 flex-1 items-start gap-3 text-left"
                   @click="openEdit(plan)"
                 >
-                  <span
-                    class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-lg"
-                    aria-hidden="true"
-                  >
-                    {{ iconOf(plan) }}
-                  </span>
+                  <CategoryAvatar
+                    :icon="categoryOf(plan)?.icon || FALLBACK_CATEGORY_ICON"
+                    :color="categoryOf(plan)?.color"
+                    class="size-10 text-lg"
+                  />
                   <span class="min-w-0">
                     <span class="block truncate text-[15px] font-semibold">
                       {{ planRowTitle(plan, categories) }}
