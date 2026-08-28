@@ -9,30 +9,26 @@
       "designSystemPath": ".superdesign/design-system.md",
       "contextFiles": [
         ".superdesign/design-system.md",
-        ".superdesign/init/theme.md",
         "apps/web/src/app/layout/AppShell.vue",
-        "apps/web/src/app/layout/AppNav.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue",
-        "apps/web/src/pages/dashboard/ui/NetWorthCard.vue",
-        "apps/web/src/pages/dashboard/ui/QuickActionsCard.vue",
-        "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue",
-        "apps/web/src/pages/dashboard/ui/RecentTransactions.vue",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue",
         "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
         "apps/web/src/shared/ui/card/Card.vue",
         "apps/web/src/shared/ui/button/Button.vue"
       ],
       "fingerprints": {
         ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
-        ".superdesign/init/theme.md": "c39303343f6cb22ecd746b12bcda47a871850b5871b2aee416316d6a891dad33",
-        "apps/web/src/app/layout/AppShell.vue": "817603e75076e14f731269484e41695d4f44a5fb1f187f259b5a116a6c3eb971",
-        "apps/web/src/app/layout/AppNav.vue": "aead1b2811b0359dca9c2d8274b22b5cffedf28620fe2638fa44972ffac79512",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "1097f63a838f5233a903389654919a335cd9c6eebab0315d4c9946f7aaa30889",
-        "apps/web/src/pages/dashboard/ui/NetWorthCard.vue": "a8efd9428b3d5d9d19e3db17b908f92cfd813bc8b23c317dde462e094f43a7f7",
-        "apps/web/src/pages/dashboard/ui/QuickActionsCard.vue": "5e2b0dfe96b49cd3cab6a2f14fb2545c9b1ac19182e560066327e0e7ced4a355",
-        "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue": "d04f3eaf3c46ca2c482fe1930b6cb209519f1473967a92ab091d5523da2b3225",
-        "apps/web/src/pages/dashboard/ui/RecentTransactions.vue": "c37a9e3000ab11830f98e2a569a7fd48f82f94a971f7c1933429fd4f1ec117bb",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "1a6eeda5ddc72b66c5c1a9cf6c146ad508c0d0f54d68773ea69e865f4d479574",
-        "apps/web/src/shared/ui/card/Card.vue": "df32f041754ac333bb87e268b827247bb2a7da68a88f6f7c5e53f16d08ce729e",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
       },
       "components": [
@@ -87,7 +83,247 @@
           "visualDirection": "dashboard blocks in data/loading/empty states: stat card, quick actions, category breakdown, accounts, debts, recent transactions, page header"
         }
       },
-      "updatedAt": "2026-08-28T15:47:34.766473+00:00"
+      "updatedAt": "2026-08-28T17:49:05.618175+00:00"
+    },
+    "/analytics": {
+      "targetKind": "flow-page",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "a34a3cff-d875-41b7-92bf-866f49a43189",
+      "designSystemPath": ".superdesign/design-system.md",
+      "sourceTarget": "/",
+      "sourceDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/app/layout/AppShell.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
+        "apps/web/src/shared/ui/card/Card.vue",
+        "apps/web/src/shared/ui/button/Button.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
+      },
+      "components": [
+        {
+          "name": "AppSidebar",
+          "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+        }
+      ],
+      "drafts": {
+        "a34a3cff-d875-41b7-92bf-866f49a43189": {
+          "title": "Аналитика — обзор (Бумага)",
+          "visualDirection": "two overview cards: donut 120 + legend, expenses/income, whole card links to detail",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-28T17:52:32.811341+00:00"
+    },
+    "/analytics/:direction": {
+      "targetKind": "flow-page",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "1060dbd7-aec0-4176-b919-9fbbbb45b4e4",
+      "designSystemPath": ".superdesign/design-system.md",
+      "sourceTarget": "/",
+      "sourceDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/app/layout/AppShell.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
+        "apps/web/src/shared/ui/card/Card.vue",
+        "apps/web/src/shared/ui/button/Button.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
+      },
+      "components": [
+        {
+          "name": "AppSidebar",
+          "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+        }
+      ],
+      "drafts": {
+        "1060dbd7-aec0-4176-b919-9fbbbb45b4e4": {
+          "title": "Аналитика — детальная (Бумага)",
+          "visualDirection": "period segmented control, stepper + total, big selectable donut, category rows with checkboxes/amounts/percents",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-28T17:52:32.811341+00:00"
+    },
+    "/debts": {
+      "targetKind": "flow-page",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "7a8e225b-6d02-41e7-8716-508ce0408337",
+      "designSystemPath": ".superdesign/design-system.md",
+      "sourceTarget": "/",
+      "sourceDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/app/layout/AppShell.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
+        "apps/web/src/shared/ui/card/Card.vue",
+        "apps/web/src/shared/ui/button/Button.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
+      },
+      "components": [
+        {
+          "name": "AppSidebar",
+          "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+        }
+      ],
+      "drafts": {
+        "7a8e225b-6d02-41e7-8716-508ce0408337": {
+          "title": "Долги (Бумага)",
+          "visualDirection": "two independent direction summaries, debtor rows with avatars + balances, history dialog with day-grouped ops",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-28T17:52:32.811341+00:00"
+    },
+    "/plans": {
+      "targetKind": "flow-page",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "24f5fbcc-22b7-49ae-b126-f6a660be1326",
+      "designSystemPath": ".superdesign/design-system.md",
+      "sourceTarget": "/",
+      "sourceDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/app/layout/AppShell.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
+        "apps/web/src/shared/ui/card/Card.vue",
+        "apps/web/src/shared/ui/button/Button.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
+      },
+      "components": [
+        {
+          "name": "AppSidebar",
+          "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+        }
+      ],
+      "drafts": {
+        "24f5fbcc-22b7-49ae-b126-f6a660be1326": {
+          "title": "Планы (Бумага)",
+          "visualDirection": "two type cards with counts + monthly figures, list dialog with recurrence, overdue badge, confirm buttons",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-28T17:52:32.811341+00:00"
+    },
+    "/settings": {
+      "targetKind": "flow-page",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "fda13a35-5814-4290-b3f3-c413b23f58a2",
+      "designSystemPath": ".superdesign/design-system.md",
+      "sourceTarget": "/",
+      "sourceDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/app/layout/AppShell.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
+        "apps/web/src/shared/ui/card/Card.vue",
+        "apps/web/src/shared/ui/button/Button.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
+      },
+      "components": [
+        {
+          "name": "AppSidebar",
+          "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+        }
+      ],
+      "drafts": {
+        "fda13a35-5814-4290-b3f3-c413b23f58a2": {
+          "title": "Настройки (Бумага)",
+          "visualDirection": "flat cards: language, profile, household members + owner actions, sessions",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-08-28T17:52:32.811341+00:00"
     }
   }
 }
