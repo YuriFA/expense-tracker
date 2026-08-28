@@ -461,7 +461,8 @@
     "about": "About",
     "version": "Version",
     "categories": "Categories",
-    "categoriesEmpty": "No categories yet"
+    "categoriesEmpty": "No categories yet",
+    "appearance": "Appearance"
   },
   "household": {
     "title": "Household",

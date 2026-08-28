@@ -8,6 +8,8 @@ import {
 } from '@/shared/ui/select'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
+import { applyTheme } from '@/app/theme'
+import type { Settings } from '@/shared/config/settings'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
@@ -33,6 +35,18 @@ import type { HouseholdMember } from '@expense-tracker/api'
 const { t, locale, availableLocales } = useI18n()
 const settings = useSettingsStore()
 const auth = useAuthStore()
+
+// Event-handler sync (vue-patterns): the store write and the DOM class
+// bridge happen in this handler, no watcher.
+const onThemeChange = (value: unknown) => {
+  settings.theme = value as Settings['theme']
+  applyTheme(settings.theme)
+}
+
+const themes = computed(() => [
+  { value: 'light' as const, label: t('settings.themeLight') },
+  { value: 'dark' as const, label: t('settings.themeDark') },
+])
 
 const locales = computed(() => {
   const displayNames = new Intl.DisplayNames(locale.value, { type: 'language' })
@@ -140,6 +154,31 @@ onMounted(() => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="item in locales" :key="item.id" :value="item.id">
+                {{ item.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>{{ t('settings.appearance') }}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <label class="flex items-center gap-2">
+          <span class="sr-only">{{ t('settings.appearance') }}</span>
+          <Select
+            :model-value="settings.theme"
+            class="w-full sm:w-64"
+            @update:model-value="onThemeChange"
+          >
+            <SelectTrigger>
+              <SelectValue :placeholder="t('settings.appearance')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="item in themes" :key="item.value" :value="item.value">
                 {{ item.label }}
               </SelectItem>
             </SelectContent>

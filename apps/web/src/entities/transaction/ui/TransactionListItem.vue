@@ -115,8 +115,8 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
     <p
       class="text-sm font-medium"
       :class="{
-        'text-green-500': transaction.type === 'income',
-        'text-red-500': transaction.type === 'expense',
+        'text-success': transaction.type === 'income',
+        'text-destructive': transaction.type === 'expense',
         'text-foreground': transaction.type === 'transfer',
       }"
     >

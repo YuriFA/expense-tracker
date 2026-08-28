@@ -7,8 +7,10 @@ import App from './App.vue'
 import i18n from './shared/i18n'
 import router from './app/router'
 import { provideRepositories } from './app/repositories'
+import { applyTheme } from './app/theme'
 import { setUnauthorizedHandler } from './shared/api'
 import { useAuthStore } from './entities/session'
+import { useSettingsStore } from './shared/store/use-settings-store'
 import './style.css'
 import { setupI18nLocaleWatcher } from './app/setup-i18n-locale-watcher'
 import { registerServiceWorker } from './app/register-service-worker'
@@ -37,6 +39,9 @@ provideRepositories(app)
 // a 401 or an unreachable backend both land in the anonymous shell - the app
 // keeps working on local data.
 void useAuthStore(pinia).ensureRestored()
+
+// Apply the persisted theme before the first paint.
+applyTheme(useSettingsStore(pinia).theme)
 
 // 401 interceptor: when an authenticated request loses its session mid-flight,
 // drop local auth state - the app continues anonymously on local data (no

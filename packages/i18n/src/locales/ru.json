@@ -461,7 +461,8 @@
     "about": "О приложении",
     "version": "Версия",
     "categories": "Категории",
-    "categoriesEmpty": "Категорий пока нет"
+    "categoriesEmpty": "Категорий пока нет",
+    "appearance": "Оформление"
   },
   "household": {
     "title": "Домохозяйство",
