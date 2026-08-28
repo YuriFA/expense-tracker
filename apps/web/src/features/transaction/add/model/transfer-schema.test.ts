@@ -10,6 +10,7 @@ describe('createTransferSchema', () => {
       fromAccountId: 'a1',
       toAccountId: 'a2',
       amount: 100,
+      occurredAt: '2026-08-29T10:00:00.000Z',
     })
     expect(result.success).toBe(true)
   })
@@ -21,6 +22,7 @@ describe('createTransferSchema', () => {
       toAccountId: 'a2',
       amount: 100,
       description: 'Monthly transfer',
+      occurredAt: '2026-08-29T10:00:00.000Z',
     })
     expect(result.success).toBe(true)
   })
@@ -110,6 +112,7 @@ describe('createTransferSchema', () => {
       fromAccountId: 'a1',
       toAccountId: 'a1',
       amount: 100,
+      occurredAt: '2026-08-29T10:00:00.000Z',
     })
     if (result.success) {
       throw new Error('Expected schema to fail')

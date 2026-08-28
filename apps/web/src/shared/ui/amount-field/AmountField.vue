@@ -11,12 +11,15 @@ const props = withDefaults(
     errors?: string[]
     placeholder?: string
     class?: string
+    /** Dialog-hero look: big bold figure over a hairline underline. */
+    hero?: boolean
   }>(),
   {
     currency: DEFAULT_CURRENCY,
     errors: undefined,
     placeholder: undefined,
     class: undefined,
+    hero: false,
   },
 )
 
@@ -47,7 +50,15 @@ const placeholder = computed(() => props.placeholder ?? defaultPlaceholder.value
       :step="0.01"
     >
       <NumberFieldContent>
-        <NumberFieldInput class="text-left px-2" :placeholder :aria-invalid="!!props.errors?.length" />
+        <NumberFieldInput
+          :class="
+            props.hero
+              ? 'h-14 rounded-none border-0 border-b bg-transparent px-0 text-left text-3xl font-bold tabular-nums focus-visible:ring-0'
+              : 'text-left px-2'
+          "
+          :placeholder
+          :aria-invalid="!!props.errors?.length"
+        />
       </NumberFieldContent>
     </NumberField>
     <FieldError v-if="props.errors?.length" :errors="props.errors" />

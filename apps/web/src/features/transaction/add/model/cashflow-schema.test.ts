@@ -10,6 +10,7 @@ describe('createCashflowSchema', () => {
       accountId: 'a1',
       amount: 100,
       categoryId: 'c1',
+      occurredAt: '2026-08-29T10:00:00.000Z',
     })
     expect(result.success).toBe(true)
   })
@@ -20,6 +21,7 @@ describe('createCashflowSchema', () => {
       accountId: 'a1',
       amount: 50,
       categoryId: 'c1',
+      occurredAt: '2026-08-29T10:00:00.000Z',
     })
     expect(result.success).toBe(true)
   })
@@ -31,6 +33,7 @@ describe('createCashflowSchema', () => {
       amount: 100,
       categoryId: 'c1',
       description: 'Salary',
+      occurredAt: '2026-08-29T10:00:00.000Z',
     })
     expect(result.success).toBe(true)
   })

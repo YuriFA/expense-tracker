@@ -3,6 +3,7 @@ import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
 import type { TransferTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
+import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
@@ -28,6 +29,7 @@ const {
   description,
   fromAccountId: initialFrom,
   toAccountId: initialTo,
+  cancellable = false,
 } = defineProps<{
   id: string
   version: number
@@ -35,6 +37,8 @@ const {
   description: string
   fromAccountId: string
   toAccountId: string
+  /** Dialog mode: full-bleed footer with a context-closing cancel button. */
+  cancellable?: boolean
 }>()
 
 const { mutateAsync: updateTransaction } = useUpdateTransaction<TransferTransaction>()
@@ -95,7 +99,8 @@ const handleSubmit = handleFormSubmit(async (data) => {
 </script>
 
 <template>
-  <form id="edit-transfer-form" class="flex flex-col gap-3" @submit="handleSubmit">
+  <div>
+    <form id="edit-transfer-form" class="flex flex-col gap-3" @submit="handleSubmit">
     <div class="flex items-end gap-2">
       <VeeField v-slot="{ value, setValue, errors }" name="fromAccountId">
         <AccountSelect
@@ -147,13 +152,34 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </Field>
     </VeeField>
 
-    <Button
-      form="edit-transfer-form"
-      type="submit"
-      class="w-full md:ml-auto md:w-auto"
-      :loading="isSubmitting"
+    <DialogFooter
+      v-if="cancellable"
+      class="-mx-6 -mb-6 mt-1 flex-col gap-3 border-t px-6 py-4 sm:flex-row"
     >
-      {{ t('editTransaction.submit') }}
-    </Button>
+      <DialogClose as-child>
+        <Button type="button" variant="outline" class="w-full sm:flex-1">
+          {{ t('editTransaction.cancel') }}
+        </Button>
+      </DialogClose>
+      <Button
+        form="edit-transfer-form"
+        type="submit"
+        class="w-full sm:flex-1"
+        :loading="isSubmitting"
+      >
+        {{ t('editTransaction.submit') }}
+      </Button>
+    </DialogFooter>
+    <div v-else class="flex justify-end pt-1">
+      <Button
+        form="edit-transfer-form"
+        type="submit"
+        class="w-full sm:w-auto"
+        :loading="isSubmitting"
+      >
+        {{ t('editTransaction.submit') }}
+      </Button>
+    </div>
   </form>
+  </div>
 </template>

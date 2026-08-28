@@ -1,5 +1,6 @@
 import z from 'zod'
 import i18n from '@/shared/i18n'
+import { isIsoDateTime } from '@/shared/lib/date'
 
 export const createTransferSchema = () => {
   const { t } = i18n.global
@@ -21,6 +22,9 @@ export const createTransferSchema = () => {
       description: z
         .string({ error: t('validation.mustBeString', { field: t('fields.description') }) })
         .optional(),
+      occurredAt: z
+        .string({ error: t('validation.enter', { field: t('fields.date') }) })
+        .refine(isIsoDateTime, t('validation.enter', { field: t('fields.date') })),
     })
     .refine((data) => data.fromAccountId !== data.toAccountId, {
       path: ['toAccountId'],

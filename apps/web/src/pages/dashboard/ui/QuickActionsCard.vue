@@ -45,7 +45,7 @@ const transferOpen = ref(false)
         <DialogHeader>
           <DialogTitle>{{ t('analytics.expenses') }}</DialogTitle>
         </DialogHeader>
-        <CashflowForm type="expense" @success="expenseOpen = false" />
+        <CashflowForm type="expense" cancellable @success="expenseOpen = false" />
       </DialogContent>
     </Dialog>
 
@@ -69,7 +69,7 @@ const transferOpen = ref(false)
         <DialogHeader>
           <DialogTitle>{{ t('addTransfer.submit') }}</DialogTitle>
         </DialogHeader>
-        <TransferForm @success="transferOpen = false" />
+        <TransferForm cancellable @success="transferOpen = false" />
       </DialogContent>
     </Dialog>
 

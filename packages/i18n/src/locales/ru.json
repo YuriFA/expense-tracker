@@ -67,6 +67,7 @@
     "categoryPlaceholder": "Категория",
     "accountPlaceholder": "Счет",
     "submit": "Добавить",
+    "cancel": "Отмена",
     "success": "Транзакция добавлена",
     "error": "Ошибка при добавлении транзакции",
     "newCategory": "Новая категория",
@@ -111,6 +112,7 @@
     "fromAccountPlaceholder": "Со счета",
     "toAccountPlaceholder": "На счет",
     "submit": "Перевести",
+    "cancel": "Отмена",
     "success": "Перевод выполнен",
     "error": "Ошибка при переводе"
   },
@@ -118,13 +120,14 @@
     "title": "Изменить транзакцию",
     "trigger": "Изменить",
     "submit": "Сохранить",
+    "cancel": "Отмена",
     "success": "Транзакция обновлена",
     "error": "Ошибка при обновлении транзакции"
   },
   "deleteTransaction": {
     "trigger": "Удалить",
-    "confirmDelete": "Вы уверены, что хотите удалить эту транзакцию?",
-    "confirmDeleteDescription": "Это действие нельзя отменить.",
+    "confirmDelete": "Удалить транзакцию?",
+    "confirmDeleteDescription": "Действие нельзя отменить.",
     "cancel": "Отмена",
     "confirm": "Удалить",
     "success": "Транзакция удалена",
