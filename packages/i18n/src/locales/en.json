@@ -15,7 +15,8 @@
     "debts": "Debts",
     "plans": "Plans",
     "accounts": "Accounts",
-    "settings": "Settings"
+    "settings": "Settings",
+    "openMenu": "Open menu"
   },
   "pages": {
     "transactions": "Transactions",
@@ -36,7 +37,14 @@
       "expense": "Add expense",
       "transfer": "Add transfer",
       "income": "Add income"
-    }
+    },
+    "addOperation": "Add operation",
+    "overview": "Overview",
+    "total": "Total",
+    "owedToMe": "Owed to me",
+    "owedByMe": "I owe",
+    "noDebts": "No debts",
+    "categoriesTitle": "Expenses by category"
   },
   "home": {
     "balance": "Balance",
@@ -139,7 +147,8 @@
     "confirm": "Delete"
   },
   "recentTransactions": {
-    "title": "Recent Transactions"
+    "title": "Recent Transactions",
+    "viewAll": "View all"
   },
   "analytics": {
     "expenses": "Expenses",
@@ -605,5 +614,8 @@
         "other": "Record"
       }
     }
+  },
+  "app": {
+    "name": "Wallet"
   }
 }

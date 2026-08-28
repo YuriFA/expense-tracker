@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import AppNav from './AppNav.vue'
+import AppSidebar from './AppSidebar.vue'
+import MobileTopBar from './MobileTopBar.vue'
 import BootGate from './BootGate.vue'
 import { OwnershipGateDialog, useAuthStore } from '@/entities/session'
 import { ConflictCenter } from '@/features/sync-conflicts'
@@ -28,12 +29,16 @@ provideSyncController({
 
 <template>
   <BootGate>
-    <div class="min-h-screen">
-      <AppNav v-if="showNav" />
+    <div class="flex min-h-screen">
+      <AppSidebar v-if="showNav" />
 
-      <main class="mx-auto max-w-5xl px-4 py-6">
-        <RouterView />
-      </main>
+      <div class="flex min-w-0 flex-1 flex-col">
+        <MobileTopBar v-if="showNav" />
+
+        <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 lg:px-8">
+          <RouterView />
+        </main>
+      </div>
 
       <!-- Global hosts: the ownership gate can trigger from any auth flow;
            the household choice from any join/leave/startup-mismatch flow;

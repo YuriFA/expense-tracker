@@ -15,7 +15,8 @@
     "debts": "Долги",
     "plans": "Планы",
     "accounts": "Счета",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "openMenu": "Открыть меню"
   },
   "pages": {
     "transactions": "Транзакции",
@@ -36,7 +37,14 @@
       "expense": "Добавить расход",
       "transfer": "Добавить перевод",
       "income": "Добавить доход"
-    }
+    },
+    "addOperation": "Добавить операцию",
+    "overview": "Обзор",
+    "total": "Всего",
+    "owedToMe": "Мне должны",
+    "owedByMe": "Я должен",
+    "noDebts": "Долгов нет",
+    "categoriesTitle": "Расходы по категориям"
   },
   "home": {
     "balance": "Баланс",
@@ -139,7 +147,8 @@
     "confirm": "Удалить"
   },
   "recentTransactions": {
-    "title": "Последние транзакции"
+    "title": "Последние транзакции",
+    "viewAll": "Все"
   },
   "analytics": {
     "expenses": "Расходы",
@@ -605,5 +614,8 @@
         "other": "Запись"
       }
     }
+  },
+  "app": {
+    "name": "Кошелёк"
   }
 }
