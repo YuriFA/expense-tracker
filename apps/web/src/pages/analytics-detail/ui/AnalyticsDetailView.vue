@@ -180,7 +180,7 @@ const openDrilldown = (category: Category) => {
 
 <template>
   <section>
-    <h1 class="text-2xl font-semibold">{{ title }}</h1>
+    <h1 class="text-3xl font-bold">{{ title }}</h1>
 
     <div class="mt-4 flex gap-2" role="group" :aria-label="title">
       <Button

@@ -29,7 +29,7 @@ const transferOpen = ref(false)
       <DialogTrigger as-child>
         <Button
           variant="outline"
-          class="h-11 justify-start gap-3 rounded-xl"
+          class="h-11 justify-start gap-3"
           data-testid="quick-action-expense"
         >
           <span
@@ -53,7 +53,7 @@ const transferOpen = ref(false)
       <DialogTrigger as-child>
         <Button
           variant="outline"
-          class="h-11 justify-start gap-3 rounded-xl"
+          class="h-11 justify-start gap-3"
           data-testid="quick-action-transfer"
         >
           <span

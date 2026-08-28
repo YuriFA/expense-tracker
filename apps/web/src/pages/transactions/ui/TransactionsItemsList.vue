@@ -69,7 +69,7 @@ const openDelete = () => {
 </script>
 
 <template>
-  <ul class="space-y-2">
+  <ul class="divide-y divide-border/60">
     <template v-if="isLoading">
       <TransactionListItemSkeleton v-for="n in 5" :key="n" />
     </template>

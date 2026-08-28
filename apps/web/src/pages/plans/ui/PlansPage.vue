@@ -37,7 +37,7 @@ const openList = (type: 'expense' | 'income') => {
 
 <template>
   <section>
-    <h1 class="text-2xl font-semibold">{{ t('pages.plans') }}</h1>
+    <h1 class="text-3xl font-bold">{{ t('pages.plans') }}</h1>
 
     <div v-if="isLoading" class="mt-6 grid gap-4 md:grid-cols-2">
       <Skeleton class="h-32 rounded-xl" />

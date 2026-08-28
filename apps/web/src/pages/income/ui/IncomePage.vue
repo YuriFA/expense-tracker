@@ -12,7 +12,7 @@ const { t } = useI18n()
 
 <template>
   <section class="mx-auto max-w-md">
-    <h1 class="text-2xl font-semibold">{{ t('pages.income') }}</h1>
+    <h1 class="text-3xl font-bold">{{ t('pages.income') }}</h1>
     <div class="mt-6">
       <CashflowForm type="income" />
     </div>

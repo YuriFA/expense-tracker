@@ -74,7 +74,9 @@ const isTransfer = computed(() => isTransferTransaction(transaction))
 </script>
 
 <template>
-  <li class="flex items-center gap-3 px-3 py-2 border rounded-md">
+  <!-- Flat divider-separated row (warm-minimal system): the list wrapper
+       owns the dividers, the row stays unboxed. -->
+  <li class="flex items-center gap-3 px-1 py-2.5">
     <div
       v-if="category"
       class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm"

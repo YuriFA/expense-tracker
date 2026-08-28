@@ -24,6 +24,7 @@
   --radius: 0.875rem;
   --radius-sm: 2px;
   --radius-md: 4px;
+  --radius-input: 8px;
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 

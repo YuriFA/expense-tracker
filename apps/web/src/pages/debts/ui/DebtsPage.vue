@@ -63,7 +63,7 @@ const openNewDebtor = (direction: DebtDirection) => {
 
 <template>
   <section>
-    <h1 class="text-2xl font-semibold">{{ t('pages.debts') }}</h1>
+    <h1 class="text-3xl font-bold">{{ t('pages.debts') }}</h1>
 
     <div v-if="isLoading" class="mt-6 space-y-4">
       <Skeleton class="h-28 rounded-xl" />

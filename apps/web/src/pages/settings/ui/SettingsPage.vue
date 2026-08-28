@@ -125,7 +125,7 @@ onMounted(() => {
 
 <template>
   <section class="flex flex-col gap-6">
-    <h1 class="text-2xl font-semibold">{{ t('pages.settings') }}</h1>
+    <h1 class="text-3xl font-bold">{{ t('pages.settings') }}</h1>
 
     <label class="flex items-center gap-2">
       <p>{{ t('settings.locale') }}:</p>

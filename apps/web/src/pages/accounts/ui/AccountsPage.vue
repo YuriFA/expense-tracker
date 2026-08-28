@@ -29,7 +29,7 @@ const format = (value: number, currency: CurrencyCode) =>
   <section>
     <div class="flex items-center justify-between gap-4 flex-wrap">
       <div class="flex-1">
-        <h1 class="text-2xl font-semibold">{{ t('pages.accounts') }}</h1>
+        <h1 class="text-3xl font-bold">{{ t('pages.accounts') }}</h1>
         <p class="text-muted-foreground text-sm">{{ t('accounts.description') }}</p>
       </div>
 
