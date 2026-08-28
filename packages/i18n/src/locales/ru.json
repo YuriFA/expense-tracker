@@ -223,9 +223,12 @@
   },
   "plans": {
     "expensesTitle": "Расходы",
-    "expensesDescription": "Подписки, платежи по кредитам и прочее",
+    "expensesDescription": "ожидаемые траты",
     "incomeTitle": "Доходы",
-    "incomeDescription": "Зарплата, премии и прочее",
+    "incomeDescription": "ожидаемые поступления",
+    "approx": "≈",
+    "listTotal": "Итого: {total} в месяц",
+    "nextDuePrefix": "след.",
     "addExpense": "Добавить расход",
     "addIncome": "Добавить доход",
     "newExpense": "Новый расход",
@@ -256,10 +259,10 @@
       "yearly": "Каждый год"
     },
     "regularityPhrase": {
-      "daily": "каждый день",
-      "weekly": "каждую неделю",
-      "monthly": "каждый месяц",
-      "yearly": "каждый год"
+      "daily": "раз в день",
+      "weekly": "раз в неделю",
+      "monthly": "раз в месяц",
+      "yearly": "раз в год"
     },
     "confirmMode": "Подтверждение",
     "confirmModeLabel": {

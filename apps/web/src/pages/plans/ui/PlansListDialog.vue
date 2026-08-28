@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Category } from '@expense-tracker/api'
 import type { PlannedPayment } from '@/entities/planned-payment'
+import { monthlyTotal } from '@/entities/planned-payment'
 import {
   isPlanOverdue,
   nextDueLabel,
@@ -22,13 +23,14 @@ import {
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { EmptyState } from '@/shared/ui/empty-state'
-import { CheckCircle2 } from '@lucide/vue'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 import { useAuthorLabel } from '@/features/household-author'
 
 // One type's plan list: flat next-due ascending (overdue first by
-// construction), an overdue badge, a confirm action for manual plans, and
-// row press to edit - the mobile list sheet as a web dialog (design D1).
+// construction), rows with the category icon circle, an inline overdue
+// badge and a confirm pill for manual plans (solid when overdue, outline
+// otherwise); row press to edit. The muted footer band carries the
+// normalized monthly total above the create action.
 
 const props = defineProps<{
   type: 'expense' | 'income'
@@ -47,11 +49,12 @@ const displayCurrency = computed(() => DEFAULT_CURRENCY)
 const title = computed(() =>
   props.type === 'expense' ? t('plans.expensesTitle') : t('plans.incomeTitle'),
 )
-const description = computed(() =>
-  props.type === 'expense' ? t('plans.expensesDescription') : t('plans.incomeDescription'),
-)
 const addLabel = computed(() =>
   props.type === 'expense' ? t('plans.addExpense') : t('plans.addIncome'),
+)
+const totalText = computed(
+  () =>
+    `${t('plans.approx')}${formatMoney(monthlyTotal(props.plans), displayCurrency.value, locale.value)}`,
 )
 
 const today = computed(() => utcTodayKey())
@@ -66,7 +69,14 @@ const regularityPhrases = computed<Record<PlannedPayment['regularity'], string>>
 }))
 
 const subtitleOf = (plan: PlannedPayment) =>
-  `${regularityPhrases.value[plan.regularity]} · ${nextDueLabel(plan.nextDue, locale.value)}`
+  `${regularityPhrases.value[plan.regularity]} · ${t('plans.nextDuePrefix')} ${nextDueLabel(plan.nextDue, locale.value)}`
+
+const iconOf = (plan: PlannedPayment) =>
+  props.categories.find((category) => category.id === plan.categoryId)?.icon ||
+  FALLBACK_CATEGORY_ICON
+
+// Anonymous local mode may have no category for a plan yet.
+const FALLBACK_CATEGORY_ICON = '🏷️'
 
 // One dialog instance + active item refs (convention 4).
 const formOpen = ref(false)
@@ -96,63 +106,87 @@ const openConfirm = (plan: PlannedPayment) => {
     <DialogContent class="sm:max-w-md" data-testid="plans-list-dialog">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
-        <p class="text-sm text-muted-foreground">{{ description }}</p>
       </DialogHeader>
 
-      <div class="max-h-80 overflow-y-auto">
+      <div class="-mx-6 max-h-96 overflow-y-auto px-4">
         <EmptyState v-if="sorted.length === 0" :title="t('plans.empty')" />
-        <ul v-else class="space-y-1">
-          <li v-for="plan in sorted" :key="plan.id">
+        <ul v-else class="divide-y divide-border/60">
+          <li v-for="plan in sorted" :key="plan.id" class="py-1.5 first:pt-0">
             <div
-              class="flex w-full items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-muted/70"
+              class="flex flex-col gap-2.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-muted/70"
               :data-testid="`plans-row-${plan.id}`"
             >
-              <button
-                type="button"
-                class="min-w-0 flex-1 text-left"
-                @click="openEdit(plan)"
-              >
-                <p class="truncate text-sm font-medium">
-                  {{ planRowTitle(plan, categories) }}
-                </p>
-                <p class="truncate text-xs text-muted-foreground">
-                  {{ subtitleOf(plan) }}
+              <div class="flex items-start justify-between gap-3">
+                <button
+                  type="button"
+                  class="flex min-w-0 flex-1 items-start gap-3 text-left"
+                  @click="openEdit(plan)"
+                >
                   <span
-                    v-if="authorLabel(plan.authorId)"
-                    :data-testid="`plans-row-${plan.id}-author`"
+                    class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-lg"
+                    aria-hidden="true"
                   >
-                    · {{ authorLabel(plan.authorId) }}
+                    {{ iconOf(plan) }}
                   </span>
-                </p>
-              </button>
-              <Badge
-                v-if="isPlanOverdue(plan, today)"
-                variant="destructive"
-                class="bg-destructive/15 text-destructive"
-                :data-testid="`plans-row-${plan.id}-overdue`"
-              >
-                {{ t('plans.overdue') }}
-              </Badge>
-              <span class="text-sm font-medium">
-                {{ formatMoney(plan.amount, displayCurrency, locale) }}
-              </span>
-              <Button
-                v-if="plan.confirmMode === 'manual'"
-                variant="ghost"
-                size="icon"
-                class="size-8"
-                :aria-label="`${t('plans.confirmTitle')}: ${planRowTitle(plan, categories)}`"
-                :data-testid="`plans-row-${plan.id}-confirm`"
-                @click="openConfirm(plan)"
-              >
-                <CheckCircle2 class="size-4" />
-              </Button>
+                  <span class="min-w-0">
+                    <span class="block truncate text-[15px] font-semibold">
+                      {{ planRowTitle(plan, categories) }}
+                    </span>
+                    <span
+                      class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground"
+                    >
+                      <span class="truncate">
+                        {{ subtitleOf(plan) }}
+                        <span
+                          v-if="authorLabel(plan.authorId)"
+                          :data-testid="`plans-row-${plan.id}-author`"
+                        >
+                          · {{ authorLabel(plan.authorId) }}
+                        </span>
+                      </span>
+                      <Badge
+                        v-if="isPlanOverdue(plan, today)"
+                        variant="secondary"
+                        class="rounded-sm bg-warning/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-warning uppercase"
+                        :data-testid="`plans-row-${plan.id}-overdue`"
+                      >
+                        {{ t('plans.overdue') }}
+                      </Badge>
+                    </span>
+                  </span>
+                </button>
+                <span class="text-[15px] font-bold tabular-nums">
+                  {{ formatMoney(plan.amount, displayCurrency, locale) }}
+                </span>
+              </div>
+              <div v-if="plan.confirmMode === 'manual'" class="flex justify-end">
+                <Button
+                  :variant="isPlanOverdue(plan, today) ? 'default' : 'outline'"
+                  size="sm"
+                  class="rounded-full px-4 text-xs font-semibold"
+                  :class="
+                    isPlanOverdue(plan, today)
+                      ? ''
+                      : 'border-primary text-primary hover:bg-accent hover:text-primary'
+                  "
+                  :aria-label="`${t('plans.confirmTitle')}: ${planRowTitle(plan, categories)}`"
+                  :data-testid="`plans-row-${plan.id}-confirm`"
+                  @click="openConfirm(plan)"
+                >
+                  {{ t('plans.confirmSubmit') }}
+                </Button>
+              </div>
             </div>
           </li>
         </ul>
       </div>
 
-      <DialogFooter>
+      <DialogFooter
+        class="-mx-6 -mb-6 mt-1 flex-col items-center gap-3 rounded-b-lg border-t bg-muted/50 px-6 py-4 sm:flex-col sm:justify-center"
+      >
+        <p class="text-xs font-medium text-muted-foreground">
+          {{ t('plans.listTotal', { total: totalText }) }}
+        </p>
         <Button class="w-full" data-testid="plans-list-add" @click="openCreate">
           {{ addLabel }}
         </Button>

@@ -39,14 +39,14 @@ const openList = (type: 'expense' | 'income') => {
   <section>
     <h1 class="text-3xl font-bold">{{ t('pages.plans') }}</h1>
 
-    <div v-if="isLoading" class="mt-6 grid gap-4 md:grid-cols-2">
-      <Skeleton class="h-32 rounded-xl" />
-      <Skeleton class="h-32 rounded-xl" />
+    <div v-if="isLoading" class="mt-6 grid gap-6 md:grid-cols-2">
+      <Skeleton class="min-h-36 rounded-lg" />
+      <Skeleton class="min-h-36 rounded-lg" />
     </div>
     <div v-else-if="error" class="mt-6">
       <ErrorState @retry="refetch" />
     </div>
-    <div v-else class="mt-6 grid gap-4 md:grid-cols-2">
+    <div v-else class="mt-6 grid gap-6 md:grid-cols-2">
       <PlansTypeCard type="expense" :plans="expensePlans" @open-list="openList" />
       <PlansTypeCard type="income" :plans="incomePlans" @open-list="openList" />
     </div>
