@@ -129,10 +129,13 @@ describe('AnalyticsDetailView', () => {
     expect(wrapper.findAll('[data-testid="donut-segment"]')).toHaveLength(2)
 
     await wrapper.find('[data-testid="analytics-category-check-c2"]').setValue(false)
-    // Only c1 remains charted; c2's row still shows the FULL-total amount.
+    // Only c1 remains charted; c2's row still shows the FULL-total amount
+    // and dims (unchecked = off the chart).
     const segments = wrapper.findAll('[data-testid="donut-segment"]')
     expect(segments).toHaveLength(1)
     expect(wrapper.text()).toContain('₽30.00')
+    const rows = wrapper.findAll('li')
+    expect(rows[1]!.classes()).toContain('opacity-50')
   })
 
   it('the master checkbox excludes/restores every category', async () => {
@@ -160,9 +163,10 @@ describe('AnalyticsDetailView', () => {
     const rowIds = wrapper
       .findAll('[data-testid^="analytics-category-row-"]')
       .map((row) => row.attributes('data-testid'))
-    // The selected category (c2) floats to the top below the summary row.
+    // The selected category (c2) floats to the top below the summary row
+    // and gets the warm wash; dimming is reserved for excluded categories.
     expect(rowIds[0]).toBe('analytics-category-row-c2')
-    const dimmed = wrapper.findAll('li.opacity-50')
-    expect(dimmed.length).toBe(1)
+    expect(wrapper.find('li').classes()).toContain('bg-muted/50')
+    expect(wrapper.findAll('li.opacity-50')).toHaveLength(0)
   })
 })

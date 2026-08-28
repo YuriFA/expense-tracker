@@ -61,6 +61,7 @@ Fast and utilitarian: color/opacity transitions `0.15s cubic-bezier(0.4, 0, 0.2,
 
 - Buttons: primary = accent fill pill; outline = hairline border white; ghost for nav/row actions; destructive red. Sizes h-9 default, h-10 CTA.
 - Cards compose: Card (white surface) / Card tinted (info) / list-card (rows with dividers).
+- Checkbox: custom-drawn native input — 16×16, radius 4, 1.5px border in the surface border color, transparent fill (no native accent-color tint). Checked = border AND an 8×8 rounded-2px inner dot take the row's accent color via currentColor: teal (primary) for the «Все расходы/доходы» master, the category's own color for its row. State coupling: unchecked (excluded) rows dim to 50% opacity; the selected row gets a warm muted wash instead of a tint.
 - Segmented control (Расходы/Доходы on analytics, Add tabs): pill group on muted track, active = white raised.
 - Date-range navigation (analytics): pill with ‹ › chevrons and centered label («1 авг. — 31 авг.»).
 - Donut chart keeps its selectable-segment behavior; colors from category data or palette tints.

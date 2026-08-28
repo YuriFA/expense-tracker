@@ -21,6 +21,7 @@ import { useTransactions } from '@/entities/transaction'
 import { useCategories } from '@/entities/category'
 import { DonutChart, type DonutChartEntry } from '@/shared/ui/donut-chart'
 import { Button } from '@/shared/ui/button'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -280,12 +281,12 @@ const openDrilldown = (category: Category) => {
             class="flex items-center gap-3 border-b pb-3"
             data-testid="analytics-total-row"
           >
-            <input
-              type="checkbox"
-              :checked="allIncluded"
+            <Checkbox
+              :model-value="allIncluded"
+              class="text-primary"
               :aria-label="t('analytics.showAllCategories', { label: allLabel })"
               data-testid="analytics-total-check"
-              @change="toggleMaster"
+              @update:model-value="toggleMaster"
             />
             <span class="flex-1 text-sm font-semibold">{{ allLabel }}</span>
             <span class="text-sm font-semibold" data-testid="analytics-total-amount">
@@ -300,19 +301,21 @@ const openDrilldown = (category: Category) => {
               v-for="row in rows"
               :key="row.category.id"
               class="flex items-center gap-3 rounded-lg border-b py-2.5 pl-2 last:border-b-0"
-              :class="{
-                'bg-accent/60': selectedCategoryId === row.category.id,
-                'opacity-50': selectedCategoryId !== null && selectedCategoryId !== row.category.id,
-                'opacity-60': selectedCategoryId === null && row.totalMinor === 0,
-              }"
+              :class="[
+                selectedCategoryId === row.category.id ? 'bg-muted/50' : '',
+                excludedIds.has(row.category.id)
+                  ? 'opacity-50'
+                  : row.totalMinor === 0
+                    ? 'opacity-60'
+                    : '',
+              ]"
             >
-              <input
-                type="checkbox"
-                :checked="!excludedIds.has(row.category.id)"
-                :style="{ accentColor: row.category.color }"
+              <Checkbox
+                :model-value="!excludedIds.has(row.category.id)"
+                :style="{ color: row.category.color }"
                 :aria-label="t('analytics.showOnChart', { name: row.category.name })"
                 :data-testid="`analytics-category-check-${row.category.id}`"
-                @change="toggleCategory(row.category.id)"
+                @update:model-value="toggleCategory(row.category.id)"
               />
               <button
                 type="button"
