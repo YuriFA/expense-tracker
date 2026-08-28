@@ -46,6 +46,7 @@ const onThemeChange = (value: unknown) => {
 const themes = computed(() => [
   { value: 'light' as const, label: t('settings.themeLight') },
   { value: 'dark' as const, label: t('settings.themeDark') },
+  { value: 'system' as const, label: t('settings.themeSystem') },
 ])
 
 const locales = computed(() => {
@@ -96,6 +97,12 @@ const myDisplayName = computed(() => myMember.value?.displayName ?? '')
 const roleLabel = (role: HouseholdMember['role']): string =>
   role === 'owner' ? t('household.role.owner') : t('household.role.member')
 
+// Avatar initials: first letter of the resolved member label.
+const memberInitials = (member: HouseholdMember): string => {
+  const label = memberLabel(member).trim()
+  return label ? label[0]!.toUpperCase() : '?'
+}
+
 function openRemove(member: HouseholdMember): void {
   removeTarget.value = member
   removeOpen.value = true
@@ -141,49 +148,50 @@ onMounted(() => {
   <section class="flex flex-col gap-6">
     <h1 class="text-3xl font-bold">{{ t('pages.settings') }}</h1>
 
+    <!-- Settings row-card: title + description on the left, control on the
+         right (design system). -->
     <Card>
-      <CardHeader>
-        <CardTitle>{{ t('settings.locale') }}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <label class="flex items-center gap-2">
-          <span class="sr-only">{{ t('settings.locale') }}</span>
-          <Select v-model="settings.locale" class="w-full sm:w-64">
-            <SelectTrigger>
-              <SelectValue :placeholder="t('settings.locale')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="item in locales" :key="item.id" :value="item.id">
-                {{ item.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </label>
+      <CardContent class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <h3 class="text-sm font-semibold">{{ t('settings.locale') }}</h3>
+          <p class="mt-0.5 text-xs text-muted-foreground">
+            {{ t('settings.languageDescription') }}
+          </p>
+        </div>
+        <Select v-model="settings.locale">
+          <SelectTrigger class="w-full shrink-0 sm:w-56" :aria-label="t('settings.locale')">
+            <SelectValue :placeholder="t('settings.locale')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="item in locales" :key="item.id" :value="item.id">
+              {{ item.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </CardContent>
     </Card>
 
     <Card>
-      <CardHeader>
-        <CardTitle>{{ t('settings.appearance') }}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <label class="flex items-center gap-2">
-          <span class="sr-only">{{ t('settings.appearance') }}</span>
-          <Select
-            :model-value="settings.theme"
-            class="w-full sm:w-64"
-            @update:model-value="onThemeChange"
-          >
-            <SelectTrigger>
-              <SelectValue :placeholder="t('settings.appearance')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="item in themes" :key="item.value" :value="item.value">
-                {{ item.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </label>
+      <CardContent class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <h3 class="text-sm font-semibold">{{ t('settings.appearance') }}</h3>
+          <p class="mt-0.5 text-xs text-muted-foreground">
+            {{ t('settings.appearanceDescription') }}
+          </p>
+        </div>
+        <Select
+          :model-value="settings.theme"
+          @update:model-value="onThemeChange"
+        >
+          <SelectTrigger class="w-full shrink-0 sm:w-56" :aria-label="t('settings.appearance')">
+            <SelectValue :placeholder="t('settings.appearance')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="item in themes" :key="item.value" :value="item.value">
+              {{ item.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </CardContent>
     </Card>
 
@@ -209,47 +217,68 @@ onMounted(() => {
       />
 
       <Card data-testid="settings-household-card">
-        <CardHeader>
-          <CardTitle>{{ t('household.title') }}</CardTitle>
+        <CardHeader class="border-b [.border-b]:pb-4">
+          <CardTitle class="text-sm font-semibold" data-testid="settings-household-name">
+            {{ householdLabel }}
+            <template v-if="household"> · {{ t('household.membersCount', members.length) }}</template>
+          </CardTitle>
         </CardHeader>
-        <CardContent class="flex flex-col gap-3">
+        <CardContent class="flex flex-col gap-4">
           <Skeleton v-if="householdQuery.isLoading.value" class="h-5 w-40" />
-          <p v-else-if="householdLabel" class="text-sm" data-testid="settings-household-name">
-            {{ householdLabel }} · {{ t('household.membersCount', members.length) }}
-          </p>
 
           <ul
-            v-if="household"
-            class="flex flex-col gap-2 text-sm"
+            v-if="household && !householdQuery.isLoading.value"
+            class="flex flex-col"
             data-testid="settings-household-member-list"
           >
             <li
               v-for="member in members"
               :key="member.userId"
-              class="flex items-center gap-2 border-b border-b-muted pb-2 last:border-0 last:pb-0"
+              class="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"
               :data-testid="`settings-household-member-${member.userId}`"
             >
-              <span class="flex-1">
-                {{ memberLabel(member) }}
-                <span v-if="member.userId === auth.user?.id" class="text-muted-foreground">
-                  ({{ t('household.you') }})
+              <div class="flex min-w-0 items-center gap-3">
+                <span
+                  class="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                  :class="
+                    member.role === 'owner'
+                      ? 'bg-accent text-primary'
+                      : 'bg-muted text-muted-foreground'
+                  "
+                  aria-hidden="true"
+                >
+                  {{ memberInitials(member) }}
                 </span>
-                <span class="block text-xs text-muted-foreground">
-                  {{ member.email }} · {{ t('household.joinedAt', { date: formatJoined(member.joinedAt) }) }}
-                </span>
-              </span>
-              <Badge variant="outline">
-                {{ roleLabel(member.role) }}
-              </Badge>
-              <Button
-                v-if="isOwner && member.role !== 'owner'"
-                variant="ghost"
-                size="sm"
-                :data-testid="`settings-household-remove-${member.userId}`"
-                @click="openRemove(member)"
-              >
-                {{ t('household.removeMember') }}
-              </Button>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold">
+                    {{ memberLabel(member) }}
+                    <span v-if="member.userId === auth.user?.id" class="font-normal text-muted-foreground">
+                      ({{ t('household.you') }})
+                    </span>
+                  </p>
+                  <p class="truncate text-[11px] text-muted-foreground">
+                    {{ member.email }} · {{ t('household.joinedAt', { date: formatJoined(member.joinedAt) }) }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex shrink-0 items-center gap-3">
+                <Badge
+                  variant="outline"
+                  class="rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+                >
+                  {{ roleLabel(member.role) }}
+                </Badge>
+                <Button
+                  v-if="isOwner && member.role !== 'owner'"
+                  variant="ghost"
+                  size="sm"
+                  class="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-destructive"
+                  :data-testid="`settings-household-remove-${member.userId}`"
+                  @click="openRemove(member)"
+                >
+                  {{ t('household.removeMember') }}
+                </Button>
+              </div>
             </li>
           </ul>
 
@@ -261,7 +290,7 @@ onMounted(() => {
             <DissolveHouseholdDialog />
           </div>
 
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-wrap gap-2 border-t border-border pt-4">
             <JoinHouseholdDialog />
             <LeaveHouseholdButton v-if="canLeave" />
           </div>
@@ -271,16 +300,18 @@ onMounted(() => {
       <RemoveMemberDialog v-model="removeOpen" :member="removeTarget" />
 
       <Card>
-        <CardHeader>
-          <CardTitle>{{ t('auth.sessionsTitle') }}</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-3">
-          <p class="text-sm text-muted-foreground">{{ t('auth.sessionsDescription') }}</p>
-          <ul v-if="sessions.length" class="flex flex-col gap-2 text-sm">
+        <CardContent class="flex flex-col gap-4">
+          <div>
+            <h3 class="text-sm font-semibold">{{ t('auth.sessionsTitle') }}</h3>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+              {{ t('auth.sessionsDescription') }}
+            </p>
+          </div>
+          <ul v-if="sessions.length" class="flex flex-col text-sm">
             <li
               v-for="(session, index) in sessions"
               :key="index"
-              class="flex items-center justify-between border-b border-b-muted pb-2 last:border-0"
+              class="flex items-center justify-between border-b border-border py-2.5 last:border-0"
             >
               <span>
                 {{ t('auth.sessionExpiresAt') }}: {{ formatExpiry(session.expiresAt) }}
@@ -291,11 +322,17 @@ onMounted(() => {
             </li>
           </ul>
           <p v-else-if="!sessionsLoading" class="text-sm text-muted-foreground">-</p>
-          <div class="flex gap-2">
-            <Button variant="outline" :loading="sessionsLoading" @click="loadSessions">
+          <div class="flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" :loading="sessionsLoading" @click="loadSessions">
               {{ t('common.errorState.retry') }}
             </Button>
-            <Button variant="outline" :loading="revoking" @click="revokeOtherSessions">
+            <Button
+              variant="outline"
+              size="sm"
+              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+              :loading="revoking"
+              @click="revokeOtherSessions"
+            >
               {{ t('auth.revokeOtherSessions') }}
             </Button>
           </div>

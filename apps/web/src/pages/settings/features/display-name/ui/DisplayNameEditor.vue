@@ -5,7 +5,7 @@ import { useForm, Field as VeeField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useQueryCache } from '@pinia/colada'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent, CardTitle } from '@/shared/ui/card'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { getHouseholdErrorMessage, householdApi } from '@/entities/household'
@@ -61,18 +61,23 @@ const handleSubmit = handleFormSubmit(async (data) => {
 
 <template>
   <Card data-testid="settings-profile-card">
-    <CardHeader>
-      <CardTitle>{{ t('profile.title') }}</CardTitle>
-    </CardHeader>
-    <CardContent class="flex flex-col gap-3">
-      <p class="text-sm text-muted-foreground" data-testid="settings-profile-email">
-        {{ t('profile.email') }}: {{ email }}
-      </p>
-      <p class="text-sm text-muted-foreground">{{ t('profile.displayNameDescription') }}</p>
+    <CardContent class="flex flex-col gap-4">
+      <!-- Row header (design system): section title + email on the right. -->
+      <div class="flex items-center justify-between gap-3">
+        <CardTitle class="text-sm font-semibold">{{ t('profile.title') }}</CardTitle>
+        <span class="truncate text-xs text-muted-foreground" data-testid="settings-profile-email">
+          {{ email }}
+        </span>
+      </div>
       <form id="display-name-form" class="flex flex-col gap-3" @submit="handleSubmit">
         <VeeField v-slot="{ field, errors }" name="displayName">
           <Field :data-invalid="!!errors.length">
-            <FieldLabel for="profile-display-name">{{ t('profile.displayName') }}</FieldLabel>
+            <FieldLabel
+              for="profile-display-name"
+              class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+            >
+              {{ t('profile.displayName') }}
+            </FieldLabel>
             <Input
               id="profile-display-name"
               :placeholder="t('profile.displayNamePlaceholder')"
@@ -91,7 +96,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
           type="submit"
           :loading="isSubmitting"
           data-testid="settings-profile-save"
-          class="self-start"
+          class="self-start bg-accent text-primary hover:bg-accent/80 hover:text-primary"
         >
           {{ t('profile.save') }}
         </Button>

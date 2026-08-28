@@ -463,6 +463,7 @@
   },
   "settings": {
     "locale": "Язык",
+    "languageDescription": "Выберите язык интерфейса приложения",
     "language": "Язык",
     "defaultCurrency": "Валюта по умолчанию",
     "theme": "Тема",
@@ -473,7 +474,8 @@
     "version": "Версия",
     "categories": "Категории",
     "categoriesEmpty": "Категорий пока нет",
-    "appearance": "Оформление"
+    "appearance": "Оформление",
+    "appearanceDescription": "Светлая, тёмная или как в системе"
   },
   "household": {
     "title": "Домохозяйство",
