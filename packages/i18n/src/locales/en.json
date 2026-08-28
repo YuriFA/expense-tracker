@@ -216,7 +216,9 @@
     "debtAdded": "Debt added",
     "contactUpdated": "Contact updated",
     "contactDeleted": "Contact deleted",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "debtAction": "Record debt",
+    "repaymentAction": "Record repayment"
   },
   "plans": {
     "expensesTitle": "Expenses",

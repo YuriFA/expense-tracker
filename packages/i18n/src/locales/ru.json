@@ -216,7 +216,9 @@
     "debtAdded": "Долг добавлен",
     "contactUpdated": "Контакт обновлён",
     "contactDeleted": "Контакт удалён",
-    "error": "Что-то пошло не так"
+    "error": "Что-то пошло не так",
+    "debtAction": "Добавить долг",
+    "repaymentAction": "Внести погашение"
   },
   "plans": {
     "expensesTitle": "Расходы",

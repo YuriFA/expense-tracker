@@ -54,6 +54,8 @@ const props = defineProps<{
   operation: DebtOperation | null
   /** Live operations of the debtor, for the over-repayment warning. */
   operations: readonly DebtOperation[]
+  /** Create-mode kind preset (the history footer's split actions). */
+  initialKind?: OperationFormValues['kind']
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -77,7 +79,7 @@ const { mutateAsync: deleteOperation } = useDeleteDebtOperation()
 const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<OperationFormValues>({
   validationSchema: toTypedSchema(createOperationSchema()),
   initialValues: {
-    kind: 'debt',
+    kind: props.initialKind ?? 'debt',
     amount: props.operation ? toMajorUnits(props.operation.amount) : undefined,
     occurredAt: props.operation
       ? calendarDayKey(new Date(props.operation.occurredAt))

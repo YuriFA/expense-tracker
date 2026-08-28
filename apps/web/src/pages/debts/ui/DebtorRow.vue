@@ -3,12 +3,15 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ChevronRight } from '@lucide/vue'
 import type { Debtor } from '@expense-tracker/api'
+import type { DebtDirection } from '@/entities/debt-operation'
 import { debtorAvatarColor, initialsOf } from '../model/selectors'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 const props = defineProps<{
   debtor: Debtor
   balance: number
+  /** The section's direction: it colors the balance (green/terracotta). */
+  direction: DebtDirection
 }>()
 
 const { locale } = useI18n()
@@ -19,6 +22,11 @@ const displayCurrency = computed(() => DEFAULT_CURRENCY)
 const balanceText = computed(() =>
   formatMoney(props.balance, displayCurrency.value, locale.value),
 )
+
+const balanceClass = computed(() => {
+  if (props.balance < 0) return 'text-destructive'
+  return props.direction === 'receivable' ? 'text-success' : 'text-warning'
+})
 </script>
 
 <template>
@@ -36,7 +44,7 @@ const balanceText = computed(() =>
       {{ initialsOf(debtor.name) }}
     </span>
     <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ debtor.name }}</span>
-    <span class="text-sm" :class="{ 'text-destructive': balance < 0 }">{{ balanceText }}</span>
+    <span class="text-sm" :class="balanceClass">{{ balanceText }}</span>
     <ChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
   </button>
 </template>

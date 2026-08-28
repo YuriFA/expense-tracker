@@ -61,8 +61,10 @@ const operationText = (operation: DebtOperation) =>
 // One dialog instance + active item refs (convention 4).
 const operationOpen = ref(false)
 const activeOperation = ref<DebtOperation | null>(null)
+const createKind = ref<'debt' | 'repayment'>('debt')
 
-const openCreate = () => {
+const openCreate = (kind: 'debt' | 'repayment') => {
+  createKind.value = kind
   activeOperation.value = null
   operationOpen.value = true
 }
@@ -134,20 +136,29 @@ const editDebtorOpen = ref(false)
         </div>
       </div>
 
-      <DialogFooter>
-        <Button class="w-full" data-testid="debts-new-operation" @click="openCreate">
-          {{ t('debts.newOperation') }}
+      <DialogFooter class="flex-row gap-2">
+        <Button
+          variant="outline"
+          class="flex-1"
+          data-testid="debts-new-repayment"
+          @click="openCreate('repayment')"
+        >
+          {{ t('debts.repaymentAction') }}
+        </Button>
+        <Button class="flex-1" data-testid="debts-new-operation" @click="openCreate('debt')">
+          {{ t('debts.debtAction') }}
         </Button>
       </DialogFooter>
 
       <OperationFormDialog
         v-if="operationOpen"
-        :key="activeOperation?.id ?? 'create'"
+        :key="`${activeOperation?.id ?? 'create'}-${createKind}`"
         v-model:open="operationOpen"
         :debtor="debtor"
         :direction="direction"
         :operation="activeOperation"
         :operations="operations"
+        :initial-kind="createKind"
       />
 
       <DebtorFormDialog

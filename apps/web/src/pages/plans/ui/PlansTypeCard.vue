@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowDown, ArrowUp, Plus } from '@lucide/vue'
+import { Minus, Plus } from '@lucide/vue'
 import type { PlannedPayment } from '@expense-tracker/api'
 import { monthlyTotal } from '@/entities/planned-payment'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -47,11 +47,12 @@ const monthlyText = computed(() =>
       <CardHeader class="flex-row items-center justify-between">
         <div class="flex items-center gap-2">
           <span
-            class="flex size-8 items-center justify-center rounded-full bg-[var(--primary)]/15"
+            class="flex items-center justify-center rounded-full"
+            :class="type === 'expense' ? 'size-8 bg-warning/10 text-warning' : 'size-8 bg-success/10 text-success'"
             aria-hidden="true"
           >
-            <ArrowUp v-if="type === 'expense'" class="size-4" />
-            <ArrowDown v-else class="size-4" />
+            <Minus v-if="type === 'expense'" class="size-4" />
+            <Plus v-else class="size-4" />
           </span>
           <div>
             <CardTitle class="text-base">{{ cardTitle }}</CardTitle>

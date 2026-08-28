@@ -64,6 +64,7 @@ const showSettled = ref(false)
         :key="view.debtor.id"
         :debtor="view.debtor"
         :balance="view.balance"
+        :direction="direction"
         @click="emit('select', view.debtor, direction)"
       />
       <button
@@ -85,6 +86,7 @@ const showSettled = ref(false)
           :key="view.debtor.id"
           :debtor="view.debtor"
           :balance="view.balance"
+          :direction="direction"
           @click="emit('select', view.debtor, direction)"
         />
       </template>

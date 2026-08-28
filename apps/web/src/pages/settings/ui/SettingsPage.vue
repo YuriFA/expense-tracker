@@ -127,19 +127,26 @@ onMounted(() => {
   <section class="flex flex-col gap-6">
     <h1 class="text-3xl font-bold">{{ t('pages.settings') }}</h1>
 
-    <label class="flex items-center gap-2">
-      <p>{{ t('settings.locale') }}:</p>
-      <Select v-model="settings.locale" class="w-full">
-        <SelectTrigger>
-          <SelectValue :placeholder="t('settings.locale')" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="item in locales" :key="item.id" :value="item.id">
-            {{ item.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </label>
+    <Card>
+      <CardHeader>
+        <CardTitle>{{ t('settings.locale') }}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <label class="flex items-center gap-2">
+          <span class="sr-only">{{ t('settings.locale') }}</span>
+          <Select v-model="settings.locale" class="w-full sm:w-64">
+            <SelectTrigger>
+              <SelectValue :placeholder="t('settings.locale')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="item in locales" :key="item.id" :value="item.id">
+                {{ item.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+      </CardContent>
+    </Card>
 
     <template v-if="auth.isAuthenticated">
       <Card v-if="!auth.user?.emailVerified">
