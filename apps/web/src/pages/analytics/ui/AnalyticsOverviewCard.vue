@@ -13,7 +13,7 @@ import {
 } from '@/entities/analytics'
 import { DonutChart, type DonutChartEntry } from '@/shared/ui/donut-chart'
 import { ChartLegend } from '@/shared/ui/donut-chart'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 const props = defineProps<{
@@ -68,9 +68,11 @@ const a11yLabel = computed(
       :aria-label="a11yLabel"
       class="block transition hover:bg-accent/50"
     >
-      <CardHeader class="flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle>{{ title }}</CardTitle>
-        <ChevronRight class="size-4 text-muted-foreground" aria-hidden="true" />
+        <CardAction>
+          <ChevronRight class="size-4 text-muted-foreground" aria-hidden="true" />
+        </CardAction>
       </CardHeader>
       <CardContent>
         <div v-if="total > 0" class="flex items-center gap-6">

@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlusIcon } from '@lucide/vue'
 import type { Category } from '@/entities/category'
-import { useCreateCategory } from '@/entities/category'
+import { useCategories, useCreateCategory } from '@/entities/category'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -35,7 +35,23 @@ const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
 const { mutateAsync: createCategory, asyncStatus } = useCreateCategory()
+const { data: categories } = useCategories()
 const name = ref('')
+
+// The closed color palette of the mobile category-appearance config (same
+// set, kept in sync by hand). Web creation has no picker yet, so new
+// categories cycle through it by the current category count - consecutive
+// categories differ. Order starts with the vivid colors: nearly-white
+// aliceblue goes last, a chart segment in it would be invisible.
+const CATEGORY_COLORS = [
+  '#6366f1', // brand-indigo
+  '#f97316', // brand-orange
+  '#22c55e', // brand-green
+  '#7c5cff', // brand-violet
+  '#a78bfa', // brand-lilac
+  '#16a34a', // brand-leaf
+  '#f1f3fd', // brand-aliceblue
+] as const
 
 async function submit() {
   const trimmed = name.value.trim()
@@ -45,7 +61,9 @@ async function submit() {
       name: trimmed,
       type,
       icon: '🏷️',
-      color: '#94a3b8',
+      color:
+        CATEGORY_COLORS[(categories.value?.length ?? 0) % CATEGORY_COLORS.length] ??
+        CATEGORY_COLORS[1],
     })
     notification.success(t('addTransaction.categoryCreated'))
     emit('created', category)

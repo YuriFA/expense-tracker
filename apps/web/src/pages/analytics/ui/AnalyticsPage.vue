@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { currentPeriod, periodToUtcDayRange } from '@expense-tracker/dates'
+import { currentPeriod, monthLabel, periodToUtcDayRange } from '@expense-tracker/dates'
 import { useTransactions } from '@/entities/transaction'
 import { useCategories } from '@/entities/category'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import AnalyticsOverviewCard from './AnalyticsOverviewCard.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // Both cards share one month-scoped read per direction; figures derive in
 // memory from the selectors (no network dependency - analytics capability).
 const cursor = currentPeriod('month')
 const range = periodToUtcDayRange(cursor)
+
+const monthCaption = computed(
+  () =>
+    `${monthLabel(cursor.start.getFullYear(), cursor.start.getMonth(), locale.value)} ${cursor.start.getFullYear()}`,
+)
 
 const {
   data: expenses,
@@ -47,6 +52,7 @@ const refetch = () =>
 <template>
   <section>
     <h1 class="text-3xl font-bold">{{ t('pages.analytics') }}</h1>
+    <p class="text-sm text-muted-foreground">{{ monthCaption }}</p>
 
     <div v-if="isLoading" class="mt-6 grid gap-4 md:grid-cols-2">
       <Skeleton class="h-48 rounded-xl" data-testid="analytics-skeleton" />

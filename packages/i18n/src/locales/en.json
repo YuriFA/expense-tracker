@@ -6,7 +6,8 @@
     "errorState": {
       "title": "Failed to load",
       "retry": "Retry"
-    }
+    },
+    "back": "Back"
   },
   "nav": {
     "dashboard": "Dashboard",

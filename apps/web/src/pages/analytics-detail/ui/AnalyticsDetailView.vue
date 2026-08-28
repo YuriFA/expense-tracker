@@ -24,7 +24,8 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ArrowLeft, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { RouterLink } from 'vue-router'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 import CategoryCashflowDialog from './CategoryCashflowDialog.vue'
 
@@ -180,14 +181,33 @@ const openDrilldown = (category: Category) => {
 
 <template>
   <section>
-    <h1 class="text-3xl font-bold">{{ title }}</h1>
+    <div class="flex items-center gap-3">
+      <Button
+        as-child
+        variant="outline"
+        size="icon"
+        class="rounded-full"
+        :aria-label="t('common.back')"
+        data-testid="analytics-back"
+      >
+        <RouterLink to="/analytics">
+          <ArrowLeft class="size-4" aria-hidden="true" />
+        </RouterLink>
+      </Button>
+      <h1 class="text-3xl font-bold">{{ title }}</h1>
+    </div>
 
-    <div class="mt-4 flex gap-2" role="group" :aria-label="title">
+    <div
+      class="bg-secondary mx-auto mt-4 flex w-full max-w-md rounded-xl p-1"
+      role="group"
+      :aria-label="title"
+    >
       <Button
         v-for="periodKind in PERIOD_KINDS"
         :key="periodKind"
-        :variant="kind === periodKind ? 'default' : 'outline'"
-        class="flex-1"
+        :variant="kind === periodKind ? 'default' : 'ghost'"
+        class="flex-1 rounded-lg"
+        :class="kind === periodKind ? '' : 'text-muted-foreground hover:text-foreground'"
         :aria-pressed="kind === periodKind"
         :data-testid="`analytics-period-${periodKind}`"
         @click="selectKind(periodKind)"
@@ -204,10 +224,11 @@ const openDrilldown = (category: Category) => {
     </div>
     <template v-else>
       <div class="mt-6 flex flex-col items-center gap-2">
-        <div class="flex items-center gap-4 self-stretch justify-between">
+        <div class="flex items-center justify-center gap-6 self-stretch">
           <Button
             variant="outline"
             size="icon"
+            class="rounded-full"
             :aria-label="t('analytics.prevPeriod')"
             data-testid="analytics-period-prev"
             @click="stepPeriod(-1)"
@@ -223,6 +244,7 @@ const openDrilldown = (category: Category) => {
           <Button
             variant="outline"
             size="icon"
+            class="rounded-full"
             :aria-label="t('analytics.nextPeriod')"
             data-testid="analytics-period-next"
             @click="stepPeriod(1)"
@@ -277,8 +299,12 @@ const openDrilldown = (category: Category) => {
             <li
               v-for="row in rows"
               :key="row.category.id"
-              class="flex items-center gap-3 border-b py-2.5 last:border-b-0"
-              :class="{ 'opacity-50': selectedCategoryId !== null && selectedCategoryId !== row.category.id }"
+              class="flex items-center gap-3 rounded-lg border-b py-2.5 pl-2 last:border-b-0"
+              :class="{
+                'bg-accent/60': selectedCategoryId === row.category.id,
+                'opacity-50': selectedCategoryId !== null && selectedCategoryId !== row.category.id,
+                'opacity-60': selectedCategoryId === null && row.totalMinor === 0,
+              }"
             >
               <input
                 type="checkbox"
@@ -291,6 +317,7 @@ const openDrilldown = (category: Category) => {
               <button
                 type="button"
                 class="min-w-0 flex-1 truncate text-left text-sm hover:underline"
+                :class="{ 'font-medium text-primary': selectedCategoryId === row.category.id }"
                 :data-testid="`analytics-category-row-${row.category.id}`"
                 @click="openDrilldown(row.category)"
               >
