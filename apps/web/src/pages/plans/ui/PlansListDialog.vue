@@ -104,7 +104,7 @@ const openConfirm = (plan: PlannedPayment) => {
         <ul v-else class="space-y-1">
           <li v-for="plan in sorted" :key="plan.id">
             <div
-              class="flex w-full items-center gap-2 rounded-md px-2 py-2 hover:bg-accent/50"
+              class="flex w-full items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-muted/70"
               :data-testid="`plans-row-${plan.id}`"
             >
               <button

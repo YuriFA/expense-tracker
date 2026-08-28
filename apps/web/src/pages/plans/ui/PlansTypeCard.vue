@@ -37,7 +37,7 @@ const monthlyText = computed(() =>
 </script>
 
 <template>
-  <Card>
+  <Card class="transition-all duration-200 hover:-translate-y-0.5 hover:border-muted-foreground/30">
     <button
       type="button"
       class="w-full text-left"

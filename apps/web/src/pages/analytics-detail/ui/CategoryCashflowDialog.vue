@@ -181,7 +181,7 @@ const openDelete = (transaction: Transaction) => {
             <div
               v-for="transaction in group.transactions"
               :key="transaction.id"
-              class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent/50"
+              class="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/70"
               :data-testid="`category-cashflow-tx-${transaction.id}`"
             >
               <button

@@ -32,7 +32,7 @@ const balanceClass = computed(() => {
 <template>
   <button
     type="button"
-    class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-accent/50"
+    class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/70"
     :data-testid="`debts-debtor-${debtor.id}`"
     :aria-label="`${debtor.name}, ${balanceText}`"
   >

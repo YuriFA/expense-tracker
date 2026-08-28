@@ -89,7 +89,7 @@ function goToLogin() {
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
-        class="flex items-center gap-2.5 rounded-md px-3 py-2 transition hover:bg-accent/50"
+        class="flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors"
         :class="isActive(item.name) ? 'font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'"
         data-testid="sidebar-nav-link"
         @click="emit('navigate')"

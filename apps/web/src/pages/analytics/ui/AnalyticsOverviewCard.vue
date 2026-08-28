@@ -13,7 +13,7 @@ import {
 } from '@/entities/analytics'
 import { DonutChart, type DonutChartEntry } from '@/shared/ui/donut-chart'
 import { ChartLegend } from '@/shared/ui/donut-chart'
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 const props = defineProps<{
@@ -61,33 +61,36 @@ const a11yLabel = computed(
 </script>
 
 <template>
-  <Card as-child>
-    <RouterLink
-      :to="`/analytics/${direction}`"
-      :data-testid="testId"
-      :aria-label="a11yLabel"
-      class="block transition hover:bg-accent/50"
-    >
-      <CardHeader>
-        <CardTitle>{{ title }}</CardTitle>
-        <CardAction>
-          <ChevronRight class="size-4 text-muted-foreground" aria-hidden="true" />
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <div v-if="total > 0" class="flex items-center gap-6">
-          <DonutChart :entries="donutEntries" :size="120" :stroke-width="14" :aria-label="a11yLabel">
-            <span class="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-              {{ t('analytics.amountCaption') }}
-            </span>
-            <span class="text-sm font-semibold">{{ totalText }}</span>
-          </DonutChart>
-          <ChartLegend :entries="entries" />
-        </div>
-        <p v-else class="py-6 text-sm text-muted-foreground">
-          {{ direction === 'expense' ? t('analytics.emptyExpense') : t('analytics.emptyIncome') }}
-        </p>
-      </CardContent>
-    </RouterLink>
-  </Card>
+  <!-- The link IS the card surface (Card has no as-child): card classes on
+       the link, hover lifts the whole card instead of washing an inset box. -->
+  <RouterLink
+    :to="`/analytics/${direction}`"
+    :data-testid="testId"
+    :aria-label="a11yLabel"
+    class="group bg-card text-card-foreground flex flex-col gap-2 rounded-lg border py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-muted-foreground/30 md:py-6"
+  >
+    <CardHeader>
+      <CardTitle>{{ title }}</CardTitle>
+      <CardAction>
+        <ChevronRight
+          class="size-4 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+      </CardAction>
+    </CardHeader>
+    <CardContent>
+      <div v-if="total > 0" class="flex items-center gap-6">
+        <DonutChart :entries="donutEntries" :size="120" :stroke-width="14" :aria-label="a11yLabel">
+          <span class="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+            {{ t('analytics.amountCaption') }}
+          </span>
+          <span class="text-sm font-semibold">{{ totalText }}</span>
+        </DonutChart>
+        <ChartLegend :entries="entries" />
+      </div>
+      <p v-else class="py-6 text-sm text-muted-foreground">
+        {{ direction === 'expense' ? t('analytics.emptyExpense') : t('analytics.emptyIncome') }}
+      </p>
+    </CardContent>
+  </RouterLink>
 </template>
