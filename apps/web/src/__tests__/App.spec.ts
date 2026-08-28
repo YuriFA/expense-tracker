@@ -14,8 +14,10 @@ vi.mock('@/shared/lib/local-db/local-db', () => ({
 }))
 
 describe('App', () => {
-  it('renders AppShell with nav', () => {
+  it('renders AppShell with the navigation shell', () => {
     const wrapper = mountWithProviders(App, { repositories: {} })
-    expect(wrapper.find('nav').exists()).toBe(true)
+    // jsdom never matches the desktop media query, so the shell renders the
+    // mobile top bar; the desktop sidebar mounts only on real desktops.
+    expect(wrapper.find('header').exists()).toBe(true)
   })
 })

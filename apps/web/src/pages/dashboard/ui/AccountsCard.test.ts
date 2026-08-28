@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import NetWorthCard from './NetWorthCard.vue'
+import AccountsCard from './AccountsCard.vue'
 import type { AccountWithBalance } from '@/entities/account'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
@@ -10,55 +10,53 @@ const accounts: AccountWithBalance[] = [
   { id: 'a2', name: 'Savings', currency: 'USD', openingBalance: 500, manualAdjustment: 0, balance: 700, version: 1 },
 ]
 
-describe('NetWorthCard', () => {
-  it('renders total balance sum across accounts', async () => {
+describe('AccountsCard', () => {
+  it('renders each account with its balance', async () => {
     const repo = createMockAccountRepository()
     repo.getAll.mockResolvedValue(accounts)
-    const wrapper = mountWithProviders(NetWorthCard, {
-      repositories: { accounts: repo },
-    })
-    await flushPromises()
-    // Total balance (1500 + 700 = 2200 kopeks = $22.00) rendered per currency
-    expect(wrapper.text()).toMatch(/22\.00/)
-  })
-
-  it('renders each account name with link', async () => {
-    const repo = createMockAccountRepository()
-    repo.getAll.mockResolvedValue(accounts)
-    const wrapper = mountWithProviders(NetWorthCard, {
+    const wrapper = mountWithProviders(AccountsCard, {
       repositories: { accounts: repo },
     })
     await flushPromises()
     expect(wrapper.text()).toContain('Main')
     expect(wrapper.text()).toContain('Savings')
+    // 1500 + 700 = 2200 kopeks, rendered per account currency
+    expect(wrapper.text()).toMatch(/22\.00/)
   })
 
   it('renders RouterLink with transactions query for each account', async () => {
     const repo = createMockAccountRepository()
     repo.getAll.mockResolvedValue(accounts)
-    const wrapper = mountWithProviders(NetWorthCard, {
+    const wrapper = mountWithProviders(AccountsCard, {
       repositories: { accounts: repo },
     })
     await flushPromises()
-    const links = wrapper.findAll('a')
-    expect(links.length).toBeGreaterThanOrEqual(2)
-    // Each link should have an href containing accountId
-    const hrefs = links.map((l) => l.attributes('href'))
+    const hrefs = wrapper.findAll('a').map((l) => l.attributes('href'))
     expect(hrefs.some((h) => h?.includes('accountId=a1'))).toBe(true)
     expect(hrefs.some((h) => h?.includes('accountId=a2'))).toBe(true)
   })
 
-  it('handles empty accounts list', async () => {
+  it('renders the total row in the fixed app currency', async () => {
     const repo = createMockAccountRepository()
-    repo.getAll.mockResolvedValue([])
-    const wrapper = mountWithProviders(NetWorthCard, {
+    repo.getAll.mockResolvedValue(accounts)
+    const wrapper = mountWithProviders(AccountsCard, {
       repositories: { accounts: repo },
     })
     await flushPromises()
-    // Should still render without errors
-    expect(wrapper.find('a').exists()).toBe(false)
-    // The empty-state figure formats in the fixed app currency, not USD
-    // (currency-rub-only).
+    // The «Всего» row formats in RUB (currency-rub-only), not in USD.
+    expect(wrapper.text()).toContain('₽22.00')
+  })
+
+  it('renders the total row for empty accounts list', async () => {
+    const repo = createMockAccountRepository()
+    repo.getAll.mockResolvedValue([])
+    const wrapper = mountWithProviders(AccountsCard, {
+      repositories: { accounts: repo },
+    })
+    await flushPromises()
+    // No account rows, only the add button and the zero total.
+    const accountLinks = wrapper.findAll('a').filter((a) => a.attributes('href')?.includes('accountId'))
+    expect(accountLinks.length).toBe(0)
     expect(wrapper.text()).toContain('₽0.00')
   })
 })
