@@ -10,15 +10,20 @@
  *
  * The WEB copy of the same palette lives in src/index.css (:root/.dark).
  * Keep the two in sync by hand: same sRGB hex values, no oklch/conversion.
+ *
+ * Palette direction: Warm Paper Minimal - warm paper background, ink text,
+ * deep teal brand primary, flat hairline borders, pastel tint accents. The
+ * brand-* accents are the categorical DATA palette (category color picker),
+ * not the UI accent - they stay vivid across themes.
  */
 
 @theme {
-  /* Border radius (base = 10px; web uses rem equivalents in the web copy) */
-  --radius: 10px;
+  /* Border radius (base = 14px; web uses rem equivalents in the web copy) */
+  --radius: 14px;
   --radius-sm: 2px;
   --radius-md: 4px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 
   /* Single font only - React Native has no font fallback chains */
   --font-sans: 'Outfit';
@@ -52,20 +57,20 @@
 @layer theme {
   :root {
     @variant light {
-      --color-background: #ffffff;
-      --color-foreground: #1b1927;
-      --color-card: #ffffff;
-      --color-card-foreground: #1b1927;
-      --color-primary: #6366f1;
+      --color-background: #f6f2ec;
+      --color-foreground: #221d16;
+      --color-card: #fffdf9;
+      --color-card-foreground: #221d16;
+      --color-primary: #0f766e;
       --color-primary-foreground: #ffffff;
-      --color-secondary: #e9e4fb;
-      --color-secondary-foreground: #312e58;
-      --color-muted: #f0ede6;
-      --color-muted-foreground: #6e6b7c;
-      --color-accent: #e4ddfe;
-      --color-accent-foreground: #312e58;
-      --color-popover: #ffffff;
-      --color-popover-foreground: #1b1927;
+      --color-secondary: #eee7db;
+      --color-secondary-foreground: #52483a;
+      --color-muted: #f0e9dc;
+      --color-muted-foreground: #8a8072;
+      --color-accent: #d9efec;
+      --color-accent-foreground: #0b544c;
+      --color-popover: #fffdf9;
+      --color-popover-foreground: #221d16;
       --color-brand-aliceblue: #f1f3fd;
       --color-brand-indigo: #6366f1;
       --color-brand-violet: #7c5cff;
@@ -73,32 +78,32 @@
       --color-brand-orange: #f97316;
       --color-brand-green: #22c55e;
       --color-brand-leaf: #16a34a;
-      --color-destructive: #dc2626;
+      --color-destructive: #b91c1c;
       --color-destructive-foreground: #ffffff;
-      --color-border: #e4dded;
-      --color-input: #1b1927;
-      --color-ring: #6366f1;
-      --color-success: #16a34a;
+      --color-border: #e8e0d4;
+      --color-input: #221d16;
+      --color-ring: #0f766e;
+      --color-success: #15803d;
       --color-success-foreground: #ffffff;
-      --color-warning: #ea580c;
+      --color-warning: #c2410c;
       --color-warning-foreground: #ffffff;
     }
 
     @variant dark {
-      --color-background: #16151c;
-      --color-foreground: #f4f2fa;
-      --color-card: #211f2b;
-      --color-card-foreground: #f4f2fa;
-      --color-primary: #818cf8;
-      --color-primary-foreground: #16151c;
-      --color-secondary: #2c2a3e;
-      --color-secondary-foreground: #ddd8f6;
-      --color-muted: #26242f;
-      --color-muted-foreground: #a5a3b2;
-      --color-accent: #312e45;
-      --color-accent-foreground: #ddd8f6;
-      --color-popover: #211f2b;
-      --color-popover-foreground: #f4f2fa;
+      --color-background: #171411;
+      --color-foreground: #f2ede4;
+      --color-card: #201c17;
+      --color-card-foreground: #f2ede4;
+      --color-primary: #2aa79b;
+      --color-primary-foreground: #06201c;
+      --color-secondary: #332c22;
+      --color-secondary-foreground: #e6ddcd;
+      --color-muted: #262119;
+      --color-muted-foreground: #a89c8a;
+      --color-accent: #1f3a35;
+      --color-accent-foreground: #b8e5dd;
+      --color-popover: #201c17;
+      --color-popover-foreground: #f2ede4;
       --color-brand-aliceblue: #f1f3fd;
       --color-brand-indigo: #6366f1;
       --color-brand-violet: #7c5cff;
@@ -108,13 +113,13 @@
       --color-brand-leaf: #16a34a;
       --color-destructive: #ef4444;
       --color-destructive-foreground: #ffffff;
-      --color-border: #57526b;
-      --color-input: #57526b;
-      --color-ring: #818cf8;
-      --color-success: #22c55e;
-      --color-success-foreground: #16151c;
+      --color-border: #3a332a;
+      --color-input: #3a332a;
+      --color-ring: #2aa79b;
+      --color-success: #4ade80;
+      --color-success-foreground: #052e16;
       --color-warning: #f97316;
-      --color-warning-foreground: #16151c;
+      --color-warning-foreground: #171411;
     }
   }
 }

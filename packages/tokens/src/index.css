@@ -8,9 +8,10 @@
  * oklch/color conversion. The MOBILE copy is canonical (decided
  * 2026-08-20): when copies disagree, this web copy syncs to it.
  *
- * Palette direction: Pastel Playful Fintech with Soft-Brutalist influences -
- * warm paper background, ink lines, indigo brand primary, pastel lavender
- * fills, and a vivid "brand" accent palette.
+ * Palette direction: Warm Paper Minimal - warm paper background, ink text,
+ * deep teal brand primary, flat hairline borders, pastel tint accents. The
+ * brand-* accents are the categorical DATA palette (category color picker),
+ * not the UI accent - they stay vivid across themes.
  */
 
 @import "tailwindcss";
@@ -20,7 +21,7 @@
 
   /* Border radius (sm/md are literal px - the mobile copy is canonical,
    * decided 2026-08-20; do not reintroduce calc() drift here) */
-  --radius: 0.625rem;
+  --radius: 0.875rem;
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: var(--radius);
@@ -50,23 +51,23 @@
 
 :root {
   /* Radius base */
-  --radius: 0.625rem;
+  --radius: 0.875rem;
 
   /* Light theme */
-  --background: #ffffff;
-  --foreground: #1b1927;
-  --card: #ffffff;
-  --card-foreground: #1b1927;
-  --popover: #ffffff;
-  --popover-foreground: #1b1927;
-  --primary: #6366f1;
+  --background: #f6f2ec;
+  --foreground: #221d16;
+  --card: #fffdf9;
+  --card-foreground: #221d16;
+  --popover: #fffdf9;
+  --popover-foreground: #221d16;
+  --primary: #0f766e;
   --primary-foreground: #ffffff;
-  --secondary: #e9e4fb;
-  --secondary-foreground: #312e58;
-  --muted: #f0ede6;
-  --muted-foreground: #6e6b7c;
-  --accent: #e4ddfe;
-  --accent-foreground: #312e58;
+  --secondary: #eee7db;
+  --secondary-foreground: #52483a;
+  --muted: #f0e9dc;
+  --muted-foreground: #8a8072;
+  --accent: #d9efec;
+  --accent-foreground: #0b544c;
   --brand-aliceblue: #f1f3fd;
   --brand-indigo: #6366f1;
   --brand-violet: #7c5cff;
@@ -74,33 +75,33 @@
   --brand-orange: #f97316;
   --brand-green: #22c55e;
   --brand-leaf: #16a34a;
-  --destructive: #dc2626;
+  --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
-  --border: #e4dded;
-  --input: #1b1927;
-  --ring: #6366f1;
-  --success: #16a34a;
+  --border: #e8e0d4;
+  --input: #221d16;
+  --ring: #0f766e;
+  --success: #15803d;
   --success-foreground: #ffffff;
-  --warning: #ea580c;
+  --warning: #c2410c;
   --warning-foreground: #ffffff;
 }
 
 .dark {
-  /* Dark theme */
-  --background: #16151c;
-  --foreground: #f4f2fa;
-  --card: #211f2b;
-  --card-foreground: #f4f2fa;
-  --popover: #211f2b;
-  --popover-foreground: #f4f2fa;
-  --primary: #818cf8;
-  --primary-foreground: #16151c;
-  --secondary: #2c2a3e;
-  --secondary-foreground: #ddd8f6;
-  --muted: #26242f;
-  --muted-foreground: #a5a3b2;
-  --accent: #312e45;
-  --accent-foreground: #ddd8f6;
+  /* Dark theme (warm charcoal; unwired at runtime - light is the only theme) */
+  --background: #171411;
+  --foreground: #f2ede4;
+  --card: #201c17;
+  --card-foreground: #f2ede4;
+  --popover: #201c17;
+  --popover-foreground: #f2ede4;
+  --primary: #2aa79b;
+  --primary-foreground: #06201c;
+  --secondary: #332c22;
+  --secondary-foreground: #e6ddcd;
+  --muted: #262119;
+  --muted-foreground: #a89c8a;
+  --accent: #1f3a35;
+  --accent-foreground: #b8e5dd;
   --brand-aliceblue: #f1f3fd;
   --brand-indigo: #6366f1;
   --brand-violet: #7c5cff;
@@ -110,11 +111,11 @@
   --brand-leaf: #16a34a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #57526b;
-  --input: #57526b;
-  --ring: #818cf8;
-  --success: #22c55e;
-  --success-foreground: #16151c;
+  --border: #3a332a;
+  --input: #3a332a;
+  --ring: #2aa79b;
+  --success: #4ade80;
+  --success-foreground: #052e16;
   --warning: #f97316;
-  --warning-foreground: #16151c;
+  --warning-foreground: #171411;
 }
