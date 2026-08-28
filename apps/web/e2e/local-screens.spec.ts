@@ -70,7 +70,7 @@ test('analytics renders from local data with route-based detail navigation', asy
   await page.goto('/analytics')
   const expenseCard = page.getByTestId('analytics-card-expenses')
   await expect(expenseCard).toBeVisible()
-  await expect(expenseCard).toContainText('$42.50')
+  await expect(expenseCard).toContainText('₽42.50')
   await expect(expenseCard.getByTestId('chart-legend')).toContainText('Groceries')
   // The income direction shows its empty state.
   await expect(page.getByTestId('analytics-card-income')).toContainText(
@@ -80,12 +80,12 @@ test('analytics renders from local data with route-based detail navigation', asy
   // Detail opens by route (card click), and the browser back returns.
   await expenseCard.click()
   await expect(page).toHaveURL(/\/analytics\/expense$/)
-  await expect(page.getByTestId('analytics-detail-total')).toContainText('$42.50')
+  await expect(page.getByTestId('analytics-detail-total')).toContainText('₽42.50')
   await expect(page.getByTestId('analytics-category-list')).toContainText('Groceries')
 
   // Deep link directly into the detail route.
   await page.goto('/analytics/income')
-  await expect(page.getByTestId('analytics-detail-total')).toContainText('$0.00')
+  await expect(page.getByTestId('analytics-detail-total')).toContainText('₽0.00')
 
   await page.goBack()
   await expect(page).toHaveURL(/\/analytics\/expense$/)
@@ -104,18 +104,18 @@ test('debts: create debtor with first debt, review history, edit the operation',
 
   const debtorRow = page.locator('[data-testid^="debts-debtor-"]').first()
   await expect(debtorRow).toContainText('Анна')
-  await expect(debtorRow).toContainText('$50.00')
+  await expect(debtorRow).toContainText('₽50.00')
 
   // History: day-grouped operations with the derived balance header.
   await debtorRow.click()
-  await expect(page.getByTestId('debts-history-balance')).toHaveText('$50.00')
+  await expect(page.getByTestId('debts-history-balance')).toHaveText('₽50.00')
 
   // Edit the operation's amount; the derived balance recalculates.
   await page.locator('[data-testid^="debts-history-op-"]').first().click()
   await page.getByRole('spinbutton').fill('70')
   await page.getByTestId('debts-operation-submit').click()
   await expect(page.getByText('Operation updated')).toBeVisible()
-  await expect(page.getByTestId('debts-history-balance')).toHaveText('$70.00')
+  await expect(page.getByTestId('debts-history-balance')).toHaveText('₽70.00')
 })
 
 test('plans: create a plan, confirm it, and the transaction appears', async ({ page }) => {
@@ -123,7 +123,7 @@ test('plans: create a plan, confirm it, and the transaction appears', async ({ p
   await seedExpenseCategory(page, 'Subscriptions')
 
   await page.goto('/plans')
-  await expect(page.getByTestId('plans-total-expense')).toHaveText('$0.00/mo')
+  await expect(page.getByTestId('plans-total-expense')).toHaveText('₽0.00/mo')
 
   await page.getByTestId('plans-card-expense').click()
   await page.getByTestId('plans-list-add').click()
@@ -172,5 +172,5 @@ test('quick income entry lands in the cashflow data', async ({ page }) => {
 
   // The income shows up in the analytics overview's income card.
   await page.goto('/analytics')
-  await expect(page.getByTestId('analytics-card-income')).toContainText('$100.00')
+  await expect(page.getByTestId('analytics-card-income')).toContainText('₽100.00')
 })

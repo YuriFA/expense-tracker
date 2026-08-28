@@ -89,6 +89,6 @@ test('a second tab is blocked by the single-tab lock', async ({ page }) => {
   await expect(second.getByRole('button', { name: 'Reload page' })).toBeVisible()
 
   // The holding tab keeps working untouched.
-  await expect(page.getByText('Net worth')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible()
   await second.close()
 })

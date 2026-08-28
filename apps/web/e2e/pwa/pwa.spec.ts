@@ -37,7 +37,9 @@ test('cold start offline loads the shell and operates on local data', async ({ p
   // The dashboard renders from the local database (SQLite-WASM via the
   // precached worker + wasm binary).
   await page.goto('/')
-  await expect(page.getByText('Капитал')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Обзор' })).toBeVisible()
+  // The seeded account row renders in the accounts card from SQLite.
+  await expect(page.getByText('Оффлайн счёт')).toBeVisible()
 })
 
 test('no API response is served from cache while offline', async ({ page }) => {
