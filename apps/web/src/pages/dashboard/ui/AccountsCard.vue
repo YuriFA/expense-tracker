@@ -52,13 +52,14 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
           <RouterLink
             class="text-sm text-muted-foreground hover:underline"
             :to="{ path: '/transactions', query: { accountId: account.id } }"
-            >{{ account.name }}</RouterLink
           >
+            {{ account.name }}
+          </RouterLink>
           <p class="text-sm font-medium tabular-nums">
             {{ format(account.balance, account.currency) }}
           </p>
         </div>
-        <div class="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+        <div class="mt-3 -mx-4 md:-mx-6 px-4 md:px-6 flex items-center justify-between gap-2 border-t border-border pt-3">
           <p class="text-xs font-bold uppercase tracking-wider">{{ t('dashboard.total') }}</p>
           <p class="text-lg font-bold tabular-nums">{{ format(totalMinor) }}</p>
         </div>
