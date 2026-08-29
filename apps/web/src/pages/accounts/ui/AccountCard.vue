@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { formatMoney } from '@/shared/lib/money'
 import { generateHashIndex } from '@/shared/lib/hash-generator'
 import type { AccountWithBalance } from '@/entities/account'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DeleteAccountDialog } from '../features/delete-account'
+import { Card } from '@/shared/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,58 +13,55 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { Button } from '@/shared/ui/button'
 import { MoreVertical, Pencil, Trash2 } from '@lucide/vue'
-import EditAccountDialog from '../features/edit-account/ui/EditAccountDialog.vue'
 
 const { account } = defineProps<{
   account: AccountWithBalance
 }>()
 
+// The edit/delete dialogs live once on the page (list/dialog convention):
+// the kebab only reports the intent, the page hoists the dialog pair.
+const emit = defineEmits<{
+  edit: []
+  delete: []
+}>()
+
 const index = computed(() => generateHashIndex(account.id))
 const { locale, t } = useI18n()
 const format = (value: number) => formatMoney(value, account.currency, locale.value)
-
-const deleteDialogOpen = ref(false)
-const editDialogOpen = ref(false)
 </script>
 
 <template>
-  <Card class="py-2 md:py-3">
-    <CardHeader class="px-2 md:px-3">
-      <div class="flex items-center gap-4">
+  <Card class="gap-3 p-4 transition-colors hover:border-foreground/10 md:p-5">
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex min-w-0 items-center gap-3">
         <div
-          class="size-10 rounded-sm flex items-center justify-center"
+          class="flex size-11 shrink-0 items-center justify-center rounded-full text-lg font-semibold"
           :style="{ backgroundColor: `var(--avatar-color-${index})` }"
+          aria-hidden="true"
         >
           {{ account.name.at(0) }}
         </div>
-        <CardTitle>{{ account.name }}</CardTitle>
+        <span class="truncate text-[15px] font-semibold">{{ account.name }}</span>
       </div>
 
-      <CardAction>
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="icon">
-              <MoreVertical class="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem @select="editDialogOpen = true">
-              <Pencil class="size-4" />
-              {{ t('editAccount.trigger') }}
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" @select="deleteDialogOpen = true">
-              <Trash2 class="size-4" />
-              {{ t('deleteAccount.trigger') }}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardAction>
-    </CardHeader>
-    <CardContent class="px-3 md:px-4">
-      <p class="text-xl font-bold">{{ format(account.balance) }}</p>
-    </CardContent>
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="ghost" size="icon">
+            <MoreVertical class="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem @select="emit('edit')">
+            <Pencil class="size-4" />
+            {{ t('editAccount.trigger') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" @select="emit('delete')">
+            <Trash2 class="size-4" />
+            {{ t('deleteAccount.trigger') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+    <p class="text-xl font-bold tabular-nums">{{ format(account.balance) }}</p>
   </Card>
-
-  <EditAccountDialog v-model:open="editDialogOpen" :account="account" />
-  <DeleteAccountDialog v-model:open="deleteDialogOpen" :account-id="account.id" />
 </template>

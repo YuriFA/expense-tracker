@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
+import { Trash2Icon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useDeleteAccount } from '@/entities/account'
 import { notification } from '@/shared/services/notification'
@@ -40,8 +41,16 @@ const handleConfirm = async () => {
 
 <template>
   <AlertDialog v-model:open="open">
-    <AlertDialogContent>
-      <AlertDialogHeader>
+    <!-- Centered confirm (design system): icon circle, question, one-line
+         description, flex-1 cancel/delete pair. -->
+    <AlertDialogContent class="max-w-[320px]">
+      <AlertDialogHeader class="items-center text-center sm:text-center">
+        <span
+          class="mx-auto mb-1 flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+          aria-hidden="true"
+        >
+          <Trash2Icon class="size-6" />
+        </span>
         <AlertDialogTitle>
           {{ t('deleteAccount.confirmDelete') }}
         </AlertDialogTitle>
@@ -49,11 +58,15 @@ const handleConfirm = async () => {
           {{ t('deleteAccount.confirmDeleteDescription') }}
         </AlertDialogDescription>
       </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>{{ t('deleteAccount.cancel') }}</AlertDialogCancel>
+      <AlertDialogFooter class="flex-col-reverse gap-3 sm:flex-row">
+        <AlertDialogCancel class="w-full sm:flex-1" data-testid="delete-account-cancel">
+          {{ t('deleteAccount.cancel') }}
+        </AlertDialogCancel>
         <AlertDialogAction
           variant="destructive"
+          class="w-full sm:flex-1"
           :loading="asyncStatus === 'loading'"
+          data-testid="delete-account-confirm"
           @click="handleConfirm"
         >
           {{ t('deleteAccount.confirm') }}

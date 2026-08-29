@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import AccountsPage from './AccountsPage.vue'
 import AccountCard from './AccountCard.vue'
+import EditAccountDialog from '../features/edit-account/ui/EditAccountDialog.vue'
 import { AddAccountForm } from '../features/add-account'
 import type { AccountWithBalance } from '@/entities/account'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
@@ -81,5 +82,25 @@ describe('AccountsPage', () => {
     // The empty-state total formats in the fixed app currency, not USD
     // (currency-rub-only).
     expect(wrapper.text()).toContain('₽0.00')
+  })
+
+  it('hosts one edit/delete dialog pair for the active account, not per card', async () => {
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue(accounts)
+    const wrapper = mountWithProviders(AccountsPage, {
+      repositories: { accounts: accountsRepo },
+    })
+    await flushPromises()
+
+    // The dialogs stay closed until a card reports the intent.
+    expect(wrapper.findComponent(EditAccountDialog).exists()).toBe(false)
+
+    // The first card's kebab opens the edit dialog bound to that account.
+    const [first] = accounts
+    wrapper.findComponent(AccountCard).vm.$emit('edit', first)
+    await flushPromises()
+    const editDialog = wrapper.findComponent(EditAccountDialog)
+    expect(editDialog.exists()).toBe(true)
+    expect(editDialog.props('account')?.id).toBe(first?.id)
   })
 })

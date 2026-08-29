@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { Card, CardAction, CardContent, CardHeader } from '@/shared/ui/card'
+import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 </script>
 
 <template>
-  <Card class="py-2 md:py-3">
-    <CardHeader class="px-2 md:px-3">
-      <div class="flex items-center gap-4">
-        <Skeleton class="size-10 rounded-sm" />
+  <!-- Mirrors the AccountCard anatomy: avatar circle, name bar, kebab
+       placeholder, balance bar. -->
+  <Card class="gap-3 p-4 md:p-5">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <Skeleton class="size-11 rounded-full" />
         <Skeleton class="h-4 w-24" />
       </div>
-      <CardAction>
-        <Skeleton class="size-8" />
-      </CardAction>
-    </CardHeader>
-    <CardContent class="px-3 md:px-4">
-      <Skeleton class="h-5 w-32" />
-    </CardContent>
+      <Skeleton class="size-9" />
+    </div>
+    <Skeleton class="h-6 w-32" />
   </Card>
 </template>
