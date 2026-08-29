@@ -6,7 +6,7 @@ import { categoryTotals, periodTotal, percentLabel } from '@/entities/analytics'
 import { useTransactions } from '@/entities/transaction'
 import { CategoryAvatar, useCategories } from '@/entities/category'
 import { NewCategoryDialog } from '@/features/transaction/add'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import DashboardCard from './DashboardCard.vue'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
@@ -49,48 +49,43 @@ const newCategoryOpen = ref(false)
 </script>
 
 <template>
-  <Card class="pt-4 md:pt-6 pb-0 md:pb-0">
-    <CardHeader>
-      <CardTitle>{{ t('dashboard.categoriesTitle') }}</CardTitle>
-    </CardHeader>
-    <CardContent class="px-0!">
-      <ErrorState v-if="error" @retry="refetch" />
-      <template v-else-if="isLoading">
-        <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-3">
-          <Skeleton class="size-9 rounded-full" />
-          <Skeleton class="h-4 flex-1" />
-          <Skeleton class="h-4 w-20" />
-        </div>
-      </template>
-      <p v-else-if="totalMinor <= 0" class="py-6 text-sm text-muted-foreground">
-        {{ t('analytics.emptyMonthExpense') }}
-      </p>
-      <div v-else>
-        <div
-          v-for="row in rows"
-          :key="row.category.id"
-          class="flex items-center gap-3 border-b border-border px-4 md:px-6 py-3 last:border-0"
-        >
-          <CategoryAvatar :icon="row.category.icon" :color="row.category.color" class="size-9" />
-          <p class="min-w-0 flex-1 truncate text-sm font-semibold">{{ row.category.name }}</p>
-          <div class="text-right">
-            <p class="text-sm font-bold tabular-nums">{{ format(row.totalMinor) }}</p>
-            <p class="text-xs font-medium uppercase text-muted-foreground tabular-nums">
-              {{ percentLabel(row.totalMinor, totalMinor, locale) }}
-            </p>
-          </div>
+  <DashboardCard :title="t('dashboard.categoriesTitle')" content-class="px-0!">
+    <ErrorState v-if="error" @retry="refetch" />
+    <template v-else-if="isLoading">
+      <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-3">
+        <Skeleton class="size-9 rounded-full" />
+        <Skeleton class="h-4 flex-1" />
+        <Skeleton class="h-4 w-20" />
+      </div>
+    </template>
+    <p v-else-if="totalMinor <= 0" class="py-6 px-4 md:px-6 text-sm text-muted-foreground">
+      {{ t('analytics.emptyMonthExpense') }}
+    </p>
+    <div v-else>
+      <div
+        v-for="row in rows"
+        :key="row.category.id"
+        class="flex items-center gap-3 border-b border-border px-4 md:px-6 py-3 last:border-0"
+      >
+        <CategoryAvatar :icon="row.category.icon" :color="row.category.color" class="size-9" />
+        <p class="min-w-0 flex-1 truncate text-sm font-semibold">{{ row.category.name }}</p>
+        <div class="text-right">
+          <p class="text-sm font-bold tabular-nums">{{ format(row.totalMinor) }}</p>
+          <p class="text-xs font-medium uppercase text-muted-foreground tabular-nums">
+            {{ percentLabel(row.totalMinor, totalMinor, locale) }}
+          </p>
         </div>
       </div>
-      <button
-        v-if="!error"
-        type="button"
-        class="w-full border-t border-dashed border-border py-3 md:py-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-        data-testid="dashboard-add-category"
-        @click="newCategoryOpen = true"
-      >
-        {{ addCategoryLabel }}
-      </button>
-    </CardContent>
-  </Card>
+    </div>
+    <button
+      v-if="!error"
+      type="button"
+      class="w-full border-t border-dashed border-border py-3 md:py-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+      data-testid="dashboard-add-category"
+      @click="newCategoryOpen = true"
+    >
+      {{ addCategoryLabel }}
+    </button>
+  </DashboardCard>
   <NewCategoryDialog v-model:open="newCategoryOpen" type="expense" />
 </template>

@@ -1,28 +1,23 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/shared/ui/card'
+import DashboardCard from './DashboardCard.vue'
 import RecentTransactions from './RecentTransactions.vue'
 
 const { t } = useI18n()
 </script>
 
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle>{{ t('recentTransactions.title') }}</CardTitle>
-      <CardAction>
-        <RouterLink
-          class="text-xs font-semibold text-primary hover:underline"
-          :to="{ path: '/transactions' }"
-          data-testid="recent-transactions-all"
-        >
-          {{ t('recentTransactions.viewAll') }}
-        </RouterLink>
-      </CardAction>
-    </CardHeader>
-    <CardContent class="px-0!">
-      <RecentTransactions />
-    </CardContent>
-  </Card>
+  <DashboardCard :title="t('recentTransactions.title')" content-class="px-0!">
+    <template #action>
+      <RouterLink
+        class="text-xs font-semibold text-primary hover:underline"
+        :to="{ path: '/transactions' }"
+        data-testid="recent-transactions-all"
+      >
+        {{ t('recentTransactions.viewAll') }}
+      </RouterLink>
+    </template>
+    <RecentTransactions />
+  </DashboardCard>
 </template>

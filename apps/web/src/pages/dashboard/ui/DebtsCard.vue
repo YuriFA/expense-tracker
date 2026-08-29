@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/shared/ui/card'
+import DashboardCard from './DashboardCard.vue'
 import {
   debtorBalanceRows,
   initialsOf,
@@ -48,57 +48,52 @@ const directionLabel = (direction: DebtDirection) =>
 </script>
 
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle>{{ t('pages.debts') }}</CardTitle>
-      <CardAction>
-        <RouterLink
-          class="text-xs font-semibold text-primary hover:underline"
-          :to="{ path: '/debts' }"
-          data-testid="debts-card-view-all"
-        >
-          {{ t('recentTransactions.viewAll') }}
-        </RouterLink>
-      </CardAction>
-    </CardHeader>
-    <CardContent class="px-0!">
-      <ErrorState v-if="error" @retry="refetch" />
-      <template v-else-if="isLoading">
-        <div v-for="n in 2" :key="n" class="flex items-center justify-between gap-2 py-3">
-          <Skeleton class="h-9 w-32" />
-          <Skeleton class="h-4 w-20" />
-        </div>
-      </template>
-      <p v-else-if="rows.length === 0" class="py-6 text-sm text-muted-foreground">
-        {{ t('dashboard.noDebts') }}
-      </p>
-      <div v-else>
-        <div
-          v-for="row in rows"
-          :key="`${row.debtor.id}:${row.direction}`"
-          class="flex items-center justify-between gap-2 border-b border-border py-3 last:border-0 px-4 md:px-6"
-          :data-testid="`debts-card-debtor-${row.debtor.id}-${row.direction}`"
-        >
-          <div class="flex min-w-0 items-center gap-3">
-            <span
-              class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-muted-foreground"
-              aria-hidden="true"
-            >
-              {{ initialsOf(row.debtor.name) }}
-            </span>
-            <div class="min-w-0">
-              <p class="truncate text-sm font-medium">{{ row.debtor.name }}</p>
-              <p class="text-xs text-muted-foreground">{{ directionLabel(row.direction) }}</p>
-            </div>
-          </div>
-          <p
-            class="text-sm font-semibold tabular-nums"
-            :class="row.direction === 'receivable' ? 'text-success' : 'text-warning'"
-          >
-            {{ amountText(row.direction, row.balance) }}
-          </p>
-        </div>
+  <DashboardCard :title="t('pages.debts')" content-class="px-0!">
+    <template #action>
+      <RouterLink
+        class="text-xs font-semibold text-primary hover:underline"
+        :to="{ path: '/debts' }"
+        data-testid="debts-card-view-all"
+      >
+        {{ t('recentTransactions.viewAll') }}
+      </RouterLink>
+    </template>
+    <ErrorState v-if="error" @retry="refetch" />
+    <template v-else-if="isLoading">
+      <div v-for="n in 2" :key="n" class="flex items-center justify-between gap-2 py-3">
+        <Skeleton class="h-9 w-32" />
+        <Skeleton class="h-4 w-20" />
       </div>
-    </CardContent>
-  </Card>
+    </template>
+    <p v-else-if="rows.length === 0" class="py-6 text-sm text-muted-foreground">
+      {{ t('dashboard.noDebts') }}
+    </p>
+    <div v-else>
+      <div
+        v-for="row in rows"
+        :key="`${row.debtor.id}:${row.direction}`"
+        class="flex items-center justify-between gap-2 border-b border-border py-3 last:border-0 px-4 md:px-6"
+        :data-testid="`debts-card-debtor-${row.debtor.id}-${row.direction}`"
+      >
+        <div class="flex min-w-0 items-center gap-3">
+          <span
+            class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-muted-foreground"
+            aria-hidden="true"
+          >
+            {{ initialsOf(row.debtor.name) }}
+          </span>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-medium">{{ row.debtor.name }}</p>
+            <p class="text-xs text-muted-foreground">{{ directionLabel(row.direction) }}</p>
+          </div>
+        </div>
+        <p
+          class="text-sm font-semibold tabular-nums"
+          :class="row.direction === 'receivable' ? 'text-success' : 'text-warning'"
+        >
+          {{ amountText(row.direction, row.balance) }}
+        </p>
+      </div>
+    </div>
+  </DashboardCard>
 </template>

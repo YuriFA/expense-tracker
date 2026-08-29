@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { Plus } from '@lucide/vue'
-import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/shared/ui/card'
+import DashboardCard from './DashboardCard.vue'
 import { Button } from '@/shared/ui/button'
 import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
 import { useAccounts } from '@/entities/account'
@@ -24,46 +24,41 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
 </script>
 
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle>{{ t('pages.accounts') }}</CardTitle>
-      <CardAction>
-        <Button as-child size="icon-sm" class="rounded-full!" data-testid="accounts-card-add">
-          <RouterLink :to="{ path: '/accounts' }" :aria-label="t('addAccount.newAccount')">
-            <Plus class="size-4" aria-hidden="true" />
-          </RouterLink>
-        </Button>
-      </CardAction>
-    </CardHeader>
-    <CardContent>
-      <ErrorState v-if="error" @retry="refetch" />
-      <template v-else-if="isLoading">
-        <div v-for="n in 3" :key="n" class="flex items-center justify-between gap-2 py-2">
-          <Skeleton class="h-4 w-24" />
-          <Skeleton class="h-4 w-20" />
-        </div>
-      </template>
-      <template v-else>
-        <div
-          v-for="account in accounts"
-          :key="account.id"
-          class="flex items-center justify-between gap-2 py-2"
+  <DashboardCard :title="t('pages.accounts')" content-class="py-4">
+    <template #action>
+      <Button as-child size="icon-sm" class="rounded-full!" data-testid="accounts-card-add">
+        <RouterLink :to="{ path: '/accounts' }" :aria-label="t('addAccount.newAccount')">
+          <Plus class="size-4" aria-hidden="true" />
+        </RouterLink>
+      </Button>
+    </template>
+    <ErrorState v-if="error" @retry="refetch" />
+    <template v-else-if="isLoading">
+      <div v-for="n in 3" :key="n" class="flex items-center justify-between gap-2 py-2">
+        <Skeleton class="h-4 w-24" />
+        <Skeleton class="h-4 w-20" />
+      </div>
+    </template>
+    <template v-else>
+      <div
+        v-for="account in accounts"
+        :key="account.id"
+        class="flex items-center justify-between gap-2 py-2"
+      >
+        <RouterLink
+          class="text-sm text-muted-foreground hover:underline"
+          :to="{ path: '/transactions', query: { accountId: account.id } }"
         >
-          <RouterLink
-            class="text-sm text-muted-foreground hover:underline"
-            :to="{ path: '/transactions', query: { accountId: account.id } }"
-          >
-            {{ account.name }}
-          </RouterLink>
-          <p class="text-sm font-medium tabular-nums">
-            {{ format(account.balance, account.currency) }}
-          </p>
-        </div>
-        <div class="mt-3 -mx-4 md:-mx-6 px-4 md:px-6 flex items-center justify-between gap-2 border-t border-border pt-3">
-          <p class="text-xs font-bold uppercase tracking-wider">{{ t('dashboard.total') }}</p>
-          <p class="text-lg font-bold tabular-nums">{{ format(totalMinor) }}</p>
-        </div>
-      </template>
-    </CardContent>
-  </Card>
+          {{ account.name }}
+        </RouterLink>
+        <p class="text-sm font-medium tabular-nums">
+          {{ format(account.balance, account.currency) }}
+        </p>
+      </div>
+      <div class="mt-3 -mx-4 md:-mx-6 px-4 md:px-6 flex items-center justify-between gap-2 border-t border-border pt-3">
+        <p class="text-xs font-bold uppercase tracking-wider">{{ t('dashboard.total') }}</p>
+        <p class="text-lg font-bold tabular-nums">{{ format(totalMinor) }}</p>
+      </div>
+    </template>
+  </DashboardCard>
 </template>
