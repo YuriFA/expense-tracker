@@ -416,6 +416,7 @@
     "rateLimited": "Too many attempts. Try again in {seconds}s",
     "signedOut": "Signed out",
     "guestMode": "Local mode",
+    "guestModeShort": "Local",
     "ownershipGate": {
       "title": "Local data of another user",
       "description": "This browser holds unsynced data of another account. You can only sign in after deleting it.",

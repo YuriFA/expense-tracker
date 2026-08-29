@@ -60,18 +60,18 @@ const user: User = {
 const hostState: { controller: SyncController | null } = { controller: null }
 
 /** Mounts the badge with the sync controller provided, as AppShell does. */
-function mountBadge() {
+function mountBadge(compact = false) {
   const Host = defineComponent({
     setup() {
       hostState.controller = provideSyncController({ isAuthenticated: () => true })
-      return () => h('div', [h(SyncStatusBadge)])
+      return () => h('div', [h(SyncStatusBadge, { compact })])
     },
   })
   return mountWithProviders(Host)
 }
 
-async function mountAuthenticated() {
-  const wrapper = mountBadge()
+async function mountAuthenticated(compact = false) {
+  const wrapper = mountBadge(compact)
   const auth = useAuthStore()
   auth.user = user
   auth.status = 'authenticated'
@@ -138,5 +138,26 @@ describe('SyncStatusBadge', () => {
     await wrapper.find('[data-testid="sync-status-badge"]').trigger('click')
     await flushPromises()
     expect(runMock).toHaveBeenCalledWith(true)
+  })
+
+  // Compact (<1024px top bar) variant: icon-only, state in an sr-only span,
+  // pending count as a visible corner badge.
+  it('compact variant drops the label but keeps the state testid', async () => {
+    const wrapper = await mountAuthenticated(true)
+
+    const badge = wrapper.find('[data-testid="sync-status-badge"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.classes()).toContain('size-7')
+    expect(badge.find('[data-testid="sync-status-synced"]').exists()).toBe(true)
+    // No visible full-pill label - the state span is screen-reader only.
+    expect(wrapper.find('[data-testid="sync-status-synced"]').classes()).toContain('sr-only')
+  })
+
+  it('compact pending state shows the outbox count as a corner badge', async () => {
+    status.pendingOperations = 3
+    const wrapper = await mountAuthenticated(true)
+
+    expect(wrapper.find('[data-testid="sync-status-pending"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sync-status-badge"]').text()).toContain('3')
   })
 })
