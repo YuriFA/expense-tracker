@@ -7,6 +7,12 @@
       "skillPath": "skills/react-native-best-practices/SKILL.md",
       "computedHash": "abdbb7fc34ad739420fe43632e0baa1d646a01d097c6905211aa8b5b41957bf1"
     },
+    "superdesign": {
+      "source": "superdesigndev/superdesign-skill",
+      "sourceType": "github",
+      "skillPath": "skills/superdesign/SKILL.md",
+      "computedHash": "f782f8776dbf7277cea88d77ea6dfc35bc0437b02a094ef79bbcfc716ef8c567"
+    },
     "uniwind": {
       "source": "uni-stack/uniwind",
       "sourceType": "github",
