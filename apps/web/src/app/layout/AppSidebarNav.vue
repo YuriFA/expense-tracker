@@ -15,13 +15,7 @@ import {
 } from '@lucide/vue'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import { SyncStatusBadge } from '@/widgets/sync-status'
 import { AddTransactionTabs } from '@/features/transaction/add'
 import { useAuthStore } from '@/entities/session'
@@ -55,8 +49,7 @@ const navItems = computed(() => [
 ])
 
 // Flat route records: analytics-detail keeps Аналитика active by name prefix.
-const isActive = (name: string) =>
-  typeof route.name === 'string' && route.name.startsWith(name)
+const isActive = (name: string) => typeof route.name === 'string' && route.name.startsWith(name)
 
 const addOpen = ref(false)
 
@@ -91,13 +84,24 @@ function goToLogin() {
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
-        class="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors"
-        :class="isActive(item.name) ? 'font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'"
+        class="flex items-center gap-3 rounded-md py-1.5 transition-colors"
+        :class="
+          isActive(item.name)
+            ? 'font-semibold text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        "
         data-testid="sidebar-nav-link"
         @click="emit('navigate')"
       >
         <component :is="item.icon" class="size-4.5" aria-hidden="true" />
-        <span :class="isActive(item.name) ? 'border-b-2 border-primary pb-0.5' : ''">
+        <span
+          class="relative"
+          :class="
+            isActive(item.name)
+              ? 'after:absolute after:-bottom-0.5 after:inset-x-0 after:h-0.5 after:bg-primary'
+              : ''
+          "
+        >
           {{ item.label }}
         </span>
       </RouterLink>
