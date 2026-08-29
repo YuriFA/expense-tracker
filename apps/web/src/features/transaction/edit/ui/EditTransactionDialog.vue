@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { X } from '@lucide/vue'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 import { useI18n } from 'vue-i18n'
 import {
   isTransferTransaction,
@@ -45,16 +52,24 @@ const handleSuccess = () => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-[400px]">
-      <DialogHeader class="-mx-6 -mt-6 border-b px-6 pb-4">
-        <DialogTitle>{{ t('editTransaction.title') }}</DialogTitle>
-        <p
-          v-if="author"
-          class="text-xs text-muted-foreground"
-          :data-testid="`edit-transaction-author-${transaction.id}`"
+    <DialogContent class="sm:max-w-[400px]" :show-close-button="false">
+      <DialogHeader class="-mx-6 -mt-6 flex-row items-start justify-between border-b px-6 pb-4 pt-6">
+        <div class="flex flex-col gap-1">
+          <DialogTitle>{{ t('editTransaction.title') }}</DialogTitle>
+          <p
+            v-if="author"
+            class="text-xs text-muted-foreground"
+            :data-testid="`edit-transaction-author-${transaction.id}`"
+          >
+            {{ t('household.authoredBy', { name: author }) }}
+          </p>
+        </div>
+        <DialogClose
+          class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
         >
-          {{ t('household.authoredBy', { name: author }) }}
-        </p>
+          <X class="size-5" />
+          <span class="sr-only">{{ t('common.close') }}</span>
+        </DialogClose>
       </DialogHeader>
       <TransferEditForm
         v-if="transfer"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PlusIcon } from '@lucide/vue'
+import { PlusIcon, X } from '@lucide/vue'
 import {
   CATEGORY_ICONS,
   DEFAULT_CATEGORY_ICON,
@@ -12,6 +12,7 @@ import { useCategories, useCreateCategory } from '@/entities/category'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -76,9 +77,15 @@ async function submit() {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-sm" data-testid="new-category-dialog">
-      <DialogHeader class="-mx-6 -mt-6 border-b px-6 pb-4">
+    <DialogContent class="sm:max-w-sm" data-testid="new-category-dialog" :show-close-button="false">
+      <DialogHeader class="-mx-6 -mt-6 flex-row items-center justify-between border-b px-6 pb-4 pt-6">
         <DialogTitle>{{ t('addTransaction.newCategory') }}</DialogTitle>
+        <DialogClose
+          class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+        >
+          <X class="size-5" />
+          <span class="sr-only">{{ t('common.close') }}</span>
+        </DialogClose>
       </DialogHeader>
       <form id="new-category-form" class="flex flex-col gap-3" @submit.prevent="submit">
         <Field>
