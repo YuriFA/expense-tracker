@@ -56,7 +56,7 @@ const newCategoryOpen = ref(false)
     <CardContent class="px-0!">
       <ErrorState v-if="error" @retry="refetch" />
       <template v-else-if="isLoading">
-        <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-4">
+        <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-3">
           <Skeleton class="size-9 rounded-full" />
           <Skeleton class="h-4 flex-1" />
           <Skeleton class="h-4 w-20" />
@@ -69,7 +69,7 @@ const newCategoryOpen = ref(false)
         <div
           v-for="row in rows"
           :key="row.category.id"
-          class="flex items-center gap-3 border-b border-border px-4 md:px-6 py-4 last:border-0"
+          class="flex items-center gap-3 border-b border-border px-4 md:px-6 py-3 last:border-0"
         >
           <CategoryAvatar :icon="row.category.icon" :color="row.category.color" class="size-9" />
           <p class="min-w-0 flex-1 truncate text-sm font-semibold">{{ row.category.name }}</p>
@@ -84,7 +84,7 @@ const newCategoryOpen = ref(false)
       <button
         v-if="!error"
         type="button"
-        class="mt-1 w-full border-t border-dashed border-border py-4 md:py-6 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+        class="w-full border-t border-dashed border-border py-3 md:py-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
         data-testid="dashboard-add-category"
         @click="newCategoryOpen = true"
       >
