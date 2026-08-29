@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { ref } from 'vue'
 
 import { mountWithProviders } from './helpers/mount-with-providers'
@@ -14,10 +14,20 @@ vi.mock('@/shared/lib/local-db/local-db', () => ({
 }))
 
 describe('App', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('renders AppShell with the navigation shell', () => {
+    // BProgress arms a delayed start() timer on mount and its unmount hook
+    // never clears it; on real timers the callback can fire after the jsdom
+    // teardown and crash the run ("document is not defined"). Pinning the
+    // clock keeps the timer inside the test's lifetime.
+    vi.useFakeTimers()
     const wrapper = mountWithProviders(App, { repositories: {} })
     // jsdom never matches the desktop media query, so the shell renders the
     // mobile top bar; the desktop sidebar mounts only on real desktops.
     expect(wrapper.find('header').exists()).toBe(true)
+    wrapper.unmount()
   })
 })
