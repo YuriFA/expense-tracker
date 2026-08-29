@@ -89,9 +89,21 @@
           "title": "Refined Dashboard Specimens (Direction D)",
           "visualDirection": "dashboard blocks in data/loading/empty states: stat card, quick actions, category breakdown, accounts, debts, recent transactions, page header",
           "currentVersion": 2
+        },
+        "73ef9770-3dbb-4ab9-9cf1-aebbeb111d99": {
+          "title": "Кошелёк — Обзор с переключателем периода",
+          "visualDirection": "variant A state 1: current month (Август 2026) with inline period switcher in the header, forward chevron disabled, no сейчас tags",
+          "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+          "currentVersion": 1
+        },
+        "ca24210c-5b7b-4201-a1e4-3ea1b8d836db": {
+          "title": "Кошелёк — Обзор за июль 2026",
+          "visualDirection": "variant A state 2: past-month browsing (Июль 2026), flow cards show July data; сейчас tags removed per user feedback (v1 had them)",
+          "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+          "currentVersion": 2
         }
       },
-      "updatedAt": "2026-08-29T11:45:32.354741+00:00"
+      "updatedAt": "2026-08-29T13:05:00Z"
     },
     "/analytics": {
       "targetKind": "flow-page",
@@ -355,6 +367,83 @@
         }
       },
       "updatedAt": "2026-08-28T22:21:48.830371+00:00"
+    },
+    "/transactions": {
+      "targetKind": "existing-ui",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "baselineDraftId": "72fef655-01ac-4f8f-8b24-2c63bb1db64d",
+      "activeDraftId": "72fef655-01ac-4f8f-8b24-2c63bb1db64d",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/app/layout/AppShell.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsPage.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsBrowser.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsDateFilter.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsFiltersSheet.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsFilters.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsActiveFilters.vue",
+        "apps/web/src/pages/transactions/ui/TransactionTypeField.vue",
+        "apps/web/src/pages/transactions/ui/TransactionAccountField.vue",
+        "apps/web/src/pages/transactions/ui/TransactionCategoriesField.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsItemsList.vue",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
+        "apps/web/src/shared/ui/button/Button.vue",
+        "apps/web/src/shared/ui/button/index.ts",
+        "apps/web/src/shared/ui/chip/Chip.vue",
+        "apps/web/src/shared/ui/checkbox/Checkbox.vue",
+        "apps/web/src/entities/category/ui/CategoryAvatar.vue",
+        "apps/web/src/app/layout/MobileTopBar.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "0c14543936113c3ab1c2ed7924bcde71137153b5745ca059526bad5b87954b14",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
+        "apps/web/src/pages/transactions/ui/TransactionsPage.vue": "e623c8619cbcd0b1f6c7dba0932ca559058be6682aa735a93583b34c4a65ed06",
+        "apps/web/src/pages/transactions/ui/TransactionsBrowser.vue": "2dee11b547b0b065965a04e9cb2f1a26a87eb4000920edae096b995d383f3307",
+        "apps/web/src/pages/transactions/ui/TransactionsDateFilter.vue": "ee158586a935bfaf22fc2935400653cea6c4b34c03a7d560c451ff6925a214fc",
+        "apps/web/src/pages/transactions/ui/TransactionsFiltersSheet.vue": "9fece0d2f2e5ab00ada1fc08f0f365c061a25ce2e82cd57f060a15f4818b27e7",
+        "apps/web/src/pages/transactions/ui/TransactionsFilters.vue": "936b5c601522181d06e94c93451803f4d36a75b3b24cd604c6b0c95947a018ee",
+        "apps/web/src/pages/transactions/ui/TransactionsActiveFilters.vue": "bac72b28d132c27419a9a7f22382230536ea7e9976f922e5bc328c08c7ce2ed3",
+        "apps/web/src/pages/transactions/ui/TransactionTypeField.vue": "252e50fc3b633becc04e4da7e43bb5b7a8512858a976ab129388497ebfb67562",
+        "apps/web/src/pages/transactions/ui/TransactionAccountField.vue": "4c9ade454a7ddb69f31ae1bd45f2f19806cc688669dca2b2193b6035b62f776f",
+        "apps/web/src/pages/transactions/ui/TransactionCategoriesField.vue": "379e12d7cb83408517e471425693fb87049975badade8681c6f5fea4043bace6",
+        "apps/web/src/pages/transactions/ui/TransactionsItemsList.vue": "9b614561028bee47636640e15e4909457419283a9c87c47e4ed2cc6cb32a9419",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "3179e26765c62194d34c0b88df5406e0631f5192652fa8d6681af963bd2875a2",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c",
+        "apps/web/src/shared/ui/button/index.ts": "10749bb1421a0eca94311bb214e9e8d80562499eab7291a4f0f975db23a8d9a2",
+        "apps/web/src/shared/ui/chip/Chip.vue": "4d3d4fa2093c3d1093674e9aa15b7d7bf02fc465adda18a1794c3d6e69c0de0f",
+        "apps/web/src/shared/ui/checkbox/Checkbox.vue": "3e8062150ee0ab28e85d263d38ef239315a2ab7c0b56639fabc418605cb1b99b",
+        "apps/web/src/entities/category/ui/CategoryAvatar.vue": "67c87a95c49e5340c1aa1bd2a399462b24efda642438775b4d57e2d83ef363a6",
+        "apps/web/src/app/layout/MobileTopBar.vue": "a688a1d8002b0404d79c7dd4d1daff174c8eaa61cc4428fa890a448f149771c0"
+      },
+      "components": [
+        {
+          "name": "AppSidebar",
+          "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+        }
+      ],
+      "drafts": {
+        "e90779c6-393f-40c9-a593-cec5fbdbcdde": {
+          "title": "Current transactions page (reproduction, incomplete attempt)",
+          "visualDirection": "truncated generation: reused Бумага sd-component sidebar instead of current indigo UI, 1 row, no specimens - not a valid baseline"
+        },
+        "72fef655-01ac-4f8f-8b24-2c63bb1db64d": {
+          "title": "Транзакции — Кошелёк",
+          "visualDirection": "v1: pixel-perfect reproduction (indigo); v2: Бумага Direction D restyle; v3 (current): polish pass - centered content (no ml-248), calendar 2026 + range states, preset chips active=teal tint, rows ~56px with min-w amount column, app-pattern empty state (dashed + inbox), kebab menu specimen",
+          "currentVersion": 2
+        },
+        "2dbe287f-27bf-4a72-8606-2fff81499465": {
+          "title": "Транзакции (Mobile) — Кошелёк (Бумага)",
+          "visualDirection": "mobile <1024px branch: top bar (hamburger + Кошелёк + sync pill + guest badge), inline drawer nav specimen, full-width toolbar, 7-row list card, 1-month date popover, full-screen filters sheet, states + chips specimens; v3 current (direct edits: chip label «Тип транзакции», 2 rows added, anchor ids)",
+          "parentDraftId": "72fef655-01ac-4f8f-8b24-2c63bb1db64d",
+          "device": "mobile",
+          "currentVersion": 3
+        }
+      },
+      "updatedAt": "2026-08-29T15:02:37Z"
     }
   }
 }
