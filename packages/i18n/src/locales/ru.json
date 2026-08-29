@@ -45,7 +45,9 @@
     "owedToMe": "Мне должны",
     "owedByMe": "Я должен",
     "noDebts": "Долгов нет",
-    "categoriesTitle": "Расходы по категориям"
+    "categoriesTitle": "Расходы по категориям",
+    "prevMonth": "Предыдущий месяц",
+    "nextMonth": "Следующий месяц"
   },
   "home": {
     "balance": "Баланс",

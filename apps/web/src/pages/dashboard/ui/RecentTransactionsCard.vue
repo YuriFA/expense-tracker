@@ -5,6 +5,11 @@ import DashboardCard from './DashboardCard.vue'
 import RecentTransactions from './RecentTransactions.vue'
 
 const { t } = useI18n()
+
+defineProps<{
+  /** Inclusive UTC-day superset of the selected dashboard month. */
+  range: { fromDate: string; toDate: string }
+}>()
 </script>
 
 <template>
@@ -18,6 +23,6 @@ const { t } = useI18n()
         {{ t('recentTransactions.viewAll') }}
       </RouterLink>
     </template>
-    <RecentTransactions />
+    <RecentTransactions :range="range" />
   </DashboardCard>
 </template>

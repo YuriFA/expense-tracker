@@ -25,12 +25,18 @@ import { computed, ref } from 'vue'
 
 const { t } = useI18n()
 const authorLabel = useAuthorLabel()
+
+const props = defineProps<{
+  /** Inclusive UTC-day superset of the selected dashboard month. */
+  range: { fromDate: string; toDate: string }
+}>()
+
 const {
   data,
   error: transactionsError,
   isLoading: isLoadingTx,
   refetch: refetchTx,
-} = useTransactions({ limit: 5 })
+} = useTransactions(() => ({ limit: 5, ...props.range }))
 const {
   data: accounts,
   error: accountsError,

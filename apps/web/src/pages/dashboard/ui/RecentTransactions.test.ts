@@ -7,6 +7,9 @@ import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositor
 import { createMockTransactionRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
+const RANGE = { fromDate: '2024-01-01', toDate: '2024-01-31' }
+const NEXT_RANGE = { fromDate: '2023-12-01', toDate: '2023-12-31' }
+
 const transactions: CashflowTransaction[] = [
   {
     id: 't1',
@@ -44,6 +47,7 @@ describe('RecentTransactions', () => {
     categoriesRepo.getAll.mockReturnValue(neverResolves())
 
     const wrapper = mountWithProviders(RecentTransactions, {
+      props: { range: RANGE },
       repositories: {
         transactions: transactionsRepo,
         accounts: accountsRepo,
@@ -64,6 +68,7 @@ describe('RecentTransactions', () => {
     categoriesRepo.getAll.mockResolvedValue([])
 
     const wrapper = mountWithProviders(RecentTransactions, {
+      props: { range: RANGE },
       repositories: {
         transactions: transactionsRepo,
         accounts: accountsRepo,
@@ -84,6 +89,7 @@ describe('RecentTransactions', () => {
     categoriesRepo.getAll.mockResolvedValue([])
 
     const wrapper = mountWithProviders(RecentTransactions, {
+      props: { range: RANGE },
       repositories: {
         transactions: transactionsRepo,
         accounts: accountsRepo,
@@ -104,6 +110,7 @@ describe('RecentTransactions', () => {
     categoriesRepo.getAll.mockResolvedValue([])
 
     const wrapper = mountWithProviders(RecentTransactions, {
+      props: { range: RANGE },
       repositories: {
         transactions: transactionsRepo,
         accounts: accountsRepo,
@@ -115,7 +122,7 @@ describe('RecentTransactions', () => {
     expect(wrapper.find('[data-slot="skeleton"]').exists()).toBe(false)
   })
 
-  it('passes limit option to repository.query', async () => {
+  it('scopes the repository query to the selected month with the limit', async () => {
     const transactionsRepo = createMockTransactionRepository()
     transactionsRepo.query.mockResolvedValue([])
     const accountsRepo = createMockAccountRepository()
@@ -123,6 +130,7 @@ describe('RecentTransactions', () => {
     const categoriesRepo = createMockCategoryRepository()
     categoriesRepo.getAll.mockResolvedValue([])
     mountWithProviders(RecentTransactions, {
+      props: { range: RANGE },
       repositories: {
         transactions: transactionsRepo,
         accounts: accountsRepo,
@@ -130,6 +138,28 @@ describe('RecentTransactions', () => {
       },
     })
     await flushPromises()
-    expect(transactionsRepo.query).toHaveBeenCalledWith({ limit: 5 })
+    expect(transactionsRepo.query).toHaveBeenCalledWith({ limit: 5, ...RANGE })
+  })
+
+  it('re-queries when the selected month range changes', async () => {
+    const transactionsRepo = createMockTransactionRepository()
+    transactionsRepo.query.mockResolvedValue([])
+    const accountsRepo = createMockAccountRepository()
+    accountsRepo.getAll.mockResolvedValue([])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([])
+    const wrapper = mountWithProviders(RecentTransactions, {
+      props: { range: RANGE },
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+      },
+    })
+    await flushPromises()
+    vi.clearAllMocks()
+    await wrapper.setProps({ range: NEXT_RANGE })
+    await flushPromises()
+    expect(transactionsRepo.query).toHaveBeenCalledWith({ limit: 5, ...NEXT_RANGE })
   })
 })

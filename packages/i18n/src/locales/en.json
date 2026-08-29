@@ -45,7 +45,9 @@
     "owedToMe": "Owed to me",
     "owedByMe": "I owe",
     "noDebts": "No debts",
-    "categoriesTitle": "Expenses by category"
+    "categoriesTitle": "Expenses by category",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "home": {
     "balance": "Balance",

@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { HandCoins, TrendingDown, TrendingUp, Wallet } from '@lucide/vue'
-import { currentPeriod, monthLabel, periodToUtcDayRange } from '@expense-tracker/dates'
+import {
+  currentPeriod,
+  isSamePeriod,
+  monthLabel,
+  periodToUtcDayRange,
+  shiftPeriod,
+  type PeriodCursor,
+} from '@expense-tracker/dates'
 import { periodTotal, type AnalyticsDirection } from '@/entities/analytics'
 import { useAccounts } from '@/entities/account'
 import { useTransactions } from '@/entities/transaction'
@@ -16,16 +23,26 @@ import CategoryBreakdownCard from './CategoryBreakdownCard.vue'
 import RecentTransactionsCard from './RecentTransactionsCard.vue'
 import AccountsCard from './AccountsCard.vue'
 import DebtsCard from './DebtsCard.vue'
+import PeriodNav from './PeriodNav.vue'
 
-// The overview shows the current device-local month, same as the analytics
-// page (analytics capability); figures derive in memory from the selectors.
+// The overview starts on the current device-local month; the header
+// navigator steps the cursor and the month-scoped queries rekey on the
+// UTC-day superset range (figures derive in memory from the selectors).
+// Snapshot cards (accounts, debts) are period-independent by nature.
 const { t, locale } = useI18n()
-const cursor = currentPeriod('month')
-const range = periodToUtcDayRange(cursor)
+const cursor = ref<PeriodCursor>(currentPeriod('month'))
+const range = computed(() => periodToUtcDayRange(cursor.value))
+const isCurrentPeriod = computed(() => isSamePeriod(cursor.value, currentPeriod('month')))
 const monthCaption = computed(
   () =>
-    `${monthLabel(cursor.start.getFullYear(), cursor.start.getMonth(), locale.value)} ${cursor.start.getFullYear()}`,
+    `${monthLabel(cursor.value.start.getFullYear(), cursor.value.start.getMonth(), locale.value)} ${cursor.value.start.getFullYear()}`,
 )
+const goPrevPeriod = () => {
+  cursor.value = shiftPeriod(cursor.value, -1)
+}
+const goNextPeriod = () => {
+  cursor.value = shiftPeriod(cursor.value, 1)
+}
 
 const {
   data: accounts,
@@ -38,13 +55,13 @@ const {
   isLoading: isLoadingExpenses,
   error: expensesError,
   refetch: refetchExpenses,
-} = useTransactions({ type: 'expense', ...range })
+} = useTransactions(() => ({ type: 'expense', ...range.value }))
 const {
   data: incomes,
   isLoading: isLoadingIncomes,
   error: incomesError,
   refetch: refetchIncomes,
-} = useTransactions({ type: 'income', ...range })
+} = useTransactions(() => ({ type: 'income', ...range.value }))
 const {
   data: debtOperations,
   isLoading: isLoadingDebts,
@@ -77,7 +94,11 @@ const balanceMinor = computed(() =>
   (accounts.value ?? []).reduce((sum, account) => sum + (account.balance ?? 0), 0),
 )
 const periodTotalFor = (direction: AnalyticsDirection) =>
-  periodTotal(direction === 'expense' ? (expenses.value ?? []) : (incomes.value ?? []), cursor, direction)
+  periodTotal(
+    direction === 'expense' ? (expenses.value ?? []) : (incomes.value ?? []),
+    cursor.value,
+    direction,
+  )
 const debtTotals = computed(() => totalsByDirection(debtOperations.value ?? []))
 
 const stats = computed(() => [
@@ -97,7 +118,14 @@ const stats = computed(() => [
   <section class="space-y-6">
     <header>
       <h1 class="text-[32px] font-bold tracking-tight">{{ t('dashboard.overview') }}</h1>
-      <p class="text-base font-medium text-muted-foreground">{{ monthCaption }}</p>
+      <PeriodNav
+        :label="monthCaption"
+        :prev-label="t('dashboard.prevMonth')"
+        :next-label="t('dashboard.nextMonth')"
+        :can-next="!isCurrentPeriod"
+        @prev="goPrevPeriod"
+        @next="goNextPeriod"
+      />
     </header>
 
     <ErrorState v-if="error" @retry="refetch" />
@@ -124,7 +152,7 @@ const stats = computed(() => [
     <div class="grid gap-6 xl:grid-cols-3">
       <div class="space-y-6 xl:col-span-2">
         <CategoryBreakdownCard />
-        <RecentTransactionsCard />
+        <RecentTransactionsCard :range="range" />
       </div>
       <div class="space-y-6">
         <AccountsCard />
