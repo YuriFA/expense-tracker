@@ -444,6 +444,78 @@
         }
       },
       "updatedAt": "2026-08-29T15:02:37Z"
+    },
+    "/accounts": {
+      "targetKind": "existing-ui",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "baselineDraftId": "328d4ba0-f474-438f-8017-8670ef0374af",
+      "activeDraftId": "328d4ba0-f474-438f-8017-8670ef0374af",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/app/layout/AppShell.vue",
+        "apps/web/src/app/layout/AppSidebar.vue",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/pages/accounts/ui/AccountsPage.vue",
+        "apps/web/src/pages/accounts/ui/AccountCard.vue",
+        "apps/web/src/pages/accounts/features/add-account/ui/AddAccountDialog.vue",
+        "apps/web/src/pages/accounts/features/add-account/ui/AddAccountForm.vue",
+        "apps/web/src/pages/accounts/features/edit-account/ui/EditAccountDialog.vue",
+        "apps/web/src/pages/accounts/features/edit-account/ui/EditAccountForm.vue",
+        "apps/web/src/pages/accounts/features/delete-account/ui/DeleteAccountDialog.vue",
+        "apps/web/src/entities/account/ui/AccountCardSkeleton.vue",
+        "apps/web/src/shared/ui/empty-state/EmptyState.vue",
+        "apps/web/src/shared/ui/error-state/ErrorState.vue",
+        "apps/web/src/shared/ui/button/Button.vue",
+        "apps/web/src/shared/ui/card/Card.vue",
+        "apps/web/src/shared/ui/card/CardHeader.vue",
+        "apps/web/src/shared/ui/card/CardAction.vue",
+        "apps/web/src/shared/ui/card/CardContent.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "0c14543936113c3ab1c2ed7924bcde71137153b5745ca059526bad5b87954b14",
+        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
+        "apps/web/src/app/layout/AppSidebar.vue": "7f8666c0cc8ed4f924948f38c2d8355297fefa76a56cf022d28a33ccc38775a9",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
+        "apps/web/src/pages/accounts/ui/AccountsPage.vue": "4f2ee4256166ff692228d5a867cd86d364dec197870547ab0710600393fcd720",
+        "apps/web/src/pages/accounts/ui/AccountCard.vue": "ed80e684e4a798b78782381a1f4715deb1312003703afaa393013e7d0a8d5114",
+        "apps/web/src/pages/accounts/features/add-account/ui/AddAccountDialog.vue": "cd60a29d3d3c42845558367cc2eea801b025596cb72686bdcb46a995012a1a44",
+        "apps/web/src/pages/accounts/features/add-account/ui/AddAccountForm.vue": "7a99829dc945dbe039972caed10750928789019fe00aa242518735bb74aad59e",
+        "apps/web/src/pages/accounts/features/edit-account/ui/EditAccountDialog.vue": "157c35ff9891fbc67ce0fb5c9fcaf2ba581e1514f1654688fda77ac140f2b711",
+        "apps/web/src/pages/accounts/features/edit-account/ui/EditAccountForm.vue": "bd0c947b1090432ef17ac0fe82761d51cd0a4cb2c63ca4fe86db1c9b5a4aa51c",
+        "apps/web/src/pages/accounts/features/delete-account/ui/DeleteAccountDialog.vue": "de51549656faac6cae74f01df7b6e01262d8136fb256f31c402f312f13f37dee",
+        "apps/web/src/entities/account/ui/AccountCardSkeleton.vue": "31ed50d7edfb8bff97115ca30663e45a477cc4e570ad36a4856b8e3d77c3ad74",
+        "apps/web/src/shared/ui/empty-state/EmptyState.vue": "b0e4a74fe8d41e9cc91d32d70548af9dc51ebcbc9a7b03045476345cd5789c47",
+        "apps/web/src/shared/ui/error-state/ErrorState.vue": "9b4a0a406a88611883dcb7221cdb25021a24a9ce79b63b4e21b82481530ebaff",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c",
+        "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
+        "apps/web/src/shared/ui/card/CardHeader.vue": "597d994c8348d902da10d336c79299c2c43401f0f6328fd0b57f2ddfe523daeb",
+        "apps/web/src/shared/ui/card/CardAction.vue": "f5e47d5785404fa3982d5b430d74f7078433385ec68217f28de319bf49a613ff",
+        "apps/web/src/shared/ui/card/CardContent.vue": "161f8ee714e416ef7b1a1d0faf1793afa37267a61f6cf79c7730d7218c3017dd"
+      },
+      "components": [
+        {
+          "name": "AppSidebar",
+          "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+        }
+      ],
+      "drafts": {
+        "328d4ba0-f474-438f-8017-8670ef0374af": {
+          "title": "Счета — Бумага (Direction D)",
+          "visualDirection": "v1 pixel-perfect reproduction (indigo, inline sidebar); v2 Бумага restyle (sd-component AppSidebar, teal, tint hero card, radius 14/12); v3 direct-edit centering fix (removed ml-[248px]); v4 direct-edit polish: uniform card hover (border darkens, no shadow), hero card border #bfe3dd, X close on add/edit dialogs, uniform teal focus rings, error icon 32px, skeleton kebab placeholder, new «Меню счёта (открыто)» specimen",
+          "parentDraftId": null,
+          "currentVersion": 4
+        },
+        "de5404d7-b27e-44be-93ef-23b6f8afcde4": {
+          "title": "Счета — Мобильная версия (Direction D)",
+          "visualDirection": "mobile <1024px branch: top bar (hamburger + Кошелёк + sync pill + guest badge), inline drawer nav specimen, full-width «Создать» button, tint hero card, stacked 1-col account cards, dialogs (add/edit/delete), kebab menu + states specimens; v2 direct-edit: compact top bar right cluster (sync = icon-only 28px outline circle, guest = teal tint pill cloud-off + «Локально» 11px) + new «Топбар: состояния синхронизации» specimen (synced/running/pending N/paused/conflicts)",
+          "parentDraftId": "328d4ba0-f474-438f-8017-8670ef0374af",
+          "device": "mobile",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-08-29T16:05:25Z"
     }
   }
 }
