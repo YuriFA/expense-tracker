@@ -17,19 +17,25 @@
         "apps/web/src/pages/dashboard/ui/AccountsCard.vue",
         "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
         "apps/web/src/shared/ui/card/Card.vue",
-        "apps/web/src/shared/ui/button/Button.vue"
+        "apps/web/src/shared/ui/button/Button.vue",
+        "apps/web/src/pages/dashboard/ui/DashboardCard.vue",
+        "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue",
+        "apps/web/src/pages/dashboard/ui/DebtsCard.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        ".superdesign/design-system.md": "0c14543936113c3ab1c2ed7924bcde71137153b5745ca059526bad5b87954b14",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "a06db87c5b1762d70ceb342154bfdf3cdf85395d20e7a31eb70b7bfb8381bf8d",
         "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "e396cebd576ff3188c51eefb1379f8820beb3eab392a3bfc2f4da9168b93799e",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "7b8f895ccbac17c5441b838cc74b2b1a55bd34f9db69de3c9c64617c4cf31211",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a4726bc2bfa68f748d8b91496f734ab80e6e4d15dacbc4b6248a450f4b93b4a1",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "9f421d9d4c42f03b807d0e3b1baf772167cb1719dab79b49ed77a3c258d38734",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "faeefa856d39b61bbb860a9af8b2ab9147f4126d34644ff68e02c55cd90731bc",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "3179e26765c62194d34c0b88df5406e0631f5192652fa8d6681af963bd2875a2",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
-        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c",
+        "apps/web/src/pages/dashboard/ui/DashboardCard.vue": "ffb6082a6de6b2362b7867621838069284120166288a32ec4d17e7f700a6bd8f",
+        "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue": "a97b89fc6478cfedf3a7a0fe9d1183afb47823785c17cac91caeecec45b0a9b4",
+        "apps/web/src/pages/dashboard/ui/DebtsCard.vue": "64fb666b9367ca712645a090b813649c1cc8bdc10b71af8dc4ac74e2ae9e093c"
       },
       "components": [
         {
@@ -61,9 +67,9 @@
         },
         "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b": {
           "title": "Синхронизация с реализацией (Транзакции и Категории)",
-          "visualDirection": "SELECTED by user. Warm paper #f6f2ec, flat cards #fffdf9 border #e8e0d4 no shadows radius 14, teal #0f766e, underline nav, sidebar shell; v2 = real functionality only (no limits, no progress bars): header Обзор+month, 4 stat cards (Счета/Доходы/Расходы/Долги), Быстрые действия row, Расходы по категориям (amount+percent), right rail Счета+Долги, Недавние транзакции",
+          "visualDirection": "SELECTED by user. Warm paper #f6f2ec, flat cards #fffdf9 border #e8e0d4 no shadows radius 14, teal #0f766e, underline nav, sidebar shell; v2 = real functionality only (no limits, no progress bars): header Обзор+month, 4 stat cards (Счета/Доходы/Расходы/Долги), Быстрые действия row, Расходы по категориям (amount+percent), right rail Счета+Долги, Недавние транзакции; v5 = unified DashboardCard shell: all four card headers identical 52px (px-6, uppercase title, centered action, hairline divider)",
           "parentDraftId": "218ec55b-8c4f-434e-b975-9b2a75dd6951",
-          "currentVersion": 4
+          "currentVersion": 5
         },
         "d43bc74a-e574-4a77-9610-1db2c7a97096": {
           "title": "Aurora Direction Redesign",
@@ -85,7 +91,7 @@
           "currentVersion": 2
         }
       },
-      "updatedAt": "2026-08-28T21:51:35.873415+00:00"
+      "updatedAt": "2026-08-29T11:45:32.354741+00:00"
     },
     "/analytics": {
       "targetKind": "flow-page",
