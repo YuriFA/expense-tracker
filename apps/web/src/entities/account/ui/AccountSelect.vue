@@ -35,7 +35,7 @@ const filteredAccounts = computed(() =>
       <SelectTrigger :id="props.inputId" :aria-invalid="!!props.errors?.length" class="w-full! min-w-0">
         <SelectValue :placeholder="props.placeholder" />
       </SelectTrigger>
-      <SelectContent position="item-aligned">
+      <SelectContent>
         <SelectItem v-for="item in filteredAccounts" :key="item.id" :value="item.id">
           {{ item.name }}
         </SelectItem>

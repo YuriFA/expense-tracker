@@ -32,7 +32,7 @@ const { t } = useI18n()
       >
         <SelectValue :placeholder="t('transactions.filters.typePlaceholder')" />
       </SelectTrigger>
-      <SelectContent position="item-aligned">
+      <SelectContent>
         <SelectItem v-for="item in transactionOptions" :key="item.value" :value="item.value">
           {{ item.label }}
         </SelectItem>

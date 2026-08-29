@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { useCategories } from '../model/use-categories'
 import CategoryAvatar from './CategoryAvatar.vue'
@@ -33,15 +27,17 @@ const filteredCategories = computed(() =>
   <Field :class="props.class" orientation="responsive" :data-invalid="!!props.errors?.length">
     <FieldLabel :for="props.inputId">{{ props.label }}</FieldLabel>
     <Select v-model="modelValue">
-      <SelectTrigger :id="props.inputId" :aria-invalid="!!props.errors?.length" class="w-full! min-w-0">
+      <SelectTrigger
+        :id="props.inputId"
+        :aria-invalid="!!props.errors?.length"
+        class="w-full! min-w-0"
+      >
         <SelectValue :placeholder="props.placeholder" />
       </SelectTrigger>
-      <SelectContent position="item-aligned">
+      <SelectContent>
         <SelectItem v-for="category in filteredCategories" :key="category.id" :value="category.id">
-          <span>
-            <CategoryAvatar :icon="category.icon" :color="category.color" class="size-5 text-xs" />
-            {{ category.name }}
-          </span>
+          <CategoryAvatar :icon="category.icon" :color="category.color" class="size-5 text-xs" />
+          {{ category.name }}
         </SelectItem>
       </SelectContent>
     </Select>
