@@ -14,8 +14,8 @@ describe('createTransactionsFilterSchema', () => {
       fromDate: new Date('2024-01-01'),
       toDate: new Date('2024-01-31'),
       type: 'expense',
-      accountId: 'a1',
-      categoryId: 'c1',
+      accountId: ['a1', 'a2'],
+      categoryId: ['c1'],
     })
     expect(result.success).toBe(true)
   })
@@ -30,12 +30,12 @@ describe('createTransactionsFilterSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects empty accountId', () => {
-    const result = schema.safeParse({ accountId: '' })
+  it('rejects an accountId list with an empty id', () => {
+    const result = schema.safeParse({ accountId: ['a1', ''] })
     expect(result.success).toBe(false)
   })
 
-  it('rejects empty categoryId', () => {
+  it('rejects an empty categoryId string (not a list)', () => {
     const result = schema.safeParse({ categoryId: '' })
     expect(result.success).toBe(false)
   })

@@ -19,13 +19,13 @@ const handleSubmit = () => {
     <SheetTrigger as-child>
       <Button variant="outline"><ListFilterIcon /> {{ t('transactions.filter') }}</Button>
     </SheetTrigger>
-    <SheetContent>
-      <SheetHeader>
+    <!-- Drawer specimen: bordered full-bleed header, scrolling filter body,
+         footer pair pinned by the form itself. -->
+    <SheetContent class="gap-0 p-0 sm:max-w-[400px]">
+      <SheetHeader class="border-b border-border px-6 py-5">
         <SheetTitle>{{ t('transactions.filtersTitle') }}</SheetTitle>
       </SheetHeader>
-      <div class="px-4">
-        <TransactionsFilters @submit="handleSubmit" />
-      </div>
+      <TransactionsFilters class="min-h-0 flex-1" @submit="handleSubmit" />
     </SheetContent>
   </Sheet>
 </template>

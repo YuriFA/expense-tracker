@@ -17,12 +17,14 @@ export const createTransactionsFilterSchema = () => {
       })
       .optional(),
     accountId: z
-      .string({ error: t('validation.select', { field: t('fields.account') }) })
-      .min(1, t('validation.select', { field: t('fields.account') }))
+      .array(
+        z.string({ error: t('validation.select', { field: t('fields.account') }) }).min(1),
+      )
       .optional(),
     categoryId: z
-      .string({ error: t('validation.select', { field: t('fields.category') }) })
-      .min(1, t('validation.select', { field: t('fields.category') }))
+      .array(
+        z.string({ error: t('validation.select', { field: t('fields.category') }) }).min(1),
+      )
       .optional(),
   })
 }

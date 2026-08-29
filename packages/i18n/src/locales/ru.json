@@ -305,10 +305,8 @@
     "filters": {
       "typeLabel": "Тип",
       "typePlaceholder": "Тип",
-      "accountLabel": "Счет",
-      "accountPlaceholder": "Счет",
-      "categoryLabel": "Категория",
-      "categoryPlaceholder": "Категория",
+      "accountLabel": "Счета",
+      "categoryLabel": "Категории",
       "activeType": "Тип транзакции",
       "activeAccount": "Счет",
       "activeCategory": "Категория",

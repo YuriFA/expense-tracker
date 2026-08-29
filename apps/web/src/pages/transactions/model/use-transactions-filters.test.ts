@@ -47,18 +47,36 @@ describe('useTransactionsFilters', () => {
 
   it('removeFilter clears a single filter', async () => {
     const { result } = mountWithComposable(() => useTransactionsFilters())
-    await result.setFilters({ type: 'income', accountId: 'a1' })
+    await result.setFilters({ type: 'income', accountIds: ['a1'] })
     await result.removeFilter('type')
     expect(result.filters.value.type).toBeUndefined()
-    expect(result.filters.value.accountId).toBe('a1')
+    expect(result.filters.value.accountIds).toEqual(['a1'])
   })
 
-  it('resetFilters clears type, accountId, categoryId', async () => {
+  it('toggleIdFilter adds and removes ids, dropping the filter when empty', async () => {
     const { result } = mountWithComposable(() => useTransactionsFilters())
-    await result.setFilters({ type: 'income', accountId: 'a1', categoryId: 'c1' })
+
+    await result.toggleIdFilter('accountIds', 'a1', true)
+    await result.toggleIdFilter('accountIds', 'a2', true)
+    expect(result.filters.value.accountIds).toEqual(['a1', 'a2'])
+
+    await result.toggleIdFilter('categoryIds', 'c1', true)
+    expect(result.filters.value.categoryIds).toEqual(['c1'])
+
+    await result.toggleIdFilter('accountIds', 'a1', false)
+    expect(result.filters.value.accountIds).toEqual(['a2'])
+    expect(result.filters.value.categoryIds).toEqual(['c1'])
+
+    await result.toggleIdFilter('accountIds', 'a2', false)
+    expect(result.filters.value.accountIds).toBeUndefined()
+  })
+
+  it('resetFilters clears type, accountIds, categoryIds', async () => {
+    const { result } = mountWithComposable(() => useTransactionsFilters())
+    await result.setFilters({ type: 'income', accountIds: ['a1'], categoryIds: ['c1'] })
     await result.resetFilters()
     expect(result.filters.value.type).toBeUndefined()
-    expect(result.filters.value.accountId).toBeUndefined()
-    expect(result.filters.value.categoryId).toBeUndefined()
+    expect(result.filters.value.accountIds).toBeUndefined()
+    expect(result.filters.value.categoryIds).toBeUndefined()
   })
 })

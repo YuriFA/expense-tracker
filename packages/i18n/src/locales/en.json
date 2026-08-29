@@ -305,10 +305,8 @@
     "filters": {
       "typeLabel": "Type",
       "typePlaceholder": "Type",
-      "accountLabel": "Account",
-      "accountPlaceholder": "Account",
-      "categoryLabel": "Category",
-      "categoryPlaceholder": "Category",
+      "accountLabel": "Accounts",
+      "categoryLabel": "Categories",
       "activeType": "Transaction type",
       "activeAccount": "Account",
       "activeCategory": "Category",

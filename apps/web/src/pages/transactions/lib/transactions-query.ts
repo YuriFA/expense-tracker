@@ -1,5 +1,5 @@
 import type { LocationQuery, LocationQueryRaw, LocationQueryValue } from 'vue-router'
-import type { TransactionType } from '@/entities/transaction'
+import type { Transaction, TransactionType } from '@/entities/transaction'
 import {
   currentDay,
   parseCalendarDayOrFallback,
@@ -10,8 +10,10 @@ export type TransactionsFilters = {
   fromDate?: CalendarDay
   toDate?: CalendarDay
   type?: TransactionType
-  accountId?: string
-  categoryId?: string
+  /** Multi-select: transactions touching ANY of these accounts. */
+  accountIds?: string[]
+  /** Multi-select: transactions with ANY of these categories. */
+  categoryIds?: string[]
 }
 
 const TRANSACTION_TYPES = new Set<TransactionType>(['expense', 'income', 'transfer'])
@@ -36,6 +38,14 @@ const parseOptionalString = (value: QueryParamValue) => {
   return normalized && normalized.length > 0 ? normalized : undefined
 }
 
+/** Repeated (`?a=1&a=2`) or single (`?a=1`) query values to a clean id list. */
+const parseOptionalStringList = (value: QueryParamValue) => {
+  const raw = Array.isArray(value) ? value : [value]
+  const ids = raw.filter((item): item is string => !!item && item.length > 0)
+
+  return ids.length > 0 ? ids : undefined
+}
+
 export const parseTransactionsQuery = (query: LocationQuery): TransactionsFilters => {
   const fromValue = getQueryValue(query.from)
   const toValue = getQueryValue(query.to)
@@ -48,8 +58,8 @@ export const parseTransactionsQuery = (query: LocationQuery): TransactionsFilter
     fromDate,
     toDate,
     type: isTransactionType(type) ? type : undefined,
-    accountId: parseOptionalString(query.accountId),
-    categoryId: parseOptionalString(query.categoryId),
+    accountIds: parseOptionalStringList(query.accountId),
+    categoryIds: parseOptionalStringList(query.categoryId),
   }
 }
 
@@ -60,7 +70,40 @@ export const serializeTransactionsQuery = (
     from: filters.fromDate?.toString(),
     to: filters.toDate?.toString(),
     type: filters.type,
-    accountId: filters.accountId || undefined,
-    categoryId: filters.categoryId || undefined,
+    accountId: filters.accountIds?.length ? filters.accountIds : undefined,
+    categoryId: filters.categoryIds?.length ? filters.categoryIds : undefined,
   }
+}
+
+/**
+ * Client-side multi-select narrowing on top of the repository query (which
+ * stays single/id-free): transfers match an account when they touch it on
+ * either side — the same semantics as the repository's own account filter.
+ */
+export const matchesTransactionsFilters = (
+  transaction: Transaction,
+  filters: TransactionsFilters,
+): boolean => {
+  if (filters.accountIds?.length) {
+    const touches = (accountId: string) =>
+      transaction.type === 'transfer'
+        ? transaction.fromAccountId === accountId || transaction.toAccountId === accountId
+        : transaction.accountId === accountId
+
+    if (!filters.accountIds.some(touches)) {
+      return false
+    }
+  }
+
+  if (filters.categoryIds?.length) {
+    // Transfers carry no category, so any category selection excludes them.
+    const matches =
+      transaction.type !== 'transfer' && filters.categoryIds.includes(transaction.categoryId)
+
+    if (!matches) {
+      return false
+    }
+  }
+
+  return true
 }

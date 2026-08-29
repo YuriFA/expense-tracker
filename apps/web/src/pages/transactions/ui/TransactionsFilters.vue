@@ -23,9 +23,9 @@ const { filters, setFilters, resetFilters } = useTransactionsFilters()
 const { handleSubmit: handleFormSubmit, resetForm } = useForm<TransactionsFilterFormValues>({
   validationSchema: toTypedSchema(createTransactionsFilterSchema()),
   initialValues: {
-    accountId: filters.value.accountId,
-    categoryId: filters.value.categoryId,
     type: filters.value.type,
+    accountId: filters.value.accountIds,
+    categoryId: filters.value.categoryIds,
   },
 })
 
@@ -34,8 +34,8 @@ const typeFieldValue = useFieldValue<TransactionsFilterFormValues['type']>('type
 const handleSubmit = handleFormSubmit(async (data) => {
   await setFilters({
     type: data.type,
-    accountId: data.accountId,
-    categoryId: data.categoryId,
+    accountIds: data.accountId,
+    categoryIds: data.categoryId,
   })
 
   emit('submit')
@@ -54,37 +54,41 @@ const handleReset = async () => {
 </script>
 
 <template>
-  <form id="transactions-filter-form" class="flex flex-col gap-3" @submit="handleSubmit">
-    <VeeField v-slot="{ value, setValue, errors }" name="type">
-      <TransactionTypeField
-        :model-value="value"
-        :errors="errors"
-        @update:model-value="setValue"
-      />
-    </VeeField>
+  <!-- Drawer specimen: the fields scroll, the reset/apply pair stays pinned
+       to the sheet footer. -->
+  <form id="transactions-filter-form" class="flex min-h-0 flex-1 flex-col" @submit="handleSubmit">
+    <div class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-6 py-6">
+      <VeeField v-slot="{ value, setValue, errors }" name="type">
+        <TransactionTypeField
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="setValue"
+        />
+      </VeeField>
 
-    <VeeField v-slot="{ value, setValue, errors }" name="accountId">
-      <TransactionAccountField
-        :model-value="value"
-        :errors="errors"
-        @update:model-value="setValue"
-      />
-    </VeeField>
+      <VeeField v-slot="{ value, setValue, errors }" name="accountId">
+        <TransactionAccountField
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="setValue"
+        />
+      </VeeField>
 
-    <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
-      <TransactionCategoriesField
-        :model-value="value"
-        :errors="errors"
-        :type="typeFieldValue"
-        @update:model-value="setValue"
-      />
-    </VeeField>
+      <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
+        <TransactionCategoriesField
+          :model-value="value"
+          :errors="errors"
+          :type="typeFieldValue"
+          @update:model-value="setValue"
+        />
+      </VeeField>
+    </div>
 
-    <div class="flex flex-col gap-2 md:flex-row md:justify-end">
-      <Button type="button" variant="outline" class="w-full md:w-auto" @click="handleReset">
+    <div class="flex gap-3 border-t border-border px-6 py-5">
+      <Button type="button" variant="outline" class="flex-1" @click="handleReset">
         {{ t('transactions.reset') }}
       </Button>
-      <Button type="submit" class="w-full md:w-auto">
+      <Button type="submit" class="flex-1">
         {{ t('transactions.apply') }}
       </Button>
     </div>

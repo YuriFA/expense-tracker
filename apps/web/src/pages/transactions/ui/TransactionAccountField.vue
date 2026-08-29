@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useAccounts } from '@/entities/account'
@@ -16,33 +10,49 @@ defineProps<{
   class?: string
 }>()
 
-const modelValue = defineModel<string | undefined>()
+const modelValue = defineModel<string[] | undefined>()
 
 const { data, error, isLoading } = useAccounts()
 const { t } = useI18n()
+
+/** Toggles one account id inside the committed-on-apply form value. */
+const toggle = (accountId: string, included: boolean) => {
+  const current = modelValue.value ?? []
+  const next = included ? [...current, accountId] : current.filter((id) => id !== accountId)
+  modelValue.value = next.length > 0 ? next : undefined
+}
 </script>
 
 <template>
+  <!-- Drawer specimen: multi-select account rows, label left / 20px
+       filter-checkbox right. -->
   <Field :class="$props.class" orientation="responsive" :data-invalid="!!$props.errors?.length">
-    <FieldLabel for="account-id">{{ t('transactions.filters.accountLabel') }}</FieldLabel>
-    <Select v-model="modelValue">
-      <SelectTrigger id="account-id" :aria-invalid="!!$props.errors?.length">
-        <SelectValue :placeholder="t('transactions.filters.accountPlaceholder')" />
-      </SelectTrigger>
-      <SelectContent position="item-aligned">
-        <template v-if="isLoading">
-          <div v-for="n in 3" :key="n" class="px-8 py-2">
-            <Skeleton class="h-4 w-full" />
-          </div>
-        </template>
-        <div v-else-if="error" class="px-8 py-2 text-sm text-muted-foreground">
-          {{ t('common.errorState.title') }}
-        </div>
-        <SelectItem v-for="item in data" v-else :key="item.id" :value="item.id">
-          {{ item.name }}
-        </SelectItem>
-      </SelectContent>
-    </Select>
+    <FieldLabel class="text-xs font-bold uppercase tracking-wider" for="account-id">
+      {{ t('transactions.filters.accountLabel') }}
+    </FieldLabel>
+    <div class="flex flex-col gap-3" data-testid="transactions-filter-accounts">
+      <template v-if="isLoading">
+        <Skeleton v-for="n in 2" :key="n" class="h-5 w-32" />
+      </template>
+      <div v-else-if="error" class="text-sm text-muted-foreground">
+        {{ t('common.errorState.title') }}
+      </div>
+      <label
+        v-for="item in data"
+        v-else
+        :key="item.id"
+        class="flex cursor-pointer items-center justify-between gap-3"
+      >
+        <span class="truncate text-sm">{{ item.name }}</span>
+        <Checkbox
+          variant="filter"
+          :model-value="modelValue?.includes(item.id) ?? false"
+          :aria-label="item.name"
+          :data-testid="`transactions-filter-account-${item.id}`"
+          @update:model-value="(checked) => toggle(item.id, !!checked)"
+        />
+      </label>
+    </div>
     <FieldError v-if="$props.errors?.length" :errors="$props.errors" />
   </Field>
 </template>

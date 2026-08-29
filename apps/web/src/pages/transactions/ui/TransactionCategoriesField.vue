@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CategoryAvatar, useCategories } from '@/entities/category'
@@ -18,7 +12,7 @@ const props = defineProps<{
   class?: string
 }>()
 
-const modelValue = defineModel<string | undefined>()
+const modelValue = defineModel<string[] | undefined>()
 
 const { t } = useI18n()
 const { data: categories, error, isLoading } = useCategories()
@@ -29,41 +23,48 @@ const filteredCategories = computed(() => {
   }
   return categories.value?.filter((category) => category.type === props.type)
 })
+
+/** Toggles one category id inside the committed-on-apply form value. */
+const toggle = (categoryId: string, included: boolean) => {
+  const current = modelValue.value ?? []
+  const next = included ? [...current, categoryId] : current.filter((id) => id !== categoryId)
+  modelValue.value = next.length > 0 ? next : undefined
+}
 </script>
 
 <template>
-  <Field class="w-full md:w-auto" orientation="responsive" :data-invalid="!!props.errors?.length">
-    <FieldLabel for="category-id">{{ t('transactions.filters.categoryLabel') }}</FieldLabel>
-    <Select v-model="modelValue">
-      <SelectTrigger
-        id="category-id"
-        :aria-invalid="!!props.errors?.length"
-        class="w-full! min-w-0 md:min-w-36"
+  <!-- Drawer specimen: multi-select category rows with the avatar identity,
+       label left / 20px filter-checkbox right. -->
+  <Field :class="props.class" orientation="responsive" :data-invalid="!!props.errors?.length">
+    <FieldLabel class="text-xs font-bold uppercase tracking-wider" for="category-id">
+      {{ t('transactions.filters.categoryLabel') }}
+    </FieldLabel>
+    <div class="flex flex-col gap-3" data-testid="transactions-filter-categories">
+      <template v-if="isLoading">
+        <Skeleton v-for="n in 2" :key="n" class="h-5 w-32" />
+      </template>
+      <div v-else-if="error" class="text-sm text-muted-foreground">
+        {{ t('common.errorState.title') }}
+      </div>
+      <label
+        v-for="category in filteredCategories"
+        v-else
+        :key="category.id"
+        class="flex cursor-pointer items-center justify-between gap-3"
       >
-        <SelectValue :placeholder="t('transactions.filters.categoryPlaceholder')" />
-      </SelectTrigger>
-      <SelectContent position="item-aligned">
-        <template v-if="isLoading">
-          <div v-for="n in 3" :key="n" class="px-8 py-2">
-            <Skeleton class="h-4 w-full" />
-          </div>
-        </template>
-        <div v-else-if="error" class="px-8 py-2 text-sm text-muted-foreground">
-          {{ t('common.errorState.title') }}
-        </div>
-        <SelectItem
-          v-for="category in filteredCategories"
-          v-else
-          :key="category.id"
-          :value="category.id"
-        >
-          <span>
-            <CategoryAvatar :icon="category.icon" :color="category.color" class="size-5 text-xs" />
-            {{ category.name }}
-          </span>
-        </SelectItem>
-      </SelectContent>
-    </Select>
+        <span class="flex min-w-0 items-center gap-2 text-sm">
+          <CategoryAvatar :icon="category.icon" :color="category.color" class="size-5 text-xs" />
+          <span class="truncate">{{ category.name }}</span>
+        </span>
+        <Checkbox
+          variant="filter"
+          :model-value="modelValue?.includes(category.id) ?? false"
+          :aria-label="category.name"
+          :data-testid="`transactions-filter-category-${category.id}`"
+          @update:model-value="(checked) => toggle(category.id, !!checked)"
+        />
+      </label>
+    </div>
     <FieldError v-if="props.errors?.length" :errors="props.errors" />
   </Field>
 </template>

@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { getTransactionsOptions } from '@/entities/transaction'
-import { useAccount } from '@/entities/account'
+import { useAccounts } from '@/entities/account'
 import { useTransactionsFilters } from '../model/use-transactions-filters'
 import { computed } from 'vue'
 import { Chip } from '@/shared/ui/chip'
 import { useI18n } from 'vue-i18n'
-import { useCategory } from '@/entities/category'
+import { useCategories } from '@/entities/category'
 
-const { filters, removeFilter } = useTransactionsFilters()
-const { data: account } = useAccount(() => filters.value.accountId)
-const { data: category } = useCategory(() => filters.value.categoryId)
+const { filters, removeFilter, toggleIdFilter } = useTransactionsFilters()
+const { data: accounts } = useAccounts()
+const { data: categories } = useCategories()
 const transactionOptions = getTransactionsOptions()
 const { t } = useI18n()
 
 const activeFilters = computed(() => {
   const items: Array<{
-    key: 'type' | 'accountId' | 'categoryId'
+    key: string
     label: string
     onRemove: () => void
   }> = []
@@ -32,22 +32,26 @@ const activeFilters = computed(() => {
     })
   }
 
-  if (account.value) {
+  // One chip per selected id; removing a chip drops just that id and the
+  // filter chip group with it when the selection empties.
+  for (const accountId of filters.value.accountIds ?? []) {
+    const account = accounts.value?.find((item) => item.id === accountId)
     items.push({
-      key: 'accountId',
-      label: `${t('transactions.filters.activeAccount')}: ${account.value.name}`,
+      key: `accountIds:${accountId}`,
+      label: `${t('transactions.filters.activeAccount')}: ${account?.name ?? accountId}`,
       onRemove: () => {
-        void removeFilter('accountId')
+        void toggleIdFilter('accountIds', accountId, false)
       },
     })
   }
 
-  if (category.value) {
+  for (const categoryId of filters.value.categoryIds ?? []) {
+    const category = categories.value?.find((item) => item.id === categoryId)
     items.push({
-      key: 'categoryId',
-      label: `${t('transactions.filters.activeCategory')}: ${category.value.icon} ${category.value.name}`,
+      key: `categoryIds:${categoryId}`,
+      label: `${t('transactions.filters.activeCategory')}: ${category?.icon ?? ''} ${category?.name ?? categoryId}`.trimEnd(),
       onRemove: () => {
-        void removeFilter('categoryId')
+        void toggleIdFilter('categoryIds', categoryId, false)
       },
     })
   }
