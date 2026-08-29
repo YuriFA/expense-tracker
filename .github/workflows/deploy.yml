@@ -1,8 +1,9 @@
 name: Build and deploy
 
+# Manual-only deploys (decided 2026-08-30): nothing fires on push — run
+# "Build and deploy" from the Actions tab; empty image_tag builds and
+# deploys HEAD, a pinned sha- tag rolls back.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       image_tag:

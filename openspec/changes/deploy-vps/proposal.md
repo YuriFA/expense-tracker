@@ -16,9 +16,10 @@ CI-built images and a one-command redeploy.
   `/api/health`, web via nginx); log rotation; Traefik labels on `api`
   (`Host(<subdomain>) && PathPrefix(/api/)`) and `web` (`Host(<subdomain>)`);
   joins the external `web` network; no host ports published.
-- `deploy.yml`: build both images on `push to main` (plus manual
-  `workflow_dispatch`), tags `sha-<short>` and `main`, push to GHCR;
-  deploy job SSHes to the VPS, `docker network create web || true`,
+- `deploy.yml`: build both images on manual `workflow_dispatch` only
+  (decided 2026-08-30: no auto-deploy on push), tags `sha-<short>` and
+  `main`, push to GHCR; deploy job SSHes to the VPS,
+  `docker network create web || true`,
   `docker compose -f docker-compose.prod.yml pull && up -d --remove-orphans`,
   prunes stale repo images (zvonok's pattern).
 - Production config through env: allowed origins `https://<subdomain>`,

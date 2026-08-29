@@ -31,9 +31,9 @@
 ## 3. CI deploy pipeline
 
 - [x] 3.1 Extend `.github/workflows/deploy.yml`: build+push **both**
-      images (api + web) with `sha-<short>` and `main` tags; trigger on
-      `push: branches: [main]` + `workflow_dispatch` with optional
-      `image_tag` input
+      images (api + web) with `sha-<short>` and `main` tags; trigger:
+      manual `workflow_dispatch` only with optional `image_tag` input
+      (amended 2026-08-30 — auto-deploy on push removed by decision)
 - [x] 3.2 Deploy job: SSH (`VPS_HOST`/`VPS_USER`/`VPS_SSH_KEY` secrets) →
       `docker network create web || true` → GHCR login (VPS-side
       `GHCR_TOKEN`) → `IMAGE_TAG=<tag> docker compose -f

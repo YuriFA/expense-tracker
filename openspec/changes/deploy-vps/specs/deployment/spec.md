@@ -49,19 +49,25 @@ SHALL be served with long-lived immutable caching.
 - **WHEN** a client fetches a fingerprinted asset under `/assets/`
 - **THEN** the response carries a long-lived immutable cache header
 
-### Requirement: CI builds and deploys on merge
+### Requirement: CI builds and deploys on demand
 
-On push to the default branch (and on manual dispatch), CI SHALL build the
-API and web images, push them to the registry tagged with both the commit
-short SHA and the branch name, then deploy to the VPS over SSH by pulling
-the images and recreating the stack. A manual dispatch with an explicit
-image tag SHALL deploy that tag instead (rollback path).
+On a manual workflow dispatch, CI SHALL build the API and web images, push
+them to the registry tagged with both the commit short SHA and the branch
+name, then deploy to the VPS over SSH by pulling the images and recreating
+the stack. Deploys SHALL NOT fire automatically on pushes — the operator
+triggers each one. A dispatch with an explicit image tag SHALL deploy that
+tag instead of building (rollback path).
 
-#### Scenario: Merge deploys the new images
+#### Scenario: Manual dispatch deploys the new images
 
-- **WHEN** a commit lands on the default branch
+- **WHEN** an operator runs the deploy workflow from the default branch
 - **THEN** CI builds and pushes both images and the VPS stack is recreated
   from them without manual server access
+
+#### Scenario: Push alone deploys nothing
+
+- **WHEN** a commit lands on the default branch without a manual dispatch
+- **THEN** no images are built and the VPS stack is left untouched
 
 #### Scenario: Pinned tag rollback
 

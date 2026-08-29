@@ -1,9 +1,10 @@
 # Deployment runbook
 
 How the expense tracker is built into images and served in production:
-CI builds on every merge to `main`, pushes to GHCR, and redeploys the
-VPS stack over SSH. The stack joins the VPS's shared Traefik gateway
-and publishes no host ports of its own.
+a manual workflow dispatch makes CI build both images, push to GHCR, and
+redeploy the VPS stack over SSH (nothing fires on push — decided
+2026-08-30). The stack joins the VPS's shared Traefik gateway and
+publishes no host ports of its own.
 
 ```
 client → https://<subdomain>
@@ -41,9 +42,9 @@ client → https://<subdomain>
 - A GitHub classic PAT with `read:packages` for VPS pulls (goes in the
   VPS `.env`, not in GitHub).
 
-> **Before the VPS side exists:** every push to `main` still builds and
-> publishes both images (the `main` tag powers the first boot below),
-> but the deploy job fails at the SSH step. That is expected until
+> **Before the VPS side exists:** a dispatch still builds and publishes
+> both images (the `main` tag powers the first boot below), but the
+> deploy job fails at the SSH step. That is expected until
 > `VPS_HOST`/`VPS_USER`/`VPS_SSH_KEY` secrets and `~/expense-tracker/.env`
 > are in place.
 
@@ -94,14 +95,13 @@ responds regardless; wrong proxies only distort per-IP limiting.
 
 ## Redeploy
 
-Push to `main`. CI builds both images (`sha-<short>` + `main` tags),
-then SSHes to the VPS: `docker network create web || true`, GHCR login
-from the VPS `.env`, `pull`, `up -d --remove-orphans`, prune of stale
-local images. The API restarts briefly (boot migrations re-run as
-needed); offline-capable clients queue their sync.
-
-Manual redeploy of the current HEAD: Actions → "Build and deploy" →
-Run workflow (leave `image_tag` empty).
+Manual only (nothing fires on push): Actions → "Build and deploy" →
+Run workflow, leave `image_tag` empty. CI builds both images from HEAD
+(`sha-<short>` + `main` tags), then SSHes to the VPS:
+`docker network create web || true`, GHCR login from the VPS `.env`,
+`pull`, `up -d --remove-orphans`, prune of stale local images. The API
+restarts briefly (boot migrations re-run as needed); offline-capable
+clients queue their sync.
 
 ## Rollback
 

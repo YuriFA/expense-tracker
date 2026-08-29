@@ -52,8 +52,10 @@ change in the series) adds `GET /api/health`.
    GHCR auth on the VPS via a PAT stored in `~/expense-tracker/.env`
    (zvonok's pattern — `GHCR_TOKEN` is a VPS-side secret, not a GH
    secret). Script: `docker network create web || true`, login, pull, up
-   `-d --remove-orphans`, prune old repo images. Trigger: `push: main` +
-   `workflow_dispatch` (with optional `image_tag` input for rollback).
+   `-d --remove-orphans`, prune old repo images. Trigger:
+   `workflow_dispatch` only (amended 2026-08-30, decided after apply:
+   deploys are manual — pushes build nothing), with optional `image_tag`
+   input for rollback.
 7. **Env overrides over baked prod.yaml**: the compose passes
    `HTTP_SERVER_CORS_ALLOWED_ORIGINS`-style env (exact names verified
    against `internal/config/config.go` env tags at implementation),
@@ -86,7 +88,7 @@ change in the series) adds `GET /api/health`.
 
 First boot (runbook): VPS `~/expense-tracker` with compose + `.env`;
 `docker network create web || true`; DNS A-record `<sub> → VPS IP`;
-`docker compose ... up -d`. Subsequent: push to main. Rollback: manual
+`docker compose ... up -d`. Subsequent: manual workflow dispatch. Rollback:
 dispatch with the previous `sha-` tag. Teardown: `docker compose down`
 (gateway and zvonok untouched).
 
