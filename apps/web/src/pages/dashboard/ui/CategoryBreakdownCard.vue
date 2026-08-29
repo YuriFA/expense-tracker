@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { currentPeriod, periodToUtcDayRange } from '@expense-tracker/dates'
+import { periodToUtcDayRange, type PeriodCursor } from '@expense-tracker/dates'
 import { categoryTotals, periodTotal, percentLabel } from '@/entities/analytics'
 import { useTransactions } from '@/entities/transaction'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
@@ -12,19 +12,23 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
-// Current-month expense breakdown, derived in memory with the same selectors
-// as the analytics page (analytics capability) - no extra backend aggregate.
+// Expense breakdown of the selected dashboard month (the page owns the
+// period cursor), derived in memory with the same selectors as the
+// analytics page (analytics capability) - no extra backend aggregate.
 // The dashed footer row opens the shared new-category dialog (expenses).
+const props = defineProps<{
+  /** Selected dashboard month; the breakdown re-scopes with it. */
+  cursor: PeriodCursor
+}>()
 const { t, locale } = useI18n()
-const cursor = currentPeriod('month')
-const range = periodToUtcDayRange(cursor)
+const range = computed(() => periodToUtcDayRange(props.cursor))
 
 const {
   data: transactions,
   isLoading: isLoadingTx,
   error: txError,
   refetch: refetchTx,
-} = useTransactions({ type: 'expense', ...range })
+} = useTransactions(() => ({ type: 'expense', ...range.value }))
 const {
   data: categories,
   isLoading: isLoadingCategories,
@@ -36,9 +40,9 @@ const isLoading = computed(() => isLoadingTx.value || isLoadingCategories.value)
 const error = computed(() => txError.value || categoriesError.value)
 const refetch = () => Promise.all([refetchTx(), refetchCategories()])
 
-const totalMinor = computed(() => periodTotal(transactions.value ?? [], cursor, 'expense'))
+const totalMinor = computed(() => periodTotal(transactions.value ?? [], props.cursor, 'expense'))
 const rows = computed(() =>
-  categoryTotals(transactions.value ?? [], categories.value ?? [], cursor, 'expense'),
+  categoryTotals(transactions.value ?? [], categories.value ?? [], props.cursor, 'expense'),
 )
 
 const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.value)
@@ -50,7 +54,11 @@ const newCategoryOpen = ref(false)
 </script>
 
 <template>
-  <DashboardCard :title="t('dashboard.categoriesTitle')" content-class="px-0!">
+  <DashboardCard
+    :title="t('dashboard.categoriesTitle')"
+    content-class="px-0!"
+    data-testid="dashboard-category-breakdown"
+  >
     <ErrorState v-if="error" @retry="refetch" />
     <template v-else-if="isLoading">
       <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-3">

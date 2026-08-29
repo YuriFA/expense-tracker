@@ -39,6 +39,9 @@ const mountPage = () => {
   return { wrapper, transactionsRepo }
 }
 
+const breakdownText = (wrapper: ReturnType<typeof mountPage>['wrapper']) =>
+  wrapper.find('[data-testid="dashboard-category-breakdown"]').text()
+
 describe('DashboardPage month navigation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -72,5 +75,57 @@ describe('DashboardPage month navigation', () => {
     expect(
       wrapper.find('[data-testid="period-nav-next"]').attributes('disabled'),
     ).toBeUndefined()
+  })
+
+  it('re-scopes the category breakdown with the month', async () => {
+    const transactionsRepo = createMockTransactionRepository()
+    // The mock returns the same current-month expense for every query; only
+    // the attribution cursor decides whether the breakdown shows it.
+    const currentMonthExpense = {
+      id: 't1',
+      type: 'expense',
+      amount: 4250,
+      description: '',
+      occurredAt: new Date().toISOString(),
+      accountId: 'a1',
+      categoryId: 'cfood',
+    } as never
+    transactionsRepo.query.mockResolvedValue([currentMonthExpense])
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAll.mockResolvedValue([
+      {
+        version: 1,
+        id: 'cfood',
+        name: 'Food',
+        type: 'expense',
+        icon: '🍔',
+        color: '#FF0000',
+        slug: 'food',
+      },
+    ])
+    const wrapper = mountWithProviders(DashboardPage, {
+      repositories: {
+        transactions: transactionsRepo,
+        accounts: createMockAccountRepository(),
+        categories: categoriesRepo,
+        debtors: createMockDebtorRepository(),
+        debtOperations: createMockDebtOperationRepository(),
+      },
+    })
+    await flushPromises()
+
+    expect(breakdownText(wrapper)).toContain('Food')
+
+    vi.clearAllMocks()
+    transactionsRepo.query.mockResolvedValue([currentMonthExpense])
+    await wrapper.find('[data-testid="period-nav-prev"]').trigger('click')
+    await flushPromises()
+
+    expect(breakdownText(wrapper)).not.toContain('Food')
+
+    await wrapper.find('[data-testid="period-nav-next"]').trigger('click')
+    await flushPromises()
+
+    expect(breakdownText(wrapper)).toContain('Food')
   })
 })

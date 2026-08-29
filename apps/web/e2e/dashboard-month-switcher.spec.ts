@@ -41,11 +41,13 @@ test('month switcher re-scopes month-bound cards and gates the forward step', as
   const label = page.getByTestId('period-nav-label')
   const prev = page.getByTestId('period-nav-prev')
   const next = page.getByTestId('period-nav-next')
+  const breakdown = page.getByTestId('dashboard-category-breakdown')
 
   // Starts on the current month: the expense shows and the forward step is
   // disabled (there is no month after "now").
   await expect(next).toBeDisabled()
   await expect(page.getByText('Monthly shop')).toBeVisible()
+  await expect(breakdown.getByText('Groceries')).toBeVisible()
 
   // Step to the previous month: the expense (dated this month) leaves the
   // month-bound list and the forward step unlocks.
@@ -55,9 +57,11 @@ test('month switcher re-scopes month-bound cards and gates the forward step', as
   await expect(next).toBeEnabled()
   await expect(page.getByText('Monthly shop')).toBeHidden()
   await expect(page.getByText('No transactions found')).toBeVisible()
+  await expect(breakdown.getByText('Groceries')).toBeHidden()
 
   // Back to the current month: the expense reappears, forward locks again.
   await next.click()
   await expect(page.getByText('Monthly shop')).toBeVisible()
+  await expect(breakdown.getByText('Groceries')).toBeVisible()
   await expect(next).toBeDisabled()
 })

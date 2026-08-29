@@ -151,7 +151,7 @@ const stats = computed(() => [
 
     <div class="grid gap-6 xl:grid-cols-3">
       <div class="space-y-6 xl:col-span-2">
-        <CategoryBreakdownCard />
+        <CategoryBreakdownCard :cursor="cursor" />
         <RecentTransactionsCard :range="range" />
       </div>
       <div class="space-y-6">
