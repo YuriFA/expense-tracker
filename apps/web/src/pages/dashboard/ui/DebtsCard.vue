@@ -3,24 +3,48 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/shared/ui/card'
-import { useDebtOperations, totalsByDirection } from '@/entities/debt-operation'
+import {
+  debtorBalanceRows,
+  initialsOf,
+  useDebtOperations,
+  type DebtDirection,
+} from '@/entities/debt-operation'
+import { useDebtors } from '@/entities/debtor'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
-// The two debt directions are independent (debts capability): the card lists
-// each non-zero direction total instead of netting them into one figure.
+// Per-debtor balances (canvas): one row per debtor+direction with a nonzero
+// balance - directions are never netted (debts capability). The «Все» link
+// leads to the full debts page.
 const { t, locale } = useI18n()
-const { data: operations, error, isLoading, refetch } = useDebtOperations()
+const {
+  data: debtors,
+  error: debtorsError,
+  isLoading: debtorsLoading,
+  refetch: refetchDebtors,
+} = useDebtors()
+const {
+  data: operations,
+  error: operationsError,
+  isLoading: operationsLoading,
+  refetch: refetchOperations,
+} = useDebtOperations()
 
-const totals = computed(() => totalsByDirection(operations.value ?? []))
+const isLoading = computed(() => debtorsLoading.value || operationsLoading.value)
+const error = computed(() => debtorsError.value || operationsError.value)
+const refetch = () => Promise.all([refetchDebtors(), refetchOperations()])
 
-// Signs are formatting, not copy - composed in script so templates stay
-// free of raw text (i18n lint).
-const receivableText = computed(() => `+${format(totals.value.receivable)}`)
-const payableText = computed(() => `−${format(totals.value.payable)}`)
+const rows = computed(() => debtorBalanceRows(debtors.value ?? [], operations.value ?? []))
 
 const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.value)
+
+// Signs are formatting, not copy - composed in script (i18n lint).
+const amountText = (direction: DebtDirection, balance: number) =>
+  `${direction === 'receivable' ? '+' : '−'}${format(Math.abs(balance))}`
+
+const directionLabel = (direction: DebtDirection) =>
+  direction === 'receivable' ? t('dashboard.owedToMe') : t('dashboard.owedByMe')
 </script>
 
 <template>
@@ -29,8 +53,9 @@ const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.va
       <CardTitle>{{ t('pages.debts') }}</CardTitle>
       <CardAction>
         <RouterLink
-          class="text-sm text-muted-foreground hover:underline"
+          class="text-xs font-semibold text-primary hover:underline"
           :to="{ path: '/debts' }"
+          data-testid="debts-card-view-all"
         >
           {{ t('recentTransactions.viewAll') }}
         </RouterLink>
@@ -39,34 +64,38 @@ const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.va
     <CardContent>
       <ErrorState v-if="error" @retry="refetch" />
       <template v-else-if="isLoading">
-        <div v-for="n in 2" :key="n" class="flex items-center justify-between gap-2 py-2">
-          <Skeleton class="h-4 w-24" />
+        <div v-for="n in 2" :key="n" class="flex items-center justify-between gap-2 py-3">
+          <Skeleton class="h-9 w-32" />
           <Skeleton class="h-4 w-20" />
         </div>
       </template>
-      <p v-else-if="totals.receivable === 0 && totals.payable === 0" class="py-6 text-sm text-muted-foreground">
+      <p v-else-if="rows.length === 0" class="py-6 text-sm text-muted-foreground">
         {{ t('dashboard.noDebts') }}
       </p>
       <div v-else>
         <div
-          v-if="totals.receivable > 0"
-          class="flex items-center justify-between gap-2 border-b-2 border-b-muted py-2"
-          data-testid="debts-card-receivable"
+          v-for="row in rows"
+          :key="`${row.debtor.id}:${row.direction}`"
+          class="flex items-center justify-between gap-2 border-b border-border py-3 last:border-0"
+          :data-testid="`debts-card-debtor-${row.debtor.id}-${row.direction}`"
         >
-          <p class="text-sm text-muted-foreground">{{ t('dashboard.owedToMe') }}</p>
-          <p class="text-sm font-semibold tabular-nums text-success">
-            {{ receivableText }}
-          </p>
-        </div>
-        <div
-          v-if="totals.payable > 0"
-          class="flex items-center justify-between gap-2 py-2"
-          :class="totals.receivable > 0 ? 'border-b-2 border-b-muted' : ''"
-          data-testid="debts-card-payable"
-        >
-          <p class="text-sm text-muted-foreground">{{ t('dashboard.owedByMe') }}</p>
-          <p class="text-sm font-semibold tabular-nums text-warning">
-            {{ payableText }}
+          <div class="flex min-w-0 items-center gap-3">
+            <span
+              class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-muted-foreground"
+              aria-hidden="true"
+            >
+              {{ initialsOf(row.debtor.name) }}
+            </span>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium">{{ row.debtor.name }}</p>
+              <p class="text-xs text-muted-foreground">{{ directionLabel(row.direction) }}</p>
+            </div>
+          </div>
+          <p
+            class="text-sm font-semibold tabular-nums"
+            :class="row.direction === 'receivable' ? 'text-success' : 'text-warning'"
+          >
+            {{ amountText(row.direction, row.balance) }}
           </p>
         </div>
       </div>

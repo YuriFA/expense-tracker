@@ -1,50 +1,17 @@
 // Pure view-model helpers for the debts screen, ported from the mobile page
-// selectors. Balances derive from the operation history via the package's
-// balance helpers (never stored) - the debts capability's core rule.
+// selectors. The per-debtor balance views (sections, initials) live in the
+// debt-operation entity - the dashboard debts card is their second consumer;
+// only the history helpers stay page-local. Balances derive from the
+// operation history via the package's balance helpers (never stored) - the
+// debts capability's core rule.
 
-import type { Debtor } from '@expense-tracker/api'
 import { calendarDayKey, fullDayLabel } from '@expense-tracker/dates'
 import type { DebtDirection, DebtOperation } from '@/entities/debt-operation'
-import { balanceInDirection } from '@/entities/debt-operation'
 
-interface DebtorView {
-  debtor: Debtor
-  balance: number
-}
-
-export interface DebtorSectionViews {
-  /** Nonzero balances, sorted by balance desc, ties by name. */
-  visible: DebtorView[]
-  /** Zero balances (settled), sorted by name. */
-  settled: DebtorView[]
-}
-
-/**
- * One direction's debtor list. Membership requires at least one operation in
- * that direction - a payable-only debtor never appears under «Owed to me»,
- * not even settled. No netting across directions.
- */
-export function debtorSection(
-  debtors: readonly Debtor[],
-  operations: readonly DebtOperation[],
-  direction: DebtDirection,
-): DebtorSectionViews {
-  const inDirection = new Set(
-    operations.filter((operation) => operation.direction === direction).map((op) => op.debtorId),
-  )
-  const visible: DebtorView[] = []
-  const settled: DebtorView[] = []
-  for (const debtor of debtors) {
-    if (!inDirection.has(debtor.id)) continue
-    const balance = balanceInDirection(operations, debtor.id, direction)
-    ;(balance === 0 ? settled : visible).push({ debtor, balance })
-  }
-  visible.sort(
-    (a, b) => b.balance - a.balance || a.debtor.name.localeCompare(b.debtor.name),
-  )
-  settled.sort((a, b) => a.debtor.name.localeCompare(b.debtor.name))
-  return { visible, settled }
-}
+export {
+  debtorSection,
+  initialsOf,
+} from '@/entities/debt-operation'
 
 export interface DebtorHistoryGroup {
   key: string
@@ -72,15 +39,6 @@ export function debtorHistoryGroups(
     title: fullDayLabel(new Date(dayOperations[0]!.occurredAt), locale),
     operations: dayOperations,
   }))
-}
-
-/** Initials of the first and last word, uppercased; '?' for an empty name. */
-export function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return '?'
-  const first = words[0]![0]!
-  const last = words.length > 1 ? words[words.length - 1]![0]! : ''
-  return (first + last).toUpperCase()
 }
 
 /** The debtor's latest operation timestamp in one direction (null when none). */

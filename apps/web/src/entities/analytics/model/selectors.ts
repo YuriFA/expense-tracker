@@ -60,14 +60,14 @@ export function categoryTotals(
 }
 
 /**
- * Percentage of `total` as a display string: at most two fractional digits
- * with trailing zeros dropped, decimal separator per locale - ru renders
- * "66,33%", en "66.33%". An undefined share (total <= 0) renders as "0%".
+ * Percentage of `total` as a display string, rounded to whole percents -
+ * ru and en both render "66%". An undefined share (total <= 0) renders as
+ * "0%".
  */
 export function percentLabel(part: number, total: number, locale: string): string {
   if (total <= 0) return `0%`
-  const percent = Math.round((part / total) * 10000) / 100
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(percent)}%`
+  const percent = (part / total) * 100
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(percent)}%`
 }
 
 export interface ChartEntry {

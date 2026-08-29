@@ -94,19 +94,19 @@ const stats = computed(() => [
 </script>
 
 <template>
-  <section class="space-y-4">
+  <section class="space-y-6">
     <header>
-      <h1 class="text-3xl font-bold">{{ t('dashboard.overview') }}</h1>
-      <p class="text-sm text-muted-foreground">{{ monthCaption }}</p>
+      <h1 class="text-[32px] font-bold tracking-tight">{{ t('dashboard.overview') }}</h1>
+      <p class="text-base font-medium text-muted-foreground">{{ monthCaption }}</p>
     </header>
 
     <ErrorState v-if="error" @retry="refetch" />
-    <div v-else-if="isLoading" class="grid grid-cols-2 gap-3 xl:grid-cols-4">
-      <Skeleton v-for="n in 4" :key="n" class="h-[72px] rounded-xl" />
+    <div v-else-if="isLoading" class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <Skeleton v-for="n in 4" :key="n" class="h-[124px] rounded-lg" />
     </div>
     <div
       v-else
-      class="grid grid-cols-2 gap-3 xl:grid-cols-4"
+      class="grid grid-cols-2 gap-4 xl:grid-cols-4"
       data-testid="dashboard-stats"
     >
       <StatCard
@@ -121,12 +121,12 @@ const stats = computed(() => [
 
     <QuickActionsCard />
 
-    <div class="grid gap-4 xl:grid-cols-3">
-      <div class="space-y-4 xl:col-span-2">
+    <div class="grid gap-6 xl:grid-cols-3">
+      <div class="space-y-6 xl:col-span-2">
         <CategoryBreakdownCard />
         <RecentTransactionsCard />
       </div>
-      <div class="space-y-4">
+      <div class="space-y-6">
         <AccountsCard />
         <DebtsCard />
       </div>

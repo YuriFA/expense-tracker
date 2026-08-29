@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { currentPeriod, periodToUtcDayRange } from '@expense-tracker/dates'
 import { categoryTotals, periodTotal, percentLabel } from '@/entities/analytics'
 import { useTransactions } from '@/entities/transaction'
 import { CategoryAvatar, useCategories } from '@/entities/category'
+import { NewCategoryDialog } from '@/features/transaction/add'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -12,6 +13,7 @@ import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 // Current-month expense breakdown, derived in memory with the same selectors
 // as the analytics page (analytics capability) - no extra backend aggregate.
+// The dashed footer row opens the shared new-category dialog (expenses).
 const { t, locale } = useI18n()
 const cursor = currentPeriod('month')
 const range = periodToUtcDayRange(cursor)
@@ -41,6 +43,11 @@ const rows = computed(() =>
 )
 
 const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.value)
+
+// The "+" prefix is a glyph, not copy - composed in script (i18n lint).
+const addCategoryLabel = computed(() => `+ ${t('addCategory.newCategory')}`)
+
+const newCategoryOpen = ref(false)
 </script>
 
 <template>
@@ -51,7 +58,7 @@ const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.va
     <CardContent>
       <ErrorState v-if="error" @retry="refetch" />
       <template v-else-if="isLoading">
-        <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-2.5">
+        <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-4">
           <Skeleton class="size-9 rounded-full" />
           <Skeleton class="h-4 flex-1" />
           <Skeleton class="h-4 w-20" />
@@ -64,20 +71,32 @@ const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.va
         <div
           v-for="row in rows"
           :key="row.category.id"
-          class="flex items-center gap-3 border-b border-border/60 py-2.5 last:border-0"
+          class="flex items-center gap-3 border-b border-border py-4 last:border-0"
         >
           <CategoryAvatar
             :icon="row.category.icon"
             :color="row.category.color"
             class="size-9"
           />
-          <p class="min-w-0 flex-1 truncate text-sm font-medium">{{ row.category.name }}</p>
-          <p class="text-sm font-semibold tabular-nums">{{ format(row.totalMinor) }}</p>
-          <p class="w-14 text-right text-xs text-muted-foreground tabular-nums">
-            {{ percentLabel(row.totalMinor, totalMinor, locale) }}
-          </p>
+          <p class="min-w-0 flex-1 truncate text-sm font-semibold">{{ row.category.name }}</p>
+          <div class="text-right">
+            <p class="text-sm font-bold tabular-nums">{{ format(row.totalMinor) }}</p>
+            <p class="text-xs font-medium uppercase text-muted-foreground tabular-nums">
+              {{ percentLabel(row.totalMinor, totalMinor, locale) }}
+            </p>
+          </div>
         </div>
       </div>
+      <button
+        v-if="!error"
+        type="button"
+        class="-mx-4 -mb-4 mt-1 w-full border-t border-dashed border-border py-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground md:-mx-6 md:-mb-6"
+        data-testid="dashboard-add-category"
+        @click="newCategoryOpen = true"
+      >
+        {{ addCategoryLabel }}
+      </button>
     </CardContent>
   </Card>
+  <NewCategoryDialog v-model:open="newCategoryOpen" type="expense" />
 </template>

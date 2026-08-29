@@ -74,27 +74,29 @@ function goToLogin() {
 
 <template>
   <div class="flex h-full flex-col gap-5 p-5">
-    <div class="flex items-center gap-2.5">
+    <!-- The logo doubles as a home link (canvas): the nav item below stays
+         the primary "where am I" anchor, this is a shortcut on top. -->
+    <RouterLink :to="{ path: '/' }" class="flex items-center gap-2.5" data-testid="sidebar-logo">
       <span
-        class="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+        class="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground"
         aria-hidden="true"
       >
         <Wallet class="size-4.5" />
       </span>
-      <span class="text-[15px] font-semibold">{{ t('app.name') }}</span>
-    </div>
+      <span class="text-xl font-bold tracking-tight">{{ t('app.name') }}</span>
+    </RouterLink>
 
-    <nav class="flex flex-col gap-0.5 text-sm">
+    <nav class="flex flex-col gap-1 text-[15px]">
       <RouterLink
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
-        class="flex items-center gap-2.5 rounded-md px-3 py-2 transition-colors"
+        class="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors"
         :class="isActive(item.name) ? 'font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'"
         data-testid="sidebar-nav-link"
         @click="emit('navigate')"
       >
-        <component :is="item.icon" class="size-4" aria-hidden="true" />
+        <component :is="item.icon" class="size-4.5" aria-hidden="true" />
         <span :class="isActive(item.name) ? 'border-b-2 border-primary pb-0.5' : ''">
           {{ item.label }}
         </span>
@@ -103,7 +105,7 @@ function goToLogin() {
 
     <Dialog v-model:open="addOpen">
       <DialogTrigger as-child>
-        <Button data-testid="sidebar-add-operation">
+        <Button size="lg" data-testid="sidebar-add-operation">
           <Plus class="size-4" aria-hidden="true" />
           {{ t('dashboard.addOperation') }}
         </Button>
@@ -121,7 +123,7 @@ function goToLogin() {
       class="mt-auto flex flex-col gap-2.5 border-t border-sidebar-border pt-4"
     >
       <SyncStatusBadge class="w-fit" />
-      <span class="truncate text-xs text-muted-foreground">{{ auth.user?.email }}</span>
+      <span class="truncate text-sm font-medium">{{ auth.user?.email }}</span>
       <Button
         variant="ghost"
         size="sm"

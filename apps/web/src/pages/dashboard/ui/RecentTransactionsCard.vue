@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import RecentTransactions from './RecentTransactions.vue'
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/shared/ui/card'
+import RecentTransactions from './RecentTransactions.vue'
 
 const { t } = useI18n()
 </script>
@@ -9,7 +10,16 @@ const { t } = useI18n()
 <template>
   <Card>
     <CardHeader>
-      <CardTitle class="text-muted-foreground">{{ t('recentTransactions.title') }}</CardTitle>
+      <CardTitle>{{ t('recentTransactions.title') }}</CardTitle>
+      <CardAction>
+        <RouterLink
+          class="text-xs font-semibold text-primary hover:underline"
+          :to="{ path: '/transactions' }"
+          data-testid="recent-transactions-all"
+        >
+          {{ t('recentTransactions.viewAll') }}
+        </RouterLink>
+      </CardAction>
     </CardHeader>
     <CardContent>
       <RecentTransactions />

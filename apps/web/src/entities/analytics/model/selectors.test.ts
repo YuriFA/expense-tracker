@@ -92,11 +92,11 @@ describe('categoryTotals', () => {
 })
 
 describe('percentLabel', () => {
-  it('formats with at most two fraction digits per locale', () => {
-    expect(percentLabel(20113, 30325, 'ru')).toBe('66,32%')
-    expect(percentLabel(20113, 30325, 'en')).toBe('66.32%')
+  it('rounds to whole percents', () => {
+    expect(percentLabel(20113, 30325, 'ru')).toBe('66%')
+    expect(percentLabel(20113, 30325, 'en')).toBe('66%')
     expect(percentLabel(1000, 2000, 'en')).toBe('50%')
-    expect(percentLabel(250, 2000, 'en')).toBe('12.5%')
+    expect(percentLabel(250, 2000, 'en')).toBe('13%')
   })
 
   it('renders 0% for an undefined share', () => {

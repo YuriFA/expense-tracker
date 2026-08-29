@@ -30,16 +30,12 @@ const transferOpen = ref(false)
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+  <div class="flex flex-wrap items-center gap-4">
     <Dialog v-model:open="expenseOpen">
       <DialogTrigger as-child>
-        <Button
-          variant="outline"
-          class="h-11 justify-start gap-3"
-          data-testid="quick-action-expense"
-        >
+        <Button variant="outline" class="h-11 gap-3 bg-card px-4" data-testid="quick-action-expense">
           <span
-            class="flex size-8 items-center justify-center rounded-full bg-warning/10 text-warning"
+            class="flex size-7 items-center justify-center rounded-lg bg-warning/10 text-warning"
             aria-hidden="true"
           >
             <Minus class="size-4" />
@@ -61,13 +57,9 @@ const transferOpen = ref(false)
 
     <Dialog v-model:open="transferOpen">
       <DialogTrigger as-child>
-        <Button
-          variant="outline"
-          class="h-11 justify-start gap-3"
-          data-testid="quick-action-transfer"
-        >
+        <Button variant="outline" class="h-11 gap-3 bg-card px-4" data-testid="quick-action-transfer">
           <span
-            class="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary"
+            class="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary"
             aria-hidden="true"
           >
             <ArrowLeftRight class="size-4" />
@@ -90,12 +82,12 @@ const transferOpen = ref(false)
     <Button
       as-child
       variant="outline"
-      class="h-11 justify-start gap-3 rounded-xl"
+      class="h-11 gap-3 bg-card px-4"
       data-testid="quick-action-income"
     >
       <RouterLink to="/income">
         <span
-          class="flex size-8 items-center justify-center rounded-full bg-success/10 text-success"
+          class="flex size-7 items-center justify-center rounded-lg bg-success/10 text-success"
           aria-hidden="true"
         >
           <Plus class="size-4" />

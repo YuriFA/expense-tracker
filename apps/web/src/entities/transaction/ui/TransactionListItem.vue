@@ -68,7 +68,8 @@ const transactionCurrency = computed<CurrencyCode>(() => {
 const format = (value: number) =>
   formatMoney(value, transactionCurrency.value, locale.value)
 
-const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM YYYY HH:mm', {
+// Short recent-row date: day + month + time, no year («26 авг, 22:41»).
+const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM, HH:mm', {
   locales: locale.value,
 })
 

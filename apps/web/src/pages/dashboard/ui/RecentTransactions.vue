@@ -73,7 +73,7 @@ const openDelete = (transaction: Transaction) => {
 </script>
 
 <template>
-  <ul class="divide-y divide-border/60">
+  <ul class="divide-y divide-border">
     <template v-if="isLoading">
       <TransactionListItemSkeleton v-for="n in 5" :key="n" />
     </template>

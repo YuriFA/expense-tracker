@@ -67,11 +67,12 @@ describe('AnalyticsDetailView', () => {
     expect(wrapper.find('[data-testid="analytics-detail-total"]').text()).toBe('₽303.25')
 
     // The summary row carries the full total and 100%; rows show percentages
-    // against the FULL total (spec scenario: 20 113 of 30 325 = 66,32%).
+    // against the FULL total, rounded to whole percents
+    // (spec scenario: 20 113 of 30 325 = 66%).
     expect(wrapper.find('[data-testid="analytics-total-amount"]').text()).toBe('₽303.25')
     const list = wrapper.find('[data-testid="analytics-category-list"]')
-    expect(list.text()).toContain('66.32%')
-    expect(list.text()).toContain('33.68%')
+    expect(list.text()).toContain('66%')
+    expect(list.text()).toContain('34%')
   })
 
   it('switching the period kind selects the current period of the new kind and re-queries', async () => {

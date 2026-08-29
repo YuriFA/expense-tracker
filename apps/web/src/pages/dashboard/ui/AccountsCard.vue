@@ -38,11 +38,7 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
     <CardContent>
       <ErrorState v-if="error" @retry="refetch" />
       <template v-else-if="isLoading">
-        <div
-          v-for="n in 3"
-          :key="n"
-          class="flex items-center justify-between gap-2 border-b-2 border-b-muted py-2 last:border-0"
-        >
+        <div v-for="n in 3" :key="n" class="flex items-center justify-between gap-2 py-2">
           <Skeleton class="h-4 w-24" />
           <Skeleton class="h-4 w-20" />
         </div>
@@ -51,20 +47,20 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
         <div
           v-for="account in accounts"
           :key="account.id"
-          class="flex items-center justify-between gap-2 border-b-2 border-b-muted py-2 last:border-0"
+          class="flex items-center justify-between gap-2 py-2"
         >
           <RouterLink
             class="text-sm text-muted-foreground hover:underline"
             :to="{ path: '/transactions', query: { accountId: account.id } }"
             >{{ account.name }}</RouterLink
           >
-          <p class="text-sm tabular-nums">
+          <p class="text-sm font-medium tabular-nums">
             {{ format(account.balance, account.currency) }}
           </p>
         </div>
-        <div class="flex items-center justify-between gap-2 pt-2">
-          <p class="text-sm text-muted-foreground">{{ t('dashboard.total') }}</p>
-          <p class="text-sm font-bold tabular-nums">{{ format(totalMinor) }}</p>
+        <div class="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+          <p class="text-xs font-bold uppercase tracking-wider">{{ t('dashboard.total') }}</p>
+          <p class="text-lg font-bold tabular-nums">{{ format(totalMinor) }}</p>
         </div>
       </template>
     </CardContent>
