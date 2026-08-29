@@ -28,7 +28,7 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
     <CardHeader>
       <CardTitle>{{ t('pages.accounts') }}</CardTitle>
       <CardAction>
-        <Button as-child size="icon-sm" class="rounded-full" data-testid="accounts-card-add">
+        <Button as-child size="icon-sm" class="rounded-full!" data-testid="accounts-card-add">
           <RouterLink :to="{ path: '/accounts' }" :aria-label="t('addAccount.newAccount')">
             <Plus class="size-4" aria-hidden="true" />
           </RouterLink>

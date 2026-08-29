@@ -21,7 +21,7 @@ const { t } = useI18n()
         </RouterLink>
       </CardAction>
     </CardHeader>
-    <CardContent>
+    <CardContent class="px-0!">
       <RecentTransactions />
     </CardContent>
   </Card>

@@ -61,7 +61,7 @@ const directionLabel = (direction: DebtDirection) =>
         </RouterLink>
       </CardAction>
     </CardHeader>
-    <CardContent>
+    <CardContent class="px-0!">
       <ErrorState v-if="error" @retry="refetch" />
       <template v-else-if="isLoading">
         <div v-for="n in 2" :key="n" class="flex items-center justify-between gap-2 py-3">
@@ -76,7 +76,7 @@ const directionLabel = (direction: DebtDirection) =>
         <div
           v-for="row in rows"
           :key="`${row.debtor.id}:${row.direction}`"
-          class="flex items-center justify-between gap-2 border-b border-border py-3 last:border-0"
+          class="flex items-center justify-between gap-2 border-b border-border py-3 last:border-0 px-4 md:px-6"
           :data-testid="`debts-card-debtor-${row.debtor.id}-${row.direction}`"
         >
           <div class="flex min-w-0 items-center gap-3">

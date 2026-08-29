@@ -4,9 +4,10 @@ import { isTransferTransaction } from '../model/transaction'
 import type { Transaction } from '../model/types'
 import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, type HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CategoryAvatar } from '@/entities/category'
+import { cn } from '@/shared/lib/utils'
 
 interface AccountRef {
   id: string
@@ -21,7 +22,14 @@ interface CategoryRef {
   color?: string
 }
 
-const { transaction, accounts = [], categories = [], author = null } = defineProps<{
+const {
+  transaction,
+  accounts = [],
+  categories = [],
+  author = null,
+  class: className = '',
+} = defineProps<{
+  class?: HTMLAttributes['class']
   transaction: Transaction
   accounts?: AccountRef[]
   categories?: CategoryRef[]
@@ -65,8 +73,7 @@ const transactionCurrency = computed<CurrencyCode>(() => {
   return account.value?.currency ?? DEFAULT_CURRENCY
 })
 
-const format = (value: number) =>
-  formatMoney(value, transactionCurrency.value, locale.value)
+const format = (value: number) => formatMoney(value, transactionCurrency.value, locale.value)
 
 // Short recent-row date: day + month + time, no year («26 авг, 22:41»).
 const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM, HH:mm', {
@@ -84,7 +91,7 @@ const ARROW = '→'
 <template>
   <!-- Flat divider-separated row (warm-minimal system): the list wrapper
        owns the dividers, the row stays unboxed. -->
-  <li class="flex items-center gap-3 px-1 py-2.5">
+  <li :class="cn('flex items-center gap-3 px-1 py-2.5', className)">
     <CategoryAvatar
       v-if="category"
       :icon="category.icon"
@@ -118,7 +125,11 @@ const ARROW = '→'
         </template>
         <template v-if="author">
           {{ SEPARATOR }}
-          <span :data-testid="`transaction-row-author-${transaction.id}`" :title="t('household.authorMarkerTooltip', { name: author })">{{ author }}</span>
+          <span
+            :data-testid="`transaction-row-author-${transaction.id}`"
+            :title="t('household.authorMarkerTooltip', { name: author })"
+            >{{ author }}</span
+          >
         </template>
       </p>
     </div>

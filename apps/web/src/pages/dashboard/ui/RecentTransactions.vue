@@ -48,12 +48,10 @@ const isLoading = computed(
   () => isLoadingTx.value || isLoadingAccounts.value || isLoadingCats.value,
 )
 const error = computed(
-  () =>
-    transactionsError.value || accountsError.value || categoriesError.value,
+  () => transactionsError.value || accountsError.value || categoriesError.value,
 )
 
-const refetch = () =>
-  Promise.all([refetchTx(), refetchAccounts(), refetchCats()])
+const refetch = () => Promise.all([refetchTx(), refetchAccounts(), refetchCats()])
 
 const editOpen = ref(false)
 const deleteOpen = ref(false)
@@ -91,6 +89,7 @@ const openDelete = (transaction: Transaction) => {
         :accounts="accounts"
         :categories="categories"
         :author="authorLabel(item.authorId)"
+        class="px-4 md:px-6"
       >
         <template #actions="{ transaction }">
           <DropdownMenu>

@@ -35,9 +35,7 @@ const isLoading = computed(() => isLoadingTx.value || isLoadingCategories.value)
 const error = computed(() => txError.value || categoriesError.value)
 const refetch = () => Promise.all([refetchTx(), refetchCategories()])
 
-const totalMinor = computed(() =>
-  periodTotal(transactions.value ?? [], cursor, 'expense'),
-)
+const totalMinor = computed(() => periodTotal(transactions.value ?? [], cursor, 'expense'))
 const rows = computed(() =>
   categoryTotals(transactions.value ?? [], categories.value ?? [], cursor, 'expense'),
 )
@@ -51,11 +49,11 @@ const newCategoryOpen = ref(false)
 </script>
 
 <template>
-  <Card>
+  <Card class="pt-4 md:pt-6 pb-0 md:pb-0">
     <CardHeader>
       <CardTitle>{{ t('dashboard.categoriesTitle') }}</CardTitle>
     </CardHeader>
-    <CardContent>
+    <CardContent class="px-0!">
       <ErrorState v-if="error" @retry="refetch" />
       <template v-else-if="isLoading">
         <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-4">
@@ -71,13 +69,9 @@ const newCategoryOpen = ref(false)
         <div
           v-for="row in rows"
           :key="row.category.id"
-          class="flex items-center gap-3 border-b border-border py-4 last:border-0"
+          class="flex items-center gap-3 border-b border-border px-4 md:px-6 py-4 last:border-0"
         >
-          <CategoryAvatar
-            :icon="row.category.icon"
-            :color="row.category.color"
-            class="size-9"
-          />
+          <CategoryAvatar :icon="row.category.icon" :color="row.category.color" class="size-9" />
           <p class="min-w-0 flex-1 truncate text-sm font-semibold">{{ row.category.name }}</p>
           <div class="text-right">
             <p class="text-sm font-bold tabular-nums">{{ format(row.totalMinor) }}</p>
@@ -90,7 +84,7 @@ const newCategoryOpen = ref(false)
       <button
         v-if="!error"
         type="button"
-        class="-mx-4 -mb-4 mt-1 w-full border-t border-dashed border-border py-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground md:-mx-6 md:-mb-6"
+        class="mt-1 w-full border-t border-dashed border-border py-4 md:py-6 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
         data-testid="dashboard-add-category"
         @click="newCategoryOpen = true"
       >
