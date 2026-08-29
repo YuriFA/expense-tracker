@@ -22,8 +22,9 @@ import (
 const corsMaxAge = 12 * time.Hour
 
 // NewEngine builds the gin engine, wires middleware (request-id, recovery,
-// logging, CORS, spec-driven request validation, auth, rate limit, idempotency)
-// and registers the generated handlers backed by the StrictServerInterface.
+// logging, CSRF origin check, CORS, spec-driven request validation, auth,
+// rate limit, idempotency) and registers the generated handlers backed by the
+// StrictServerInterface.
 func NewEngine(
 	cfg *config.HTTPServer,
 	log *slog.Logger,
@@ -48,6 +49,18 @@ func NewEngine(
 		}
 	}
 
+	router.Use(middleware.RequestID())
+	router.Use(gin.Recovery())
+	router.Use(middleware.SlogLogger(log))
+
+	// ADR-0001 server-side CSRF control: browsers always send Origin on
+	// cross-site mutations, so any non-GET request with a foreign Origin is
+	// rejected with 403 ORIGIN_REJECTED before any state change. Mounted
+	// BEFORE the CORS middleware: gin-contrib/cors pre-empts disallowed
+	// origins with a bare 403, which would hide the machine code clients
+	// switch on (spec: api-hardening).
+	router.Use(middleware.OriginCheck(cfg.CorsConfig.AllowedOrigins, log))
+
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CorsConfig.AllowedOrigins,
 		AllowMethods:     cfg.CorsConfig.AllowedMethods,
@@ -56,9 +69,6 @@ func NewEngine(
 		AllowCredentials: true,
 		MaxAge:           corsMaxAge,
 	}))
-	router.Use(middleware.RequestID())
-	router.Use(gin.Recovery())
-	router.Use(middleware.SlogLogger(log))
 
 	// API docs: served from the embedded spec (the same copy that powers
 	// runtime validation), so the routes work from any working directory
@@ -93,14 +103,23 @@ func NewEngine(
 		},
 	}))
 
-	// Auth (path-aware), rate limit (login + verify), idempotency (create txn).
+	// Auth (path-aware), rate limit (login + verify failure-based, register
+	// count-all-attempts), idempotency (create txn).
 	publicRoutes := publicRouteSet()
 	router.Use(pathAwareAuth(sessions, users, households, log, cfg, publicRoutes))
 	loginRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
 	verifyRL := middleware.NewFailureRateLimiter(cfg.FailureRateLimit.MaxAttempts, cfg.FailureRateLimit.LockoutDuration)
-	router.Use(pathAwareRateLimit(map[string]*middleware.FailureRateLimiter{
-		"POST:/api/auth/login":        loginRL,
-		"POST:/api/auth/verify-email": verifyRL,
+	registerRL := middleware.NewAttemptRateLimiter(
+		cfg.RegisterRateLimit.MaxAttempts, cfg.RegisterRateLimit.LockoutDuration,
+	)
+	router.Use(pathAwareRateLimit(map[string]gin.HandlerFunc{
+		"POST:/api/auth/login":        middleware.RateLimit(loginRL),
+		"POST:/api/auth/verify-email": middleware.RateLimit(verifyRL),
+		"POST:/api/auth/register": middleware.AttemptRateLimit(
+			registerRL,
+			httperr.ErrCodeRegisterRateLimited,
+			"too many registration attempts, please try again later",
+		),
 	}))
 	router.Use(pathAwareIdempotency(idempotency, log))
 
@@ -124,6 +143,7 @@ func validationErrorHandler(c *gin.Context, message string, statusCode int) {
 // (security: [] plus logout, which is idempotent and clears the cookie).
 func publicRouteSet() map[string]bool {
 	return map[string]bool{
+		"GET:/api/health":                       true,
 		"POST:/api/auth/register":               true,
 		"POST:/api/auth/login":                  true,
 		"POST:/api/auth/logout":                 true,
@@ -154,14 +174,17 @@ func isPublic(c *gin.Context, publicRoutes map[string]bool) bool {
 	return publicRoutes[c.Request.Method+":"+c.Request.URL.Path]
 }
 
-func pathAwareRateLimit(limiters map[string]*middleware.FailureRateLimiter) gin.HandlerFunc {
+// pathAwareRateLimit dispatches to the per-path limiter handler; the map mixes
+// limiter kinds (failure-counting for login/verify, count-all-attempts for
+// register), each entry carrying its own rejection shape.
+func pathAwareRateLimit(limiters map[string]gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rl, ok := limiters[c.Request.Method+":"+c.Request.URL.Path]
 		if !ok {
 			c.Next()
 			return
 		}
-		middleware.RateLimit(rl)(c)
+		rl(c)
 	}
 }
 

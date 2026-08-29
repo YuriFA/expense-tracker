@@ -37,7 +37,9 @@ tests). The check applies to every non-GET route, authenticated or not.
 #### Scenario: GET requests are never blocked by the Origin check
 
 - **WHEN** a GET request carries a foreign `Origin`
-- **THEN** the request is processed normally (the check covers non-GET only)
+- **THEN** the Origin check does not reject it; any cross-origin rejection
+  for GET requests comes only from the pre-existing CORS policy, which this
+  requirement leaves unchanged
 
 ### Requirement: Registration rate limit
 

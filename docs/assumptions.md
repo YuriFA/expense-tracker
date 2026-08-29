@@ -27,17 +27,10 @@ spec, ADRs, invariants, openspec specs) is established.
   (distributed or proxy-level limiting) before ever scaling horizontally.
 - **Email delivery provider is unchosen.** The backend mailer is a
   logging stub; verification/reset emails go nowhere.
-- **Registration is not rate-limited** — an explicit TODO in the
-  OpenAPI spec itself (`registerUser` description); only login and
-  verify-email are rate-limited today.
 - **OAuth (Google/VK/Yandex)** is planned.
 
 ## Decided directions (implementation pending)
 
-- **CSRF Origin-check middleware** — decided in
-  `docs/adr/0001-auth-csrf-threat-model.md`; the server-side Origin check
-  on state-changing browser requests is the primary CSRF control and is
-  still an unimplemented work item (until then: SameSite/JSON/CORS only).
 - **Web migrates onto `@expense-tracker/dates`** as the canonical date
   layer — decided 2026-08-20; the app-local `@internationalized/date`
   adapter is the sanctioned temporary exception (invariant #14). Extend

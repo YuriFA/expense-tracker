@@ -17,8 +17,14 @@ export interface paths {
          * Регистрация пользователя
          * @description Создаёт пользователя и сразу стартует сессию (Set-Cookie).
          *
-         *     Registration is not rate-limited (TODO). Login (see `loginUser`) carries
-         *     the per-ClientIP failure rate limit and trusted-proxy policy.
+         *     ## Rate limiting & trusted proxies
+         *
+         *     Registration is rate-limited per **ClientIP**: every attempt counts
+         *     (success or failure — account creation is the abuse, not the failure),
+         *     so after `max_attempts` registrations (default 10) within the lockout
+         *     window (default 1h) the IP is blocked and returns `429` with a
+         *     `Retry-After` header (seconds until unlock). `ClientIP` resolution and
+         *     the trusted-proxy policy are the same as for `loginUser`.
          */
         post: operations["registerUser"];
         delete?: never;
@@ -842,10 +848,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liveness-проба процесса
+         * @description Unauthenticated liveness probe for deployment healthchecks: succeeds
+         *     while the process is serving requests. Deliberately touches no
+         *     session, no database, and no business logic — the database has its
+         *     own container healthcheck; a readiness variant was rejected so DB
+         *     blips tolerated by local-first clients do not bounce the API.
+         */
+        get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Liveness-статус процесса API. */
+        Health: {
+            /**
+             * @description Всегда `ok`, пока процесс обслуживает запросы.
+             * @enum {string}
+             */
+            status: "ok";
+        };
         User: {
             /** Format: uuid */
             id: string;
@@ -2015,6 +2053,23 @@ export interface operations {
                      * @example {
                      *       "code": "USER_ALREADY_EXISTS",
                      *       "message": "user already exists"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Исчерпан бюджет регистраций с этого IP. */
+            429: {
+                headers: {
+                    /** @description Секунд до разблокировки. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "REGISTER_RATE_LIMITED",
+                     *       "message": "too many registration attempts, please try again later"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -3787,6 +3842,26 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Процесс обслуживает запросы. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
         };
     };
 }

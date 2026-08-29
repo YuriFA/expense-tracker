@@ -66,6 +66,19 @@ const (
 	ErrCodeHouseholdMemberNotFound            = "HOUSEHOLD_MEMBER_NOT_FOUND"
 	ErrCodeHouseholdMemberIsOwner             = "HOUSEHOLD_MEMBER_IS_OWNER"
 	ErrCodeHouseholdDissolveConfirmRequired   = "HOUSEHOLD_DISSOLVE_CONFIRM_REQUIRED"
+
+	// Transport-hardening codes (api-hardening change): unlike the domain
+	// sentinels mapped in errormap.go, these are written directly by their
+	// middleware via httperr.Write (middleware rejections cannot flow
+	// through the strict-handler error mapper).
+
+	// ErrCodeOriginRejected is the 403 for non-GET requests whose Origin is
+	// outside the CORS allowlist (ADR-0001 CSRF control).
+	ErrCodeOriginRejected = "ORIGIN_REJECTED"
+
+	// ErrCodeRegisterRateLimited is the 429 for over-budget registration
+	// attempts from one client IP (count-all-attempts limiter).
+	ErrCodeRegisterRateLimited = "REGISTER_RATE_LIMITED"
 )
 
 type ErrorResponse struct {

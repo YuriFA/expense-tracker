@@ -25,6 +25,9 @@ origin), `prod.yaml` sets `secure: true` with explicit origins.
    `transport/http/middleware/origin.go`, mounted after
    request-id/logger, before routing: if method != GET and `Origin` is
    present and not an exact member of `cors.allowed_origins` → reject.
+   Implementation note: it mounts BEFORE the CORS middleware (which moved
+   after the logger) — gin-contrib/cors pre-empts disallowed origins with
+   a bare 403, which would hide the `ORIGIN_REJECTED` machine code.
    Alternative: exempt auth endpoints — rejected: registration/login are
    the juiciest CSRF targets for cookie-less attacks and the rule is
    cheaper to reason about uniform.
@@ -32,8 +35,12 @@ origin), `prod.yaml` sets `secure: true` with explicit origins.
    matches nothing and logs a startup warning (ADR-0001 finding A6 makes
    explicit origins a correctness dependency — fail closed, visibly).
 3. **Rejection shape**: HTTP 403 with a new machine code `ORIGIN_REJECTED`
-   through the existing errormap (invariant #4; additive — clients fall
-   back to generic handling for unknown codes).
+   (invariant #4; additive — clients fall back to generic handling for unknown
+   codes). Implementation note: written directly via `httperr.Write` with the
+   code constant in `httperr` — the errormap (`writeDomainError`) is driven by
+   the strict-handler `HandlerErrorFunc` and is unreachable from middleware;
+   direct-write is the established pattern (RateLimit, AuthRequired,
+   Idempotency).
 4. **Register limiter counts every attempt, not failures.** Account
    creation is the abuse; a "failure-based" counter would never trip.
    Extend the middleware family with a sibling of `FailureRateLimiter`
@@ -77,3 +84,23 @@ previous image; no persisted state introduced (limiters are in-memory).
 
 None — limiter defaults (10/h) can be retuned via config later without
 spec or code-shape changes.
+
+## Deviations during implementation
+
+- **Wildcard origins panic at startup, not warn-only.** D2 said "matches
+  nothing and logs a startup warning"; the shipped server refuses to boot
+  on wildcard/empty entries (`server.go` panics before the engine is built),
+  and the middleware keeps the defensive warn-and-skip. Fail closed at boot
+  beats fail closed per-request — a misconfigured prod origin allowlist is
+  caught by the deploy, not by the first user.
+- **Origin check mounts before CORS** (CORS moved one slot down): the CORS
+  middleware pre-empts disallowed origins with a bare 403 that would hide
+  the `ORIGIN_REJECTED` machine code. Side effect: a foreign-origin GET
+  through the full engine still gets CORS's bare 403 — pre-existing
+  behavior, untouched; the spec's GET scenario is scoped to the Origin
+  check accordingly.
+- **Rejection codes live in `httperr`, written directly** (`httperr.Write`),
+  not in the errormap: `writeDomainError` is driven by the strict-handler
+  error callback and is unreachable from middleware — the established
+  pattern for RateLimit/AuthRequired/Idempotency. Same uniform error
+  shape, centralized code constants.

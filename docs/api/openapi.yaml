@@ -74,6 +74,8 @@ tags:
     description: Хаусхолд (общее семейное пространство) и профиль пользователя
   - name: Sync
     description: Синхронизация offline-first клиентов (push/pull с change-log)
+  - name: Health
+    description: Операционные эндпоинты (liveness-проба для деплоя)
 
 security:
   - sessionCookie: []
@@ -87,8 +89,14 @@ paths:
       description: |
         Создаёт пользователя и сразу стартует сессию (Set-Cookie).
 
-        Registration is not rate-limited (TODO). Login (see `loginUser`) carries
-        the per-ClientIP failure rate limit and trusted-proxy policy.
+        ## Rate limiting & trusted proxies
+
+        Registration is rate-limited per **ClientIP**: every attempt counts
+        (success or failure — account creation is the abuse, not the failure),
+        so after `max_attempts` registrations (default 10) within the lockout
+        window (default 1h) the IP is blocked and returns `429` with a
+        `Retry-After` header (seconds until unlock). `ClientIP` resolution and
+        the trusted-proxy policy are the same as for `loginUser`.
       security: []
       requestBody:
         required: true
@@ -139,6 +147,20 @@ paths:
               example:
                 code: USER_ALREADY_EXISTS
                 message: user already exists
+        "429":
+          description: Исчерпан бюджет регистраций с этого IP.
+          headers:
+            Retry-After:
+              description: Секунд до разблокировки.
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                code: REGISTER_RATE_LIMITED
+                message: too many registration attempts, please try again later
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -1989,6 +2011,26 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Liveness-проба процесса
+      description: |
+        Unauthenticated liveness probe for deployment healthchecks: succeeds
+        while the process is serving requests. Deliberately touches no
+        session, no database, and no business logic — the database has its
+        own container healthcheck; a readiness variant was rejected so DB
+        blips tolerated by local-first clients do not bounce the API.
+      security: []
+      responses:
+        "200":
+          description: Процесс обслуживает запросы.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -2273,6 +2315,16 @@ components:
             message: planned payment version conflict
 
   schemas:
+    Health:
+      type: object
+      description: Liveness-статус процесса API.
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Всегда `ok`, пока процесс обслуживает запросы.
+
     User:
       type: object
       properties:

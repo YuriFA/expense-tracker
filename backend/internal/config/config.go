@@ -50,7 +50,8 @@ type DatabaseConfig struct {
 }
 
 type HTTPServer struct {
-	FailureRateLimit `yaml:"failure_rate_limit"`
+	FailureRateLimit  `yaml:"failure_rate_limit"`
+	RegisterRateLimit `yaml:"register_rate_limit"`
 
 	Address        string        `yaml:"address"         env-default:"localhost:8080"`
 	ReadTimeout    time.Duration `yaml:"read_timeout"    env-default:"5s"`
@@ -64,6 +65,14 @@ type HTTPServer struct {
 type FailureRateLimit struct {
 	MaxAttempts     int           `yaml:"max_attempts"     env:"FAILURE_RATE_LIMIT_MAX_ATTEMPTS"     env-default:"5"`
 	LockoutDuration time.Duration `yaml:"lockout_duration" env:"FAILURE_RATE_LIMIT_LOCKOUT_DURATION" env-default:"15m"`
+}
+
+// RegisterRateLimit throttles POST /api/auth/register per client IP. Unlike
+// FailureRateLimit, every attempt counts (success or failure): account
+// creation is the abuse, not the failure.
+type RegisterRateLimit struct {
+	MaxAttempts     int           `yaml:"max_attempts"     env:"REGISTER_RATE_LIMIT_MAX_ATTEMPTS"     env-default:"10"`
+	LockoutDuration time.Duration `yaml:"lockout_duration" env:"REGISTER_RATE_LIMIT_LOCKOUT_DURATION" env-default:"1h"`
 }
 
 type SessionConfig struct {

@@ -82,9 +82,11 @@ migrations). `make gen-check` is the CI drift gate. Both generated trees are com
   env-defaults to zero-value fields, which silently flips an explicit
   `secure: false` (plain-HTTP local dev; RN/iOS won't send Secure cookies
   over http) back to true. Every yaml sets it explicitly.
-- CSRF: the server-side Origin check on state-changing browser requests is
-  decided (ADR-0001) but NOT yet implemented - do not treat the current
-  SameSite/JSON/CORS layers as the final posture.
+- CSRF: the server-side Origin check on state-changing (non-GET) requests
+  is implemented (`middleware/origin.go`, ADR-0001; spec `api-hardening`):
+  requests with a foreign `Origin` are rejected 403 `ORIGIN_REJECTED`;
+  requests without `Origin` (native clients) pass. SameSite/JSON/CORS
+  remain defense-in-depth layers, not the primary control.
 
 ## Cross-cutting
 

@@ -185,7 +185,8 @@ func testCfg() *config.HTTPServer {
 			SameSite:          "lax",
 			SlidingExpiration: true,
 		},
-		FailureRateLimit: config.FailureRateLimit{MaxAttempts: 100, LockoutDuration: time.Minute},
+		FailureRateLimit:  config.FailureRateLimit{MaxAttempts: 100, LockoutDuration: time.Minute},
+		RegisterRateLimit: config.RegisterRateLimit{MaxAttempts: 100, LockoutDuration: time.Minute},
 	}
 }
 
