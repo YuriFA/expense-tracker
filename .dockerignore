@@ -1,0 +1,39 @@
+# Applies to builds with the repo root as context (apps/web/Dockerfile).
+# Keeps the context small and keeps host state (node_modules, build
+# artifacts, env files with secrets) out of the image.
+
+# VCS / CI / agent tooling
+.git
+.github
+.zcode
+.agents
+.superdesign
+skills-lock.json
+
+# Host dependency installs (platform binaries would poison the build)
+node_modules
+**/node_modules
+
+# Build outputs and test artifacts (rebuilt inside the image)
+apps/web/dist
+apps/web/playwright-report
+apps/web/test-results
+**/coverage
+
+# Env files: nothing in the image build should read them, and they must
+# never leak into a layer (vite would silently bake VITE_* vars in).
+**/.env
+**/.env.*
+
+# Not part of the web build. apps/mobile keeps ONLY its package.json:
+# the pnpm workspace graph (and lockfile importers) reference it, but
+# its sources/test artifacts (.maestro output, .expo) never enter a
+# web image.
+apps/mobile/*
+!apps/mobile/package.json
+backend
+docs
+openspec
+CLAUDE.md
+AGENTS.md
+*.log

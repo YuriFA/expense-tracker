@@ -1,0 +1,146 @@
+# docker-compose.prod.yml — production stack on the VPS.
+#
+# Runs behind the shared Traefik gateway (~/gateway): Traefik owns host
+# ports 80/443 and terminates TLS; this stack joins the external `web`
+# network and publishes no host ports of its own.
+#
+# Usage (VPS, ~/expense-tracker with a filled-in .env — see
+# .env.production.example):
+#   docker network create web 2>/dev/null || true
+#   IMAGE_TAG=<tag> docker compose -f docker-compose.prod.yml pull
+#   IMAGE_TAG=<tag> docker compose -f docker-compose.prod.yml up -d
+#
+# Images are built and pushed by .github/workflows/deploy.yml:
+#   api:  ghcr.io/<owner>/<repo>:<tag>
+#   web:  ghcr.io/<owner>/<repo>-web:<tag>
+# Env names mirror backend/internal/config env tags (config.go).
+
+name: expense-tracker
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: expense-tracker-db
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    expose:
+      - "5432"
+
+  api:
+    image: ghcr.io/${GHCR_REPO:?set in .env}:${IMAGE_TAG:-main}
+    container_name: expense-tracker-api
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    environment:
+      # Internal network only — no published database port anywhere.
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      # CSRF/origin allowlist (ADR-0001) and gateway proxy trust — both
+      # deployment facts, set explicitly in .env.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?set in .env}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:?set in .env}
+      SESSION_SECURE: ${SESSION_SECURE:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      # Boot runs migrations before serving.
+      start_period: 15s
+    expose:
+      - "8080"
+    networks:
+      - default
+      - web
+    labels:
+      - "traefik.enable=true"
+      # Route over the shared gateway network, not the stack's default one.
+      - "traefik.docker.network=web"
+      # Autoheal restarts this container when its healthcheck fails.
+      - "autoheal=true"
+      # Higher priority than the web router: the Host rule alone would
+      # also swallow /api/*.
+      - "traefik.http.routers.expense-api.rule=Host(`${SITE_ADDRESS:?set in .env}`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.expense-api.priority=100"
+      - "traefik.http.routers.expense-api.entrypoints=websecure"
+      - "traefik.http.routers.expense-api.tls.certresolver=le"
+      - "traefik.http.services.expense-api.loadbalancer.server.port=8080"
+
+  web:
+    image: ghcr.io/${GHCR_REPO:?set in .env}-web:${IMAGE_TAG:-main}
+    container_name: expense-tracker-web
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    expose:
+      - "80"
+    networks:
+      - default
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "autoheal=true"
+      - "traefik.http.routers.expense-web.rule=Host(`${SITE_ADDRESS:?set in .env}`)"
+      - "traefik.http.routers.expense-web.priority=1"
+      - "traefik.http.routers.expense-web.entrypoints=websecure"
+      - "traefik.http.routers.expense-web.tls.certresolver=le"
+      - "traefik.http.services.expense-web.loadbalancer.server.port=80"
+
+  # Restarts containers whose healthcheck fails while the process is still
+  # alive (plain `restart:` only covers exits). Watches the `autoheal`
+  # label on api/web; scoped to this stack's containers by labeling only.
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: expense-tracker-autoheal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      AUTOHEAL_INTERVAL: "10"
+      AUTOHEAL_START_PERIOD: "30"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  default:
+  # Shared with the Traefik gateway and the other sites on the VPS
+  # (created once: `docker network create web`).
+  web:
+    external: true
+
+volumes:
+  pgdata:

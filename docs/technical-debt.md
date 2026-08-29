@@ -24,6 +24,7 @@ or stale entries are removed, not archived.
 
 ## Web
 
+- **`workbox-window` is an undeclared runtime dependency of web** (deploy-vps review): vite-plugin-pwa's virtual module imports it, but it resolves only through the repo's hoisted install (`.npmrc` `node-linker=hoisted`) — a clean isolated install fails. The web Dockerfile copies `.npmrc` as the workaround; the proper fix is declaring `workbox-window` in `apps/web/package.json` (version matching vite-plugin-pwa's workbox) and then dropping the .npmrc coupling.
 - `pages/accounts` edit-account feature has no public API barrel (FSD
   violation).
 - `TransactionsItemsList.vue` binds one shared `editOpen`/`deleteOpen`

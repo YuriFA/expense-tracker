@@ -1,18 +1,36 @@
-name: Build and publish image
+name: Build and deploy
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Existing image tag to deploy (e.g. sha-abc1234, rollback); empty = build from HEAD"
+        required: false
+        default: ""
+
+# One deploy at a time; a queued run deploys the newer commit.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 permissions:
   contents: read
   packages: write
 
 env:
-  SERVER_IMAGE: ghcr.io/${{ github.repository }}
+  REGISTRY: ghcr.io
 
 jobs:
   build:
+    name: Build & push images
+    # Skipped on a rollback dispatch: the pinned tag is already in GHCR.
+    if: inputs.image_tag == ''
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.value }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,30 +39,116 @@ jobs:
         id: image-tag
         run: echo "value=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
+      # GHCR requires lowercase repository names.
+      - name: Resolve GHCR repository
+        id: ghcr-repo
+        run: echo "value=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta-server
+      - name: Extract metadata (api)
+        id: meta-api
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.SERVER_IMAGE }}
+          images: ${{ env.REGISTRY }}/${{ steps.ghcr-repo.outputs.value }}
           tags: |
             type=raw,value=${{ steps.image-tag.outputs.value }}
+            type=raw,value=main
 
-      - name: Build and push
-        id: build-image
+      - name: Build and push api image
         uses: docker/build-push-action@v6
         with:
           context: backend
           push: true
-          tags: ${{ steps.meta-server.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ steps.meta-api.outputs.tags }}
+          cache-from: type=gha,scope=api-build
+          cache-to: type=gha,scope=api-build,mode=max
+
+      - name: Extract metadata (web)
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.ghcr-repo.outputs.value }}-web
+          tags: |
+            type=raw,value=${{ steps.image-tag.outputs.value }}
+            type=raw,value=main
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          # Repo-root context: the web build compiles packages/* from
+          # source (see apps/web/Dockerfile).
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          cache-from: type=gha,scope=web-build
+          cache-to: type=gha,scope=web-build,mode=max
+
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    # Runs after a successful build, or directly on a rollback dispatch
+    # (build skipped). Never runs when the build failed.
+    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (for compose file)
+        uses: actions/checkout@v4
+
+      - name: Resolve deploy tag
+        id: tag
+        run: echo "value=${{ inputs.image_tag || needs.build.outputs.image-tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Copy compose file to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: ~/expense-tracker
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: IMAGE_TAG
+          script: |
+            set -e
+            cd ~/expense-tracker
+
+            # Shared network with the Traefik gateway (idempotent).
+            docker network create web 2>/dev/null || true
+
+            # GHCR pull credentials live in the VPS-side .env
+            # (GHCR_USER/GHCR_TOKEN), not in GitHub secrets.
+            set -a; . ./.env; set +a
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+
+            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull
+            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Prune stale local images for this project (GHCR keeps the
+            # full history; rollback re-pulls).
+            docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" \
+              | grep -E "^ghcr\.io/${GHCR_REPO}(:|-web:)" \
+              | grep -v ":${IMAGE_TAG} " \
+              | awk '{print $2}' \
+              | sort -u \
+              | xargs -r docker rmi || true

@@ -95,3 +95,27 @@ dispatch with the previous `sha-` tag. Teardown: `docker compose down`
 - Exact GHCR repo naming for the web image (`-web` suffix vs
   `<repo>/web`) — implementation picks the simpler workflow expression;
   no spec impact.
+
+## Deviations during implementation
+
+- **Real env name is `CORS_ALLOWED_ORIGINS`**, not the design's guessed
+  `HTTP_SERVER_CORS_ALLOWED_ORIGINS` — wired with the verified tag from
+  `internal/config/config.go`.
+- **The web image build requires the repo `.npmrc`** (`node-linker=hoisted`):
+  vite-plugin-pwa's virtual module imports `workbox-window`, which resolves
+  only through the hoisted layout — it is an undeclared dependency of
+  `apps/web` (clean isolated installs fail). The Dockerfile copies `.npmrc`
+  before install; the proper fix (declaring the dep) is recorded in
+  `docs/technical-debt.md`.
+- **`apps/mobile/.maestro` (~21 GB of local flow output) entered the Docker
+  context** and filled the disk mid-build; `.dockerignore` now keeps only
+  `apps/mobile/package.json` (needed for the pnpm workspace graph).
+- **`autoheal` sidecar added at review time**: plain Docker restarts
+  containers on exit but NOT running-but-unhealthy ones, so the spec's
+  "unhealthy API is restarted" scenario would only hold for dead
+  processes. The sidecar watches the `autoheal=true` label (api, web) and
+  restarts on health failure; the runbook keeps manual restart as the
+  override.
+- **Tasks 3.3 (rollback dispatch) and 5.2 (live smoke) are deploy-time**,
+  as their own wording states — they need the real VPS and stay open until
+  the first deployment runs the runbook checklists.
