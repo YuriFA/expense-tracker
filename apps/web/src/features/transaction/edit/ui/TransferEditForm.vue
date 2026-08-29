@@ -157,7 +157,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       class="-mx-6 -mb-6 mt-1 flex-col gap-3 border-t px-6 py-4 sm:flex-row"
     >
       <DialogClose as-child>
-        <Button type="button" variant="outline" class="w-full sm:flex-1">
+        <Button type="button" variant="secondary" class="w-full sm:flex-1">
           {{ t('editTransaction.cancel') }}
         </Button>
       </DialogClose>

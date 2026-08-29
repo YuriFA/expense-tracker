@@ -130,7 +130,7 @@ async function handleRestore(conflict: LocalSyncConflict) {
           <div v-if="conflict.kind === 'version'" class="mt-3 flex flex-wrap justify-end gap-2">
             <Button
               size="sm"
-              variant="outline"
+              variant="secondary"
               :disabled="asyncStatus === 'loading'"
               @click="handleResolve('keep-local', conflict)"
             >
@@ -148,7 +148,7 @@ async function handleRestore(conflict: LocalSyncConflict) {
             <Button
               v-if="canRestoreAsNew(conflict)"
               size="sm"
-              variant="outline"
+              variant="secondary"
               :disabled="asyncStatus === 'loading' || restoreStatus === 'loading'"
               data-testid="conflict-restore-as-new"
               @click="handleRestore(conflict)"

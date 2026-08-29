@@ -80,7 +80,7 @@ async function goHome(): Promise<void> {
             {{ t('auth.submitSignIn') }}
           </RouterLink>
         </Button>
-        <Button as-child variant="outline" data-testid="invite-page-register-link">
+        <Button as-child variant="secondary" data-testid="invite-page-register-link">
           <RouterLink :to="{ name: 'register', query: { redirect: invitePath } }">
             {{ t('auth.submitSignUp') }}
           </RouterLink>
@@ -99,7 +99,7 @@ async function goHome(): Promise<void> {
         <p v-if="auth.user?.email" class="text-sm">
           {{ t('auth.signedInAs') }}: {{ auth.user.email }}
         </p>
-        <Button as-child variant="outline">
+        <Button as-child variant="secondary">
           <RouterLink :to="{ name: 'home' }">{{ t('household.invite.backHome') }}</RouterLink>
         </Button>
       </CardContent>
@@ -111,7 +111,7 @@ async function goHome(): Promise<void> {
       </CardHeader>
       <CardContent class="flex flex-col gap-3">
         <p class="text-sm text-muted-foreground">{{ deadMessage }}</p>
-        <Button as-child variant="outline">
+        <Button as-child variant="secondary">
           <RouterLink :to="{ name: 'home' }">{{ t('household.invite.backHome') }}</RouterLink>
         </Button>
       </CardContent>

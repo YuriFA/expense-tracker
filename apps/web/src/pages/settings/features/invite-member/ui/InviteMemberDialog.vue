@@ -53,7 +53,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
 <template>
   <Dialog v-model:open="open">
     <DialogTrigger as-child>
-      <Button variant="outline" data-testid="household-invite-button">
+      <Button variant="secondary" data-testid="household-invite-button">
         {{ t('household.inviteAction') }}
       </Button>
     </DialogTrigger>

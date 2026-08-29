@@ -17,7 +17,7 @@ const handleSubmit = () => {
 <template>
   <Sheet v-model:open="open">
     <SheetTrigger as-child>
-      <Button variant="outline"><ListFilterIcon /> {{ t('transactions.filter') }}</Button>
+      <Button variant="secondary"><ListFilterIcon /> {{ t('transactions.filter') }}</Button>
     </SheetTrigger>
     <!-- Drawer specimen: bordered full-bleed header, scrolling filter body,
          footer pair pinned by the form itself. -->

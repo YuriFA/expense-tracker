@@ -63,8 +63,9 @@
   --popover-foreground: #221d16;
   --primary: #0f766e;
   --primary-foreground: #ffffff;
-  --secondary: #eee7db;
-  --secondary-foreground: #52483a;
+  --secondary: #f0e9dd;
+  --secondary-foreground: #221d16;
+  --secondary-hover: #e9e1d2;
   --muted: #f0e9dc;
   --muted-foreground: #8a8072;
   --accent: #d9efec;
@@ -99,6 +100,7 @@
   --primary-foreground: #06201c;
   --secondary: #332c22;
   --secondary-foreground: #e6ddcd;
+  --secondary-hover: #3d352a;
   --muted: #262119;
   --muted-foreground: #a89c8a;
   --accent: #1f3a35;

@@ -200,7 +200,7 @@ onMounted(() => {
           <CardTitle>{{ t('auth.verifyEmailPrompt') }}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button as-child variant="outline">
+          <Button as-child variant="secondary">
             <RouterLink :to="{ name: 'verify-email' }">{{ t('auth.verifyEmailTitle') }}</RouterLink>
           </Button>
         </CardContent>
@@ -326,9 +326,9 @@ onMounted(() => {
               {{ t('common.errorState.retry') }}
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+              class="text-destructive hover:bg-destructive/10 hover:text-destructive"
               :loading="revoking"
               @click="revokeOtherSessions"
             >

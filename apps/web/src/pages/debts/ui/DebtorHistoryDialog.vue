@@ -159,7 +159,7 @@ const editDebtorOpen = ref(false)
         </div>
         <div class="grid w-full grid-cols-2 gap-3">
           <Button
-            variant="outline"
+            variant="secondary"
             data-testid="debts-new-repayment"
             @click="openCreate('repayment')"
           >

@@ -81,7 +81,7 @@ function notifyError(error: unknown, action: string): void {
 <template>
   <Dialog v-model:open="open">
     <DialogTrigger as-child>
-      <Button variant="outline" data-testid="household-invitations-button">
+      <Button variant="secondary" data-testid="household-invitations-button">
         {{ t('household.invitationsTitle') }}
       </Button>
     </DialogTrigger>
@@ -117,7 +117,7 @@ function notifyError(error: unknown, action: string): void {
             </span>
             <div v-if="invitation.status === 'pending'" class="flex gap-2">
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 :data-testid="`household-invitation-${invitation.id}-resend`"
                 @click="handleResend(invitation.email)"

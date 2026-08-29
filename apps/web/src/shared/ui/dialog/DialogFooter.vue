@@ -26,7 +26,7 @@ const { t } = useI18n()
   >
     <slot />
     <DialogClose v-if="showCloseButton" as-child>
-      <Button variant="outline">{{ t('common.close') }}</Button>
+      <Button variant="secondary">{{ t('common.close') }}</Button>
     </DialogClose>
   </div>
 </template>

@@ -64,8 +64,9 @@
       --color-card-foreground: #221d16;
       --color-primary: #0f766e;
       --color-primary-foreground: #ffffff;
-      --color-secondary: #eee7db;
-      --color-secondary-foreground: #52483a;
+      --color-secondary: #f0e9dd;
+      --color-secondary-foreground: #221d16;
+      --color-secondary-hover: #e9e1d2;
       --color-muted: #f0e9dc;
       --color-muted-foreground: #8a8072;
       --color-accent: #d9efec;
@@ -99,6 +100,7 @@
       --color-primary-foreground: #06201c;
       --color-secondary: #332c22;
       --color-secondary-foreground: #e6ddcd;
+      --color-secondary-hover: #3d352a;
       --color-muted: #262119;
       --color-muted-foreground: #a89c8a;
       --color-accent: #1f3a35;

@@ -127,7 +127,7 @@ const applyRange = async () => {
 <template>
   <Popover :open="open" @update:open="handleOpenChange">
     <PopoverTrigger as-child>
-      <Button variant="outline"><CalendarIcon /> {{ dateFormatted }}</Button>
+      <Button variant="secondary"><CalendarIcon /> {{ dateFormatted }}</Button>
     </PopoverTrigger>
     <PopoverContent align="start" class="w-auto p-0">
       <div class="flex flex-col gap-4 p-4">
@@ -137,6 +137,7 @@ const applyRange = async () => {
             :key="preset.label"
             variant="outline"
             size="sm"
+            class="rounded-full bg-card"
             :class="{
               'bg-accent text-accent-foreground border-primary':
                 draftRange.start === preset.range.start && draftRange.end === preset.range.end,
@@ -159,7 +160,7 @@ const applyRange = async () => {
         />
 
         <div class="flex items-center justify-end gap-2 border-t pt-4">
-          <Button variant="ghost" @click="open = false">
+          <Button variant="secondary" @click="open = false">
             {{ t('transactions.dateFilter.cancel') }}
           </Button>
           <Button :disabled="isApplyDisabled" @click="applyRange">

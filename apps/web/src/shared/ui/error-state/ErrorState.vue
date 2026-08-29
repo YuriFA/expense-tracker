@@ -22,7 +22,7 @@ const { t } = useI18n()
       <p class="text-sm font-medium">{{ title ?? t('common.errorState.title') }}</p>
       <p v-if="description" class="text-xs text-muted-foreground">{{ description }}</p>
     </div>
-    <Button variant="outline" size="sm" @click="$emit('retry')">
+    <Button variant="secondary" size="sm" @click="$emit('retry')">
       {{ t('common.errorState.retry') }}
     </Button>
   </div>

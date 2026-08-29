@@ -70,7 +70,7 @@ async function handleRevoke(): Promise<void> {
 <template>
   <Dialog v-model:open="open">
     <DialogTrigger as-child>
-      <Button variant="outline" data-testid="household-code-button">
+      <Button variant="secondary" data-testid="household-code-button">
         {{ t('household.codePanelTitle') }}
       </Button>
     </DialogTrigger>
@@ -92,14 +92,14 @@ async function handleRevoke(): Promise<void> {
         <div class="flex flex-wrap gap-2">
           <template v-if="code">
             <Button
-              variant="outline"
+              variant="secondary"
               data-testid="household-code-copy"
               @click="handleCopy"
             >
               {{ t('household.codeCopy') }}
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               :loading="actions.generateCode.isLoading.value"
               data-testid="household-code-rotate"
               @click="rotateConfirmOpen = true"

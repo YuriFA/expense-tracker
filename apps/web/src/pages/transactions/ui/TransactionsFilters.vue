@@ -85,7 +85,7 @@ const handleReset = async () => {
     </div>
 
     <div class="flex gap-3 border-t border-border px-6 py-5">
-      <Button type="button" variant="outline" class="flex-1" @click="handleReset">
+      <Button type="button" variant="secondary" class="flex-1" @click="handleReset">
         {{ t('transactions.reset') }}
       </Button>
       <Button type="submit" class="flex-1">
