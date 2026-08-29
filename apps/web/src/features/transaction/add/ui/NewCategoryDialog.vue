@@ -77,7 +77,7 @@ async function submit() {
 <template>
   <Dialog v-model:open="open">
     <DialogContent class="sm:max-w-sm" data-testid="new-category-dialog">
-      <DialogHeader>
+      <DialogHeader class="-mx-6 -mt-6 border-b px-6 pb-4">
         <DialogTitle>{{ t('addTransaction.newCategory') }}</DialogTitle>
       </DialogHeader>
       <form id="new-category-form" class="flex flex-col gap-3" @submit.prevent="submit">

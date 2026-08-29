@@ -8,6 +8,7 @@ import type { Category, Transaction } from '@expense-tracker/api'
 import {
   categoryTotals,
   periodTotal,
+  percentLabel,
   toChartEntries,
   type AnalyticsDirection,
 } from '@/entities/analytics'
@@ -43,6 +44,12 @@ const entries = computed(() =>
   }),
 )
 const totalText = computed(() => formatMoney(total.value, displayCurrency.value, locale.value))
+const legendEntries = computed(() =>
+  entries.value.map((entry) => ({
+    ...entry,
+    percent: percentLabel(entry.totalMinor, total.value, locale.value),
+  })),
+)
 const donutEntries = computed<DonutChartEntry[]>(() =>
   entries.value.map((entry) => ({
     id: entry.id,
@@ -86,7 +93,7 @@ const a11yLabel = computed(
           </span>
           <span class="text-sm font-semibold">{{ totalText }}</span>
         </DonutChart>
-        <ChartLegend :entries="entries" />
+        <ChartLegend :entries="legendEntries" />
       </div>
       <p v-else class="py-6 text-sm text-muted-foreground">
         {{ direction === 'expense' ? t('analytics.emptyExpense') : t('analytics.emptyIncome') }}

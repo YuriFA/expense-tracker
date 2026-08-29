@@ -1,6 +1,14 @@
 <script setup lang="ts">
+interface ChartLegendEntry {
+  id: string
+  label: string
+  color: string
+  /** Preformatted share caption (e.g. «72%»), shown muted after the label. */
+  percent?: string
+}
+
 defineProps<{
-  entries: readonly { id: string; label: string; color: string }[]
+  entries: readonly ChartLegendEntry[]
 }>()
 </script>
 
@@ -13,6 +21,9 @@ defineProps<{
         aria-hidden="true"
       />
       <span class="truncate">{{ entry.label }}</span>
+      <span v-if="entry.percent" class="shrink-0 text-xs text-muted-foreground">
+        {{ entry.percent }}
+      </span>
     </li>
   </ul>
 </template>

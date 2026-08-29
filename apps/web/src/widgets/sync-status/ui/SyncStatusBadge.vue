@@ -29,6 +29,9 @@ const view = computed(() => {
       id: 'sync-status-conflicts',
       label: t('sync.status.conflicts', { count: conflicts.value }),
       destructive: true,
+      // Specimen: the conflict pill carries the terracotta wash, unlike the
+      // plain outlined paused pill.
+      tinted: true,
       showSpinner: false,
     }
   }
@@ -37,21 +40,23 @@ const view = computed(() => {
       id: 'sync-status-paused',
       label: t('sync.status.paused'),
       destructive: true,
+      tinted: false,
       showSpinner: false,
     }
   }
   if (engineState.value.running) {
-    return { id: 'sync-status-running', label: t('sync.status.running'), destructive: false, showSpinner: true }
+    return { id: 'sync-status-running', label: t('sync.status.running'), destructive: false, tinted: false, showSpinner: true }
   }
   if (pending.value > 0) {
     return {
       id: 'sync-status-pending',
       label: t('sync.status.pending', { count: pending.value }),
       destructive: false,
+      tinted: false,
       showSpinner: false,
     }
   }
-  return { id: 'sync-status-synced', label: t('sync.status.synced'), destructive: false, showSpinner: false }
+  return { id: 'sync-status-synced', label: t('sync.status.synced'), destructive: false, tinted: false, showSpinner: false }
 })
 
 function activate() {
@@ -69,7 +74,13 @@ function activate() {
     variant="outline"
     size="sm"
     class="h-7 gap-1.5 rounded-full px-3 text-xs font-medium"
-    :class="view.destructive ? 'text-destructive' : 'text-muted-foreground'"
+    :class="
+      view.tinted
+        ? 'border-transparent bg-warning/10 font-semibold text-destructive'
+        : view.destructive
+          ? 'text-destructive'
+          : 'text-muted-foreground'
+    "
     data-testid="sync-status-badge"
     @click="activate"
   >

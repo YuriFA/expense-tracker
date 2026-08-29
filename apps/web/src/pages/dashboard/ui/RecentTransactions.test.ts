@@ -51,7 +51,7 @@ describe('RecentTransactions', () => {
       },
     })
     await flushPromises()
-    const skeletons = wrapper.findAll('.animate-pulse')
+    const skeletons = wrapper.findAll('[data-slot="skeleton"]')
     expect(skeletons.length).toBeGreaterThan(0)
   })
 
@@ -92,7 +92,7 @@ describe('RecentTransactions', () => {
     })
     await flushPromises()
     expect(wrapper.text()).toContain('No transactions found')
-    expect(wrapper.find('.animate-pulse').exists()).toBe(false)
+    expect(wrapper.find('[data-slot="skeleton"]').exists()).toBe(false)
   })
 
   it('renders error state when query fails', async () => {
@@ -112,7 +112,7 @@ describe('RecentTransactions', () => {
     })
     await flushPromises()
     expect(wrapper.text()).toContain('Failed to load')
-    expect(wrapper.find('.animate-pulse').exists()).toBe(false)
+    expect(wrapper.find('[data-slot="skeleton"]').exists()).toBe(false)
   })
 
   it('passes limit option to repository.query', async () => {

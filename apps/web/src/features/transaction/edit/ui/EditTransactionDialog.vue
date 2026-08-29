@@ -45,8 +45,8 @@ const handleSuccess = () => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent>
-      <DialogHeader>
+    <DialogContent class="sm:max-w-[400px]">
+      <DialogHeader class="-mx-6 -mt-6 border-b px-6 pb-4">
         <DialogTitle>{{ t('editTransaction.title') }}</DialogTitle>
         <p
           v-if="author"

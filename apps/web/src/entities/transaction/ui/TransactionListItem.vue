@@ -88,13 +88,13 @@ const ARROW = '→'
       v-if="category"
       :icon="category.icon"
       :color="category.color"
-      class="size-8 text-sm"
+      class="size-10 text-lg"
     />
     <div
       v-if="isTransfer"
-      class="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground"
+      class="flex size-10 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground"
     >
-      <RepeatIcon class="size-4" />
+      <RepeatIcon class="size-5" />
     </div>
     <div class="flex-1">
       <p v-if="transaction.description" class="text-sm font-medium">

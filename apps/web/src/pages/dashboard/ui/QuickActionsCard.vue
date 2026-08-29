@@ -41,8 +41,8 @@ const transferOpen = ref(false)
           {{ t('dashboard.quickActions.expense') }}
         </Button>
       </DialogTrigger>
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent class="sm:max-w-[400px]">
+        <DialogHeader class="-mx-6 -mt-6 border-b px-6 pb-4">
           <DialogTitle>{{ t('analytics.expenses') }}</DialogTitle>
         </DialogHeader>
         <CashflowForm type="expense" cancellable @success="expenseOpen = false" />
@@ -65,8 +65,8 @@ const transferOpen = ref(false)
           {{ t('dashboard.quickActions.transfer') }}
         </Button>
       </DialogTrigger>
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent class="sm:max-w-[400px]">
+        <DialogHeader class="-mx-6 -mt-6 border-b px-6 pb-4">
           <DialogTitle>{{ t('addTransfer.submit') }}</DialogTitle>
         </DialogHeader>
         <TransferForm cancellable @success="transferOpen = false" />

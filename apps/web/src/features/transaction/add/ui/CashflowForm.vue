@@ -175,11 +175,11 @@ const handleSubmit = handleFormSubmit(async (data) => {
                 id="occurred-at"
                 type="button"
                 variant="outline"
-                class="w-full justify-start text-left font-normal"
+                class="w-full justify-between text-left font-normal"
                 :aria-invalid="!!errors.length"
               >
+                <span>{{ occurredAtLabel }}</span>
                 <CalendarIcon class="text-muted-foreground" />
-                {{ occurredAtLabel }}
               </Button>
             </PopoverTrigger>
             <PopoverContent class="w-auto p-0" align="start">
