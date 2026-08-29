@@ -22,12 +22,12 @@
       "fingerprints": {
         ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
-        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "e396cebd576ff3188c51eefb1379f8820beb3eab392a3bfc2f4da9168b93799e",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "7b8f895ccbac17c5441b838cc74b2b1a55bd34f9db69de3c9c64617c4cf31211",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a4726bc2bfa68f748d8b91496f734ab80e6e4d15dacbc4b6248a450f4b93b4a1",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
       },
@@ -60,10 +60,10 @@
           "parentDraftId": "218ec55b-8c4f-434e-b975-9b2a75dd6951"
         },
         "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b": {
-          "title": "Direction D «Бумага» — Warm Minimal Refined",
+          "title": "Синхронизация с реализацией (Транзакции и Категории)",
           "visualDirection": "SELECTED by user. Warm paper #f6f2ec, flat cards #fffdf9 border #e8e0d4 no shadows radius 14, teal #0f766e, underline nav, sidebar shell; v2 = real functionality only (no limits, no progress bars): header Обзор+month, 4 stat cards (Счета/Доходы/Расходы/Долги), Быстрые действия row, Расходы по категориям (amount+percent), right rail Счета+Долги, Недавние транзакции",
           "parentDraftId": "218ec55b-8c4f-434e-b975-9b2a75dd6951",
-          "currentVersion": 2
+          "currentVersion": 4
         },
         "d43bc74a-e574-4a77-9610-1db2c7a97096": {
           "title": "Aurora Direction Redesign",
@@ -71,16 +71,18 @@
           "parentDraftId": "218ec55b-8c4f-434e-b975-9b2a75dd6951"
         },
         "c33e5121-b301-40b6-958b-2cfe7b24a16c": {
-          "title": "Этап 2 — простые компоненты (Бумага)",
-          "visualDirection": "Rev 2: controls aligned to screen canvases - buttons/inputs/selects 12px (not pills), pills only for badges, checkbox specimen, cards 14px"
+          "title": "Кошелёк — Дизайн-система (Бумага) Rev 4",
+          "visualDirection": "Rev 2: controls aligned to screen canvases - buttons/inputs/selects 12px (not pills), pills only for badges, checkbox specimen, cards 14px",
+          "currentVersion": 4
         },
         "182da9a6-e4f9-443e-9c38-2d0d90214639": {
           "title": "Этап 3 — сложные компоненты (Бумага)",
           "visualDirection": "Rev 2: dialog footer buttons 12px (not pills), rest preserved: centered delete confirm, open select, segmented tabs, paper calendar, transaction rows, donut, sync pills, filters drawer"
         },
         "27cb41d8-53ae-45c8-b8ee-1aed289b7a73": {
-          "title": "Этап 4 — блоки главной в состояниях (Бумага)",
-          "visualDirection": "dashboard blocks in data/loading/empty states: stat card, quick actions, category breakdown, accounts, debts, recent transactions, page header"
+          "title": "Refined Dashboard Specimens (Direction D)",
+          "visualDirection": "dashboard blocks in data/loading/empty states: stat card, quick actions, category breakdown, accounts, debts, recent transactions, page header",
+          "currentVersion": 2
         }
       },
       "updatedAt": "2026-08-28T21:51:35.873415+00:00"
@@ -108,12 +110,12 @@
       "fingerprints": {
         ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
-        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "e396cebd576ff3188c51eefb1379f8820beb3eab392a3bfc2f4da9168b93799e",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "7b8f895ccbac17c5441b838cc74b2b1a55bd34f9db69de3c9c64617c4cf31211",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a4726bc2bfa68f748d8b91496f734ab80e6e4d15dacbc4b6248a450f4b93b4a1",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
       },
@@ -126,9 +128,9 @@
       ],
       "drafts": {
         "a34a3cff-d875-41b7-92bf-866f49a43189": {
-          "title": "Аналитика — обзор (Бумага)",
+          "title": "Аналитика — Обзор (Бумага Редакция)",
           "visualDirection": "two overview cards: donut 120 + legend, expenses/income, whole card links to detail",
-          "currentVersion": 1
+          "currentVersion": 2
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -156,12 +158,12 @@
       "fingerprints": {
         ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
-        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "e396cebd576ff3188c51eefb1379f8820beb3eab392a3bfc2f4da9168b93799e",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "7b8f895ccbac17c5441b838cc74b2b1a55bd34f9db69de3c9c64617c4cf31211",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a4726bc2bfa68f748d8b91496f734ab80e6e4d15dacbc4b6248a450f4b93b4a1",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
       },
@@ -204,12 +206,12 @@
       "fingerprints": {
         ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
-        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "e396cebd576ff3188c51eefb1379f8820beb3eab392a3bfc2f4da9168b93799e",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "7b8f895ccbac17c5441b838cc74b2b1a55bd34f9db69de3c9c64617c4cf31211",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a4726bc2bfa68f748d8b91496f734ab80e6e4d15dacbc4b6248a450f4b93b4a1",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
       },
@@ -252,12 +254,12 @@
       "fingerprints": {
         ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
-        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "e396cebd576ff3188c51eefb1379f8820beb3eab392a3bfc2f4da9168b93799e",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "7b8f895ccbac17c5441b838cc74b2b1a55bd34f9db69de3c9c64617c4cf31211",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a4726bc2bfa68f748d8b91496f734ab80e6e4d15dacbc4b6248a450f4b93b4a1",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
       },
@@ -270,9 +272,9 @@
       ],
       "drafts": {
         "24f5fbcc-22b7-49ae-b126-f6a660be1326": {
-          "title": "Планы (Бумага)",
+          "title": "Планы (Бумага) — Синхронизация Стилей",
           "visualDirection": "two type cards with counts + monthly figures, list dialog with recurrence, overdue badge, confirm buttons",
-          "currentVersion": 1
+          "currentVersion": 2
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -300,12 +302,12 @@
       "fingerprints": {
         ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "761e984585423c98a9fc2d35f2231ba862a27bc55e832ae630dc3e28d9cef652",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "60e751865b1f76485cc09ebf04b0230f7587e9d433cf583bbb2586d909830588",
-        "apps/web/src/pages/dashboard/ui/StatCard.vue": "163559c65d69c8cf896b4233bfa2d6432fd0469a8f70c340b047153dcd89a0e6",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "2fb145359c3a0ec72a9d3206937e68de1a87188e3a5f23dbbec9b0cd09b64358",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "755675d2203e3d0e0b78b063e197ff6f0d5b1a2613d35c249236db3ceb9856c1",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a7a8953dae53c32e966cf777cb89bacb38c17c7b32989fb96e3e4a0b36379d84",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "e396cebd576ff3188c51eefb1379f8820beb3eab392a3bfc2f4da9168b93799e",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "7b8f895ccbac17c5441b838cc74b2b1a55bd34f9db69de3c9c64617c4cf31211",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "a4726bc2bfa68f748d8b91496f734ab80e6e4d15dacbc4b6248a450f4b93b4a1",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c"
       },
@@ -318,9 +320,9 @@
       ],
       "drafts": {
         "fda13a35-5814-4290-b3f3-c413b23f58a2": {
-          "title": "Настройки (Бумага)",
+          "title": "Настройки (Бумага) — Обновление заголовков",
           "visualDirection": "flat cards: language, profile, household members + owner actions, sessions",
-          "currentVersion": 1
+          "currentVersion": 2
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
