@@ -8,7 +8,6 @@ import {
 } from '@/shared/ui/select'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
-import { applyTheme } from '@/app/theme'
 import type { Settings } from '@/shared/config/settings'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -36,11 +35,11 @@ const { t, locale, availableLocales } = useI18n()
 const settings = useSettingsStore()
 const auth = useAuthStore()
 
-// Event-handler sync (vue-patterns): the store write and the DOM class
-// bridge happen in this handler, no watcher.
+// Event-handler sync (vue-patterns): the handler only writes the store; the
+// DOM bridge is owned by the app-level theme watcher (setup-theme-watcher),
+// so this page never imports the app layer.
 const onThemeChange = (value: unknown) => {
   settings.theme = value as Settings['theme']
-  applyTheme(settings.theme)
 }
 
 const themes = computed(() => [
