@@ -138,7 +138,7 @@ const applyRange = async () => {
             variant="outline"
             size="sm"
             :class="{
-              'bg-muted border-primary':
+              'bg-accent text-accent-foreground border-primary':
                 draftRange.start === preset.range.start && draftRange.end === preset.range.end,
             }"
             @click="setDraftRange(preset.range)"

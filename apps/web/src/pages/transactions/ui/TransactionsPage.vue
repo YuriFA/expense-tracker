@@ -17,7 +17,7 @@ const handleSuccess = () => {
 <template>
   <section>
     <div class="flex gap-4 justify-between items-center">
-      <h1 class="text-3xl font-bold">{{ t('pages.transactions') }}</h1>
+      <h1 class="text-[32px] font-bold tracking-tight">{{ t('pages.transactions') }}</h1>
 
       <Dialog v-model:open="dialogOpen">
         <DialogTrigger as-child>

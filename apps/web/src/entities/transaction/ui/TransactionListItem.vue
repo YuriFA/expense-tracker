@@ -134,7 +134,7 @@ const ARROW = '→'
       </p>
     </div>
     <p
-      class="text-sm font-semibold"
+      class="min-w-24 text-right text-sm font-semibold tabular-nums"
       :class="{
         'text-success': transaction.type === 'income',
         'text-destructive': transaction.type === 'expense',

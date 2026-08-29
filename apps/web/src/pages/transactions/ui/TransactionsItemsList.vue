@@ -3,6 +3,7 @@ import {
   TransactionListItem,
   TransactionListItemSkeleton,
   useTransactions,
+  type Transaction,
 } from '@/entities/transaction'
 import { useAccounts } from '@/entities/account'
 import { useCategories } from '@/entities/category'
@@ -14,6 +15,7 @@ import { EditTransactionDialog } from '@/features/transaction/edit'
 import { DeleteTransactionDialog } from '@/features/transaction/delete'
 import { ErrorState } from '@/shared/ui/error-state'
 import { EmptyState } from '@/shared/ui/empty-state'
+import { Card } from '@/shared/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,69 +73,82 @@ const visibleTransactions = computed(() =>
   ),
 )
 
+// One dialog instance per flow, hoisted out of the row loop: the kebab sets
+// the active transaction, the dialog pair reads it (same pattern as the
+// dashboard's recent list).
 const editOpen = ref(false)
 const deleteOpen = ref(false)
+const activeTransaction = ref<Transaction | null>(null)
+const pendingDeleteId = ref<string | null>(null)
 
-const openEdit = () => {
+const openEdit = (transaction: Transaction) => {
+  activeTransaction.value = transaction
   editOpen.value = true
 }
 
-const openDelete = () => {
+const openDelete = (transaction: Transaction) => {
+  activeTransaction.value = null
+  pendingDeleteId.value = transaction.id
   deleteOpen.value = true
 }
 </script>
 
 <template>
-  <ul class="divide-y divide-border/60">
-    <template v-if="isLoading">
-      <TransactionListItemSkeleton v-for="n in 5" :key="n" />
-    </template>
-    <li v-else-if="error">
-      <ErrorState @retry="refetch" />
-    </li>
-    <li v-else-if="visibleTransactions.length === 0">
-      <EmptyState :title="t('transactions.noTransactions')" />
-    </li>
-    <template v-else>
-      <TransactionListItem
-        v-for="item in visibleTransactions"
-        :key="item.id"
-        :transaction="item"
-        :accounts="accounts"
-        :categories="categories"
-        :author="authorLabel(item.authorId)"
-      >
-        <template #actions="{ transaction }">
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button variant="ghost" size="icon" :aria-label="t('common.close')">
-                <MoreVertical class="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem @select="openEdit">
-                <Pencil class="size-4" />
-                {{ t('editTransaction.trigger') }}
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" @select="openDelete">
-                <Trash2 class="size-4" />
-                {{ t('deleteTransaction.trigger') }}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+  <!-- The list lives in one white card; rows stay flat divider-separated
+       (warm-minimal system) and the card owns the surface. -->
+  <Card class="gap-0 py-0 md:py-0">
+    <ul class="divide-y divide-border">
+      <template v-if="isLoading">
+        <TransactionListItemSkeleton v-for="n in 5" :key="n" />
+      </template>
+      <li v-else-if="error" class="p-4 md:p-6">
+        <ErrorState @retry="refetch" />
+      </li>
+      <li v-else-if="visibleTransactions.length === 0" class="p-4 md:p-6">
+        <EmptyState :title="t('transactions.noTransactions')" />
+      </li>
+      <template v-else>
+        <TransactionListItem
+          v-for="item in visibleTransactions"
+          :key="item.id"
+          :transaction="item"
+          :accounts="accounts"
+          :categories="categories"
+          :author="authorLabel(item.authorId)"
+          class="px-4 md:px-6"
+        >
+          <template #actions="{ transaction }">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="ghost" size="icon" :aria-label="t('common.close')">
+                  <MoreVertical class="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem @select="openEdit(transaction)">
+                  <Pencil class="size-4" />
+                  {{ t('editTransaction.trigger') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" @select="openDelete(transaction)">
+                  <Trash2 class="size-4" />
+                  {{ t('deleteTransaction.trigger') }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </template>
+        </TransactionListItem>
+      </template>
+    </ul>
 
-          <EditTransactionDialog
-            v-if="transaction"
-            v-model:open="editOpen"
-            :transaction="transaction"
-          />
-          <DeleteTransactionDialog
-            v-if="transaction"
-            v-model:open="deleteOpen"
-            :transaction-id="transaction?.id"
-          />
-        </template>
-      </TransactionListItem>
-    </template>
-  </ul>
+    <EditTransactionDialog
+      v-if="activeTransaction"
+      v-model:open="editOpen"
+      :transaction="activeTransaction"
+    />
+    <DeleteTransactionDialog
+      v-if="pendingDeleteId"
+      v-model:open="deleteOpen"
+      :transaction-id="pendingDeleteId"
+    />
+  </Card>
 </template>
