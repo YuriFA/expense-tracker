@@ -2,7 +2,8 @@
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { CategoryAvatar, useCategories } from '@/entities/category'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
+import { useCategories } from '@/entities/category'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

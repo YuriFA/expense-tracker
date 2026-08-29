@@ -2,7 +2,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { useCategories } from '../model/use-categories'
-import CategoryAvatar from './CategoryAvatar.vue'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { computed } from 'vue'
 
 const props = defineProps<{

@@ -6,7 +6,7 @@ import { useDateFormat } from '@vueuse/core'
 import { RepeatIcon } from '@lucide/vue'
 import { computed, type HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CategoryAvatar } from '@/entities/category'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { cn } from '@/shared/lib/utils'
 
 interface AccountRef {

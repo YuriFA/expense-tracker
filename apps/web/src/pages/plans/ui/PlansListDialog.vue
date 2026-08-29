@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { Category } from '@expense-tracker/api'
 import type { PlannedPayment } from '@/entities/planned-payment'
 import { monthlyTotal } from '@/entities/planned-payment'
-import { CategoryAvatar } from '@/entities/category'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import {
   isPlanOverdue,
   nextDueLabel,
