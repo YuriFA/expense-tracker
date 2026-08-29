@@ -102,7 +102,7 @@ const stats = computed(() => [
 
     <ErrorState v-if="error" @retry="refetch" />
     <div v-else-if="isLoading" class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-      <Skeleton v-for="n in 4" :key="n" class="h-[124px] rounded-lg" />
+      <Skeleton v-for="n in 4" :key="n" class="h-31 rounded-lg" />
     </div>
     <div
       v-else
