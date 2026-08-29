@@ -23,7 +23,7 @@
         "apps/web/src/pages/dashboard/ui/DebtsCard.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "0c14543936113c3ab1c2ed7924bcde71137153b5745ca059526bad5b87954b14",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "a06db87c5b1762d70ceb342154bfdf3cdf85395d20e7a31eb70b7bfb8381bf8d",
@@ -78,8 +78,8 @@
         },
         "c33e5121-b301-40b6-958b-2cfe7b24a16c": {
           "title": "Кошелёк — Дизайн-система (Бумага) Rev 4",
-          "visualDirection": "Rev 2: controls aligned to screen canvases - buttons/inputs/selects 12px (not pills), pills only for badges, checkbox specimen, cards 14px",
-          "currentVersion": 4
+          "visualDirection": "Rev 5: блок «Кнопки и Элементы Управления» реорганизован в полную шкалу: Варианты (primary teal / secondary = тёплая нейтральная #f0e9dd без бордера - выбран из кандидата C / destructive / ghost / link), Размеры sm-default-lg, Икон-кнопки 32/36/40, Состояния (hover/нажата/focus/disabled/loading), Футер диалога (Отмена secondary + Применить primary), На будущее (счётчик, dashed, chip-toggle, segmented, тумблер); остальные карточки без изменений",
+          "currentVersion": 5
         },
         "182da9a6-e4f9-443e-9c38-2d0d90214639": {
           "title": "Этап 3 — сложные компоненты (Бумага)",
@@ -126,7 +126,7 @@
         "apps/web/src/shared/ui/button/Button.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
@@ -174,7 +174,7 @@
         "apps/web/src/shared/ui/button/Button.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
@@ -222,7 +222,7 @@
         "apps/web/src/shared/ui/button/Button.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
@@ -244,7 +244,7 @@
         "7a8e225b-6d02-41e7-8716-508ce0408337": {
           "title": "Долги (Бумага)",
           "visualDirection": "two independent direction summaries, debtor rows with avatars + balances, history dialog with day-grouped ops",
-          "currentVersion": 1
+          "currentVersion": 2
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -270,7 +270,7 @@
         "apps/web/src/shared/ui/button/Button.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
@@ -318,7 +318,7 @@
         "apps/web/src/shared/ui/button/Button.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "8f1e838c3beebaaff79a44ae32f4b8b349724276a9037162b5625111f3848afe",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebarNav.vue": "851f2f23a8ce99f90d90ba3c9417470e77d27fe563a95559866a5ac4d1b1cf4d",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "97d4e4e085c0ba56dc294bd8e8cf5e48f8081f6c2f77cd93308d360d275a0974",
@@ -340,7 +340,7 @@
         "fda13a35-5814-4290-b3f3-c413b23f58a2": {
           "title": "Настройки (Бумага) — Обновление заголовков",
           "visualDirection": "flat cards: language, profile, household members + owner actions, sessions",
-          "currentVersion": 2
+          "currentVersion": 3
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -356,14 +356,15 @@
         "apps/mobile/src/entities/category/config/category-appearance.ts"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "67dccae7911ccaba427e650404db6b422c92eb5e95cc6d47fc13bbe43d88537e",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/features/transaction/add/ui/NewCategoryDialog.vue": "eff01c01853626712c194f09fe249d6836331c07326e164584ba161fb5eaebd5",
         "apps/mobile/src/entities/category/config/category-appearance.ts": "3609629b11d85b5719e9238f4dcdb385303a6eb01bbb0887bf20c4bcee6a227d"
       },
       "drafts": {
         "7fbb8242-8e55-4ad5-9492-e8a6bfd7669a": {
           "title": "Specimen Sheet: New Category Dialog Variants",
-          "visualDirection": "v3: no color picker - emoji set pre-paired to a 12-hue palette, picker tiles are live tinted circles; color auto-assigned at creation (paired color, collision-shifted to nearest free), still stored in DB"
+          "visualDirection": "v3: no color picker - emoji set pre-paired to a 12-hue palette, picker tiles are live tinted circles; color auto-assigned at creation (paired color, collision-shifted to nearest free), still stored in DB",
+          "currentVersion": 5
         }
       },
       "updatedAt": "2026-08-28T22:21:48.830371+00:00"
@@ -397,7 +398,7 @@
         "apps/web/src/app/layout/MobileTopBar.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "0c14543936113c3ab1c2ed7924bcde71137153b5745ca059526bad5b87954b14",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
         "apps/web/src/pages/transactions/ui/TransactionsPage.vue": "e623c8619cbcd0b1f6c7dba0932ca559058be6682aa735a93583b34c4a65ed06",
@@ -433,14 +434,14 @@
         "72fef655-01ac-4f8f-8b24-2c63bb1db64d": {
           "title": "Транзакции — Кошелёк",
           "visualDirection": "v1: pixel-perfect reproduction (indigo); v2: Бумага Direction D restyle; v3 (current): polish pass - centered content (no ml-248), calendar 2026 + range states, preset chips active=teal tint, rows ~56px with min-w amount column, app-pattern empty state (dashed + inbox), kebab menu specimen",
-          "currentVersion": 2
+          "currentVersion": 4
         },
         "2dbe287f-27bf-4a72-8606-2fff81499465": {
           "title": "Транзакции (Mobile) — Кошелёк (Бумага)",
           "visualDirection": "mobile <1024px branch: top bar (hamburger + Кошелёк + sync pill + guest badge), inline drawer nav specimen, full-width toolbar, 7-row list card, 1-month date popover, full-screen filters sheet, states + chips specimens; v3 current (direct edits: chip label «Тип транзакции», 2 rows added, anchor ids)",
           "parentDraftId": "72fef655-01ac-4f8f-8b24-2c63bb1db64d",
           "device": "mobile",
-          "currentVersion": 3
+          "currentVersion": 4
         }
       },
       "updatedAt": "2026-08-29T15:02:37Z"
@@ -473,7 +474,7 @@
         "apps/web/src/shared/ui/card/CardContent.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "0c14543936113c3ab1c2ed7924bcde71137153b5745ca059526bad5b87954b14",
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
         "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
         "apps/web/src/app/layout/AppSidebar.vue": "7f8666c0cc8ed4f924948f38c2d8355297fefa76a56cf022d28a33ccc38775a9",
         "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
@@ -505,17 +506,47 @@
           "title": "Счета — Бумага (Direction D)",
           "visualDirection": "v1 pixel-perfect reproduction (indigo, inline sidebar); v2 Бумага restyle (sd-component AppSidebar, teal, tint hero card, radius 14/12); v3 direct-edit centering fix (removed ml-[248px]); v4 direct-edit polish: uniform card hover (border darkens, no shadow), hero card border #bfe3dd, X close on add/edit dialogs, uniform teal focus rings, error icon 32px, skeleton kebab placeholder, new «Меню счёта (открыто)» specimen",
           "parentDraftId": null,
-          "currentVersion": 4
+          "currentVersion": 5
         },
         "de5404d7-b27e-44be-93ef-23b6f8afcde4": {
           "title": "Счета — Мобильная версия (Direction D)",
           "visualDirection": "mobile <1024px branch: top bar (hamburger + Кошелёк + sync pill + guest badge), inline drawer nav specimen, full-width «Создать» button, tint hero card, stacked 1-col account cards, dialogs (add/edit/delete), kebab menu + states specimens; v2 direct-edit: compact top bar right cluster (sync = icon-only 28px outline circle, guest = teal tint pill cloud-off + «Локально» 11px) + new «Топбар: состояния синхронизации» specimen (synced/running/pending N/paused/conflicts)",
           "parentDraftId": "328d4ba0-f474-438f-8017-8670ef0374af",
           "device": "mobile",
-          "currentVersion": 2
+          "currentVersion": 3
         }
       },
       "updatedAt": "2026-08-29T16:05:25Z"
+    },
+    "design-system-buttons": {
+      "targetKind": "new-ui",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "03be7ab7-e472-4857-bd83-06848418fa21",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/shared/ui/button/index.ts",
+        "apps/web/src/shared/ui/button/Button.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsDateFilter.vue",
+        "apps/web/src/pages/transactions/ui/TransactionsFiltersSheet.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
+        "apps/web/src/shared/ui/button/index.ts": "10749bb1421a0eca94311bb214e9e8d80562499eab7291a4f0f975db23a8d9a2",
+        "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c",
+        "apps/web/src/pages/transactions/ui/TransactionsDateFilter.vue": "a32b4341cc8942b21928a465f41283ac80a55bcca6b20f2d10ecc820510cc379",
+        "apps/web/src/pages/transactions/ui/TransactionsFiltersSheet.vue": "9fece0d2f2e5ab00ada1fc08f0f365c06a25ce2e82cd57f060a15f4818b27e7"
+      },
+      "drafts": {
+        "03be7ab7-e472-4857-bd83-06848418fa21": {
+          "title": "Кнопки — варианты вторичных кнопок (Бумага)",
+          "visualDirection": "v2: только сравнение кандидатов (как сейчас + A-E в тулбаре и состояниях); секции 3-4 (шкала, на будущее) перенесены в драфт дизайн-системы c33e5121; user выбрал C как secondary",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-08-29T17:15:21.293Z",
+      "notes": "Решение: secondary = кандидат C (#f0e9dd fill, ink текст, без бордера, hover #e9e1d2). Зафиксировано в design-system.md (Component rules - Buttons). Раскатка по драфтам (прямыми правками, без генераций): транзакции desktop+mobile v4 (тулбар, футеры поповера/шита, Повторить), счета v5 + mobile v3 (Повторить, Отмена), настройки v3 (5 нейтральных xs-действий -> C, Распустить/Выйти со всех -> danger-ghost), долги v2 (Внести погашение), cat-dialog v5 (Отмена). Сознательно НЕ тронуты: quick-action плитки дашборда (карточные тайлы с цветными иконками), круговые стрелки периода в аналитике (nav-ghost, описаны в системе), teal-outline «Подтвердить» в планах (акцентное подтверждение), селект-триггеры и чипы/пилюли."
     }
-  }
+  },
+  "updatedAt": "2026-08-29T17:43:07.957Z"
 }
