@@ -38,6 +38,6 @@
 - [x] 5.1 Backend: `go test -race ./...`, lint, gen-check; web:
       type-check + unit + lint + i18n:lint; `openspec validate
       app-version-visibility --strict`
-- [ ] 5.2 Deploy-time check (next deploy): `curl
+- [x] 5.2 Deploy-time check (next deploy): `curl
       https://<host>/api/health` shows the sha; browser console shows
       `web sha-… · api sha-…`
