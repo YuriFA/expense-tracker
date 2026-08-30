@@ -121,3 +121,13 @@ dispatch with the previous `sha-` tag. Teardown: `docker compose down`
 - **Tasks 3.3 (rollback dispatch) and 5.2 (live smoke) are deploy-time**,
   as their own wording states — they need the real VPS and stay open until
   the first deployment runs the runbook checklists.
+
+- **Workstation deploy path added post-apply (2026-08-30, by decision):**
+  a root `Makefile` (`make deploy` / `make rollback TAG=sha-…`) mirrors
+  the CI job — derives the GHCR repo from `git remote`, builds both
+  images with the same `sha-<short>` + `main` tags, and runs the same
+  remote sequence (scp compose, VPS-side GHCR login, pull, up, prune).
+  The two paths are interchangeable and share one tag history; the CI
+  path is unchanged. Push credentials live on the workstation (one-time
+  `docker login ghcr.io` with a `write:packages` PAT), the VPS keeps its
+  read-only token.

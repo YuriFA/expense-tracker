@@ -42,6 +42,12 @@
 - [ ] 3.3 Rollback check: manual dispatch with a previous `sha-` tag
       re-creates the stack from it (verified on the VPS at deploy time)
 
+- [x] 3.5 Workstation deploy path: root `Makefile` (`deploy` / `rollback
+      TAG=` / `deploy-remote`) mirroring the workflow — same images, tags,
+      and remote sequence; `.deploy.env` (SSH_TARGET) gitignored and
+      docker-ignored; runbook section added. Added 2026-08-30 post-apply
+      as a second deploy path by decision.
+
 ## 4. Runbook
 
 - [x] 4.1 `docs/deployment.md`: prerequisites (gateway present, DNS A

@@ -69,6 +69,26 @@ tag instead of building (rollback path).
 - **WHEN** a commit lands on the default branch without a manual dispatch
 - **THEN** no images are built and the VPS stack is left untouched
 
+### Requirement: Workstation deploy path
+
+The repository SHALL provide a workstation deploy command that builds the
+same images, pushes them under the same tag vocabulary, and recreates the
+VPS stack with the same result as the CI path. Invoking it with a pinned
+existing image tag SHALL skip the build and deploy that tag (rollback).
+
+#### Scenario: Workstation deploy matches CI state
+
+- **WHEN** an operator runs the workstation deploy command from a checkout
+  of a commit
+- **THEN** the images pushed are the ones that commit builds and the VPS
+  stack is recreated from them, indistinguishable from a CI deploy of the
+  same commit
+
+#### Scenario: Workstation rollback skips the build
+
+- **WHEN** the workstation command runs with a pinned existing image tag
+- **THEN** no images are built and the stack is recreated from that tag
+
 #### Scenario: Pinned tag rollback
 
 - **WHEN** a manual deploy runs with a previous commit's image tag

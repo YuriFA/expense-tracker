@@ -37,3 +37,6 @@ openspec
 CLAUDE.md
 AGENTS.md
 *.log
+
+# Workstation deploy config (local SSH target)
+.deploy.env

@@ -95,6 +95,32 @@ responds regardless; wrong proxies only distort per-IP limiting.
 
 ## Redeploy
 
+## Deploy from a laptop (make deploy)
+
+The repository root Makefile is a second, CI-free deploy path producing
+the same images, tags, and stack state — the two paths are
+interchangeable (use whichever is at hand; GHCR keeps one shared tag
+history).
+
+One-time setup on the workstation:
+
+```bash
+echo 'SSH_TARGET=deploy@<vps-ip>' > .deploy.env   # gitignored; or an ~/.ssh/config alias
+docker login ghcr.io -u <github-user>              # PAT with write:packages
+```
+
+```bash
+make deploy                     # build + push + deploy current HEAD
+make rollback TAG=sha-03aad8d   # redeploy an already-pushed tag (no build)
+```
+
+It derives the GHCR repo from `git remote get-url origin`, builds the
+same two images with `sha-<short>` + `main` tags, and runs the same
+remote sequence as CI (scp compose → GHCR login from the VPS `.env` →
+pull → `up -d --remove-orphans` → prune stale local images).
+
+## Redeploy
+
 Manual only (nothing fires on push): Actions → "Build and deploy" →
 Run workflow, leave `image_tag` empty. CI builds both images from HEAD
 (`sha-<short>` + `main` tags), then SSHes to the VPS:
