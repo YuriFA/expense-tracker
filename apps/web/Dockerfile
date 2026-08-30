@@ -4,8 +4,12 @@
 # the Vite build compiles the workspace TS packages (packages/*) from
 # source, so the whole pnpm workspace must be present.
 #   docker build -f apps/web/Dockerfile .
+#
+# Cross-build at native speed: the node builder runs on the BUILD
+# platform (dist is platform-independent static files); only the final
+# nginx stage targets the deploy platform (--platform linux/amd64).
 
-FROM node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 # Build version logged at startup and cross-checked against /api/health
 # (spec: app-version): the deployed image tag (sha-<short>) from the deploy

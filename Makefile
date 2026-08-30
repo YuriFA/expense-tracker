@@ -20,7 +20,9 @@ GHCR_REPO  ?= $(shell git remote get-url origin 2>/dev/null | sed -E 's,.*github
 DEPLOY_DIR ?= ~/expense-tracker
 # The VPS is amd64; a workstation build (e.g. Apple Silicon) must
 # cross-build for it or the containers crash-loop with exec format
-# error (exit 255). Docker Desktop emulates the target platform.
+# error (exit 255). The Dockerfiles run their builder stages natively
+# ($BUILDPLATFORM) and cross-compile, so only the tiny final stages
+# pull for the target platform.
 PLATFORM  ?= linux/amd64
 
 SHORT_SHA  := $(shell git rev-parse --short HEAD)
