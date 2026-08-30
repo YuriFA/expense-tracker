@@ -76,3 +76,28 @@ are untouched plain files.
 
 - SMTP provider choice (any relay) and the rclone target are operator
   first-boot decisions — deliberately env, not repo, state.
+
+## Deviations during implementation
+
+- **Dump-then-compress, not `pg_dump | gzip`**: without `pipefail` (not
+  available in the sidecar's busybox sh), a failed dump would hide behind
+  gzip's exit code and land an empty-but-valid .gz in retention. The
+  script dumps to a raw file first, compresses second, and removes the
+  raw file after; each step's failure exits non-zero with the retained
+  dumps untouched.
+- **SMTP misconfiguration is fatal at boot** (stronger than the design's
+  plain factory pick): a bogus `SMTP_TLS` refuses to start instead of
+  silently degrading to a mode nobody asked for. A missing `SMTP_HOST`
+  still means the intentional log-only stub, with a clear boot log line.
+- **Entrypoint validates the cron schedule and crashes on a bad one**:
+  busybox crond silently skips invalid schedules — the sidecar would sit
+  idle while looking healthy. A bad `BACKUP_SCHEDULE` now crash-loops
+  visibly instead.
+- **The optional SMTP-sink integration test was skipped**: the exported
+  `SMTPConn`/`SMTPDialFunc` seam lets unit tests drive the full SMTP
+  conversation against a fake conn (messages per kind, TLS mode
+  selection, PLAIN auth, header injection, CRLF, error swallowing), so
+  a live sink adds coverage only for the TCP layer.
+- **`ci.yml` gained a backup-image build smoke** (beyond the change's
+  gate list): the third image had no CI signal at all until the deploy
+  workflow builds it.

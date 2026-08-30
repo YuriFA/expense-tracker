@@ -25,8 +25,6 @@ spec, ADRs, invariants, openspec specs) is established.
   2026-08-20). The backend runs as one replica, which makes the in-memory
   per-IP rate limiter (`middleware/ratelimit.go`) sufficient. Revisit
   (distributed or proxy-level limiting) before ever scaling horizontally.
-- **Email delivery provider is unchosen.** The backend mailer is a
-  logging stub; verification/reset emails go nowhere.
 - **OAuth (Google/VK/Yandex)** is planned.
 
 ## Decided directions (implementation pending)

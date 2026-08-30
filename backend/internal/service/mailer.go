@@ -5,9 +5,11 @@ import (
 	"log/slog"
 )
 
-// Mailer sends transactional auth emails. Real email delivery is out of scope
-// for this rework; the default implementation is a log-only stub. Swap in a
-// real sender (SES, SMTP, ...) by implementing this interface.
+// Mailer sends transactional auth emails. The default implementation is a
+// log-only stub (NewLogMailer, dev default); NewSMTPMailer delivers through
+// an SMTP relay when SMTP_HOST is configured (wiring in cmd picks one).
+// Implementations are best-effort: failures are logged, not returned as
+// flow errors.
 type Mailer interface {
 	SendVerificationCode(ctx context.Context, to, code string) error
 	SendPasswordResetToken(ctx context.Context, to, token string) error

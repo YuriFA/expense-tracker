@@ -1,10 +1,10 @@
 # Deployment runbook
 
 How the expense tracker is built into images and served in production:
-a manual workflow dispatch makes CI build both images, push to GHCR, and
-redeploy the VPS stack over SSH (nothing fires on push — decided
-2026-08-30). The stack joins the VPS's shared Traefik gateway and
-publishes no host ports of its own.
+a manual workflow dispatch makes CI build the images (api, web, backup),
+push to GHCR, and redeploy the VPS stack over SSH (nothing fires on
+push — decided 2026-08-30). The stack joins the VPS's shared Traefik
+gateway and publishes no host ports of its own.
 
 ```
 client → https://<subdomain>
@@ -12,6 +12,8 @@ client → https://<subdomain>
          ├─ Host(<sub>) && PathPrefix(/api/) → api container :8080
          └─ Host(<sub>)                       → web container (nginx) :80
                                                   └─ db (postgres) :5432, internal only
+                                                       └─ backup sidecar: nightly dumps →
+                                                         backups volume (+ rclone off-site)
 ```
 
 ## Pieces
@@ -20,6 +22,7 @@ client → https://<subdomain>
 |---|---|
 | Web image (nginx serving the built PWA) | `apps/web/Dockerfile`, `apps/web/nginx.conf` — GHCR `<repo>-web` |
 | API image (CGO-free Go binary) | `backend/Dockerfile` — GHCR `<repo>` |
+| Backup sidecar (pg_dump + rclone + crond) | `deploy/backup/` — GHCR `<repo>-backup` |
 | Production stack | `docker-compose.prod.yml` + `.env` on the VPS |
 | Build + deploy pipeline | `.github/workflows/deploy.yml` |
 | Environment example | `.env.production.example` |
@@ -60,7 +63,9 @@ scp docker-compose.prod.yml vps:~/expense-tracker/
 
 # secrets + site facts — never commit the real .env
 cp .env.production.example .env
-$EDITOR .env          # SITE_ADDRESS, GHCR_REPO/USER/TOKEN, POSTGRES_PASSWORD, ...
+$EDITOR .env          # SITE_ADDRESS, GHCR_REPO/USER/TOKEN, POSTGRES_PASSWORD,
+                      # SMTP_* (email relay; empty = log-only),
+                      # RCLONE_REMOTE (optional off-site backups, see Backups)
 
 # shared network with the gateway (idempotent)
 docker network create web 2>/dev/null || true
@@ -92,8 +97,6 @@ If it differs from what `.env` says, update `TRUSTED_PROXIES` and
 `docker compose -f docker-compose.prod.yml up -d api` to apply. A
 functional check: hit `https://<subdomain>/api/health` — the API
 responds regardless; wrong proxies only distort per-IP limiting.
-
-## Redeploy
 
 ## Deploy from a laptop (make deploy)
 
@@ -144,13 +147,99 @@ IMAGE_TAG=sha-abc1234 docker compose -f docker-compose.prod.yml pull
 IMAGE_TAG=sha-abc1234 docker compose -f docker-compose.prod.yml up -d --remove-orphans
 ```
 
+## Backups
+
+The `backup` service (image `deploy/backup/`, built and pushed alongside
+api/web) dumps the database nightly and can replicate it off-site:
+
+- **What**: `pg_dump` (plain SQL, `--no-owner --no-privileges`) gzipped to
+  `backups_data:/backups` as `expense-YYYYmmdd-HHMMSS.sql.gz` (UTC).
+- **When**: `BACKUP_SCHEDULE` cron, default `0 3 * * *` (UTC) — 5-field
+  numeric syntax only; anything else crash-loops the container on purpose
+  (busybox crond silently skips unparseable schedules otherwise).
+- **Retention**: 7 most recent daily dumps + the newest dump of each of the
+  4 most recent ISO weeks (~11 files).
+- **Off-site**: `rclone copy /backups $RCLONE_REMOTE` after each successful
+  dump when `RCLONE_REMOTE` is set; a warning is logged each run otherwise.
+- **Failure visibility**: dump or replication failures log `ERROR` and exit
+  non-zero — `docker compose -f docker-compose.prod.yml logs backup`
+  shows it; retained dumps are never touched by a failed run.
+
+### Off-site target setup (once per VPS)
+
+Any rclone backend works (S3, B2, another box over sftp, ...). The remote
+config persists in the `rclone_config` volume; create it with a one-shot
+run (example: S3):
+
+```bash
+cd ~/expense-tracker
+. ./.env  # optional: export RCLONE_CONFIG_* creds instead of pasting them
+docker compose -f docker-compose.prod.yml run --rm --entrypoint rclone backup \
+  config create offsite s3 \
+  provider=AWS access_key_id=AKIA... secret_access_key=... region=eu-central-1
+
+# point the sidecar at it and recreate the service
+echo 'RCLONE_REMOTE=offsite:expense-tracker' >> .env
+docker compose -f docker-compose.prod.yml up -d backup
+
+# verify after the next scheduled run (or a manual one, below)
+docker compose -f docker-compose.prod.yml exec backup rclone ls "$RCLONE_REMOTE"
+```
+
+No off-site target yet? Leave `RCLONE_REMOTE` empty — backups stay
+local-only with a per-run warning (the VPS volume is still the only real
+copy, so set this up before caring about the data).
+
+### Restore procedure
+
+Dumps are owner-agnostic plain SQL: `gunzip -c | psql` into the target.
+On the VPS (point-in-time restore over the current database):
+
+```bash
+cd ~/expense-tracker && set -a; . ./.env; set +a
+
+# 1. Stop writes (the API runs migrations at boot, so it also re-upgrades
+#    an older dump on the way back up).
+docker compose -f docker-compose.prod.yml stop api
+
+# 2. Pick the dump to restore (newest last)
+docker compose -f docker-compose.prod.yml exec backup ls -lt /backups | head
+
+# 3. Reset the schema and pipe the dump in
+#    (docker compose exec needs -T: no tty on a pipe)
+docker compose -f docker-compose.prod.yml exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+docker compose -f docker-compose.prod.yml exec backup \
+  sh -c 'gunzip -c /backups/expense-<stamp>.sql.gz' | \
+  docker compose -f docker-compose.prod.yml exec -T db \
+  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q
+
+# 4. Bring the API back and verify
+docker compose -f docker-compose.prod.yml start api
+curl -fsS https://<subdomain>/api/health
+```
+
+Total loss (fresh VPS/volume): bring the stack up as in First boot, copy a
+kept dump into the new volume (`docker cp` + a temporary bind or
+`rclone copy` from the off-site target), then steps 3-4 above.
+
+This path is proven: the local smoke (change `ops-backups-email`) dumps a
+seeded scratch Postgres, restores into a fresh one, and serves the backed-
+up data through the API. A monthly spot-check keeps it honest:
+
+- [ ] `ls -lt /backups` shows fresh dumps (nightly cadence)
+- [ ] off-site: `exec backup rclone ls "$RCLONE_REMOTE"` lists them too
+- [ ] test-restore the newest dump into a scratch database (laptop or a
+  throwaway container) and eyeball the data
+
 ## Health & logs
 
 ```bash
-docker compose -f docker-compose.prod.yml ps        # health of all three
+docker compose -f docker-compose.prod.yml ps        # health of all services
 docker compose -f docker-compose.prod.yml logs -f api
 docker compose -f docker-compose.prod.yml logs -f web
 docker compose -f docker-compose.prod.yml logs -f db
+docker compose -f docker-compose.prod.yml logs backup   # nightly dump log
 
 # psql into the database
 docker compose -f docker-compose.prod.yml exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
@@ -171,8 +260,10 @@ cd ~/expense-tracker && docker compose -f docker-compose.prod.yml down
 ```
 
 Removes this stack only; the gateway, zvonok, and the `web` network
-are untouched. Add `-v` to also drop the database volume
-(**destructive** — the data has no other copy).
+are untouched. Add `-v` to also drop the database and backups volumes
+(**destructive** — with off-site replication off, the `.env` and rclone
+credentials elsewhere are all that let you rebuild; copy dumps out first,
+see Backups below).
 
 ## Deploy-time smoke checklist
 
@@ -186,4 +277,9 @@ config, or the API surface:
 - [ ] `curl -sI https://<subdomain>/sw.js | grep -i cache-control` → `no-cache`
 - [ ] Register + login round-trip in the web app (session cookie set)
 - [ ] Mobile client: sync push/pull against the subdomain
+- [ ] `docker compose -f docker-compose.prod.yml logs backup` → `backup
+  sidecar ready: schedule ...` (and, if SMTP is configured, a verification
+  email arrives instead of appearing only in `logs api`)
+- [ ] Trigger a manual backup run and watch it succeed:
+  `docker compose -f docker-compose.prod.yml run --rm --entrypoint /app/backup.sh backup`
 - [ ] `docker compose -f docker-compose.prod.yml ps` → all `(healthy)`

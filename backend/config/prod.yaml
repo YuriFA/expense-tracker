@@ -28,3 +28,11 @@ http_server:
 retention:
   tombstone_window: 2160h
   interval: 1h
+# Transactional email relay. The yaml stays empty on purpose: production
+# sets SMTP_HOST/PORT/USER/PASSWORD/FROM/TLS via env (see
+# .env.production.example); empty host would fall back to log-only mailer.
+smtp:
+  host: ""
+  port: 587
+  tls: starttls
+

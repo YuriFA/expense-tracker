@@ -131,6 +131,7 @@ backend/        Go API (Gin + sqlc + Postgres)
 apps/web/       Vue 3 + Vite (Feature-Sliced Design, online-first)
 apps/mobile/    React Native + Expo (Feature-Sliced Design + Expo Router, offline-first)
 packages/       shared TS: api, dates, local-data, money, i18n; shared css: tokens
+deploy/backup/  production backup sidecar image (pg_dump + rclone + crond)
 docs/           architecture, ADRs, assumptions, API policy; docs/api/ = OpenAPI contract
 openspec/       domain behavior specs + proposed changes
 ```

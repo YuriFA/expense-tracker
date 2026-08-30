@@ -60,7 +60,12 @@ func run(cfg *config.Config, log *slog.Logger) error {
 	repo := postgres.NewRepository(pool)
 	log.Info("database initialized")
 
-	srv := newHTTPServer(cfg, repo, log)
+	mailer, err := newMailer(cfg, log)
+	if err != nil {
+		return fmt.Errorf("init mailer: %w", err)
+	}
+
+	srv := newHTTPServer(cfg, repo, log, mailer)
 	log.Info("starting server", slog.String("address", cfg.Address))
 
 	serverErr := make(chan error, 1)
@@ -147,20 +152,52 @@ func startBackgroundJobs(
 	}
 }
 
+// newMailer selects the Mailer from config: an SMTP relay when SMTP_HOST
+// is set, else the log-only stub (local development default). A relay
+// misconfiguration is fatal at boot - silently falling back to log-only
+// delivery would recreate the launch gap this change closes.
+func newMailer(cfg *config.Config, log *slog.Logger) (service.Mailer, error) {
+	if cfg.SMTP.Host == "" {
+		log.Info("SMTP_HOST not set: using log-only mailer (emails are logged, not sent)")
+		return service.NewLogMailer(log), nil
+	}
+	mailer, err := service.NewSMTPMailer(log, service.SMTPMailerConfig{
+		Host:     cfg.SMTP.Host,
+		Port:     cfg.SMTP.Port,
+		User:     cfg.SMTP.User,
+		Password: cfg.SMTP.Password,
+		From:     cfg.SMTP.From,
+		TLSMode:  cfg.SMTP.TLSMode,
+		// Same public origin the household service uses for invitation
+		// links; the reset email builds its link from it too.
+		WebAppBaseURL: cfg.Household.WebAppBaseURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+	log.Info("SMTP mailer configured",
+		slog.String("host", cfg.SMTP.Host),
+		slog.Int("port", cfg.SMTP.Port),
+		slog.String("tls_mode", cfg.SMTP.TLSMode))
+	return mailer, nil
+}
+
 // newHTTPServer wires every service to the single *postgres.Repository, builds
 // the gin engine, and returns a configured *[http.Server] ready to serve.
-func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logger) *http.Server {
+func newHTTPServer(
+	cfg *config.Config, repo *postgres.Repository, log *slog.Logger, mailer service.Mailer,
+) *http.Server {
 	accountSvc := service.NewAccountService(repo)
 	categorySvc := service.NewCategoryService(repo)
 	txnSvc := service.NewTransactionService(repo, repo, repo)
 	debtorSvc := service.NewDebtorService(repo)
 	debtOpSvc := service.NewDebtOperationService(repo, repo)
 	planSvc := service.NewPlannedPaymentService(repo, repo, repo)
-	authSvc := service.NewAuthService(repo, repo, repo, repo, service.NewLogMailer(log), service.AuthConfig{
+	authSvc := service.NewAuthService(repo, repo, repo, repo, mailer, service.AuthConfig{
 		SessionTTL: cfg.SessionConfig.TTL,
 	})
 	sessionSvc := service.NewSessionService(repo)
-	householdSvc := service.NewHouseholdService(repo, repo, service.NewLogMailer(log), log, service.HouseholdJoinConfig{
+	householdSvc := service.NewHouseholdService(repo, repo, mailer, log, service.HouseholdJoinConfig{
 		InvitationTTL:            cfg.Household.InvitationTTL,
 		MaxInvitationSendsPerDay: cfg.Household.MaxInvitationSendsPerDay,
 		WebAppBaseURL:            cfg.Household.WebAppBaseURL,

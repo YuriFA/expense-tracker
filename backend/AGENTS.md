@@ -76,8 +76,11 @@ migrations). `make gen-check` is the CI drift gate. Both generated trees are com
   SHA-256 hashing for password-reset tokens, modulo-bias-free OTP). Never
   roll your own crypto.
 - Fresh session id per login (session-fixation defense); sliding expiration;
-  password reset revokes all sessions. The mailer is a stub interface
-  (`service.Mailer`) - real email delivery is out of scope.
+  password reset revokes all sessions. The mailer is a best-effort
+  interface (`service.Mailer`): the SMTP relay impl (`SMTP_HOST` env →
+  `smtpMailer`, stdlib `net/smtp`) delivers verification/reset/invitation
+  email in prod; without `SMTP_HOST` the log-only stub is the dev default.
+  Failures are logged and never fail the triggering flow.
 - `session.secure` has NO env-default on purpose (config.go): cleanenv applies
   env-defaults to zero-value fields, which silently flips an explicit
   `secure: false` (plain-HTTP local dev; RN/iOS won't send Secure cookies

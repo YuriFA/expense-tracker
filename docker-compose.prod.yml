@@ -58,6 +58,15 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?set in .env}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:?set in .env}
       SESSION_SECURE: ${SESSION_SECURE:-true}
+      # Transactional email relay (verification codes, password resets,
+      # household invitations): any SMTP provider. Empty SMTP_HOST (the
+      # default) keeps the log-only mailer — emails are logged, not sent.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_TLS: ${SMTP_TLS:-starttls}
     depends_on:
       db:
         condition: service_healthy
@@ -119,6 +128,35 @@ services:
       - "traefik.http.routers.expense-web.tls.certresolver=le"
       - "traefik.http.services.expense-web.loadbalancer.server.port=80"
 
+  # Nightly gzipped pg_dump into the backups volume with retention
+  # (7 daily + 4 weekly) and optional off-site replication via rclone
+  # (ops-backups-email). Crond inside the image runs /app/backup.sh on
+  # BACKUP_SCHEDULE; the rclone remote config persists in its own volume
+  # and is set up once at first boot (docs/deployment.md, Backups).
+  backup:
+    image: ghcr.io/${GHCR_REPO:?set in .env}-backup:${IMAGE_TAG:-main}
+    container_name: expense-tracker-backup
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      # Same internal DSN the api uses (defaults live in the image scripts).
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-}
+      BACKUP_RETENTION_DAILY: ${BACKUP_RETENTION_DAILY:-}
+      BACKUP_RETENTION_WEEKLY: ${BACKUP_RETENTION_WEEKLY:-}
+      # Empty = local-only backups; each run logs a warning.
+      RCLONE_REMOTE: ${RCLONE_REMOTE:-}
+    volumes:
+      - backups_data:/backups
+      - rclone_config:/root
+    depends_on:
+      db:
+        condition: service_healthy
+
   # Restarts containers whose healthcheck fails while the process is still
   # alive (plain `restart:` only covers exits). Watches the `autoheal`
   # label on api/web; scoped to this stack's containers by labeling only.
@@ -147,3 +185,6 @@ networks:
 
 volumes:
   pgdata:
+  # Gzipped SQL dumps (expense-YYYYmmdd-HHMMSS.sql.gz) + rclone's config.
+  backups_data:
+  rclone_config:

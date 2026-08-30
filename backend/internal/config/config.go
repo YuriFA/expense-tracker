@@ -17,6 +17,7 @@ type Config struct {
 	Retention      RetentionConfig      `yaml:"retention"`
 	PlannedConfirm PlannedConfirmConfig `yaml:"planned_confirm"`
 	Household      HouseholdConfig      `yaml:"household"`
+	SMTP           SMTPConfig           `yaml:"smtp"`
 }
 
 // RetentionConfig tunes the tombstone retention job: soft-deleted rows older
@@ -39,6 +40,21 @@ type HouseholdConfig struct {
 	InvitationTTL            time.Duration `yaml:"invitation_ttl"               env:"HOUSEHOLD_INVITATION_TTL"               env-default:"168h"` // 7 days
 	MaxInvitationSendsPerDay int           `yaml:"max_invitation_sends_per_day" env:"HOUSEHOLD_MAX_INVITATION_SENDS_PER_DAY" env-default:"20"`
 	WebAppBaseURL            string        `yaml:"web_app_base_url"             env:"HOUSEHOLD_WEB_APP_BASE_URL"             env-default:""`
+}
+
+// SMTPConfig selects the transactional-mail relay (operations change
+// ops-backups-email). An empty Host (the default) keeps the log-only
+// mailer: delivery is disabled unless explicitly configured per
+// environment. TLS mode: "starttls" (default, port 587), "implicit"
+// (tls.Dial first, port 465 style), or "none" (plaintext - local test
+// sinks only; smtp.PlainAuth refuses credentials over plaintext anyway).
+type SMTPConfig struct {
+	Host     string `yaml:"host"     env:"SMTP_HOST"     env-default:""`
+	Port     int    `yaml:"port"     env:"SMTP_PORT"     env-default:"587"`
+	User     string `yaml:"user"     env:"SMTP_USER"     env-default:""`
+	Password string `yaml:"password" env:"SMTP_PASSWORD" env-default:""`
+	From     string `yaml:"from"     env:"SMTP_FROM"     env-default:""`
+	TLSMode  string `yaml:"tls"      env:"SMTP_TLS"      env-default:"starttls"`
 }
 
 // DatabaseConfig tunes the pgxpool connection pool.

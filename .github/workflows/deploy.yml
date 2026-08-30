@@ -101,6 +101,25 @@ jobs:
           cache-from: type=gha,scope=web-build
           cache-to: type=gha,scope=web-build,mode=max
 
+      - name: Extract metadata (backup)
+        id: meta-backup
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.ghcr-repo.outputs.value }}-backup
+          tags: |
+            type=raw,value=${{ steps.image-tag.outputs.value }}
+            type=raw,value=main
+
+      - name: Build and push backup image
+        uses: docker/build-push-action@v6
+        with:
+          # Backup sidecar: pg_dump + rclone + crond (deploy/backup/).
+          context: deploy/backup
+          push: true
+          tags: ${{ steps.meta-backup.outputs.tags }}
+          cache-from: type=gha,scope=backup-build
+          cache-to: type=gha,scope=backup-build,mode=max
+
   deploy:
     name: Deploy to VPS
     needs: build

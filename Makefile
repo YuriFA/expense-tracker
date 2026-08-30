@@ -59,7 +59,7 @@ deploy-remote: deploy-check
 		IMAGE_TAG=$(IMAGE_TAG) docker compose -f docker-compose.prod.yml pull; \
 		IMAGE_TAG=$(IMAGE_TAG) docker compose -f docker-compose.prod.yml up -d --remove-orphans; \
 		docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" \
-			| grep -E "^ghcr\.io/$(GHCR_REPO)(:|-web:)" \
+			| grep -E "^ghcr\.io/$(GHCR_REPO)(:|-web:|-backup:)" \
 			| grep -v ":$(IMAGE_TAG) " \
 			| cut -d" " -f1 \
 			| xargs -r docker rmi || true'

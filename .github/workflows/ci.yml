@@ -130,3 +130,13 @@ jobs:
           tags: expense-tracker-api:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build backup image (smoke)
+        uses: docker/build-push-action@v6
+        with:
+          # Catches rot in the backup sidecar (deploy/backup) on every PR.
+          context: deploy/backup
+          push: false
+          tags: expense-tracker-backup:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

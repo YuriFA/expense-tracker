@@ -30,3 +30,10 @@ http_server:
 retention:
   tombstone_window: 2160h
   interval: 1h
+# Transactional email relay. Empty host = log-only mailer (dev default);
+# values normally come from SMTP_* env vars, not this file.
+smtp:
+  host: ""
+  port: 587
+  tls: starttls
+
