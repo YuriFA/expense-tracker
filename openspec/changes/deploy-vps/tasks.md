@@ -39,7 +39,7 @@
       `GHCR_TOKEN`) → `IMAGE_TAG=<tag> docker compose -f
       docker-compose.prod.yml pull && up -d --remove-orphans` → prune old
       repo images
-- [ ] 3.3 Rollback check: manual dispatch with a previous `sha-` tag
+- [x] 3.3 Rollback check: manual dispatch with a previous `sha-` tag
       re-creates the stack from it (verified on the VPS at deploy time)
 
 - [x] 3.5 Workstation deploy path: root `Makefile` (`deploy` / `rollback
@@ -61,6 +61,13 @@
 - [x] 5.1 Repo gates unaffected: `pnpm -C apps/web build` clean (image
       builds from it), `openspec validate deploy-vps --strict`; compose
       config validates (`docker compose -f docker-compose.prod.yml config`)
-- [ ] 5.2 Live smoke on the VPS at deploy time (runbook checklist):
+- [x] 5.2 Live smoke on the VPS at deploy time (runbook checklist):
       `GET /api/health` via the subdomain, web shell loads, register +
       login round-trip, sync push/pull from a client
+
+Deploy-time notes (2026-08-30): first boot passed behind the live
+zvonok gateway; the web healthcheck IPv6/localhost gotcha and the
+workstation arm64 build issue were found and fixed live (see
+Deviations); rollback was verified BOTH directions with
+`make rollback TAG=sha-03aad8d` → `make rollback TAG=sha-d74a6a5`;
+smoke checklist confirmed by the operator.
