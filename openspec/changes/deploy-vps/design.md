@@ -131,3 +131,9 @@ dispatch with the previous `sha-` tag. Teardown: `docker compose down`
   path is unchanged. Push credentials live on the workstation (one-time
   `docker login ghcr.io` with a `write:packages` PAT), the VPS keeps its
   read-only token.
+- **Workstation builds must cross-build for the VPS (`PLATFORM
+  ?= linux/amd64`)**: the first `make deploy` from an Apple Silicon Mac
+  pushed arm64-only images, and the amd64 VPS crash-looped both api and
+  web with exec format error (exit 255) while Docker-Hub multi-arch
+  services stayed healthy. The Makefile now pins `--platform` (CI is
+  amd64-native and unaffected).

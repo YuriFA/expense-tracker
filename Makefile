@@ -18,6 +18,10 @@
 SSH_TARGET ?= $(error SSH_TARGET is not set: put SSH_TARGET=user@host into .deploy.env (see the header of this Makefile) or pass SSH_TARGET=... on the command line)
 GHCR_REPO  ?= $(shell git remote get-url origin 2>/dev/null | sed -E 's,.*github.com[:/],,; s,\.git$$,,' | tr '[:upper:]' '[:lower:]')
 DEPLOY_DIR ?= ~/expense-tracker
+# The VPS is amd64; a workstation build (e.g. Apple Silicon) must
+# cross-build for it or the containers crash-loop with exec format
+# error (exit 255). Docker Desktop emulates the target platform.
+PLATFORM  ?= linux/amd64
 
 SHORT_SHA  := $(shell git rev-parse --short HEAD)
 API_IMAGE  := ghcr.io/$(GHCR_REPO)
@@ -31,8 +35,8 @@ deploy-check:
 
 ## deploy: build both images from HEAD, push (sha-<short> + main), deploy.
 deploy: deploy-check
-	docker build -t $(API_IMAGE):sha-$(SHORT_SHA) -t $(API_IMAGE):main backend
-	docker build -t $(WEB_IMAGE):sha-$(SHORT_SHA) -t $(WEB_IMAGE):main -f apps/web/Dockerfile .
+	docker build --platform $(PLATFORM) -t $(API_IMAGE):sha-$(SHORT_SHA) -t $(API_IMAGE):main backend
+	docker build --platform $(PLATFORM) -t $(WEB_IMAGE):sha-$(SHORT_SHA) -t $(WEB_IMAGE):main -f apps/web/Dockerfile .
 	docker push $(API_IMAGE):sha-$(SHORT_SHA)
 	docker push $(API_IMAGE):main
 	docker push $(WEB_IMAGE):sha-$(SHORT_SHA)
