@@ -62,7 +62,8 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      # Same IPv6/localhost gotcha as web: pin the address explicitly.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/api/health"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -97,7 +98,9 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      # 127.0.0.1, not localhost: busybox wget resolves localhost to ::1
+      # first, and nginx listens on IPv4 only (listen 80).
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
       interval: 10s
       timeout: 3s
       retries: 3
