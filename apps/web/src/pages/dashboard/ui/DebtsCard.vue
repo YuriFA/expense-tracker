@@ -65,7 +65,7 @@ const directionLabel = (direction: DebtDirection) =>
         <Skeleton class="h-4 w-20" />
       </div>
     </template>
-    <p v-else-if="rows.length === 0" class="py-6 text-sm text-muted-foreground">
+    <p v-else-if="rows.length === 0" class="py-6 px-4 md:px-6 text-sm text-muted-foreground">
       {{ t('dashboard.noDebts') }}
     </p>
     <div v-else>

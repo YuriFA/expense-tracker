@@ -39,7 +39,7 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
         <Skeleton class="h-4 w-20" />
       </div>
     </template>
-    <template v-else>
+    <template v-else-if="accounts && accounts.length > 0">
       <div
         v-for="account in accounts"
         :key="account.id"
@@ -60,5 +60,8 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
         <p class="text-lg font-bold tabular-nums">{{ format(totalMinor) }}</p>
       </div>
     </template>
+    <p v-else class="py-6 text-sm text-muted-foreground">
+      {{ t('accounts.noAccounts') }}
+    </p>
   </DashboardCard>
 </template>

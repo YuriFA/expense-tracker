@@ -47,16 +47,17 @@ describe('AccountsCard', () => {
     expect(wrapper.text()).toContain('₽22.00')
   })
 
-  it('renders the total row for empty accounts list', async () => {
+  it('renders the empty state and zero total for empty accounts list', async () => {
     const repo = createMockAccountRepository()
     repo.getAll.mockResolvedValue([])
     const wrapper = mountWithProviders(AccountsCard, {
       repositories: { accounts: repo },
     })
     await flushPromises()
-    // No account rows, only the add button and the zero total.
+    // Empty-state message instead of account rows; no zero total alongside it.
+    expect(wrapper.text()).toContain('No accounts yet')
     const accountLinks = wrapper.findAll('a').filter((a) => a.attributes('href')?.includes('accountId'))
     expect(accountLinks.length).toBe(0)
-    expect(wrapper.text()).toContain('₽0.00')
+    expect(wrapper.text()).not.toContain('₽0.00')
   })
 })
