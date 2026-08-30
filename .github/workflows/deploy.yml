@@ -70,6 +70,10 @@ jobs:
           context: backend
           push: true
           tags: ${{ steps.meta-api.outputs.tags }}
+          # Same value as the image tag: the build reports it via
+          # /api/health (spec: app-version), so front/back drift is visible.
+          build-args: |
+            VERSION=${{ steps.image-tag.outputs.value }}
           cache-from: type=gha,scope=api-build
           cache-to: type=gha,scope=api-build,mode=max
 
@@ -91,6 +95,9 @@ jobs:
           file: apps/web/Dockerfile
           push: true
           tags: ${{ steps.meta-web.outputs.tags }}
+          # Same value as the image tag (see the api build step above).
+          build-args: |
+            VERSION=${{ steps.image-tag.outputs.value }}
           cache-from: type=gha,scope=web-build
           cache-to: type=gha,scope=web-build,mode=max
 

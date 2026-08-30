@@ -35,8 +35,8 @@ deploy-check:
 
 ## deploy: build both images from HEAD, push (sha-<short> + main), deploy.
 deploy: deploy-check
-	docker build --platform $(PLATFORM) -t $(API_IMAGE):sha-$(SHORT_SHA) -t $(API_IMAGE):main backend
-	docker build --platform $(PLATFORM) -t $(WEB_IMAGE):sha-$(SHORT_SHA) -t $(WEB_IMAGE):main -f apps/web/Dockerfile .
+	docker build --platform $(PLATFORM) --build-arg VERSION=sha-$(SHORT_SHA) -t $(API_IMAGE):sha-$(SHORT_SHA) -t $(API_IMAGE):main backend
+	docker build --platform $(PLATFORM) --build-arg VERSION=sha-$(SHORT_SHA) -t $(WEB_IMAGE):sha-$(SHORT_SHA) -t $(WEB_IMAGE):main -f apps/web/Dockerfile .
 	docker push $(API_IMAGE):sha-$(SHORT_SHA)
 	docker push $(API_IMAGE):main
 	docker push $(WEB_IMAGE):sha-$(SHORT_SHA)

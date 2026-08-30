@@ -9,6 +9,7 @@ import router from './app/router'
 import { provideRepositories } from './app/repositories'
 import { setupThemeWatcher } from './app/setup-theme-watcher'
 import { setUnauthorizedHandler } from './shared/api'
+import { APP_VERSION } from './shared/config/app-version'
 import { useAuthStore } from './entities/session'
 import './style.css'
 import { setupI18nLocaleWatcher } from './app/setup-i18n-locale-watcher'
@@ -57,6 +58,27 @@ setUnauthorizedHandler(() => {
 
 setupI18nLocaleWatcher()
 app.mount('#app')
+
+// Boot version line (spec: `app-version`): one console.info identifying the
+// running build, so "is the site on the right version?" is answered without
+// server access and front/back drift after partial rollbacks is visible.
+// The API part is fire-and-forget and bypasses the API client (no session or
+// base-URL semantics; the relative URL hits the same origin through the
+// gateway): an offline start logs the web-only line and never blocks boot.
+async function logBuildVersions(): Promise<void> {
+  const parts = [`web ${APP_VERSION}`]
+  try {
+    const res = await fetch('/api/health')
+    if (res.ok) {
+      const health = (await res.json()) as { version?: string }
+      if (health.version) parts.push(`api ${health.version}`)
+    }
+  } catch {
+    // API unreachable: keep the web-only line.
+  }
+  console.info(`[expense-tracker] ${parts.join(' · ')}`)
+}
+void logBuildVersions()
 
 // The app-shell service worker exists only in production builds; in dev its
 // /sw.js would 404 (vite-plugin-pwa emits nothing without devOptions).

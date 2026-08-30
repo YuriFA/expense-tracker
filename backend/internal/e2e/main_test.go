@@ -154,6 +154,7 @@ func testMain(m *testing.M) int {
 	server := httptransport.NewServer(
 		testCfg(),
 		discardLogger(),
+		"dev",
 		accountSvc,
 		categorySvc,
 		txnSvc,

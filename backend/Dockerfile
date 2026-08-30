@@ -5,12 +5,16 @@
 
 FROM golang:1.26-alpine AS builder
 
+# Build version reported by GET /api/health: the deployed image tag
+# (sha-<short>) from the deploy pipeline, or `dev` for local builds.
+ARG VERSION=dev
+
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/expense-tracker-api ./cmd/expense-tracker-api
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$VERSION" -o /out/expense-tracker-api ./cmd/expense-tracker-api
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata

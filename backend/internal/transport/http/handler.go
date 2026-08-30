@@ -25,6 +25,7 @@ import (
 type Server struct {
 	cfg        *config.HTTPServer
 	log        *slog.Logger
+	version    string
 	accounts   *service.AccountService
 	categories *service.CategoryService
 	txn        *service.TransactionService
@@ -40,6 +41,7 @@ type Server struct {
 func NewServer(
 	cfg *config.HTTPServer,
 	log *slog.Logger,
+	version string,
 	accounts *service.AccountService,
 	categories *service.CategoryService,
 	txn *service.TransactionService,
@@ -54,6 +56,7 @@ func NewServer(
 	return &Server{
 		cfg:      cfg,
 		log:      logger.WithComponent(log, "http"),
+		version:  version,
 		accounts: accounts, categories: categories, txn: txn,
 		debtors: debtors, debtOps: debtOps,
 		plans: plans,

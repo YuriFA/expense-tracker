@@ -20,6 +20,15 @@ import (
 	httptransport "github.com/yurifa/expense-tracker-api/internal/transport/http"
 )
 
+// version is the build version reported by GET /api/health: the deployed
+// image tag (sha-<short>), injected at image build time via
+// -ldflags "-X main.version=..." (backend/Dockerfile ARG VERSION). Builds
+// without the flag (go run, tests) keep the "dev" default.
+var version = "dev"
+
+// Version returns the build version string (see the version var).
+func Version() string { return version }
+
 func main() {
 	cfg := config.MustLoad()
 	log := logger.New(logger.Options{Environment: cfg.Env, AppName: "expense-tracker-api"})
@@ -161,6 +170,7 @@ func newHTTPServer(cfg *config.Config, repo *postgres.Repository, log *slog.Logg
 	server := httptransport.NewServer(
 		&cfg.HTTPServer,
 		log,
+		version,
 		accountSvc,
 		categorySvc,
 		txnSvc,

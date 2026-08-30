@@ -25,7 +25,9 @@ linker-injected strings via `-ldflags -X`.
      accessor keeps the wiring in `cmd` (testable, single injection site).
    - Web: `ARG VERSION=dev` → `ENV VITE_APP_VERSION` → Vite
      `define` (`__APP_VERSION__`), typed in `env.d.ts` / a tiny
-     `shared/lib/app-version.ts` helper.
+     `shared/config/app-version.ts` helper (beside `APP_NAME`: steiger's
+     `shared-lib-grouping` threshold caps `shared/lib` root modules, and the
+     version constant is app identity, not a generic helper).
 3. **Both deploy paths pass the same argument**: CI uses its computed
    `sha-<short>` output for both `build-arg`s; the Makefile uses
    `SHORT_SHA`. Drift between front and back versions becomes impossible

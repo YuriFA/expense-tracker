@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/yurifa/expense-tracker-api/internal/config"
+	"github.com/yurifa/expense-tracker-api/internal/logger"
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/httperr"
 	"github.com/yurifa/expense-tracker-api/internal/transport/http/middleware"
 )
@@ -207,5 +208,17 @@ func TestGetHealthUnauthenticated(t *testing.T) {
 
 	rec := client.do("GET", "/api/health", nil, nil)
 	require.Equal(t, 200, rec.Code, rec.Body.String())
-	assert.JSONEq(t, `{"status":"ok"}`, rec.Body.String())
+	assert.JSONEq(t, `{"status":"ok","version":"dev"}`, rec.Body.String())
+}
+
+// A build produced with the version build argument reports it in the health
+// payload (spec: app-version, "deployed build reports its commit").
+func TestGetHealthReportsInjectedVersion(t *testing.T) {
+	t.Parallel()
+	engine := wireTestEngineWithVersion(t, testHTTPConfig(), logger.NewDiscardLogger(), "sha-deadbee")
+	client := newClient(t, engine)
+
+	rec := client.do("GET", "/api/health", nil, nil)
+	require.Equal(t, 200, rec.Code, rec.Body.String())
+	assert.JSONEq(t, `{"status":"ok","version":"sha-deadbee"}`, rec.Body.String())
 }

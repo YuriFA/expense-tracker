@@ -11,3 +11,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/**
+ * Build version, replaced by Vite at build time (vite.config.ts `define`,
+ * sourced from VITE_APP_VERSION; 'dev' when unset). Declared optional
+ * because raw non-Vite consumers (plain node) never see the replacement.
+ */
+declare const __APP_VERSION__: string | undefined

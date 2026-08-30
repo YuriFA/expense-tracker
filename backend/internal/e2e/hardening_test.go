@@ -30,6 +30,7 @@ func e2eEngineWithCfg(cfg *config.HTTPServer) http.Handler {
 	)
 	server := httptransport.NewServer(
 		cfg, discardLogger(),
+		"dev",
 		service.NewAccountService(e2eRepo),
 		service.NewCategoryService(e2eRepo),
 		txnSvc,
@@ -110,5 +111,5 @@ func TestE2E_HealthUnauthenticated(t *testing.T) {
 	}
 	rec := doJSON(t, e2eEngine, "GET", "/api/health", nil)
 	require.Equal(t, 200, rec.Code, rec.Body.String())
-	assert.JSONEq(t, `{"status":"ok"}`, rec.Body.String())
+	assert.JSONEq(t, `{"status":"ok","version":"dev"}`, rec.Body.String())
 }

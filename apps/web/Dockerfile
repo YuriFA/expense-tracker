@@ -7,6 +7,13 @@
 
 FROM node:22-alpine AS builder
 
+# Build version logged at startup and cross-checked against /api/health
+# (spec: app-version): the deployed image tag (sha-<short>) from the deploy
+# pipeline, or `dev` for local builds. Consumed by the Vite `define` in
+# vite.config.ts (VITE_APP_VERSION -> __APP_VERSION__).
+ARG VERSION=dev
+ENV VITE_APP_VERSION=$VERSION
+
 # pnpm comes from the root package.json `packageManager` pin via corepack.
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable

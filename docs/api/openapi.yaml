@@ -2022,6 +2022,9 @@ paths:
         session, no database, and no business logic — the database has its
         own container healthcheck; a readiness variant was rejected so DB
         blips tolerated by local-first clients do not bounce the API.
+        The payload also carries the API build version (the deployed image
+        tag, `sha-<short>`, or `dev` for unversioned builds), so the running
+        build can be identified without server access.
       security: []
       responses:
         "200":
@@ -2318,12 +2321,18 @@ components:
     Health:
       type: object
       description: Liveness-статус процесса API.
-      required: [status]
+      required: [status, version]
       properties:
         status:
           type: string
           enum: [ok]
           description: Всегда `ok`, пока процесс обслуживает запросы.
+        version:
+          type: string
+          description: |
+            Версия сборки API: тег развернутого образа (`sha-<short>`,
+            передается через build-arg `VERSION`) или `dev` для сборок без
+            версии (`go run`, тесты).
 
     User:
       type: object

@@ -862,6 +862,9 @@ export interface paths {
          *     session, no database, and no business logic — the database has its
          *     own container healthcheck; a readiness variant was rejected so DB
          *     blips tolerated by local-first clients do not bounce the API.
+         *     The payload also carries the API build version (the deployed image
+         *     tag, `sha-<short>`, or `dev` for unversioned builds), so the running
+         *     build can be identified without server access.
          */
         get: operations["getHealth"];
         put?: never;
@@ -883,6 +886,12 @@ export interface components {
              * @enum {string}
              */
             status: "ok";
+            /**
+             * @description Версия сборки API: тег развернутого образа (`sha-<short>`,
+             *     передается через build-arg `VERSION`) или `dev` для сборок без
+             *     версии (`go run`, тесты).
+             */
+            version: string;
         };
         User: {
             /** Format: uuid */

@@ -76,6 +76,11 @@ func newTestEngineWithConfig(t *testing.T, cfg *config.HTTPServer) *gin.Engine {
 
 func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin.Engine {
 	t.Helper()
+	return wireTestEngineWithVersion(t, cfg, log, "dev")
+}
+
+func wireTestEngineWithVersion(t *testing.T, cfg *config.HTTPServer, log *slog.Logger, version string) *gin.Engine {
+	t.Helper()
 	store := fakes.New()
 	authSvc := service.NewAuthService(
 		store,
@@ -103,6 +108,7 @@ func wireTestEngine(t *testing.T, cfg *config.HTTPServer, log *slog.Logger) *gin
 	server := httptransport.NewServer(
 		cfg,
 		log,
+		version,
 		accountSvc,
 		categorySvc,
 		txnSvc,

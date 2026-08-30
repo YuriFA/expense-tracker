@@ -8,8 +8,16 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const API_TARGET = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080'
 
+// Build version (spec: app-version): the image tag (sha-<short>) baked in
+// at build time via apps/web/Dockerfile (ARG VERSION -> ENV VITE_APP_VERSION),
+// `dev` for local/vitest builds. Consumed through shared/config/app-version.ts.
+const APP_VERSION = process.env.VITE_APP_VERSION ?? 'dev'
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   plugins: [
     vue(),
     vueDevTools(),
