@@ -41,6 +41,19 @@ test('the FAB speed-dial opens a creation dialog without navigating', async ({ p
   await expect(page).toHaveURL(/\/$/)
 })
 
+test('a tap on empty page space dismisses the speed-dial', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByTestId('fab-add-operation').click()
+  await expect(page.getByTestId('speed-dial-scrim')).toBeVisible()
+
+  // The scrim sits under the tab bar/FAB but over the page content: a tap on
+  // blank content must hit it and close the dial (the shell container is
+  // pointer-events-none, so the scrim re-enables hit testing itself).
+  await page.mouse.click(195, 300)
+  await expect(page.getByTestId('speed-dial-scrim')).toHaveCount(0)
+})
+
 test('guest header offers sign-in; the shell is absent on desktop widths', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('topbar-sign-in')).toBeVisible()

@@ -57,11 +57,13 @@ function openIncome() {
          themes (the token is warm paper in light, near-black in dark), the
          bottom layers emphasize the dial area (canvas round-3) - gradient +
          blur that fades out towards the top via a mask (uniform backdrop blur
-         would blank the whole screen). Only the wash layer is tappable. -->
+         would blank the whole screen). Only the wash layer is tappable: the
+         shell container is pointer-events-none, so tap-to-close must re-enable
+         hit testing explicitly. -->
     <div
       v-if="open"
       data-testid="speed-dial-scrim"
-      class="fixed inset-0 z-30 bg-background/40"
+      class="pointer-events-auto fixed inset-0 z-30 bg-background/40"
       @click="open = false"
     />
     <div
