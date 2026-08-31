@@ -16,8 +16,7 @@
     "debts": "Debts",
     "plans": "Plans",
     "accounts": "Accounts",
-    "settings": "Settings",
-    "openMenu": "Open menu"
+    "settings": "Settings"
   },
   "pages": {
     "transactions": "Transactions",
@@ -633,5 +632,13 @@
   },
   "app": {
     "name": "Wallet"
+  },
+  "shell": {
+    "mainNav": "Main navigation",
+    "signIn": "Sign in",
+    "openAccountMenu": "Account menu",
+    "transfer": "Transfer",
+    "expense": "Expense",
+    "income": "Income"
   }
 }

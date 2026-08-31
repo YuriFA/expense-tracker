@@ -19,17 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { SyncStatusBadge } from '@/widgets/sync-status'
 import { AddTransactionTabs } from '@/features/transaction/add'
 import { useAuthStore } from '@/entities/session'
+import { isRouteActive } from '@/shared/lib/route-active'
 import { notification } from '@/shared/services/notification'
-
-withDefaults(
-  defineProps<{
-    // The compact sheet variant drops the auth footer: the mobile top bar
-    // carries the badges and sign-in entry, so only one instance of each
-    // testid lives in the DOM per viewport.
-    footer?: boolean
-  }>(),
-  { footer: true },
-)
 
 const emit = defineEmits<{ navigate: [] }>()
 
@@ -49,7 +40,7 @@ const navItems = computed(() => [
 ])
 
 // Flat route records: analytics-detail keeps Аналитика active by name prefix.
-const isActive = (name: string) => typeof route.name === 'string' && route.name.startsWith(name)
+const isActive = (name: string) => isRouteActive(route.name, name)
 
 const addOpen = ref(false)
 
@@ -123,7 +114,7 @@ function goToLogin() {
     </Dialog>
 
     <div
-      v-if="footer && auth.isAuthenticated"
+      v-if="auth.isAuthenticated"
       class="mt-auto flex flex-col gap-2.5 border-t border-sidebar-border pt-4"
     >
       <SyncStatusBadge class="w-fit" />
@@ -139,10 +130,7 @@ function goToLogin() {
       </Button>
     </div>
 
-    <div
-      v-else-if="footer"
-      class="mt-auto flex flex-col gap-2.5 border-t border-sidebar-border pt-4"
-    >
+    <div v-else class="mt-auto flex flex-col gap-2.5 border-t border-sidebar-border pt-4">
       <!-- Anonymous (local) mode indicator: everything works on local data;
            sign-in only adds server sync. -->
       <Badge variant="secondary" class="w-fit" data-testid="guest-mode-indicator">

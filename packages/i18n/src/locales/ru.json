@@ -16,8 +16,7 @@
     "debts": "Долги",
     "plans": "Планы",
     "accounts": "Счета",
-    "settings": "Настройки",
-    "openMenu": "Открыть меню"
+    "settings": "Настройки"
   },
   "pages": {
     "transactions": "Транзакции",
@@ -633,5 +632,13 @@
   },
   "app": {
     "name": "Кошелёк"
+  },
+  "shell": {
+    "mainNav": "Основная навигация",
+    "signIn": "Войти",
+    "openAccountMenu": "Меню аккаунта",
+    "transfer": "Перевод",
+    "expense": "Расход",
+    "income": "Доход"
   }
 }

@@ -546,6 +546,81 @@
       },
       "updatedAt": "2026-08-29T17:15:21.293Z",
       "notes": "Решение: secondary = кандидат C (#f0e9dd fill, ink текст, без бордера, hover #e9e1d2). Зафиксировано в design-system.md (Component rules - Buttons). Раскатка по драфтам (прямыми правками, без генераций): транзакции desktop+mobile v4 (тулбар, футеры поповера/шита, Повторить), счета v5 + mobile v3 (Повторить, Отмена), настройки v3 (5 нейтральных xs-действий -> C, Распустить/Выйти со всех -> danger-ghost), долги v2 (Внести погашение), cat-dialog v5 (Отмена). Сознательно НЕ тронуты: quick-action плитки дашборда (карточные тайлы с цветными иконками), круговые стрелки периода в аналитике (nav-ghost, описаны в системе), teal-outline «Подтвердить» в планах (акцентное подтверждение), селект-триггеры и чипы/пилюли."
+    },
+    "mobile-nav": {
+      "targetKind": "new-ui",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "99e2a910-ec8e-4ac6-97a9-4aab96545efb",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "packages/tokens/src/index.css",
+        "apps/web/src/app/layout/AppSidebarNav.vue",
+        "apps/web/src/app/layout/MobileTopBar.vue",
+        "apps/web/src/widgets/sync-status/ui/SyncStatusBadge.vue",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue",
+        "apps/web/src/pages/dashboard/ui/QuickActionsCard.vue",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue",
+        "apps/web/src/pages/analytics/ui/AnalyticsPage.vue",
+        "apps/web/src/pages/settings/ui/SettingsPage.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
+        "packages/tokens/src/index.css": "520161ff5424b271d24ba5af1b0da75118d9db32ce6e77e5bf80bfb1b861bda8",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
+        "apps/web/src/app/layout/MobileTopBar.vue": "52061725efba0e77c25e68768290b7281df21fafc2f8dcfc5bcc6017f4229108",
+        "apps/web/src/widgets/sync-status/ui/SyncStatusBadge.vue": "f2edaebfba1d69ec092193c9cfb47aec7572aa86e91db677cf1b9796062072ef",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "db9d50a57fde1eb1a7538c6876391740c368af614f79137ee7cc2678729354b9",
+        "apps/web/src/pages/dashboard/ui/QuickActionsCard.vue": "8c37f1242b5151bf9402171e166556fe43d58958cb52d62fb9d4ed3aca784da5",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "87bf7b7bb24fb1c761b24f861c204dcbdcb6ade659f30312092d5e50a458ea73",
+        "apps/web/src/pages/analytics/ui/AnalyticsPage.vue": "8758b77540e6392d73a018de4d5dd36183b78fa0bd814124c4cfc5452190084f",
+        "apps/web/src/pages/settings/ui/SettingsPage.vue": "6a53b4fd85c5b73c80b0de769d93eccd8a6f591fb5d48599efa501150a676276"
+      },
+      "components": [],
+      "drafts": {
+        "99e2a910-ec8e-4ac6-97a9-4aab96545efb": {
+          "title": "Кошелёк Mobile Shell — Full Design Board",
+          "visualDirection": "Direction D «Бумага»; вариант A (утверждён пользователем): плавающая пилюля-таббар с прорезью и центральной FAB speed-dial; радиусы согласованы: контейнер таббара rounded-3xl (24px), активный таб rounded-[20px], FAB круглый; 5 кадров (Дашборд, Speed-dial, Аналитика, Настройки, Гость); v6: speed-dial перерисован горизонтально как в RN (ряд над FAB: Перевод 56 aliceblue / Расход 80 red / Доход 56 green, подписи под кружками, скрим белый 70%); борд superseded поэкранными драфтами (split 2026-08-31), остаётся как история/референс",
+          "currentVersion": 6
+        },
+        "ba427f65-6f68-4c16-974e-c869a9ac4077": {
+          "title": "Кошелёк Mobile Shell - Full Board",
+          "visualDirection": "Direction D «Бумага»; вариант B: full-width флэт-таббар с верхней hairline-границей; та же центральная FAB; branch от варианта A",
+          "parentDraftId": "99e2a910-ec8e-4ac6-97a9-4aab96545efb",
+          "currentVersion": 1
+        },
+        "0d51fa85-05d9-4481-adcb-919f4efb8fd3": {
+          "title": "Mobile — Дашборд",
+          "visualDirection": "Mobile — Дашборд — поэкранный сплит борда v6, один экран 390x844 на драфт; итерации по экрану целить в этот draft id; v2: канонический таббар (w-[70px] табы, лейблы 10px, пилюля 20px) единый на всех экранах, FAB -top-4 (на ~14% ниже), в speed-dial возвращены лейблы табов, ряд действий сдвинут вниз вслед FAB",
+          "parentDraftId": "99e2a910-ec8e-4ac6-97a9-4aab96545efb",
+          "currentVersion": 2
+        },
+        "f1f270d5-2017-4948-b65e-92c379672123": {
+          "title": "Mobile — Speed-dial (v6: горизонтальный ряд как в RN)",
+          "visualDirection": "Mobile — Speed-dial (v6: горизонтальный ряд как в RN) — поэкранный сплит борда v6, один экран 390x844 на драфт; итерации по экрану целить в этот draft id; v2: канонический таббар (w-[70px] табы, лейблы 10px, пилюля 20px) единый на всех экранах, FAB -top-4 (на ~14% ниже), в speed-dial возвращены лейблы табов, ряд действий сдвинут вниз вслед FAB; v3: плитки speed-dial перекрашены в тему Direction D — пастельные тинты (перевод teal/10, расход terracotta warning/10, доход success/10) с насыщенными глифами, без сплошных заливок и теней; сплошной осталась только FAB; v4: под тинтовые плитки добавлена плотная подложка bg-card (иначе тинт 10% наслаивается на белый скрим и плитки тают); v5: скрим получил backdrop-blur-md — фоновые тексты больше не проступают под подписями плиток; v7 (round-3): скрим = лёгкая вуаль 40% + градиентная вуаль снизу + блюр с маской-градиентом (сильный у кнопок, сходит на нет к середине), таббар без затемнения — видимый и кликабельный, шторка закрывается при навигации; код приведён к канвасу: FAB z-50 над таббаром, перекрытие 40px (-mb-10) как в макете",
+          "parentDraftId": "99e2a910-ec8e-4ac6-97a9-4aab96545efb",
+          "currentVersion": 7
+        },
+        "8d218e63-2cde-408b-bcf8-c5cf68d6bcff": {
+          "title": "Mobile — Аналитика",
+          "visualDirection": "Mobile — Аналитика — поэкранный сплит борда v6, один экран 390x844 на драфт; итерации по экрану целить в этот draft id; v2: канонический таббар (w-[70px] табы, лейблы 10px, пилюля 20px) единый на всех экранах, FAB -top-4 (на ~14% ниже), в speed-dial возвращены лейблы табов, ряд действий сдвинут вниз вслед FAB",
+          "parentDraftId": "99e2a910-ec8e-4ac6-97a9-4aab96545efb",
+          "currentVersion": 2
+        },
+        "012138f3-0ab7-4740-adce-945b80018fc9": {
+          "title": "Mobile — Настройки",
+          "visualDirection": "Mobile — Настройки — поэкранный сплит борда v6, один экран 390x844 на драфт; итерации по экрану целить в этот draft id; v2: канонический таббар (w-[70px] табы, лейблы 10px, пилюля 20px) единый на всех экранах, FAB -top-4 (на ~14% ниже), в speed-dial возвращены лейблы табов, ряд действий сдвинут вниз вслед FAB",
+          "parentDraftId": "99e2a910-ec8e-4ac6-97a9-4aab96545efb",
+          "currentVersion": 2
+        },
+        "812ffe45-c126-4c41-acd0-28dbb838af34": {
+          "title": "Mobile — Гость",
+          "visualDirection": "Mobile — Гость — поэкранный сплит борда v6, один экран 390x844 на драфт; итерации по экрану целить в этот draft id; v2: канонический таббар (w-[70px] табы, лейблы 10px, пилюля 20px) единый на всех экранах, FAB -top-4 (на ~14% ниже), в speed-dial возвращены лейблы табов, ряд действий сдвинут вниз вслед FAB",
+          "parentDraftId": "99e2a910-ec8e-4ac6-97a9-4aab96545efb",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-08-31T14:52:11Z"
     }
   },
   "updatedAt": "2026-08-29T17:43:07.957Z"

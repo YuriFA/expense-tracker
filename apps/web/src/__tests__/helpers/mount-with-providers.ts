@@ -69,7 +69,12 @@ export function mountWithProviders<T>(
     router ??
     createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: '/', component: { template: '<div/>' } }],
+      // The mobile shell renders a sign-in link to the named login route
+      // (web-screens: mobile top bar account access), so it must resolve.
+      routes: [
+        { path: '/', component: { template: '<div/>' } },
+        { path: '/login', name: 'login', component: { template: '<div/>' } },
+      ],
     })
 
   return mount(component as never, {

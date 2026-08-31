@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMediaQuery } from '@vueuse/core'
 import AppSidebar from './AppSidebar.vue'
-import MobileTopBar from './MobileTopBar.vue'
 import BootGate from './BootGate.vue'
+import { BottomNavLayout, BottomTabBar, MobileTopBar, SpeedDialFab } from '@/widgets/mobile-shell'
 import { OwnershipGateDialog, useAuthStore } from '@/entities/session'
 import { ConflictCenter } from '@/features/sync-conflicts'
 import { HouseholdChoiceDialog, useHouseholdJoinStore } from '@/features/household-join'
@@ -17,7 +17,9 @@ const showNav = computed(() => !route.meta.public)
 
 // JS-gated (not CSS-hidden) so exactly one instance of the sync/guest badges
 // exists in the DOM per viewport - e2e locators match by testid strictly.
-const isDesktop = useMediaQuery('(min-width: 1024px)')
+// 768px is the sidebar <-> bottom-tabs boundary (web-screens: below it the
+// mobile shell replaces the sidebar).
+const isDesktop = useMediaQuery('(min-width: 768px)')
 
 // The sync controller is composed here (the FSD composition root): it needs
 // the auth state (entities) and provides itself down to the badge/conflict
@@ -40,10 +42,17 @@ provideSyncController({
       <div class="flex min-w-0 flex-1 flex-col">
         <MobileTopBar v-if="showNav && !isDesktop" />
 
-        <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 lg:px-8">
+        <!-- Extra bottom padding on phone widths keeps the content clear of
+             the floating tab bar. -->
+        <main class="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-32 md:px-8 md:pb-6">
           <RouterView />
         </main>
       </div>
+
+      <BottomNavLayout v-if="showNav && !isDesktop">
+        <SpeedDialFab />
+        <BottomTabBar />
+      </BottomNavLayout>
 
       <!-- Global hosts: the ownership gate can trigger from any auth flow;
            the household choice from any join/leave/startup-mismatch flow;
