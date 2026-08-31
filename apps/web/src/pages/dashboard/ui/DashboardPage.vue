@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 import { HandCoins, TrendingDown, TrendingUp, Wallet } from '@lucide/vue'
 import {
+  calendarDayKey,
   currentPeriod,
   isSamePeriod,
   monthLabel,
@@ -100,15 +102,49 @@ const periodTotalFor = (direction: AnalyticsDirection) =>
   )
 const debtTotals = computed(() => totalsByDirection(debtOperations.value ?? []))
 
+// The income/expense stat cards deep-link the transactions screen's URL
+// filter: local calendar-day bounds of the selected month (the format
+// transactions-query.ts parses), not the dashboard's UTC query superset.
+const monthRange = computed(() => {
+  const start = cursor.value.start
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, 0)
+  return { from: calendarDayKey(start), to: calendarDayKey(end) }
+})
+
 const stats = computed(() => [
-  { label: t('pages.accounts'), amount: format(balanceMinor.value), icon: Wallet, tone: 'primary' as const },
-  { label: t('analytics.income'), amount: format(periodTotalFor('income')), icon: TrendingUp, tone: 'success' as const },
-  { label: t('analytics.expenses'), amount: format(periodTotalFor('expense')), icon: TrendingDown, tone: 'warning' as const },
+  {
+    label: t('pages.accounts'),
+    amount: format(balanceMinor.value),
+    icon: Wallet,
+    tone: 'primary' as const,
+    to: { path: '/accounts' },
+  },
+  {
+    label: t('analytics.income'),
+    amount: format(periodTotalFor('income')),
+    icon: TrendingUp,
+    tone: 'success' as const,
+    to: {
+      path: '/transactions',
+      query: { type: 'income', from: monthRange.value.from, to: monthRange.value.to },
+    },
+  },
+  {
+    label: t('analytics.expenses'),
+    amount: format(periodTotalFor('expense')),
+    icon: TrendingDown,
+    tone: 'warning' as const,
+    to: {
+      path: '/transactions',
+      query: { type: 'expense', from: monthRange.value.from, to: monthRange.value.to },
+    },
+  },
   {
     label: t('pages.debts'),
     amount: format(debtTotals.value.receivable - debtTotals.value.payable),
     icon: HandCoins,
     tone: 'neutral' as const,
+    to: { path: '/debts' },
   },
 ])
 </script>
@@ -136,14 +172,21 @@ const stats = computed(() => [
       class="grid grid-cols-2 gap-4 xl:grid-cols-4"
       data-testid="dashboard-stats"
     >
-      <StatCard
+      <!-- The link wraps the card surface: hover ring + focus ring give the
+           clickability affordance; StatCard stays presentational. -->
+      <RouterLink
         v-for="stat in stats"
         :key="stat.label"
-        :label="stat.label"
-        :amount="stat.amount"
-        :icon="stat.icon"
-        :tone="stat.tone"
-      />
+        :to="stat.to"
+        class="block rounded-lg cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-muted-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
+      >
+        <StatCard
+          :label="stat.label"
+          :amount="stat.amount"
+          :icon="stat.icon"
+          :tone="stat.tone"
+        />
+      </RouterLink>
     </div>
 
     <!-- No inline creation entry points (web-unified-transaction-entry):
