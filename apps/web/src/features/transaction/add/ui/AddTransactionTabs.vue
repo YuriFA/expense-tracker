@@ -19,13 +19,13 @@ const transactionTypes = getTransactionsOptions()
       </TabsTrigger>
     </TabsList>
     <TabsContent value="expense">
-      <CashflowForm type="expense" cancellable @success="$emit('success')" />
+      <CashflowForm type="expense" @success="$emit('success')" />
     </TabsContent>
     <TabsContent value="income">
-      <CashflowForm type="income" cancellable @success="$emit('success')" />
+      <CashflowForm type="income" @success="$emit('success')" />
     </TabsContent>
     <TabsContent value="transfer">
-      <TransferForm cancellable @success="$emit('success')" />
+      <TransferForm @success="$emit('success')" />
     </TabsContent>
   </Tabs>
 </template>

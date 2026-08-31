@@ -297,8 +297,9 @@ binds it through the ownership gate + initial sync (capability spec
 `openspec/specs/web-local-data`). Screen inventory and navigation contract
 (screen set parity with mobile, web-native presentation) are specified by the
 `web-screens` capability: dashboard, transactions, analytics (overview +
-`/analytics/:direction` detail), debts, plans, accounts, settings, and the
-quick income page — all reachable through the persistent `AppNav`.
+`/analytics/:direction` detail), debts, plans, accounts, settings — all
+reachable through the persistent `AppNav`. Transaction creation (any type)
+happens in dialogs, not on dedicated pages.
 
 - **State**: server state via `@pinia/colada` (`gcTime 300s`, `staleTime
   30s`, retry ×2); auth/session state in a Pinia store

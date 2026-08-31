@@ -55,6 +55,8 @@ describe('TransferForm', () => {
     const wrapper = mountWithProviders(TransferForm, {
       props: { ...props } as never,
       repositories: { accounts: accountsRepo, categories: categoriesRepo, transactions: transactionsRepo },
+      // The footer's DialogClose requires a DialogRoot the tests don't mount.
+      global: { stubs: { DialogClose: true } },
     })
     return { wrapper, accountsRepo, categoriesRepo, transactionsRepo }
   }

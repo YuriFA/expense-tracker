@@ -153,7 +153,8 @@ test('plans: create a plan, confirm it, and the transaction appears', async ({ p
 test('quick income entry lands in the cashflow data', async ({ page }) => {
   await seedAccount(page, 'Cash')
 
-  await page.goto('/income')
+  await page.goto('/')
+  await page.getByTestId('quick-action-income').click()
   // Inline category creation (anonymous local mode starts without categories).
   await page.getByTestId('open-new-category').click()
   await page.getByTestId('new-category-name').fill('Salary')

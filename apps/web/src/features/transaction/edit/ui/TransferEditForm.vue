@@ -29,7 +29,6 @@ const {
   description,
   fromAccountId: initialFrom,
   toAccountId: initialTo,
-  cancellable = false,
 } = defineProps<{
   id: string
   version: number
@@ -37,8 +36,6 @@ const {
   description: string
   fromAccountId: string
   toAccountId: string
-  /** Dialog mode: full-bleed footer with a context-closing cancel button. */
-  cancellable?: boolean
 }>()
 
 const { mutateAsync: updateTransaction } = useUpdateTransaction<TransferTransaction>()
@@ -152,10 +149,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </Field>
     </VeeField>
 
-    <DialogFooter
-      v-if="cancellable"
-      class="-mx-6 -mb-6 mt-1 flex-col gap-3 border-t px-6 py-4 sm:flex-row"
-    >
+    <DialogFooter class="-mx-6 -mb-6 mt-2 flex-col gap-3 border-t px-6 py-4 sm:flex-row">
       <DialogClose as-child>
         <Button type="button" variant="secondary" class="w-full sm:flex-1">
           {{ t('editTransaction.cancel') }}
@@ -170,16 +164,6 @@ const handleSubmit = handleFormSubmit(async (data) => {
         {{ t('editTransaction.submit') }}
       </Button>
     </DialogFooter>
-    <div v-else class="flex justify-end pt-1">
-      <Button
-        form="edit-transfer-form"
-        type="submit"
-        class="w-full sm:w-auto"
-        :loading="isSubmitting"
-      >
-        {{ t('editTransaction.submit') }}
-      </Button>
-    </div>
   </form>
   </div>
 </template>

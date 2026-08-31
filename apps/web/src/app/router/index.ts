@@ -66,11 +66,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/plans').then((m) => m.PlansPage),
   },
   {
-    path: '/income',
-    name: 'income',
-    component: () => import('@/pages/income').then((m) => m.IncomePage),
-  },
-  {
     path: '/accounts',
     name: 'accounts',
     component: () => import('@/pages/accounts').then((m) => m.AccountsPage),

@@ -74,6 +74,8 @@ describe('CashflowEditForm', () => {
         ...props,
       } as never,
       repositories: { accounts, categories, transactions },
+      // The footer's DialogClose requires a DialogRoot the tests don't mount.
+      global: { stubs: { DialogClose: true } },
     })
     return { wrapper, accounts, categories, transactions }
   }

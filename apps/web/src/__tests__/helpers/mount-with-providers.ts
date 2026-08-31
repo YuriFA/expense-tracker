@@ -79,6 +79,7 @@ export function mountWithProviders<T>(
     global: {
       plugins: [i18n, pinia ?? createPinia(), memoryRouter, PiniaColada],
       provide: provide as never,
+      ...options.global,
     },
   }) as VueWrapper
 }

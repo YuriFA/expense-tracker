@@ -43,10 +43,7 @@ describe('QuickActionsCard', () => {
 
     expect(wrapper.find('[data-testid="quick-action-expense"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="quick-action-transfer"]').exists()).toBe(true)
-    // Button as-child forwards the testid onto the rendered link.
-    const incomeLink = wrapper.find('[data-testid="quick-action-income"]')
-    expect(incomeLink.exists()).toBe(true)
-    expect(incomeLink.attributes('href')).toBe('/income')
+    expect(wrapper.find('[data-testid="quick-action-income"]').exists()).toBe(true)
   })
 
   it('opens the expense dialog with the cashflow form', async () => {
@@ -56,6 +53,18 @@ describe('QuickActionsCard', () => {
     await flushPromises()
 
     // The expense dialog opened (teleported to body) with a form inside.
+    const dialogs = [...document.querySelectorAll('[role="dialog"]')]
+    expect(dialogs.length).toBeGreaterThan(0)
+    expect(dialogs.some((dialog) => dialog.querySelector('form'))).toBe(true)
+  })
+
+  it('opens the income dialog with the cashflow form', async () => {
+    const { wrapper } = mountCard()
+
+    await wrapper.find('[data-testid="quick-action-income"]').trigger('click')
+    await flushPromises()
+
+    // The income dialog opened (teleported to body) with a form inside.
     const dialogs = [...document.querySelectorAll('[role="dialog"]')]
     expect(dialogs.length).toBeGreaterThan(0)
     expect(dialogs.some((dialog) => dialog.querySelector('form'))).toBe(true)
