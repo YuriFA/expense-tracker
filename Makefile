@@ -28,6 +28,7 @@ PLATFORM  ?= linux/amd64
 SHORT_SHA  := $(shell git rev-parse --short HEAD)
 API_IMAGE  := ghcr.io/$(GHCR_REPO)
 WEB_IMAGE  := ghcr.io/$(GHCR_REPO)-web
+BACKUP_IMAGE := ghcr.io/$(GHCR_REPO)-backup
 
 .PHONY: deploy rollback deploy-remote deploy-check
 
@@ -35,14 +36,17 @@ deploy-check:
 	@test -n "$(GHCR_REPO)" || { echo "ERROR: cannot derive GHCR_REPO from 'git remote get-url origin'"; exit 1; }
 	@test -n "$(SHORT_SHA)" || { echo "ERROR: not a git checkout"; exit 1; }
 
-## deploy: build both images from HEAD, push (sha-<short> + main), deploy.
+## deploy: build all three images from HEAD, push (sha-<short> + main), deploy.
 deploy: deploy-check
 	docker build --platform $(PLATFORM) --build-arg VERSION=sha-$(SHORT_SHA) -t $(API_IMAGE):sha-$(SHORT_SHA) -t $(API_IMAGE):main backend
 	docker build --platform $(PLATFORM) --build-arg VERSION=sha-$(SHORT_SHA) -t $(WEB_IMAGE):sha-$(SHORT_SHA) -t $(WEB_IMAGE):main -f apps/web/Dockerfile .
+	docker build --platform $(PLATFORM) -t $(BACKUP_IMAGE):sha-$(SHORT_SHA) -t $(BACKUP_IMAGE):main deploy/backup
 	docker push $(API_IMAGE):sha-$(SHORT_SHA)
 	docker push $(API_IMAGE):main
 	docker push $(WEB_IMAGE):sha-$(SHORT_SHA)
 	docker push $(WEB_IMAGE):main
+	docker push $(BACKUP_IMAGE):sha-$(SHORT_SHA)
+	docker push $(BACKUP_IMAGE):main
 	@echo ">> images pushed, deploying sha-$(SHORT_SHA)"
 	$(MAKE) deploy-remote IMAGE_TAG=sha-$(SHORT_SHA)
 
