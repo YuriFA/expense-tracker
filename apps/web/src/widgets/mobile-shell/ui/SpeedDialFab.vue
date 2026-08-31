@@ -53,20 +53,21 @@ function openIncome() {
 
 <template>
   <div>
-    <!-- Scrim: light uniform wash keeps the page readable, the bottom layers
-         emphasize the dial area (canvas round-3) - white gradient + blur that
-         fades out towards the top via a mask (uniform backdrop blur would
-         blank the whole screen). Only the wash layer is tappable. -->
+    <!-- Scrim: a uniform page-colored wash keeps the content readable in both
+         themes (the token is warm paper in light, near-black in dark), the
+         bottom layers emphasize the dial area (canvas round-3) - gradient +
+         blur that fades out towards the top via a mask (uniform backdrop blur
+         would blank the whole screen). Only the wash layer is tappable. -->
     <div
       v-if="open"
       data-testid="speed-dial-scrim"
-      class="fixed inset-0 z-30 bg-white/40"
+      class="fixed inset-0 z-30 bg-background/40"
       @click="open = false"
     />
     <div
       v-if="open"
       aria-hidden="true"
-      class="pointer-events-none fixed inset-0 z-30 bg-gradient-to-t from-white/80 via-white/30 to-transparent"
+      class="pointer-events-none fixed inset-0 z-30 bg-gradient-to-t from-background/80 via-background/30 to-transparent"
     />
     <div
       v-if="open"
