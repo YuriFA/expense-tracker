@@ -27,7 +27,7 @@ const payableSign = '−'
 
 <template>
   <Card>
-    <CardContent class="flex flex-col gap-4 pb-6 sm:flex-row sm:gap-12">
+    <CardContent class="flex flex-col gap-4 sm:flex-row sm:gap-12">
       <div class="flex-1">
         <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           {{ t('debts.receivable') }}
