@@ -31,12 +31,6 @@
   },
   "dashboard": {
     "netWorth": "Капитал",
-    "quickActions": {
-      "title": "Быстрые действия",
-      "expense": "Добавить расход",
-      "transfer": "Добавить перевод",
-      "income": "Добавить доход"
-    },
     "addOperation": "Добавить операцию",
     "overview": "Обзор",
     "total": "Всего",
@@ -74,6 +68,15 @@
     "categoryName": "Название",
     "categoryIcon": "Иконка",
     "categoryCreated": "Категория создана"
+  },
+  "palette": {
+    "search": "Найти или выполнить…",
+    "addExpense": "Добавить расход",
+    "addIncome": "Добавить доход",
+    "addTransfer": "Добавить перевод",
+    "newCategory": "Новая категория",
+    "hint": "↑↓ навигация · ↵ выбрать · esc закрыть",
+    "noResults": "Ничего не найдено"
   },
   "addAccount": {
     "nameLabel": "Название",
@@ -639,6 +642,7 @@
     "openAccountMenu": "Меню аккаунта",
     "transfer": "Перевод",
     "expense": "Расход",
-    "income": "Доход"
+    "income": "Доход",
+    "addHotkey": "N"
   }
 }

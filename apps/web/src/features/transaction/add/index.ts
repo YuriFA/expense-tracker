@@ -1,7 +1,5 @@
 export { default as CashflowForm } from './ui/CashflowForm.vue'
 export { default as TransferForm } from './ui/TransferForm.vue'
-export { default as AddTransactionTabs } from './ui/AddTransactionTabs.vue'
+export { default as AddTransactionDialogHost } from './ui/AddTransactionDialogHost.vue'
 export { default as NewCategoryDialog } from './ui/NewCategoryDialog.vue'
-
-
-
+export { useAddTransactionDialog } from './model/add-transaction-dialog'

@@ -5,7 +5,7 @@
       "targetKind": "existing-ui",
       "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
       "baselineDraftId": "218ec55b-8c4f-434e-b975-9b2a75dd6951",
-      "activeDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+      "activeDraftId": "ec985bff-1ac8-4430-8a90-ef3f37f4f60c",
       "designSystemPath": ".superdesign/design-system.md",
       "contextFiles": [
         ".superdesign/design-system.md",
@@ -20,28 +20,32 @@
         "apps/web/src/shared/ui/button/Button.vue",
         "apps/web/src/pages/dashboard/ui/DashboardCard.vue",
         "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue",
-        "apps/web/src/pages/dashboard/ui/DebtsCard.vue"
+        "apps/web/src/pages/dashboard/ui/DebtsCard.vue",
+        "apps/web/src/features/transaction/add/ui/AddTransactionTabs.vue",
+        "apps/web/src/widgets/mobile-shell/ui/SpeedDialFab.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "d628e443732cd7176cb6e9b0e1f620070f9e681761a4f10abce30d30e0e8b90a",
-        "apps/web/src/app/layout/AppShell.vue": "c091dac8b61c357bfbed1d63e12dc2e3543384a21b5ec70e2ca4ef9a3c0f7b95",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "8cdd78c78e2c529330d7673a777afbb3941fcb90846134e4f1dc372d3efe2454",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "a06db87c5b1762d70ceb342154bfdf3cdf85395d20e7a31eb70b7bfb8381bf8d",
+        ".superdesign/design-system.md": "abd708d8b56e968f377f46cd56557257ea0ba0a315521732a05a28ab048cdbb3",
+        "apps/web/src/app/layout/AppShell.vue": "e6dff4abc67db65cf6ed391c217a2e7ce4bee831e55edb4cdb688d5977a11555",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "b1b1f788b67197ca79f25cee854a7d5e38d3cf1b0eba54ed7be588d793f948a1",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "db9d50a57fde1eb1a7538c6876391740c368af614f79137ee7cc2678729354b9",
         "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
-        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "9f421d9d4c42f03b807d0e3b1baf772167cb1719dab79b49ed77a3c258d38734",
-        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "faeefa856d39b61bbb860a9af8b2ab9147f4126d34644ff68e02c55cd90731bc",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "3179e26765c62194d34c0b88df5406e0631f5192652fa8d6681af963bd2875a2",
+        "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "4b59d19f7895785fa5d27dc86a2eef1b3739e57a4806f43eb267618d017dabf1",
+        "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "5fa7bc9ae018b65e600fddec4431ebcb39a1bee57278d38260f57cc6fdd95fa9",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "87bf7b7bb24fb1c761b24f861c204dcbdcb6ade659f30312092d5e50a458ea73",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c",
         "apps/web/src/pages/dashboard/ui/DashboardCard.vue": "ffb6082a6de6b2362b7867621838069284120166288a32ec4d17e7f700a6bd8f",
-        "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue": "a97b89fc6478cfedf3a7a0fe9d1183afb47823785c17cac91caeecec45b0a9b4",
-        "apps/web/src/pages/dashboard/ui/DebtsCard.vue": "64fb666b9367ca712645a090b813649c1cc8bdc10b71af8dc4ac74e2ae9e093c"
+        "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue": "879e8cda1713714531b39a1224ae33d1356c3fec39cdb285fc794ccf616ba40a",
+        "apps/web/src/pages/dashboard/ui/DebtsCard.vue": "41c9ba1e20d41c85cb4f1a5eb572f4e9cc5583f22303122984ca0aae7c07a25c",
+        "apps/web/src/features/transaction/add/ui/AddTransactionTabs.vue": "7f1da092ecc0bfa6ca666de01fd7d1fcbbfbfa05a0aa7840f5ddeef2cf76236f",
+        "apps/web/src/widgets/mobile-shell/ui/SpeedDialFab.vue": "ff8fdcebe2c698818d5f6eaebe49b688b6002f44a3981dcaa19dd637fc5d5719"
       },
       "components": [
         {
           "name": "AppSidebar",
           "id": "d4de33db-4a6c-479f-8cfb-d7b17ef6f910",
-          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue)"
+          "sourcePath": ".superdesign/tmp/sidebar-component.html (converted from apps/web/src/app/layout/AppNav.vue); v2: CTA с kbd «N» — единый триггер добавления"
         }
       ],
       "drafts": {
@@ -87,23 +91,59 @@
         },
         "27cb41d8-53ae-45c8-b8ee-1aed289b7a73": {
           "title": "Refined Dashboard Specimens (Direction D)",
-          "visualDirection": "dashboard blocks in data/loading/empty states: stat card, quick actions, category breakdown, accounts, debts, recent transactions, page header",
-          "currentVersion": 2
+          "visualDirection": "dashboard blocks in data/loading/empty states: stat card, quick actions, category breakdown, accounts, debts, recent transactions, page header; v3 sync: спесимен «Быстрые действия» удалён (quick actions убраны из продукта)",
+          "currentVersion": 3
         },
         "73ef9770-3dbb-4ab9-9cf1-aebbeb111d99": {
           "title": "Кошелёк — Обзор с переключателем периода",
-          "visualDirection": "variant A state 1: current month (Август 2026) with inline period switcher in the header, forward chevron disabled, no сейчас tags",
+          "visualDirection": "variant A state 1: current month (Август 2026) with inline period switcher in the header, forward chevron disabled, no сейчас tags; v2 sync: kbd «N» на CTA сайдбара",
           "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
-          "currentVersion": 1
+          "currentVersion": 2
         },
         "ca24210c-5b7b-4201-a1e4-3ea1b8d836db": {
           "title": "Кошелёк — Обзор за июль 2026",
-          "visualDirection": "variant A state 2: past-month browsing (Июль 2026), flow cards show July data; сейчас tags removed per user feedback (v1 had them)",
+          "visualDirection": "variant A state 2: past-month browsing (Июль 2026), flow cards show July data; сейчас tags removed per user feedback (v1 had them); v3 sync: kbd «N» на CTA сайдбара",
           "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
-          "currentVersion": 2
+          "currentVersion": 3
+        },
+        "3bafa31e-f14b-4693-b563-6651fe471535": {
+          "title": "Вариант A — усиленный сайдбар CTA",
+          "visualDirection": "quick actions убраны; сайдбарная пилюля «Добавить операцию» — единственный триггер (full-width, h-10, hover-подъём); спесимен: таб-модал «Новая транзакция» (Расход/Доход/Перевод)",
+          "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+          "currentVersion": 1
+        },
+        "9463fa59-79bd-491e-b970-6f3f1115984d": {
+          "title": "Вариант B — десктопный FAB",
+          "visualDirection": "quick actions убраны; плавающая круглая кнопка 56px teal справа снизу (язык мобильного FAB), открывает единую форму напрямую без плиток; спесимен: таб-модал",
+          "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+          "currentVersion": 1
+        },
+        "c747ab0c-c377-4988-8b53-1a2ee32efc0e": {
+          "title": "Вариант C — топбар с кнопкой добавления",
+          "visualDirection": "quick actions убраны; новый slim липкий топбар над контентом: заголовок страницы слева, «Добавить операцию» справа; CTA из сайдбара убрана; спесимен: таб-модал",
+          "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+          "currentVersion": 1
+        },
+        "ec985bff-1ac8-4430-8a90-ef3f37f4f60c": {
+          "title": "Вариант D — хоткей N + command palette ⌘K",
+          "visualDirection": "quick actions убраны; сайдбар CTA варианта A + kbd «N»; спесимены: command palette (поиск + действия добавления) и таб-модал; палитра — дополнение, не единственный путь; SELECTED by user (A+D вместе): усиленный сайдбар CTA — основной путь, kbd «N» и command palette ⌘K — ускорение",
+          "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
+          "currentVersion": 1
+        },
+        "415640d0-0715-4bcb-8850-37ce36675915": {
+          "title": "Презентация P1 — side sheet справа",
+          "visualDirection": "форма добавления в выдвижной панели 440px справа (вместо центрированного модала), скрим 50%, палитра ⌘K и kbd N сохранены",
+          "parentDraftId": "ec985bff-1ac8-4430-8a90-ef3f37f4f60c",
+          "currentVersion": 1
+        },
+        "4960695d-c0ff-47ed-a39e-aa54c92e1921": {
+          "title": "Презентация P2 — страница /transactions/new",
+          "visualDirection": "форма добавления на отдельной странице (назад-стрелка, карточка max-w 520px), палитра ⌘K и kbd N сохранены",
+          "parentDraftId": "ec985bff-1ac8-4430-8a90-ef3f37f4f60c",
+          "currentVersion": 1
         }
       },
-      "updatedAt": "2026-08-29T13:05:00Z"
+      "updatedAt": "2026-08-31T16:40:29.339Z"
     },
     "/analytics": {
       "targetKind": "flow-page",
@@ -147,8 +187,8 @@
       "drafts": {
         "a34a3cff-d875-41b7-92bf-866f49a43189": {
           "title": "Аналитика — Обзор (Бумага Редакция)",
-          "visualDirection": "two overview cards: donut 120 + legend, expenses/income, whole card links to detail",
-          "currentVersion": 2
+          "visualDirection": "two overview cards: donut 120 + legend, expenses/income, whole card links to detail; v3 sync: kbd «N» на CTA сайдбара (единый триггер добавления)",
+          "currentVersion": 3
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -195,8 +235,8 @@
       "drafts": {
         "1060dbd7-aec0-4176-b919-9fbbbb45b4e4": {
           "title": "Аналитика — детальная (Бумага)",
-          "visualDirection": "period segmented control, stepper + total, big selectable donut, category rows with checkboxes/amounts/percents",
-          "currentVersion": 1
+          "visualDirection": "period segmented control, stepper + total, big selectable donut, category rows with checkboxes/amounts/percents; v3 sync: kbd «N» на CTA сайдбара",
+          "currentVersion": 3
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -243,8 +283,8 @@
       "drafts": {
         "7a8e225b-6d02-41e7-8716-508ce0408337": {
           "title": "Долги (Бумага)",
-          "visualDirection": "two independent direction summaries, debtor rows with avatars + balances, history dialog with day-grouped ops",
-          "currentVersion": 2
+          "visualDirection": "two independent direction summaries, debtor rows with avatars + balances, history dialog with day-grouped ops; v3 sync: kbd «N» на CTA сайдбара",
+          "currentVersion": 3
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -291,8 +331,8 @@
       "drafts": {
         "24f5fbcc-22b7-49ae-b126-f6a660be1326": {
           "title": "Планы (Бумага) — Синхронизация Стилей",
-          "visualDirection": "two type cards with counts + monthly figures, list dialog with recurrence, overdue badge, confirm buttons",
-          "currentVersion": 2
+          "visualDirection": "two type cards with counts + monthly figures, list dialog with recurrence, overdue badge, confirm buttons; v3 sync: kbd «N» на CTA сайдбара",
+          "currentVersion": 3
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -339,8 +379,8 @@
       "drafts": {
         "fda13a35-5814-4290-b3f3-c413b23f58a2": {
           "title": "Настройки (Бумага) — Обновление заголовков",
-          "visualDirection": "flat cards: language, profile, household members + owner actions, sessions",
-          "currentVersion": 3
+          "visualDirection": "flat cards: language, profile, household members + owner actions, sessions; v4 sync: kbd «N» на CTA сайдбара",
+          "currentVersion": 4
         }
       },
       "updatedAt": "2026-08-28T17:52:32.811341+00:00"
@@ -623,5 +663,5 @@
       "updatedAt": "2026-08-31T14:52:11Z"
     }
   },
-  "updatedAt": "2026-08-29T17:43:07.957Z"
+  "updatedAt": "2026-08-31T16:40:29.339Z"
 }

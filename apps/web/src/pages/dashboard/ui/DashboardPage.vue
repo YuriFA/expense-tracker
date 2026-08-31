@@ -17,7 +17,6 @@ import { useDebtOperations, totalsByDirection } from '@/entities/debt-operation'
 import { formatMoney, DEFAULT_CURRENCY } from '@/shared/lib/money'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
-import QuickActionsCard from './QuickActionsCard.vue'
 import StatCard from './StatCard.vue'
 import CategoryBreakdownCard from './CategoryBreakdownCard.vue'
 import RecentTransactionsCard from './RecentTransactionsCard.vue'
@@ -147,7 +146,9 @@ const stats = computed(() => [
       />
     </div>
 
-    <QuickActionsCard />
+    <!-- No inline creation entry points (web-unified-transaction-entry):
+         adding happens through the shell triggers (sidebar CTA / «N» /
+         command palette) and the FAB speed-dial below 768px. -->
 
     <div class="grid gap-6 xl:grid-cols-3">
       <div class="space-y-6 xl:col-span-2">

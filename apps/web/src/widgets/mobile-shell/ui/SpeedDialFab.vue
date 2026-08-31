@@ -159,7 +159,7 @@ function openIncome() {
     <Dialog v-model:open="incomeOpen">
       <DialogContent class="sm:max-w-[400px]" :show-close-button="false">
         <DialogHeader class="-mx-6 -mt-6 flex-row items-center justify-between border-b px-6 pb-4 pt-6">
-          <DialogTitle>{{ t('dashboard.quickActions.income') }}</DialogTitle>
+          <DialogTitle>{{ t('shell.income') }}</DialogTitle>
           <DialogClose :class="closeClasses">
             <X class="size-5" />
             <span class="sr-only">{{ t('common.close') }}</span>

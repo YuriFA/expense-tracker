@@ -20,7 +20,7 @@ test('month switcher re-scopes month-bound cards and gates the forward step', as
   await expect(page.getByText('Account added')).toBeVisible()
 
   await page.goto('/')
-  await page.getByTestId('quick-action-expense').click()
+  await page.getByTestId('sidebar-add-operation').click()
   const expenseDialog = page.getByRole('dialog')
   await expect(expenseDialog).toBeVisible()
   await expenseDialog.getByTestId('open-new-category').click()

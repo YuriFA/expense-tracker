@@ -26,10 +26,11 @@ test('anonymous local CRUD: account -> category -> transaction', async ({ page }
   await page.getByRole('button', { name: 'Add account' }).click()
   await expect(page.getByText('Account added')).toBeVisible()
 
-  // The dashboard's expense quick action with an inline new category
-  // (anonymous local mode starts with no categories).
+  // The sidebar CTA opens the unified creation flow (expense tab by default)
+  // with an inline new category (anonymous local mode starts with no
+  // categories).
   await page.goto('/')
-  await page.getByTestId('quick-action-expense').click()
+  await page.getByTestId('sidebar-add-operation').click()
   // Let the dialog mount settle (Firefox re-attaches nodes mid-animation).
   const expenseDialog = page.getByRole('dialog')
   await expect(expenseDialog).toBeVisible()

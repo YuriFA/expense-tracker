@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import {
   ArrowLeftRight,
   CalendarClock,
@@ -15,9 +15,8 @@ import {
 } from '@lucide/vue'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import { SyncStatusBadge } from '@/widgets/sync-status'
-import { AddTransactionTabs } from '@/features/transaction/add'
+import { useAddTransactionDialog } from '@/features/transaction/add'
 import { useAuthStore } from '@/entities/session'
 import { isRouteActive } from '@/shared/lib/route-active'
 import { notification } from '@/shared/services/notification'
@@ -42,7 +41,9 @@ const navItems = computed(() => [
 // Flat route records: analytics-detail keeps Аналитика active by name prefix.
 const isActive = (name: string) => isRouteActive(route.name, name)
 
-const addOpen = ref(false)
+// The CTA is the primary desktop trigger of the single creation flow; the
+// dialog itself lives in the app shell host (one instance per flow).
+const { openAddTransactionDialog } = useAddTransactionDialog()
 
 async function signOut() {
   await auth.logout()
@@ -98,20 +99,24 @@ function goToLogin() {
       </RouterLink>
     </nav>
 
-    <Dialog v-model:open="addOpen">
-      <DialogTrigger as-child>
-        <Button size="lg" data-testid="sidebar-add-operation">
-          <Plus class="size-4" aria-hidden="true" />
-          {{ t('dashboard.addOperation') }}
-        </Button>
-      </DialogTrigger>
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{{ t('addTransaction.newTransaction') }}</DialogTitle>
-        </DialogHeader>
-        <AddTransactionTabs @success="addOpen = false" />
-      </DialogContent>
-    </Dialog>
+    <!-- Emphasis pass per the approved canvas (draft ec985bff): full-width
+         pill, content left, hover kbd hint for the «N» accelerator. -->
+    <Button
+      size="lg"
+      class="group h-10 w-full justify-between px-4 transition-transform hover:-translate-y-0.5"
+      data-testid="sidebar-add-operation"
+      @click="openAddTransactionDialog()"
+    >
+      <span class="flex items-center gap-2">
+        <Plus class="size-4" aria-hidden="true" />
+        {{ t('dashboard.addOperation') }}
+      </span>
+      <kbd
+        class="hidden size-5 items-center justify-center rounded-md border border-border bg-secondary text-[11px] font-bold text-secondary-foreground group-hover:flex"
+      >
+        {{ t('shell.addHotkey') }}
+      </kbd>
+    </Button>
 
     <div
       v-if="auth.isAuthenticated"

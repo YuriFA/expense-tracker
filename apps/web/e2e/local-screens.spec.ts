@@ -21,13 +21,13 @@ async function seedAccount(page: import('@playwright/test').Page, name: string) 
   await expect(page.getByText('Account added')).toBeVisible()
 }
 
-/** An expense category created inline through the dashboard quick action. */
+/** An expense category created inline through the unified creation flow. */
 async function seedExpenseCategory(
   page: import('@playwright/test').Page,
   name: string,
 ) {
   await page.goto('/')
-  await page.getByTestId('quick-action-expense').click()
+  await page.getByTestId('sidebar-add-operation').click()
   const expenseDialog = page.getByRole('dialog')
   await expect(expenseDialog).toBeVisible()
   await expenseDialog.getByTestId('open-new-category').click()
@@ -48,7 +48,7 @@ test('analytics renders from local data with route-based detail navigation', asy
   // One expense with an inline new category, all in one dialog session (the
   // created category is auto-selected by the form).
   await page.goto('/')
-  await page.getByTestId('quick-action-expense').click()
+  await page.getByTestId('sidebar-add-operation').click()
   const expenseDialog = page.getByRole('dialog')
   await expect(expenseDialog).toBeVisible()
   await expenseDialog.getByTestId('open-new-category').click()
@@ -154,7 +154,12 @@ test('quick income entry lands in the cashflow data', async ({ page }) => {
   await seedAccount(page, 'Cash')
 
   await page.goto('/')
-  await page.getByTestId('quick-action-income').click()
+  // Unified flow (web-unified-transaction-entry): the sidebar CTA opens the
+  // tabbed creation dialog; switch it to the income tab.
+  await page.getByTestId('sidebar-add-operation').click()
+  const incomeDialog = page.getByRole('dialog')
+  await expect(incomeDialog).toBeVisible()
+  await incomeDialog.getByRole('tab', { name: 'Income' }).click()
   // Inline category creation (anonymous local mode starts without categories).
   await page.getByTestId('open-new-category').click()
   await page.getByTestId('new-category-name').fill('Salary')

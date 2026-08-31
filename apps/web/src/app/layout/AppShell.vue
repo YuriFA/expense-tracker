@@ -5,6 +5,8 @@ import { useMediaQuery } from '@vueuse/core'
 import AppSidebar from './AppSidebar.vue'
 import BootGate from './BootGate.vue'
 import { BottomNavLayout, BottomTabBar, MobileTopBar, SpeedDialFab } from '@/widgets/mobile-shell'
+import { CommandPalette } from '@/widgets/command-palette'
+import { AddTransactionDialogHost } from '@/features/transaction/add'
 import { OwnershipGateDialog, useAuthStore } from '@/entities/session'
 import { ConflictCenter } from '@/features/sync-conflicts'
 import { HouseholdChoiceDialog, useHouseholdJoinStore } from '@/features/household-join'
@@ -56,10 +58,17 @@ provideSyncController({
 
       <!-- Global hosts: the ownership gate can trigger from any auth flow;
            the household choice from any join/leave/startup-mismatch flow;
-           the conflict center opens from the sync badge on any screen. -->
+           the conflict center opens from the sync badge on any screen. The
+           add-transaction host is the single desktop creation flow
+           (web-unified-transaction-entry); it only has triggers on app
+           screens, so it mounts with the navigation. -->
       <OwnershipGateDialog />
       <HouseholdChoiceDialog />
       <ConflictCenter />
+      <AddTransactionDialogHost v-if="showNav" />
+      <!-- Palette + hotkeys are desktop accelerators (web-screens: transaction
+           creation entry points); the mobile shell keeps the FAB speed-dial. -->
+      <CommandPalette v-if="showNav && isDesktop" />
     </div>
   </BootGate>
 </template>

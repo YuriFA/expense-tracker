@@ -6,7 +6,7 @@ Style source: three reference screenshots provided by the user (a purple mobile 
 
 A personal & household finance tracker. Two clients (Vue 3 web PWA, React Native mobile) over one Go API; the web app is **anonymous-first and local-first**: it fully works without an account (local SQLite via OPFS), sign-in only adds background server sync. Data domain: accounts (balance derived), categories (emoji icon + color hex as DATA), transactions (expense/income/transfer), planned payments (recurring, confirm → transaction), debts (two directions, derived balances), analytics (donut + category breakdown by week/month/year), household (shared budget, email/join-code invites), sync engine (pending ops, conflicts the user resolves).
 
-Key pages (web): Dashboard `/` (redesign target), Transactions, Analytics + detail, Debts, Plans, Income (quick entry), Accounts, Settings, auth stack (login/register/verify-email/reset-password/invite).
+Key pages (web): Dashboard `/` (redesign target), Transactions, Analytics + detail, Debts, Plans, Accounts, Settings, auth stack (login/register/verify-email/reset-password/invite).
 
 JTBD: record a spend in seconds; see where money goes this month; keep balances/debts/upcoming payments under control; share a budget with family; stay functional offline.
 
@@ -21,7 +21,7 @@ JTBD: record a spend in seconds; see where money goes this month; keep balances/
 ## Branding & styling
 
 ### Layout structure (all directions)
-- **Left sidebar** (replaces the current top nav): brand mark top, vertical nav with lucide icons + labels, prominent primary CTA «Добавить операцию» (pill), bottom block: sync status badge + user email + sign out (authed) or guest badge + sign in.
+- **Left sidebar** (replaces the current top nav): brand mark top, vertical nav with lucide icons + labels, prominent primary CTA «Добавить операцию» (full-width pill, THE single desktop add trigger; kbd-подсказка «N» справа на hover), bottom block: sync status badge + user email + sign out (authed) or guest badge + sign in. Добавление транзакций на десктопе имеет ровно один флоу (центрированный модал «Новая транзакция» с табами Расход/Доход/Перевод) и три триггера к нему: сайдбарная CTA (основной путь), хоткей «N», command palette ⌘K (ускорение, не единственный путь); кнопка «Создать» на странице Транзакций — контекстный триггер того же флоу. Быстрых действий на дашборде больше нет (их роль на <768px выполняет FAB speed-dial).
 - Content column max-width ~1200px, comfortable 24px gutters. Dashboard: main column + right rail (Счета, Цели/сводка) on ≥1280px, single column below.
 - Cards: white surface, **radius 16–20px**, hairline border, soft low shadow. Page background: very light neutral gray (not pure white) so white cards read as surfaces.
 - Tinted info cards (like refs «Лимит»/«Все расходы»): pastel fills (lavender/mint) with normal contrast text, radius 20.
@@ -65,12 +65,14 @@ Fast and utilitarian: color/opacity transitions `0.15s cubic-bezier(0.4, 0, 0.2,
 - Cards compose: Card (white surface) / Card tinted (info) / list-card (rows with dividers).
 - Checkbox: custom-drawn native input — 16×16, radius 4, 1.5px border in the surface border color, transparent fill (no native accent-color tint). Checked = border AND an 8×8 rounded-2px inner dot take the row's accent color via currentColor: teal (primary) for the «Все расходы/доходы» master, the category's own color for its row. State coupling: unchecked (excluded) rows dim to 50% opacity; the selected row gets a warm muted wash instead of a tint. A second, standalone-filter variant exists in the specimen: 20×20, rounded-md, 2px border, checked = teal fill + white check glyph (for future filter surfaces).
 - Segmented control (Расходы/Доходы on analytics, Add tabs): pill group on muted track, active = white raised.
+- Command palette (⌘K): centered modal ~480px, search input «Найти или выполнить…», action rows with lucide icons (Добавить расход / Добавить доход / Добавить перевод / Новая категория), hover row = teal tint #d9efec, footer hint «↑↓ навигация · ↵ выбрать · esc закрыть». Ускорение к сайдбарной CTA, не единственный путь добавления.
+- kbd-подсказка: 20×20 (w-5 h-5), radius 6px, border #e8e0d4, fill #f0e9dd, ink 11px bold; видна на hover родителя (group-hover), например «N» на сайдбарной CTA «Добавить операцию».
 - Date-range navigation (analytics): pill with ‹ › chevrons and centered label («1 авг. — 31 авг.»).
 - Donut chart keeps its selectable-segment behavior; colors from category data or palette tints.
 
 ## Specific project requirements
 
-- Keep ALL current dashboard data surfaces reachable after redesign: totals per account, quick add (expense/transfer dialogs, income page), recent transactions (edit/delete), plus reference-inspired additions (category breakdown card, accounts right-rail, month stat cards) — additions must map to existing domain data (accounts, categories, transactions; no invented backend features).
+- Keep ALL current dashboard data surfaces reachable after redesign: totals per account, recent transactions (edit/delete), plus reference-inspired additions (category breakdown card, accounts right-rail, month stat cards) — additions must map to existing domain data (accounts, categories, transactions; no invented backend features). Adding a transaction is NOT a dashboard surface: it lives in the shell (sidebar CTA / hotkey «N» / ⌘K palette → единый модал «Новая транзакция»); the dashboard has no add buttons.
 - **No invented features.** The product has NO budgets/limits — no limit tiles, no limit CTAs, no progress bars tied to limits anywhere. Category breakdown shows amount + percentage only (as the analytics page already does). Every block must map to an implemented surface: accounts, transactions, category breakdown with percentages, debts, planned payments, sync status.
 - Anonymous-first: guest badge + sign-in entry must be visible without an account.
 - Responsive: ≥768px shows the desktop sidebar; <768px the mobile shell (slim sticky top bar + floating bottom tab bar with a central FAB speed-dial) replaces the old hamburger drawer (web-mobile-bottom-nav). Right rail stacks below main.

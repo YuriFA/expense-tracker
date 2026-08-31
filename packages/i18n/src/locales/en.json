@@ -31,12 +31,6 @@
   },
   "dashboard": {
     "netWorth": "Net worth",
-    "quickActions": {
-      "title": "Quick actions",
-      "expense": "Add expense",
-      "transfer": "Add transfer",
-      "income": "Add income"
-    },
     "addOperation": "Add operation",
     "overview": "Overview",
     "total": "Total",
@@ -74,6 +68,15 @@
     "categoryName": "Name",
     "categoryIcon": "Icon",
     "categoryCreated": "Category created"
+  },
+  "palette": {
+    "search": "Find or run a command…",
+    "addExpense": "Add expense",
+    "addIncome": "Add income",
+    "addTransfer": "Add transfer",
+    "newCategory": "New category",
+    "hint": "↑↓ navigate · ↵ select · esc close",
+    "noResults": "No matches"
   },
   "addAccount": {
     "nameLabel": "Name",
@@ -639,6 +642,7 @@
     "openAccountMenu": "Account menu",
     "transfer": "Transfer",
     "expense": "Expense",
-    "income": "Income"
+    "income": "Income",
+    "addHotkey": "N"
   }
 }
