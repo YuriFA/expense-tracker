@@ -22,12 +22,27 @@ const (
 // business-rule errors) and the cursor pull. The whole push batch commits
 // atomically via repository.SyncRepository.WithinHouseholdTx; householdID is
 // the scoping key and userID the authorship stamp of the pushing member.
+// Push dispatch goes through the per-entity applier registry: entities with
+// a landed adapter (ADR-0003) ride the engine, the rest their legacy twins.
 type SyncService struct {
-	sync repository.SyncRepository
+	sync     repository.SyncRepository
+	appliers map[string]syncOpApplier
 }
 
 func NewSyncService(sync repository.SyncRepository) *SyncService {
-	return &SyncService{sync: sync}
+	return &SyncService{
+		sync: sync,
+		appliers: map[string]syncOpApplier{
+			domain.SyncEntityAccount: applySyncOperationFor(accountAdapter{}),
+			domain.SyncEntityDebtor:  applySyncOperationFor(debtorAdapter{}),
+			// Strangler (ADR-0003 decision 5): remaining entities still ride
+			// their legacy twins until their adapters land.
+			domain.SyncEntityCategory:       applyCategoryOperation,
+			domain.SyncEntityTransaction:    applyTransactionOperation,
+			domain.SyncEntityDebtOperation:  applyDebtOperationOperation,
+			domain.SyncEntityPlannedPayment: applyPlannedPaymentOperation,
+		},
+	}
 }
 
 // Push applies a batch of client operations. Every item yields its own
@@ -43,7 +58,7 @@ func (s *SyncService) Push(
 	results := make([]domain.SyncPushResult, 0, len(ops))
 	err := s.sync.WithinHouseholdTx(ctx, householdID, func(t repository.SyncTx) error {
 		for _, operation := range ops {
-			result, err := applySyncOperation(ctx, t, householdID, userID, operation)
+			result, err := applySyncOperation(ctx, t, householdID, userID, operation, s.appliers)
 			if err != nil {
 				return err
 			}
@@ -100,6 +115,7 @@ func applySyncOperation(
 	t repository.SyncTx,
 	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
+	appliers map[string]syncOpApplier,
 ) (domain.SyncPushResult, error) {
 	// Persistent idempotency: an already-applied opId replays its stored
 	// result without side effects (retry after a lost response, duplicate
@@ -110,27 +126,14 @@ func applySyncOperation(
 		return previous.Result, nil
 	}
 
-	var result domain.SyncPushResult
-	var err error
-	switch op.Entity {
-	case domain.SyncEntityAccount:
-		result, err = applyAccountOperation(ctx, t, householdID, userID, op)
-	case domain.SyncEntityCategory:
-		result, err = applyCategoryOperation(ctx, t, householdID, userID, op)
-	case domain.SyncEntityTransaction:
-		result, err = applyTransactionOperation(ctx, t, householdID, userID, op)
-	case domain.SyncEntityDebtor:
-		result, err = applyDebtorOperation(ctx, t, householdID, userID, op)
-	case domain.SyncEntityDebtOperation:
-		result, err = applyDebtOperationOperation(ctx, t, householdID, userID, op)
-	case domain.SyncEntityPlannedPayment:
-		result, err = applyPlannedPaymentOperation(ctx, t, householdID, userID, op)
-	default:
+	applier, known := appliers[op.Entity]
+	if !known {
 		return domain.SyncPushResult{
 			OpID: op.OpID, Status: domain.SyncStatusError,
 			Code: "VALIDATION_FAILED", Message: "unknown entity",
 		}, nil
 	}
+	result, err := applier(ctx, t, householdID, userID, op)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -200,153 +203,6 @@ func serverStateOf(version int, deleted bool, data any) *domain.SyncServerState 
 		}
 	}
 	return state
-}
-
-// --- accounts -----------------------------------------------------------------
-
-func applyAccountOperation(
-	ctx context.Context,
-	t repository.SyncTx,
-	householdID, userID uuid.UUID,
-	op domain.SyncOperation,
-) (domain.SyncPushResult, error) {
-	if op.Action == domain.SyncActionDelete {
-		return deleteAccountOp(ctx, t, householdID, userID, op)
-	}
-	if op.Action != domain.SyncActionUpsert {
-		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
-	}
-
-	var data domain.AccountFullState
-	if err := decodeSyncData(op.Data, &data); err != nil {
-		return errorResult( //nolint:nilerr // decode failure is a per-item error result, not a batch error
-			op.OpID,
-			"VALIDATION_FAILED",
-			"invalid account data",
-		), nil
-	}
-
-	current, err := t.GetAccountAny(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-
-	// Create (base 0): absent -> create; exists -> already-exists conflict
-	// (a replay of the same opId was answered above, so this is a DIFFERENT
-	// operation claiming the id - never a silent overwrite).
-	if op.BaseVersion == 0 { //nolint:nestif // create-vs-update branches mirror the protocol spec
-		if current != nil {
-			return conflictResult(
-				op.OpID, domain.SyncCodeAlreadyExists, "account already exists",
-				serverStateOf(current.Version, current.Deleted(), current.FullState()),
-			), nil
-		}
-		if res, err := adoptOrphanedOrConflict(ctx, t, domain.SyncEntityAccount, op, householdID,
-			"account already exists in another household"); err != nil {
-			return domain.SyncPushResult{}, err
-		} else if res.Status != "" {
-			return res, nil
-		}
-		created, err := t.CreateAccount(ctx, domain.CreateAccountParams{
-			ID: op.ID, HouseholdID: householdID, UserID: userID,
-			Name: data.Name, Currency: data.Currency, OpeningBalance: data.OpeningBalance,
-		})
-		if errors.Is(err, domain.ErrAccountAlreadyExists) {
-			// Safety net for an id race (the advisory lock makes it unlikely):
-			// report the actual stored record as the conflict's serverState.
-			fresh, ferr := t.GetAccountAny(ctx, householdID, op.ID)
-			if ferr != nil {
-				return domain.SyncPushResult{}, ferr
-			}
-			if fresh == nil {
-				// The id is taken OUTSIDE this household (a cross-household
-				// collision): an already-exists conflict with no serverState -
-				// the foreign record must not be revealed.
-				return conflictResult(op.OpID, domain.SyncCodeAlreadyExists, "account already exists", nil), nil
-			}
-			return conflictResult(
-				op.OpID, domain.SyncCodeAlreadyExists, "account already exists",
-				serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),
-			), nil
-		}
-		if err != nil {
-			return domain.SyncPushResult{}, err
-		}
-		return appliedResult(op.OpID, created.Version), nil
-	}
-
-	// Update: strict CAS on the base version of a live record.
-	if current == nil {
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "account not found on server",
-			serverStateOf(0, false, nil),
-		), nil
-	}
-	if current.Deleted() {
-		return conflictResult(
-			op.OpID, domain.SyncCodeDeletedConflict, "account was deleted on server",
-			serverStateOf(current.Version, true, nil),
-		), nil
-	}
-	if current.Version != op.BaseVersion {
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "account version conflict",
-			serverStateOf(current.Version, false, current.FullState()),
-		), nil
-	}
-
-	updated, err := t.ReplaceAccount(ctx, householdID, userID, op.ID, op.BaseVersion, data)
-	if errors.Is(err, domain.ErrAccountVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		// Lost a race inside the batch (two ops touching the same record);
-		// report the conflict, the client re-pushes on the new base.
-		fresh, ferr := t.GetAccountAny(ctx, householdID, op.ID)
-		if ferr != nil {
-			return domain.SyncPushResult{}, ferr
-		}
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "account version conflict",
-			serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),
-		), nil
-	}
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	return appliedResult(op.OpID, updated.Version), nil
-}
-
-// deleteAccountOp implements the delete side: idempotent on tombstones and
-// missing records, delete-wins over concurrent edits (the device that edited
-// learns of the tombstone via pull and its conflict flow), in-use guard as a
-// per-item error.
-func deleteAccountOp( //nolint:dupl // account/category/transaction delete twins: identical protocol shape per entity
-	ctx context.Context,
-	t repository.SyncTx,
-	householdID, userID uuid.UUID,
-	op domain.SyncOperation,
-) (domain.SyncPushResult, error) {
-	current, err := t.GetAccountAny(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	if current == nil {
-		// The server never saw the record; nothing to delete (idempotent).
-		return appliedResult(op.OpID, 0), nil
-	}
-	if current.Deleted() {
-		return appliedResult(op.OpID, current.Version), nil
-	}
-	inUse, err := t.HasLiveTransactionsForAccount(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	if inUse {
-		return errorResult(op.OpID, "ACCOUNT_IN_USE", "account has transactions and cannot be deleted"), nil
-	}
-	deleted, err := t.TombstoneAccount(ctx, householdID, userID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	return appliedResult(op.OpID, deleted.Version), nil
 }
 
 // --- categories -----------------------------------------------------------------
@@ -450,7 +306,7 @@ func applyCategoryOperation(
 	return appliedResult(op.OpID, updated.Version), nil
 }
 
-func deleteCategoryOp( //nolint:dupl // account/category/transaction delete twins: identical protocol shape per entity
+func deleteCategoryOp(
 	ctx context.Context,
 	t repository.SyncTx,
 	householdID, userID uuid.UUID,
@@ -601,136 +457,6 @@ func deleteTransactionOp(
 		return appliedResult(op.OpID, current.Version), nil
 	}
 	deleted, err := t.TombstoneTransaction(ctx, householdID, userID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	return appliedResult(op.OpID, deleted.Version), nil
-}
-
-// --- debtors -----------------------------------------------------------------
-
-func applyDebtorOperation(
-	ctx context.Context,
-	t repository.SyncTx,
-	householdID, userID uuid.UUID,
-	op domain.SyncOperation,
-) (domain.SyncPushResult, error) {
-	if op.Action == domain.SyncActionDelete {
-		return deleteDebtorOp(ctx, t, householdID, userID, op)
-	}
-	if op.Action != domain.SyncActionUpsert {
-		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
-	}
-
-	var data domain.DebtorFullState
-	if err := decodeSyncData(op.Data, &data); err != nil {
-		return errorResult( //nolint:nilerr // decode failure is a per-item error result, not a batch error
-			op.OpID,
-			"VALIDATION_FAILED",
-			"invalid debtor data",
-		), nil
-	}
-
-	// Live-name uniqueness (pre-checked under the advisory lock so a
-	// violation surfaces as a per-item error, never an aborted batch).
-	nameTaken, err := t.DebtorNameTaken(ctx, householdID, data.Name, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	if nameTaken {
-		return errorResult(op.OpID, "DEBTOR_ALREADY_EXISTS", "debtor name already exists"), nil
-	}
-
-	current, err := t.GetDebtorAny(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-
-	if op.BaseVersion == 0 {
-		if current != nil {
-			return conflictResult(
-				op.OpID, domain.SyncCodeAlreadyExists, "debtor already exists",
-				serverStateOf(current.Version, current.Deleted(), current.FullState()),
-			), nil
-		}
-		if res, err := adoptOrphanedOrConflict(ctx, t, domain.SyncEntityDebtor, op, householdID,
-			"debtor already exists in another household"); err != nil {
-			return domain.SyncPushResult{}, err
-		} else if res.Status != "" {
-			return res, nil
-		}
-		created, err := t.CreateDebtor(ctx, domain.CreateDebtorParams{
-			ID: op.ID, HouseholdID: householdID, UserID: userID, Name: data.Name, Note: data.Note,
-		})
-		if err != nil {
-			return domain.SyncPushResult{}, err
-		}
-		return appliedResult(op.OpID, created.Version), nil
-	}
-
-	if current == nil {
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "debtor not found on server",
-			serverStateOf(0, false, nil),
-		), nil
-	}
-	if current.Deleted() {
-		return conflictResult(
-			op.OpID, domain.SyncCodeDeletedConflict, "debtor was deleted on server",
-			serverStateOf(current.Version, true, nil),
-		), nil
-	}
-	if current.Version != op.BaseVersion {
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "debtor version conflict",
-			serverStateOf(current.Version, false, current.FullState()),
-		), nil
-	}
-
-	updated, err := t.ReplaceDebtor(ctx, householdID, userID, op.ID, op.BaseVersion, data)
-	if errors.Is(err, domain.ErrDebtorVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		fresh, ferr := t.GetDebtorAny(ctx, householdID, op.ID)
-		if ferr != nil {
-			return domain.SyncPushResult{}, ferr
-		}
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "debtor version conflict",
-			serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),
-		), nil
-	}
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	return appliedResult(op.OpID, updated.Version), nil
-}
-
-// deleteDebtorOp mirrors deleteCategoryOp: idempotent on tombstones and
-// missing records, delete-wins over concurrent edits, live-operations in-use
-// guard as a per-item error.
-func deleteDebtorOp( //nolint:dupl // per-entity delete twins: identical protocol shape
-	ctx context.Context,
-	t repository.SyncTx,
-	householdID, userID uuid.UUID,
-	op domain.SyncOperation,
-) (domain.SyncPushResult, error) {
-	current, err := t.GetDebtorAny(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	if current == nil {
-		return appliedResult(op.OpID, 0), nil
-	}
-	if current.Deleted() {
-		return appliedResult(op.OpID, current.Version), nil
-	}
-	inUse, err := t.HasLiveDebtOperationsForDebtor(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	if inUse {
-		return errorResult(op.OpID, "DEBTOR_IN_USE", "debtor has debt operations and cannot be deleted"), nil
-	}
-	deleted, err := t.TombstoneDebtor(ctx, householdID, userID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}

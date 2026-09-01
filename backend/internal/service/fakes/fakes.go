@@ -520,12 +520,19 @@ func catUniqueKey(householdID uuid.UUID, name string) string {
 func (s *Store) CreateCategory(_ context.Context, params domain.CreateCategoryParams) (*domain.Category, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	id := params.ID
+	if id == uuid.Nil {
+		id = uuid.New()
+	}
+	if _, exists := s.categories[id]; exists {
+		return nil, domain.ErrCategoryAlreadyExists
+	}
 	if _, exists := s.catUnique[catUniqueKey(params.HouseholdID, params.Name)]; exists {
 		return nil, domain.ErrCategoryAlreadyExists
 	}
 	now := time.Now().UTC()
 	c := &domain.Category{
-		ID:        uuid.New(),
+		ID:        id,
 		UserID:    params.UserID,
 		Name:      params.Name,
 		Type:      params.Type,
@@ -533,9 +540,18 @@ func (s *Store) CreateCategory(_ context.Context, params domain.CreateCategoryPa
 		Color:     params.Color,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Version:   1,
 	}
 	s.categories[c.ID] = c
-	s.catUnique[catUniqueKey(params.HouseholdID, params.Name)] = struct{}{}
+	s.catUnique[catUniqueKey(params.HouseholdID, c.Name)] = struct{}{}
+	s.appendChange(
+		params.HouseholdID,
+		params.UserID,
+		domain.SyncEntityCategory,
+		c.ID,
+		domain.SyncChangeUpsert,
+		c.Version,
+	)
 	cc := *c
 	return &cc, nil
 }
