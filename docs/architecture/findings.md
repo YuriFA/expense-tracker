@@ -1,5 +1,13 @@
 # Architecture Findings — classification & revision status
 
+**Revision 3 (2026-09-01, full-repo audit).** Spec-to-code sweep of all 21
+capability specs, gate runs (HEAD `d21bebd`, with web/mobile suites re-run
+in a HEAD worktree), and invariant re-verification. Evidence report:
+`docs/architecture/audit-2026-09.md`. New IDs continue the sequence. The
+stale "ADR-0001 Origin-check not yet implemented" entry below is resolved
+(implemented 2026-08-30, `backend-hardening`); invariants #3/#5/#15/#17 and
+ADR-0002's status header were refreshed by the same audit (B6).
+
 **Revision 2 (2026-08-20, post-decision review).** Revision 1 was the
 original baseline classification (FIX / DECIDE / DOCUMENT / ACCEPT /
 REMOVE). This revision records the outcome of the interactive architecture
@@ -10,14 +18,30 @@ CI + root `pnpm arch:check` in CI). Original finding IDs are preserved.
 
 ## Status summary
 
-| Class (rev.2) | Count | Findings |
+| Class | Count | Findings |
 |---|---|---|
-| FIX (pending) | 0 | none — all closed |
-| FIX (pending, follow-up) | 0 | the A8 follow-up (tokens sync + guard) is closed — see resolved table |
-| ACCEPT | 2 | A2 (registered deviations, migration deferred by decision), A14 (narrowed: `ts-gen-check` + `arch-check` carved out of the CI gap) |
-| DOCUMENT (resolved) | 10 | A7, A10, A12, B5, C2, C3, C4, C5, C6, C7 — all fixed 2026-08-20 |
+| FIX (pending, rev.3) | 5 | A16 (debts listing scoping bug), A17 (CI `arch-check` red since introduction — Node 20 vs dependency-cruiser 18), A18 (mobile date-dependent test fixtures), A19 (web FSD: cross-slice import + Steiger not in CI), A20 (PWA manifest colors not token-derived) |
+| DOCUMENT (pending, rev.3) | 2 | B7 (OpenAPI `Idempotency-Key` self-contradiction), B8 (planned-payments spec wording still user-scoped) |
+| DECIDE (open, rev.3) | 1 | B9 (mobile runtime version surface — spec gap) |
+| DOCUMENT (resolved, rev.3) | 1 | B6 (stale docs: ADR-0001:66, overview CSRF/rate-limit + test counts, ADR-0002 status header, invariants #3/#15/#17, findings deviation list) — fixed by the audit itself |
+| FIX (pending, rev.2) | 0 | none — all closed |
+| ACCEPT | 2 | A2 (registered deviations, migration deferred by decision), A14 (narrowed: `ts-gen-check` + `arch-check` carved out of the CI gap — note A17: the `arch-check` half was never operational in CI) |
+| DOCUMENT (resolved, rev.2) | 10 | A7, A10, A12, B5, C2, C3, C4, C5, C6, C7 — all fixed 2026-08-20 |
 | REMOVE | 2 | A15, C1 |
-| DECIDE | 0 | all resolved: A1, A8, B1, B2, D4 |
+| DECIDE (resolved, rev.2) | 0 | all resolved: A1, A8, B1, B2, D4 |
+
+## Open findings detail (rev.3)
+
+| ID | Class | Priority | Finding |
+|---|---|---|---|
+| A16 | FIX | P1 | `GET /api/debtors` / `GET /api/debt-operations` pass `user.ID` into the `householdID` parameter (`transport/http/debtors.go:17`, `debt_operations.go:17`); empty listings for every registration since the household change (distinct ids, `postgres/users.go:28-29`; only 000005-backfill rows coincide). e2e gap: list assertions are `NotContains`-only. One-line fix per handler + a positive e2e assertion. Blast radius limited — both local-first apps list from the local DB — but the contract endpoint is broken and household members generally get wrong results |
+| A17 | FIX | P1 | CI red on every run since 2026-08-21 (last green 2026-08-19 `fe30c7d`): the `arch-check` job (added 2026-08-20) has never passed — dependency-cruiser 18 rejects Node 20 (`ci.yml` pins `node-version: "20"` in 3 places; local Node 24 is fine). The "Automated: yes" claims for #12–#16 were not operational in CI. Fix: bump to 22. Also: 14 local commits unpushed |
+| A18 | FIX | P2 | 3 mobile Jest suites / 7 tests fail at HEAD since the 2026-09-01 month boundary: `category-cashflow-sheet.test.tsx` (`dayThisMonth` clamping collapses days 2/4/6 onto the 1st), `analytics-screen`/`analytics-detail-screen` (hardcoded `2026-08-*` fixtures vs `currentPeriod('month')` default). Not in CI → unnoticed. Fix: month-independent fixtures (injected clock) |
+| A19 | FIX | P2 | Web FSD (Steiger, local-only): `widgets/mobile-shell/ui/MobileTopBar.vue:6` imports `@/widgets/sync-status` (cross-slice, forbidden); `shared/lib` 17 modules > 15 threshold. Fix the import, group shared/lib, and add Steiger (or port the two rules to the depcruiser web config) to CI |
+| A20 | FIX | P3 | `apps/web/public/site.webmanifest:9-10`: `theme_color #6366f1` is the categorical data-palette indigo (tokens file: brand-* is "not the UI accent"), `background_color #ffffff` matches no Warm Paper token (light background `#f6f2ec`, primary `#0f766e`). Also stale comment `packages/tokens/src/index.css:92` ("dark theme unwired at runtime") |
+| B7 | DOCUMENT | P3 | `openapi.yaml` self-contradiction on `Idempotency-Key`: operation description says "если заголовок присутствует" (conditional), the parameter is `required: true` (`openapi.yaml:2072-2078`), and the middleware 400s on absence (`IDEMPOTENCY_KEY_MISSING`). Align the description with the enforced reality |
+| B8 | DOCUMENT | P3 | planned-payments spec wording predates household scoping ("belongs to exactly one user… another user's … not exist"); code and its four sibling specs are household-scoped. Reword via a spec delta |
+| B9 | DECIDE | P3 | app-version spec gap: mobile exposes no runtime version surface (only `package.json` `0.0.0`), so version-drift detection cannot cover the mobile client. Decide: add one or record the exclusion |
 
 **ADR policy outcome:** exactly one ADR was warranted — **ADR-0001**
 (`docs/adr/0001-auth-csrf-threat-model.md`, finding B1). The remaining
@@ -65,20 +89,19 @@ deployment assumptions, not cross-cutting architecture changes.
 
 ## Pending findings (FIX — none fixed silently; each awaits its own change)
 
-None — every FIX finding (A3–A6, A9, A11, A13, B3, B4, A8-follow-up) is
-closed. The remaining open work items are implementations of already-made
-decisions: the ADR-0001 Origin-check middleware, the web migration onto
-`@expense-tracker/dates`, the mobile i18n wiring, and the `i18n` en→ru
-default flip — tracked in `docs/assumptions.md`; and the web offline-first
-migration — decided and tracked in invariant #16
-(`docs/architecture/invariants.md`), not in assumptions.
+Rev.3 open items: **A16–A20** (see the detail table above). Rev.2 items are
+all closed. The remaining older open work items are implementations of
+already-made decisions: the web migration onto `@expense-tracker/dates`,
+the mobile i18n wiring, and the `i18n` en→ru default flip — tracked in
+`docs/assumptions.md`. (The ADR-0001 Origin-check middleware and the web
+local-first migration from the rev.2 list have since landed.)
 
 ## Registered deviations & accepted debts (do not "fix" without a decision)
 
 - A2 deviations: `RegisterUser` seeding, `VerifyEmailCode` attempt
   accounting (business policy inside repository transactions) — revisit
   as new tasks exercise the boundary; UoW would need its own ADR.
-- ADR-0001 Origin-check middleware: decided, **not yet implemented**.
-- A14 remainder: no type-check / app tests / knip in CI.
+- A14 remainder: no type-check / app tests / knip in CI (see A17/A18/A19
+  for what that let slip).
 - Sliding-expiry policy lives in auth middleware without dedicated unit
   tests (accepted with the invariant #17 decision).

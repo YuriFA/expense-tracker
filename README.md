@@ -1,8 +1,12 @@
 # expense-tracker
 
-Monorepo for the Expense Tracker product: a Go API, a Vue 3 web client,
-and a React Native (Expo) mobile client, tied together by an OpenAPI
-contract.
+Expense Tracker is a household budget app: a family shares one budget space —
+accounts, categories, transactions, debts, and planned payments are common to
+every member from the moment they join (ADR-0002). Free of subscriptions and
+third-party aggregators: the family's data lives on its own server.
+
+The product is a monorepo: a Go API, a Vue 3 web client (installable PWA),
+and a React Native (Expo) mobile client, tied together by an OpenAPI contract.
 
 ## Structure
 

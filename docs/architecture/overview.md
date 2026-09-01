@@ -205,13 +205,15 @@ expired rows.
 
 CSRF (decided 2026-08-20, `docs/adr/0001-auth-csrf-threat-model.md`): one
 stateful cookie session for both clients; the primary CSRF control is a
-server-side Origin check on state-changing browser requests — decided but
-**not yet implemented**; SameSite=Lax + JSON-only + CORS allowlist remain
-defense-in-depth; native clients carry no extra CSRF protection.
-Transport policy: production HTTPS-only with `Secure` cookies; dev allows
-plain HTTP on localhost. Rate limiting is an in-memory per-IP
-limiter on login/verify-email only (`middleware/ratelimit.go`) —
-process-local, not distributed.
+server-side Origin check on state-changing browser requests — **implemented
+2026-08-30** (`middleware/origin.go`, mounted pre-CORS in `server.go`,
+403 `ORIGIN_REJECTED`; e2e `hardening_test.go`); SameSite=Lax + JSON-only
++ CORS allowlist remain defense-in-depth; native clients carry no extra
+CSRF protection. Transport policy: production HTTPS-only with `Secure`
+cookies; dev allows plain HTTP on localhost. Rate limiting is an in-memory
+per-IP limiter on login/verify-email **and registration**
+(attempt-counting, `middleware/ratelimit.go`, 429
+`REGISTER_RATE_LIMITED` + `Retry-After`) — process-local, not distributed.
 
 ### Error handling
 
@@ -398,7 +400,7 @@ happens in dialogs, not on dedicated pages.
   UI surfaces them via toasts (`vue-sonner`), inline form field errors, and
   retry-capable `ErrorState` blocks; a handful of screens special-case
   classes (Unauthorized/RateLimited on login, AlreadyExists on register).
-- **Testing**: 71 vitest files — repositories (via `globalThis.fetch`
+- **Testing**: 85 vitest files (2026-09-01 count) — repositories (via `globalThis.fetch`
   spies), DI wiring, stores/composables, and extensive component/page tests
   with a mount-with-providers helper; Playwright e2e covers backendless
   local flows (CRUD, reload persistence, offline, single-tab lock, and the
@@ -515,7 +517,7 @@ entities/ shared/`.
 |---|---|---|---|---|
 | backend | auth crypto, services (fakes), transport (httptest+fakes), jobs | repository + e2e suites on testcontainers Postgres 17 (IDOR, OCC, auth flows, sync) | — (e2e suite is a Go integration pkg) | yes (`go test -race`, lint, drift gate) |
 | packages | none in-package | covered from app suites only | — | no |
-| web | 64 vitest files (repos, DI, stores, components, filters) | — | Playwright auth flow | no (local only) |
+| web | 85 vitest files (repos, DI, stores, components, filters) | — | Playwright auth flow | no (local only) |
 | mobile | 37 jest files (repos on real SQLite, sync engine, screens) | opt-in backend-integration suite | 11 Maestro flows | no (local only) |
 | spec | — | — | — | yes (redocly lint, oasdiff breaking on PRs) |
 

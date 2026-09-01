@@ -1,6 +1,12 @@
 # Architecture Invariants — evidence-backed
 
 Baseline captured 2026-08-20 (branch `chore/expo-sdk-57`, HEAD `c0b18bf`).
+**Refreshed 2026-09-01** (full-repo audit, HEAD `d21bebd`; evidence report:
+`docs/architecture/audit-2026-09.md`, findings Rev 3 in
+`docs/architecture/findings.md`): #3 Origin-check is now implemented, #5
+records a live call-site deviation (A16, pending fix), #15 web evidence
+updated (Steiger red locally), #17 allowlist corrected to include
+`HouseholdRepository`.
 Every invariant below is supported by evidence in code, tests, OpenSpec, or
 existing documentation, cited per entry. Anything that could not be
 established from those sources is marked **UNKNOWN** and excluded from this
@@ -12,6 +18,11 @@ golangci-lint (incl. depguard architecture rules) + `go test -race`,
 `arch-check` (dependency-cruiser; run locally via `pnpm arch:check`),
 Docker build). Checks that exist only as local scripts (type-check,
 vitest/jest, knip, Steiger) are **not** automated enforcement.
+**Caveat (audit 2026-09-01, finding A17):** the CI `arch-check` job has
+been red on every run since it was added (2026-08-21) — dependency-cruiser
+18 rejects the job's Node 20. Until `ci.yml` bumps to Node 22, the
+"Automated: yes" claims that rest on `arch-check` (#12–#16) are operational
+only via local runs (Node ≥ 22), not in CI.
 
 ---
 
@@ -93,12 +104,18 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
 - **Risk if violated**: Stateless tokens would break the documented
   revoke-on-reset, sliding-expiry, and session-listing semantics that
   tests and both frontends rely on.
-- **Current enforcement**: none beyond code structure; e2e tests cover
-  login/logout/session behavior but don't (and can't) assert absence of JWT.
-  The Origin-check middleware is decided (ADR-0001) but **not yet
-  implemented** — until then the CSRF layer rests on SameSite/JSON/CORS
-  only.
-- **Automated**: no.
+- **Current enforcement** (updated 2026-09-01): the ADR-0001 Origin check is
+  **implemented** — `middleware/origin.go:17-45` (non-GET + non-allowlisted
+  Origin → 403 `ORIGIN_REJECTED`; absent Origin and GET pass), mounted
+  pre-CORS at `server.go:62`; wildcard/empty allowlists fail closed
+  (`server.go:46-50`). Registration adds a per-IP attempt-counting limiter
+  (429 `REGISTER_RATE_LIMITED` + `Retry-After`,
+  `middleware/ratelimit.go:108-185`, `server.go:112-123`). e2e coverage:
+  `e2e/hardening_test.go:67-115` (runs in CI). Landed with the
+  `backend-hardening` change (2026-08-30). No check asserts absence of JWT
+  beyond code structure.
+- **Automated**: partially — behavior e2e-tested in CI; the rule itself is
+  convention.
 
 ### 4. Every non-2xx response carries a machine `code` + human `message`; backend maps domain errors in one place; frontends map by `code`, not by HTTP status
 
@@ -143,6 +160,15 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
 - **Risk if violated**: Cross-household data leaks (IDOR) — the most severe
   failure mode of this system.
 - **Current enforcement**: integration tests run in CI (`go test -race`).
+- **Live deviation (audit 2026-09-01, finding A16, fix pending)**:
+  `transport/http/debtors.go:17` and `debt_operations.go:17` pass
+  `user.ID` into the `householdID` service parameter — it only returns
+  rows for households whose id coincides with the owner's user id (the
+  000005 backfill); registrations since the household change mint distinct
+  ids (`postgres/users.go:28-29`) and get empty debtor/debt-operation
+  listings. Exactly the caveat below materializing: no test covered the
+  positive listing path (`e2e/debts_test.go` list assertions are
+  `NotContains`-only).
 - **Automated**: yes (backend; a new unscoped query would only be caught if
   a test happens to cover it — the rule itself is not mechanically checked).
 
@@ -346,8 +372,11 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   formulated to be mechanically enforceable — no exceptions.
 - **Evidence**: web — enforced by `apps/web/steiger.config.ts`
   (`@feature-sliced/steiger-plugin`, fractal-FSD overrides; run via
-  `pnpm exec steiger` in `apps/web`);
-  grep found no violations. Mobile — rule decided 2026-08-20; all A11
+  `pnpm exec steiger` in `apps/web`). Audit 2026-09-01 (finding A19):
+  Steiger is red locally — one cross-slice import
+  (`widgets/mobile-shell/ui/MobileTopBar.vue:6` → `widgets/sync-status`)
+  plus a `shared/lib` grouping warning (17 modules > 15) — and is not in
+  CI, so nothing surfaced it. Mobile — rule decided 2026-08-20; all A11
   deviations fixed 2026-08-20 (sync
   provider composes in `src/app/_layout.tsx`, context in
   `shared/lib/sync/sync-context.tsx`; cashflow sheets delegate to
@@ -406,9 +435,12 @@ vitest/jest, knip, Steiger) are **not** automated enforcement.
   repositories. Gin middleware implementing a cross-cutting infrastructure
   concern that needs no service business logic may depend directly on
   repository interfaces, limited to an explicit allowlist:
-  `SessionRepository` + `UserRepository` (auth), `IdempotencyRepository`
-  (idempotency). Any new middleware → repository dependency is a separate
-  architectural decision.
+  `SessionRepository` + `UserRepository` + `HouseholdRepository` (auth —
+  membership resolution session → user → household,
+  `middleware/auth.go:27-29`), `IdempotencyRepository` (idempotency).
+  Any new middleware → repository dependency is a separate architectural
+  decision. (Enumeration corrected 2026-09-01: `HouseholdRepository` was
+  part of the allowlist since the household change but missing here.)
 - **Evidence**: decided 2026-08-20; rule recorded in this invariant;
   implemented at `middleware/auth.go:23-28`,
   `middleware/idempotency.go:48`, wiring at `server.go:30-32`; all handlers

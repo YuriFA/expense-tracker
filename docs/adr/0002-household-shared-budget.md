@@ -1,6 +1,8 @@
 # ADR-0002: Household — single shared data space for the family budget
 
-- **Status:** Accepted (2026-08-26); implementation deferred to its own change (roadmap stage 5)
+- **Status:** Accepted (2026-08-26); implemented 2026-08-27 by the household changes
+  (`2026-08-27-household-scoping`, `2026-08-27-household-join`, `2026-08-27-household-ux`
+  in `openspec/changes/archive/`)
 - **Scope:** backend data model & sync scoping; client sync semantics; no API contract change decided here
 - **Related:** `docs/architecture/invariants.md` #5 (user-scoped data), #7 (change_log
   atomicity / per-user advisory lock); `openspec/specs/sync-protocol/spec.md`
@@ -72,7 +74,7 @@ the join path must compose with that.
 
 ## Consequences
 
-- Implementation lands as its own OpenSpec change (stage 5); this record fixes
+- Implementation landed as its own OpenSpec changes (stage 5); this record fixes
   the direction only. Web/UI work for households is likewise out of this ADR.
 - OpenAPI additions happen at implementation: household endpoints (get mine +
   members, create/accept invitation, leave/remove member). Sync push/pull

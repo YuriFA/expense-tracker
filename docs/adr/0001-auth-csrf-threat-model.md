@@ -63,8 +63,12 @@ Threat-model split:
 ## Consequences
 
 - `docs/architecture/invariants.md` #3 records the posture. The
-  Origin-check middleware is **decided but not yet implemented**;
-  implementation is a separate work item, not part of this record.
+  Origin-check middleware is **implemented** (2026-08-30, the
+  `backend-hardening` change: `middleware/origin.go`, mounted pre-CORS in
+  `server.go`, 403 `ORIGIN_REJECTED`; e2e `hardening_test.go`) — this line
+  updated 2026-09-01 by the repo audit; the original record said
+  "decided but not yet implemented; implementation is a separate work
+  item".
 - No OpenAPI contract change: the check is server-side enforcement of
   existing endpoints.
 - The Origin allowlist shares configuration with CORS; the wildcard-CORS
