@@ -1,3 +1,8 @@
+export { default as ResponsiveSelect } from './ResponsiveSelect.vue'
+export { default as ResponsiveSelectContent } from './ResponsiveSelectContent.vue'
+export { default as ResponsiveSelectItem } from './ResponsiveSelectItem.vue'
+export { default as ResponsiveSelectTrigger } from './ResponsiveSelectTrigger.vue'
+export { default as ResponsiveSelectValue } from './ResponsiveSelectValue.vue'
 export { default as Select } from './Select.vue'
 export { default as SelectContent } from './SelectContent.vue'
 export { default as SelectGroup } from './SelectGroup.vue'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMediaQuery } from '@vueuse/core'
 import AppSidebar from './AppSidebar.vue'
@@ -11,6 +11,8 @@ import { OwnershipGateDialog, useAuthStore } from '@/entities/session'
 import { ConflictCenter } from '@/features/sync-conflicts'
 import { HouseholdChoiceDialog, useHouseholdJoinStore } from '@/features/household-join'
 import { provideSyncController } from '@/shared/lib/local-db'
+import { DESKTOP_PRESENTATION_KEY } from '@/shared/lib/presentation'
+import { SyncStatusBadge } from '@/widgets/sync-status'
 
 const route = useRoute()
 // Auth entry points (login/register/verify/reset) render full-screen without
@@ -22,6 +24,7 @@ const showNav = computed(() => !route.meta.public)
 // 768px is the sidebar <-> bottom-tabs boundary (web-screens: below it the
 // mobile shell replaces the sidebar).
 const isDesktop = useMediaQuery('(min-width: 768px)')
+provide(DESKTOP_PRESENTATION_KEY, isDesktop)
 
 // The sync controller is composed here (the FSD composition root): it needs
 // the auth state (entities) and provides itself down to the badge/conflict
@@ -42,7 +45,11 @@ provideSyncController({
       <AppSidebar v-if="showNav && isDesktop" />
 
       <div class="flex min-w-0 flex-1 flex-col">
-        <MobileTopBar v-if="showNav && !isDesktop" />
+        <MobileTopBar v-if="showNav && !isDesktop">
+          <template #status>
+            <SyncStatusBadge compact />
+          </template>
+        </MobileTopBar>
 
         <!-- Extra bottom padding on phone widths keeps the content clear of
              the floating tab bar. -->

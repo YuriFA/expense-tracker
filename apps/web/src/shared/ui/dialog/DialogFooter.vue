@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DialogClose } from 'reka-ui'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
+import DialogClose from './DialogClose.vue'
 
 const props = withDefaults(
   defineProps<{
