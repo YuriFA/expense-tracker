@@ -12,16 +12,17 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { Button } from '@/shared/ui/button'
-import { MoreVertical, Pencil, Trash2 } from '@lucide/vue'
+import { MoreVertical, Pencil, ScaleIcon, Trash2 } from '@lucide/vue'
 
 const { account } = defineProps<{
   account: AccountWithBalance
 }>()
 
-// The edit/delete dialogs live once on the page (list/dialog convention):
-// the kebab only reports the intent, the page hoists the dialog pair.
+// The edit/reconcile/delete dialogs live once on the page (list/dialog
+// convention): the kebab only reports the intent, the page hoists the dialogs.
 const emit = defineEmits<{
   edit: []
+  reconcile: []
   delete: []
 }>()
 
@@ -46,7 +47,7 @@ const format = (value: number) => formatMoney(value, account.currency, locale.va
 
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" :aria-label="t('accounts.actions')">
             <MoreVertical class="size-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -54,6 +55,10 @@ const format = (value: number) => formatMoney(value, account.currency, locale.va
           <DropdownMenuItem @select="emit('edit')">
             <Pencil class="size-4" />
             {{ t('editAccount.trigger') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem @select="emit('reconcile')">
+            <ScaleIcon class="size-4" />
+            {{ t('reconcileAccount.trigger') }}
           </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" @select="emit('delete')">
             <Trash2 class="size-4" />

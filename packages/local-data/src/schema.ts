@@ -32,7 +32,6 @@ export const accounts = sqliteTable('accounts', {
   currency: text('currency').notNull(),
   /** Integer minor units. */
   openingBalance: integer('opening_balance').notNull(),
-  manualAdjustment: integer('manual_adjustment').notNull().default(0),
   version: integer('version').notNull().default(1),
   serverVersion: integer('server_version').notNull().default(0),
   deletedAt: text('deleted_at'),
@@ -63,9 +62,10 @@ export const transactions = sqliteTable(
   'transactions',
   {
     id: text('id').primaryKey(),
-    /** TransactionType ('income' | 'expense' | 'transfer'). */
+    /** TransactionType ('income' | 'expense' | 'transfer' | 'adjustment'). */
     type: text('type').notNull(),
-    /** Integer minor units, always >= 1. */
+    /** Integer minor units: >= 1 for income/expense/transfer, nonzero signed
+     * for adjustment (the balance reconciliation delta). */
     amount: integer('amount').notNull(),
     description: text('description').notNull().default(''),
     /** Canonical UTC ISO-8601 (`new Date(...).toISOString()`). */

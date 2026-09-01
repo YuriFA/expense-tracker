@@ -65,19 +65,13 @@ func (s *Server) UpdateAccount(
 ) (api.UpdateAccountResponseObject, error) {
 	user := s.currentUser(ctx)
 	var name *string
-	var manual *int64
 	if req.Body.Name != nil {
 		n := *req.Body.Name
 		name = &n
 	}
-	if req.Body.ManualAdjustment != nil {
-		m := *req.Body.ManualAdjustment
-		manual = &m
-	}
 	a, err := s.accounts.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateAccountParams{
-		Name:             name,
-		ManualAdjustment: manual,
-		Version:          req.Body.Version,
+		Name:    name,
+		Version: req.Body.Version,
 	})
 	if err != nil {
 		return nil, err

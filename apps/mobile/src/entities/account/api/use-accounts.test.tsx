@@ -28,7 +28,6 @@ describe('account hooks', () => {
         name: 'Карта',
         currency: 'RUB',
         openingBalance: 1_000,
-        manualAdjustment: 0,
         version: 1,
       },
     ])
@@ -71,7 +70,6 @@ describe('account hooks', () => {
         name: 'Карта',
         currency: 'RUB',
         openingBalance: 0,
-        manualAdjustment: 0,
         version: 1,
       },
     ])

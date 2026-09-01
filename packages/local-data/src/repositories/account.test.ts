@@ -27,7 +27,7 @@ beforeEach(async () => {
 const OCCURRED_AT = '2026-08-10T12:00:00.000Z'
 
 describe('local account repository', () => {
-  it('creates an account with manualAdjustment 0 and the opening balance', async () => {
+  it('creates an account with the opening balance', async () => {
     const account = await accountRepo.create({
       name: 'Карта',
       currency: 'RUB',
@@ -37,7 +37,6 @@ describe('local account repository', () => {
       name: 'Карта',
       currency: 'RUB',
       openingBalance: 150_000,
-      manualAdjustment: 0,
       balance: 150_000,
     })
     const ops = db.select().from(syncOutbox).all()
@@ -106,11 +105,23 @@ describe('local account repository', () => {
     expect(balances.get(card.id)).toBe(115_000) // 100k + 30k - 10k - 5k
     expect(balances.get(cash.id)).toBe(5_000)
 
-    const manual = await accountRepo.update(card.id, {
-      manualAdjustment: 2_500,
+    // An adjustment transaction shifts the balance by its signed amount.
+    const adjustment = await transactionRepo.create({
+      type: 'adjustment',
+      amount: 2_500,
+      description: 'сверка',
+      occurredAt: OCCURRED_AT,
+      accountId: card.id,
+    })
+    const afterAdjustment = await accountRepo.getById(card.id)
+    expect(afterAdjustment?.balance).toBe(117_500)
+
+    // Rename keeps the balance.
+    const renamed = await accountRepo.update(card.id, {
+      name: 'Карта Про',
       version: card.version,
     })
-    expect(manual.balance).toBe(117_500)
+    expect(renamed.balance).toBe(117_500)
   })
 
   it('excludes deleted transactions from balances', async () => {
@@ -204,7 +215,7 @@ describe('local account repository', () => {
     })
   })
 
-  it('updates only name and manualAdjustment and bumps the local revision', async () => {
+  it('updates the name and bumps the local revision', async () => {
     const account = await accountRepo.create({
       name: 'Карта',
       currency: 'RUB',

@@ -269,6 +269,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeInvalidRefs,
 		"invalid references",
 	},
+	domain.ErrInvalidAmount: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeInvalidAmount,
+		"invalid amount",
+	},
 
 	// --- transport/service errors ---
 	service.ErrNoFieldsToUpdate: {http.StatusBadRequest, httperr.ErrCodeValidationFailed, "no fields to update"},

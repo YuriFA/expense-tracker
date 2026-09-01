@@ -186,16 +186,7 @@ export function ConflictCenter() {
       const state = fresh.localState as Record<string, unknown>
       try {
         if (fresh.entity === 'account') {
-          const created = await accountRepository.create(asCreateAccountPayload(state))
-          // Create cannot carry a manual adjustment (wire contract), so a
-          // lost adjustment is replayed as an immediate local update.
-          const manualAdjustment = toMinorUnits(state.manualAdjustment)
-          if (manualAdjustment !== 0) {
-            await accountRepository.update(created.id, {
-              manualAdjustment,
-              version: created.version,
-            })
-          }
+          await accountRepository.create(asCreateAccountPayload(state))
         } else if (fresh.entity === 'category') {
           await categoryRepository.create(asCreateCategoryPayload(state))
         } else if (fresh.entity === 'debtor') {

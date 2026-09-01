@@ -138,6 +138,44 @@ describe('local transaction repository: create validation', () => {
     const transaction = await transactionRepo.create(cashflowPayload({ id: 'tx-client-1' }))
     expect(transaction.id).toBe('tx-client-1')
   })
+
+  it('creates an adjustment with a signed amount and no category', async () => {
+    const adjustment = await transactionRepo.create({
+      type: 'adjustment',
+      amount: -2_500,
+      description: 'сверка наличных',
+      occurredAt: '2026-08-10T12:00:00.000Z',
+      accountId: cardId,
+    })
+    expect(adjustment).toMatchObject({ type: 'adjustment', amount: -2_500, accountId: cardId })
+  })
+
+  it('rejects a zero adjustment amount and forbidden references', async () => {
+    const zeroError = await transactionRepo
+      .create({
+        type: 'adjustment',
+        amount: 0,
+        description: '',
+        occurredAt: '2026-08-10T12:00:00.000Z',
+        accountId: cardId,
+      })
+      .catch((e) => e)
+    expect(zeroError).toBeInstanceOf(InvalidPayloadError)
+    expect((zeroError as InvalidPayloadError).apiCode).toBe('INVALID_AMOUNT')
+
+    const refsError = await transactionRepo
+      .create({
+        type: 'adjustment',
+        amount: -100,
+        description: '',
+        occurredAt: '2026-08-10T12:00:00.000Z',
+        accountId: cardId,
+        categoryId: incomeCategoryId,
+      } as never)
+      .catch((e) => e)
+    expect(refsError).toBeInstanceOf(InvalidPayloadError)
+    expect((refsError as InvalidPayloadError).apiCode).toBe('INVALID_REFS')
+  })
 })
 
 describe('local transaction repository: update', () => {

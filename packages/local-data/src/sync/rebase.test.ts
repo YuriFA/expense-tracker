@@ -157,7 +157,7 @@ describe('rebaseLocalDataForHousehold', () => {
     server.seedFromServer(
       'account',
       'sibling-account-1',
-      { name: 'Theirs', currency: 'EUR', openingBalance: 250, manualAdjustment: 0 },
+      { name: 'Theirs', currency: 'EUR', openingBalance: 250 },
       'author-user-1',
     )
 
@@ -193,7 +193,7 @@ describe('idempotent-create convergence', () => {
     const server = new UnionServer()
     server.records.set(mine.id, {
       version: 3,
-      data: { name: 'Theirs', currency: 'EUR', openingBalance: 900, manualAdjustment: 0 },
+      data: { name: 'Theirs', currency: 'EUR', openingBalance: 900 },
     })
     server.applied.set('their-op', 3)
 
@@ -247,7 +247,7 @@ describe('local authorship', () => {
     server.seedFromServer(
       'account',
       'sibling-account-2',
-      { name: 'Theirs', currency: 'USD', openingBalance: 10, manualAdjustment: 0 },
+      { name: 'Theirs', currency: 'USD', openingBalance: 10 },
       'author-user-2',
     )
     const engine = createSyncEngine({ db, transport: server })

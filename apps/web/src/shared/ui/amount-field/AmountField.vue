@@ -13,6 +13,9 @@ const props = withDefaults(
     class?: string
     /** Dialog-hero look: big bold figure over a hairline underline. */
     hero?: boolean
+    /** Lower bound (major units); negative targets (e.g. reconciling a
+     * credit-card balance) need an explicit pass-through. */
+    min?: number
   }>(),
   {
     currency: DEFAULT_CURRENCY,
@@ -20,6 +23,7 @@ const props = withDefaults(
     placeholder: undefined,
     class: undefined,
     hero: false,
+    min: 0,
   },
 )
 
@@ -46,7 +50,7 @@ const placeholder = computed(() => props.placeholder ?? defaultPlaceholder.value
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }"
-      :min="0"
+      :min="props.min"
       :step="0.01"
     >
       <NumberFieldContent>

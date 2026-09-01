@@ -53,7 +53,7 @@ func (r *Repository) CreateAccount(ctx context.Context, params domain.CreateAcco
 	}
 	return accountRow(
 		row.ID, row.UserID, row.Name, row.Currency,
-		row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.OpeningBalance, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
 	), nil
 }
 
@@ -68,11 +68,10 @@ func (r *Repository) UpdateAccount(
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		var err error
 		row, err = q.UpdateAccount(ctx, db.UpdateAccountParams{
-			ID:               id,
-			HouseholdID:      householdID,
-			Name:             params.Name,
-			ManualAdjustment: params.ManualAdjustment,
-			Version:          int32(params.Version), //nolint:gosec // optimistic version is a small positive int
+			ID:          id,
+			HouseholdID: householdID,
+			Name:        params.Name,
+			Version:     int32(params.Version), //nolint:gosec // optimistic version is a small positive int
 		})
 		if err != nil {
 			if errNoRows(err) {
@@ -96,7 +95,7 @@ func (r *Repository) UpdateAccount(
 	}
 	return accountRow(
 		row.ID, row.UserID, row.Name, row.Currency,
-		row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.OpeningBalance, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
 	), nil
 }
 
@@ -167,7 +166,7 @@ func (r *Repository) GetAccount(ctx context.Context, householdID, id uuid.UUID) 
 	}
 	return accountRow(
 		row.ID, row.UserID, row.Name, row.Currency,
-		row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.OpeningBalance, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
 	), nil
 }
 
@@ -182,7 +181,7 @@ func (r *Repository) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]
 	for _, row := range rows {
 		out = append(
 			out,
-			*accountRow(row.ID, row.UserID, row.Name, row.Currency, row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version)),
+			*accountRow(row.ID, row.UserID, row.Name, row.Currency, row.OpeningBalance, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version)),
 		)
 	}
 	return out, nil
@@ -194,20 +193,19 @@ func (r *Repository) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]
 func accountRow(
 	id, userID uuid.UUID,
 	name, currency string,
-	openingBalance, manualAdjustment, balance int64,
+	openingBalance, balance int64,
 	createdAt, updatedAt time.Time,
 	version int,
 ) *domain.Account {
 	return &domain.Account{
-		ID:               id,
-		UserID:           userID,
-		Name:             name,
-		Currency:         currency,
-		OpeningBalance:   openingBalance,
-		ManualAdjustment: manualAdjustment,
-		Balance:          balance,
-		CreatedAt:        createdAt,
-		UpdatedAt:        updatedAt,
-		Version:          version,
+		ID:             id,
+		UserID:         userID,
+		Name:           name,
+		Currency:       currency,
+		OpeningBalance: openingBalance,
+		Balance:        balance,
+		CreatedAt:      createdAt,
+		UpdatedAt:      updatedAt,
+		Version:        version,
 	}
 }

@@ -165,7 +165,6 @@ describe('NewAccountForm', () => {
       name: 'Наличные',
       currency: 'RUB',
       openingBalance: 10_050,
-      manualAdjustment: 0,
       balance: 10_050,
       version: 1,
     })

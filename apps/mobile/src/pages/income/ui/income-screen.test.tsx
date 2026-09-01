@@ -62,7 +62,6 @@ const ACCOUNTS: Account[] = [
     name: 'Карта',
     currency: 'RUB',
     openingBalance: 3_200_000,
-    manualAdjustment: 0,
     version: 1,
   },
 ]

@@ -15,7 +15,7 @@ defineProps<{
   class?: string
 }>()
 
-const modelValue = defineModel<'expense' | 'income' | 'transfer' | undefined>()
+const modelValue = defineModel<'expense' | 'income' | 'transfer' | 'adjustment' | undefined>()
 
 const transactionOptions = getTransactionsOptions()
 const { t } = useI18n()

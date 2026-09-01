@@ -1,4 +1,4 @@
-export type TransactionType = 'income' | 'expense' | 'transfer'
+export type TransactionType = 'income' | 'expense' | 'transfer' | 'adjustment'
 
 type BaseTransaction = {
   id: string
@@ -30,4 +30,14 @@ export type TransferTransaction = BaseTransaction & {
   categoryId?: never
 }
 
-export type Transaction = CashflowTransaction | TransferTransaction
+/** A signed balance reconciliation: no category, no transfer pair, the
+ * nonzero amount may be negative (lowers the balance) or positive. */
+export type AdjustmentTransaction = BaseTransaction & {
+  type: 'adjustment'
+  accountId: string
+  categoryId?: never
+  fromAccountId?: never
+  toAccountId?: never
+}
+
+export type Transaction = CashflowTransaction | TransferTransaction | AdjustmentTransaction

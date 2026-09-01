@@ -105,7 +105,7 @@ func TestE2E_SyncPushPullFlows(t *testing.T) {
 		{
 			"opId": accountOp, "entity": "account", "action": "upsert", "id": accountID, "baseVersion": 0,
 			"data": map[string]any{
-				"name": "Карта", "currency": "RUB", "openingBalance": 10050, "manualAdjustment": 0,
+				"name": "Карта", "currency": "RUB", "openingBalance": 10050,
 			},
 		},
 		{
@@ -124,7 +124,7 @@ func TestE2E_SyncPushPullFlows(t *testing.T) {
 		{
 			"opId": accountOp, "entity": "account", "action": "upsert", "id": accountID, "baseVersion": 0,
 			"data": map[string]any{
-				"name": "Карта", "currency": "RUB", "openingBalance": 10050, "manualAdjustment": 0,
+				"name": "Карта", "currency": "RUB", "openingBalance": 10050,
 			},
 		},
 	})
@@ -143,7 +143,7 @@ func TestE2E_SyncPushPullFlows(t *testing.T) {
 			"opId": "bbbbbbb1-0000-4000-8000-000000000001", "entity": "account", "action": "upsert",
 			"id": accountID, "baseVersion": 0,
 			"data": map[string]any{
-				"name": "Другая", "currency": "USD", "openingBalance": 0, "manualAdjustment": 0,
+				"name": "Другая", "currency": "USD", "openingBalance": 0,
 			},
 		},
 	})
@@ -165,7 +165,7 @@ func TestE2E_SyncPushPullFlows(t *testing.T) {
 		{
 			"opId": updateOp, "entity": "account", "action": "upsert", "id": accountID, "baseVersion": 1,
 			"data": map[string]any{
-				"name": "Карта", "currency": "RUB", "openingBalance": 20000, "manualAdjustment": 0,
+				"name": "Карта", "currency": "RUB", "openingBalance": 20000,
 			},
 		},
 	})
@@ -179,7 +179,7 @@ func TestE2E_SyncPushPullFlows(t *testing.T) {
 			"opId": "ccccccc2-0000-4000-8000-000000000002", "entity": "account", "action": "upsert",
 			"id": accountID, "baseVersion": 1,
 			"data": map[string]any{
-				"name": "Карта", "currency": "RUB", "openingBalance": 0, "manualAdjustment": 0,
+				"name": "Карта", "currency": "RUB", "openingBalance": 0,
 			},
 		},
 	})

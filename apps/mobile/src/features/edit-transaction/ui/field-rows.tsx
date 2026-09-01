@@ -70,14 +70,16 @@ function FieldRow({
   )
 }
 
-/** The expense/income account selector row plus its picker sheet. */
-export function CashflowAccountRow({ kind }: { kind: 'expense' | 'income' }) {
+/** The expense/income/adjustment account selector row plus its picker sheet. */
+export function CashflowAccountRow({ kind }: { kind: 'expense' | 'income' | 'adjustment' }) {
   const { control, setValue } = useFormContext<EditTransactionFormValues>()
   const { field, fieldState } = useController({ name: 'accountId', control })
   const accounts = useAccounts().data ?? []
   const pickerRef = useRef<BottomSheetRef>(null)
   const selectedAccount = accounts.find((account) => account.id === field.value)
-  const label = kind === 'income' ? 'Счёт пополнения' : 'Счёт списания'
+  // Adjustment has no direction: the neutral label, no delta wording.
+  const label =
+    kind === 'income' ? 'Счёт пополнения' : kind === 'expense' ? 'Счёт списания' : 'Счёт'
 
   return (
     <>

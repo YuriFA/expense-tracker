@@ -94,7 +94,6 @@ export function rowToPayload(entity: SyncEntity, row: EntityRow): Record<string,
       name: r.name,
       currency: r.currency,
       openingBalance: r.openingBalance,
-      manualAdjustment: r.manualAdjustment,
     }
   }
   if (entity === 'category') {
@@ -166,20 +165,13 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
   if (entity === 'account') {
     const currency = asString(p.currency)
     const openingBalance = asInt(p.openingBalance)
-    const manualAdjustment = asInt(p.manualAdjustment)
-    if (
-      !currency ||
-      !ACCOUNT_CURRENCIES.has(currency) ||
-      openingBalance === null ||
-      manualAdjustment === null
-    ) {
+    if (!currency || !ACCOUNT_CURRENCIES.has(currency) || openingBalance === null) {
       return null
     }
     const data: AccountSyncData = {
       name: asString(p.name) ?? '',
       currency: currency as AccountSyncData['currency'],
       openingBalance,
-      manualAdjustment,
     }
     return data.name ? data : null
   }
@@ -263,9 +255,19 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
   }
 
   const type = asString(p.type)
-  if (type !== 'income' && type !== 'expense' && type !== 'transfer') return null
+  if (
+    type !== 'income' &&
+    type !== 'expense' &&
+    type !== 'transfer' &&
+    type !== 'adjustment'
+  ) {
+    return null
+  }
   const amount = asInt(p.amount)
-  if (amount === null || amount < 1) return null
+  if (amount === null) return null
+  // Amount sign rule mirrors the backend: positive for the classic types,
+  // nonzero signed for adjustment.
+  if (type === 'adjustment' ? amount === 0 : amount < 1) return null
   const occurredAt = asString(p.occurredAt)
   if (!occurredAt) return null
 
@@ -281,6 +283,11 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
     if (!from || !to) return null
     return { ...data, fromAccountId: from, toAccountId: to }
   }
+  if (type === 'adjustment') {
+    const account = asString(p.accountId)
+    if (!account) return null
+    return { ...data, accountId: account }
+  }
   const account = asString(p.accountId)
   const category = asString(p.categoryId)
   if (!account || !category) return null
@@ -289,7 +296,7 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
 
 /** Complete entity-column sets for applying a wire upsert to a local row. */
 export type SyncRowPatch =
-  | Pick<AccountRow, 'name' | 'currency' | 'openingBalance' | 'manualAdjustment'>
+  | Pick<AccountRow, 'name' | 'currency' | 'openingBalance'>
   | Pick<CategoryRow, 'name' | 'type' | 'icon' | 'color' | 'slug'>
   | Pick<
       TransactionRow,
@@ -335,14 +342,12 @@ export function syncDataToRowPatch(
 
   if (entity === 'account') {
     const openingBalance = asInt(p.openingBalance)
-    const manualAdjustment = asInt(p.manualAdjustment)
     const currency = asString(p.currency)
-    if (openingBalance === null || manualAdjustment === null || !currency) return null
+    if (openingBalance === null || !currency) return null
     return {
       name: asString(p.name) ?? '',
       currency,
       openingBalance,
-      manualAdjustment,
     }
   }
 
@@ -438,6 +443,20 @@ export function syncDataToRowPatch(
       categoryId: null,
       fromAccountId,
       toAccountId,
+    }
+  }
+  if (type === 'adjustment') {
+    const accountId = asString(p.accountId)
+    if (!accountId) return null
+    return {
+      type,
+      amount,
+      description: asString(p.description) ?? '',
+      occurredAt,
+      accountId,
+      categoryId: null,
+      fromAccountId: null,
+      toAccountId: null,
     }
   }
   if (type !== 'income' && type !== 'expense') return null

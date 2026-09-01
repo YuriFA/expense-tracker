@@ -18,7 +18,6 @@ function toAccountWithBalance(value: ApiAccount): AccountWithBalance {
     name: value.name,
     currency: value.currency,
     openingBalance: value.openingBalance,
-    manualAdjustment: value.manualAdjustment,
     version: value.version,
     balance: value.balance,
   }
@@ -80,8 +79,5 @@ function toUpdateRequest(payload: UpdateAccountPayload): AccountUpdateRequest {
   return {
     version: payload.version,
     ...(payload.name !== undefined ? { name: payload.name } : {}),
-    ...(payload.manualAdjustment !== undefined
-      ? { manualAdjustment: payload.manualAdjustment }
-      : {}),
   }
 }

@@ -7,5 +7,6 @@ export const getTransactionsOptions = () => {
     { label: t('transactions.types.expense'), value: 'expense' },
     { label: t('transactions.types.income'), value: 'income' },
     { label: t('transactions.types.transfer'), value: 'transfer' },
+    { label: t('transactions.types.adjustment'), value: 'adjustment' },
   ]
 }

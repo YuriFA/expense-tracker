@@ -29,21 +29,18 @@ export function createMockAccountRepository(initial: Account[] = []): MockAccoun
       calls.getAll += 1
       return items.map((account) => ({
         ...account,
-        balance: account.openingBalance + account.manualAdjustment,
+        balance: account.openingBalance,
       }))
     },
     async getById(id) {
       const account = items.find((item) => item.id === id)
-      return account
-        ? { ...account, balance: account.openingBalance + account.manualAdjustment }
-        : null
+      return account ? { ...account, balance: account.openingBalance } : null
     },
     async create(payload: CreateAccountPayload) {
       calls.create += 1
       const account: Account = {
         ...payload,
         id: payload.id ?? `acc-${nextId++}`,
-        manualAdjustment: 0,
         version: 1,
       }
       items.push(account)
@@ -61,7 +58,7 @@ export function createMockAccountRepository(initial: Account[] = []): MockAccoun
       const { version: _cas, ...fields } = payload
       items[index] = { ...items[index], ...fields, version: items[index].version + 1 }
       const updated = items[index]
-      return { ...updated, balance: updated.openingBalance + updated.manualAdjustment }
+      return { ...updated, balance: updated.openingBalance }
     },
     async remove(id) {
       calls.remove += 1

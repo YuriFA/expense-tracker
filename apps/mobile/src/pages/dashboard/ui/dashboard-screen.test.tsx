@@ -69,15 +69,13 @@ const ACCOUNTS: Account[] = [
     name: 'Наличные',
     currency: 'RUB',
     openingBalance: 500_000,
-    manualAdjustment: 0,
     version: 1,
   },
   {
     id: 'acc-card',
     name: 'Карта',
     currency: 'RUB',
-    openingBalance: 3_200_000,
-    manualAdjustment: 200_000,
+    openingBalance: 3_200_000_000,
     version: 1,
   },
 ]
@@ -162,7 +160,7 @@ const TRANSACTIONS: Transaction[] = [
 const expectedAccounts = () =>
   ACCOUNTS.map((account) => ({
     ...account,
-    balance: account.openingBalance + account.manualAdjustment,
+    balance: account.openingBalance,
   }))
 
 function renderDashboard() {

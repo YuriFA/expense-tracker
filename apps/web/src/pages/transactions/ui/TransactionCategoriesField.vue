@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   errors?: string[]
-  type?: 'expense' | 'income' | 'transfer'
+  type?: 'expense' | 'income' | 'transfer' | 'adjustment'
   class?: string
 }>()
 
@@ -19,8 +19,10 @@ const { t } = useI18n()
 const { data: categories, error, isLoading } = useCategories()
 
 const filteredCategories = computed(() => {
-  if (props.type === undefined) {
-    return categories.value
+  if (props.type === undefined || props.type === 'adjustment') {
+    // Adjustments carry no category: with the adjustment type filter set the
+    // category list is irrelevant (any category selection excludes them).
+    return props.type === 'adjustment' ? [] : categories.value
   }
   return categories.value?.filter((category) => category.type === props.type)
 })

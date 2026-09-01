@@ -2,6 +2,7 @@ export type {
   Transaction,
   CashflowTransaction,
   TransferTransaction,
+  AdjustmentTransaction,
   TransactionType,
 } from './model/types'
 export { TRANSACTION_REPOSITORY_KEY, useTransactionRepository } from './api/repository'
@@ -15,6 +16,7 @@ export {
 export { getTransactionsOptions } from './model/constants'
 export {
   isTransferTransaction,
+  isAdjustmentTransaction,
   
   
   

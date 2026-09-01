@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import TransactionListItem from './TransactionListItem.vue'
-import type { CashflowTransaction, Transaction, TransferTransaction } from '../model/types'
+import type {
+  AdjustmentTransaction,
+  CashflowTransaction,
+  Transaction,
+  TransferTransaction,
+} from '../model/types'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const incomeAccount = {
@@ -94,6 +99,32 @@ describe('TransactionListItem', () => {
     // When accounts are unknown, the "from -> to" span is hidden and the
     // generic transfer-type label is rendered instead.
     expect(wrapper.text()).not.toContain('->')
+  })
+
+  it('renders adjustment with badge, account, and signed amount', async () => {
+    const negativeAdjustment: AdjustmentTransaction = {
+      id: 't4',
+      type: 'adjustment',
+      amount: -500,
+      description: 'сверка наличных',
+      occurredAt: '2024-01-15T10:00:00Z',
+      accountId: 'a1',
+    } as never
+    const wrapper = mountWithTransaction(negativeAdjustment)
+    await flushPromises()
+    expect(wrapper.text()).toContain('сверка наличных')
+    expect(wrapper.text()).toContain('Adjustment')
+    expect(wrapper.text()).toContain('Main')
+    expect(wrapper.text()).toContain('-')
+
+    const positiveAdjustment: AdjustmentTransaction = {
+      ...negativeAdjustment,
+      id: 't5',
+      amount: 300,
+    } as never
+    const positive = mountWithTransaction(positiveAdjustment)
+    await flushPromises()
+    expect(positive.text()).toContain('+')
   })
 
   it('renders category icon for cashflow transaction', async () => {

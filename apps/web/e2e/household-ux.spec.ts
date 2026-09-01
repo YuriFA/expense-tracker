@@ -58,7 +58,7 @@ function firstPullChanges() {
       action: 'upsert',
       version: 1,
       userId: SIBLING,
-      data: { name: 'Card', currency: 'USD', openingBalance: 0, manualAdjustment: 0 },
+      data: { name: 'Card', currency: 'USD', openingBalance: 0 },
     },
     {
       seq: 2,

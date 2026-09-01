@@ -41,8 +41,9 @@ export const useUpdateAccount = () => {
   return useOptimisticMutation<{ id: string; payload: UpdateAccountPayload }, AccountWithBalance>({
     mutation: ({ id, payload }) => accounts.update(id, payload),
     optimistic: ({ id, payload }) => {
-      // manualAdjustment меняет баланс — не делаем optimistic update, чтобы не было рассинхрона с сервером
-      if ('manualAdjustment' in payload) return []
+      // Patch only the LIST query: the single-account query
+      // `['accounts', id]` may not exist, and setQueryData on a missing key
+      // crashes colada. Invalidation (below) refreshes by prefix anyway.
       const patches: OptimisticPatch[] = [
         {
           key: ['accounts'],
@@ -50,11 +51,6 @@ export const useUpdateAccount = () => {
             (current as AccountWithBalance[] | undefined)?.map((account) =>
               account.id === id ? { ...account, ...payload } : account,
             ),
-        },
-        {
-          key: ['accounts', id],
-          updater: (current) =>
-            current === undefined ? undefined : { ...(current as AccountWithBalance), ...payload },
         },
       ]
       return patches

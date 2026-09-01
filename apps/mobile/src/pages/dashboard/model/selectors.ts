@@ -2,7 +2,7 @@
 // @expense-tracker/api. The month-scoped cashflow selectors shared with the
 // income screen live in @/features/cashflow-overview. Integer money math
 // only (minor units); balances come pre-computed from the account repository
-// (opening + manualAdjustment + signed transaction impacts), so selectors
+// (opening + signed transaction impacts, adjustments included), so selectors
 // only aggregate them.
 
 import type { AccountWithBalance, Transaction } from '@expense-tracker/api'

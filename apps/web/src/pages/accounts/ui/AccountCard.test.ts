@@ -10,7 +10,6 @@ const accountFixture: AccountWithBalance = {
   name: 'Main',
   currency: 'USD',
   openingBalance: 100000,
-  manualAdjustment: 0,
   balance: 123456,
 }
 

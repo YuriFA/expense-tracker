@@ -12,7 +12,7 @@ export const createTransactionsFilterSchema = () => {
       .date({ error: t('validation.mustBeDate', { field: t('fields.date') }) })
       .optional(),
     type: z
-      .enum(['expense', 'income', 'transfer'], {
+      .enum(['expense', 'income', 'transfer', 'adjustment'], {
         message: t('validation.select', { field: t('fields.transactionType') }),
       })
       .optional(),

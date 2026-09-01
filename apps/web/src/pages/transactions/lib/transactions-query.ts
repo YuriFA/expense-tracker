@@ -16,7 +16,12 @@ export type TransactionsFilters = {
   categoryIds?: string[]
 }
 
-const TRANSACTION_TYPES = new Set<TransactionType>(['expense', 'income', 'transfer'])
+const TRANSACTION_TYPES = new Set<TransactionType>([
+  'expense',
+  'income',
+  'transfer',
+  'adjustment',
+])
 
 type QueryParamValue = LocationQueryValue | LocationQueryValue[] | undefined
 
@@ -96,9 +101,11 @@ export const matchesTransactionsFilters = (
   }
 
   if (filters.categoryIds?.length) {
-    // Transfers carry no category, so any category selection excludes them.
+    // Transfers and adjustments carry no category, so any category
+    // selection excludes them.
     const matches =
-      transaction.type !== 'transfer' && filters.categoryIds.includes(transaction.categoryId)
+      (transaction.type === 'income' || transaction.type === 'expense') &&
+      filters.categoryIds.includes(transaction.categoryId)
 
     if (!matches) {
       return false

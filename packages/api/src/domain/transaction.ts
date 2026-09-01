@@ -1,19 +1,27 @@
 import type { CurrencyCode } from '@expense-tracker/money'
 import {
   asDateTimeString,
+  asInteger,
   asNonEmptyString,
   asPositiveInteger,
   asString,
   isRecord,
 } from '../lib/normalize'
 import type {
+  AdjustmentTransaction,
   CashflowTransaction,
   Transaction,
   TransferTransaction,
   TransactionType,
 } from './transaction-types'
 
-export type { Transaction, CashflowTransaction, TransferTransaction, TransactionType } from './transaction-types'
+export type {
+  Transaction,
+  CashflowTransaction,
+  TransferTransaction,
+  AdjustmentTransaction,
+  TransactionType,
+} from './transaction-types'
 
 export type AccountRef = { id: string; currency: CurrencyCode }
 export type CategoryRef = { id: string; type: TransactionType }
@@ -32,12 +40,25 @@ type BaseTransaction = {
 }
 
 const isTransactionType = (value: unknown): value is TransactionType =>
-  value === 'income' || value === 'expense' || value === 'transfer'
+  value === 'income' ||
+  value === 'expense' ||
+  value === 'transfer' ||
+  value === 'adjustment'
+
+/** Amount sign rule mirrors the backend: positive for the classic types,
+ * nonzero signed for adjustment (the reconciliation delta). */
+const normalizeAmount = (type: TransactionType, value: unknown): number | null => {
+  if (type === 'adjustment') {
+    const amount = asInteger(value)
+    return amount !== null && amount !== 0 ? amount : null
+  }
+  return asPositiveInteger(value)
+}
 
 const normalizeBaseTransaction = (value: TransactionRecord): BaseTransaction | null => {
   const id = asNonEmptyString(value.id)
   const type = isTransactionType(value.type) ? value.type : null
-  const amount = asPositiveInteger(value.amount)
+  const amount = type ? normalizeAmount(type, value.amount) : null
   const description = asString(value.description) ?? ''
   const occurredAt = asDateTimeString(value.occurredAt)
   const updatedAtValue =
@@ -116,6 +137,27 @@ const normalizeTransferTransaction = (
   }
 }
 
+const normalizeAdjustmentTransaction = (
+  value: TransactionRecord,
+  baseTransaction: BaseTransaction | null,
+): AdjustmentTransaction | null => {
+  if (!baseTransaction || baseTransaction.type !== 'adjustment') {
+    return null
+  }
+
+  const accountId = asNonEmptyString(value.accountId)
+
+  if (!accountId) {
+    return null
+  }
+
+  return {
+    ...baseTransaction,
+    type: 'adjustment',
+    accountId,
+  }
+}
+
 export const isTransaction = (value: unknown): value is Transaction => {
   return normalizeTransaction(value) !== null
 }
@@ -124,6 +166,16 @@ export const isTransferTransaction = (
   transaction: Transaction,
 ): transaction is TransferTransaction => {
   if (transaction.type === 'transfer') {
+    return true
+  }
+
+  return false
+}
+
+export const isAdjustmentTransaction = (
+  transaction: Transaction,
+): transaction is AdjustmentTransaction => {
+  if (transaction.type === 'adjustment') {
     return true
   }
 
@@ -139,7 +191,7 @@ export const isTransactionLinkedToAccount = (transaction: Transaction, accountId
 }
 
 export const isTransactionLinkedToCategory = (transaction: Transaction, categoryId: string) => {
-  if (isTransferTransaction(transaction)) {
+  if (isTransferTransaction(transaction) || isAdjustmentTransaction(transaction)) {
     return false
   }
 
@@ -161,6 +213,10 @@ export const hasValidTransactionReferences = (
       from.id !== to.id &&
       from.currency === to.currency
     )
+  }
+
+  if (isAdjustmentTransaction(transaction)) {
+    return accounts.some((account) => account.id === transaction.accountId)
   }
 
   const hasAccount = (accountId: string) => accounts.some((account) => account.id === accountId)
@@ -186,6 +242,10 @@ export const normalizeTransaction = (value: unknown): Transaction | null => {
 
   if (baseTransaction.type === 'transfer') {
     return normalizeTransferTransaction(value, baseTransaction)
+  }
+
+  if (baseTransaction.type === 'adjustment') {
+    return normalizeAdjustmentTransaction(value, baseTransaction)
   }
 
   return normalizeCashflowTransaction(value, baseTransaction)

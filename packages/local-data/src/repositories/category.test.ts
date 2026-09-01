@@ -25,8 +25,8 @@ beforeEach(async () => {
 
 /** Seeds an account so transactions can reference it. */
 function seedAccount() {
-  db.run(sql`insert into accounts (id, name, currency, opening_balance, manual_adjustment, version, server_version, deleted_at, created_at)
-    values ('acc-1', 'Карта', 'RUB', 0, 0, 1, 0, null, '2026-01-01T00:00:00.000Z')`)
+  db.run(sql`insert into accounts (id, name, currency, opening_balance, version, server_version, deleted_at, created_at)
+    values ('acc-1', 'Карта', 'RUB', 0, 1, 0, null, '2026-01-01T00:00:00.000Z')`)
 }
 
 describe('local category repository', () => {

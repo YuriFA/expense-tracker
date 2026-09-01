@@ -86,7 +86,10 @@ async function restoreConflictAsNew(
       const amount = asNumber(state.amount)
       const occurredAt = asString(state.occurredAt)
       if (
-        (type !== 'expense' && type !== 'income' && type !== 'transfer') ||
+        (type !== 'expense' &&
+          type !== 'income' &&
+          type !== 'transfer' &&
+          type !== 'adjustment') ||
         amount === null ||
         !occurredAt
       ) {
@@ -104,6 +107,10 @@ async function restoreConflictAsNew(
         if (!fromAccountId || !toAccountId) throw new Error('Incomplete transfer state.')
         payload.fromAccountId = fromAccountId
         payload.toAccountId = toAccountId
+      } else if (type === 'adjustment') {
+        const accountId = asString(state.accountId)
+        if (!accountId) throw new Error('Incomplete adjustment state.')
+        payload.accountId = accountId
       } else {
         const accountId = asString(state.accountId)
         const categoryId = asString(state.categoryId)

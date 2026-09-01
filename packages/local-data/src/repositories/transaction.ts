@@ -38,7 +38,8 @@ type LocalTx = Parameters<Parameters<LocalDatabase['transaction']>[0]>[0]
 type TransactionPatch = { version: number } & Partial<
   Omit<import('@expense-tracker/api').CashflowTransaction, 'id' | 'version' | 'type'>
 > &
-  Partial<Omit<import('@expense-tracker/api').TransferTransaction, 'id' | 'version' | 'type'>>
+  Partial<Omit<import('@expense-tracker/api').TransferTransaction, 'id' | 'version' | 'type'>> &
+  Partial<Omit<import('@expense-tracker/api').AdjustmentTransaction, 'id' | 'version' | 'type'>>
 
 const PAGE_SIZE = 100
 
@@ -60,6 +61,13 @@ function toTransaction(row: TransactionRow): Transaction {
       toAccountId: row.toAccountId as string,
     }
   }
+  if (row.type === 'adjustment') {
+    return {
+      ...base,
+      type: 'adjustment',
+      accountId: row.accountId as string,
+    }
+  }
   return {
     ...base,
     type: row.type as 'income' | 'expense',
@@ -69,7 +77,12 @@ function toTransaction(row: TransactionRow): Transaction {
 }
 
 function isTransactionType(value: string): value is Transaction['type'] {
-  return value === 'income' || value === 'expense' || value === 'transfer'
+  return (
+    value === 'income' ||
+    value === 'expense' ||
+    value === 'transfer' ||
+    value === 'adjustment'
+  )
 }
 
 function normalizeOccurredAt(value: string): string {
@@ -78,9 +91,24 @@ function normalizeOccurredAt(value: string): string {
   return new Date(time).toISOString()
 }
 
-function assertAmount(value: number): void {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
-    throw new InvalidPayloadError('amount must be an integer of at least 1 minor unit')
+/** Amount sign rule mirrors the backend: >= 1 for income/expense/transfer,
+ * nonzero signed for adjustment (the balance reconciliation delta). */
+function assertAmount(type: Transaction['type'], value: number): void {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
+    throw new InvalidPayloadError('amount must be an integer of minor units')
+  }
+  if (type === 'adjustment') {
+    if (value === 0) {
+      throw new InvalidPayloadError('adjustment amount must be a nonzero signed integer', {
+        apiCode: 'INVALID_AMOUNT',
+      })
+    }
+    return
+  }
+  if (value < 1) {
+    throw new InvalidPayloadError('amount must be an integer of at least 1 minor unit', {
+      apiCode: 'INVALID_AMOUNT',
+    })
   }
 }
 
@@ -122,6 +150,18 @@ function validateReferences(
       throw new InvalidPayloadError('Transfer requires distinct accounts', {
         apiCode: 'SAME_ACCOUNT_TRANSFER',
       })
+    }
+    return
+  }
+
+  if (type === 'adjustment') {
+    if (categoryId || fromAccountId || toAccountId) {
+      throw new InvalidPayloadError('Adjustment carries only an account reference', {
+        apiCode: 'INVALID_REFS',
+      })
+    }
+    if (!findLiveAccount(tx, accountId)) {
+      throw new UnknownReferencesError('Account not found', { apiCode: 'ACCOUNT_NOT_FOUND' })
     }
     return
   }
@@ -221,13 +261,25 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
       if (!isTransactionType(payload.type)) {
         throw new InvalidPayloadError('Invalid transaction type')
       }
-      assertAmount(payload.amount)
+      assertAmount(payload.type, payload.amount)
       if (payload.description !== undefined && typeof payload.description !== 'string') {
         throw new InvalidPayloadError('description must be a string')
       }
       const occurredAt = normalizeOccurredAt(payload.occurredAt)
 
       const id = payload.id ?? generateId()
+
+      // Adjustment carries only an account reference (backend parity):
+      // category/transfer fields on the payload are rejected, not ignored.
+      if (payload.type === 'adjustment') {
+        const forbidden =
+          'categoryId' in payload || 'fromAccountId' in payload || 'toAccountId' in payload
+        if (forbidden || !payload.accountId) {
+          throw new InvalidPayloadError('Adjustment carries only an account reference', {
+            apiCode: 'INVALID_REFS',
+          })
+        }
+      }
 
       return db.transaction((tx) => {
         if (
@@ -256,6 +308,23 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
                 serverVersion: 0,
                 deletedAt: null,
               }
+            : payload.type === 'adjustment'
+              ? {
+                  id,
+                  userId: getOwnerUserId(db),
+                  type: 'adjustment',
+                  amount: payload.amount,
+                  description: payload.description ?? '',
+                  occurredAt,
+                  updatedAt: nowIso(),
+                  accountId: payload.accountId,
+                  categoryId: null,
+                  fromAccountId: null,
+                  toAccountId: null,
+                  version: 1,
+                  serverVersion: 0,
+                  deletedAt: null,
+                }
             : {
                 id,
                 userId: getOwnerUserId(db),
@@ -305,7 +374,6 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
         patch.fromAccountId !== undefined ||
         patch.toAccountId !== undefined
       if (!hasFields) throw new InvalidPayloadError('No fields to update')
-      if (patch.amount !== undefined) assertAmount(patch.amount)
       if (patch.description !== undefined && typeof patch.description !== 'string') {
         throw new InvalidPayloadError('description must be a string')
       }
@@ -323,6 +391,11 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
           })
         }
 
+        // The amount sign rule depends on the (immutable) record type.
+        if (patch.amount !== undefined) {
+          assertAmount(row.type as Transaction['type'], patch.amount)
+        }
+
         // `type` is immutable (the backend's PATCH cannot express a type
         // change); ref columns irrelevant to the record's type stay null.
         const next: TransactionRow = { ...row }
@@ -332,6 +405,8 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
         if (row.type === 'transfer') {
           if (patch.fromAccountId !== undefined) next.fromAccountId = patch.fromAccountId
           if (patch.toAccountId !== undefined) next.toAccountId = patch.toAccountId
+        } else if (row.type === 'adjustment') {
+          if (patch.accountId !== undefined) next.accountId = patch.accountId
         } else {
           if (patch.accountId !== undefined) next.accountId = patch.accountId
           if (patch.categoryId !== undefined) next.categoryId = patch.categoryId

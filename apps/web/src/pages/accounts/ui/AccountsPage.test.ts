@@ -9,8 +9,8 @@ import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositori
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const accounts: AccountWithBalance[] = [
-  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, manualAdjustment: 0, balance: 1500, version: 1 },
-  { id: 'a2', name: 'Savings', currency: 'USD', openingBalance: 500, manualAdjustment: 0, balance: 700, version: 1 },
+  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, balance: 1500, version: 1 },
+  { id: 'a2', name: 'Savings', currency: 'USD', openingBalance: 500, balance: 700, version: 1 },
 ]
 
 describe('AccountsPage', () => {

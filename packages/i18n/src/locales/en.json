@@ -92,7 +92,6 @@
     "trigger": "Edit account",
     "nameLabel": "Name",
     "namePlaceholder": "Account name",
-    "openingBalanceLabel": "Balance adjustment",
     "submit": "Save changes",
     "success": "Account updated",
     "error": "Error updating account"
@@ -303,7 +302,8 @@
     "types": {
       "expense": "Expense",
       "income": "Income",
-      "transfer": "Transfer"
+      "transfer": "Transfer",
+      "adjustment": "Adjustment"
     },
     "filters": {
       "typeLabel": "Type",
@@ -334,7 +334,8 @@
     "noMatchesTitle": "No matching transactions",
     "noMatchesDescription": "Try changing or clearing the filters",
     "noMatchesAction": "Clear filters",
-    "clearFilter": "Clear filter"
+    "clearFilter": "Clear filter",
+    "rowActions": "Row actions"
   },
   "fields": {
     "name": "Name",
@@ -357,7 +358,8 @@
     "mustBeString": "{field} must be text",
     "mustBeDate": "{field} must be a valid date",
     "transferAccountsMustDiffer": "Transfer accounts must be different",
-    "transferAccountsMustMatchCurrency": "Transfer accounts must use the same currency"
+    "transferAccountsMustMatchCurrency": "Transfer accounts must use the same currency",
+    "adjustmentNonZero": "Adjustment cannot be zero"
   },
   "errors": {
     "notFound": "Not found",
@@ -461,7 +463,8 @@
     "starterAccountName": "Cash",
     "homeEmptyAccountsTitle": "No account to record against",
     "homeEmptyAccountsDescription": "Create an account in the Accounts tab to start logging transactions.",
-    "homeEmptyAccountsAction": "Go to Accounts"
+    "homeEmptyAccountsAction": "Go to Accounts",
+    "actions": "Actions"
   },
   "settings": {
     "locale": "Locale",
@@ -644,5 +647,19 @@
     "expense": "Expense",
     "income": "Income",
     "addHotkey": "N"
+  },
+  "reconcileAccount": {
+    "title": "Reconcile balance",
+    "trigger": "Reconcile balance",
+    "balanceLabel": "Actual balance",
+    "noteLabel": "Note",
+    "notePlaceholder": "e.g. cash count",
+    "noteTooLong": "Note must be at most 200 characters",
+    "deltaZero": "Balance is already accurate - nothing to reconcile",
+    "deltaAdded": "{amount} will be added",
+    "deltaRemoved": "{amount} will be removed",
+    "submit": "Reconcile",
+    "success": "Balance reconciled",
+    "error": "Failed to reconcile the balance"
   }
 }

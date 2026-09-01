@@ -87,16 +87,15 @@ func toAPIHousehold(h domain.Household) api.Household {
 
 func toAPIAccount(a domain.Account) api.Account {
 	return api.Account{
-		Id:               toUUID(a.ID),
-		UserId:           toUUID(a.UserID),
-		Name:             a.Name,
-		Currency:         api.AccountCurrency(a.Currency),
-		OpeningBalance:   a.OpeningBalance,
-		ManualAdjustment: a.ManualAdjustment,
-		Balance:          a.Balance,
-		CreatedAt:        a.CreatedAt,
-		UpdatedAt:        a.UpdatedAt,
-		Version:          a.Version,
+		Id:             toUUID(a.ID),
+		UserId:         toUUID(a.UserID),
+		Name:           a.Name,
+		Currency:       api.AccountCurrency(a.Currency),
+		OpeningBalance: a.OpeningBalance,
+		Balance:        a.Balance,
+		CreatedAt:      a.CreatedAt,
+		UpdatedAt:      a.UpdatedAt,
+		Version:        a.Version,
 	}
 }
 

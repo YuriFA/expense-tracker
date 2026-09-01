@@ -46,7 +46,7 @@ func pushCreate(t *testing.T, c *client, opID, id string) float64 {
 			"opId": opID, "entity": "account", "action": "upsert", "id": id, "baseVersion": 0,
 			"data": map[string]any{
 				"name": "Acc " + id[:8], "currency": "USD",
-				"openingBalance": 1000, "manualAdjustment": 0,
+				"openingBalance": 1000,
 			},
 		}},
 	})
@@ -465,7 +465,7 @@ func TestE2E_SyncAuthorshipRoundTrip(t *testing.T) {
 			"id": "dddddddd-0000-4000-8000-000000000006", "baseVersion": 0,
 			"userId": ownerID, // spoofed author - must be ignored
 			"data": map[string]any{
-				"name": "Spoofed", "currency": "USD", "openingBalance": 0, "manualAdjustment": 0,
+				"name": "Spoofed", "currency": "USD", "openingBalance": 0,
 			},
 		}},
 	})

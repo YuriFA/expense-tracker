@@ -11,17 +11,16 @@ import (
 )
 
 type Account struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	Currency         string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        *time.Time
-	Version          int32
-	HouseholdID      uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	OpeningBalance int64
+	Currency       string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time
+	Version        int32
+	HouseholdID    uuid.UUID
 }
 
 type AccountContribution struct {

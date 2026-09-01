@@ -503,13 +503,8 @@ func applyTransactionOperation(
 			"invalid transaction data",
 		), nil
 	}
-	if data.Amount < 1 {
-		return errorResult(op.OpID, "VALIDATION_FAILED", "amount must be at least 1 minor unit"), nil
-	}
-	if data.Type != domain.TransactionTypeIncome &&
-		data.Type != domain.TransactionTypeExpense &&
-		data.Type != domain.TransactionTypeTransfer {
-		return errorResult(op.OpID, "VALIDATION_FAILED", "invalid transaction type"), nil
+	if code := validateTransactionSyncShape(&data); code != "" {
+		return errorResult(op.OpID, code, syncRefMessage(code)), nil
 	}
 
 	current, err := t.GetTransactionAny(ctx, householdID, op.ID)
@@ -1073,9 +1068,29 @@ func validatePlannedPaymentSyncData(data *domain.PlannedPaymentFullState) string
 	return ""
 }
 
-// validateSyncRefs enforces the cashflow-vs-transfer reference rules on the
-// LIVE accounts/categories, returning the machine code of the violation ("" =
-// valid). Mirrors TransactionService.validateRefs with sync-tx reads.
+// validateTransactionSyncShape checks the type + amount sign rules a
+// transaction upsert must satisfy regardless of the transport (the REST
+// surface gets this from TransactionService), returning the machine code of
+// the violation ("" = valid).
+func validateTransactionSyncShape(data *domain.TransactionFullState) string {
+	switch data.Type {
+	case domain.TransactionTypeIncome,
+		domain.TransactionTypeExpense,
+		domain.TransactionTypeTransfer,
+		domain.TransactionTypeAdjustment:
+	default:
+		return "VALIDATION_FAILED"
+	}
+	if ValidateAmount(data.Type, data.Amount) != nil {
+		return "INVALID_AMOUNT"
+	}
+	return ""
+}
+
+// validateSyncRefs enforces the per-type reference rules (cashflow vs
+// transfer vs adjustment) on the LIVE accounts/categories, returning the
+// machine code of the violation ("" = valid). Mirrors
+// TransactionService.validateRefs with sync-tx reads.
 func validateSyncRefs(
 	ctx context.Context,
 	t repository.SyncTx,
@@ -1087,43 +1102,77 @@ func validateSyncRefs(
 		if data.FromAccountID != nil || data.ToAccountID != nil || data.AccountID == nil || data.CategoryID == nil {
 			return "INVALID_REFS"
 		}
-		exists, err := t.LiveAccountExists(ctx, householdID, *data.AccountID)
-		if err != nil {
-			return "INVALID_REFS"
-		}
-		if !exists {
-			return "ACCOUNT_NOT_FOUND"
-		}
-		category, err := t.LiveCategory(ctx, householdID, *data.CategoryID)
-		if err != nil || category == nil {
-			return "CATEGORY_NOT_FOUND"
-		}
-		if category.Type != data.Type {
-			return "CATEGORY_TYPE_MISMATCH"
-		}
+		return validateSyncCashflowRefs(ctx, t, householdID, *data.AccountID, *data.CategoryID, data.Type)
 	case domain.TransactionTypeTransfer:
 		if data.AccountID != nil || data.CategoryID != nil || data.FromAccountID == nil || data.ToAccountID == nil {
 			return "INVALID_REFS"
 		}
-		fromExists, err := t.LiveAccountExists(ctx, householdID, *data.FromAccountID)
-		if err != nil {
+		return validateSyncTransferRefs(ctx, t, householdID, *data.FromAccountID, *data.ToAccountID)
+	case domain.TransactionTypeAdjustment:
+		if data.CategoryID != nil || data.FromAccountID != nil || data.ToAccountID != nil || data.AccountID == nil {
 			return "INVALID_REFS"
 		}
-		if !fromExists {
-			return "ACCOUNT_NOT_FOUND"
-		}
-		toExists, err := t.LiveAccountExists(ctx, householdID, *data.ToAccountID)
-		if err != nil {
-			return "INVALID_REFS"
-		}
-		if !toExists {
-			return "ACCOUNT_NOT_FOUND"
-		}
-		if data.FromAccountID == data.ToAccountID {
-			return "SAME_ACCOUNT_TRANSFER"
-		}
+		return validateSyncAdjustmentRefs(ctx, t, householdID, *data.AccountID)
 	}
 	return ""
+}
+
+// liveAccountCode maps an account existence read to a sync result code: ""
+// when the account exists, ACCOUNT_NOT_FOUND when it does not, INVALID_REFS
+// when the read itself failed.
+func liveAccountCode(ctx context.Context, t repository.SyncTx, householdID, accountID uuid.UUID) string {
+	exists, err := t.LiveAccountExists(ctx, householdID, accountID)
+	if err != nil {
+		return "INVALID_REFS"
+	}
+	if !exists {
+		return "ACCOUNT_NOT_FOUND"
+	}
+	return ""
+}
+
+func validateSyncCashflowRefs(
+	ctx context.Context,
+	t repository.SyncTx,
+	householdID, accountID, categoryID uuid.UUID,
+	typ domain.TransactionType,
+) string {
+	if code := liveAccountCode(ctx, t, householdID, accountID); code != "" {
+		return code
+	}
+	category, err := t.LiveCategory(ctx, householdID, categoryID)
+	if err != nil || category == nil {
+		return "CATEGORY_NOT_FOUND"
+	}
+	if category.Type != typ {
+		return "CATEGORY_TYPE_MISMATCH"
+	}
+	return ""
+}
+
+func validateSyncTransferRefs(
+	ctx context.Context,
+	t repository.SyncTx,
+	householdID, fromAccountID, toAccountID uuid.UUID,
+) string {
+	if code := liveAccountCode(ctx, t, householdID, fromAccountID); code != "" {
+		return code
+	}
+	if code := liveAccountCode(ctx, t, householdID, toAccountID); code != "" {
+		return code
+	}
+	if fromAccountID == toAccountID {
+		return "SAME_ACCOUNT_TRANSFER"
+	}
+	return ""
+}
+
+func validateSyncAdjustmentRefs(
+	ctx context.Context,
+	t repository.SyncTx,
+	householdID, accountID uuid.UUID,
+) string {
+	return liveAccountCode(ctx, t, householdID, accountID)
 }
 
 func syncRefMessage(code string) string {
@@ -1136,6 +1185,8 @@ func syncRefMessage(code string) string {
 		return "transaction type does not match category type"
 	case "SAME_ACCOUNT_TRANSFER":
 		return "transaction from and to accounts are the same"
+	case "INVALID_AMOUNT":
+		return "invalid amount"
 	default:
 		return "invalid references"
 	}

@@ -43,6 +43,7 @@ var (
 	ErrRecordDeleted                      = errors.New("record is deleted on the server")
 	ErrSyncOpIDReused                     = errors.New("sync operation id reused for a different operation")
 	ErrInvalidRefs                        = errors.New("invalid references in transaction")
+	ErrInvalidAmount                      = errors.New("invalid transaction amount")
 	ErrSameAccountTransfer                = errors.New("transfer cannot be made to the same account")
 	ErrTransactionAccountNotFound         = errors.New("transaction references an account that does not exist")
 	ErrTransactionCategoryNotFound        = errors.New("transaction references a category that does not exist")

@@ -13,7 +13,6 @@ const accountFixture: AccountWithBalance = {
   name: 'Main',
   currency: 'USD',
   openingBalance: 1000,
-  manualAdjustment: 0,
   balance: 1000,
 }
 
@@ -104,13 +103,12 @@ describe('useUpdateAccount', () => {
     expect(repo.update).toHaveBeenCalledWith('a1', { name: 'Updated', version: 1 })
   })
 
-  it('optimistically patches account name in list and detail caches', async () => {
+  it('optimistically patches the list cache and leaves a missing detail query alone', async () => {
     const repo = createMockAccountRepository()
     repo.update.mockResolvedValue({ ...accountFixture, name: 'Updated' })
     const { result } = mountWithComposable(() => {
       const queryCache = useQueryCache()
       queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture])
-      queryCache.setQueryData<AccountWithBalance>(['accounts', 'a1'], accountFixture)
       return { mutation: useUpdateAccount(), queryCache }
     }, { repositories: { accounts: repo } })
 
@@ -118,7 +116,6 @@ describe('useUpdateAccount', () => {
     await flushPromises()
 
     expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.[0]?.name).toBe('Updated')
-    expect(result.queryCache.getQueryData<AccountWithBalance>(['accounts', 'a1'])?.name).toBe('Updated')
   })
 
   it('skips optimistic patch when payload touches manualAdjustment', async () => {
@@ -137,7 +134,7 @@ describe('useUpdateAccount', () => {
       return { mutation: useUpdateAccount(), queryCache }
     }, { repositories: { accounts: repo } })
 
-    await result.mutation.mutateAsync({ id: 'a1', payload: { manualAdjustment: 500, version: 1 } })
+    await result.mutation.mutateAsync({ id: 'a1', payload: { version: 1 } })
     await flushPromises()
 
     // Cache stays untouched optimistically; rely on invalidate + refetch

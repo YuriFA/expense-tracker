@@ -75,12 +75,12 @@ func TestTransport_SyncMetricsLogEvents(t *testing.T) {
 			{
 				"opId": "ccccccc1-0000-4000-8000-000000000001", "entity": "account", "action": "upsert",
 				"id": accountID, "baseVersion": 0,
-				"data": map[string]any{"name": "Карта", "currency": "RUB", "openingBalance": 0, "manualAdjustment": 0},
+				"data": map[string]any{"name": "Карта", "currency": "RUB", "openingBalance": 0},
 			},
 			{
 				"opId": "ccccccc2-0000-4000-8000-000000000002", "entity": "account", "action": "upsert",
 				"id": accountID, "baseVersion": 9,
-				"data": map[string]any{"name": "Другая", "currency": "RUB", "openingBalance": 0, "manualAdjustment": 0},
+				"data": map[string]any{"name": "Другая", "currency": "RUB", "openingBalance": 0},
 			},
 			{
 				"opId": "ccccccc3-0000-4000-8000-000000000003", "entity": "transaction", "action": "upsert",

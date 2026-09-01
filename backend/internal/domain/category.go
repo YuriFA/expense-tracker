@@ -6,14 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
-// TransactionType is the kind of a transaction (cashflow income/expense or
-// transfer). Stored as TEXT with a CHECK constraint in Postgres.
+// TransactionType is the kind of a transaction (cashflow income/expense,
+// transfer, or adjustment — a signed balance reconciliation). Stored as TEXT
+// with a CHECK constraint in Postgres.
 type TransactionType string
 
 const (
-	TransactionTypeIncome   TransactionType = "income"
-	TransactionTypeExpense  TransactionType = "expense"
-	TransactionTypeTransfer TransactionType = "transfer"
+	TransactionTypeIncome     TransactionType = "income"
+	TransactionTypeExpense    TransactionType = "expense"
+	TransactionTypeTransfer   TransactionType = "transfer"
+	TransactionTypeAdjustment TransactionType = "adjustment"
 )
 
 // CategoryType is the subset of transaction types a category can own.

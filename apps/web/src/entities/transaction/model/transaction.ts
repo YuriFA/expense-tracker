@@ -1,6 +1,7 @@
 export {
   isTransaction,
   isTransferTransaction,
+  isAdjustmentTransaction,
   isTransactionLinkedToAccount,
   isTransactionLinkedToCategory,
   hasValidTransactionReferences,

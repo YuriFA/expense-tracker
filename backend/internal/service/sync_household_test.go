@@ -35,7 +35,7 @@ func accountUpsertOp(opID, recordID uuid.UUID) domain.SyncOperation {
 		OpID: opID, Entity: domain.SyncEntityAccount, Action: domain.SyncActionUpsert,
 		ID: recordID, BaseVersion: 0,
 		Data: mustJSON(&domain.AccountFullState{
-			Name: "Карта", Currency: "RUB", OpeningBalance: 100, ManualAdjustment: 0,
+			Name: "Карта", Currency: "RUB", OpeningBalance: 100,
 		}),
 	}
 }

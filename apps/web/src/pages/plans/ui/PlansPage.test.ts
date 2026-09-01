@@ -59,7 +59,7 @@ describe('PlansPage', () => {
     categoriesRepo.getAll.mockResolvedValue(categories)
     const accountsRepo = createMockAccountRepository()
     accountsRepo.getAll.mockResolvedValue([
-      { id: 'a1', name: 'Cash', currency: 'USD', openingBalance: 0, manualAdjustment: 0, balance: 0, version: 1 },
+      { id: 'a1', name: 'Cash', currency: 'USD', openingBalance: 0, balance: 0, version: 1 },
     ])
 
     const wrapper = mountWithProviders(PlansPage, {

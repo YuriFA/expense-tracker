@@ -52,11 +52,13 @@ export type {
   Transaction,
   CashflowTransaction,
   TransferTransaction,
+  AdjustmentTransaction,
   TransactionType,
 } from './domain/transaction'
 export {
   isTransaction,
   isTransferTransaction,
+  isAdjustmentTransaction,
   isTransactionLinkedToAccount,
   isTransactionLinkedToCategory,
   hasValidTransactionReferences,

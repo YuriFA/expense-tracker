@@ -8,9 +8,6 @@ export const createEditAccountSchema = () => {
     name: z
       .string({ error: t('validation.enter', { field: t('fields.name') }) })
       .min(1, t('validation.enter', { field: t('fields.name') })),
-    manualAdjustment: z.number({
-      error: t('validation.enter', { field: t('fields.openingBalance') }),
-    }),
   })
 }
 

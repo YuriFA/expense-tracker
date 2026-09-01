@@ -11,7 +11,6 @@ const createdAccount: AccountWithBalance = {
   name: 'Main',
   currency: 'RUB',
   openingBalance: 100,
-  manualAdjustment: 0,
   balance: 100,
 }
 

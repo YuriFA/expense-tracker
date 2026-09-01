@@ -1,8 +1,9 @@
 // Local (offline-first) AccountRepository over the app's SQLite database.
 //
-// Balances are computed by query - opening + manual adjustment + the signed
-// impact of non-deleted transactions (income +, expense -, transfer -from
-// +to) - mirroring the backend's `account_contributions` view and
+// Balances are computed by query - opening + the signed impact of
+// non-deleted transactions (income +, expense -, transfer -from +to,
+// adjustment = its signed amount) - mirroring the backend's
+// `account_contributions` view and
 // @expense-tracker/money's integer math. Mutations write the row and its
 // outbox operation in one transaction (design D5/D6); deletes are guarded
 // against in-use and tombstone records only.
@@ -36,7 +37,6 @@ function toAccount(row: Omit<AccountRow, 'balance'> & { balance?: number }): Acc
     name: row.name,
     currency: row.currency as Account['currency'],
     openingBalance: row.openingBalance,
-    manualAdjustment: row.manualAdjustment,
     version: row.version,
   }
 }
@@ -52,6 +52,9 @@ const contributions = sql`(select account_id, sum(signed) as total from (
   union all
   select to_account_id, amount from transactions
   where deleted_at is null and type = 'transfer'
+  union all
+  select account_id, amount from transactions
+  where deleted_at is null and type = 'adjustment'
 ) group by account_id)`
 
 interface AccountBalanceRow {
@@ -59,14 +62,13 @@ interface AccountBalanceRow {
   name: string
   currency: string
   opening_balance: number
-  manual_adjustment: number
   version: number
   balance: number
 }
 
 const balanceSelect = sql`
-  select a.id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.version,
-    a.opening_balance + a.manual_adjustment + coalesce(c.total, 0) as balance
+  select a.id, a.name, a.currency, a.opening_balance, a.version,
+    a.opening_balance + coalesce(c.total, 0) as balance
   from accounts a
   left join ${contributions} c on c.account_id = a.id
 `
@@ -77,7 +79,6 @@ function toAccountWithBalance(row: AccountBalanceRow): AccountWithBalance {
     name: row.name,
     currency: row.currency as Account['currency'],
     openingBalance: row.opening_balance,
-    manualAdjustment: row.manual_adjustment,
     version: row.version,
     balance: row.balance,
   }
@@ -154,7 +155,6 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
           name,
           currency: payload.currency,
           openingBalance: payload.openingBalance,
-          manualAdjustment: 0,
           version: 1,
           serverVersion: 0,
           deletedAt: null,
@@ -168,21 +168,15 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
           payload: toAccount(row),
           baseVersion: row.serverVersion,
         })
-        return { ...toAccount(row), balance: row.openingBalance + row.manualAdjustment }
+        return { ...toAccount(row), balance: row.openingBalance }
       })
     },
 
     async update(id: string, payload: UpdateAccountPayload) {
-      const hasFields = payload.name !== undefined || payload.manualAdjustment !== undefined
-      if (!hasFields) throw new InvalidPayloadError('No fields to update')
-      if (payload.name !== undefined && !payload.name.trim()) {
+      const name = payload.name
+      if (name === undefined) throw new InvalidPayloadError('No fields to update')
+      if (!name.trim()) {
         throw new InvalidPayloadError('Account name is required')
-      }
-      if (
-        payload.manualAdjustment !== undefined &&
-        !isSafeIntegerAmount(payload.manualAdjustment)
-      ) {
-        throw new InvalidPayloadError('Manual adjustment must be an integer amount of minor units')
       }
 
       return db.transaction((tx) => {
@@ -198,8 +192,7 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
 
         const next: AccountRow = {
           ...row,
-          name: payload.name !== undefined ? payload.name.trim() : row.name,
-          manualAdjustment: payload.manualAdjustment ?? row.manualAdjustment,
+          name: name.trim(),
           version: row.version + 1,
         }
         tx.update(accounts).set(next).where(eq(accounts.id, id)).run()
@@ -218,7 +211,7 @@ export function createLocalAccountRepository(db: LocalDatabase): AccountReposito
           .at(0)
         return {
           ...toAccount(next),
-          balance: next.openingBalance + next.manualAdjustment + (impact?.total ?? 0),
+          balance: next.openingBalance + (impact?.total ?? 0),
         }
       })
     },

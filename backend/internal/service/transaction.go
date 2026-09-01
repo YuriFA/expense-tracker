@@ -44,6 +44,10 @@ func (s *TransactionService) Create(
 ) (*domain.Transaction, error) {
 	const op = "service.transaction.Create"
 
+	if err := ValidateAmount(params.Type, params.Amount); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
 	if err := s.validateRefs(
 		ctx,
 		householdID,
@@ -98,6 +102,14 @@ func (s *TransactionService) Update(
 	effectiveToAccountID := current.ToAccountID
 	if params.ToAccountID != nil {
 		effectiveToAccountID = params.ToAccountID
+	}
+
+	effectiveAmount := current.Amount
+	if params.Amount != nil {
+		effectiveAmount = *params.Amount
+	}
+	if err := ValidateAmount(current.Type, effectiveAmount); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err := s.validateRefs(ctx, householdID, current.Type,
@@ -208,11 +220,12 @@ func boundPageSize(requested *int) int {
 	return min(size, maxTransactionPageSize)
 }
 
-// validateRefs enforces the cashflow-vs-transfer reference rules and that every
-// referenced account/category exists and belongs to householdID, and that a
-// cashflow category's type matches the transaction type. The not-found errors
-// for FK references are DISTINCT from the by-id fetch errors so the transport
-// error mapper stays a pure 1:1 function (422 inside a transaction vs 404 by id).
+// validateRefs enforces the per-type reference rules (cashflow vs transfer
+// vs adjustment) and that every referenced account/category exists and
+// belongs to householdID, and that a cashflow category's type matches the
+// transaction type. The not-found errors for FK references are DISTINCT from
+// the by-id fetch errors so the transport error mapper stays a pure 1:1
+// function (422 inside a transaction vs 404 by id).
 func (s *TransactionService) validateRefs(
 	ctx context.Context,
 	householdID uuid.UUID,
@@ -230,6 +243,42 @@ func (s *TransactionService) validateRefs(
 			return domain.ErrInvalidRefs
 		}
 		return s.validateTransferRefs(ctx, householdID, *fromAccountID, *toAccountID)
+	case domain.TransactionTypeAdjustment:
+		if categoryID != nil || fromAccountID != nil || toAccountID != nil || accountID == nil {
+			return domain.ErrInvalidRefs
+		}
+		return s.validateAdjustmentRefs(ctx, householdID, *accountID)
+	}
+	return nil
+}
+
+// ValidateAmount enforces the per-type amount sign rule: positive for
+// income/expense/transfer, nonzero signed for adjustment (the reconciliation
+// delta may lower or raise the balance).
+func ValidateAmount(typ domain.TransactionType, amount int64) error {
+	if typ == domain.TransactionTypeAdjustment {
+		if amount == 0 {
+			return domain.ErrInvalidAmount
+		}
+		return nil
+	}
+	if amount < 1 {
+		return domain.ErrInvalidAmount
+	}
+	return nil
+}
+
+// validateAdjustmentRefs verifies the reconciled account exists and belongs
+// to householdID.
+func (s *TransactionService) validateAdjustmentRefs(
+	ctx context.Context,
+	householdID, accountID uuid.UUID,
+) error {
+	if _, err := s.accounts.GetAccount(ctx, householdID, accountID); err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			return domain.ErrTransactionAccountNotFound
+		}
+		return err
 	}
 	return nil
 }

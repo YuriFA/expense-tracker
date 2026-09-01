@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
-import { isTransferTransaction } from '../model/transaction'
+import { isAdjustmentTransaction, isTransferTransaction } from '../model/transaction'
 import type { Transaction } from '../model/types'
 import { useDateFormat } from '@vueuse/core'
-import { RepeatIcon } from '@lucide/vue'
+import { RepeatIcon, ScaleIcon } from '@lucide/vue'
 import { computed, type HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
@@ -44,6 +44,9 @@ const {
 const { locale, t } = useI18n()
 
 const category = computed(() => {
+  if (isAdjustmentTransaction(transaction) || isTransferTransaction(transaction)) {
+    return undefined
+  }
   return categories?.find((category) => category.id === transaction.categoryId)
 })
 
@@ -81,6 +84,9 @@ const formattedOccuredAt = useDateFormat(transaction.occurredAt, 'DD MMM, HH:mm'
 })
 
 const isTransfer = computed(() => isTransferTransaction(transaction))
+const isAdjustment = computed(() => isAdjustmentTransaction(transaction))
+const isAdjustmentAndPositive = computed(() => isAdjustment.value && transaction.amount > 0)
+const isAdjustmentAndNegative = computed(() => isAdjustment.value && transaction.amount < 0)
 
 // Draft meta uses a bullet separator and an arrow for transfers; kept as
 // script constants (i18n lint bans raw non-text glyphs in templates).
@@ -104,6 +110,12 @@ const ARROW = '→'
     >
       <RepeatIcon class="size-5" />
     </div>
+    <div
+      v-if="isAdjustment"
+      class="flex size-10 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground"
+    >
+      <ScaleIcon class="size-5" />
+    </div>
     <div class="flex-1">
       <p v-if="transaction.description" class="text-sm font-medium">
         {{ transaction.description }}
@@ -115,6 +127,15 @@ const ARROW = '→'
           </span>
           <span v-else>{{ t('transactions.types.transfer') }}</span>
           {{ SEPARATOR }} <span>{{ formattedOccuredAt }}</span>
+        </template>
+        <template v-else-if="isAdjustment">
+          <span
+            class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+          >
+            {{ t('transactions.types.adjustment') }}
+          </span>
+          {{ SEPARATOR }} <span v-if="account">{{ account.name }}</span> {{ SEPARATOR }}
+          <span>{{ formattedOccuredAt }}</span>
         </template>
         <template v-else>
           <span v-if="category">
@@ -136,14 +157,16 @@ const ARROW = '→'
     <p
       class="min-w-24 text-right text-sm font-semibold tabular-nums"
       :class="{
-        'text-success': transaction.type === 'income',
-        'text-destructive': transaction.type === 'expense',
-        'text-foreground': transaction.type === 'transfer',
+        'text-success': transaction.type === 'income' || isAdjustmentAndPositive,
+        'text-destructive': transaction.type === 'expense' || isAdjustmentAndNegative,
+        'text-foreground': transaction.type === 'transfer' || (isAdjustment && transaction.amount === 0),
       }"
     >
       <span v-if="transaction.type === 'income'">+</span>
       <span v-if="transaction.type === 'expense'">-</span>
-      <span>{{ format(transaction.amount) }}</span>
+      <span v-if="isAdjustment && transaction.amount > 0">+</span>
+      <span v-if="isAdjustment && transaction.amount < 0">-</span>
+      <span>{{ format(isAdjustment ? Math.abs(transaction.amount) : transaction.amount) }}</span>
     </p>
     <slot name="actions" :transaction="transaction" />
   </li>

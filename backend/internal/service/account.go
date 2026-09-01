@@ -42,7 +42,7 @@ func (s *AccountService) Update(
 	params domain.UpdateAccountParams,
 ) (*domain.Account, error) {
 	const op = "service.account.Update"
-	if params.Name == nil && params.ManualAdjustment == nil {
+	if params.Name == nil {
 		return nil, ErrNoFieldsToUpdate
 	}
 	a, err := s.accounts.UpdateAccount(ctx, householdID, userID, id, params)

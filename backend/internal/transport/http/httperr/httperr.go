@@ -22,6 +22,7 @@ const (
 	ErrCodeAccountInUse                   = "ACCOUNT_IN_USE"
 	ErrCodeCategoryInUse                  = "CATEGORY_IN_USE"
 	ErrCodeInvalidRefs                    = "INVALID_REFS"
+	ErrCodeInvalidAmount                  = "INVALID_AMOUNT"
 	ErrCodeSameAccountTransfer            = "SAME_ACCOUNT_TRANSFER"
 	ErrCodeUnauthorized                   = "UNAUTHORIZED"
 	ErrCodeTooManyRequests                = "TOO_MANY_REQUESTS"

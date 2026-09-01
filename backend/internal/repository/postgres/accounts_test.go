@@ -26,16 +26,18 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, int64(10000), created.Balance, "fresh account balance = opening")
-	assert.Equal(t, int64(0), created.ManualAdjustment)
 
-	// Manual adjustment shifts balance.
-	adj := int64(-2500)
-	updated, err := testRepo.UpdateAccount(
-		ctx,
-		userHH, user.ID,
-		created.ID,
-		domain.UpdateAccountParams{ManualAdjustment: &adj, Version: created.Version},
-	)
+	// An adjustment transaction shifts the balance by its signed amount.
+	acct := created.ID
+	adjTx, err := testRepo.CreateTransaction(ctx, domain.CreateTransactionParams{
+		HouseholdID: userHH,
+		UserID:      user.ID,
+		Type:        domain.TransactionTypeAdjustment,
+		Amount:      -2500,
+		AccountID:   &acct,
+	})
+	require.NoError(t, err)
+	updated, err := testRepo.GetAccount(ctx, userHH, created.ID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(7500), updated.Balance)
 
@@ -63,7 +65,9 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 	require.Len(t, all, 1)
 	assert.Equal(t, int64(7500), all[0].Balance)
 
-	// Delete.
+	// Delete (the adjustment transaction must be gone first: the account is
+	// in use while any live transaction references it).
+	require.NoError(t, testRepo.DeleteTransaction(ctx, userHH, user.ID, adjTx.ID))
 	require.NoError(t, testRepo.DeleteAccount(ctx, userHH, user.ID, created.ID))
 	_, err = testRepo.GetAccount(ctx, userHH, created.ID)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)

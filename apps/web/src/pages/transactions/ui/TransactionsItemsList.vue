@@ -120,7 +120,7 @@ const openDelete = (transaction: Transaction) => {
           <template #actions="{ transaction }">
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button variant="ghost" size="icon" :aria-label="t('common.close')">
+                <Button variant="ghost" size="icon" :aria-label="t('transactions.rowActions')">
                   <MoreVertical class="size-4" />
                 </Button>
               </DropdownMenuTrigger>

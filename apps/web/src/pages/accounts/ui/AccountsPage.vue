@@ -9,6 +9,7 @@ import { EmptyState } from '@/shared/ui/empty-state'
 import { computed, ref } from 'vue'
 import { AddAccountDialog } from '../features/add-account'
 import EditAccountDialog from '../features/edit-account/ui/EditAccountDialog.vue'
+import ReconcileAccountDialog from '../features/reconcile-account/ui/ReconcileAccountDialog.vue'
 import { DeleteAccountDialog } from '../features/delete-account'
 
 const { t, locale } = useI18n()
@@ -30,6 +31,7 @@ const format = (value: number, currency: CurrencyCode) =>
 // sets the active account, the dialog pair reads it (the list/dialog
 // convention - the RecentTransactions shape).
 const editOpen = ref(false)
+const reconcileOpen = ref(false)
 const deleteOpen = ref(false)
 const activeAccount = ref<AccountWithBalance | null>(null)
 const pendingDeleteId = ref<string | null>(null)
@@ -37,6 +39,11 @@ const pendingDeleteId = ref<string | null>(null)
 const openEdit = (account: AccountWithBalance) => {
   activeAccount.value = account
   editOpen.value = true
+}
+
+const openReconcile = (account: AccountWithBalance) => {
+  activeAccount.value = account
+  reconcileOpen.value = true
 }
 
 const openDelete = (account: AccountWithBalance) => {
@@ -96,7 +103,12 @@ const openDelete = (account: AccountWithBalance) => {
       </li>
       <template v-else>
         <li v-for="account in data" :key="account.id">
-          <AccountCard :account @edit="openEdit(account)" @delete="openDelete(account)" />
+          <AccountCard
+            :account
+            @edit="openEdit(account)"
+            @reconcile="openReconcile(account)"
+            @delete="openDelete(account)"
+          />
         </li>
       </template>
     </ul>
@@ -104,6 +116,11 @@ const openDelete = (account: AccountWithBalance) => {
     <EditAccountDialog
       v-if="activeAccount"
       v-model:open="editOpen"
+      :account="activeAccount"
+    />
+    <ReconcileAccountDialog
+      v-if="activeAccount"
+      v-model:open="reconcileOpen"
       :account="activeAccount"
     />
     <DeleteAccountDialog

@@ -92,7 +92,6 @@
     "trigger": "Изменить счёт",
     "nameLabel": "Название",
     "namePlaceholder": "Название счёта",
-    "openingBalanceLabel": "Корректировка баланса",
     "submit": "Сохранить изменения",
     "success": "Счёт обновлён",
     "error": "Ошибка при обновлении счёта"
@@ -303,7 +302,8 @@
     "types": {
       "expense": "Расход",
       "income": "Доход",
-      "transfer": "Перевод"
+      "transfer": "Перевод",
+      "adjustment": "Корректировка"
     },
     "filters": {
       "typeLabel": "Тип",
@@ -334,7 +334,8 @@
     "noMatchesTitle": "Подходящих транзакций нет",
     "noMatchesDescription": "Измените или сбросьте фильтры",
     "noMatchesAction": "Сбросить фильтры",
-    "clearFilter": "Очистить фильтр"
+    "clearFilter": "Очистить фильтр",
+    "rowActions": "Действия над записью"
   },
   "fields": {
     "name": "Название",
@@ -357,7 +358,8 @@
     "mustBeString": "{field} должно быть текстом",
     "mustBeDate": "{field} должно быть корректной датой",
     "transferAccountsMustDiffer": "Счета перевода должны отличаться",
-    "transferAccountsMustMatchCurrency": "Счета перевода должны быть в одной валюте"
+    "transferAccountsMustMatchCurrency": "Счета перевода должны быть в одной валюте",
+    "adjustmentNonZero": "Корректировка не может быть нулевой"
   },
   "errors": {
     "notFound": "Не найдено",
@@ -461,7 +463,8 @@
     "starterAccountName": "Наличные",
     "homeEmptyAccountsTitle": "Нет счёта для записи",
     "homeEmptyAccountsDescription": "Создайте счёт на вкладке «Счета», чтобы начать фиксировать транзакции.",
-    "homeEmptyAccountsAction": "Перейти к счетам"
+    "homeEmptyAccountsAction": "Перейти к счетам",
+    "actions": "Действия"
   },
   "settings": {
     "locale": "Язык",
@@ -644,5 +647,19 @@
     "expense": "Расход",
     "income": "Доход",
     "addHotkey": "N"
+  },
+  "reconcileAccount": {
+    "title": "Сверить баланс",
+    "trigger": "Сверить баланс",
+    "balanceLabel": "Фактический баланс",
+    "noteLabel": "Заметка",
+    "notePlaceholder": "Например: сверка наличных",
+    "noteTooLong": "Заметка не длиннее 200 символов",
+    "deltaZero": "Баланс актуален - сверка не требуется",
+    "deltaAdded": "Будет добавлено {amount}",
+    "deltaRemoved": "Будет убрано {amount}",
+    "submit": "Сверить",
+    "success": "Баланс сверен",
+    "error": "Ошибка при сверке баланса"
   }
 }

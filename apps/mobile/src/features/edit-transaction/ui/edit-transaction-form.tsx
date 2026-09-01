@@ -45,6 +45,7 @@ const TYPE_TITLES: Record<TransactionType, string> = {
   expense: 'Расход',
   income: 'Доход',
   transfer: 'Перевод',
+  adjustment: 'Корректировка',
 }
 
 // Placeholder branch for the (closed-sheet) gap before the record arrives;
@@ -102,6 +103,9 @@ function toUpdatePayload(
 
   if (values.type === 'transfer') {
     return { ...base, fromAccountId: values.fromAccountId, toAccountId: values.toAccountId }
+  }
+  if (values.type === 'adjustment') {
+    return { ...base, accountId: values.accountId }
   }
   return { ...base, accountId: values.accountId, categoryId: values.categoryId }
 }
@@ -248,6 +252,8 @@ export function EditTransactionForm({
 
         {transaction.type === 'transfer' ? (
           <TransferAccountRows />
+        ) : transaction.type === 'adjustment' ? (
+          <CashflowAccountRow kind={transaction.type} />
         ) : (
           <>
             <CashflowAccountRow kind={transaction.type} />

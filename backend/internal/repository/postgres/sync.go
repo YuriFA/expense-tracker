@@ -196,17 +196,16 @@ func (t *syncTx) GetAccountAny(ctx context.Context, householdID, id uuid.UUID) (
 		return nil, opWrap(op, err)
 	}
 	return &domain.Account{
-		ID:               row.ID,
-		UserID:           row.UserID,
-		Name:             row.Name,
-		Currency:         row.Currency,
-		OpeningBalance:   row.OpeningBalance,
-		ManualAdjustment: row.ManualAdjustment,
-		Balance:          row.Balance,
-		CreatedAt:        row.CreatedAt,
-		UpdatedAt:        row.UpdatedAt,
-		Version:          int(row.Version),
-		DeletedAt:        row.DeletedAt,
+		ID:             row.ID,
+		UserID:         row.UserID,
+		Name:           row.Name,
+		Currency:       row.Currency,
+		OpeningBalance: row.OpeningBalance,
+		Balance:        row.Balance,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+		Version:        int(row.Version),
+		DeletedAt:      row.DeletedAt,
 	}, nil
 }
 
@@ -498,7 +497,7 @@ func (t *syncTx) CreateAccount(ctx context.Context, params domain.CreateAccountP
 	}
 	return accountRow(
 		row.ID, row.UserID, row.Name, row.Currency,
-		row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.OpeningBalance, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
 	), nil
 }
 
@@ -511,13 +510,12 @@ func (t *syncTx) ReplaceAccount(
 	const op = "repository.postgres.syncTx.ReplaceAccount"
 
 	row, err := t.q.SyncReplaceAccount(ctx, db.SyncReplaceAccountParams{
-		ID:               id,
-		HouseholdID:      householdID,
-		Name:             st.Name,
-		Currency:         st.Currency,
-		OpeningBalance:   st.OpeningBalance,
-		ManualAdjustment: st.ManualAdjustment,
-		BaseVersion:      int32(baseVersion), //nolint:gosec // server versions are small positive ints
+		ID:             id,
+		HouseholdID:    householdID,
+		Name:           st.Name,
+		Currency:       st.Currency,
+		OpeningBalance: st.OpeningBalance,
+		BaseVersion:    int32(baseVersion), //nolint:gosec // server versions are small positive ints
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -540,7 +538,7 @@ func (t *syncTx) ReplaceAccount(
 	}
 	return accountRow(
 		row.ID, row.UserID, row.Name, row.Currency,
-		row.OpeningBalance, row.ManualAdjustment, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
+		row.OpeningBalance, row.Balance, row.CreatedAt, row.UpdatedAt, int(row.Version),
 	), nil
 }
 
@@ -1450,10 +1448,9 @@ func pullStateOf(
 	case domain.SyncEntityAccount:
 		if a, ok := accountsByID[id]; ok {
 			return &domain.AccountFullState{
-				Name:             a.Name,
-				Currency:         a.Currency,
-				OpeningBalance:   a.OpeningBalance,
-				ManualAdjustment: a.ManualAdjustment,
+				Name:           a.Name,
+				Currency:       a.Currency,
+				OpeningBalance: a.OpeningBalance,
 			}
 		}
 	case domain.SyncEntityCategory:

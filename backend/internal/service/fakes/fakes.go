@@ -381,8 +381,8 @@ func (s *Store) CreateAccount(_ context.Context, params domain.CreateAccountPara
 	now := time.Now().UTC()
 	a := &domain.Account{
 		ID: id, UserID: params.UserID, Name: params.Name, Currency: params.Currency,
-		OpeningBalance: params.OpeningBalance, ManualAdjustment: 0,
-		Balance: params.OpeningBalance, CreatedAt: now, UpdatedAt: now, Version: 1,
+		OpeningBalance: params.OpeningBalance,
+		Balance:        params.OpeningBalance, CreatedAt: now, UpdatedAt: now, Version: 1,
 	}
 	s.accounts[a.ID] = a
 	s.appendChange(
@@ -398,7 +398,7 @@ func (s *Store) CreateAccount(_ context.Context, params domain.CreateAccountPara
 }
 
 func (s *Store) recomputeBalance(a *domain.Account) int64 {
-	bal := a.OpeningBalance + a.ManualAdjustment
+	bal := a.OpeningBalance
 	householdID, ok := s.householdOf(a.UserID)
 	if !ok {
 		return bal
@@ -423,6 +423,10 @@ func (s *Store) recomputeBalance(a *domain.Account) int64 {
 			if t.ToAccountID != nil && *t.ToAccountID == a.ID {
 				bal += t.Amount
 			}
+		case domain.TransactionTypeAdjustment:
+			if t.AccountID != nil && *t.AccountID == a.ID {
+				bal += t.Amount
+			}
 		}
 	}
 	return bal
@@ -444,9 +448,6 @@ func (s *Store) UpdateAccount(
 	}
 	if params.Name != nil {
 		a.Name = *params.Name
-	}
-	if params.ManualAdjustment != nil {
-		a.ManualAdjustment = *params.ManualAdjustment
 	}
 	a.UpdatedAt = time.Now().UTC()
 	a.Version++
@@ -1537,7 +1538,6 @@ func (t *fakeSyncTx) ReplaceAccount(
 	a.Name = st.Name
 	a.Currency = st.Currency
 	a.OpeningBalance = st.OpeningBalance
-	a.ManualAdjustment = st.ManualAdjustment
 	a.UpdatedAt = time.Now().UTC()
 	a.Version++
 	a.Balance = t.store.recomputeBalance(a)

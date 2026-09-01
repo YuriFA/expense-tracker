@@ -7,8 +7,8 @@ import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositori
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const accounts: AccountWithBalance[] = [
-  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, manualAdjustment: 0, balance: 1000, version: 1 },
-  { id: 'a2', name: 'Cash', currency: 'USD', openingBalance: 0, manualAdjustment: 0, balance: 0, version: 1 },
+  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, balance: 1000, version: 1 },
+  { id: 'a2', name: 'Cash', currency: 'USD', openingBalance: 0, balance: 0, version: 1 },
 ]
 
 describe('TransactionAccountField', () => {

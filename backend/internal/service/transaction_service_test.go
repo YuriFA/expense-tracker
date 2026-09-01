@@ -87,6 +87,117 @@ func TestTransactionService_RefValidation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, created.Version)
 	})
+
+	t.Run("adjustment with category rejected", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
+			AccountID: &acct.ID, CategoryID: &cat.ID,
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidRefs)
+	})
+
+	t.Run("adjustment with transfer refs rejected", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
+			FromAccountID: &acct.ID, ToAccountID: &acct.ID,
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidRefs)
+	})
+
+	t.Run("adjustment without account rejected", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidRefs)
+	})
+
+	t.Run("adjustment account not owned -> transaction account not found", func(t *testing.T) {
+		t.Parallel()
+		other := uuid.New()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
+			AccountID: &other,
+		})
+		require.ErrorIs(t, err, domain.ErrTransactionAccountNotFound)
+	})
+
+	t.Run("valid adjustment creates and shifts balance by signed amount", func(t *testing.T) {
+		t.Parallel()
+		dedicated := seedFakeAccount(t, store, userHH, user.ID)
+		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: -2500, OccurredAt: time.Now().UTC(),
+			AccountID: &dedicated.ID,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 1, created.Version)
+		after, err := store.GetAccount(context.Background(), userHH, dedicated.ID)
+		require.NoError(t, err)
+		assert.Equal(t, dedicated.Balance-2500, after.Balance)
+	})
+}
+
+func TestTransactionService_AmountSignValidation(t *testing.T) {
+	t.Parallel()
+	_, _, txSvc, _, _, store := services(t)
+	ctx := context.Background()
+
+	user := seedFakeUser(t, store)
+	userHH := householdOf(t, store, user.ID)
+	acct := seedFakeAccount(t, store, userHH, user.ID)
+	cat := seedFakeCategory(t, store, userHH, user.ID, "AmountIncome", domain.TransactionTypeIncome)
+
+	t.Run("zero income amount rejected", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeIncome, Amount: 0, OccurredAt: time.Now().UTC(),
+			AccountID: &acct.ID, CategoryID: &cat.ID,
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidAmount)
+	})
+
+	t.Run("negative expense amount rejected", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: -100, OccurredAt: time.Now().UTC(),
+			AccountID: &acct.ID, CategoryID: &cat.ID,
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidAmount)
+	})
+
+	t.Run("zero adjustment amount rejected", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: 0, OccurredAt: time.Now().UTC(),
+			AccountID: &acct.ID,
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidAmount)
+	})
+
+	t.Run("negative adjustment amount accepted", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: -1, OccurredAt: time.Now().UTC(),
+			AccountID: &acct.ID,
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("update flips amount sign against the type rule", func(t *testing.T) {
+		t.Parallel()
+		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeAdjustment, Amount: -500, OccurredAt: time.Now().UTC(),
+			AccountID: &acct.ID,
+		})
+		require.NoError(t, err)
+		zero := int64(0)
+		_, err = txSvc.Update(ctx, userHH, user.ID, created.ID, domain.UpdateTransactionParams{
+			Amount: &zero, Version: created.Version,
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidAmount)
+	})
 }
 
 func TestTransactionService_CursorEncodeDecode(t *testing.T) {

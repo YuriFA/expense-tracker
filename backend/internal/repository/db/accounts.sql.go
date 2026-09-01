@@ -14,16 +14,15 @@ import (
 
 const createAccount = `-- name: CreateAccount :one
 
-INSERT INTO accounts (id, household_id, user_id, name, currency, opening_balance, manual_adjustment)
-VALUES ($1, $2, $3, $4, $5, $6, 0)
+INSERT INTO accounts (id, household_id, user_id, name, currency, opening_balance)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING
     id,
     user_id,
     name,
     currency,
     opening_balance,
-    manual_adjustment,
-    (opening_balance + manual_adjustment)::bigint AS balance,
+    opening_balance::bigint AS balance,
     created_at,
     updated_at,
     version
@@ -39,22 +38,21 @@ type CreateAccountParams struct {
 }
 
 type CreateAccountRow struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	Balance          int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Version          int32
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	Balance        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
 }
 
 // accounts. Every query scopes by household_id (IDOR-safe: an access from
 // outside the household returns "not found", never the row). user_id stays on
 // the rows as authorship (stamped from the session on create). Balance is
-// computed via the account_contributions view (opening + manual + sum(signed)).
+// computed via the account_contributions view (opening + sum(signed)).
 // Deletes are soft (deleted_at tombstone); every read path that feeds
 // listings/summaries filters tombstones, while the *Any reads (sync + conflict
 // classification) include them.
@@ -75,7 +73,6 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (C
 		&i.Name,
 		&i.Currency,
 		&i.OpeningBalance,
-		&i.ManualAdjustment,
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -91,15 +88,14 @@ SELECT
     a.name,
     a.currency,
     a.opening_balance,
-    a.manual_adjustment,
-    (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance,
+    (a.opening_balance + COALESCE(SUM(c.signed), 0))::bigint AS balance,
     a.created_at,
     a.updated_at,
     a.version
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
 WHERE a.id = $1 AND a.household_id = $2 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at, a.version
+GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.created_at, a.updated_at, a.version
 `
 
 type GetAccountParams struct {
@@ -108,16 +104,15 @@ type GetAccountParams struct {
 }
 
 type GetAccountRow struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	Balance          int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Version          int32
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	Balance        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
 }
 
 func (q *Queries) GetAccount(ctx context.Context, arg GetAccountParams) (GetAccountRow, error) {
@@ -129,7 +124,6 @@ func (q *Queries) GetAccount(ctx context.Context, arg GetAccountParams) (GetAcco
 		&i.Name,
 		&i.Currency,
 		&i.OpeningBalance,
-		&i.ManualAdjustment,
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -145,8 +139,7 @@ SELECT
     name,
     currency,
     opening_balance,
-    manual_adjustment,
-    (opening_balance + manual_adjustment + COALESCE(
+    (opening_balance + COALESCE(
         (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
     ))::bigint AS balance,
     created_at,
@@ -163,17 +156,16 @@ type GetAccountAnyParams struct {
 }
 
 type GetAccountAnyRow struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	Balance          int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Version          int32
-	DeletedAt        *time.Time
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	Balance        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
+	DeletedAt      *time.Time
 }
 
 // Includes tombstoned rows; used by sync push (serverState / idempotent
@@ -187,7 +179,6 @@ func (q *Queries) GetAccountAny(ctx context.Context, arg GetAccountAnyParams) (G
 		&i.Name,
 		&i.Currency,
 		&i.OpeningBalance,
-		&i.ManualAdjustment,
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -204,29 +195,27 @@ SELECT
     a.name,
     a.currency,
     a.opening_balance,
-    a.manual_adjustment,
-    (a.opening_balance + a.manual_adjustment + COALESCE(SUM(c.signed), 0))::bigint AS balance,
+    (a.opening_balance + COALESCE(SUM(c.signed), 0))::bigint AS balance,
     a.created_at,
     a.updated_at,
     a.version
 FROM accounts a
 LEFT JOIN account_contributions c ON c.account_id = a.id
 WHERE a.household_id = $1 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.manual_adjustment, a.created_at, a.updated_at, a.version
+GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.created_at, a.updated_at, a.version
 ORDER BY a.created_at, a.id
 `
 
 type GetAccountsRow struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	Balance          int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Version          int32
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	Balance        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
 }
 
 func (q *Queries) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]GetAccountsRow, error) {
@@ -244,7 +233,6 @@ func (q *Queries) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]Get
 			&i.Name,
 			&i.Currency,
 			&i.OpeningBalance,
-			&i.ManualAdjustment,
 			&i.Balance,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -311,7 +299,6 @@ SELECT
     name,
     currency,
     opening_balance,
-    manual_adjustment,
     created_at,
     updated_at,
     version,
@@ -326,16 +313,15 @@ type SyncAccountsByIDsParams struct {
 }
 
 type SyncAccountsByIDsRow struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Version          int32
-	DeletedAt        *time.Time
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
+	DeletedAt      *time.Time
 }
 
 // Batch fetch for pull data (current state of records named by change rows).
@@ -354,7 +340,6 @@ func (q *Queries) SyncAccountsByIDs(ctx context.Context, arg SyncAccountsByIDsPa
 			&i.Name,
 			&i.Currency,
 			&i.OpeningBalance,
-			&i.ManualAdjustment,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
@@ -373,21 +358,19 @@ func (q *Queries) SyncAccountsByIDs(ctx context.Context, arg SyncAccountsByIDsPa
 const syncReplaceAccount = `-- name: SyncReplaceAccount :one
 UPDATE accounts
 SET
-    name              = $1,
-    currency          = $2,
-    opening_balance   = $3,
-    manual_adjustment = $4,
-    version           = version + 1,
+    name            = $1,
+    currency        = $2,
+    opening_balance = $3,
+    version         = version + 1,
     updated_at        = now()
-WHERE id = $5 AND household_id = $6 AND deleted_at IS NULL AND version = $7
+WHERE id = $4 AND household_id = $5 AND deleted_at IS NULL AND version = $6
 RETURNING
     id,
     user_id,
     name,
     currency,
     opening_balance,
-    manual_adjustment,
-    (opening_balance + manual_adjustment + COALESCE(
+    (opening_balance + COALESCE(
         (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
     ))::bigint AS balance,
     created_at,
@@ -396,26 +379,24 @@ RETURNING
 `
 
 type SyncReplaceAccountParams struct {
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	ID               uuid.UUID
-	HouseholdID      uuid.UUID
-	BaseVersion      int32
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	ID             uuid.UUID
+	HouseholdID    uuid.UUID
+	BaseVersion    int32
 }
 
 type SyncReplaceAccountRow struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	Balance          int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Version          int32
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	Balance        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
 }
 
 // Full-state CAS upsert from a sync push: applies only on the exact base
@@ -425,7 +406,6 @@ func (q *Queries) SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccount
 		arg.Name,
 		arg.Currency,
 		arg.OpeningBalance,
-		arg.ManualAdjustment,
 		arg.ID,
 		arg.HouseholdID,
 		arg.BaseVersion,
@@ -437,7 +417,6 @@ func (q *Queries) SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccount
 		&i.Name,
 		&i.Currency,
 		&i.OpeningBalance,
-		&i.ManualAdjustment,
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -449,19 +428,17 @@ func (q *Queries) SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccount
 const updateAccount = `-- name: UpdateAccount :one
 UPDATE accounts
 SET
-    name              = COALESCE($1, name),
-    manual_adjustment = COALESCE($2, manual_adjustment),
-    version           = version + 1,
+    name       = COALESCE($1, name),
+    version    = version + 1,
     updated_at        = now()
-WHERE id = $3 AND household_id = $4 AND deleted_at IS NULL AND version = $5
+WHERE id = $2 AND household_id = $3 AND deleted_at IS NULL AND version = $4
 RETURNING
     id,
     user_id,
     name,
     currency,
     opening_balance,
-    manual_adjustment,
-    (opening_balance + manual_adjustment + COALESCE(
+    (opening_balance + COALESCE(
         (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
     ))::bigint AS balance,
     created_at,
@@ -470,24 +447,22 @@ RETURNING
 `
 
 type UpdateAccountParams struct {
-	Name             *string
-	ManualAdjustment *int64
-	ID               uuid.UUID
-	HouseholdID      uuid.UUID
-	Version          int32
+	Name        *string
+	ID          uuid.UUID
+	HouseholdID uuid.UUID
+	Version     int32
 }
 
 type UpdateAccountRow struct {
-	ID               uuid.UUID
-	UserID           uuid.UUID
-	Name             string
-	Currency         string
-	OpeningBalance   int64
-	ManualAdjustment int64
-	Balance          int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Version          int32
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	Balance        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
 }
 
 // Optimistic concurrency: the WHERE clause includes version = @version (and
@@ -496,7 +471,6 @@ type UpdateAccountRow struct {
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (UpdateAccountRow, error) {
 	row := q.db.QueryRow(ctx, updateAccount,
 		arg.Name,
-		arg.ManualAdjustment,
 		arg.ID,
 		arg.HouseholdID,
 		arg.Version,
@@ -508,7 +482,6 @@ func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (U
 		&i.Name,
 		&i.Currency,
 		&i.OpeningBalance,
-		&i.ManualAdjustment,
 		&i.Balance,
 		&i.CreatedAt,
 		&i.UpdatedAt,

@@ -7,8 +7,10 @@ import (
 )
 
 // Transaction is a single money movement. Cashflow (income/expense) carries
-// AccountID + CategoryID; transfer carries FromAccountID + ToAccountID. These
-// pairs are mutually exclusive. DeletedAt marks a tombstone (soft delete).
+// AccountID + CategoryID; transfer carries FromAccountID + ToAccountID;
+// adjustment (balance reconciliation) carries only AccountID and a nonzero
+// signed Amount. These reference shapes are mutually exclusive. DeletedAt
+// marks a tombstone (soft delete).
 type Transaction struct {
 	ID          uuid.UUID
 	UserID      uuid.UUID

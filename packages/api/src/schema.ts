@@ -588,7 +588,7 @@ export interface paths {
         delete: operations["deleteAccount"];
         options?: never;
         head?: never;
-        /** Обновить счёт (name, manualAdjustment) */
+        /** Обновить счёт (name) */
         patch: operations["updateAccount"];
         trace?: never;
     };
@@ -1014,8 +1014,8 @@ export interface components {
         };
         /**
          * @description Cashflow-транзакция (income/expense) содержит `accountId`+`categoryId`.
-         *     Transfer содержит `fromAccountId`+`toAccountId`. Эти пары
-         *     взаимоисключающие.
+         *     Transfer содержит `fromAccountId`+`toAccountId`. Adjustment (сверка
+         *     баланса) содержит только `accountId`. Формы ссылок взаимоисключающие.
          */
         Transaction: {
             /** Format: uuid */
@@ -1023,10 +1023,13 @@ export interface components {
             /** Format: uuid */
             userId: string;
             /** @enum {string} */
-            type: "income" | "expense" | "transfer";
+            type: "income" | "expense" | "transfer" | "adjustment";
             /**
              * Format: int64
-             * @description Минорные единицы (divisor 100 для USD/EUR/RUB).
+             * @description Минорные единицы (divisor 100 для USD/EUR/RUB). Положительный для
+             *     income/expense/transfer; для adjustment — ненулевое знаковое
+             *     значение (отрицательное уменьшает баланс, положительное
+             *     увеличивает).
              */
             amount: number;
             description: string;
@@ -1059,8 +1062,13 @@ export interface components {
              */
             id?: string;
             /** @enum {string} */
-            type: "income" | "expense" | "transfer";
-            /** Format: int64 */
+            type: "income" | "expense" | "transfer" | "adjustment";
+            /**
+             * Format: int64
+             * @description Положительный (> 0) для income/expense/transfer; для adjustment —
+             *     ненулевое знаковое значение (сверка баланса: отрицательное
+             *     уменьшает баланс счёта, положительное увеличивает).
+             */
             amount: number;
             /** @default  */
             description: string;
@@ -1068,22 +1076,22 @@ export interface components {
             occurredAt: string;
             /**
              * Format: uuid
-             * @description Required для income/expense. Forbidden для transfer.
+             * @description Required для income/expense/adjustment. Forbidden для transfer.
              */
             accountId?: string;
             /**
              * Format: uuid
-             * @description Required для income/expense. Forbidden для transfer.
+             * @description Required для income/expense. Forbidden для transfer/adjustment.
              */
             categoryId?: string;
             /**
              * Format: uuid
-             * @description Required для transfer. Forbidden для income/expense.
+             * @description Required для transfer. Forbidden для income/expense/adjustment.
              */
             fromAccountId?: string;
             /**
              * Format: uuid
-             * @description Required для transfer. Forbidden для income/expense.
+             * @description Required для transfer. Forbidden для income/expense/adjustment.
              */
             toAccountId?: string;
         };
@@ -1091,7 +1099,11 @@ export interface components {
         TransactionUpdateRequest: {
             /** Format: int */
             version: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Для adjustment-транзакций — ненулевое знаковое значение; для
+             *     остальных типов — положительное.
+             */
             amount?: number;
             description?: string;
             /** Format: date-time */
@@ -1137,11 +1149,10 @@ export interface components {
             currency: "USD" | "EUR" | "RUB";
             /** Format: int64 */
             openingBalance: number;
-            /** Format: int64 */
-            manualAdjustment: number;
             /**
              * Format: int64
-             * @description Вычисляется сервером (opening + manual + Σ transactions).
+             * @description Вычисляется сервером (opening + Σ транзакций: income +, expense −,
+             *     transfer −from/+to, adjustment — знаковое значение).
              */
             balance: number;
             /** Format: date-time */
@@ -1176,8 +1187,6 @@ export interface components {
             /** Format: int */
             version: number;
             name?: string;
-            /** Format: int64 */
-            manualAdjustment?: number;
         };
         Category: {
             /** Format: uuid */
@@ -1480,8 +1489,6 @@ export interface components {
             currency: "USD" | "EUR" | "RUB";
             /** Format: int64 */
             openingBalance: number;
-            /** Format: int64 */
-            manualAdjustment: number;
         };
         /** @description Полное состояние категории в sync-операции (upsert). */
         CategorySyncData: {
@@ -1494,12 +1501,16 @@ export interface components {
         /**
          * @description Полное состояние транзакции в sync-операции (upsert). Cashflow
          *     (income/expense) несёт `accountId`+`categoryId`, transfer —
-         *     `fromAccountId`+`toAccountId`.
+         *     `fromAccountId`+`toAccountId`, adjustment — только `accountId`.
          */
         TransactionSyncData: {
             /** @enum {string} */
-            type: "income" | "expense" | "transfer";
-            /** Format: int64 */
+            type: "income" | "expense" | "transfer" | "adjustment";
+            /**
+             * Format: int64
+             * @description Положительный для income/expense/transfer; ненулевое знаковое
+             *     для adjustment.
+             */
             amount: number;
             description: string;
             /** Format: date-time */
@@ -2910,7 +2921,7 @@ export interface operations {
     listTransactions: {
         parameters: {
             query?: {
-                type?: "income" | "expense" | "transfer";
+                type?: "income" | "expense" | "transfer" | "adjustment";
                 accountId?: string;
                 categoryId?: string;
                 /** @description ISO date (YYYY-MM-DD), lower bound inclusive. */

@@ -22,14 +22,16 @@ export function formatAmountInput(value: string, currency: CurrencyCode): string
 
 /**
  * Minor units -> canonical amount string (the keypad/edit-input format):
- * 3134331 -> "31343,31", 20000 -> "200". String/integer arithmetic only -
- * the inverse of `parseMajorUnitsToMinor`, so a round-trip loses nothing.
+ * 3134331 -> "31343,31", 20000 -> "200", -500 -> "-5". String/integer
+ * arithmetic only - the inverse of `parseMajorUnitsToMinor`, so a round-trip
+ * loses nothing.
  */
 export function minorToInputValue(minor: number): string {
+  const sign = minor < 0 ? '-' : ''
   const integer = Math.trunc(Math.abs(minor) / 100)
   const fraction = Math.abs(minor) % 100
   const integerDigits = String(integer)
-  if (fraction === 0) return integerDigits
+  if (fraction === 0) return `${sign}${integerDigits}`
   const fractionDigits = String(fraction).padStart(2, '0').replace(/0+$/, '')
-  return `${integerDigits},${fractionDigits}`
+  return `${sign}${integerDigits},${fractionDigits}`
 }

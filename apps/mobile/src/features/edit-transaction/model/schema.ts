@@ -21,6 +21,9 @@ const occurredAtField = z.string().min(1)
 // Mirrors the create schema but discriminates on the record's immutable
 // `type`: the edit form never switches kinds, so there is no transient
 // `kind` discriminator - the union branch is fixed for the sheet's lifetime.
+// The adjustment branch parses a NONZERO SIGNED delta (the leading "-" is
+// kept by `sanitizeAmountInput`; a decimal-pad cannot type it, but the
+// prefilled value must round-trip exactly).
 export const editTransactionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('expense'),
@@ -46,6 +49,19 @@ export const editTransactionSchema = z.discriminatedUnion('type', [
     fromAccountId: z.string().min(1, 'Выберите счёт списания'),
     toAccountId: z.string().min(1, 'Выберите счёт зачисления'),
   }),
+  z.object({
+    type: z.literal('adjustment'),
+    amount: z
+      .string()
+      .min(1, 'Введите сумму')
+      .refine((value) => {
+        const parsedAmount = parseMajorUnitsToMinor(value)
+        return parsedAmount !== null && parsedAmount !== 0
+      }, 'Корректировка не может быть нулевой'),
+    description: noteField,
+    occurredAt: occurredAtField,
+    accountId: z.string().min(1, 'Выберите счёт'),
+  }),
 ])
 
 export type EditTransactionFormValues = z.infer<typeof editTransactionSchema>
@@ -68,6 +84,13 @@ export function editTransactionDefaultValues(transaction: Transaction): EditTran
       ...base,
       fromAccountId: transaction.fromAccountId,
       toAccountId: transaction.toAccountId,
+    }
+  }
+  if (transaction.type === 'adjustment') {
+    return {
+      type: 'adjustment',
+      ...base,
+      accountId: transaction.accountId,
     }
   }
   return {

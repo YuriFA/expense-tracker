@@ -1037,7 +1037,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [income, expense, transfer]
+            enum: [income, expense, transfer, adjustment]
         - name: accountId
           in: query
           schema:
@@ -1340,7 +1340,7 @@ paths:
     patch:
       tags: [Accounts]
       operationId: updateAccount
-      summary: Обновить счёт (name, manualAdjustment)
+      summary: Обновить счёт (name)
       requestBody:
         required: true
         content:
@@ -2543,8 +2543,8 @@ components:
       type: object
       description: |
         Cashflow-транзакция (income/expense) содержит `accountId`+`categoryId`.
-        Transfer содержит `fromAccountId`+`toAccountId`. Эти пары
-        взаимоисключающие.
+        Transfer содержит `fromAccountId`+`toAccountId`. Adjustment (сверка
+        баланса) содержит только `accountId`. Формы ссылок взаимоисключающие.
       properties:
         id:
           type: string
@@ -2554,11 +2554,15 @@ components:
           format: uuid
         type:
           type: string
-          enum: [income, expense, transfer]
+          enum: [income, expense, transfer, adjustment]
         amount:
           type: integer
           format: int64
-          description: Минорные единицы (divisor 100 для USD/EUR/RUB).
+          description: |
+            Минорные единицы (divisor 100 для USD/EUR/RUB). Положительный для
+            income/expense/transfer; для adjustment — ненулевое знаковое
+            значение (отрицательное уменьшает баланс, положительное
+            увеличивает).
         description:
           type: string
         occurredAt:
@@ -2616,11 +2620,14 @@ components:
             Дубликат для user → 409 `TRANSACTION_ALREADY_EXISTS`.
         type:
           type: string
-          enum: [income, expense, transfer]
+          enum: [income, expense, transfer, adjustment]
         amount:
           type: integer
           format: int64
-          minimum: 1
+          description: |
+            Положительный (> 0) для income/expense/transfer; для adjustment —
+            ненулевое знаковое значение (сверка баланса: отрицательное
+            уменьшает баланс счёта, положительное увеличивает).
         description:
           type: string
           default: ""
@@ -2630,19 +2637,19 @@ components:
         accountId:
           type: string
           format: uuid
-          description: Required для income/expense. Forbidden для transfer.
+          description: Required для income/expense/adjustment. Forbidden для transfer.
         categoryId:
           type: string
           format: uuid
-          description: Required для income/expense. Forbidden для transfer.
+          description: Required для income/expense. Forbidden для transfer/adjustment.
         fromAccountId:
           type: string
           format: uuid
-          description: Required для transfer. Forbidden для income/expense.
+          description: Required для transfer. Forbidden для income/expense/adjustment.
         toAccountId:
           type: string
           format: uuid
-          description: Required для transfer. Forbidden для income/expense.
+          description: Required для transfer. Forbidden для income/expense/adjustment.
 
     TransactionUpdateRequest:
       type: object
@@ -2655,7 +2662,9 @@ components:
         amount:
           type: integer
           format: int64
-          minimum: 1
+          description: |
+            Для adjustment-транзакций — ненулевое знаковое значение; для
+            остальных типов — положительное.
         description:
           type: string
         occurredAt:
@@ -2722,13 +2731,12 @@ components:
         openingBalance:
           type: integer
           format: int64
-        manualAdjustment:
-          type: integer
-          format: int64
         balance:
           type: integer
           format: int64
-          description: Вычисляется сервером (opening + manual + Σ transactions).
+          description: |
+            Вычисляется сервером (opening + Σ транзакций: income +, expense −,
+            transfer −from/+to, adjustment — знаковое значение).
         createdAt:
           type: string
           format: date-time
@@ -2739,7 +2747,7 @@ components:
           type: integer
           format: int
           description: Версия счёта (optimistic concurrency).
-      required: [id, userId, name, currency, openingBalance, manualAdjustment, balance, createdAt, updatedAt, version]
+      required: [id, userId, name, currency, openingBalance, balance, createdAt, updatedAt, version]
 
     AccountCreateRequest:
       type: object
@@ -2774,9 +2782,6 @@ components:
         name:
           type: string
           minLength: 3
-        manualAdjustment:
-          type: integer
-          format: int64
       required: [version]
 
     Category:
@@ -3207,7 +3212,7 @@ components:
       type: object
       additionalProperties: false
       description: Полное состояние счёта в sync-операции (upsert).
-      required: [name, currency, openingBalance, manualAdjustment]
+      required: [name, currency, openingBalance]
       properties:
         name:
           type: string
@@ -3215,9 +3220,6 @@ components:
           type: string
           enum: [USD, EUR, RUB]
         openingBalance:
-          type: integer
-          format: int64
-        manualAdjustment:
           type: integer
           format: int64
 
@@ -3243,16 +3245,18 @@ components:
       description: |
         Полное состояние транзакции в sync-операции (upsert). Cashflow
         (income/expense) несёт `accountId`+`categoryId`, transfer —
-        `fromAccountId`+`toAccountId`.
+        `fromAccountId`+`toAccountId`, adjustment — только `accountId`.
       required: [type, amount, description, occurredAt]
       properties:
         type:
           type: string
-          enum: [income, expense, transfer]
+          enum: [income, expense, transfer, adjustment]
         amount:
           type: integer
           format: int64
-          minimum: 1
+          description: |
+            Положительный для income/expense/transfer; ненулевое знаковое
+            для adjustment.
         description:
           type: string
         occurredAt:

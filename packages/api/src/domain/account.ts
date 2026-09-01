@@ -6,7 +6,6 @@ export type Account = {
   name: string
   currency: CurrencyCode
   openingBalance: number
-  manualAdjustment: number
   /** Optimistic-concurrency revision (bumped on every server update). */
   version: number
 }
@@ -24,17 +23,9 @@ export const normalizeAccount = (value: unknown): Account | null => {
   const name = asString(value.name)
   const currency = isCurrencyCode(value.currency) ? value.currency : null
   const openingBalance = asInteger(value.openingBalance)
-  const manualAdjustment = asInteger(value.manualAdjustment)
   const version = asInteger(value.version)
 
-  if (
-    !id ||
-    name === null ||
-    currency === null ||
-    openingBalance === null ||
-    manualAdjustment === null ||
-    version === null
-  ) {
+  if (!id || name === null || currency === null || openingBalance === null || version === null) {
     return null
   }
 
@@ -43,7 +34,6 @@ export const normalizeAccount = (value: unknown): Account | null => {
     name,
     currency,
     openingBalance,
-    manualAdjustment,
     version,
   }
 }

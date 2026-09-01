@@ -16,7 +16,6 @@ const account: AccountWithBalance = {
   name: 'Main',
   currency: 'USD',
   openingBalance: 1000,
-  manualAdjustment: 0,
   balance: 1000,
 }
 

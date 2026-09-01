@@ -23,8 +23,8 @@ vi.mock('@/shared/lib/date', async (importOriginal) => {
 })
 
 const accounts: AccountWithBalance[] = [
-  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, manualAdjustment: 0, balance: 1000, version: 1 },
-  { id: 'a2', name: 'Savings', currency: 'USD', openingBalance: 500, manualAdjustment: 0, balance: 500, version: 1 },
+  { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, balance: 1000, version: 1 },
+  { id: 'a2', name: 'Savings', currency: 'USD', openingBalance: 500, balance: 500, version: 1 },
 ]
 
 const categories: Category[] = []

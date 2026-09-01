@@ -147,6 +147,9 @@ function toCreateRequest(payload: CreateTransactionPayload): TransactionCreateRe
   if (payload.type === 'transfer') {
     return { ...base, fromAccountId: payload.fromAccountId, toAccountId: payload.toAccountId }
   }
+  if (payload.type === 'adjustment') {
+    return { ...base, accountId: payload.accountId }
+  }
   return { ...base, accountId: payload.accountId, categoryId: payload.categoryId }
 }
 
