@@ -64,6 +64,20 @@ source of truth.
 - Type/currency use `CHECK` constraints, not Postgres ENUM.
 - Money/IDs/timestamps follow the project-wide invariants (root `AGENTS.md`).
 
+## Sync push surface (ADR-0003)
+
+- Synced mutations go through the push engine; a new synced entity ships an
+  adapter + repository contract, never a hand-copied apply/delete twin:
+  `internal/service/sync_engine.go` owns the protocol skeleton,
+  `sync_adapter_<entity>.go` supplies the entity half, and
+  `repository/interfaces.go` composes `SyncTx` from `SyncCore` + per-entity
+  `*SyncTx` contracts.
+- Behavior is frozen (ADR-0003 decision 4): per-item codes, ordering, and
+  conflict shapes are pinned by `service/sync_push_protocol_test.go` and the
+  e2e sync suites; the known protocol oddities (string-literal error codes,
+  batch-in-one-transaction semantics, orphan adoption without a tombstone)
+  stay unchanged until their own changes.
+
 ## Codegen
 
 `make gen` regenerates `internal/api/api.gen.go` (oapi-codegen) and

@@ -16,7 +16,7 @@ or questioning a rule, read the relevant canonical document:
 
 - Invariants (evidence-backed, with enforcement status): `docs/architecture/invariants.md`
 - Architecture overview (observed baseline, file-level evidence): `docs/architecture/overview.md`
-- Architectural decisions: `docs/adr/` (ADR-0001: auth/CSRF threat model; ADR-0002: household shared budget, implementation pending)
+- Architectural decisions: `docs/adr/` (ADR-0001: auth/CSRF threat model; ADR-0002: household shared budget, implementation pending; ADR-0003: sync push-protocol engine, implemented)
 - Open decisions & accepted assumptions: `docs/assumptions.md`
 - Known technical debts: `docs/technical-debt.md`
 - Finding classification & resolution history: `docs/architecture/findings.md`

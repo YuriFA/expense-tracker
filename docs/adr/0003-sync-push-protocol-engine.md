@@ -1,7 +1,8 @@
 # ADR-0003: Sync push-protocol engine — one protocol, per-entity adapters
 
-- **Status:** Accepted (2026-09-01); implementation deferred until the in-flight
-  `adjustment-transactions` change lands and archives (decision 5)
+- **Status:** Implemented (2026-09-01, strangler steps 1-4 of decision 5;
+  accepted the same day — the `adjustment-transactions` change had just
+  landed and archived, satisfying decision 5's gate)
 - **Scope:** backend sync push surface only — `service/sync.go`,
   `repository/postgres/sync.go`, the `SyncTx` interface, `service/fakes`;
   no behavior change, no OpenAPI contract change

@@ -216,13 +216,17 @@ only via local runs (Node ≥ 22), not in CI.
 - **Evidence**: `postgres/tx.go` (`withinLockedTx` takes
   `LockHouseholdChanges`) + `appendChangeLog` on the same tx; every sync
   write appends on the same tx — section contract in
-  `repository/interfaces.go` ("writes (each appends change_log on the same
-  tx)") and per-method calls through `postgres/sync.go`; seeding logs each
+  `repository/interfaces.go` (per-entity `*SyncTx` contracts, "writes (each
+  appends change_log on the same tx)") reached through the push engine's
+  adapters (`service/sync_engine.go` + `sync_adapter_*.go`, ADR-0003; the
+  2026-09-01 audit's fake `CreateCategory` change-log drift fixed with it);
+  per-method calls through `postgres/sync.go`; seeding logs each
   row (`postgres/users.go` RegisterUser); rationale documented in
   `migrations/000002_sync.up.sql` (per-scoping-unit lock) and re-keyed in
   `000005_household.up.sql`; per-household seq monotonicity + pull
   isolation + household-scoped opId idempotency tested in
-  `service/sync_household_test.go`.
+  `service/sync_household_test.go` (per-item outcomes pinned in
+  `service/sync_push_protocol_test.go`).
 - **Risk if violated**: Gaps/reordered `change_log.seq` would make sync
   pull miss or misorder changes; offline clients silently diverge.
 - **Current enforcement**: all REST mutations and sync push go through
@@ -466,10 +470,13 @@ only via local runs (Node ≥ 22), not in CI.
 - **Evidence**: decided 2026-08-20; rule recorded in this invariant.
   Compliant today: CAS `WHERE version = X` and `classify*Write`
   outcome mapping (`postgres/transactions.go:143-152`,
-  `postgres/accounts.go:130-136`). Registered deviations (migration
-  deferred by decision; no UoW seam introduced): `RegisterUser` seeding
-  (`postgres/users.go:47-70`), `VerifyEmailCode` attempt accounting
-  (`postgres/email_verification.go:114-126`).
+  `postgres/accounts.go:130-136`). The sync surface keeps the same split
+  (ADR-0003): the service-layer push engine owns the four-way conflict
+  classification; postgres only maps zero-row writes to its per-entity
+  sentinels (`classifySyncWrite` in `postgres/sync.go`). Registered
+  deviations (migration deferred by decision; no UoW seam introduced):
+  `RegisterUser` seeding (`postgres/users.go:47-70`), `VerifyEmailCode`
+  attempt accounting (`postgres/email_verification.go:114-126`).
 - **Risk if violated**: business/security policy (e.g. attempt caps)
   becomes testable only against a real database, escaping the service-test
   tier of the testing pyramid; policy changes require SQL changes.
