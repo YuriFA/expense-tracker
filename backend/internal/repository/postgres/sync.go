@@ -519,11 +519,10 @@ func (t *syncTx) ReplaceAccount(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, t.classifySyncWrite(
-				ctx,
-				householdID,
-				id,
-				domain.SyncEntityAccount,
+			current, cerr := t.q.GetAccountAny(ctx, db.GetAccountAnyParams{ID: id, HouseholdID: householdID})
+			return nil, classifySyncWrite(
+				cerr,
+				current.DeletedAt != nil,
 				domain.ErrAccountNotFound,
 				domain.ErrAccountVersionConflict,
 			)
@@ -623,11 +622,10 @@ func (t *syncTx) ReplaceCategory(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, t.classifySyncWrite(
-				ctx,
-				householdID,
-				id,
-				domain.SyncEntityCategory,
+			current, cerr := t.q.GetCategoryAny(ctx, db.GetCategoryAnyParams{ID: id, HouseholdID: householdID})
+			return nil, classifySyncWrite(
+				cerr,
+				current.DeletedAt != nil,
 				domain.ErrCategoryNotFound,
 				domain.ErrCategoryVersionConflict,
 			)
@@ -722,11 +720,10 @@ func (t *syncTx) ReplaceDebtor(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, t.classifySyncWrite(
-				ctx,
-				householdID,
-				id,
-				domain.SyncEntityDebtor,
+			current, cerr := t.q.GetDebtorAny(ctx, db.GetDebtorAnyParams{ID: id, HouseholdID: householdID})
+			return nil, classifySyncWrite(
+				cerr,
+				current.DeletedAt != nil,
 				domain.ErrDebtorNotFound,
 				domain.ErrDebtorVersionConflict,
 			)
@@ -831,11 +828,13 @@ func (t *syncTx) ReplaceDebtOperation(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, t.classifySyncWrite(
+			current, cerr := t.q.GetDebtOperationAny(
 				ctx,
-				householdID,
-				id,
-				domain.SyncEntityDebtOperation,
+				db.GetDebtOperationAnyParams{ID: id, HouseholdID: householdID},
+			)
+			return nil, classifySyncWrite(
+				cerr,
+				current.DeletedAt != nil,
 				domain.ErrDebtOperationNotFound,
 				domain.ErrDebtOperationVersionConflict,
 			)
@@ -951,11 +950,13 @@ func (t *syncTx) ReplacePlannedPayment(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, t.classifySyncWrite(
+			current, cerr := t.q.GetPlannedPaymentAny(
 				ctx,
-				householdID,
-				id,
-				domain.SyncEntityPlannedPayment,
+				db.GetPlannedPaymentAnyParams{ID: id, HouseholdID: householdID},
+			)
+			return nil, classifySyncWrite(
+				cerr,
+				current.DeletedAt != nil,
 				domain.ErrPlannedPaymentNotFound,
 				domain.ErrPlannedPaymentVersionConflict,
 			)
@@ -1105,11 +1106,10 @@ func (t *syncTx) ReplaceTransaction(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, t.classifySyncWrite(
-				ctx,
-				householdID,
-				id,
-				domain.SyncEntityTransaction,
+			current, cerr := t.q.GetTransactionAny(ctx, db.GetTransactionAnyParams{ID: id, HouseholdID: householdID})
+			return nil, classifySyncWrite(
+				cerr,
+				current.DeletedAt != nil,
 				domain.ErrTransactionNotFound,
 				domain.ErrTransactionVersionConflict,
 			)
@@ -1163,62 +1163,15 @@ func (t *syncTx) TombstoneTransaction( //nolint:dupl // account/category/transac
 // classifySyncWrite classifies a zero-row CAS write for the sync surface:
 // a tombstoned row is its own sentinel (the client learns via
 // SYNC_DELETED_CONFLICT); a live version mismatch is the entity's version
-// conflict; an absent row keeps the entity's not-found sentinel.
-func (t *syncTx) classifySyncWrite(
-	ctx context.Context,
-	householdID, id uuid.UUID,
-	entity string,
-	notFound, versionConflict error,
-) error {
-	switch entity {
-	case domain.SyncEntityAccount:
-		row, err := t.q.GetAccountAny(ctx, db.GetAccountAnyParams{ID: id, HouseholdID: householdID})
-		if err != nil {
-			return notFound
-		}
-		if row.DeletedAt != nil {
-			return domain.ErrRecordDeleted
-		}
-	case domain.SyncEntityCategory:
-		row, err := t.q.GetCategoryAny(ctx, db.GetCategoryAnyParams{ID: id, HouseholdID: householdID})
-		if err != nil {
-			return notFound
-		}
-		if row.DeletedAt != nil {
-			return domain.ErrRecordDeleted
-		}
-	case domain.SyncEntityTransaction:
-		row, err := t.q.GetTransactionAny(ctx, db.GetTransactionAnyParams{ID: id, HouseholdID: householdID})
-		if err != nil {
-			return notFound
-		}
-		if row.DeletedAt != nil {
-			return domain.ErrRecordDeleted
-		}
-	case domain.SyncEntityDebtor:
-		row, err := t.q.GetDebtorAny(ctx, db.GetDebtorAnyParams{ID: id, HouseholdID: householdID})
-		if err != nil {
-			return notFound
-		}
-		if row.DeletedAt != nil {
-			return domain.ErrRecordDeleted
-		}
-	case domain.SyncEntityDebtOperation:
-		row, err := t.q.GetDebtOperationAny(ctx, db.GetDebtOperationAnyParams{ID: id, HouseholdID: householdID})
-		if err != nil {
-			return notFound
-		}
-		if row.DeletedAt != nil {
-			return domain.ErrRecordDeleted
-		}
-	case domain.SyncEntityPlannedPayment:
-		row, err := t.q.GetPlannedPaymentAny(ctx, db.GetPlannedPaymentAnyParams{ID: id, HouseholdID: householdID})
-		if err != nil {
-			return notFound
-		}
-		if row.DeletedAt != nil {
-			return domain.ErrRecordDeleted
-		}
+// conflict; an absent row keeps the entity's not-found sentinel. Each
+// Replace twin supplies its own re-read and sentinels - no entity-string
+// dispatch remains on the push write path (ADR-0003).
+func classifySyncWrite(rowErr error, rowDeleted bool, notFound, versionConflict error) error {
+	if rowErr != nil {
+		return notFound
+	}
+	if rowDeleted {
+		return domain.ErrRecordDeleted
 	}
 	return versionConflict
 }
