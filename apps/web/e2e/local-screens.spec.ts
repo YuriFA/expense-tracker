@@ -130,6 +130,11 @@ test('plans: create a plan, confirm it, and the transaction appears', async ({ p
 
   await page.getByLabel('Name').fill('Netflix')
   await page.getByRole('spinbutton').fill('15')
+  // Anchor on yesterday (UTC): the default is the form's local today, and
+  // whether that already counts as overdue depends on the UTC-vs-local day
+  // skew (isPlanOverdue compares against the UTC day, design D2) - so the
+  // test pins a day that is always past.
+  await page.locator('#plans-form-date').fill(new Date(Date.now() - 86_400_000).toISOString().slice(0, 10))
   await page.locator('#plans-form-account').click()
   await page.getByRole('option', { name: /Cash/ }).click()
   await page.locator('#plans-form-category').click()
@@ -137,7 +142,7 @@ test('plans: create a plan, confirm it, and the transaction appears', async ({ p
   await page.getByTestId('plans-form-submit').click()
   await expect(page.getByText('Plan created')).toBeVisible()
 
-  // The plan row is due (next due = today) and therefore overdue.
+  // The plan row is anchored in the past, so it is overdue.
   await expect(page.getByTestId('plans-list-dialog')).toContainText('Netflix')
   await expect(page.locator('[data-testid$="-overdue"]').first()).toBeVisible()
 
