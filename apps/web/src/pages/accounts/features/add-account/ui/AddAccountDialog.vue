@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import AddAccountForm from './AddAccountForm.vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -13,17 +13,14 @@ const handleSuccess = () => {
 </script>
 
 <template>
-  <Dialog v-model:open="dialogOpen">
-    <DialogTrigger as-child>
-      <slot name="trigger">
-        <Button class="max-sm:w-full">{{ t('actions.create') }}</Button>
-      </slot>
-    </DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{{ t('addAccount.newAccount') }}</DialogTitle>
-      </DialogHeader>
-      <AddAccountForm @success="handleSuccess" />
-    </DialogContent>
-  </Dialog>
+  <div @click="dialogOpen = true">
+    <slot name="trigger">
+      <Button class="max-sm:w-full">{{ t('actions.create') }}</Button>
+    </slot>
+  </div>
+
+  <ResponsiveDialog v-model:open="dialogOpen">
+    <template #title>{{ t('addAccount.newAccount') }}</template>
+    <AddAccountForm @success="handleSuccess" />
+  </ResponsiveDialog>
 </template>

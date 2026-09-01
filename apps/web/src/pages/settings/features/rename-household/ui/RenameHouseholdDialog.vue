@@ -5,7 +5,7 @@ import { useForm, Field as VeeField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useQueryCache } from '@pinia/colada'
 import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { getHouseholdErrorMessage, householdApi } from '@/entities/household'
@@ -52,34 +52,29 @@ const handleSubmit = handleFormSubmit(async (data) => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogTrigger as-child>
-      <Button variant="ghost" data-testid="household-rename-button">
+  <Button variant="ghost" data-testid="household-rename-button" @click="open = true">
+    {{ t('household.rename') }}
+  </Button>
+
+  <ResponsiveDialog v-model:open="open">
+    <template #title>{{ t('household.renameTitle') }}</template>
+    <form id="rename-household-form" class="flex flex-col gap-3" @submit="handleSubmit">
+      <VeeField v-slot="{ field, errors }" name="name">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="household-name">{{ t('household.renameLabel') }}</FieldLabel>
+          <Input
+            id="household-name"
+            :placeholder="t('household.renameLabel')"
+            maxlength="100"
+            v-bind="field"
+            :aria-invalid="!!errors.length"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+      <Button form="rename-household-form" type="submit" :loading="isSubmitting">
         {{ t('household.rename') }}
       </Button>
-    </DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{{ t('household.renameTitle') }}</DialogTitle>
-      </DialogHeader>
-      <form id="rename-household-form" class="flex flex-col gap-3" @submit="handleSubmit">
-        <VeeField v-slot="{ field, errors }" name="name">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="household-name">{{ t('household.renameLabel') }}</FieldLabel>
-            <Input
-              id="household-name"
-              :placeholder="t('household.renameLabel')"
-              maxlength="100"
-              v-bind="field"
-              :aria-invalid="!!errors.length"
-            />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
-        <Button form="rename-household-form" type="submit" :loading="isSubmitting">
-          {{ t('household.rename') }}
-        </Button>
-      </form>
-    </DialogContent>
-  </Dialog>
+    </form>
+  </ResponsiveDialog>
 </template>

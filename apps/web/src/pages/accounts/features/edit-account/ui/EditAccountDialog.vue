@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { useI18n } from 'vue-i18n'
 import EditAccountForm from './EditAccountForm.vue'
 import type { Account } from '@/entities/account'
@@ -17,12 +17,8 @@ const handleSuccess = () => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{{ t('editAccount.title') }}</DialogTitle>
-      </DialogHeader>
-      <EditAccountForm :account="account" @success="handleSuccess" />
-    </DialogContent>
-  </Dialog>
+  <ResponsiveDialog v-model:open="open">
+    <template #title>{{ t('editAccount.title') }}</template>
+    <EditAccountForm :account="account" @success="handleSuccess" />
+  </ResponsiveDialog>
 </template>

@@ -8,13 +8,8 @@ import type { Debtor } from '@/entities/debtor'
 import { useCreateDebtor } from '@/entities/debtor'
 import { useCreateDebtOperation, type DebtDirection } from '@/entities/debt-operation'
 import { createDebtorDebtSchema, type DebtorDebtFormValues } from '../model/schemas'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
@@ -92,72 +87,68 @@ const handleSubmit = handleFormSubmit(async (data) => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-sm" data-testid="debts-new-debtor-dialog">
-      <DialogHeader>
-        <DialogTitle>{{ title }}</DialogTitle>
-        <p class="text-sm text-muted-foreground">{{ subtitle }}</p>
-      </DialogHeader>
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-sm" data-testid="debts-new-debtor-dialog">
+    <template #title>{{ title }}</template>
+    <template #description>{{ subtitle }}</template>
 
-      <form class="flex flex-col gap-3" @submit="handleSubmit">
-        <VeeField v-slot="{ value, setValue, errors }" name="name">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="debts-new-debt-name">{{ t('fields.name') }}</FieldLabel>
-            <Input
-              id="debts-new-debt-name"
-              type="text"
-              :placeholder="t('debts.namePlaceholder')"
-              :model-value="value"
-              :aria-invalid="!!errors.length"
-              @update:model-value="setValue"
-            />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue, errors }" name="amount">
-          <AmountField
-            class="w-full"
-            :currency="displayCurrency"
+    <form class="flex flex-col gap-3" @submit="handleSubmit">
+      <VeeField v-slot="{ value, setValue, errors }" name="name">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="debts-new-debt-name">{{ t('fields.name') }}</FieldLabel>
+          <Input
+            id="debts-new-debt-name"
+            type="text"
+            :placeholder="t('debts.namePlaceholder')"
             :model-value="value"
-            :errors="errors"
-            @update:model-value="(v) => setValue(v as number)"
+            :aria-invalid="!!errors.length"
+            @update:model-value="setValue"
           />
-        </VeeField>
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
 
-        <VeeField v-slot="{ value, setValue, errors }" name="occurredAt">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="debts-new-debt-date">{{ t('fields.date') }}</FieldLabel>
-            <Input
-              id="debts-new-debt-date"
-              type="date"
-              :model-value="value"
-              :aria-invalid="!!errors.length"
-              @update:model-value="setValue"
-            />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
+      <VeeField v-slot="{ value, setValue, errors }" name="amount">
+        <AmountField
+          class="w-full"
+          :currency="displayCurrency"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="(v) => setValue(v as number)"
+        />
+      </VeeField>
 
-        <VeeField v-slot="{ value, setValue }" name="note">
-          <Field>
-            <FieldLabel for="debts-new-debt-note">{{ t('fields.description') }}</FieldLabel>
-            <Input
-              id="debts-new-debt-note"
-              type="text"
-              :placeholder="t('debts.notePlaceholder')"
-              :model-value="value"
-              @update:model-value="setValue"
-            />
-          </Field>
-        </VeeField>
+      <VeeField v-slot="{ value, setValue, errors }" name="occurredAt">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="debts-new-debt-date">{{ t('fields.date') }}</FieldLabel>
+          <Input
+            id="debts-new-debt-date"
+            type="date"
+            :model-value="value"
+            :aria-invalid="!!errors.length"
+            @update:model-value="setValue"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
 
-        <DialogFooter class="flex-row">
-          <Button type="submit" class="w-full" :loading="isSubmitting" data-testid="debts-new-debt-submit">
-            {{ t('debts.addDebt') }}
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
+      <VeeField v-slot="{ value, setValue }" name="note">
+        <Field>
+          <FieldLabel for="debts-new-debt-note">{{ t('fields.description') }}</FieldLabel>
+          <Input
+            id="debts-new-debt-note"
+            type="text"
+            :placeholder="t('debts.notePlaceholder')"
+            :model-value="value"
+            @update:model-value="setValue"
+          />
+        </Field>
+      </VeeField>
+
+      <DialogFooter class="flex-row">
+        <Button type="submit" class="w-full" :loading="isSubmitting" data-testid="debts-new-debt-submit">
+          {{ t('debts.addDebt') }}
+        </Button>
+      </DialogFooter>
+    </form>
+  </ResponsiveDialog>
 </template>

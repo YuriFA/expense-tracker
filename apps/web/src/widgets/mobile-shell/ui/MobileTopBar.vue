@@ -3,7 +3,6 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { CloudOffIcon, Wallet } from '@lucide/vue'
 import { Button } from '@/shared/ui/button'
-import { SyncStatusBadge } from '@/widgets/sync-status'
 import { useAuthStore } from '@/entities/session'
 import UserMenu from './UserMenu.vue'
 
@@ -28,7 +27,7 @@ const auth = useAuthStore()
     </RouterLink>
 
     <div class="ml-auto flex items-center gap-1.5">
-      <SyncStatusBadge compact />
+      <slot name="status" />
       <UserMenu v-if="auth.isAuthenticated" />
       <template v-else>
         <!-- Anonymous (local) mode indicator: everything works on local data;

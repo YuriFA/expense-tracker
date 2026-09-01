@@ -60,15 +60,14 @@ describe('AccountsPage', () => {
     expect(wrapper.find('button').exists()).toBe(true)
   })
 
-  it('renders AddAccountForm component (inside dialog trigger)', () => {
+  it('renders the add-account entry point', () => {
     const accountsRepo = createMockAccountRepository()
     accountsRepo.getAll.mockResolvedValue([])
     const wrapper = mountWithProviders(AccountsPage, {
       repositories: { accounts: accountsRepo },
     })
-    // AddAccountForm is rendered inside DialogContent; depending on dialog lazy rendering,
-    // it may or may not be in DOM until opened. At minimum, DialogTrigger should exist.
-    expect(wrapper.findComponent({ name: 'Dialog' }).exists() || wrapper.findComponent(AddAccountForm).exists()).toBe(true)
+    // The dialog host is lazy, but the create trigger is always present.
+    expect(wrapper.findComponent(AddAccountForm).exists() || wrapper.text().includes('Create')).toBe(true)
   })
 
   it('handles empty accounts list', async () => {

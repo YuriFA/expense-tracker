@@ -2,15 +2,9 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { ArrowLeftRight, Minus, Plus, X } from '@lucide/vue'
+import { ArrowLeftRight, Minus, Plus } from '@lucide/vue'
 import { CashflowForm, TransferForm } from '@/features/transaction/add'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 
 // RN-parity add entry (web-screens: mobile navigation shell): the FAB never
 // navigates; each speed-dial action opens its creation dialog directly -
@@ -32,10 +26,6 @@ watch(
     open.value = false
   },
 )
-
-// Header-row close button shared by all dialogs (specimen: QuickActionsCard).
-const closeClasses =
-  'rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden'
 
 function openExpense() {
   open.value = false
@@ -133,43 +123,37 @@ function openIncome() {
       </button>
     </div>
 
-    <Dialog v-model:open="expenseOpen">
-      <DialogContent class="sm:max-w-[400px]" :show-close-button="false">
-        <DialogHeader class="-mx-6 -mt-6 flex-row items-center justify-between border-b px-6 pb-4 pt-6">
-          <DialogTitle>{{ t('analytics.expenses') }}</DialogTitle>
-          <DialogClose :class="closeClasses">
-            <X class="size-5" />
-            <span class="sr-only">{{ t('common.close') }}</span>
-          </DialogClose>
-        </DialogHeader>
-        <CashflowForm type="expense" @success="expenseOpen = false" />
-      </DialogContent>
-    </Dialog>
+    <ResponsiveDialog
+      v-model:open="expenseOpen"
+      class="sm:max-w-[400px]"
+      close-button-in-header
+      close-button-class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+    >
+      <template #title>{{ t('analytics.expenses') }}</template>
+      <CashflowForm type="expense" @success="expenseOpen = false" />
+    </ResponsiveDialog>
 
-    <Dialog v-model:open="transferOpen">
-      <DialogContent class="sm:max-w-[400px]" :show-close-button="false">
-        <DialogHeader class="-mx-6 -mt-6 flex-row items-center justify-between border-b px-6 pb-4 pt-6">
-          <DialogTitle>{{ t('addTransfer.submit') }}</DialogTitle>
-          <DialogClose :class="closeClasses">
-            <X class="size-5" />
-            <span class="sr-only">{{ t('common.close') }}</span>
-          </DialogClose>
-        </DialogHeader>
-        <TransferForm @success="transferOpen = false" />
-      </DialogContent>
-    </Dialog>
+    <ResponsiveDialog
+      v-model:open="transferOpen"
+      class="sm:max-w-[400px]"
+      close-button-in-header
+      close-button-class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+    >
+      <template #title>{{ t('addTransfer.submit') }}</template>
+      <TransferForm @success="transferOpen = false" />
+    </ResponsiveDialog>
 
-    <Dialog v-model:open="incomeOpen">
-      <DialogContent class="sm:max-w-[400px]" :show-close-button="false">
-        <DialogHeader class="-mx-6 -mt-6 flex-row items-center justify-between border-b px-6 pb-4 pt-6">
-          <DialogTitle>{{ t('shell.income') }}</DialogTitle>
-          <DialogClose :class="closeClasses">
-            <X class="size-5" />
-            <span class="sr-only">{{ t('common.close') }}</span>
-          </DialogClose>
-        </DialogHeader>
-        <CashflowForm type="income" @success="incomeOpen = false" />
-      </DialogContent>
-    </Dialog>
+    <ResponsiveDialog
+      v-model:open="incomeOpen"
+      class="sm:max-w-[400px]"
+      close-button-in-header
+      close-button-class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+      header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+    >
+      <template #title>{{ t('shell.income') }}</template>
+      <CashflowForm type="income" @success="incomeOpen = false" />
+    </ResponsiveDialog>
   </div>
 </template>

@@ -6,13 +6,8 @@ import type { PlannedPayment } from '@/entities/planned-payment'
 import { useConfirmPlannedPayment } from '@/entities/planned-payment'
 import { useAccounts } from '@/entities/account'
 import { planRowTitle } from '../model/selectors'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
@@ -80,48 +75,44 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-sm" data-testid="plans-confirm-dialog">
-      <DialogHeader>
-        <DialogTitle>{{ t('plans.confirmTitle') }}</DialogTitle>
-        <p class="text-sm text-muted-foreground">{{ planRowTitle(plan, categories) }}</p>
-      </DialogHeader>
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-sm" data-testid="plans-confirm-dialog">
+    <template #title>{{ t('plans.confirmTitle') }}</template>
+    <template #description>{{ planRowTitle(plan, categories) }}</template>
 
-      <form class="flex flex-col gap-3" @submit.prevent="handleSubmit">
-        <AmountField
-          v-model="amount"
-          class="w-full"
-          :currency="displayCurrency"
-          :aria-label="t('plans.confirmAmountLabel')"
-        />
+    <form class="flex flex-col gap-3" @submit.prevent="handleSubmit">
+      <AmountField
+        v-model="amount"
+        class="w-full"
+        :currency="displayCurrency"
+        :aria-label="t('plans.confirmAmountLabel')"
+      />
 
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <p class="text-muted-foreground">{{ accountLabel }}</p>
-            <p class="font-medium">{{ accountName }}</p>
-          </div>
-          <div>
-            <p class="text-muted-foreground">{{ t('fields.category') }}</p>
-            <p class="font-medium">{{ categoryName }}</p>
-          </div>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <p class="text-muted-foreground">{{ accountLabel }}</p>
+          <p class="font-medium">{{ accountName }}</p>
         </div>
+        <div>
+          <p class="text-muted-foreground">{{ t('fields.category') }}</p>
+          <p class="font-medium">{{ categoryName }}</p>
+        </div>
+      </div>
 
-        <Field>
-          <FieldLabel for="plans-confirm-date">{{ t('fields.date') }}</FieldLabel>
-          <Input id="plans-confirm-date" v-model="occurredOn" type="date" />
-        </Field>
+      <Field>
+        <FieldLabel for="plans-confirm-date">{{ t('fields.date') }}</FieldLabel>
+        <Input id="plans-confirm-date" v-model="occurredOn" type="date" />
+      </Field>
 
-        <Field>
-          <FieldLabel for="plans-confirm-note">{{ t('fields.description') }}</FieldLabel>
-          <Input id="plans-confirm-note" v-model="note" type="text" />
-        </Field>
+      <Field>
+        <FieldLabel for="plans-confirm-note">{{ t('fields.description') }}</FieldLabel>
+        <Input id="plans-confirm-note" v-model="note" type="text" />
+      </Field>
 
-        <DialogFooter class="flex-row">
-          <Button type="submit" class="w-full" :loading="asyncStatus === 'loading'" data-testid="plans-confirm-submit">
-            {{ t('plans.confirmSubmit') }}
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
+      <DialogFooter class="flex-row">
+        <Button type="submit" class="w-full" :loading="asyncStatus === 'loading'" data-testid="plans-confirm-submit">
+          {{ t('plans.confirmSubmit') }}
+        </Button>
+      </DialogFooter>
+    </form>
+  </ResponsiveDialog>
 </template>

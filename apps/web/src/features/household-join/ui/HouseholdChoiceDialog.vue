@@ -1,14 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { useHouseholdJoinStore } from '../model/use-household-join'
 
@@ -24,38 +18,36 @@ const { pending, applying } = storeToRefs(join)
 </script>
 
 <template>
-  <Dialog :open="pending !== null">
-    <DialogContent
-      data-testid="household-choice-dialog"
-      :show-close-button="false"
-      @interact-outside.prevent
-      @escape-key-down.prevent
-    >
-      <DialogHeader>
-        <DialogTitle>{{ t('household.choice.title') }}</DialogTitle>
-        <DialogDescription>
-          {{ t('household.choice.description') }}
-        </DialogDescription>
-      </DialogHeader>
-      <DialogFooter class="flex-col gap-2 sm:flex-col">
-        <Button
-          data-testid="household-choice-carry"
-          class="w-full"
-          :loading="applying"
-          @click="join.confirmChoice('carry')"
-        >
-          {{ t('household.choice.carry') }}
-        </Button>
-        <Button
-          data-testid="household-choice-clean"
-          variant="destructive"
-          class="w-full"
-          :disabled="applying"
-          @click="join.confirmChoice('clean')"
-        >
-          {{ t('household.choice.clean') }}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+  <ResponsiveDialog
+    :open="pending !== null"
+    data-testid="household-choice-dialog"
+    :show-close-button="false"
+    @interact-outside.prevent
+    @escape-key-down.prevent
+  >
+    <template #title>{{ t('household.choice.title') }}</template>
+    <template #description>
+      {{ t('household.choice.description') }}
+    </template>
+
+    <DialogFooter class="flex-col gap-2 sm:flex-col">
+      <Button
+        data-testid="household-choice-carry"
+        class="w-full"
+        :loading="applying"
+        @click="join.confirmChoice('carry')"
+      >
+        {{ t('household.choice.carry') }}
+      </Button>
+      <Button
+        data-testid="household-choice-clean"
+        variant="destructive"
+        class="w-full"
+        :disabled="applying"
+        @click="join.confirmChoice('clean')"
+      >
+        {{ t('household.choice.clean') }}
+      </Button>
+    </DialogFooter>
+  </ResponsiveDialog>
 </template>

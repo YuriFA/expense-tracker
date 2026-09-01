@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import AddTransactionTabs from './AddTransactionTabs.vue'
 import { useAddTransactionDialog } from '../model/add-transaction-dialog'
 
@@ -11,12 +11,12 @@ const { open, preselect, closeAddTransactionDialog } = useAddTransactionDialog()
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="(value: boolean) => !value && closeAddTransactionDialog()">
-    <DialogContent class="sm:max-w-md">
-      <DialogHeader>
-        <DialogTitle>{{ t('addTransaction.newTransaction') }}</DialogTitle>
-      </DialogHeader>
-      <AddTransactionTabs :preselect="preselect" @success="closeAddTransactionDialog" />
-    </DialogContent>
-  </Dialog>
+  <ResponsiveDialog
+    :open="open"
+    class="sm:max-w-md"
+    @update:open="(value: boolean) => !value && closeAddTransactionDialog()"
+  >
+    <template #title>{{ t('addTransaction.newTransaction') }}</template>
+    <AddTransactionTabs :preselect="preselect" @success="closeAddTransactionDialog" />
+  </ResponsiveDialog>
 </template>
