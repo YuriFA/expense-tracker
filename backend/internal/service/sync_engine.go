@@ -14,9 +14,10 @@ import (
 // push skeleton - decode -> staged validation -> base-0 create (incl.
 // adopt-orphaned) vs strict-CAS update -> four-way conflict classification ->
 // replace + race re-read -> per-item result shaping. Idempotent replay and
-// applied-op recording live one level up in applySyncOperation. Behavior is
-// frozen: outcomes (codes, ordering, conflict shapes) are identical to the
-// per-entity twins it replaces.
+// applied-op recording live one level up in applySyncOperation. Outcomes
+// (codes, ordering, conflict shapes) are identical to the per-entity twins it
+// replaced, except the delete in-use guards: they also block on live planned
+// payments now, matching the REST delete semantics (2026-09-01 fix).
 
 // syncRow is the stored-row shape every synced entity offers the engine: the
 // tombstone flag. (The full-state projection returns a concrete type per
@@ -93,11 +94,12 @@ type syncAdapter[R syncRow, S any] interface {
 
 // syncInUseGuard is implemented by the entities whose delete is blocked by
 // live dependants (account, category, debtor); the other synced entities
-// tombstone unconditionally.
+// tombstone unconditionally. inUse reports which relation blocks the delete
+// by returning its message (an entity with several dependants checks them in
+// the REST order and names the one that fired).
 type syncInUseGuard[R syncRow] interface {
-	inUse(ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID) (bool, error)
+	inUse(ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID) (blocked bool, message string, err error)
 	inUseCode() string
-	inUseMessage() string
 }
 
 // syncAdapterDefaults carries the no-op answers for the optional adapter
@@ -293,12 +295,12 @@ func deleteSyncEntity[R syncRow, S any](
 		return appliedResult(op.OpID, ad.version(current)), nil
 	}
 	if guard, ok := any(ad).(syncInUseGuard[R]); ok {
-		inUse, err := guard.inUse(ctx, t, householdID, op.ID)
+		blocked, message, err := guard.inUse(ctx, t, householdID, op.ID)
 		if err != nil {
 			return domain.SyncPushResult{}, err
 		}
-		if inUse {
-			return errorResult(op.OpID, guard.inUseCode(), guard.inUseMessage()), nil
+		if blocked {
+			return errorResult(op.OpID, guard.inUseCode(), message), nil
 		}
 	}
 	deleted, err := ad.tombstone(ctx, t, householdID, userID, op.ID)

@@ -90,9 +90,15 @@ func (debtorAdapter) tombstone(
 
 func (debtorAdapter) inUse(
 	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
-) (bool, error) {
-	return t.HasLiveDebtOperationsForDebtor(ctx, householdID, id)
+) (bool, string, error) {
+	operations, err := t.HasLiveDebtOperationsForDebtor(ctx, householdID, id)
+	if err != nil {
+		return false, "", err
+	}
+	if operations {
+		return true, "debtor has debt operations and cannot be deleted", nil
+	}
+	return false, "", nil
 }
 
-func (debtorAdapter) inUseCode() string    { return "DEBTOR_IN_USE" }
-func (debtorAdapter) inUseMessage() string { return "debtor has debt operations and cannot be deleted" }
+func (debtorAdapter) inUseCode() string { return "DEBTOR_IN_USE" }
