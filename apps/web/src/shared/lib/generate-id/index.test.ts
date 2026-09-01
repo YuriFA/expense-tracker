@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateId } from './generate-id'
+import { generateId } from '.'
 
 describe('generateId', () => {
   it('returns unique values across many calls', () => {
