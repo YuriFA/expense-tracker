@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { useForm, useFieldValue, useSetFieldValue, Field as VeeField } from 'vee-validate'
-import { CalendarIcon } from '@lucide/vue'
-import type { DateValue } from '@internationalized/date'
 import { createTransferSchema, type TransferFormValues } from '../model/transfer-schema'
 import { lastAccountIds } from '../model/last-account-ids'
 import type { TransferTransaction } from '@/entities/transaction'
@@ -12,19 +10,12 @@ import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
 import { AccountSelect, useAccounts } from '@/entities/account'
-import {
-  currentDay,
-  formatCalendarDay,
-  fromDateValue,
-  nowIsoString,
-  toDateValue,
-} from '@/shared/lib/date'
+import { formatCalendarDay, nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { Calendar } from '@/shared/ui/calendar'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { DateField } from '@/shared/ui/date-field'
 import { computed } from 'vue'
 
 const emit = defineEmits<{
@@ -65,15 +56,12 @@ const fromCurrency = computed<CurrencyCode>(() => {
 const occurredAt = useFieldValue<TransferFormValues['occurredAt']>('occurredAt')
 const timeSuffix = initialOccurredAt.slice(10)
 const selectedDay = computed(() => occurredAt.value.slice(0, 10))
-const selectedDateValue = computed(() => toDateValue(selectedDay.value))
 const occurredAtLabel = computed(() =>
   formatCalendarDay(selectedDay.value, locale.value, { dateStyle: 'long' }),
 )
 const setOccurredAt = useSetFieldValue<TransferFormValues['occurredAt']>('occurredAt')
-const onDatePick = (value: DateValue | undefined) => {
-  if (value) {
-    setOccurredAt(`${fromDateValue(value)}${timeSuffix}`)
-  }
+const onDatePick = (value: string) => {
+  setOccurredAt(`${value}${timeSuffix}`)
 }
 
 const handleSubmit = handleFormSubmit(async (data) => {
@@ -154,34 +142,13 @@ const handleSubmit = handleFormSubmit(async (data) => {
     <VeeField v-slot="{ errors }" name="occurredAt">
       <Field :data-invalid="!!errors.length">
         <FieldLabel for="transfer-occurred-at">{{ t('fields.date') }}</FieldLabel>
-        <Popover v-slot="{ close }">
-          <PopoverTrigger as-child>
-            <Button
-              id="transfer-occurred-at"
-              type="button"
-              variant="outline"
-              class="w-full justify-between text-left font-normal"
-              :aria-invalid="!!errors.length"
-            >
-              <span>{{ occurredAtLabel }}</span>
-              <CalendarIcon class="text-muted-foreground" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-auto p-0" align="start">
-            <Calendar
-              :model-value="selectedDateValue"
-              :default-placeholder="toDateValue(currentDay())"
-              layout="month-and-year"
-              initial-focus
-              @update:model-value="
-                (v) => {
-                  onDatePick(v)
-                  close()
-                }
-              "
-            />
-          </PopoverContent>
-        </Popover>
+        <DateField
+          input-id="transfer-occurred-at"
+          :model-value="selectedDay"
+          :placeholder="occurredAtLabel"
+          :aria-invalid="!!errors.length"
+          @update:model-value="onDatePick"
+        />
         <FieldError v-if="errors.length" :errors="errors" />
       </Field>
     </VeeField>

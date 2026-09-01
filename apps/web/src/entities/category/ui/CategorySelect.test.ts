@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import CategorySelect from './CategorySelect.vue'
 import type { Category } from '../model/types'
 import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
+import { DESKTOP_PRESENTATION_KEY } from '@/shared/lib/presentation'
 
 const categories: Category[] = [
   { id: 'cincome', name: 'Salary', type: 'income', icon: '💰', color: '#00FF00', slug: 'salary', version: 1 },
@@ -23,7 +24,14 @@ function mountField(props: Record<string, unknown> = {}, repositories: Record<st
       return () => h(CategorySelect, { ...baseProps, ...props })
     },
   })
-  return mountWithProviders(Wrapper, { repositories })
+  return mountWithProviders(Wrapper, {
+    repositories,
+    global: {
+      provide: {
+        [DESKTOP_PRESENTATION_KEY]: ref(true),
+      },
+    },
+  })
 }
 
 describe('CategorySelect', () => {
@@ -48,6 +56,6 @@ describe('CategorySelect', () => {
   it('reflects modelValue in Select', async () => {
     const wrapper = mountField({ modelValue: 'cincome' })
     await flushPromises()
-    expect(wrapper.findComponent({ name: 'Select' }).props('modelValue')).toBe('cincome')
+    expect(wrapper.findComponent({ name: 'ResponsiveSelect' }).props('modelValue')).toBe('cincome')
   })
 })

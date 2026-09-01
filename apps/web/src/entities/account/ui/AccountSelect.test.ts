@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import AccountSelect from './AccountSelect.vue'
 import type { AccountWithBalance } from '../model/types'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
+import { DESKTOP_PRESENTATION_KEY } from '@/shared/lib/presentation'
 
 const accounts: AccountWithBalance[] = [
   { id: 'a1', name: 'Main', currency: 'USD', openingBalance: 1000, balance: 1000, version: 1 },
@@ -23,7 +24,14 @@ function mountField(props: Record<string, unknown> = {}, repositories: Record<st
       return () => h(AccountSelect, { ...baseProps, ...props })
     },
   })
-  return mountWithProviders(Wrapper, { repositories })
+  return mountWithProviders(Wrapper, {
+    repositories,
+    global: {
+      provide: {
+        [DESKTOP_PRESENTATION_KEY]: ref(true),
+      },
+    },
+  })
 }
 
 describe('AccountSelect', () => {
@@ -48,6 +56,6 @@ describe('AccountSelect', () => {
   it('reflects modelValue in Select', async () => {
     const wrapper = mountField({ modelValue: 'a1' })
     await flushPromises()
-    expect(wrapper.findComponent({ name: 'Select' }).props('modelValue')).toBe('a1')
+    expect(wrapper.findComponent({ name: 'ResponsiveSelect' }).props('modelValue')).toBe('a1')
   })
 })

@@ -1,49 +1,19 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
-
-import { CalendarIcon } from '@lucide/vue'
-import { Button } from '@/shared/ui/button'
-import { Calendar } from '@/shared/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
-import { computed, ref, type Ref } from 'vue'
-import { cn } from '@/shared/lib/utils'
+import { ref } from 'vue'
+import { DateField } from '@/shared/ui/date-field'
 import { useI18n } from 'vue-i18n'
-import { currentDay, formatCalendarDay, fromDateValue, toDateValue } from '@/shared/lib/date'
+import { type CalendarDay } from '@/shared/lib/date'
 
-const defaultPlaceholder = toDateValue(currentDay())
-const date = ref() as Ref<DateValue>
-const { locale, t } = useI18n()
-
-const dateFormatted = computed(() => {
-  if (!date.value) {
-    return t('transactions.dateFilter.pickDate')
-  }
-
-  return formatCalendarDay(fromDateValue(date.value), locale.value, {
-    dateStyle: 'long',
-  })
-})
+const date = ref<CalendarDay>()
+const { t } = useI18n()
 </script>
 
 <template>
-  <Popover v-slot="{ close }">
-    <PopoverTrigger as-child>
-      <Button
-        variant="outline"
-        :class="cn('w-60 justify-start text-left font-normal', !date && 'text-muted-foreground')"
-      >
-        <CalendarIcon />
-        {{ dateFormatted }}
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent class="w-auto p-0" align="start">
-      <Calendar
-        v-model="date"
-        :default-placeholder="defaultPlaceholder"
-        layout="month-and-year"
-        initial-focus
-        @update:model-value="close"
-      />
-    </PopoverContent>
-  </Popover>
+  <DateField
+    input-id="filter-custom-date"
+    class="w-60 justify-start"
+    :model-value="date"
+    :placeholder="t('transactions.dateFilter.pickDate')"
+    @update:model-value="(value) => (date = value)"
+  />
 </template>
