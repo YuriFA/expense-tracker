@@ -7,7 +7,10 @@
       "title": "Failed to load",
       "retry": "Retry"
     },
-    "back": "Back"
+    "back": "Back",
+    "yesterday": "Yesterday",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
   },
   "nav": {
     "dashboard": "Home",
