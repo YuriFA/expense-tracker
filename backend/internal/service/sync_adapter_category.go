@@ -11,11 +11,21 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
+// categoryTx is the category push path's slice of the batch tx (ADR-0003):
+// the shared core plus the category's own contract. The compile-time check
+// pins the contract to the full repository.SyncTx the applier hands in.
+type categoryTx interface {
+	repository.SyncCore
+	repository.CategorySyncTx
+}
+
+var _ categoryTx = repository.SyncTx(nil)
+
 // categoryAdapter is the category's half of the push engine: the type shape
 // rule and live-name uniqueness pre-check, and the in-use delete guard. No
 // immutable fields.
 type categoryAdapter struct {
-	syncAdapterDefaults[*domain.Category, domain.CategoryFullState]
+	syncAdapterDefaults[categoryTx, *domain.Category, domain.CategoryFullState]
 }
 
 func (categoryAdapter) entity() string { return domain.SyncEntityCategory }
@@ -34,7 +44,7 @@ func (categoryAdapter) invalidDataMessage() string { return "invalid category da
 // per-item error, never an aborted batch.
 func (categoryAdapter) preValidate(
 	ctx context.Context,
-	t repository.SyncTx,
+	t categoryTx,
 	householdID uuid.UUID,
 	op domain.SyncOperation,
 	data domain.CategoryFullState,
@@ -59,7 +69,7 @@ func (categoryAdapter) isWriteRace(err error) bool {
 }
 
 func (categoryAdapter) getAny(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
 ) (*domain.Category, bool, error) {
 	c, err := t.GetCategoryAny(ctx, householdID, id)
 	if err != nil || c == nil {
@@ -69,7 +79,7 @@ func (categoryAdapter) getAny(
 }
 
 func (categoryAdapter) create(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID, data domain.CategoryFullState,
+	ctx context.Context, t categoryTx, householdID, userID, id uuid.UUID, data domain.CategoryFullState,
 ) (*domain.Category, error) {
 	return t.CreateCategory(ctx, domain.CreateCategoryParams{
 		ID: id, HouseholdID: householdID, UserID: userID,
@@ -79,7 +89,7 @@ func (categoryAdapter) create(
 
 func (categoryAdapter) replace(
 	ctx context.Context,
-	t repository.SyncTx,
+	t categoryTx,
 	householdID, userID, id uuid.UUID,
 	baseVersion int,
 	data domain.CategoryFullState,
@@ -88,7 +98,7 @@ func (categoryAdapter) replace(
 }
 
 func (categoryAdapter) tombstone(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t categoryTx, householdID, userID, id uuid.UUID,
 ) (*domain.Category, error) {
 	return t.TombstoneCategory(ctx, householdID, userID, id)
 }
@@ -97,7 +107,7 @@ func (categoryAdapter) tombstone(
 // DeleteCategory): live transactions first, then live planned payments - the
 // message names the relation that fired.
 func (categoryAdapter) inUse(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
 ) (bool, string, error) {
 	transactions, err := t.HasLiveTransactionsForCategory(ctx, householdID, id)
 	if err != nil {

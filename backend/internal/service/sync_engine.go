@@ -18,6 +18,11 @@ import (
 // (codes, ordering, conflict shapes) are identical to the per-entity twins it
 // replaced, except the delete in-use guards: they also block on live planned
 // payments now, matching the REST delete semantics (2026-09-01 fix).
+//
+// Each adapter rides the batch tx through its own narrow contract (T: the
+// shared SyncCore plus the entity's repository contract and any cross-entity
+// reference reads it needs), so the seam a new entity touches is named in its
+// adapter file, not the whole SyncTx.
 
 // syncRow is the stored-row shape every synced entity offers the engine: the
 // tombstone flag. (The full-state projection returns a concrete type per
@@ -28,9 +33,10 @@ type syncRow interface {
 
 // syncAdapter supplies everything entity-specific the engine cannot know:
 // the decode target, the staged validation hooks, the immutability guard,
-// the persistence calls, and the write-race sentinels. R is the stored row
-// (pointer type), S the decoded full-state type.
-type syncAdapter[R syncRow, S any] interface {
+// the persistence calls, and the write-race sentinels. T is the entity's
+// slice of the batch tx (repository.SyncCore + its contracts), R the stored
+// row (pointer type), S the decoded full-state type.
+type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 	// entity labels change-log rows and drives the adopt-orphaned check.
 	entity() string
 	// label names the entity in per-item messages ("account", "debt operation").
@@ -43,7 +49,7 @@ type syncAdapter[R syncRow, S any] interface {
 	// uniqueness pre-checks); "" = pass, err = batch error.
 	preValidate(
 		ctx context.Context,
-		t repository.SyncTx,
+		t T,
 		householdID uuid.UUID,
 		op domain.SyncOperation,
 		data S,
@@ -52,7 +58,7 @@ type syncAdapter[R syncRow, S any] interface {
 	// create-vs-update split (transaction reference rules); "" = pass.
 	postReadValidate(
 		ctx context.Context,
-		t repository.SyncTx,
+		t T,
 		householdID uuid.UUID,
 		op domain.SyncOperation,
 		data S,
@@ -62,20 +68,20 @@ type syncAdapter[R syncRow, S any] interface {
 	fullState(row R) any
 	// getAny reads the row including tombstones; found = false means the id
 	// was never created in this household.
-	getAny(ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID) (row R, found bool, err error)
+	getAny(ctx context.Context, t T, householdID, id uuid.UUID) (row R, found bool, err error)
 
 	// immutable fires between the deleted-check and the version-check of the
 	// update branch (an immutable-field violation outranks the version
 	// conflict); "" = pass.
 	immutable(cur R, data S) (code, message string)
 
-	create(ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID, data S) (R, error)
+	create(ctx context.Context, t T, householdID, userID, id uuid.UUID, data S) (R, error)
 	// onCreateError turns a create failure into a per-item result when the
 	// entity knows how (the account id-race safety net); handled = false
 	// makes the engine propagate the error as a batch error.
 	onCreateError(
 		ctx context.Context,
-		t repository.SyncTx,
+		t T,
 		householdID uuid.UUID,
 		op domain.SyncOperation,
 		err error,
@@ -83,13 +89,13 @@ type syncAdapter[R syncRow, S any] interface {
 
 	replace(
 		ctx context.Context,
-		t repository.SyncTx,
+		t T,
 		householdID, userID, id uuid.UUID,
 		baseVersion int,
 		data S,
 	) (R, error)
 	isWriteRace(err error) bool
-	tombstone(ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID) (R, error)
+	tombstone(ctx context.Context, t T, householdID, userID, id uuid.UUID) (R, error)
 }
 
 // syncInUseGuard is implemented by the entities whose delete is blocked by
@@ -97,35 +103,35 @@ type syncAdapter[R syncRow, S any] interface {
 // tombstone unconditionally. inUse reports which relation blocks the delete
 // by returning its message (an entity with several dependants checks them in
 // the REST order and names the one that fired).
-type syncInUseGuard[R syncRow] interface {
-	inUse(ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID) (blocked bool, message string, err error)
+type syncInUseGuard[T repository.SyncCore, R syncRow] interface {
+	inUse(ctx context.Context, t T, householdID, id uuid.UUID) (blocked bool, message string, err error)
 	inUseCode() string
 }
 
 // syncAdapterDefaults carries the no-op answers for the optional adapter
 // hooks (validation stages, immutability, create-error recovery). Adapters
-// embed it, instantiated with their row and full-state types, and override
-// only what their entity actually has.
-type syncAdapterDefaults[R syncRow, S any] struct{}
+// embed it, instantiated with their tx, row, and full-state types, and
+// override only what their entity actually has.
+type syncAdapterDefaults[T repository.SyncCore, R syncRow, S any] struct{}
 
-func (syncAdapterDefaults[R, S]) preValidate(
-	context.Context, repository.SyncTx, uuid.UUID, domain.SyncOperation, S,
+func (syncAdapterDefaults[T, R, S]) preValidate(
+	context.Context, T, uuid.UUID, domain.SyncOperation, S,
 ) (string, string, error) {
 	return "", "", nil
 }
 
-func (syncAdapterDefaults[R, S]) postReadValidate(
-	context.Context, repository.SyncTx, uuid.UUID, domain.SyncOperation, S,
+func (syncAdapterDefaults[T, R, S]) postReadValidate(
+	context.Context, T, uuid.UUID, domain.SyncOperation, S,
 ) (string, string, error) {
 	return "", "", nil
 }
 
-func (syncAdapterDefaults[R, S]) immutable(R, S) (string, string) {
+func (syncAdapterDefaults[T, R, S]) immutable(R, S) (string, string) {
 	return "", ""
 }
 
-func (syncAdapterDefaults[R, S]) onCreateError(
-	context.Context, repository.SyncTx, uuid.UUID, domain.SyncOperation, error,
+func (syncAdapterDefaults[T, R, S]) onCreateError(
+	context.Context, T, uuid.UUID, domain.SyncOperation, error,
 ) (domain.SyncPushResult, bool, error) {
 	return domain.SyncPushResult{}, false, nil
 }
@@ -134,19 +140,26 @@ func (syncAdapterDefaults[R, S]) onCreateError(
 // built in NewSyncService maps entities to appliers.
 type syncOpApplier func(ctx context.Context, t repository.SyncTx, householdID, userID uuid.UUID, op domain.SyncOperation) (domain.SyncPushResult, error)
 
-// applySyncOperationFor binds an adapter into the registry's applier shape.
-func applySyncOperationFor[R syncRow, S any](ad syncAdapter[R, S]) syncOpApplier {
+// applySyncOperationFor binds an adapter into the registry's applier shape,
+// narrowing the batch tx to the adapter's own contract: the registry erases
+// the entity's tx type, so the assertion restores it. It cannot fail for a
+// declared contract - each adapter file's compile-time check pins its
+// contract to the full repository.SyncTx the applier hands in.
+func applySyncOperationFor[T repository.SyncCore, R syncRow, S any](ad syncAdapter[T, R, S]) syncOpApplier {
 	return func(ctx context.Context, t repository.SyncTx, householdID, userID uuid.UUID, op domain.SyncOperation) (domain.SyncPushResult, error) {
-		return applySyncEntity(ctx, t, householdID, userID, op, ad)
+		// A violated contract is a programming error: fail loud - the
+		// per-adapter compile-time checks prevent it.
+		narrowed := t.(T) //nolint:errcheck // see above
+		return applySyncEntity(ctx, narrowed, householdID, userID, op, ad)
 	}
 }
 
-func applySyncEntity[R syncRow, S any](
+func applySyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
-	t repository.SyncTx,
+	t T,
 	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
-	ad syncAdapter[R, S],
+	ad syncAdapter[T, R, S],
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
 		return deleteSyncEntity(ctx, t, householdID, userID, op, ad)
@@ -189,12 +202,12 @@ func applySyncEntity[R syncRow, S any](
 // create; exists -> already-exists conflict (a replay of the same opId was
 // answered one level up, so this is a DIFFERENT operation claiming the id -
 // never a silent overwrite).
-func createSyncEntity[R syncRow, S any](
+func createSyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
-	t repository.SyncTx,
+	t T,
 	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
-	ad syncAdapter[R, S],
+	ad syncAdapter[T, R, S],
 	data S, current R, found bool,
 ) (domain.SyncPushResult, error) {
 	if found {
@@ -223,12 +236,12 @@ func createSyncEntity[R syncRow, S any](
 
 // updateSyncEntity is the update branch: strict CAS on the base version of a
 // live record.
-func updateSyncEntity[R syncRow, S any](
+func updateSyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
-	t repository.SyncTx,
+	t T,
 	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
-	ad syncAdapter[R, S],
+	ad syncAdapter[T, R, S],
 	data S, current R, found bool,
 ) (domain.SyncPushResult, error) {
 	if !found {
@@ -276,12 +289,12 @@ func updateSyncEntity[R syncRow, S any](
 // missing records, delete-wins over concurrent edits (the device that edited
 // learns of the tombstone via pull and its conflict flow), in-use guard as a
 // per-item error.
-func deleteSyncEntity[R syncRow, S any](
+func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
-	t repository.SyncTx,
+	t T,
 	householdID, userID uuid.UUID,
 	op domain.SyncOperation,
-	ad syncAdapter[R, S],
+	ad syncAdapter[T, R, S],
 ) (domain.SyncPushResult, error) {
 	current, found, err := ad.getAny(ctx, t, householdID, op.ID)
 	if err != nil {
@@ -294,7 +307,7 @@ func deleteSyncEntity[R syncRow, S any](
 	if current.Deleted() {
 		return appliedResult(op.OpID, ad.version(current)), nil
 	}
-	if guard, ok := any(ad).(syncInUseGuard[R]); ok {
+	if guard, ok := any(ad).(syncInUseGuard[T, R]); ok {
 		blocked, message, err := guard.inUse(ctx, t, householdID, op.ID)
 		if err != nil {
 			return domain.SyncPushResult{}, err

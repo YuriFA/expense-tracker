@@ -11,12 +11,27 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
+// plannedPaymentTx is the planned payment's slice of the batch tx
+// (ADR-0003): the shared core, its own contract, and the live account/
+// category reference reads the pre-validation needs (declared inline so the
+// adapter sees exactly the reads it uses, not those contracts' writes). The
+// compile-time check pins the contract to the full repository.SyncTx the
+// applier hands in.
+type plannedPaymentTx interface {
+	repository.SyncCore
+	repository.PlannedPaymentSyncTx
+	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+}
+
+var _ plannedPaymentTx = repository.SyncTx(nil)
+
 // plannedPaymentAdapter is the planned payment's half of the push engine:
 // the shape rules and account/category reference checks as pre-validation,
 // the plan-type immutability guard, and no delete guard (plans tombstone
 // unconditionally; advancement is the auto-confirm job's, not push's).
 type plannedPaymentAdapter struct {
-	syncAdapterDefaults[*domain.PlannedPayment, domain.PlannedPaymentFullState]
+	syncAdapterDefaults[plannedPaymentTx, *domain.PlannedPayment, domain.PlannedPaymentFullState]
 }
 
 func (plannedPaymentAdapter) entity() string { return domain.SyncEntityPlannedPayment }
@@ -35,7 +50,7 @@ func (plannedPaymentAdapter) invalidDataMessage() string { return "invalid plann
 // then the references against the LIVE records (REST granularity).
 func (plannedPaymentAdapter) preValidate(
 	ctx context.Context,
-	t repository.SyncTx,
+	t plannedPaymentTx,
 	householdID uuid.UUID,
 	_ domain.SyncOperation,
 	data domain.PlannedPaymentFullState,
@@ -70,7 +85,7 @@ func (plannedPaymentAdapter) isWriteRace(err error) bool {
 }
 
 func (plannedPaymentAdapter) getAny(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t plannedPaymentTx, householdID, id uuid.UUID,
 ) (*domain.PlannedPayment, bool, error) {
 	p, err := t.GetPlannedPaymentAny(ctx, householdID, id)
 	if err != nil || p == nil {
@@ -80,7 +95,7 @@ func (plannedPaymentAdapter) getAny(
 }
 
 func (plannedPaymentAdapter) create(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID, data domain.PlannedPaymentFullState,
+	ctx context.Context, t plannedPaymentTx, householdID, userID, id uuid.UUID, data domain.PlannedPaymentFullState,
 ) (*domain.PlannedPayment, error) {
 	return t.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
 		ID: id, HouseholdID: householdID, UserID: userID,
@@ -93,7 +108,7 @@ func (plannedPaymentAdapter) create(
 
 func (plannedPaymentAdapter) replace(
 	ctx context.Context,
-	t repository.SyncTx,
+	t plannedPaymentTx,
 	householdID, userID, id uuid.UUID,
 	baseVersion int,
 	data domain.PlannedPaymentFullState,
@@ -102,7 +117,7 @@ func (plannedPaymentAdapter) replace(
 }
 
 func (plannedPaymentAdapter) tombstone(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t plannedPaymentTx, householdID, userID, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
 	return t.TombstonePlannedPayment(ctx, householdID, userID, id)
 }
@@ -113,7 +128,7 @@ func (plannedPaymentAdapter) tombstone(
 // per-item machine code + message ("" = valid).
 func plannedPaymentRefViolation(
 	ctx context.Context,
-	t repository.SyncTx,
+	t plannedPaymentTx,
 	householdID uuid.UUID,
 	data *domain.PlannedPaymentFullState,
 ) (string, string, error) {
