@@ -36,4 +36,4 @@
 - [x] 5.1 Backend: `make gen-check`, `go vet/lint` (golangci), full `go test ./...` incl. e2e
 - [x] 5.2 Workspace: `pnpm type-check`, `pnpm arch:check`, `pnpm knip`, `pnpm i18n:lint` all green
 - [x] 5.3 Web E2E pass: reconcile flow (positive/negative/zero delta), adjustment visible in history + filterable + editable, edit-account form name-only, analytics figures unchanged by adjustment transactions
-- [ ] 5.4  <!-- left open: needs a human visual pass (light/dark, dialog) - model cannot view screenshots in this session --> Visual spot-check of the reconcile dialog (light/dark, mobile viewport) and history rows per the pixel standard
+- [x] 5.4 Visual spot-check of the reconcile dialog (light/dark, mobile viewport) and history rows per the pixel standard

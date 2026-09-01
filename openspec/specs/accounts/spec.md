@@ -3,8 +3,8 @@
 ## Purpose
 
 The financial accounts a user tracks (e.g. cash, bank cards) with a
-currency, an opening balance, and a manual adjustment, whose current
-balance the system computes from the account's transactions.
+currency and an opening balance, whose current balance the system
+computes from the account's transactions.
 
 ## Requirements
 
@@ -27,13 +27,12 @@ A user SHALL be able to create an account with a name, a currency, and
 an opening balance. The supported currencies are USD, EUR, and RUB; a
 request with any other currency SHALL be rejected. Money values are
 minor units (integer, divisor 100) and MAY be negative (e.g. a debt
-card with a negative opening balance). A newly created account has a
-zero manual adjustment until changed.
+card with a negative opening balance).
 
 #### Scenario: Create an account
 
 - **WHEN** the user creates an account named "Cash" in USD with an opening balance of 5000 (i.e. $50.00)
-- **THEN** the account is created and its balance equals 5000 until transactions or adjustments change it
+- **THEN** the account is created and its balance equals 5000 until transactions change it
 
 #### Scenario: Unsupported currency
 
@@ -63,10 +62,10 @@ sync protocol's operation idempotency, not by this rule.)
 ### Requirement: Server-computed balance
 
 The account balance SHALL be computed by the system as
-`opening balance + manual adjustment + net transaction contribution`,
-where income adds its amount, expense subtracts it, and a transfer
-subtracts from the source account and adds to the destination account.
-Clients never send the balance; updates to transactions or accounts are
+`opening balance + net transaction contribution`, where income adds its
+amount, expense subtracts it, a transfer subtracts from the source account
+and adds to the destination account, and an adjustment adds its signed
+amount. Clients never send the balance; updates to transactions are
 reflected in the computed balance.
 
 #### Scenario: Balance after transactions
@@ -79,24 +78,16 @@ reflected in the computed balance.
 - **WHEN** a transfer of 3000 is created from account A to account B
 - **THEN** account A's balance decreases by 3000 and account B's balance increases by 3000
 
-### Requirement: Manual adjustment
+#### Scenario: Reconciliation via adjustment transaction
 
-A user SHALL be able to set a manual adjustment on an account, which
-acts as a signed correction included in the computed balance (e.g. to
-reconcile a real-world statement). Updating the adjustment replaces its
-previous value; it is not cumulative.
-
-#### Scenario: Reconciliation adjustment
-
-- **WHEN** the user sets a manual adjustment of -750 on an account whose opening balance is 10000 and has no transactions
-- **THEN** the account's balance is 9250
+- **WHEN** the user reconciles an account whose computed balance is 12000 by creating an adjustment transaction of -500
+- **THEN** the account's balance is 11500
 
 ### Requirement: Limited mutability
 
-Updating an account SHALL allow changing only its name and manual
-adjustment. The currency and opening balance SHALL NOT be changeable
-after creation. An update request that changes no fields SHALL be
-rejected.
+Updating an account SHALL allow changing only its name. The currency and
+opening balance SHALL NOT be changeable after creation. An update request
+that changes no fields SHALL be rejected.
 
 #### Scenario: Rename an account
 
