@@ -801,3 +801,170 @@ func TestSyncPush_TransactionProtocol(t *testing.T) {
 		assert.Equal(t, deleted.Version, again.Version)
 	})
 }
+
+func TestSyncPush_PlannedPaymentProtocol(t *testing.T) {
+	t.Parallel()
+
+	seedRefs := func(t *testing.T, syncSvc *service.SyncService, householdID, userID uuid.UUID) (uuid.UUID, uuid.UUID, uuid.UUID) {
+		t.Helper()
+		accountID, expenseCatID, incomeCatID := uuid.New(), uuid.New(), uuid.New()
+		for _, op := range []domain.SyncOperation{
+			upsertOp(domain.SyncEntityAccount, uuid.New(), accountID, 0,
+				&domain.AccountFullState{Name: "Карта", Currency: "RUB"}),
+			upsertOp(domain.SyncEntityCategory, uuid.New(), expenseCatID, 0,
+				&domain.CategoryFullState{Name: "Подписки", Type: domain.TransactionTypeExpense}),
+			upsertOp(domain.SyncEntityCategory, uuid.New(), incomeCatID, 0,
+				&domain.CategoryFullState{Name: "Зарплата", Type: domain.TransactionTypeIncome}),
+		} {
+			require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, userID, op).Status)
+		}
+		return accountID, expenseCatID, incomeCatID
+	}
+	validPlan := func(accountID, categoryID uuid.UUID) *domain.PlannedPaymentFullState {
+		return &domain.PlannedPaymentFullState{
+			Type: domain.TransactionTypeExpense, Amount: 500, Name: "Интернет",
+			AccountID: accountID, CategoryID: categoryID,
+			NextDue: domain.NewDate(2026, 10, 1), AnchorDate: domain.NewDate(2026, 9, 1),
+			Regularity: domain.PlannedRegularityMonthly, ConfirmMode: domain.PlannedConfirmManual,
+			Reminder: domain.PlannedReminderOff,
+		}
+	}
+
+	t.Run("create with valid refs applies at version 1", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID, _ := seedRefs(t, syncSvc, householdID, user.ID)
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0, validPlan(accountID, categoryID)))
+		assert.Equal(t, domain.SyncStatusApplied, res.Status)
+		assert.Equal(t, 1, res.Version)
+	})
+
+	t.Run("shape violations are per-item validation errors", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID, _ := seedRefs(t, syncSvc, householdID, user.ID)
+		cases := []struct {
+			name string
+			mut  func(*domain.PlannedPaymentFullState)
+		}{
+			{"zero amount", func(p *domain.PlannedPaymentFullState) { p.Amount = 0 }},
+			{"bad type", func(p *domain.PlannedPaymentFullState) { p.Type = domain.TransactionTypeTransfer }},
+			{"bad regularity", func(p *domain.PlannedPaymentFullState) { p.Regularity = "hourly" }},
+			{"bad confirm mode", func(p *domain.PlannedPaymentFullState) { p.ConfirmMode = "maybe" }},
+			{"bad reminder", func(p *domain.PlannedPaymentFullState) { p.Reminder = "weekly" }},
+			{"zero next due", func(p *domain.PlannedPaymentFullState) { p.NextDue = domain.Date{} }},
+			{"zero anchor", func(p *domain.PlannedPaymentFullState) { p.AnchorDate = domain.Date{} }},
+		}
+		for _, tc := range cases {
+			data := validPlan(accountID, categoryID)
+			tc.mut(data)
+			res := pushOne(t, syncSvc, householdID, user.ID,
+				upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0, data))
+			assert.Equal(t, domain.SyncStatusError, res.Status, tc.name)
+			assert.Equal(t, "VALIDATION_FAILED", res.Code, tc.name)
+			assert.Equal(t, "invalid planned payment data", res.Message, tc.name)
+		}
+	})
+
+	t.Run("reference violations are per-item errors with their own codes", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID, _ := seedRefs(t, syncSvc, householdID, user.ID)
+
+		unknownAccount := validPlan(uuid.New(), categoryID)
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0, unknownAccount))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "PLANNED_PAYMENT_ACCOUNT_NOT_FOUND", res.Code)
+
+		unknownCategory := validPlan(accountID, uuid.New())
+		res = pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0, unknownCategory))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", res.Code)
+
+		mismatch := validPlan(accountID, categoryID)
+		mismatch.Type = domain.TransactionTypeIncome
+		res = pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0, mismatch))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", res.Code)
+		assert.Equal(t, "category type does not match the plan type", res.Message)
+	})
+
+	t.Run("update on the current base applies, unknown id conflicts with the zero state", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID, _ := seedRefs(t, syncSvc, householdID, user.ID)
+		recordID := uuid.New()
+		created := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), recordID, 0, validPlan(accountID, categoryID)))
+		require.Equal(t, domain.SyncStatusApplied, created.Status)
+
+		updated := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), recordID, 1, validPlan(accountID, categoryID)))
+		assert.Equal(t, domain.SyncStatusApplied, updated.Status)
+		assert.Equal(t, 2, updated.Version)
+
+		unknown := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 3, validPlan(accountID, categoryID)))
+		assert.Equal(t, domain.SyncStatusConflict, unknown.Status)
+		assert.Equal(t, domain.SyncCodeVersionConflict, unknown.Code)
+		require.NotNil(t, unknown.ServerState)
+		assert.Equal(t, 0, unknown.ServerState.Version)
+	})
+
+	t.Run("a plan-type change outranks the version conflict on a stale base", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, expenseCatID, incomeCatID := seedRefs(t, syncSvc, householdID, user.ID)
+		recordID := uuid.New()
+		for _, base := range []int{0, 1} {
+			created := pushOne(
+				t,
+				syncSvc,
+				householdID,
+				user.ID,
+				upsertOp(
+					domain.SyncEntityPlannedPayment,
+					uuid.New(),
+					recordID,
+					base,
+					validPlan(accountID, expenseCatID),
+				),
+			)
+			require.Equal(t, domain.SyncStatusApplied, created.Status)
+		}
+
+		// Retyped to income AND re-referenced to the income category so the
+		// pre-validation passes and the immutability rule is what fires.
+		retyped := validPlan(accountID, incomeCatID)
+		retyped.Type = domain.TransactionTypeIncome
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), recordID, 1, retyped))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "VALIDATION_FAILED", res.Code)
+		assert.Equal(t, "plan type is immutable", res.Message)
+	})
+
+	t.Run("delete tombstones unconditionally and repeats idempotently", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID, _ := seedRefs(t, syncSvc, householdID, user.ID)
+		recordID := uuid.New()
+		created := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), recordID, 0, validPlan(accountID, categoryID)))
+		require.Equal(t, domain.SyncStatusApplied, created.Status)
+
+		deleted := pushOne(t, syncSvc, householdID, user.ID,
+			deleteOp(domain.SyncEntityPlannedPayment, uuid.New(), recordID))
+		assert.Equal(t, domain.SyncStatusApplied, deleted.Status, "no in-use guard on planned payments")
+		assert.Equal(t, 2, deleted.Version)
+
+		again := pushOne(t, syncSvc, householdID, user.ID,
+			deleteOp(domain.SyncEntityPlannedPayment, uuid.New(), recordID))
+		assert.Equal(t, domain.SyncStatusApplied, again.Status)
+		assert.Equal(t, deleted.Version, again.Version)
+	})
+}
