@@ -33,13 +33,11 @@ func NewSyncService(sync repository.SyncRepository) *SyncService {
 	return &SyncService{
 		sync: sync,
 		appliers: map[string]syncOpApplier{
-			domain.SyncEntityAccount:       applySyncOperationFor(accountAdapter{}),
-			domain.SyncEntityDebtor:        applySyncOperationFor(debtorAdapter{}),
-			domain.SyncEntityCategory:      applySyncOperationFor(categoryAdapter{}),
-			domain.SyncEntityDebtOperation: applySyncOperationFor(debtOperationAdapter{}),
-			// Strangler (ADR-0003 decision 5): remaining entities still ride
-			// their legacy twins until their adapters land.
-			domain.SyncEntityTransaction:    applyTransactionOperation,
+			domain.SyncEntityAccount:        applySyncOperationFor(accountAdapter{}),
+			domain.SyncEntityDebtor:         applySyncOperationFor(debtorAdapter{}),
+			domain.SyncEntityCategory:       applySyncOperationFor(categoryAdapter{}),
+			domain.SyncEntityDebtOperation:  applySyncOperationFor(debtOperationAdapter{}),
+			domain.SyncEntityTransaction:    applySyncOperationFor(transactionAdapter{}),
 			domain.SyncEntityPlannedPayment: applyPlannedPaymentOperation,
 		},
 	}
@@ -203,133 +201,6 @@ func serverStateOf(version int, deleted bool, data any) *domain.SyncServerState 
 		}
 	}
 	return state
-}
-
-// --- transactions -----------------------------------------------------------------
-
-func applyTransactionOperation(
-	ctx context.Context,
-	t repository.SyncTx,
-	householdID, userID uuid.UUID,
-	op domain.SyncOperation,
-) (domain.SyncPushResult, error) {
-	if op.Action == domain.SyncActionDelete {
-		return deleteTransactionOp(ctx, t, householdID, userID, op)
-	}
-	if op.Action != domain.SyncActionUpsert {
-		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
-	}
-
-	var data domain.TransactionFullState
-	if err := decodeSyncData(op.Data, &data); err != nil {
-		return errorResult( //nolint:nilerr // decode failure is a per-item error result, not a batch error
-			op.OpID,
-			"VALIDATION_FAILED",
-			"invalid transaction data",
-		), nil
-	}
-	if code := validateTransactionSyncShape(&data); code != "" {
-		return errorResult(op.OpID, code, syncRefMessage(code)), nil
-	}
-
-	current, err := t.GetTransactionAny(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-
-	// Reference validation with the REST granularity: unknown live refs ->
-	// per-item unknown-references error; type mismatch / same-account
-	// transfer -> invalid-payload codes. Validated on the effective refs of
-	// the full state (update) or the new record (create).
-	if verr := validateSyncRefs(ctx, t, householdID, &data); verr != "" {
-		return errorResult(op.OpID, verr, syncRefMessage(verr)), nil
-	}
-
-	if op.BaseVersion == 0 {
-		if current != nil {
-			return conflictResult(
-				op.OpID, domain.SyncCodeAlreadyExists, "transaction already exists",
-				serverStateOf(current.Version, current.Deleted(), current.FullState()),
-			), nil
-		}
-		if res, err := adoptOrphanedOrConflict(ctx, t, domain.SyncEntityTransaction, op, householdID,
-			"transaction already exists in another household"); err != nil {
-			return domain.SyncPushResult{}, err
-		} else if res.Status != "" {
-			return res, nil
-		}
-		created, err := t.CreateTransaction(ctx, domain.CreateTransactionParams{
-			ID: op.ID, HouseholdID: householdID, UserID: userID,
-			Type: data.Type, Amount: data.Amount, Description: data.Description, OccurredAt: data.OccurredAt,
-			AccountID: data.AccountID, CategoryID: data.CategoryID,
-			FromAccountID: data.FromAccountID, ToAccountID: data.ToAccountID,
-		})
-		if err != nil {
-			return domain.SyncPushResult{}, err
-		}
-		return appliedResult(op.OpID, created.Version), nil
-	}
-
-	if current == nil {
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "transaction not found on server",
-			serverStateOf(0, false, nil),
-		), nil
-	}
-	if current.Deleted() {
-		return conflictResult(
-			op.OpID, domain.SyncCodeDeletedConflict, "transaction was deleted on server",
-			serverStateOf(current.Version, true, nil),
-		), nil
-	}
-	if current.Type != data.Type {
-		return errorResult(op.OpID, "VALIDATION_FAILED", "transaction type is immutable"), nil
-	}
-	if current.Version != op.BaseVersion {
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "transaction version conflict",
-			serverStateOf(current.Version, false, current.FullState()),
-		), nil
-	}
-
-	updated, err := t.ReplaceTransaction(ctx, householdID, userID, op.ID, op.BaseVersion, data)
-	if errors.Is(err, domain.ErrTransactionVersionConflict) || errors.Is(err, domain.ErrRecordDeleted) {
-		fresh, ferr := t.GetTransactionAny(ctx, householdID, op.ID)
-		if ferr != nil {
-			return domain.SyncPushResult{}, ferr
-		}
-		return conflictResult(
-			op.OpID, domain.SyncCodeVersionConflict, "transaction version conflict",
-			serverStateOf(fresh.Version, fresh.Deleted(), fresh.FullState()),
-		), nil
-	}
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	return appliedResult(op.OpID, updated.Version), nil
-}
-
-func deleteTransactionOp(
-	ctx context.Context,
-	t repository.SyncTx,
-	householdID, userID uuid.UUID,
-	op domain.SyncOperation,
-) (domain.SyncPushResult, error) {
-	current, err := t.GetTransactionAny(ctx, householdID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	if current == nil {
-		return appliedResult(op.OpID, 0), nil
-	}
-	if current.Deleted() {
-		return appliedResult(op.OpID, current.Version), nil
-	}
-	deleted, err := t.TombstoneTransaction(ctx, householdID, userID, op.ID)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	return appliedResult(op.OpID, deleted.Version), nil
 }
 
 // --- planned payments ----------------------------------------------------------
