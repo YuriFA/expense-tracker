@@ -89,7 +89,8 @@
 }
 
 .dark {
-  /* Dark theme (warm charcoal; unwired at runtime - light is the only theme) */
+  /* Dark theme (warm charcoal; wired at runtime via the light/dark/system
+   * setting - web setup-theme-watcher, mobile ThemeProvider → Uniwind) */
   --background: #171411;
   --foreground: #f2ede4;
   --card: #201c17;
