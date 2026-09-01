@@ -108,5 +108,5 @@
 - [x] 7.1 Checks: web type-check, oxlint+eslint, `pnpm test:unit`,
       `pnpm exec steiger src` (in apps/web); `pnpm knip`, `pnpm arch:check`
       (workspace root); backendless + PWA e2e suites
-- [ ] 7.2 openspec sync-specs (delta → `openspec/specs/web-screens/spec.md`),
+- [x] 7.2 openspec sync-specs (delta → `openspec/specs/web-screens/spec.md`),
       then archive the change
