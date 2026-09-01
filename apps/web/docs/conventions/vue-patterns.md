@@ -87,9 +87,9 @@ itself against those two.
 - Known trade-off: schema factories snapshot `t()` at creation — validation
   messages switch locale only on remount. Accepted; don't "fix" silently.
 
-## 4. Lists and dialogs
+## 4. Lists and overlays
 
-One dialog instance OUTSIDE the loop plus an "active item" ref:
+One overlay instance OUTSIDE the loop plus an "active item" ref:
 
 - Canonical: `pages/dashboard/ui/RecentTransactions.vue` —
   `activeTransaction`/`pendingDeleteId` refs; row actions call
@@ -101,6 +101,21 @@ One dialog instance OUTSIDE the loop plus an "active item" ref:
   `#actions` slot, all bound to one shared `editOpen`/`deleteOpen` — every
   row instantiates its own pair and one toggle targets all of them. New list
   screens follow the RecentTransactions shape.
+- Overlay container owns presentation and lifecycle; the inner form/list owns
+  only its own state and submission. Use one `open` ref in the container,
+  close on success there, and keep reusable form logic out of
+  `responsive-dialog` / `drawer` specifics.
+- Modal create/edit/detail/history surfaces use `shared/ui/responsive-dialog`:
+  below 768px it renders the shared `drawer/`, at 768px+ the shared `dialog/`.
+  Put title/description/actions in the container slots; account/category rows
+  use the responsive select variant and day picking goes through
+  `shared/ui/date-field`.
+- Exemptions stay explicit at the call site: destructive confirms stay on
+  `alert-dialog`, the command palette stays a centered `dialog`, and the
+  transactions filters stay `drawer` below 768px plus right-side `sheet` at
+  768px+. The plans form keeps its native `<input type="date">`, and the
+  transactions range calendar stays the existing popover inside the filters
+  drawer.
 
 ## 5. i18n and dates in components
 
