@@ -22,7 +22,7 @@ CI + root `pnpm arch:check` in CI). Original finding IDs are preserved.
 |---|---|---|
 | FIX (pending, rev.3) | 5 | A16 (debts listing scoping bug), A17 (CI `arch-check` red since introduction — Node 20 vs dependency-cruiser 18), A18 (mobile date-dependent test fixtures), A19 (web FSD: cross-slice import + Steiger not in CI), A20 (PWA manifest colors not token-derived) |
 | DOCUMENT (pending, rev.3) | 2 | B7 (OpenAPI `Idempotency-Key` self-contradiction), B8 (planned-payments spec wording still user-scoped) |
-| DECIDE (open, rev.3) | 1 | B9 (mobile runtime version surface — spec gap) |
+| DECIDE (open, rev.3) | 2 | B9 (mobile runtime version surface - spec gap), B10 (plans overdue flag: UTC-day comparison vs local calendar-day semantics) |
 | DOCUMENT (resolved, rev.3) | 1 | B6 (stale docs: ADR-0001:66, overview CSRF/rate-limit + test counts, ADR-0002 status header, invariants #3/#15/#17, findings deviation list) — fixed by the audit itself |
 | FIX (pending, rev.2) | 0 | none — all closed |
 | ACCEPT | 2 | A2 (registered deviations, migration deferred by decision), A14 (narrowed: `ts-gen-check` + `arch-check` carved out of the CI gap — note A17: the `arch-check` half was never operational in CI) |
@@ -42,6 +42,7 @@ CI + root `pnpm arch:check` in CI). Original finding IDs are preserved.
 | B7 | DOCUMENT | P3 | `openapi.yaml` self-contradiction on `Idempotency-Key`: operation description says "если заголовок присутствует" (conditional), the parameter is `required: true` (`openapi.yaml:2072-2078`), and the middleware 400s on absence (`IDEMPOTENCY_KEY_MISSING`). Align the description with the enforced reality |
 | B8 | DOCUMENT | P3 | planned-payments spec wording predates household scoping ("belongs to exactly one user… another user's … not exist"); code and its four sibling specs are household-scoped. Reword via a spec delta |
 | B9 | DECIDE | P3 | app-version spec gap: mobile exposes no runtime version surface (only `package.json` `0.0.0`), so version-drift detection cannot cover the mobile client. Decide: add one or record the exclusion |
+| B10 | DECIDE | P3 | Plans overdue flag compares `nextDue` against the UTC day (`utcTodayKey`, both apps - `apps/web/src/pages/plans/model/selectors.ts:23`, `apps/mobile/src/pages/plans/model/selectors.ts:24`; rationale comment: parity with the server auto-confirm day boundary, design D2), while the spec's overdue semantics are user-calendar phrased ("due once its scheduled calendar day has arrived", `planned-payments/spec.md`) and both plan forms default `nextDue` to the LOCAL today (`calendarDayKey(new Date())`). Net effect in UTC+ zones between local midnight and UTC midnight a just-created due-today plan shows no overdue badge and its confirm pill stays outline - contradicts the spec's create-today expectations and flaked `local-screens.spec.ts` "plans" at 00:xx MSK (test now pins yesterday explicitly). Decide: local-day UI flag (server job stays UTC) vs UTC everywhere incl. form default |
 
 **ADR policy outcome:** exactly one ADR was warranted — **ADR-0001**
 (`docs/adr/0001-auth-csrf-threat-model.md`, finding B1). The remaining
