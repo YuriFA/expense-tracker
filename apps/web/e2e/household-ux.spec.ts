@@ -157,6 +157,11 @@ test('authorship markers appear for sibling rows and disappear with member count
   let withSibling = true
   mockControlPlane(page, () => withSibling)
 
+  // The fixture expense occurred on 2026-08-20 and the dashboard's recent
+  // list is month-scoped: pin the clock inside that month so the row renders
+  // regardless of the real current date.
+  await page.clock.install({ time: new Date('2026-08-25T10:00:00') })
+
   // The booted engine pulls the fixture: the expense lands locally with the
   // sibling as its author, so the dashboard row carries the marker.
   await page.goto('/')

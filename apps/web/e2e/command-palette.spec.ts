@@ -11,6 +11,10 @@ test.beforeEach(({ page }) => {
 })
 
 async function openPalette(page: import('@playwright/test').Page) {
+  // The hotkey listener mounts with the app shell: wait for a shell marker
+  // before pressing, or a press during hydration is silently dropped
+  // (flaky under load).
+  await expect(page.getByRole('button', { name: 'Add operation' })).toBeVisible()
   await page.keyboard.press('ControlOrMeta+K')
   await expect(page.getByTestId('command-palette')).toBeVisible()
 }
@@ -62,6 +66,7 @@ test('palette search filters actions and ⌘K toggles it closed', async ({ page 
 
 test('hotkey N opens the unified flow and stays idle while typing', async ({ page }) => {
   await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Add operation' })).toBeVisible()
 
   await page.keyboard.press('n')
   const dialog = page.getByRole('dialog')
