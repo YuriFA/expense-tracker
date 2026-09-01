@@ -5,7 +5,7 @@
 // deterministic, `Intl`-free formatter (Hermes-safe on React Native;
 // identical output on web). No DOM or framework APIs.
 
-export { formatMoney, currencySymbol } from './format'
+export { formatMoney, formatMoneyCompact, currencySymbol } from './format'
 export { toMoney, type Money } from './money'
 export {
   CURRENCY_MAP,

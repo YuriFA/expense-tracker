@@ -1,5 +1,5 @@
 import { toDecimal } from 'dinero.js'
-import type { CurrencyCode } from './currencies'
+import { getDineroCurrency, type CurrencyCode } from './currencies'
 import { toMoney } from './money'
 
 /**
@@ -24,6 +24,8 @@ interface LocaleShape {
   symbolPlacement: 'prefix' | 'suffix'
   /** Separator between the amount and a suffix symbol (empty for prefix). */
   symbolSeparator: string
+  /** Compact unit suffixes per tier key (trillions, billions, millions). */
+  compactSuffixes: Record<CompactTier['key'], string>
 }
 
 const LOCALE_SHAPES: Record<SupportedShape, LocaleShape> = {
@@ -32,6 +34,7 @@ const LOCALE_SHAPES: Record<SupportedShape, LocaleShape> = {
     decimalSeparator: '.',
     symbolPlacement: 'prefix',
     symbolSeparator: '',
+    compactSuffixes: { trillions: 'T', billions: 'B', millions: 'M' },
   },
   ru: {
     // Narrow no-break space grouping is the ru-RU typographic convention and
@@ -41,6 +44,7 @@ const LOCALE_SHAPES: Record<SupportedShape, LocaleShape> = {
     symbolPlacement: 'suffix',
     // No-break space keeps the symbol glued to the amount across line breaks.
     symbolSeparator: '\u00A0',
+    compactSuffixes: { trillions: 'трлн', billions: 'млрд', millions: 'млн' },
   },
 }
 
@@ -91,4 +95,87 @@ export function formatMoney(amountMinor: number, currency: CurrencyCode, locale:
   return shape.symbolPlacement === 'prefix'
     ? `${sign}${symbol}${numberBody}`
     : `${sign}${numberBody}${shape.symbolSeparator}${symbol}`
+}
+
+/**
+ * Compact tiers in major units, largest first. A tier applies once the amount
+ * reaches its threshold; below the million tier the amount renders exactly
+ * (whole units, no fraction).
+ */
+interface CompactTier {
+  majorPerUnit: number
+  key: 'trillions' | 'billions' | 'millions'
+}
+
+const COMPACT_TIERS: readonly CompactTier[] = [
+  { majorPerUnit: 1_000_000_000_000, key: 'trillions' },
+  { majorPerUnit: 1_000_000_000, key: 'billions' },
+  { majorPerUnit: 1_000_000, key: 'millions' },
+]
+
+/**
+ * Dashboard-scale formatting: whole units below one major million, an
+ * abbreviated figure with one fractional digit at or above it. Trades exact
+ * magnitude for a bounded string that fits narrow summary tiles
+ * ("999 999,00 ₽" -> "999 999 ₽"; "1 000 100,00 ₽" -> "1 млн ₽"), where the
+ * exact figure remains one tap away on the linked detail screen.
+ *
+ * Rounding is half-up to one fractional digit, computed on integers; a
+ * rounding carry ("999,97 млн" -> "1 000,0") escalates to the next tier.
+ * Otherwise the contract matches `formatMoney` (sign placement, symbol side,
+ * separators; no `Intl`, identical output on web and React Native).
+ */
+export function formatMoneyCompact(
+  amountMinor: number,
+  currency: CurrencyCode,
+  locale: string,
+): string {
+  const shape = shapeFor(locale)
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency
+  const minorPerMajor = 10 ** getDineroCurrency(currency).exponent
+
+  const negative = amountMinor < 0
+  const abs = Math.abs(amountMinor)
+
+  let numberBody: string
+  let unit = ''
+  // First tier whose threshold the amount reaches wins.
+  let tierKey: CompactTier['key'] | undefined
+  let tierMajorPerUnit: number | undefined
+  for (const tier of COMPACT_TIERS) {
+    if (abs >= tier.majorPerUnit * minorPerMajor) {
+      tierKey = tier.key
+      tierMajorPerUnit = tier.majorPerUnit
+      break
+    }
+  }
+  if (tierKey === undefined || tierMajorPerUnit === undefined) {
+    // Exact whole major units - kopecks add width without information here.
+    numberBody = groupThousands(String(Math.floor(abs / minorPerMajor)), shape.groupSeparator)
+  } else {
+    // `scaled` is the tier value times ten, so one fractional digit is a
+    // plain integer; thresholds divide exactly, keeping this float-free. A
+    // rounding carry ("999,97 млн" -> "1 000,0") escalates one tier up - the
+    // only possible one, tiers being 1000x apart.
+    let scaled = Math.round(abs / ((tierMajorPerUnit * minorPerMajor) / 10))
+    let key: CompactTier['key'] = tierKey
+    while (scaled >= 1000) {
+      scaled = Math.round(scaled / 1000)
+      // Escalation moves UP the scale ("999,97 млн" -> "1 млрд"); from
+      // trillions it is unreachable (would exceed safe integers).
+      key = key === 'millions' ? 'billions' : 'trillions'
+    }
+    const whole = Math.trunc(scaled / 10)
+    const fraction = scaled % 10
+    numberBody = fraction > 0 ? `${whole}${shape.decimalSeparator}${fraction}` : `${whole}`
+    unit = shape.compactSuffixes[key]
+  }
+
+  const sign = negative ? '-' : ''
+  // Suffix currencies glue the unit and symbol on with no-break spaces
+  // ("1,2 млн ₽"); prefix currencies abbreviate tightly ("$1.2M").
+  const compactBody = unit ? `${numberBody}${shape.symbolSeparator}${unit}` : numberBody
+  return shape.symbolPlacement === 'prefix'
+    ? `${sign}${symbol}${compactBody}`
+    : `${sign}${compactBody}${shape.symbolSeparator}${symbol}`
 }

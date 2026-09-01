@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
+import { computed } from 'vue'
 import { cn } from '@/shared/lib/utils'
 
 const props = withDefaults(
@@ -28,6 +29,17 @@ const amountClasses: Record<NonNullable<(typeof props)['tone']>, string> = {
   warning: 'text-warning',
   neutral: '',
 }
+
+// An amount is one unbreakable token (no-break separators), so instead of
+// wrapping or clipping it steps down to fit its half-grid-column card. The
+// dashboard caps strings at ~"999 999 ₽" via compact formatting; these two
+// steps are the guard for longer figures any caller might pass.
+const amountSizeClass = computed(() => {
+  const length = props.amount.length
+  if (length >= 13) return 'text-lg'
+  if (length >= 9) return 'text-xl'
+  return 'text-2xl'
+})
 </script>
 
 <template>
@@ -43,7 +55,11 @@ const amountClasses: Record<NonNullable<(typeof props)['tone']>, string> = {
         {{ props.label }}
       </p>
     </div>
-    <p class="mt-3 text-2xl font-bold tabular-nums" :class="amountClasses[props.tone]">
+    <p
+      data-testid="stat-card-amount"
+      class="mt-3 font-bold tabular-nums"
+      :class="[amountSizeClass, amountClasses[props.tone]]"
+    >
       {{ props.amount }}
     </p>
   </div>

@@ -16,7 +16,7 @@ import { periodTotal, type AnalyticsDirection } from '@/entities/analytics'
 import { useAccounts } from '@/entities/account'
 import { useTransactions } from '@/entities/transaction'
 import { useDebtOperations, totalsByDirection } from '@/entities/debt-operation'
-import { formatMoney, DEFAULT_CURRENCY } from '@/shared/lib/money'
+import { formatMoneyCompact, DEFAULT_CURRENCY } from '@/shared/lib/money'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
 import StatCard from './StatCard.vue'
@@ -88,8 +88,10 @@ const refetch = () =>
     refetchDebts(),
   ])
 
-// Plain minor-unit sums in the fixed app display currency (currency-rub-only).
-const format = (value: number) => formatMoney(value, DEFAULT_CURRENCY, locale.value)
+// Dashboard tiles show compact figures (whole units below one million, an
+// abbreviated magnitude above) so long amounts fit the half-width mobile
+// cards; exact values live one tap away on the linked screens.
+const formatStat = (value: number) => formatMoneyCompact(value, DEFAULT_CURRENCY, locale.value)
 
 const balanceMinor = computed(() =>
   (accounts.value ?? []).reduce((sum, account) => sum + (account.balance ?? 0), 0),
@@ -114,14 +116,14 @@ const monthRange = computed(() => {
 const stats = computed(() => [
   {
     label: t('pages.accounts'),
-    amount: format(balanceMinor.value),
+    amount: formatStat(balanceMinor.value),
     icon: Wallet,
     tone: 'primary' as const,
     to: { path: '/accounts' },
   },
   {
     label: t('analytics.income'),
-    amount: format(periodTotalFor('income')),
+    amount: formatStat(periodTotalFor('income')),
     icon: TrendingUp,
     tone: 'success' as const,
     to: {
@@ -131,7 +133,7 @@ const stats = computed(() => [
   },
   {
     label: t('analytics.expenses'),
-    amount: format(periodTotalFor('expense')),
+    amount: formatStat(periodTotalFor('expense')),
     icon: TrendingDown,
     tone: 'warning' as const,
     to: {
@@ -141,7 +143,7 @@ const stats = computed(() => [
   },
   {
     label: t('pages.debts'),
-    amount: format(debtTotals.value.receivable - debtTotals.value.payable),
+    amount: formatStat(debtTotals.value.receivable - debtTotals.value.payable),
     icon: HandCoins,
     tone: 'neutral' as const,
     to: { path: '/debts' },
@@ -178,7 +180,7 @@ const stats = computed(() => [
         v-for="stat in stats"
         :key="stat.label"
         :to="stat.to"
-        class="block rounded-lg cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-muted-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
+        class="block min-w-0 rounded-lg cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-muted-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
       >
         <StatCard
           :label="stat.label"

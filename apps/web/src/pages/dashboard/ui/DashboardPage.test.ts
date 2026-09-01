@@ -189,4 +189,40 @@ describe('DashboardPage stat card links', () => {
       hrefs.some((h) => h.includes('type=expense') && h.includes(`from=${bounds.from}`) && h.includes(`to=${bounds.to}`)),
     ).toBe(true)
   })
+
+  it('renders dashboard-scale figures compacted so they fit the tile', async () => {
+    // The screenshot overflow case: a debt of 1 000 100,00 must abbreviate,
+    // not paint over the neighbouring card at half mobile width.
+    const debtOperationsRepo = createMockDebtOperationRepository()
+    debtOperationsRepo.query.mockResolvedValue([
+      {
+        id: 'op1',
+        debtorId: 'd1',
+        direction: 'receivable',
+        kind: 'debt',
+        amount: 100_010_000,
+        note: '',
+        occurredAt: new Date().toISOString(),
+        version: 1,
+      },
+    ])
+    const wrapper = mountWithProviders(DashboardPage, {
+      repositories: {
+        transactions: createMockTransactionRepository(),
+        accounts: createMockAccountRepository(),
+        categories: createMockCategoryRepository(),
+        debtors: createMockDebtorRepository(),
+        debtOperations: debtOperationsRepo,
+      },
+    })
+    await flushPromises()
+
+    // Component tests run under 'en' (see src/__tests__/setup.ts), so the
+    // compact million suffix is the latin "M".
+    const debtsLink = wrapper
+      .find('[data-testid="dashboard-stats"]')
+      .findAll('a')
+      .find((a) => (a.attributes('href') ?? '').startsWith('/debts'))
+    expect(debtsLink?.text()).toContain('1M')
+  })
 })
