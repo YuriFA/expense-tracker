@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Lint OpenAPI spec (Redocly)
         run: npx --yes @redocly/cli@latest lint --config docs/api/redocly.yaml docs/api/openapi.yaml
       - name: Detect breaking contract changes (oasdiff)
@@ -35,7 +35,7 @@ jobs:
           if git cat-file -e "origin/${{ github.base_ref }}:docs/api/openapi.yaml" 2>/dev/null; then
             git show "origin/${{ github.base_ref }}:docs/api/openapi.yaml" > /tmp/base.yaml
             cp docs/api/openapi.yaml /tmp/head.yaml
-            docker run --rm -v /tmp:/spec oasdiff/oasdiff:latest breaking /spec/base.yaml /spec/head.yaml
+            docker run --rm -v /tmp:/spec tufin/oasdiff:v1.30.0 breaking /spec/base.yaml /spec/head.yaml
           else
             echo "No baseline spec on base ref; skipping breaking-change check."
           fi
@@ -70,7 +70,7 @@ jobs:
       - uses: pnpm/action-setup@v4 # version from package.json packageManager
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -90,7 +90,7 @@ jobs:
       - uses: pnpm/action-setup@v4 # version from package.json packageManager
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
