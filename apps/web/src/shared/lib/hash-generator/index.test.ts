@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateHashIndex } from './hash-generator'
+import { generateHashIndex } from '.'
 
 describe('generateHashIndex', () => {
   it('returns a number in range [1, 16]', () => {
