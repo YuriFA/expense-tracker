@@ -67,3 +67,18 @@ test('no API response is served from cache while offline', async ({ page }) => {
   await page.reload()
   await expect(page.getByTestId('guest-mode-indicator')).toBeVisible()
 })
+
+test('installed-shell add flow presents the form as a bottom drawer at a phone viewport', async ({ page }) => {
+  // Mobile overlay presentation (web-screens) inside the production shell:
+  // the same FAB flow that the dev-server suite covers must render the
+  // drawer presentation from the precached build.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await expect(page.getByTestId('guest-mode-indicator')).toBeVisible()
+
+  await page.getByTestId('fab-add-operation').click()
+  await page.getByTestId('speed-dial-expense').click()
+
+  await expect(page.locator('[data-slot="drawer-content"][data-state="open"]')).toHaveCount(1)
+  await expect(page.locator('[data-slot="dialog-content"][data-state="open"]')).toHaveCount(0)
+})
