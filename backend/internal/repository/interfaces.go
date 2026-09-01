@@ -171,11 +171,11 @@ type PlannedPaymentRepository interface {
 	) ([]domain.PlannedPayment, error)
 }
 
-// SyncTx is the unit-of-work handed to SyncRepository.WithinHouseholdTx: every
-// method operates on the SAME open database transaction (which holds the
-// household's change-log advisory lock), so a whole push batch commits
-// atomically and its change_log rows order with commit visibility.
-type SyncTx interface {
+// SyncCore is the entity-agnostic push core: durable op-id idempotency (the
+// applied-operations store) and the cross-household adoption check. It is the
+// shared half of the per-batch unit-of-work; the per-entity halves are the
+// *SyncTx contracts below (ADR-0003).
+type SyncCore interface {
 	GetAppliedOperation(ctx context.Context, householdID, opID uuid.UUID) (*domain.AppliedOperation, error)
 	InsertAppliedOperation(ctx context.Context, rec domain.AppliedOperation) error
 
@@ -191,30 +191,21 @@ type SyncTx interface {
 		entity string,
 		entityID, householdID uuid.UUID,
 	) (*domain.SyncServerState, error)
+}
 
-	// Reads including tombstones (nil, nil when the id was never created).
+// AccountSyncTx is the account's push contract: the tombstone-inclusive read,
+// the create/replace/tombstone writes, and the guard reads the account's
+// push/delete paths call. Reference-validation reads for OTHER entities'
+// adapters (LiveAccountExists) live here too - Go's structural interfaces make
+// that a cheap cross-contract dependency.
+type AccountSyncTx interface {
+	// Read including tombstones (nil, nil when the id was never created).
 	GetAccountAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error)
-	GetCategoryAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
-	GetTransactionAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error)
-	GetDebtorAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error)
-	GetDebtOperationAny(ctx context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error)
-	GetPlannedPaymentAny(ctx context.Context, householdID, id uuid.UUID) (*domain.PlannedPayment, error)
-
-	// Live-only reads for reference validation.
+	// Live-only read for reference validation.
 	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
-	CategoryNameTaken(ctx context.Context, householdID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
+	// In-use guards for deletes.
 	HasLiveTransactionsForAccount(ctx context.Context, householdID, accountID uuid.UUID) (bool, error)
-	HasLiveTransactionsForCategory(ctx context.Context, householdID, categoryID uuid.UUID) (bool, error)
-	LiveDebtorExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	DebtorNameTaken(ctx context.Context, householdID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
-	HasLiveDebtOperationsForDebtor(ctx context.Context, householdID, debtorID uuid.UUID) (bool, error)
 	HasLivePlannedPaymentsForAccount(ctx context.Context, householdID, accountID uuid.UUID) (bool, error)
-	HasLivePlannedPaymentsForCategory(ctx context.Context, householdID, categoryID uuid.UUID) (bool, error)
-
-	// The auto-confirm job's due scan (live auto plans, next_due <= today).
-	DueAutoPlannedPayments(ctx context.Context, householdID uuid.UUID, today time.Time) ([]domain.PlannedPayment, error)
-
 	// Writes; each appends its change_log row on the same transaction. The
 	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
 	// the classified domain sentinel on failure (Err*VersionConflict,
@@ -224,26 +215,102 @@ type SyncTx interface {
 		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.AccountFullState,
 	) (*domain.Account, error)
 	TombstoneAccount(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Account, error)
+}
+
+// CategorySyncTx is the category's push contract: the tombstone-inclusive
+// read, the create/replace/tombstone writes, the live-name uniqueness
+// pre-check, and the delete in-use guards.
+type CategorySyncTx interface {
+	// Read including tombstones (nil, nil when the id was never created).
+	GetCategoryAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	// Live-only read for reference validation.
+	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	// Live-name uniqueness, pre-checked under the advisory lock so a violation
+	// surfaces as a per-item error, never an aborted batch.
+	CategoryNameTaken(ctx context.Context, householdID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
+	// In-use guards for deletes.
+	HasLiveTransactionsForCategory(ctx context.Context, householdID, categoryID uuid.UUID) (bool, error)
+	HasLivePlannedPaymentsForCategory(ctx context.Context, householdID, categoryID uuid.UUID) (bool, error)
+	// Writes; each appends its change_log row on the same transaction. The
+	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
+	// the classified domain sentinel on failure (Err*VersionConflict,
+	// ErrRecordDeleted, Err*NotFound).
 	CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error)
 	ReplaceCategory(
 		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.CategoryFullState,
 	) (*domain.Category, error)
 	TombstoneCategory(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Category, error)
+}
+
+// TransactionSyncTx is the transaction's push contract: the
+// tombstone-inclusive read and the create/replace/tombstone writes.
+type TransactionSyncTx interface {
+	// Read including tombstones (nil, nil when the id was never created).
+	GetTransactionAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error)
+	// Writes; each appends its change_log row on the same transaction. The
+	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
+	// the classified domain sentinel on failure (Err*VersionConflict,
+	// ErrRecordDeleted, Err*NotFound).
 	CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error)
 	ReplaceTransaction(
 		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.TransactionFullState,
 	) (*domain.Transaction, error)
 	TombstoneTransaction(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Transaction, error)
+}
+
+// DebtorSyncTx is the debtor's push contract: the tombstone-inclusive read,
+// the create/replace/tombstone writes, the live-name uniqueness pre-check,
+// the live-existence reference read, and the delete in-use guard.
+type DebtorSyncTx interface {
+	// Read including tombstones (nil, nil when the id was never created).
+	GetDebtorAny(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error)
+	// Live-only read for reference validation.
+	LiveDebtorExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	// Live-name uniqueness, pre-checked under the advisory lock so a violation
+	// surfaces as a per-item error, never an aborted batch.
+	DebtorNameTaken(ctx context.Context, householdID uuid.UUID, name string, exceptID uuid.UUID) (bool, error)
+	// In-use guard for deletes.
+	HasLiveDebtOperationsForDebtor(ctx context.Context, householdID, debtorID uuid.UUID) (bool, error)
+	// Writes; each appends its change_log row on the same transaction. The
+	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
+	// the classified domain sentinel on failure (Err*VersionConflict,
+	// ErrRecordDeleted, Err*NotFound).
 	CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error)
 	ReplaceDebtor(
 		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.DebtorFullState,
 	) (*domain.Debtor, error)
 	TombstoneDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Debtor, error)
+}
+
+// DebtOperationSyncTx is the debt operation's push contract: the
+// tombstone-inclusive read and the create/replace/tombstone writes.
+type DebtOperationSyncTx interface {
+	// Read including tombstones (nil, nil when the id was never created).
+	GetDebtOperationAny(ctx context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error)
+	// Writes; each appends its change_log row on the same transaction. The
+	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
+	// the classified domain sentinel on failure (Err*VersionConflict,
+	// ErrRecordDeleted, Err*NotFound).
 	CreateDebtOperation(ctx context.Context, params domain.CreateDebtOperationParams) (*domain.DebtOperation, error)
 	ReplaceDebtOperation(
 		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.DebtOperationFullState,
 	) (*domain.DebtOperation, error)
 	TombstoneDebtOperation(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.DebtOperation, error)
+}
+
+// PlannedPaymentSyncTx is the planned payment's push contract: the
+// tombstone-inclusive read, the create/replace/tombstone writes, and the
+// auto-confirm job's due scan/advancement (they run under the same advisory
+// lock, so they ride the tx handle).
+type PlannedPaymentSyncTx interface {
+	// Read including tombstones (nil, nil when the id was never created).
+	GetPlannedPaymentAny(ctx context.Context, householdID, id uuid.UUID) (*domain.PlannedPayment, error)
+	// The auto-confirm job's due scan (live auto plans, next_due <= today).
+	DueAutoPlannedPayments(ctx context.Context, householdID uuid.UUID, today time.Time) ([]domain.PlannedPayment, error)
+	// Writes; each appends its change_log row on the same transaction. The
+	// Replace/Tombstone methods enforce the CAS/liveness invariants and return
+	// the classified domain sentinel on failure (Err*VersionConflict,
+	// ErrRecordDeleted, Err*NotFound).
 	CreatePlannedPayment(ctx context.Context, params domain.CreatePlannedPaymentParams) (*domain.PlannedPayment, error)
 	ReplacePlannedPayment(
 		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.PlannedPaymentFullState,
@@ -255,6 +322,24 @@ type SyncTx interface {
 	AdvancePlannedPayment(
 		ctx context.Context, householdID, actorID, id uuid.UUID, nextDue time.Time,
 	) (*domain.PlannedPayment, error)
+}
+
+// SyncTx is the unit-of-work handed to SyncRepository.WithinHouseholdTx: every
+// method operates on the SAME open database transaction (which holds the
+// household's change-log advisory lock), so a whole push batch commits
+// atomically and its change_log rows order with commit visibility. It is the
+// composition of the shared core and the per-entity contracts; the push
+// engine consumes each entity's adapter through its own narrow contract, so a
+// new synced entity adds a contract + adapter instead of widening every
+// implementor (ADR-0003).
+type SyncTx interface {
+	SyncCore
+	AccountSyncTx
+	CategorySyncTx
+	TransactionSyncTx
+	DebtorSyncTx
+	DebtOperationSyncTx
+	PlannedPaymentSyncTx
 }
 
 // SyncRepository backs /api/sync: batched pushes (one transaction per batch)
