@@ -5,7 +5,7 @@
       "targetKind": "existing-ui",
       "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
       "baselineDraftId": "218ec55b-8c4f-434e-b975-9b2a75dd6951",
-      "activeDraftId": "ec985bff-1ac8-4430-8a90-ef3f37f4f60c",
+      "activeDraftId": "73ef9770-3dbb-4ab9-9cf1-aebbeb111d99",
       "designSystemPath": ".superdesign/design-system.md",
       "contextFiles": [
         ".superdesign/design-system.md",
@@ -22,24 +22,30 @@
         "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue",
         "apps/web/src/pages/dashboard/ui/DebtsCard.vue",
         "apps/web/src/features/transaction/add/ui/AddTransactionTabs.vue",
-        "apps/web/src/widgets/mobile-shell/ui/SpeedDialFab.vue"
+        "apps/web/src/widgets/mobile-shell/ui/SpeedDialFab.vue",
+        "apps/web/src/pages/dashboard/ui/PeriodNav.vue",
+        "apps/web/src/widgets/mobile-shell/ui/MobileTopBar.vue",
+        "apps/web/src/widgets/mobile-shell/ui/BottomTabBar.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "abd708d8b56e968f377f46cd56557257ea0ba0a315521732a05a28ab048cdbb3",
-        "apps/web/src/app/layout/AppShell.vue": "e6dff4abc67db65cf6ed391c217a2e7ce4bee831e55edb4cdb688d5977a11555",
-        "apps/web/src/app/layout/AppSidebarNav.vue": "b1b1f788b67197ca79f25cee854a7d5e38d3cf1b0eba54ed7be588d793f948a1",
-        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "db9d50a57fde1eb1a7538c6876391740c368af614f79137ee7cc2678729354b9",
-        "apps/web/src/pages/dashboard/ui/StatCard.vue": "69be2e27b2205d7771f1227d1043272aa15a7986e234d2c12b3b495f1284f96c",
+        ".superdesign/design-system.md": "0c7d82a391818d83f4f673e07d1bcdc108df9a111257ad1bf6e3432a859d47fb",
+        "apps/web/src/app/layout/AppShell.vue": "fecab6c3c90f9d55463fa36cc3c1d725a295953e8f6d87e2ef90f8f7887d94c3",
+        "apps/web/src/app/layout/AppSidebarNav.vue": "d175a55d45e471269212bccb1c3f2da37e945873b73a47b9d39c5136564b0bd9",
+        "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "1deeca777ab3c52f041b74ecd88b0e6e233a67634b1064beaca805e169661793",
+        "apps/web/src/pages/dashboard/ui/StatCard.vue": "0c196f47960684811a5bd759cc0cabd35139ec61def7aae91646bfcf622abd4c",
         "apps/web/src/pages/dashboard/ui/CategoryBreakdownCard.vue": "4b59d19f7895785fa5d27dc86a2eef1b3739e57a4806f43eb267618d017dabf1",
         "apps/web/src/pages/dashboard/ui/AccountsCard.vue": "5fa7bc9ae018b65e600fddec4431ebcb39a1bee57278d38260f57cc6fdd95fa9",
-        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "87bf7b7bb24fb1c761b24f861c204dcbdcb6ade659f30312092d5e50a458ea73",
+        "apps/web/src/entities/transaction/ui/TransactionListItem.vue": "62b0b70c69f6ab66f7c8b7d91479fb0aa00782cb153d9c3f932f352cf20d6c19",
         "apps/web/src/shared/ui/card/Card.vue": "21b4e17480df5e7efb707a5f4d93805b4e5136a50de7ccc78e9241db879718ed",
         "apps/web/src/shared/ui/button/Button.vue": "8c7afb939b83f8e7dcb33575013d0064674282b140380ef8841c2effeeee469c",
         "apps/web/src/pages/dashboard/ui/DashboardCard.vue": "ffb6082a6de6b2362b7867621838069284120166288a32ec4d17e7f700a6bd8f",
         "apps/web/src/pages/dashboard/ui/RecentTransactionsCard.vue": "879e8cda1713714531b39a1224ae33d1356c3fec39cdb285fc794ccf616ba40a",
         "apps/web/src/pages/dashboard/ui/DebtsCard.vue": "41c9ba1e20d41c85cb4f1a5eb572f4e9cc5583f22303122984ca0aae7c07a25c",
-        "apps/web/src/features/transaction/add/ui/AddTransactionTabs.vue": "7f1da092ecc0bfa6ca666de01fd7d1fcbbfbfa05a0aa7840f5ddeef2cf76236f",
-        "apps/web/src/widgets/mobile-shell/ui/SpeedDialFab.vue": "ff8fdcebe2c698818d5f6eaebe49b688b6002f44a3981dcaa19dd637fc5d5719"
+        "apps/web/src/features/transaction/add/ui/AddTransactionTabs.vue": "b956264a9bd646aef553d9c27e05089b0ac95933a0c3e7d5e14baf8b67859ac8",
+        "apps/web/src/widgets/mobile-shell/ui/SpeedDialFab.vue": "3ce0baafe8b5ef2cc34a6c38fba8168bb7b5f0b567beafa8b07bf3c66b6b1d2f",
+        "apps/web/src/pages/dashboard/ui/PeriodNav.vue": "8d1186d64740505691372abbf36112de3ad687b845e6543f72bf141d29aa6dd5",
+        "apps/web/src/widgets/mobile-shell/ui/MobileTopBar.vue": "55d8f8527a9f95cacd168743176a52910b633f72d4e7f90574e26a917a0a0ab4",
+        "apps/web/src/widgets/mobile-shell/ui/BottomTabBar.vue": "d9d17c50bc8a886cc0f9536294ebd4ef00f05e7799d36bd49b25772de8feaa8c"
       },
       "components": [
         {
@@ -71,9 +77,9 @@
         },
         "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b": {
           "title": "Синхронизация с реализацией (Транзакции и Категории)",
-          "visualDirection": "SELECTED by user. Warm paper #f6f2ec, flat cards #fffdf9 border #e8e0d4 no shadows radius 14, teal #0f766e, underline nav, sidebar shell; v2 = real functionality only (no limits, no progress bars): header Обзор+month, 4 stat cards (Счета/Доходы/Расходы/Долги), Быстрые действия row, Расходы по категориям (amount+percent), right rail Счета+Долги, Недавние транзакции; v5 = unified DashboardCard shell: all four card headers identical 52px (px-6, uppercase title, centered action, hairline divider)",
+          "visualDirection": "SELECTED by user. Warm paper #f6f2ec, flat cards #fffdf9 border #e8e0d4 no shadows radius 14, teal #0f766e, underline nav, sidebar shell; v2 = real functionality only (no limits, no progress bars): header Обзор+month, 4 stat cards (Счета/Доходы/Расходы/Долги), Быстрые действия row, Расходы по категориям (amount+percent), right rail Счета+Долги, Недавние транзакции; v5 = unified DashboardCard shell: all four card headers identical 52px (px-6, uppercase title, centered action, hairline divider); v6 sync: PeriodNav в одну строку с «Обзор», убраны quick actions, kbd N на CTA сайдбара (синхронизирован с «Обзор с переключателем периода» v3)",
           "parentDraftId": "218ec55b-8c4f-434e-b975-9b2a75dd6951",
-          "currentVersion": 5
+          "currentVersion": 6
         },
         "d43bc74a-e574-4a77-9610-1db2c7a97096": {
           "title": "Aurora Direction Redesign",
@@ -96,15 +102,15 @@
         },
         "73ef9770-3dbb-4ab9-9cf1-aebbeb111d99": {
           "title": "Кошелёк — Обзор с переключателем периода",
-          "visualDirection": "variant A state 1: current month (Август 2026) with inline period switcher in the header, forward chevron disabled, no сейчас tags; v2 sync: kbd «N» на CTA сайдбара",
+          "visualDirection": "variant A state 1: current month (Август 2026) with inline period switcher in the header, forward chevron disabled, no сейчас tags; v2 sync: kbd «N» на CTA сайдбара; v3: PeriodNav в одной строке с заголовком «Обзор» (title слева, ‹ Август 2026 › справа), удалены устаревшие quick actions (добавление только через CTA сайдбара / N / ⌘K)",
           "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
-          "currentVersion": 2
+          "currentVersion": 3
         },
         "ca24210c-5b7b-4201-a1e4-3ea1b8d836db": {
           "title": "Кошелёк — Обзор за июль 2026",
-          "visualDirection": "variant A state 2: past-month browsing (Июль 2026), flow cards show July data; сейчас tags removed per user feedback (v1 had them); v3 sync: kbd «N» на CTA сайдбара",
+          "visualDirection": "variant A state 2: past-month browsing (Июль 2026), flow cards show July data; сейчас tags removed per user feedback (v1 had them); v3 sync: kbd «N» на CTA сайдбара; v4 sync: PeriodNav в одну строку с «Обзор» (июль - обе стрелки активны), убраны quick actions",
           "parentDraftId": "14a5f77e-5fd0-427b-ad2a-c2fa2dbd751b",
-          "currentVersion": 3
+          "currentVersion": 4
         },
         "3bafa31e-f14b-4693-b563-6651fe471535": {
           "title": "Вариант A — усиленный сайдбар CTA",
@@ -141,9 +147,16 @@
           "visualDirection": "форма добавления на отдельной странице (назад-стрелка, карточка max-w 520px), палитра ⌘K и kbd N сохранены",
           "parentDraftId": "ec985bff-1ac8-4430-8a90-ef3f37f4f60c",
           "currentVersion": 1
+        },
+        "2d255afe-a51a-4583-8501-ec819510de89": {
+          "title": "Кошелёк — мобильный обзор",
+          "visualDirection": "mobile <768px ветка десктопного «Обзора»: компактные StatCard 2x2 (p-3, круг 32px, сумма 18px), шапка в одну строку («Обзор» 26px слева + PeriodNav справа: ‹ Август 2026 ›, forward disabled), канонический мобильный шелл (топбар лого+Кошелёк+«Синхр.»+аватар, плавающий пилюле-таббар 2+FAB+2), те же данные Августа 2026, без quick actions; v2: фикс шрифта - явный body font-family 'Outfit' вместо неработающего в превью класса font-['Outfit'] (серифный фолбэк)",
+          "parentDraftId": "73ef9770-3dbb-4ab9-9cf1-aebbeb111d99",
+          "device": "mobile",
+          "currentVersion": 2
         }
       },
-      "updatedAt": "2026-08-31T16:40:29.339Z"
+      "updatedAt": "2026-08-31T19:45:00.000Z"
     },
     "/analytics": {
       "targetKind": "flow-page",
