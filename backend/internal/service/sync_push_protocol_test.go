@@ -189,6 +189,40 @@ func TestSyncPush_AccountProtocol(t *testing.T) {
 			deleteOp(domain.SyncEntityAccount, uuid.New(), busy))
 		assert.Equal(t, domain.SyncStatusError, res.Status)
 		assert.Equal(t, "ACCOUNT_IN_USE", res.Code)
+		assert.Equal(t, "account has transactions and cannot be deleted", res.Message)
+	})
+
+	t.Run("delete of an account with live planned payments is a per-item error", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		busy := uuid.New()
+		created := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityAccount, uuid.New(), busy, 0, accountData))
+		require.Equal(t, domain.SyncStatusApplied, created.Status)
+
+		// A live plan referencing the account (the plan's own reference
+		// validation needs a live expense account + category first).
+		categoryID := uuid.New()
+		for _, op := range []domain.SyncOperation{
+			upsertOp(domain.SyncEntityCategory, uuid.New(), categoryID, 0,
+				&domain.CategoryFullState{Name: "Подписки", Type: domain.TransactionTypeExpense}),
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0,
+				&domain.PlannedPaymentFullState{
+					Type: domain.TransactionTypeExpense, Amount: 500, Name: "Интернет",
+					AccountID: busy, CategoryID: categoryID,
+					NextDue: domain.NewDate(2026, 10, 1), AnchorDate: domain.NewDate(2026, 9, 1),
+					Regularity: domain.PlannedRegularityMonthly, ConfirmMode: domain.PlannedConfirmManual,
+					Reminder: domain.PlannedReminderOff,
+				}),
+		} {
+			require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, user.ID, op).Status)
+		}
+
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			deleteOp(domain.SyncEntityAccount, uuid.New(), busy))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "ACCOUNT_IN_USE", res.Code)
+		assert.Equal(t, "account has planned payments and cannot be deleted", res.Message)
 	})
 
 	t.Run("opId replay returns the stored result with no new mutation", func(t *testing.T) {
@@ -420,6 +454,35 @@ func TestSyncPush_CategoryProtocol(t *testing.T) {
 			deleteOp(domain.SyncEntityCategory, uuid.New(), categoryID))
 		assert.Equal(t, domain.SyncStatusError, res.Status)
 		assert.Equal(t, "CATEGORY_IN_USE", res.Code)
+		assert.Equal(t, "category has transactions and cannot be deleted", res.Message)
+	})
+
+	t.Run("delete of a category with live planned payments is a per-item error", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID := uuid.New(), uuid.New()
+		for _, op := range []domain.SyncOperation{
+			upsertOp(domain.SyncEntityAccount, uuid.New(), accountID, 0,
+				&domain.AccountFullState{Name: "Карта", Currency: "RUB"}),
+			upsertOp(domain.SyncEntityCategory, uuid.New(), categoryID, 0,
+				&domain.CategoryFullState{Name: "Подписки", Type: domain.TransactionTypeExpense}),
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0,
+				&domain.PlannedPaymentFullState{
+					Type: domain.TransactionTypeExpense, Amount: 500, Name: "Интернет",
+					AccountID: accountID, CategoryID: categoryID,
+					NextDue: domain.NewDate(2026, 10, 1), AnchorDate: domain.NewDate(2026, 9, 1),
+					Regularity: domain.PlannedRegularityMonthly, ConfirmMode: domain.PlannedConfirmManual,
+					Reminder: domain.PlannedReminderOff,
+				}),
+		} {
+			require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, user.ID, op).Status)
+		}
+
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			deleteOp(domain.SyncEntityCategory, uuid.New(), categoryID))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "CATEGORY_IN_USE", res.Code)
+		assert.Equal(t, "category has planned payments and cannot be deleted", res.Message)
 	})
 
 	t.Run("delete of an unknown id is idempotently applied at version 0", func(t *testing.T) {

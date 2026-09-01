@@ -93,13 +93,27 @@ func (categoryAdapter) tombstone(
 	return t.TombstoneCategory(ctx, householdID, userID, id)
 }
 
+// inUse reports the category's live dependants in the REST order (postgres
+// DeleteCategory): live transactions first, then live planned payments - the
+// message names the relation that fired.
 func (categoryAdapter) inUse(
 	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
-) (bool, error) {
-	return t.HasLiveTransactionsForCategory(ctx, householdID, id)
+) (bool, string, error) {
+	transactions, err := t.HasLiveTransactionsForCategory(ctx, householdID, id)
+	if err != nil {
+		return false, "", err
+	}
+	if transactions {
+		return true, "category has transactions and cannot be deleted", nil
+	}
+	plans, err := t.HasLivePlannedPaymentsForCategory(ctx, householdID, id)
+	if err != nil {
+		return false, "", err
+	}
+	if plans {
+		return true, "category has planned payments and cannot be deleted", nil
+	}
+	return false, "", nil
 }
 
 func (categoryAdapter) inUseCode() string { return "CATEGORY_IN_USE" }
-func (categoryAdapter) inUseMessage() string {
-	return "category has transactions and cannot be deleted"
-}
