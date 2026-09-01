@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PlusIcon, X } from '@lucide/vue'
+import { PlusIcon } from '@lucide/vue'
 import {
   CATEGORY_ICONS,
   DEFAULT_CATEGORY_ICON,
@@ -10,14 +10,8 @@ import {
 } from '@/entities/category'
 import { useCategories, useCreateCategory } from '@/entities/category'
 import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { notification } from '@/shared/services/notification'
@@ -76,59 +70,56 @@ async function submit() {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-sm" data-testid="new-category-dialog" :show-close-button="false">
-      <DialogHeader class="-mx-6 -mt-6 flex-row items-center justify-between border-b px-6 pb-4 pt-6">
-        <DialogTitle>{{ t('addTransaction.newCategory') }}</DialogTitle>
-        <DialogClose
-          class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+  <ResponsiveDialog
+    v-model:open="open"
+    class="sm:max-w-sm"
+    data-testid="new-category-dialog"
+    close-button-in-header
+    header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+  >
+    <template #title>{{ t('addTransaction.newCategory') }}</template>
+
+    <form id="new-category-form" class="flex flex-col gap-3" @submit.prevent="submit">
+      <Field>
+        <FieldLabel for="new-category-name">{{ t('addTransaction.categoryName') }}</FieldLabel>
+        <Input
+          id="new-category-name"
+          v-model="name"
+          data-testid="new-category-name"
+          :placeholder="t('addTransaction.categoryName')"
+        />
+      </Field>
+      <Field>
+        <FieldLabel>{{ t('addTransaction.categoryIcon') }}</FieldLabel>
+        <!-- Picker tiles are live previews: each emoji on the pastel tint
+             of its own paired color (design-system identity rule). -->
+        <div
+          class="flex flex-wrap gap-2"
+          role="radiogroup"
+          :aria-label="t('addTransaction.categoryIcon')"
         >
-          <X class="size-5" />
-          <span class="sr-only">{{ t('common.close') }}</span>
-        </DialogClose>
-      </DialogHeader>
-      <form id="new-category-form" class="flex flex-col gap-3" @submit.prevent="submit">
-        <Field>
-          <FieldLabel for="new-category-name">{{ t('addTransaction.categoryName') }}</FieldLabel>
-          <Input
-            id="new-category-name"
-            v-model="name"
-            data-testid="new-category-name"
-            :placeholder="t('addTransaction.categoryName')"
-          />
-        </Field>
-        <Field>
-          <FieldLabel>{{ t('addTransaction.categoryIcon') }}</FieldLabel>
-          <!-- Picker tiles are live previews: each emoji on the pastel tint
-               of its own paired color (design-system identity rule). -->
-          <div
-            class="flex flex-wrap gap-2"
-            role="radiogroup"
-            :aria-label="t('addTransaction.categoryIcon')"
+          <button
+            v-for="(option, index) in CATEGORY_ICONS"
+            :key="option.icon"
+            type="button"
+            role="radio"
+            :aria-checked="icon === option.icon"
+            :data-testid="`new-category-icon-${index}`"
+            class="flex size-10 items-center justify-center rounded-full text-lg transition-shadow"
+            :class="icon === option.icon ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''"
+            :style="{ backgroundColor: `color-mix(in srgb, ${option.color} 15%, transparent)` }"
+            @click="icon = option.icon"
           >
-            <button
-              v-for="(option, index) in CATEGORY_ICONS"
-              :key="option.icon"
-              type="button"
-              role="radio"
-              :aria-checked="icon === option.icon"
-              :data-testid="`new-category-icon-${index}`"
-              class="flex size-10 items-center justify-center rounded-full text-lg transition-shadow"
-              :class="icon === option.icon ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''"
-              :style="{ backgroundColor: `color-mix(in srgb, ${option.color} 15%, transparent)` }"
-              @click="icon = option.icon"
-            >
-              {{ option.icon }}
-            </button>
-          </div>
-        </Field>
-        <DialogFooter>
-          <Button type="submit" :loading="asyncStatus === 'loading'" :disabled="!name.trim()">
-            <PlusIcon class="size-4" />
-            {{ t('actions.create') }}
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
+            {{ option.icon }}
+          </button>
+        </div>
+      </Field>
+      <DialogFooter>
+        <Button type="submit" :loading="asyncStatus === 'loading'" :disabled="!name.trim()">
+          <PlusIcon class="size-4" />
+          {{ t('actions.create') }}
+        </Button>
+      </DialogFooter>
+    </form>
+  </ResponsiveDialog>
 </template>

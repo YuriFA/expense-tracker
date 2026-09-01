@@ -6,13 +6,8 @@ import { toTypedSchema } from '@vee-validate/zod'
 import type { Debtor } from '@/entities/debtor'
 import { useDeleteDebtor, useUpdateDebtor } from '@/entities/debtor'
 import { createDebtorSchema, type DebtorFormValues } from '../model/schemas'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,73 +92,71 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-sm" data-testid="debts-debtor-dialog">
-      <DialogHeader class="flex-row items-center justify-between space-y-0">
-        <DialogTitle>{{ t('debts.contact') }}</DialogTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          :aria-label="t('debts.deleteContact')"
-          data-testid="debts-debtor-delete"
-          @click="deleteOpen = true"
-        >
-          <Trash2 class="size-4" />
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-sm" data-testid="debts-debtor-dialog">
+    <template #title>{{ t('debts.contact') }}</template>
+    <template #header-actions>
+      <Button
+        variant="ghost"
+        size="icon"
+        :aria-label="t('debts.deleteContact')"
+        data-testid="debts-debtor-delete"
+        @click="deleteOpen = true"
+      >
+        <Trash2 class="size-4" />
+      </Button>
+    </template>
+
+    <form class="flex flex-col gap-3" @submit="handleSubmit">
+      <VeeField v-slot="{ value, setValue, errors }" name="name">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="debts-debtor-name">{{ t('fields.name') }}</FieldLabel>
+          <Input
+            id="debts-debtor-name"
+            type="text"
+            :placeholder="t('debts.namePlaceholder')"
+            :model-value="value"
+            :aria-invalid="!!errors.length"
+            @update:model-value="setValue"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue }" name="note">
+        <Field>
+          <FieldLabel for="debts-debtor-note">{{ t('fields.description') }}</FieldLabel>
+          <Input
+            id="debts-debtor-note"
+            type="text"
+            :placeholder="t('debts.noteOptionalPlaceholder')"
+            :model-value="value"
+            @update:model-value="setValue"
+          />
+        </Field>
+      </VeeField>
+
+      <DialogFooter class="flex-row">
+        <Button type="submit" class="flex-1" :loading="isSubmitting" data-testid="debts-debtor-submit">
+          {{ t('debts.save') }}
         </Button>
-      </DialogHeader>
+      </DialogFooter>
+    </form>
 
-      <form class="flex flex-col gap-3" @submit="handleSubmit">
-        <VeeField v-slot="{ value, setValue, errors }" name="name">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="debts-debtor-name">{{ t('fields.name') }}</FieldLabel>
-            <Input
-              id="debts-debtor-name"
-              type="text"
-              :placeholder="t('debts.namePlaceholder')"
-              :model-value="value"
-              :aria-invalid="!!errors.length"
-              @update:model-value="setValue"
-            />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue }" name="note">
-          <Field>
-            <FieldLabel for="debts-debtor-note">{{ t('fields.description') }}</FieldLabel>
-            <Input
-              id="debts-debtor-note"
-              type="text"
-              :placeholder="t('debts.noteOptionalPlaceholder')"
-              :model-value="value"
-              @update:model-value="setValue"
-            />
-          </Field>
-        </VeeField>
-
-        <DialogFooter class="flex-row">
-          <Button type="submit" class="flex-1" :loading="isSubmitting" data-testid="debts-debtor-submit">
-            {{ t('debts.save') }}
-          </Button>
-        </DialogFooter>
-      </form>
-
-      <AlertDialog v-model:open="deleteOpen">
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{{ t('debts.deleteContactTitle') }}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {{ t('deleteTransaction.confirmDeleteDescription') }}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{{ t('debts.cancel') }}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" :loading="isDeleting" @click="handleDelete">
-              {{ t('debts.delete') }}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </DialogContent>
-  </Dialog>
+    <AlertDialog v-model:open="deleteOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ t('debts.deleteContactTitle') }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ t('deleteTransaction.confirmDeleteDescription') }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t('debts.cancel') }}</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" :loading="isDeleting" @click="handleDelete">
+            {{ t('debts.delete') }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </ResponsiveDialog>
 </template>

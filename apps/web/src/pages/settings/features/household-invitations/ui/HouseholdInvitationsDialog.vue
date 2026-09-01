@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQueryCache } from '@pinia/colada'
 import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Badge } from '@/shared/ui/badge'
 import {
   getHouseholdErrorMessage,
@@ -79,63 +79,55 @@ function notifyError(error: unknown, action: string): void {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogTrigger as-child>
-      <Button variant="secondary" data-testid="household-invitations-button">
-        {{ t('household.invitationsTitle') }}
-      </Button>
-    </DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{{ t('household.invitationsTitle') }}</DialogTitle>
-      </DialogHeader>
-      <div class="flex flex-col gap-3">
-        <p v-if="isLoading" class="text-sm text-muted-foreground">
-          {{ t('household.loadingInvitations') }}
-        </p>
-        <p v-else-if="!invitations.length" class="text-sm text-muted-foreground">
-          {{ t('household.invitationsEmpty') }}
-        </p>
-        <ul v-else class="flex flex-col gap-3 text-sm">
-          <li
-            v-for="invitation in invitations"
-            :key="invitation.id"
-            class="flex flex-col gap-1 border-b border-b-muted pb-3 last:border-0 last:pb-0"
-            :data-testid="`household-invitation-${invitation.id}`"
-          >
-            <div class="flex items-center gap-2">
-              <span class="flex-1">{{ invitation.email }}</span>
-              <Badge
-                variant="outline"
-                :data-testid="`household-invitation-${invitation.id}-status`"
-              >
-                {{ statusLabel(invitation.status) }}
-              </Badge>
-            </div>
-            <span class="text-xs text-muted-foreground">
-              {{ t('household.invitationExpiresAt', { date: formatExpiry(invitation.expiresAt) }) }}
-            </span>
-            <div v-if="invitation.status === 'pending'" class="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                :data-testid="`household-invitation-${invitation.id}-resend`"
-                @click="handleResend(invitation.email)"
-              >
-                {{ t('household.resendInvitation') }}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                :data-testid="`household-invitation-${invitation.id}-revoke`"
-                @click="handleRevoke(invitation.id)"
-              >
-                {{ t('household.revokeInvitation') }}
-              </Button>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </DialogContent>
-  </Dialog>
+  <Button variant="secondary" data-testid="household-invitations-button" @click="open = true">
+    {{ t('household.invitationsTitle') }}
+  </Button>
+
+  <ResponsiveDialog v-model:open="open">
+    <template #title>{{ t('household.invitationsTitle') }}</template>
+    <div class="flex flex-col gap-3">
+      <p v-if="isLoading" class="text-sm text-muted-foreground">
+        {{ t('household.loadingInvitations') }}
+      </p>
+      <p v-else-if="!invitations.length" class="text-sm text-muted-foreground">
+        {{ t('household.invitationsEmpty') }}
+      </p>
+      <ul v-else class="flex flex-col gap-3 text-sm">
+        <li
+          v-for="invitation in invitations"
+          :key="invitation.id"
+          class="flex flex-col gap-1 border-b border-b-muted pb-3 last:border-0 last:pb-0"
+          :data-testid="`household-invitation-${invitation.id}`"
+        >
+          <div class="flex items-center gap-2">
+            <span class="flex-1">{{ invitation.email }}</span>
+            <Badge variant="outline" :data-testid="`household-invitation-${invitation.id}-status`">
+              {{ statusLabel(invitation.status) }}
+            </Badge>
+          </div>
+          <span class="text-xs text-muted-foreground">
+            {{ t('household.invitationExpiresAt', { date: formatExpiry(invitation.expiresAt) }) }}
+          </span>
+          <div v-if="invitation.status === 'pending'" class="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              :data-testid="`household-invitation-${invitation.id}-resend`"
+              @click="handleResend(invitation.email)"
+            >
+              {{ t('household.resendInvitation') }}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              :data-testid="`household-invitation-${invitation.id}-revoke`"
+              @click="handleRevoke(invitation.id)"
+            >
+              {{ t('household.revokeInvitation') }}
+            </Button>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </ResponsiveDialog>
 </template>

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useForm, Field as VeeField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { getHouseholdApiErrorCode, householdApi } from '@/entities/household'
@@ -53,35 +53,30 @@ const handleSubmit = handleFormSubmit(async (data) => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogTrigger as-child>
-      <Button variant="secondary" data-testid="household-join-code-button">
-        {{ t('household.joinByCode') }}
+  <Button variant="secondary" data-testid="household-join-code-button" @click="open = true">
+    {{ t('household.joinByCode') }}
+  </Button>
+
+  <ResponsiveDialog v-model:open="open">
+    <template #title>{{ t('household.joinByCodeTitle') }}</template>
+    <form id="join-household-form" class="flex flex-col gap-3" @submit="handleSubmit">
+      <VeeField v-slot="{ field, errors }" name="code">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="household-code">{{ t('household.codeLabel') }}</FieldLabel>
+          <Input
+            id="household-code"
+            :placeholder="t('household.codePlaceholder')"
+            autocomplete="off"
+            class="uppercase"
+            v-bind="field"
+            :aria-invalid="!!errors.length"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+      <Button form="join-household-form" type="submit" :loading="isSubmitting">
+        {{ t('household.join') }}
       </Button>
-    </DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{{ t('household.joinByCodeTitle') }}</DialogTitle>
-      </DialogHeader>
-      <form id="join-household-form" class="flex flex-col gap-3" @submit="handleSubmit">
-        <VeeField v-slot="{ field, errors }" name="code">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="household-code">{{ t('household.codeLabel') }}</FieldLabel>
-            <Input
-              id="household-code"
-              :placeholder="t('household.codePlaceholder')"
-              autocomplete="off"
-              class="uppercase"
-              v-bind="field"
-              :aria-invalid="!!errors.length"
-            />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
-        <Button form="join-household-form" type="submit" :loading="isSubmitting">
-          {{ t('household.join') }}
-        </Button>
-      </form>
-    </DialogContent>
-  </Dialog>
+    </form>
+  </ResponsiveDialog>
 </template>

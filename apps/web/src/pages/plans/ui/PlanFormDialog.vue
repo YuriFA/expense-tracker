@@ -13,13 +13,8 @@ import {
 import { AccountSelect } from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
 import { createPlanSchema, type PlanFormValues } from '../model/plan-schema'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -177,170 +172,172 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-md" data-testid="plans-form-dialog">
-      <DialogHeader class="flex-row items-center justify-between space-y-0">
-        <DialogTitle>{{ dialogTitle }}</DialogTitle>
-        <Button
-          v-if="isEdit"
-          variant="ghost"
-          size="icon"
-          :aria-label="t('plans.deletePlan')"
-          data-testid="plans-form-delete"
-          @click="deleteOpen = true"
-        >
-          <Trash2 class="size-4" />
+  <ResponsiveDialog
+    v-model:open="open"
+    class="max-h-[85vh] overflow-y-auto sm:max-w-md"
+    data-testid="plans-form-dialog"
+  >
+    <template #title>{{ dialogTitle }}</template>
+    <template #header-actions>
+      <Button
+        v-if="isEdit"
+        variant="ghost"
+        size="icon"
+        :aria-label="t('plans.deletePlan')"
+        data-testid="plans-form-delete"
+        @click="deleteOpen = true"
+      >
+        <Trash2 class="size-4" />
+      </Button>
+    </template>
+
+    <form class="flex flex-col gap-3" @submit="handleSubmit">
+      <VeeField v-slot="{ value, setValue, errors }" name="amount">
+        <AmountField
+          class="w-full"
+          :currency="displayCurrency"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="(v) => setValue(v as number)"
+        />
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue }" name="name">
+        <Field>
+          <FieldLabel for="plans-form-name">{{ t('fields.name') }}</FieldLabel>
+          <Input
+            id="plans-form-name"
+            type="text"
+            :placeholder="t('plans.namePlaceholder')"
+            :model-value="value"
+            @update:model-value="setValue"
+          />
+        </Field>
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue, errors }" name="accountId">
+        <AccountSelect
+          input-id="plans-form-account"
+          :label="accountLabel"
+          :placeholder="t('addTransaction.accountPlaceholder')"
+          class="w-full"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="setValue"
+        />
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
+        <CategorySelect
+          input-id="plans-form-category"
+          :label="t('fields.category')"
+          :placeholder="t('addTransaction.categoryPlaceholder')"
+          :type="type"
+          class="w-full"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="setValue"
+        />
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue, errors }" name="nextDue">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="plans-form-date">{{ t('fields.date') }}</FieldLabel>
+          <Input
+            id="plans-form-date"
+            type="date"
+            :model-value="value"
+            :aria-invalid="!!errors.length"
+            @update:model-value="setValue"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue, errors }" name="regularity">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="plans-form-regularity">{{ t('plans.regularity') }}</FieldLabel>
+          <NativeSelect
+            id="plans-form-regularity"
+            :model-value="value"
+            class="w-full"
+            @update:model-value="(option) => setValue(option as PlanFormValues['regularity'])"
+          >
+            <NativeSelectOption v-for="option in regularityOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </NativeSelectOption>
+          </NativeSelect>
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue }" name="confirmMode">
+        <Field>
+          <FieldLabel for="plans-form-confirm-mode">{{ t('plans.confirmMode') }}</FieldLabel>
+          <NativeSelect
+            id="plans-form-confirm-mode"
+            :model-value="value"
+            class="w-full"
+            @update:model-value="(option) => setValue(option as PlanFormValues['confirmMode'])"
+          >
+            <NativeSelectOption v-for="option in confirmModeOptions" :key="option.value" :value="option.value">
+              {{ t('plans.confirmModeOption', { label: option.label, caption: option.caption }) }}
+            </NativeSelectOption>
+          </NativeSelect>
+        </Field>
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue }" name="reminder">
+        <Field>
+          <FieldLabel for="plans-form-reminder">{{ t('plans.reminder') }}</FieldLabel>
+          <NativeSelect
+            id="plans-form-reminder"
+            :model-value="value"
+            class="w-full"
+            @update:model-value="(option) => setValue(option as PlanFormValues['reminder'])"
+          >
+            <NativeSelectOption v-for="option in reminderOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </NativeSelectOption>
+          </NativeSelect>
+        </Field>
+      </VeeField>
+
+      <VeeField v-slot="{ value, setValue }" name="note">
+        <Field>
+          <FieldLabel for="plans-form-note">{{ t('fields.description') }}</FieldLabel>
+          <Input
+            id="plans-form-note"
+            type="text"
+            :placeholder="t('plans.notePlaceholder')"
+            :model-value="value"
+            @update:model-value="setValue"
+          />
+        </Field>
+      </VeeField>
+
+      <DialogFooter class="flex-row">
+        <Button type="submit" class="w-full" :loading="isSubmitting" data-testid="plans-form-submit">
+          {{ t('plans.save') }}
         </Button>
-      </DialogHeader>
+      </DialogFooter>
+    </form>
 
-      <form class="flex flex-col gap-3" @submit="handleSubmit">
-        <VeeField v-slot="{ value, setValue, errors }" name="amount">
-          <AmountField
-            class="w-full"
-            :currency="displayCurrency"
-            :model-value="value"
-            :errors="errors"
-            @update:model-value="(v) => setValue(v as number)"
-          />
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue }" name="name">
-          <Field>
-            <FieldLabel for="plans-form-name">{{ t('fields.name') }}</FieldLabel>
-            <Input
-              id="plans-form-name"
-              type="text"
-              :placeholder="t('plans.namePlaceholder')"
-              :model-value="value"
-              @update:model-value="setValue"
-            />
-          </Field>
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue, errors }" name="accountId">
-          <AccountSelect
-            input-id="plans-form-account"
-            :label="accountLabel"
-            :placeholder="t('addTransaction.accountPlaceholder')"
-            class="w-full"
-            :model-value="value"
-            :errors="errors"
-            @update:model-value="setValue"
-          />
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
-          <CategorySelect
-            input-id="plans-form-category"
-            :label="t('fields.category')"
-            :placeholder="t('addTransaction.categoryPlaceholder')"
-            :type="type"
-            class="w-full"
-            :model-value="value"
-            :errors="errors"
-            @update:model-value="setValue"
-          />
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue, errors }" name="nextDue">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="plans-form-date">{{ t('fields.date') }}</FieldLabel>
-            <Input
-              id="plans-form-date"
-              type="date"
-              :model-value="value"
-              :aria-invalid="!!errors.length"
-              @update:model-value="setValue"
-            />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue, errors }" name="regularity">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="plans-form-regularity">{{ t('plans.regularity') }}</FieldLabel>
-            <NativeSelect
-              id="plans-form-regularity"
-              :model-value="value"
-              class="w-full"
-              @update:model-value="(option) => setValue(option as PlanFormValues['regularity'])"
-            >
-              <NativeSelectOption v-for="option in regularityOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </NativeSelectOption>
-            </NativeSelect>
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue }" name="confirmMode">
-          <Field>
-            <FieldLabel for="plans-form-confirm-mode">{{ t('plans.confirmMode') }}</FieldLabel>
-            <NativeSelect
-              id="plans-form-confirm-mode"
-              :model-value="value"
-              class="w-full"
-              @update:model-value="(option) => setValue(option as PlanFormValues['confirmMode'])"
-            >
-              <NativeSelectOption v-for="option in confirmModeOptions" :key="option.value" :value="option.value">
-                {{ t('plans.confirmModeOption', { label: option.label, caption: option.caption }) }}
-              </NativeSelectOption>
-            </NativeSelect>
-          </Field>
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue }" name="reminder">
-          <Field>
-            <FieldLabel for="plans-form-reminder">{{ t('plans.reminder') }}</FieldLabel>
-            <NativeSelect
-              id="plans-form-reminder"
-              :model-value="value"
-              class="w-full"
-              @update:model-value="(option) => setValue(option as PlanFormValues['reminder'])"
-            >
-              <NativeSelectOption v-for="option in reminderOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </NativeSelectOption>
-            </NativeSelect>
-          </Field>
-        </VeeField>
-
-        <VeeField v-slot="{ value, setValue }" name="note">
-          <Field>
-            <FieldLabel for="plans-form-note">{{ t('fields.description') }}</FieldLabel>
-            <Input
-              id="plans-form-note"
-              type="text"
-              :placeholder="t('plans.notePlaceholder')"
-              :model-value="value"
-              @update:model-value="setValue"
-            />
-          </Field>
-        </VeeField>
-
-        <DialogFooter class="flex-row">
-          <Button type="submit" class="w-full" :loading="isSubmitting" data-testid="plans-form-submit">
-            {{ t('plans.save') }}
-          </Button>
-        </DialogFooter>
-      </form>
-
-      <AlertDialog v-model:open="deleteOpen">
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{{ t('plans.deleteTitle') }}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {{ t('deleteTransaction.confirmDeleteDescription') }}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{{ t('plans.cancel') }}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" :loading="isDeleting" @click="handleDelete">
-              {{ t('plans.delete') }}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </DialogContent>
-  </Dialog>
+    <AlertDialog v-model:open="deleteOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ t('plans.deleteTitle') }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ t('deleteTransaction.confirmDeleteDescription') }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t('plans.cancel') }}</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" :loading="isDeleting" @click="handleDelete">
+            {{ t('plans.delete') }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </ResponsiveDialog>
 </template>

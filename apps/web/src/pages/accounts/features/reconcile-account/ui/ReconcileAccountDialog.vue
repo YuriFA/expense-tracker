@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { useI18n } from 'vue-i18n'
 import type { AccountWithBalance } from '@/entities/account'
 import ReconcileAccountForm from './ReconcileAccountForm.vue'
@@ -17,12 +17,8 @@ const handleSuccess = () => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{{ t('reconcileAccount.title', { name: account.name }) }}</DialogTitle>
-      </DialogHeader>
-      <ReconcileAccountForm :account @success="handleSuccess" />
-    </DialogContent>
-  </Dialog>
+  <ResponsiveDialog v-model:open="open">
+    <template #title>{{ t('reconcileAccount.title', { name: account.name }) }}</template>
+    <ReconcileAccountForm :account @success="handleSuccess" />
+  </ResponsiveDialog>
 </template>

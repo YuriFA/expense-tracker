@@ -15,12 +15,7 @@ import type { AnalyticsDirection } from '@/entities/analytics'
 import { useTransactions } from '@/entities/transaction'
 import { EditTransactionDialog } from '@/features/transaction/edit'
 import { DeleteTransactionDialog } from '@/features/transaction/delete'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { ChevronLeft, ChevronRight, Trash2 } from '@lucide/vue'
@@ -28,8 +23,8 @@ import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 
 // Category drill-down (analytics capability): the selected category's
 // transactions for the detail screen's period, with the period navigable
-// inside the sheet - a web dialog instead of the mobile bottom sheet
-// (web-screens-parity design D1).
+// inside the overlay. The shared responsive-dialog keeps the centered desktop
+// dialog and switches to the mobile drawer presentation below 768px.
 
 const props = defineProps<{
   category: Category
@@ -128,95 +123,91 @@ const openDelete = (transaction: Transaction) => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-md" data-testid="category-cashflow-dialog">
-      <DialogHeader>
-        <DialogTitle>{{ category.name || t('analytics.category') }}</DialogTitle>
-      </DialogHeader>
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-md" data-testid="category-cashflow-dialog">
+    <template #title>{{ category.name || t('analytics.category') }}</template>
 
-      <div class="flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          :aria-label="t('analytics.prevPeriod')"
-          data-testid="category-cashflow-prev"
-          @click="stepPeriod(-1)"
-        >
-          <ChevronLeft class="size-4" />
-        </Button>
-        <div class="text-center">
-          <p class="text-sm font-medium" data-testid="category-cashflow-range">
-            {{ rangeLabel }}
-          </p>
-          <p class="text-xs text-muted-foreground">
-            {{ totalText }} {{ totalWord }}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="icon"
-          :aria-label="t('analytics.nextPeriod')"
-          data-testid="category-cashflow-next"
-          @click="stepPeriod(1)"
-        >
-          <ChevronRight class="size-4" />
-        </Button>
-      </div>
-
+    <div class="flex items-center justify-between gap-2">
       <Button
-        variant="ghost"
-        size="sm"
-        class="self-start text-muted-foreground"
-        data-testid="category-cashflow-sort"
-        @click="newestFirst = !newestFirst"
+        variant="outline"
+        size="icon"
+        :aria-label="t('analytics.prevPeriod')"
+        data-testid="category-cashflow-prev"
+        @click="stepPeriod(-1)"
       >
-        {{ newestFirst ? t('analytics.sortNewestFirst') : t('analytics.sortOldestFirst') }}
+        <ChevronLeft class="size-4" />
       </Button>
+      <div class="text-center">
+        <p class="text-sm font-medium" data-testid="category-cashflow-range">
+          {{ rangeLabel }}
+        </p>
+        <p class="text-xs text-muted-foreground">
+          {{ totalText }} {{ totalWord }}
+        </p>
+      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        :aria-label="t('analytics.nextPeriod')"
+        data-testid="category-cashflow-next"
+        @click="stepPeriod(1)"
+      >
+        <ChevronRight class="size-4" />
+      </Button>
+    </div>
 
-      <div class="max-h-80 space-y-4 overflow-y-auto">
-        <EmptyState v-if="groups.length === 0" :title="emptyText" />
-        <div v-for="group in groups" :key="group.key" :data-testid="`category-cashflow-day-${group.key}`">
-          <p class="text-xs font-medium uppercase text-muted-foreground">{{ group.title }}</p>
-          <div class="mt-1 space-y-1">
-            <div
-              v-for="transaction in group.transactions"
-              :key="transaction.id"
-              class="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/70"
-              :data-testid="`category-cashflow-tx-${transaction.id}`"
+    <Button
+      variant="ghost"
+      size="sm"
+      class="self-start text-muted-foreground"
+      data-testid="category-cashflow-sort"
+      @click="newestFirst = !newestFirst"
+    >
+      {{ newestFirst ? t('analytics.sortNewestFirst') : t('analytics.sortOldestFirst') }}
+    </Button>
+
+    <div class="max-h-80 space-y-4 overflow-y-auto">
+      <EmptyState v-if="groups.length === 0" :title="emptyText" />
+      <div v-for="group in groups" :key="group.key" :data-testid="`category-cashflow-day-${group.key}`">
+        <p class="text-xs font-medium uppercase text-muted-foreground">{{ group.title }}</p>
+        <div class="mt-1 space-y-1">
+          <div
+            v-for="transaction in group.transactions"
+            :key="transaction.id"
+            class="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/70"
+            :data-testid="`category-cashflow-tx-${transaction.id}`"
+          >
+            <button
+              type="button"
+              class="min-w-0 flex-1 truncate text-left text-sm"
+              :aria-label="`${t('editTransaction.trigger')}: ${transaction.description || category.name}`"
+              @click="openEdit(transaction)"
             >
-              <button
-                type="button"
-                class="min-w-0 flex-1 truncate text-left text-sm"
-                :aria-label="`${t('editTransaction.trigger')}: ${transaction.description || category.name}`"
-                @click="openEdit(transaction)"
-              >
-                {{ transaction.description || category.name }}
-              </button>
-              <span class="text-sm font-medium">{{ formatMoney(transaction.amount, displayCurrency, locale) }}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="size-7"
-                :aria-label="t('deleteTransaction.trigger')"
-                @click="openDelete(transaction)"
-              >
-                <Trash2 class="size-4" />
-              </Button>
-            </div>
+              {{ transaction.description || category.name }}
+            </button>
+            <span class="text-sm font-medium">{{ formatMoney(transaction.amount, displayCurrency, locale) }}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-7"
+              :aria-label="t('deleteTransaction.trigger')"
+              @click="openDelete(transaction)"
+            >
+              <Trash2 class="size-4" />
+            </Button>
           </div>
         </div>
       </div>
+    </div>
 
-      <EditTransactionDialog
-        v-if="activeTransaction"
-        v-model:open="editOpen"
-        :transaction="activeTransaction"
-      />
-      <DeleteTransactionDialog
-        v-if="pendingDeleteId"
-        v-model:open="deleteOpen"
-        :transaction-id="pendingDeleteId"
-      />
-    </DialogContent>
-  </Dialog>
+    <EditTransactionDialog
+      v-if="activeTransaction"
+      v-model:open="editOpen"
+      :transaction="activeTransaction"
+    />
+    <DeleteTransactionDialog
+      v-if="pendingDeleteId"
+      v-model:open="deleteOpen"
+      :transaction-id="pendingDeleteId"
+    />
+  </ResponsiveDialog>
 </template>

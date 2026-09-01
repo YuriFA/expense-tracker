@@ -17,13 +17,8 @@ import {
   createOperationSchema,
   type OperationFormValues,
 } from '../model/schemas'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -175,130 +170,126 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-sm" data-testid="debts-operation-dialog">
-      <DialogHeader>
-        <DialogTitle>{{ isEdit ? t('debts.operation') : t('debts.newOperation') }}</DialogTitle>
-        <p class="text-sm text-muted-foreground">{{ debtor.name }}</p>
-      </DialogHeader>
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-sm" data-testid="debts-operation-dialog">
+    <template #title>{{ isEdit ? t('debts.operation') : t('debts.newOperation') }}</template>
+    <template #description>{{ debtor.name }}</template>
 
-      <form class="flex flex-col gap-3" @submit="handleSubmit">
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <p class="text-muted-foreground">{{ t('debts.contact') }}</p>
-            <p class="font-medium">{{ debtor.name }}</p>
-          </div>
-          <div>
-            <p class="text-muted-foreground">{{ t('debts.direction') }}</p>
-            <p class="font-medium">{{ directionLabel }}</p>
-          </div>
+    <form class="flex flex-col gap-3" @submit="handleSubmit">
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <p class="text-muted-foreground">{{ t('debts.contact') }}</p>
+          <p class="font-medium">{{ debtor.name }}</p>
         </div>
-
-        <div v-if="!isEdit" class="flex gap-2" data-testid="debts-operation-kind">
-          <Button
-            type="button"
-            :variant="kindValue === 'debt' ? 'default' : 'outline'"
-            class="flex-1"
-            :aria-pressed="kindValue === 'debt'"
-            @click="setKind('debt')"
-          >
-            {{ t('debts.debt') }}
-          </Button>
-          <Button
-            type="button"
-            :variant="kindValue === 'repayment' ? 'default' : 'outline'"
-            class="flex-1"
-            :aria-pressed="kindValue === 'repayment'"
-            @click="setKind('repayment')"
-          >
-            {{ t('debts.repayment') }}
-          </Button>
+        <div>
+          <p class="text-muted-foreground">{{ t('debts.direction') }}</p>
+          <p class="font-medium">{{ directionLabel }}</p>
         </div>
-        <div v-else class="text-sm">
-          <p class="text-muted-foreground">{{ t('fields.transactionType') }}</p>
-          <p class="font-medium">
-            {{ operation!.kind === 'debt' ? t('debts.debt') : t('debts.repayment') }}
-          </p>
-        </div>
+      </div>
 
-        <VeeField v-slot="{ value, setValue, errors }" name="amount">
-          <AmountField
-            class="w-full"
-            :currency="displayCurrency"
-            :model-value="value"
-            :errors="errors"
-            @update:model-value="(v) => setValue(v as number)"
-          />
-        </VeeField>
-
-        <p
-          v-if="overRepayment"
-          class="text-xs text-[var(--warning)]"
-          data-testid="debts-operation-over-repayment"
+      <div v-if="!isEdit" class="flex gap-2" data-testid="debts-operation-kind">
+        <Button
+          type="button"
+          :variant="kindValue === 'debt' ? 'default' : 'outline'"
+          class="flex-1"
+          :aria-pressed="kindValue === 'debt'"
+          @click="setKind('debt')"
         >
-          {{ overRepayment }}
+          {{ t('debts.debt') }}
+        </Button>
+        <Button
+          type="button"
+          :variant="kindValue === 'repayment' ? 'default' : 'outline'"
+          class="flex-1"
+          :aria-pressed="kindValue === 'repayment'"
+          @click="setKind('repayment')"
+        >
+          {{ t('debts.repayment') }}
+        </Button>
+      </div>
+      <div v-else class="text-sm">
+        <p class="text-muted-foreground">{{ t('fields.transactionType') }}</p>
+        <p class="font-medium">
+          {{ operation!.kind === 'debt' ? t('debts.debt') : t('debts.repayment') }}
         </p>
+      </div>
 
-        <VeeField v-slot="{ value, setValue, errors }" name="occurredAt">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel for="debts-operation-date">{{ t('fields.date') }}</FieldLabel>
-            <Input
-              id="debts-operation-date"
-              type="date"
-              :model-value="value"
-              :aria-invalid="!!errors.length"
-              @update:model-value="setValue"
-            />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
+      <VeeField v-slot="{ value, setValue, errors }" name="amount">
+        <AmountField
+          class="w-full"
+          :currency="displayCurrency"
+          :model-value="value"
+          :errors="errors"
+          @update:model-value="(v) => setValue(v as number)"
+        />
+      </VeeField>
 
-        <VeeField v-slot="{ value, setValue }" name="note">
-          <Field>
-            <FieldLabel for="debts-operation-note">{{ t('fields.description') }}</FieldLabel>
-            <Input
-              id="debts-operation-note"
-              type="text"
-              :placeholder="t('debts.notePlaceholder')"
-              :model-value="value"
-              @update:model-value="setValue"
-            />
-          </Field>
-        </VeeField>
+      <p
+        v-if="overRepayment"
+        class="text-xs text-[var(--warning)]"
+        data-testid="debts-operation-over-repayment"
+      >
+        {{ overRepayment }}
+      </p>
 
-        <DialogFooter class="flex-row gap-2">
-          <Button
-            v-if="isEdit"
-            type="button"
-            variant="outline"
-            :aria-label="t('debts.deleteOperation')"
-            data-testid="debts-operation-delete"
-            @click="deleteOpen = true"
-          >
-            <Trash2 class="size-4" />
-          </Button>
-          <Button type="submit" class="flex-1" :loading="isSubmitting" data-testid="debts-operation-submit">
-            {{ isEdit ? t('debts.saveOperation') : t('debts.addOperation') }}
-          </Button>
-        </DialogFooter>
-      </form>
+      <VeeField v-slot="{ value, setValue, errors }" name="occurredAt">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="debts-operation-date">{{ t('fields.date') }}</FieldLabel>
+          <Input
+            id="debts-operation-date"
+            type="date"
+            :model-value="value"
+            :aria-invalid="!!errors.length"
+            @update:model-value="setValue"
+          />
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
 
-      <AlertDialog v-model:open="deleteOpen">
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{{ t('debts.deleteOperationTitle') }}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {{ t('deleteTransaction.confirmDeleteDescription') }}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{{ t('debts.cancel') }}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" :loading="isDeleting" @click="handleDelete">
-              {{ t('debts.delete') }}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </DialogContent>
-  </Dialog>
+      <VeeField v-slot="{ value, setValue }" name="note">
+        <Field>
+          <FieldLabel for="debts-operation-note">{{ t('fields.description') }}</FieldLabel>
+          <Input
+            id="debts-operation-note"
+            type="text"
+            :placeholder="t('debts.notePlaceholder')"
+            :model-value="value"
+            @update:model-value="setValue"
+          />
+        </Field>
+      </VeeField>
+
+      <DialogFooter class="flex-row gap-2">
+        <Button
+          v-if="isEdit"
+          type="button"
+          variant="outline"
+          :aria-label="t('debts.deleteOperation')"
+          data-testid="debts-operation-delete"
+          @click="deleteOpen = true"
+        >
+          <Trash2 class="size-4" />
+        </Button>
+        <Button type="submit" class="flex-1" :loading="isSubmitting" data-testid="debts-operation-submit">
+          {{ isEdit ? t('debts.saveOperation') : t('debts.addOperation') }}
+        </Button>
+      </DialogFooter>
+    </form>
+
+    <AlertDialog v-model:open="deleteOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ t('debts.deleteOperationTitle') }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ t('deleteTransaction.confirmDeleteDescription') }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t('debts.cancel') }}</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" :loading="isDeleting" @click="handleDelete">
+            {{ t('debts.delete') }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </ResponsiveDialog>
 </template>
