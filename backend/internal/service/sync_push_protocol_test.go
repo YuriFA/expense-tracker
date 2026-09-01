@@ -636,3 +636,168 @@ func TestSyncPush_DebtOperationProtocol(t *testing.T) {
 		assert.Equal(t, deleted.Version, again.Version)
 	})
 }
+
+func TestSyncPush_TransactionProtocol(t *testing.T) {
+	t.Parallel()
+
+	seedRefs := func(t *testing.T, syncSvc *service.SyncService, householdID, userID uuid.UUID) (uuid.UUID, uuid.UUID) {
+		t.Helper()
+		accountID, categoryID := uuid.New(), uuid.New()
+		for _, op := range []domain.SyncOperation{
+			upsertOp(domain.SyncEntityAccount, uuid.New(), accountID, 0,
+				&domain.AccountFullState{Name: "Карта", Currency: "RUB"}),
+			upsertOp(domain.SyncEntityCategory, uuid.New(), categoryID, 0,
+				&domain.CategoryFullState{Name: "Продукты", Type: domain.TransactionTypeExpense}),
+		} {
+			require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, userID, op).Status)
+		}
+		return accountID, categoryID
+	}
+
+	t.Run("cashflow create with valid refs applies at version 1", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID := seedRefs(t, syncSvc, householdID, user.ID)
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), uuid.New(), 0,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 250, Description: "хлеб",
+					OccurredAt: time.Now().UTC(), AccountID: &accountID, CategoryID: &categoryID,
+				}))
+		assert.Equal(t, domain.SyncStatusApplied, res.Status)
+		assert.Equal(t, 1, res.Version)
+	})
+
+	t.Run("shape and reference violations are per-item errors", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID := seedRefs(t, syncSvc, householdID, user.ID)
+		otherAccount := uuid.New()
+		require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityAccount, uuid.New(), otherAccount, 0,
+				&domain.AccountFullState{Name: "Наличные", Currency: "RUB"})).Status)
+
+		cases := []struct {
+			name string
+			code string
+			data *domain.TransactionFullState
+		}{
+			{"zero amount", "INVALID_AMOUNT", &domain.TransactionFullState{
+				Type: domain.TransactionTypeExpense, Amount: 0, OccurredAt: time.Now().UTC(),
+				AccountID: &accountID, CategoryID: &categoryID}},
+			{"unknown type", "VALIDATION_FAILED", &domain.TransactionFullState{
+				Type: domain.TransactionType("barter"), Amount: 5, OccurredAt: time.Now().UTC(),
+				AccountID: &accountID, CategoryID: &categoryID}},
+			{"expense with transfer refs", "INVALID_REFS", &domain.TransactionFullState{
+				Type: domain.TransactionTypeExpense, Amount: 5, OccurredAt: time.Now().UTC(),
+				FromAccountID: &accountID, ToAccountID: &otherAccount}},
+			{"unknown account", "ACCOUNT_NOT_FOUND", &domain.TransactionFullState{
+				Type: domain.TransactionTypeExpense, Amount: 5, OccurredAt: time.Now().UTC(),
+				AccountID: &uuid.UUID{}, CategoryID: &categoryID}},
+			{"unknown category", "CATEGORY_NOT_FOUND", &domain.TransactionFullState{
+				Type: domain.TransactionTypeExpense, Amount: 5, OccurredAt: time.Now().UTC(),
+				AccountID: &accountID, CategoryID: &uuid.UUID{}}},
+			{"category type mismatch", "CATEGORY_TYPE_MISMATCH", &domain.TransactionFullState{
+				Type: domain.TransactionTypeIncome, Amount: 5, OccurredAt: time.Now().UTC(),
+				AccountID: &accountID, CategoryID: &categoryID}},
+			{"same-account transfer", "SAME_ACCOUNT_TRANSFER", &domain.TransactionFullState{
+				Type: domain.TransactionTypeTransfer, Amount: 5, OccurredAt: time.Now().UTC(),
+				FromAccountID: &accountID, ToAccountID: &accountID}},
+			{"adjustment with category", "INVALID_REFS", &domain.TransactionFullState{
+				Type: domain.TransactionTypeAdjustment, Amount: 5, OccurredAt: time.Now().UTC(),
+				AccountID: &accountID, CategoryID: &categoryID}},
+		}
+		for _, tc := range cases {
+			res := pushOne(t, syncSvc, householdID, user.ID,
+				upsertOp(domain.SyncEntityTransaction, uuid.New(), uuid.New(), 0, tc.data))
+			assert.Equal(t, domain.SyncStatusError, res.Status, tc.name)
+			assert.Equal(t, tc.code, res.Code, tc.name)
+		}
+	})
+
+	t.Run("update on the current base applies, unknown id conflicts with the zero state", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID := seedRefs(t, syncSvc, householdID, user.ID)
+		recordID := uuid.New()
+		created := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), recordID, 0,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 250, Description: "хлеб",
+					OccurredAt: time.Now().UTC(), AccountID: &accountID, CategoryID: &categoryID,
+				}))
+		require.Equal(t, domain.SyncStatusApplied, created.Status)
+
+		updated := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), recordID, 1,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 300, Description: "хлеб и молоко",
+					OccurredAt: time.Now().UTC(), AccountID: &accountID, CategoryID: &categoryID,
+				}))
+		assert.Equal(t, domain.SyncStatusApplied, updated.Status)
+		assert.Equal(t, 2, updated.Version)
+
+		unknown := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), uuid.New(), 3,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeAdjustment, Amount: 5,
+					OccurredAt: time.Now().UTC(), AccountID: &accountID,
+				}))
+		assert.Equal(t, domain.SyncStatusConflict, unknown.Status)
+		assert.Equal(t, domain.SyncCodeVersionConflict, unknown.Code)
+		require.NotNil(t, unknown.ServerState)
+		assert.Equal(t, 0, unknown.ServerState.Version)
+	})
+
+	t.Run("a type change outranks the version conflict on a stale base", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID := seedRefs(t, syncSvc, householdID, user.ID)
+		recordID := uuid.New()
+		for _, base := range []int{0, 1} {
+			created := pushOne(t, syncSvc, householdID, user.ID,
+				upsertOp(domain.SyncEntityTransaction, uuid.New(), recordID, base,
+					&domain.TransactionFullState{
+						Type: domain.TransactionTypeExpense, Amount: 250,
+						OccurredAt: time.Now().UTC(), AccountID: &accountID, CategoryID: &categoryID,
+					}))
+			require.Equal(t, domain.SyncStatusApplied, created.Status)
+		}
+
+		// Stale base (server is at v2) AND the type changed: the immutability
+		// error fires before the version conflict.
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), recordID, 1,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeAdjustment, Amount: 250,
+					OccurredAt: time.Now().UTC(), AccountID: &accountID,
+				}))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "VALIDATION_FAILED", res.Code)
+		assert.Equal(t, "transaction type is immutable", res.Message)
+	})
+
+	t.Run("delete tombstones unconditionally and repeats idempotently", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, _ := seedRefs(t, syncSvc, householdID, user.ID)
+		recordID := uuid.New()
+		created := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), recordID, 0,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeAdjustment, Amount: 250,
+					OccurredAt: time.Now().UTC(), AccountID: &accountID,
+				}))
+		require.Equal(t, domain.SyncStatusApplied, created.Status)
+
+		deleted := pushOne(t, syncSvc, householdID, user.ID,
+			deleteOp(domain.SyncEntityTransaction, uuid.New(), recordID))
+		assert.Equal(t, domain.SyncStatusApplied, deleted.Status, "no in-use guard on transactions")
+		assert.Equal(t, 2, deleted.Version)
+
+		again := pushOne(t, syncSvc, householdID, user.ID,
+			deleteOp(domain.SyncEntityTransaction, uuid.New(), recordID))
+		assert.Equal(t, domain.SyncStatusApplied, again.Status)
+		assert.Equal(t, deleted.Version, again.Version)
+	})
+}
