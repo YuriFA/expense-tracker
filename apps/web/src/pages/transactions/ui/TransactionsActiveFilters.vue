@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getTransactionsOptions } from '@/entities/transaction'
+import { getTransactionTypeOptions } from '@/entities/transaction'
 import { useAccounts } from '@/entities/account'
 import { useTransactionsFilters } from '../model/use-transactions-filters'
 import { computed } from 'vue'
@@ -10,7 +10,7 @@ import { useCategories } from '@/entities/category'
 const { filters, removeFilter, toggleIdFilter } = useTransactionsFilters()
 const { data: accounts } = useAccounts()
 const { data: categories } = useCategories()
-const transactionOptions = getTransactionsOptions()
+const transactionOptions = getTransactionTypeOptions()
 const { t } = useI18n()
 
 const activeFilters = computed(() => {

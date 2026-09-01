@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { getTransactionsOptions } from '@/entities/transaction'
+import { getAddTransactionTypeOptions } from '@/entities/transaction'
 import type { AddTransactionType } from '../model/add-transaction-dialog'
 import CashflowForm from './CashflowForm.vue'
 import TransferForm from './TransferForm.vue'
@@ -15,7 +15,7 @@ defineEmits<{
   success: []
 }>()
 
-const transactionTypes = getTransactionsOptions()
+const transactionTypes = getAddTransactionTypeOptions()
 </script>
 
 <template>

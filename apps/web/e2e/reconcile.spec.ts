@@ -66,6 +66,21 @@ test('reconciling a higher actual balance records a positive adjustment', async 
   await expect(page.getByRole('listitem').filter({ hasText: 'Wallet' })).toContainText('₽25.00')
 })
 
+test('the generic add-transaction flow offers no adjustment tab', async ({ page }) => {
+  await page.goto('/transactions')
+
+  // Unified flow (web-unified-transaction-entry): the sidebar CTA opens the
+  // tabbed creation dialog.
+  await page.getByTestId('sidebar-add-operation').click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  // web-screens spec: the reconcile dialog is the only creation surface for
+  // adjustments; the generic flow offers expense/income/transfer only.
+  await expect(dialog.getByRole('tab')).toHaveCount(3)
+  await expect(dialog.getByRole('tab', { name: 'Adjustment' })).toHaveCount(0)
+})
+
 test('adjustment is visible in history, filterable, and editable', async ({ page }) => {
   await seedAccount(page, 'Cash', '50')
 

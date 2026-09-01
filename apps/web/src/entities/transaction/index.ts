@@ -13,7 +13,10 @@ export {
   useUpdateTransaction,
   useDeleteTransaction,
 } from './model/use-transactions'
-export { getTransactionsOptions } from './model/constants'
+export {
+  getTransactionTypeOptions,
+  getAddTransactionTypeOptions,
+} from './model/constants'
 export {
   isTransferTransaction,
   isAdjustmentTransaction,

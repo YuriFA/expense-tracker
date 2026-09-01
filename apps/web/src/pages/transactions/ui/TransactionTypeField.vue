@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
-import { getTransactionsOptions } from '@/entities/transaction'
+import { getTransactionTypeOptions } from '@/entities/transaction'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
@@ -17,7 +17,7 @@ defineProps<{
 
 const modelValue = defineModel<'expense' | 'income' | 'transfer' | 'adjustment' | undefined>()
 
-const transactionOptions = getTransactionsOptions()
+const transactionOptions = getTransactionTypeOptions()
 const { t } = useI18n()
 </script>
 
