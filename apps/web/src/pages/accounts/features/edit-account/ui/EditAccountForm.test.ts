@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { nextTick } from 'vue'
 import EditAccountForm from './EditAccountForm.vue'
 import type { Account } from '@/entities/account'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
