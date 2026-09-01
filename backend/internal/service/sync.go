@@ -161,7 +161,7 @@ func applySyncOperation(
 // conflict result. The zero result means "free to create".
 func adoptOrphanedOrConflict(
 	ctx context.Context,
-	t repository.SyncTx,
+	t repository.SyncCore,
 	entity string,
 	op domain.SyncOperation,
 	householdID uuid.UUID,

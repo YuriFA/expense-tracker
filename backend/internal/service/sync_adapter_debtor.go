@@ -11,10 +11,20 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
+// debtorTx is the debtor push path's slice of the batch tx (ADR-0003): the
+// shared core plus the debtor's own contract. The compile-time check pins
+// the contract to the full repository.SyncTx the applier hands in.
+type debtorTx interface {
+	repository.SyncCore
+	repository.DebtorSyncTx
+}
+
+var _ debtorTx = repository.SyncTx(nil)
+
 // debtorAdapter is the debtor's half of the push engine: the live-name
 // uniqueness pre-check, the in-use delete guard, and no immutable fields.
 type debtorAdapter struct {
-	syncAdapterDefaults[*domain.Debtor, domain.DebtorFullState]
+	syncAdapterDefaults[debtorTx, *domain.Debtor, domain.DebtorFullState]
 }
 
 func (debtorAdapter) entity() string { return domain.SyncEntityDebtor }
@@ -33,7 +43,7 @@ func (debtorAdapter) invalidDataMessage() string { return "invalid debtor data" 
 // aborted batch.
 func (debtorAdapter) preValidate(
 	ctx context.Context,
-	t repository.SyncTx,
+	t debtorTx,
 	householdID uuid.UUID,
 	op domain.SyncOperation,
 	data domain.DebtorFullState,
@@ -55,7 +65,7 @@ func (debtorAdapter) isWriteRace(err error) bool {
 }
 
 func (debtorAdapter) getAny(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t debtorTx, householdID, id uuid.UUID,
 ) (*domain.Debtor, bool, error) {
 	d, err := t.GetDebtorAny(ctx, householdID, id)
 	if err != nil || d == nil {
@@ -65,7 +75,7 @@ func (debtorAdapter) getAny(
 }
 
 func (debtorAdapter) create(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID, data domain.DebtorFullState,
+	ctx context.Context, t debtorTx, householdID, userID, id uuid.UUID, data domain.DebtorFullState,
 ) (*domain.Debtor, error) {
 	return t.CreateDebtor(ctx, domain.CreateDebtorParams{
 		ID: id, HouseholdID: householdID, UserID: userID, Name: data.Name, Note: data.Note,
@@ -74,7 +84,7 @@ func (debtorAdapter) create(
 
 func (debtorAdapter) replace(
 	ctx context.Context,
-	t repository.SyncTx,
+	t debtorTx,
 	householdID, userID, id uuid.UUID,
 	baseVersion int,
 	data domain.DebtorFullState,
@@ -83,13 +93,13 @@ func (debtorAdapter) replace(
 }
 
 func (debtorAdapter) tombstone(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t debtorTx, householdID, userID, id uuid.UUID,
 ) (*domain.Debtor, error) {
 	return t.TombstoneDebtor(ctx, householdID, userID, id)
 }
 
 func (debtorAdapter) inUse(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t debtorTx, householdID, id uuid.UUID,
 ) (bool, string, error) {
 	operations, err := t.HasLiveDebtOperationsForDebtor(ctx, householdID, id)
 	if err != nil {

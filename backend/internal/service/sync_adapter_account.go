@@ -11,12 +11,22 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
+// accountTx is the account push path's slice of the batch tx (ADR-0003): the
+// shared core plus the account's own contract. The compile-time check pins
+// the contract to the full repository.SyncTx the applier hands in.
+type accountTx interface {
+	repository.SyncCore
+	repository.AccountSyncTx
+}
+
+var _ accountTx = repository.SyncTx(nil)
+
 // accountAdapter is the account's half of the push engine: no validation
 // stages, no immutable fields, the in-use delete guard, and the create
 // id-race safety net unique to accounts (global PK + client-chosen
 // offline-first ids).
 type accountAdapter struct {
-	syncAdapterDefaults[*domain.Account, domain.AccountFullState]
+	syncAdapterDefaults[accountTx, *domain.Account, domain.AccountFullState]
 }
 
 func (accountAdapter) entity() string { return domain.SyncEntityAccount }
@@ -37,7 +47,7 @@ func (accountAdapter) isWriteRace(err error) bool {
 }
 
 func (accountAdapter) getAny(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t accountTx, householdID, id uuid.UUID,
 ) (*domain.Account, bool, error) {
 	a, err := t.GetAccountAny(ctx, householdID, id)
 	if err != nil || a == nil {
@@ -47,7 +57,7 @@ func (accountAdapter) getAny(
 }
 
 func (accountAdapter) create(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID, data domain.AccountFullState,
+	ctx context.Context, t accountTx, householdID, userID, id uuid.UUID, data domain.AccountFullState,
 ) (*domain.Account, error) {
 	return t.CreateAccount(ctx, domain.CreateAccountParams{
 		ID: id, HouseholdID: householdID, UserID: userID,
@@ -60,7 +70,7 @@ func (accountAdapter) create(
 // an id taken OUTSIDE this household (a cross-household collision) conflicts
 // with no serverState - the foreign record must not be revealed.
 func (accountAdapter) onCreateError(
-	ctx context.Context, t repository.SyncTx, householdID uuid.UUID, op domain.SyncOperation, err error,
+	ctx context.Context, t accountTx, householdID uuid.UUID, op domain.SyncOperation, err error,
 ) (domain.SyncPushResult, bool, error) {
 	if !errors.Is(err, domain.ErrAccountAlreadyExists) {
 		return domain.SyncPushResult{}, false, nil
@@ -80,7 +90,7 @@ func (accountAdapter) onCreateError(
 
 func (accountAdapter) replace(
 	ctx context.Context,
-	t repository.SyncTx,
+	t accountTx,
 	householdID, userID, id uuid.UUID,
 	baseVersion int,
 	data domain.AccountFullState,
@@ -89,7 +99,7 @@ func (accountAdapter) replace(
 }
 
 func (accountAdapter) tombstone(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t accountTx, householdID, userID, id uuid.UUID,
 ) (*domain.Account, error) {
 	return t.TombstoneAccount(ctx, householdID, userID, id)
 }
@@ -98,7 +108,7 @@ func (accountAdapter) tombstone(
 // DeleteAccount): live transactions first, then live planned payments - the
 // message names the relation that fired.
 func (accountAdapter) inUse(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t accountTx, householdID, id uuid.UUID,
 ) (bool, string, error) {
 	transactions, err := t.HasLiveTransactionsForAccount(ctx, householdID, id)
 	if err != nil {

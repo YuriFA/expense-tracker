@@ -11,12 +11,25 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
+// debtOperationTx is the debt operation's slice of the batch tx (ADR-0003):
+// the shared core, its own contract, and the live-debtor reference read the
+// pre-validation needs (declared inline so the adapter sees exactly the read
+// it uses, not the debtor contract's writes). The compile-time check pins
+// the contract to the full repository.SyncTx the applier hands in.
+type debtOperationTx interface {
+	repository.SyncCore
+	repository.DebtOperationSyncTx
+	LiveDebtorExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+}
+
+var _ debtOperationTx = repository.SyncTx(nil)
+
 // debtOperationAdapter is the debt operation's half of the push engine: the
 // amount/direction/kind shape rules and the live-debtor reference check as
 // pre-validation, the debtor/direction/kind immutability guard, and no
 // delete guard (debt operations tombstone unconditionally).
 type debtOperationAdapter struct {
-	syncAdapterDefaults[*domain.DebtOperation, domain.DebtOperationFullState]
+	syncAdapterDefaults[debtOperationTx, *domain.DebtOperation, domain.DebtOperationFullState]
 }
 
 func (debtOperationAdapter) entity() string { return domain.SyncEntityDebtOperation }
@@ -35,7 +48,7 @@ func (debtOperationAdapter) invalidDataMessage() string { return "invalid debt o
 // granularity.
 func (debtOperationAdapter) preValidate(
 	ctx context.Context,
-	t repository.SyncTx,
+	t debtOperationTx,
 	householdID uuid.UUID,
 	_ domain.SyncOperation,
 	data domain.DebtOperationFullState,
@@ -73,7 +86,7 @@ func (debtOperationAdapter) isWriteRace(err error) bool {
 }
 
 func (debtOperationAdapter) getAny(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t debtOperationTx, householdID, id uuid.UUID,
 ) (*domain.DebtOperation, bool, error) {
 	o, err := t.GetDebtOperationAny(ctx, householdID, id)
 	if err != nil || o == nil {
@@ -83,7 +96,7 @@ func (debtOperationAdapter) getAny(
 }
 
 func (debtOperationAdapter) create(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID, data domain.DebtOperationFullState,
+	ctx context.Context, t debtOperationTx, householdID, userID, id uuid.UUID, data domain.DebtOperationFullState,
 ) (*domain.DebtOperation, error) {
 	return t.CreateDebtOperation(ctx, domain.CreateDebtOperationParams{
 		ID: id, HouseholdID: householdID, UserID: userID,
@@ -94,7 +107,7 @@ func (debtOperationAdapter) create(
 
 func (debtOperationAdapter) replace(
 	ctx context.Context,
-	t repository.SyncTx,
+	t debtOperationTx,
 	householdID, userID, id uuid.UUID,
 	baseVersion int,
 	data domain.DebtOperationFullState,
@@ -103,7 +116,7 @@ func (debtOperationAdapter) replace(
 }
 
 func (debtOperationAdapter) tombstone(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t debtOperationTx, householdID, userID, id uuid.UUID,
 ) (*domain.DebtOperation, error) {
 	return t.TombstoneDebtOperation(ctx, householdID, userID, id)
 }

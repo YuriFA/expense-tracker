@@ -11,13 +11,28 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
+// transactionTx is the transaction push path's slice of the batch tx
+// (ADR-0003): the shared core, its own contract, and the live account/
+// category reference reads the per-type validation needs (declared inline so
+// the adapter sees exactly the reads it uses, not those contracts' writes).
+// The compile-time check pins the contract to the full repository.SyncTx the
+// applier hands in.
+type transactionTx interface {
+	repository.SyncCore
+	repository.TransactionSyncTx
+	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+}
+
+var _ transactionTx = repository.SyncTx(nil)
+
 // transactionAdapter is the transaction's half of the push engine: the
 // type/amount shape rules before the current-row read, the per-type
 // reference rules (cashflow vs transfer vs adjustment, against LIVE
 // accounts/categories) after it, the type immutability guard, and no delete
 // guard (transactions tombstone unconditionally).
 type transactionAdapter struct {
-	syncAdapterDefaults[*domain.Transaction, domain.TransactionFullState]
+	syncAdapterDefaults[transactionTx, *domain.Transaction, domain.TransactionFullState]
 }
 
 func (transactionAdapter) entity() string { return domain.SyncEntityTransaction }
@@ -34,7 +49,7 @@ func (transactionAdapter) invalidDataMessage() string { return "invalid transact
 // preValidate checks the type + amount sign rules every upsert must satisfy
 // regardless of the transport.
 func (transactionAdapter) preValidate(
-	_ context.Context, _ repository.SyncTx, _ uuid.UUID, _ domain.SyncOperation, data domain.TransactionFullState,
+	_ context.Context, _ transactionTx, _ uuid.UUID, _ domain.SyncOperation, data domain.TransactionFullState,
 ) (string, string, error) {
 	if code := validateTransactionSyncShape(&data); code != "" {
 		return code, syncRefMessage(code), nil
@@ -48,7 +63,7 @@ func (transactionAdapter) preValidate(
 // mismatch / same-account transfer -> invalid-payload codes.
 func (transactionAdapter) postReadValidate(
 	ctx context.Context,
-	t repository.SyncTx,
+	t transactionTx,
 	householdID uuid.UUID,
 	_ domain.SyncOperation,
 	data domain.TransactionFullState,
@@ -73,7 +88,7 @@ func (transactionAdapter) isWriteRace(err error) bool {
 }
 
 func (transactionAdapter) getAny(
-	ctx context.Context, t repository.SyncTx, householdID, id uuid.UUID,
+	ctx context.Context, t transactionTx, householdID, id uuid.UUID,
 ) (*domain.Transaction, bool, error) {
 	tr, err := t.GetTransactionAny(ctx, householdID, id)
 	if err != nil || tr == nil {
@@ -83,7 +98,7 @@ func (transactionAdapter) getAny(
 }
 
 func (transactionAdapter) create(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID, data domain.TransactionFullState,
+	ctx context.Context, t transactionTx, householdID, userID, id uuid.UUID, data domain.TransactionFullState,
 ) (*domain.Transaction, error) {
 	return t.CreateTransaction(ctx, domain.CreateTransactionParams{
 		ID: id, HouseholdID: householdID, UserID: userID,
@@ -95,7 +110,7 @@ func (transactionAdapter) create(
 
 func (transactionAdapter) replace(
 	ctx context.Context,
-	t repository.SyncTx,
+	t transactionTx,
 	householdID, userID, id uuid.UUID,
 	baseVersion int,
 	data domain.TransactionFullState,
@@ -104,13 +119,13 @@ func (transactionAdapter) replace(
 }
 
 func (transactionAdapter) tombstone(
-	ctx context.Context, t repository.SyncTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t transactionTx, householdID, userID, id uuid.UUID,
 ) (*domain.Transaction, error) {
 	return t.TombstoneTransaction(ctx, householdID, userID, id)
 }
 
-// validateTransactionSyncShape checks the type + amount sign rules a
-
+// validateTransactionSyncShape checks the type + amount sign rules a pushed
+// transaction must satisfy regardless of the transport.
 func validateTransactionSyncShape(data *domain.TransactionFullState) string {
 	switch data.Type {
 	case domain.TransactionTypeIncome,
@@ -132,7 +147,7 @@ func validateTransactionSyncShape(data *domain.TransactionFullState) string {
 // TransactionService.validateRefs with sync-tx reads.
 func validateSyncRefs(
 	ctx context.Context,
-	t repository.SyncTx,
+	t transactionTx,
 	householdID uuid.UUID,
 	data *domain.TransactionFullState,
 ) string {
@@ -159,7 +174,7 @@ func validateSyncRefs(
 // liveAccountCode maps an account existence read to a sync result code: ""
 // when the account exists, ACCOUNT_NOT_FOUND when it does not, INVALID_REFS
 // when the read itself failed.
-func liveAccountCode(ctx context.Context, t repository.SyncTx, householdID, accountID uuid.UUID) string {
+func liveAccountCode(ctx context.Context, t transactionTx, householdID, accountID uuid.UUID) string {
 	exists, err := t.LiveAccountExists(ctx, householdID, accountID)
 	if err != nil {
 		return "INVALID_REFS"
@@ -172,7 +187,7 @@ func liveAccountCode(ctx context.Context, t repository.SyncTx, householdID, acco
 
 func validateSyncCashflowRefs(
 	ctx context.Context,
-	t repository.SyncTx,
+	t transactionTx,
 	householdID, accountID, categoryID uuid.UUID,
 	typ domain.TransactionType,
 ) string {
@@ -191,7 +206,7 @@ func validateSyncCashflowRefs(
 
 func validateSyncTransferRefs(
 	ctx context.Context,
-	t repository.SyncTx,
+	t transactionTx,
 	householdID, fromAccountID, toAccountID uuid.UUID,
 ) string {
 	if code := liveAccountCode(ctx, t, householdID, fromAccountID); code != "" {
@@ -208,7 +223,7 @@ func validateSyncTransferRefs(
 
 func validateSyncAdjustmentRefs(
 	ctx context.Context,
-	t repository.SyncTx,
+	t transactionTx,
 	householdID, accountID uuid.UUID,
 ) string {
 	return liveAccountCode(ctx, t, householdID, accountID)
