@@ -33,31 +33,33 @@ const amountClasses: Record<NonNullable<(typeof props)['tone']>, string> = {
 // An amount is one unbreakable token (no-break separators), so instead of
 // wrapping or clipping it steps down to fit its half-grid-column card. The
 // dashboard caps strings at ~"999 999 ₽" via compact formatting; these two
-// steps are the guard for longer figures any caller might pass.
+// steps are the guard for longer figures any caller might pass. Below md the
+// card runs compact (approved canvas «Кошелёк — мобильный обзор»): smaller
+// paddings, icon and type scale, with the same step-down guard.
 const amountSizeClass = computed(() => {
   const length = props.amount.length
-  if (length >= 13) return 'text-lg'
-  if (length >= 9) return 'text-xl'
-  return 'text-2xl'
+  if (length >= 13) return 'text-base md:text-lg'
+  if (length >= 9) return 'text-lg md:text-xl'
+  return 'text-lg md:text-2xl'
 })
 </script>
 
 <template>
-  <div class="bg-card text-card-foreground rounded-lg border p-5">
-    <div class="flex items-center gap-3">
+  <div class="bg-card text-card-foreground rounded-lg border p-3 md:p-5">
+    <div class="flex items-center gap-2 md:gap-3">
       <span
-        :class="cn('flex size-10 shrink-0 items-center justify-center rounded-full', toneClasses[props.tone])"
+        :class="cn('flex size-8 shrink-0 items-center justify-center rounded-full md:size-10', toneClasses[props.tone])"
         aria-hidden="true"
       >
-        <component :is="props.icon" class="size-5" />
+        <component :is="props.icon" class="size-4 md:size-5" />
       </span>
-      <p class="truncate text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <p class="truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground md:text-xs">
         {{ props.label }}
       </p>
     </div>
     <p
       data-testid="stat-card-amount"
-      class="mt-3 font-bold tabular-nums"
+      class="mt-2 font-bold tabular-nums md:mt-3"
       :class="[amountSizeClass, amountClasses[props.tone]]"
     >
       {{ props.amount }}

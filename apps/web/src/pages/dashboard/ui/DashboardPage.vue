@@ -153,7 +153,10 @@ const stats = computed(() => [
 
 <template>
   <section class="space-y-6">
-    <header>
+    <!-- Title and the period navigator share one row (approved canvas
+         «Обзор с переключателем периода» v3); below md the row wraps only
+         if a viewport is too narrow for both. -->
+    <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <h1 class="text-[32px] font-bold tracking-tight">{{ t('dashboard.overview') }}</h1>
       <PeriodNav
         :label="monthCaption"
@@ -166,12 +169,12 @@ const stats = computed(() => [
     </header>
 
     <ErrorState v-if="error" @retry="refetch" />
-    <div v-else-if="isLoading" class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-      <Skeleton v-for="n in 4" :key="n" class="h-31 rounded-lg" />
+    <div v-else-if="isLoading" class="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+      <Skeleton v-for="n in 4" :key="n" class="h-23 rounded-lg md:h-31" />
     </div>
     <div
       v-else
-      class="grid grid-cols-2 gap-4 xl:grid-cols-4"
+      class="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4"
       data-testid="dashboard-stats"
     >
       <!-- The link wraps the card surface: hover ring + focus ring give the
