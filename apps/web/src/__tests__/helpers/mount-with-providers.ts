@@ -77,14 +77,23 @@ export function mountWithProviders<T>(
       ],
     })
 
+  const globalOptions = options.global ?? {}
+  const providedGlobals =
+    typeof globalOptions.provide === 'object' && globalOptions.provide !== null
+      ? (globalOptions.provide as Record<PropertyKey, unknown>)
+      : {}
+
   return mount(component as never, {
     props: props as never,
     attrs: attrs as never,
     slots: slots as never,
     global: {
+      ...globalOptions,
       plugins: [i18n, pinia ?? createPinia(), memoryRouter, PiniaColada],
-      provide: provide as never,
-      ...options.global,
+      provide: {
+        ...provide,
+        ...providedGlobals,
+      } as never,
     },
   }) as VueWrapper
 }
