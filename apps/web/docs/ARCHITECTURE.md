@@ -74,6 +74,28 @@ entities/account/
 - `shared/lib/money/index.ts` реэкспортит `formatCurrency` → импорт через `@/shared/lib/money`
 - `shared/lib/data/` — пока flat без barrel (will be fixed when steiger начнёт на него ругаться)
 
+### `shared/ui/` primitives
+
+`shared/ui/` — локальный UI-kit проекта: app-level обёртки над reka-ui и
+общие field/form primitives. Для overlay-ев набор фиксирован и намеренно
+явный:
+- `dialog/` — центрированные desktop modal surfaces
+- `drawer/` — mobile bottom-sheet primitives
+- `responsive-dialog/` — viewport-aware modal wrapper: `<768px` drawer,
+  `>=768px` dialog
+- `alert-dialog/` — destructive confirms, всегда центрированные
+- `sheet/` — non-form side panel pattern; в текущем продукте это desktop
+  filters rail
+- `select/` — reka select + responsive select variant for stacked mobile
+  picker drawers
+- `date-field/` — desktop popover calendar + mobile drawer calendar
+
+Решение по presentation idiom фиксировано в capability `web-screens`:
+модальные create/edit/detail/history surfaces below 768px используют
+`responsive-dialog`, а destructive confirms остаются на `alert-dialog`.
+Импорт этой политики должен быть виден в call site - не прятать viewport
+switch внутрь старого `dialog/`.
+
 ## Fractal расширение: `pages/*/features/`
 
 **Не каноничный FSD v2.1, осознанный trade-off.**
