@@ -19,8 +19,9 @@ navigation shell (persistent bottom tab bar for the primary screens
 dashboard, plans, analytics, and settings; transactions, debts, and
 accounts reachable from the dashboard screen, which is always one tap
 away). The settings screen SHALL include the household section (current
-household, members, invitations, home code, leave) and the profile
-display-name editor. Anonymous and signed-in users SHALL have the same
+household, members, invitations, home code, leave), the profile
+display-name editor, and a category management section reachable at
+`/settings/categories`. Anonymous and signed-in users SHALL have the same
 screen set (the difference is synchronization, not features).
 
 #### Scenario: All screens reachable
@@ -49,6 +50,11 @@ screen set (the difference is synchronization, not features).
 - **WHEN** a signed-in user opens settings
 - **THEN** the household section is present with the actions their role
   permits
+
+#### Scenario: Category management from settings
+
+- **WHEN** the user opens the settings screen
+- **THEN** a categories section leads to the category management screen at `/settings/categories`
 
 ### Requirement: Dashboard screen
 
@@ -558,3 +564,64 @@ adjustment transaction SHALL behave like deleting any other transaction.
 
 - **WHEN** the user edits an adjustment transaction and changes its amount from -500 to -700
 - **THEN** the update succeeds and the account's balance reflects the new contribution
+
+### Requirement: Category management screen
+
+The category management screen at `/settings/categories` SHALL list the
+household's non-deleted categories grouped by type (expense, income),
+each row showing the category's icon, color, name, and its transaction
+count computed from the local data, with actions to edit, archive
+(unarchive for archived ones), and delete. Archived categories SHALL be
+shown in a separate collapsible archive section of the same screen. The
+edit dialog SHALL allow changing the name, icon, and color only - the
+type SHALL NOT be editable. Creating categories from this screen SHALL
+NOT be offered (creation stays in the transaction form dialog).
+
+#### Scenario: Browse categories
+
+- **WHEN** the user opens `/settings/categories`
+- **THEN** active categories are listed grouped by type with icon, color, name, and transaction count, and the archive section is available
+
+#### Scenario: Edit a category
+
+- **WHEN** the user edits a category from the list
+- **THEN** a dialog offers name, icon, and color; the type is shown read-only
+
+#### Scenario: Archived section
+
+- **WHEN** archived categories exist
+- **THEN** the archive section lists them with an unarchive action, and they are absent from the active groups
+
+### Requirement: Category deletion dialog
+
+The delete flow SHALL branch by the category's references. A category
+with no transactions and no live planned payments SHALL be deleted after
+a plain confirmation. A category with transactions but no live planned
+payments SHALL be offered a choice: archive (the default) or cascaded
+delete; the cascaded option SHALL state the number of transactions to be
+deleted and that account balances will change, and SHALL require typing
+the category's exact name to confirm. An archived category with
+transactions SHALL go directly to the cascaded-delete confirmation
+(without the archive option). A category referenced by a live planned
+payment SHALL NOT be deletable; the dialog SHALL explain the blocking
+plans.
+
+#### Scenario: Delete an unused category
+
+- **WHEN** the user deletes a category with no transactions and no live plans
+- **THEN** a plain confirmation deletes the category
+
+#### Scenario: Delete a category with transactions
+
+- **WHEN** the user deletes a category referenced by 12 transactions and no live plans
+- **THEN** the dialog offers archiving as the default and cascaded delete as the alternative, stating the 12 transactions and the balance impact
+
+#### Scenario: Typed confirmation for cascaded delete
+
+- **WHEN** the user chooses the cascaded delete of a category with transactions
+- **THEN** the destructive action stays disabled until the category's exact name is typed
+
+#### Scenario: Delete blocked by a live plan
+
+- **WHEN** the user attempts to delete a category referenced by a live planned payment
+- **THEN** the dialog reports the block instead of offering deletion
