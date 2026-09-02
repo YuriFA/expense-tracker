@@ -39,7 +39,10 @@ test('register binds anonymous local data and pushes it to the server', async ({
   // Register: the ownership gate binds the unowned data, the initial sync
   // pushes all local records as creates and pulls the server records.
   await page.goto('/')
-  await page.getByTestId('open-new-category').click()
+  // The sidebar CTA opens the unified creation flow; the inline new-category
+  // entry lives inside it (web-unified-transaction-entry).
+  await page.getByTestId('sidebar-add-operation').click()
+  await page.getByRole('dialog').getByTestId('open-new-category').click()
   await page.getByTestId('new-category-name').fill('Migration category')
   await page
     .getByTestId('new-category-dialog')
@@ -111,8 +114,9 @@ test('an expired session pauses sync and logging in resumes it', async ({ page }
   // engine pauses itself.
   await page.context().clearCookies()
   // SPA navigation (no reload): a reload would re-run the network-tolerant
-  // session restore and land in anonymous mode instead of paused.
-  await page.getByRole('link', { name: 'Accounts' }).click()
+  // session restore and land in anonymous mode instead of paused. The
+  // sidebar link is disambiguated from the dashboard's stat-card link.
+  await page.getByTestId('sidebar-nav-link').filter({ hasText: 'Accounts' }).click()
   await page.getByRole('button', { name: 'Create' }).first().click()
   await page.getByLabel('Name').fill('Pending account')
   await page.getByRole('button', { name: 'Add account' }).click()
