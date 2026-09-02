@@ -648,8 +648,7 @@
     "openAccountMenu": "Меню аккаунта",
     "transfer": "Перевод",
     "expense": "Расход",
-    "income": "Доход",
-    "addHotkey": "N"
+    "income": "Доход"
   },
   "reconcileAccount": {
     "title": "Сверить баланс",

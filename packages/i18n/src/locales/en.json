@@ -648,8 +648,7 @@
     "openAccountMenu": "Account menu",
     "transfer": "Transfer",
     "expense": "Expense",
-    "income": "Income",
-    "addHotkey": "N"
+    "income": "Income"
   },
   "reconcileAccount": {
     "title": "Reconcile balance",

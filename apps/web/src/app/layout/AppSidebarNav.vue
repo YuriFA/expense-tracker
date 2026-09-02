@@ -100,22 +100,17 @@ function goToLogin() {
     </nav>
 
     <!-- Emphasis pass per the approved canvas (draft ec985bff): full-width
-         pill, content left, hover kbd hint for the «N» accelerator. -->
+         pill with centered content. No inline hover hint - at w-62 the row
+         cannot fit label + kbd, and the «N» accelerator is discoverable in
+         the command palette. -->
     <Button
       size="lg"
-      class="group h-10 w-full justify-between px-4 transition-transform hover:-translate-y-0.5"
+      class="h-10 w-full px-4"
       data-testid="sidebar-add-operation"
       @click="openAddTransactionDialog()"
     >
-      <span class="flex items-center gap-2">
-        <Plus class="size-4" aria-hidden="true" />
-        {{ t('dashboard.addOperation') }}
-      </span>
-      <kbd
-        class="hidden size-5 items-center justify-center rounded-md border border-border bg-secondary text-[11px] font-bold text-secondary-foreground group-hover:flex"
-      >
-        {{ t('shell.addHotkey') }}
-      </kbd>
+      <Plus class="size-4" aria-hidden="true" />
+      {{ t('dashboard.addOperation') }}
     </Button>
 
     <div
