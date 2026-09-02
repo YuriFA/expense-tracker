@@ -15,6 +15,7 @@ import { RouterLink } from 'vue-router'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { SettingsCard } from '@/shared/ui/settings-card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ChevronRight, Tags } from '@lucide/vue'
 import { useAuthStore, sessionApi } from '@/entities/session'
@@ -148,16 +149,11 @@ onMounted(() => {
   <section class="flex flex-col gap-6">
     <h1 class="text-3xl font-bold">{{ t('pages.settings') }}</h1>
 
-    <!-- Settings row-card: title + description on the left, control on the
-         right (design system). -->
-    <Card>
-      <CardContent class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="min-w-0">
-          <h3 class="text-sm font-semibold">{{ t('settings.locale') }}</h3>
-          <p class="mt-0.5 text-xs text-muted-foreground">
-            {{ t('settings.languageDescription') }}
-          </p>
-        </div>
+    <SettingsCard :title="t('settings.locale')">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-muted-foreground">
+          {{ t('settings.languageDescription') }}
+        </p>
         <Select v-model="settings.locale">
           <SelectTrigger class="w-full shrink-0 sm:w-56" :aria-label="t('settings.locale')">
             <SelectValue :placeholder="t('settings.locale')" />
@@ -168,17 +164,14 @@ onMounted(() => {
             </SelectItem>
           </SelectContent>
         </Select>
-      </CardContent>
-    </Card>
+      </div>
+    </SettingsCard>
 
-    <Card>
-      <CardContent class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="min-w-0">
-          <h3 class="text-sm font-semibold">{{ t('settings.appearance') }}</h3>
-          <p class="mt-0.5 text-xs text-muted-foreground">
-            {{ t('settings.appearanceDescription') }}
-          </p>
-        </div>
+    <SettingsCard :title="t('settings.appearance')">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-muted-foreground">
+          {{ t('settings.appearanceDescription') }}
+        </p>
         <Select
           :model-value="settings.theme"
           @update:model-value="onThemeChange"
@@ -192,37 +185,35 @@ onMounted(() => {
             </SelectItem>
           </SelectContent>
         </Select>
-      </CardContent>
-    </Card>
+      </div>
+    </SettingsCard>
 
     <!-- Category management entry (category-management screens): available
          to anonymous users too - categories are local-first data, the
          difference is only synchronization. -->
-    <Card>
-      <CardContent class="p-0">
-        <RouterLink
-          :to="{ name: 'settings-categories' }"
-          class="flex items-center justify-between gap-3 px-6 py-4 transition-colors hover:bg-muted/50"
-          data-testid="settings-categories-link"
-        >
-          <div class="flex min-w-0 items-center gap-3">
-            <span
-              class="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
-              aria-hidden="true"
-            >
-              <Tags class="size-4" />
-            </span>
-            <div class="min-w-0">
-              <p class="text-sm font-semibold">{{ t('categoryManagement.title') }}</p>
-              <p class="mt-0.5 text-xs text-muted-foreground">
-                {{ t('categoryManagement.subtitle') }}
-              </p>
-            </div>
+    <SettingsCard :title="t('categoryManagement.title')" content-class="p-4 md:p-6">
+      <RouterLink
+        :to="{ name: 'settings-categories' }"
+        class="flex items-center justify-between gap-3 transition-colors hover:bg-muted/50"
+        data-testid="settings-categories-link"
+      >
+        <div class="flex min-w-0 items-center gap-3">
+          <span
+            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+            aria-hidden="true"
+          >
+            <Tags class="size-4" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold">{{ t('categoryManagement.title') }}</p>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+              {{ t('categoryManagement.subtitle') }}
+            </p>
           </div>
-          <ChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        </RouterLink>
-      </CardContent>
-    </Card>
+        </div>
+        <ChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </RouterLink>
+    </SettingsCard>
 
     <template v-if="auth.isAuthenticated">
       <Card v-if="!auth.user?.emailVerified">
@@ -239,21 +230,20 @@ onMounted(() => {
       <!-- Mounts only once the household read resolves: the editor's initial
            form value comes from the member entry and would otherwise seed
            empty while the query is in flight. -->
-      <DisplayNameEditor
-        v-if="auth.user && household"
-        :email="auth.user.email"
-        :initial-name="myDisplayName"
-      />
+      <SettingsCard :title="t('profile.title')" content-class="flex flex-col gap-4" data-testid="settings-profile-card">
+        <DisplayNameEditor
+          v-if="auth.user && household"
+          :email="auth.user.email"
+          :initial-name="myDisplayName"
+        />
+      </SettingsCard>
 
-      <Card data-testid="settings-household-card">
-        <CardHeader class="border-b [.border-b]:pb-4">
-          <CardTitle class="text-sm font-semibold" data-testid="settings-household-name">
-            {{ householdLabel }}
-            <template v-if="household"> · {{ t('household.membersCount', members.length) }}</template>
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4">
-          <Skeleton v-if="householdQuery.isLoading.value" class="h-5 w-40" />
+      <SettingsCard :title="t('household.title')" content-class="flex flex-col gap-4" data-testid="settings-household-card">
+        <p class="text-sm font-semibold" data-testid="settings-household-name">
+          {{ householdLabel }}
+          <template v-if="household"> · {{ t('household.membersCount', members.length) }}</template>
+        </p>
+        <Skeleton v-if="householdQuery.isLoading.value" class="h-5 w-40" />
 
           <ul
             v-if="household && !householdQuery.isLoading.value"
@@ -323,19 +313,14 @@ onMounted(() => {
             <JoinHouseholdDialog />
             <LeaveHouseholdButton v-if="canLeave" />
           </div>
-        </CardContent>
-      </Card>
+      </SettingsCard>
 
       <RemoveMemberDialog v-model="removeOpen" :member="removeTarget" />
 
-      <Card>
-        <CardContent class="flex flex-col gap-4">
-          <div>
-            <h3 class="text-sm font-semibold">{{ t('auth.sessionsTitle') }}</h3>
-            <p class="mt-0.5 text-xs text-muted-foreground">
-              {{ t('auth.sessionsDescription') }}
-            </p>
-          </div>
+      <SettingsCard :title="t('auth.sessionsTitle')" content-class="flex flex-col gap-4">
+        <p class="text-xs text-muted-foreground">
+          {{ t('auth.sessionsDescription') }}
+        </p>
           <ul v-if="sessions.length" class="flex flex-col text-sm">
             <li
               v-for="(session, index) in sessions"
@@ -351,22 +336,21 @@ onMounted(() => {
             </li>
           </ul>
           <p v-else-if="!sessionsLoading" class="text-sm text-muted-foreground">-</p>
-          <div class="flex flex-wrap gap-2">
-            <Button variant="ghost" size="sm" :loading="sessionsLoading" @click="loadSessions">
-              {{ t('common.errorState.retry') }}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              :loading="revoking"
-              @click="revokeOtherSessions"
-            >
-              {{ t('auth.revokeOtherSessions') }}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div class="flex flex-wrap gap-2">
+          <Button variant="ghost" size="sm" :loading="sessionsLoading" @click="loadSessions">
+            {{ t('common.errorState.retry') }}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            :loading="revoking"
+            @click="revokeOtherSessions"
+          >
+            {{ t('auth.revokeOtherSessions') }}
+          </Button>
+        </div>
+      </SettingsCard>
 
       <RouterLink :to="{ name: 'reset-password' }" class="text-sm text-muted-foreground hover:underline">
         {{ t('auth.forgotPassword') }}

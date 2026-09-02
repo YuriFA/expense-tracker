@@ -5,7 +5,6 @@ import { useForm, Field as VeeField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useQueryCache } from '@pinia/colada'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardTitle } from '@/shared/ui/card'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { getHouseholdErrorMessage, householdApi } from '@/entities/household'
@@ -60,47 +59,46 @@ const handleSubmit = handleFormSubmit(async (data) => {
 </script>
 
 <template>
-  <Card data-testid="settings-profile-card">
-    <CardContent class="flex flex-col gap-4">
-      <!-- Row header (design system): section title + email on the right. -->
-      <div class="flex items-center justify-between gap-3">
-        <CardTitle class="text-sm font-semibold">{{ t('profile.title') }}</CardTitle>
-        <span class="truncate text-xs text-muted-foreground" data-testid="settings-profile-email">
-          {{ email }}
-        </span>
-      </div>
-      <form id="display-name-form" class="flex flex-col gap-3" @submit="handleSubmit">
-        <VeeField v-slot="{ field, errors }" name="displayName">
-          <Field :data-invalid="!!errors.length">
-            <FieldLabel
-              for="profile-display-name"
-              class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              {{ t('profile.displayName') }}
-            </FieldLabel>
+  <!-- Bare editor: the SettingsCard wrapper (title strip) lives on the
+       settings page, so every settings card shares one component. -->
+  <div class="flex flex-col gap-4">
+    <span class="truncate text-xs text-muted-foreground" data-testid="settings-profile-email">
+      {{ email }}
+    </span>
+    <form id="display-name-form" class="flex flex-col gap-3" @submit="handleSubmit">
+      <VeeField v-slot="{ field, errors }" name="displayName">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel
+            for="profile-display-name"
+            class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+          >
+            {{ t('profile.displayName') }}
+          </FieldLabel>
+          <div class="flex items-center gap-2">
             <Input
               id="profile-display-name"
               :placeholder="t('profile.displayNamePlaceholder')"
               maxlength="100"
+              class="flex-1"
               v-bind="field"
               :aria-invalid="!!errors.length"
             />
-            <FieldError v-if="errors.length" :errors="errors" />
-          </Field>
-        </VeeField>
-        <p class="text-xs text-muted-foreground" data-testid="settings-profile-preview">
-          {{ preview }}
-        </p>
-        <Button
-          form="display-name-form"
-          type="submit"
-          :loading="isSubmitting"
-          data-testid="settings-profile-save"
-          class="self-start bg-accent text-primary hover:bg-accent/80 hover:text-primary"
-        >
-          {{ t('profile.save') }}
-        </Button>
-      </form>
-    </CardContent>
-  </Card>
+            <Button
+              form="display-name-form"
+              type="submit"
+              :loading="isSubmitting"
+              data-testid="settings-profile-save"
+              class="bg-accent text-primary hover:bg-accent/80 hover:text-primary"
+            >
+              {{ t('profile.save') }}
+            </Button>
+          </div>
+          <FieldError v-if="errors.length" :errors="errors" />
+        </Field>
+      </VeeField>
+      <p class="text-xs text-muted-foreground" data-testid="settings-profile-preview">
+        {{ preview }}
+      </p>
+    </form>
+  </div>
 </template>

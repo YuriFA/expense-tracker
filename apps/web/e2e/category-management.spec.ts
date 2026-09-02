@@ -20,27 +20,13 @@ test('category management screen: archive, cascade, and balance impact', async (
   await page.getByRole('button', { name: 'Add account' }).click()
   await expect(page.getByText('Account added')).toBeVisible()
 
-  for (const [note, amount] of [
-    ['Weekly shop', '10.00'],
-    ['Fruit', '5.00'],
-  ] as const) {
+  const addExpense = async (note: string, amount: string) => {
     await page.goto('/')
     await page.getByTestId('sidebar-add-operation').click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
-    if (note === 'Weekly shop') {
-      // Anonymous local mode starts with no categories - create the first.
-      await dialog.getByTestId('open-new-category').click()
-      await page.getByTestId('new-category-name').fill('Groceries')
-      await page
-        .getByTestId('new-category-dialog')
-        .getByRole('button', { name: 'Create' })
-        .click()
-      await expect(page.getByText('Category created')).toBeVisible()
-    } else {
-      await page.locator('#category-id').click()
-      await page.getByRole('option', { name: /Groceries/ }).click()
-    }
+    await page.locator('#category-id').click()
+    await page.getByRole('option', { name: /Groceries/ }).click()
     await page.locator('#account-id').click()
     await page.getByRole('option', { name: /Cash/ }).click()
     await page.getByLabel('Note').fill(note)
@@ -48,6 +34,28 @@ test('category management screen: archive, cascade, and balance impact', async (
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await expect(page.getByText('Transaction added')).toBeVisible()
   }
+
+  // Anonymous local mode starts with no categories - the first transaction
+  // creates one inline.
+  await page.goto('/')
+  await page.getByTestId('sidebar-add-operation').click()
+  const firstDialog = page.getByRole('dialog')
+  await expect(firstDialog).toBeVisible()
+  await firstDialog.getByTestId('open-new-category').click()
+  await page.getByTestId('new-category-name').fill('Groceries')
+  await page
+    .getByTestId('new-category-dialog')
+    .getByRole('button', { name: 'Create' })
+    .click()
+  await expect(page.getByText('Category created')).toBeVisible()
+  await page.locator('#account-id').click()
+  await page.getByRole('option', { name: /Cash/ }).click()
+  await page.getByLabel('Note').fill('Weekly shop')
+  await page.getByRole('spinbutton').fill('10.00')
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await expect(page.getByText('Transaction added')).toBeVisible()
+
+  await addExpense('Fruit', '5.00')
 
   // --- The management screen lists the category with its count. ---------
   await page.goto('/settings')

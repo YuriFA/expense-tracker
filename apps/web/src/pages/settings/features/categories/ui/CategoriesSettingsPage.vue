@@ -5,9 +5,9 @@ import { RouterLink } from 'vue-router'
 import { ArrowLeft, ArchiveRestore, Archive, ChevronDown, Pencil, Trash2 } from '@lucide/vue'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
+import { SettingsCard } from '@/shared/ui/settings-card'
 import { useCategoriesIncludingArchived, useSetCategoryArchived } from '@/entities/category'
 import type { Category } from '@expense-tracker/api'
 import { notification } from '@/shared/services/notification'
@@ -118,7 +118,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
       </RouterLink>
       <h1 class="text-3xl font-bold">{{ t('categoryManagement.title') }}</h1>
       <p class="text-sm text-muted-foreground">
-        {{ t('categoryManagement.subtitle') }}
+        {{ t('categoryManagement.pageSubtitle') }}
       </p>
     </div>
 
@@ -127,20 +127,16 @@ async function unarchiveCategory(category: Category): Promise<void> {
     </div>
 
     <template v-else>
-      <Card
+      <SettingsCard
         v-for="group in [
           { title: t('categoryManagement.groupExpense'), items: expense, testid: 'categories-expense' },
           { title: t('categoryManagement.groupIncome'), items: income, testid: 'categories-income' },
         ]"
         :key="group.title"
+        :title="group.title"
+        content-class="flex flex-col p-0"
         :data-testid="group.testid"
       >
-        <CardHeader class="border-b [.border-b]:pb-4">
-          <CardTitle class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            {{ group.title }}
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col p-0">
           <p
             v-if="!group.items.length"
             class="px-6 py-4 text-sm text-muted-foreground"
@@ -151,7 +147,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
           <div
             v-for="category in group.items"
             :key="category.id"
-            class="flex items-center justify-between gap-3 border-b border-border px-6 py-3 last:border-0"
+            class="flex items-center justify-between gap-3 border-b border-border px-6 py-4 last:border-0"
             :data-testid="`category-row-${category.id}`"
           >
             <div class="flex min-w-0 items-center gap-3">
@@ -196,11 +192,10 @@ async function unarchiveCategory(category: Category): Promise<void> {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </SettingsCard>
 
-      <Card data-testid="categories-archive">
-        <CardHeader class="border-b [.border-b]:pb-4">
+      <SettingsCard content-class="flex flex-col p-0" data-testid="categories-archive">
+        <template #title>
           <button
             type="button"
             class="flex w-full items-center justify-between gap-2"
@@ -224,8 +219,8 @@ async function unarchiveCategory(category: Category): Promise<void> {
               aria-hidden="true"
             />
           </button>
-        </CardHeader>
-        <CardContent v-if="archiveOpen" class="flex flex-col gap-4 p-0">
+        </template>
+        <div v-if="archiveOpen" class="flex flex-col gap-4">
           <p class="px-6 pt-4 text-xs text-muted-foreground">
             {{ t('categoryManagement.archiveHint') }}
           </p>
@@ -239,7 +234,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
           <div
             v-for="category in archived"
             :key="category.id"
-            class="flex items-center justify-between gap-3 border-b border-border px-6 py-3 last:border-0 last:pb-4"
+            class="flex items-center justify-between gap-3 border-b border-border px-6 py-4 last:border-0"
             :data-testid="`category-row-${category.id}`"
           >
             <div class="flex min-w-0 items-center gap-3 opacity-75">
@@ -282,8 +277,8 @@ async function unarchiveCategory(category: Category): Promise<void> {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SettingsCard>
     </template>
 
     <CategoryEditDialog v-model:open="editOpen" :category="editTarget" />

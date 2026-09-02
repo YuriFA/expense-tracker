@@ -706,6 +706,7 @@
     "archiveBlockedPlans": "The category is used by active planned payments. Remove or change them first: {plans}.",
     "deleteSuccess": "Category deleted",
     "cancel": "Cancel",
-    "noTransactions": "no transactions"
+    "noTransactions": "no transactions",
+    "pageSubtitle": "Manage the household's categories"
   }
 }
