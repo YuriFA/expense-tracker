@@ -19,6 +19,18 @@ const category: Category = {
 const q = <T extends HTMLElement = HTMLElement>(selector: string): T | null =>
   document.querySelector<T>(selector)
 
+async function click(selector: string): Promise<void> {
+  q<HTMLButtonElement>(selector)!.click()
+  await flushPromises()
+}
+
+async function typeInto(selector: string, value: string): Promise<void> {
+  const input = q<HTMLInputElement>(selector)!
+  input.value = value
+  input.dispatchEvent(new Event('input'))
+  await flushPromises()
+}
+
 function mountDialog() {
   const categoriesRepo = createMockCategoryRepository()
   categoriesRepo.getAllIncludingArchived.mockResolvedValue([category])
@@ -79,5 +91,59 @@ describe('CategoryEditDialog', () => {
     expect(q<HTMLButtonElement>('[data-testid="edit-category-submit"]')!.hasAttribute('disabled')).toBe(
       true,
     )
+  })
+})
+
+describe('CategoryEditDialog (create mode)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountCreateDialog() {
+    const categoriesRepo = createMockCategoryRepository()
+    categoriesRepo.getAllIncludingArchived.mockResolvedValue([category])
+    const wrapper = mountWithProviders(CategoryEditDialog, {
+      props: { category: null, open: true },
+      repositories: { categories: categoriesRepo },
+    })
+    return { wrapper, categoriesRepo }
+  }
+
+  it('offers the type as a segmented control with expense preselected', async () => {
+    mountCreateDialog()
+    await flushPromises()
+
+    const expense = q<HTMLButtonElement>('[data-testid="create-category-type-expense"]')!
+    const income = q<HTMLButtonElement>('[data-testid="create-category-type-income"]')!
+    expect(expense.getAttribute('aria-pressed')).toBe('true')
+    expect(income.getAttribute('aria-pressed')).toBe('false')
+    expect(document.body.textContent).not.toContain('The category type cannot be changed')
+
+    income.click()
+    await flushPromises()
+    expect(income.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('creates a category of the chosen type with the paired color of the picked icon', async () => {
+    const { categoriesRepo } = mountCreateDialog()
+    await flushPromises()
+
+    const pizza = CATEGORY_ICONS.find((option) => option.icon === '🍕')!
+    await click('[data-testid="create-category-type-income"]')
+    await typeInto('[data-testid="create-category-name"]', 'Salary')
+    await click('[data-testid="create-category-icon-2"]')
+    await click('[data-testid="create-category-submit"]')
+
+    expect(categoriesRepo.create).toHaveBeenCalledWith({
+      name: 'Salary',
+      icon: '🍕',
+      color: pizza.color,
+      type: 'income',
+    })
+    expect(categoriesRepo.update).not.toHaveBeenCalled()
   })
 })

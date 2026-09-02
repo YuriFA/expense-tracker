@@ -11,17 +11,23 @@ import { notification } from '@/shared/services/notification'
 import { VersionConflictError } from '@expense-tracker/api'
 import {
   CATEGORY_ICONS,
+  DEFAULT_CATEGORY_ICON,
   pickCategoryColor,
   useCategoriesIncludingArchived,
+  useCreateCategory,
   useUpdateCategory,
 } from '@/entities/category'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import type { Category } from '@expense-tracker/api'
 
-// Edit dialog (category-management screens): name + the pre-paired
-// icon/color set only - the type is immutable by contract and rendered as a
-// read-only badge. Mirrors the create dialog's picker model (the user picks
-// only the emoji; the color travels with it).
+// Edit/create dialog (category-management screens): one dialog for the
+// screen's full CRUD. Edit mode (category set) offers name + the
+// pre-paired icon/color set only - the type is immutable by contract and
+// rendered as a read-only badge. Create mode (category null, opened from
+// the page header, add-category-create-button) additionally offers the
+// type as a segmented control; the color still travels with the picked
+// icon (the user picks only the emoji), same creation model as the
+// transaction form's new-category dialog.
 const { t } = useI18n()
 const queryCache = useQueryCache()
 
@@ -32,57 +38,101 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { data: allCategories } = useCategoriesIncludingArchived()
-const { mutateAsync: updateCategory, asyncStatus } = useUpdateCategory()
+const {
+  mutateAsync: updateCategory,
+  asyncStatus: updateStatus,
+} = useUpdateCategory()
+const {
+  mutateAsync: createCategory,
+  asyncStatus: createStatus,
+} = useCreateCategory()
+
+const isCreate = computed(() => !props.category)
+const asyncStatus = computed(() =>
+  isCreate.value ? createStatus.value : updateStatus.value,
+)
 
 const name = ref('')
 const icon = ref('')
+const type = ref<'expense' | 'income'>('expense')
 
-// Reseed the draft each time the dialog opens for a category (the shared
-// dialog instance lives outside the row loop; `immediate` covers mounting
-// with the dialog already open).
+// Reseed the draft each time the dialog opens (the shared dialog instance
+// lives outside the row loop; `immediate` covers mounting with the dialog
+// already open): the row's category in edit mode, clean defaults in
+// create mode.
 watch(
   () => [open.value, props.category] as const,
   ([isOpen, category]) => {
-    if (isOpen && category) {
+    if (!isOpen) return
+    if (category) {
       name.value = category.name
       icon.value = category.icon
+    } else {
+      name.value = ''
+      icon.value = DEFAULT_CATEGORY_ICON.icon
+      type.value = 'expense'
     }
   },
   { immediate: true },
 )
 
+// Literal keys per branch (the i18n lint bans dynamic keys).
+const titleLabel = computed(() =>
+  isCreate.value ? t('editCategory.createTitle') : t('editCategory.title'),
+)
+const submitLabel = computed(() =>
+  isCreate.value ? t('editCategory.createSubmit') : t('editCategory.submit'),
+)
+const hintLabel = computed(() =>
+  isCreate.value
+    ? t('editCategory.autoColorHint')
+    : t('editCategory.typeImmutableHint'),
+)
 const typeLabel = computed(() =>
-  props.category?.type === 'income'
+  (isCreate.value ? type.value : props.category?.type) === 'income'
     ? t('transactions.types.income')
     : t('transactions.types.expense'),
 )
+// Mode-scoped testids keep the edit surface stable for existing specs.
+const dialogTestId = computed(() => (isCreate.value ? 'create-category' : 'edit-category'))
 
 const trimmed = computed(() => name.value.trim())
 const canSubmit = computed(() => trimmed.value.length > 0 && asyncStatus.value !== 'loading')
 
 async function submit(): Promise<void> {
-  const category = props.category
-  if (!category || !trimmed.value) return
+  if (!trimmed.value) return
 
   // The color stays paired to the picked icon; colors taken by OTHER
   // categories (archived included - they still render in charts) displace
   // to the nearest free palette color, same walk as creation.
   const takenColors = (allCategories.value ?? [])
-    .filter((candidate) => candidate.id !== category.id)
+    .filter((candidate) => candidate.id !== props.category?.id)
     .map((candidate) => candidate.color)
   const color = pickCategoryColor(icon.value, takenColors)
 
   try {
-    await updateCategory({
-      id: category.id,
-      payload: {
+    if (isCreate.value) {
+      await createCategory({
         name: trimmed.value,
         icon: icon.value,
         color,
-        version: category.version,
-      },
-    })
-    notification.success(t('editCategory.success'))
+        type: type.value,
+      })
+      notification.success(t('editCategory.createSuccess'))
+    } else {
+      const category = props.category
+      if (!category) return
+      await updateCategory({
+        id: category.id,
+        payload: {
+          name: trimmed.value,
+          icon: icon.value,
+          color,
+          version: category.version,
+        },
+      })
+      notification.success(t('editCategory.success'))
+    }
     open.value = false
   } catch (error) {
     if (error instanceof VersionConflictError) {
@@ -91,9 +141,9 @@ async function submit(): Promise<void> {
       await queryCache.invalidateQueries({ key: ['categories'] })
     }
     notification.mutationError(error, {
-      title: t('editCategory.title'),
+      title: titleLabel.value,
       feature: 'category',
-      action: 'update',
+      action: isCreate.value ? 'create' : 'update',
     })
   }
 }
@@ -103,15 +153,15 @@ async function submit(): Promise<void> {
   <ResponsiveDialog
     v-model:open="open"
     class="sm:max-w-sm"
-    data-testid="edit-category-dialog"
+    :data-testid="`${dialogTestId}-dialog`"
     close-button-in-header
     header-variant="bordered-row"
     bordered-footer
   >
-    <template #title>{{ t('editCategory.title') }}</template>
+    <template #title>{{ titleLabel }}</template>
 
-    <form id="edit-category-form" class="flex flex-col gap-3" @submit.prevent="submit">
-      <div class="flex items-center gap-3">
+    <form :id="`${dialogTestId}-form`" class="flex flex-col gap-3" @submit.prevent="submit">
+      <div v-if="!isCreate" class="flex items-center gap-3">
         <CategoryAvatar
           :icon="icon || '❔'"
           :color="CATEGORY_ICONS.find((option) => option.icon === icon)?.color"
@@ -131,12 +181,38 @@ async function submit(): Promise<void> {
         </div>
       </div>
 
+      <!-- Create mode: the type IS choosable (segmented control, design
+           system: pill group on muted track); edit keeps the badge. -->
+      <Field v-else>
+        <FieldLabel>{{ t('editCategory.typeLabel') }}</FieldLabel>
+        <div
+          class="flex w-full rounded-xl bg-secondary p-1"
+          role="group"
+          :aria-label="t('editCategory.typeLabel')"
+          data-testid="create-category-type"
+        >
+          <Button
+            v-for="option in ['expense', 'income'] as const"
+            :key="option"
+            type="button"
+            :variant="type === option ? 'default' : 'ghost'"
+            class="flex-1 rounded-lg"
+            :class="type === option ? '' : 'text-muted-foreground hover:text-foreground'"
+            :aria-pressed="type === option"
+            :data-testid="`create-category-type-${option}`"
+            @click="type = option"
+          >
+            {{ option === 'income' ? t('transactions.types.income') : t('transactions.types.expense') }}
+          </Button>
+        </div>
+      </Field>
+
       <Field>
-        <FieldLabel for="edit-category-name">{{ t('editCategory.nameLabel') }}</FieldLabel>
+        <FieldLabel :for="`${dialogTestId}-name`">{{ t('editCategory.nameLabel') }}</FieldLabel>
         <Input
-          id="edit-category-name"
+          :id="`${dialogTestId}-name`"
           v-model="name"
-          data-testid="edit-category-name"
+          :data-testid="`${dialogTestId}-name`"
           :placeholder="t('editCategory.nameLabel')"
         />
       </Field>
@@ -156,7 +232,7 @@ async function submit(): Promise<void> {
             type="button"
             role="radio"
             :aria-checked="icon === option.icon"
-            :data-testid="`edit-category-icon-${index}`"
+            :data-testid="`${dialogTestId}-icon-${index}`"
             class="flex size-10 items-center justify-center rounded-full text-lg transition-shadow"
             :class="
               icon === option.icon ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
@@ -169,21 +245,26 @@ async function submit(): Promise<void> {
         </div>
       </Field>
 
-      <p class="text-xs text-muted-foreground">{{ t('editCategory.typeImmutableHint') }}</p>
+      <p class="text-xs text-muted-foreground">{{ hintLabel }}</p>
     </form>
 
     <template #footer>
-      <Button type="button" variant="ghost" data-testid="edit-category-cancel" @click="open = false">
+      <Button
+        type="button"
+        variant="ghost"
+        :data-testid="`${dialogTestId}-cancel`"
+        @click="open = false"
+      >
         {{ t('categoryManagement.cancel') }}
       </Button>
       <Button
         type="submit"
-        form="edit-category-form"
+        :form="`${dialogTestId}-form`"
         :loading="asyncStatus === 'loading'"
         :disabled="!canSubmit"
-        data-testid="edit-category-submit"
+        :data-testid="`${dialogTestId}-submit`"
       >
-        {{ t('editCategory.submit') }}
+        {{ submitLabel }}
       </Button>
     </template>
   </ResponsiveDialog>

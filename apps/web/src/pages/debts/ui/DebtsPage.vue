@@ -12,6 +12,7 @@ import DebtsSummaryCard from './DebtsSummaryCard.vue'
 import DebtorSection from './DebtorSection.vue'
 import DebtorHistoryDialog from './DebtorHistoryDialog.vue'
 import NewDebtorDebtDialog from './NewDebtorDebtDialog.vue'
+import { PageHeader } from '@/shared/ui/page-header'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -62,7 +63,7 @@ const openNewDebtor = (direction: DebtDirection) => {
 
 <template>
   <section>
-    <h1 class="text-3xl font-bold">{{ t('pages.debts') }}</h1>
+    <PageHeader :title="t('pages.debts')" />
 
     <div v-if="isLoading" class="mt-6 space-y-4">
       <Skeleton class="h-28 rounded-xl" />

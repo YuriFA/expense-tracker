@@ -148,12 +148,16 @@
   },
   "editCategory": {
     "title": "Изменить категорию",
+    "createTitle": "Новая категория",
     "submit": "Сохранить",
+    "createSubmit": "Создать",
     "nameLabel": "Название",
     "iconLabel": "Значок",
     "typeLabel": "Тип",
     "typeImmutableHint": "Тип категории изменить нельзя",
-    "success": "Категория обновлена"
+    "autoColorHint": "Цвет подберётся автоматически",
+    "success": "Категория обновлена",
+    "createSuccess": "Категория создана"
   },
   "deleteCategory": {
     "trigger": "Удалить категорию",
@@ -706,7 +710,6 @@
     "archiveBlockedPlans": "Категория используется в активных плановых платежах. Сначала удалите или измените их: {plans}.",
     "deleteSuccess": "Категория удалена",
     "cancel": "Отмена",
-    "noTransactions": "нет операций",
-    "pageSubtitle": "Управление категориями домохозяйства"
+    "noTransactions": "нет операций"
   }
 }

@@ -15,6 +15,7 @@ import { RouterLink } from 'vue-router'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { PageHeader } from '@/shared/ui/page-header'
 import { SettingsCard } from '@/shared/ui/settings-card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ChevronRight, Tags } from '@lucide/vue'
@@ -147,7 +148,7 @@ onMounted(() => {
 
 <template>
   <section class="flex flex-col gap-7">
-    <h1 class="text-3xl font-bold">{{ t('pages.settings') }}</h1>
+    <PageHeader :title="t('pages.settings')" />
 
     <SettingsCard :title="t('settings.locale')">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

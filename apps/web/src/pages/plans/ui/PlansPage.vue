@@ -5,6 +5,7 @@ import { usePlannedPayments } from '@/entities/planned-payment'
 import { useCategoriesIncludingArchived } from '@/entities/category'
 import PlansTypeCard from './PlansTypeCard.vue'
 import PlansListDialog from './PlansListDialog.vue'
+import { PageHeader } from '@/shared/ui/page-header'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -39,7 +40,7 @@ const openList = (type: 'expense' | 'income') => {
 
 <template>
   <section>
-    <h1 class="text-3xl font-bold">{{ t('pages.plans') }}</h1>
+    <PageHeader :title="t('pages.plans')" />
 
     <div v-if="isLoading" class="mt-6 grid gap-6 md:grid-cols-2">
       <Skeleton class="min-h-36 rounded-lg" />

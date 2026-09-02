@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAccounts, AccountCardSkeleton, type AccountWithBalance } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
+import { PageHeader } from '@/shared/ui/page-header'
 import AccountCard from './AccountCard.vue'
 import { Card, CardContent } from '@/shared/ui/card'
 import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
@@ -55,14 +56,11 @@ const openDelete = (account: AccountWithBalance) => {
 
 <template>
   <section>
-    <header class="flex items-center justify-between gap-4 flex-wrap">
-      <div class="flex-1">
-        <h1 class="text-[32px] font-bold tracking-tight">{{ t('pages.accounts') }}</h1>
-        <p class="mt-1 text-sm text-muted-foreground">{{ t('accounts.description') }}</p>
-      </div>
-
-      <AddAccountDialog />
-    </header>
+    <PageHeader :title="t('pages.accounts')" :subtitle="t('accounts.description')">
+      <template #actions>
+        <AddAccountDialog />
+      </template>
+    </PageHeader>
 
     <!-- Warm-minimal tinted info card: the teal wash carries the hero total
          (the paper redesign replaces the old indigo gradient). -->

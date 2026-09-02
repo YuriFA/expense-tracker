@@ -23,10 +23,10 @@ import { DonutChart, type DonutChartEntry } from '@/shared/ui/donut-chart'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { PageHeader } from '@/shared/ui/page-header'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { ArrowLeft, ChevronLeft, ChevronRight } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { DEFAULT_CURRENCY, formatMoney } from '@/shared/lib/money'
 import CategoryCashflowDialog from './CategoryCashflowDialog.vue'
 
@@ -184,21 +184,11 @@ const openDrilldown = (category: Category) => {
 
 <template>
   <section>
-    <div class="flex items-center gap-3">
-      <Button
-        as-child
-        variant="outline"
-        size="icon"
-        class="rounded-full"
-        :aria-label="t('common.back')"
-        data-testid="analytics-back"
-      >
-        <RouterLink to="/analytics">
-          <ArrowLeft class="size-4" aria-hidden="true" />
-        </RouterLink>
-      </Button>
-      <h1 class="text-3xl font-bold">{{ title }}</h1>
-    </div>
+    <PageHeader
+      :title="title"
+      back-to="/analytics"
+      :back-label="t('common.back')"
+    />
 
     <div
       class="bg-secondary mx-auto mt-4 flex w-full max-w-md rounded-xl p-1"

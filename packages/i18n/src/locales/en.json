@@ -148,12 +148,16 @@
   },
   "editCategory": {
     "title": "Edit category",
+    "createTitle": "New category",
     "submit": "Save",
+    "createSubmit": "Create",
     "nameLabel": "Name",
     "iconLabel": "Icon",
     "typeLabel": "Type",
     "typeImmutableHint": "The category type cannot be changed",
-    "success": "Category updated"
+    "autoColorHint": "The color is assigned automatically",
+    "success": "Category updated",
+    "createSuccess": "Category created"
   },
   "deleteCategory": {
     "trigger": "Delete category",
@@ -706,7 +710,6 @@
     "archiveBlockedPlans": "The category is used by active planned payments. Remove or change them first: {plans}.",
     "deleteSuccess": "Category deleted",
     "cancel": "Cancel",
-    "noTransactions": "no transactions",
-    "pageSubtitle": "Manage the household's categories"
+    "noTransactions": "no transactions"
   }
 }

@@ -28,7 +28,7 @@
         "apps/web/src/widgets/mobile-shell/ui/BottomTabBar.vue"
       ],
       "fingerprints": {
-        ".superdesign/design-system.md": "0c7d82a391818d83f4f673e07d1bcdc108df9a111257ad1bf6e3432a859d47fb",
+        ".superdesign/design-system.md": "847e0cc4bd1e85306fdeb49cbf9140425c596a101a8ff1f61d591778918c2294",
         "apps/web/src/app/layout/AppShell.vue": "fecab6c3c90f9d55463fa36cc3c1d725a295953e8f6d87e2ef90f8f7887d94c3",
         "apps/web/src/app/layout/AppSidebarNav.vue": "d175a55d45e471269212bccb1c3f2da37e945873b73a47b9d39c5136564b0bd9",
         "apps/web/src/pages/dashboard/ui/DashboardPage.vue": "1deeca777ab3c52f041b74ecd88b0e6e233a67634b1064beaca805e169661793",
@@ -93,7 +93,8 @@
         },
         "182da9a6-e4f9-443e-9c38-2d0d90214639": {
           "title": "Этап 3 — сложные компоненты (Бумага)",
-          "visualDirection": "Rev 2: dialog footer buttons 12px (not pills), rest preserved: centered delete confirm, open select, segmented tabs, paper calendar, transaction rows, donut, sync pills, filters drawer"
+          "visualDirection": "Rev 2: dialog footer buttons 12px (not pills), rest preserved: centered delete confirm, open select, segmented tabs, paper calendar, transaction rows, donut, sync pills, filters drawer; добавлена секция 11 «Шапка внутренней страницы (PageHeader)» — образцы А (корневая) и Б (дочерняя) + правило",
+          "currentVersion": 4
         },
         "27cb41d8-53ae-45c8-b8ee-1aed289b7a73": {
           "title": "Refined Dashboard Specimens (Direction D)",
@@ -154,9 +155,19 @@
           "parentDraftId": "73ef9770-3dbb-4ab9-9cf1-aebbeb111d99",
           "device": "mobile",
           "currentVersion": 2
+        },
+        "5cf87628-7bce-4d78-83f6-1d8907491aae": {
+          "title": "Кошелёк — Управление категориями",
+          "visualDirection": "Бумага; шапка по канону PageHeader (без подзаголовка): круглая back-кнопка в ряд, «Создать» справа; specimen «Диалог — Новая категория»",
+          "currentVersion": 3
+        },
+        "1060dbd7-aec0-4176-b919-9fbbbb45b4e4": {
+          "title": "Аналитика детальная",
+          "visualDirection": "Бумага; заголовок приведён к канону 32px tracking-tight",
+          "currentVersion": 3
         }
       },
-      "updatedAt": "2026-08-31T19:45:00.000Z"
+      "updatedAt": "2026-09-02T22:04:32Z"
     },
     "/analytics": {
       "targetKind": "flow-page",

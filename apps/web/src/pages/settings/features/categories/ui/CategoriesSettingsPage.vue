@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
-import { ArrowLeft, ArchiveRestore, Archive, ChevronDown, Pencil, Trash2 } from '@lucide/vue'
+import { ArchiveRestore, Archive, ChevronDown, Pencil, Trash2 } from '@lucide/vue'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { SettingsCard } from '@/shared/ui/settings-card'
@@ -17,8 +17,9 @@ import CategoryDeleteDialog from './CategoryDeleteDialog.vue'
 
 // Category management (category-management screens): the household's
 // non-deleted categories grouped by type with locally computed transaction
-// counts, an archive section, and edit/archive/delete actions. Creation is
-// deliberately not offered here - it lives in the transaction form dialog.
+// counts, an archive section, and edit/archive/delete actions. Creation
+// lives in the header (add-category-create-button): it opens the shared
+// edit dialog in create mode; the transaction form keeps its inline flow.
 const { t, locale } = useI18n()
 
 const categoriesQuery = useCategoriesIncludingArchived()
@@ -54,6 +55,11 @@ const editTarget = ref<Category | null>(null)
 const editOpen = ref(false)
 const deleteTarget = ref<Category | null>(null)
 const deleteOpen = ref(false)
+
+function openCreate(): void {
+  editTarget.value = null
+  editOpen.value = true
+}
 
 function openEdit(category: Category): void {
   editTarget.value = category
@@ -107,20 +113,17 @@ async function unarchiveCategory(category: Category): Promise<void> {
 
 <template>
   <section class="flex flex-col gap-7">
-    <div>
-      <RouterLink
-        :to="{ name: 'settings' }"
-        class="mb-4 flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        data-testid="categories-back-link"
-      >
-        <ArrowLeft class="size-4" aria-hidden="true" />
-        {{ t('pages.settings') }}
-      </RouterLink>
-      <h1 class="mb-3 text-3xl font-bold">{{ t('categoryManagement.title') }}</h1>
-      <p class="text-sm text-muted-foreground">
-        {{ t('categoryManagement.pageSubtitle') }}
-      </p>
-    </div>
+    <PageHeader
+      :title="t('categoryManagement.title')"
+      :back-to="{ name: 'settings' }"
+      :back-label="t('pages.settings')"
+    >
+      <template #actions>
+        <Button data-testid="categories-create" @click="openCreate()">
+          {{ t('actions.create') }}
+        </Button>
+      </template>
+    </PageHeader>
 
     <div v-if="categoriesLoading" class="flex flex-col gap-6" data-testid="categories-loading">
       <Skeleton v-for="group in 2" :key="group" class="h-40" />

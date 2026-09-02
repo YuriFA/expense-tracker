@@ -253,4 +253,21 @@ describe('CategoriesSettingsPage', () => {
     await flushPromises()
     expect(categoriesRepo.update).not.toHaveBeenCalledWith('c-taxi', expect.anything())
   })
+
+  it('opens the dialog in create mode from the header button', async () => {
+    const { wrapper, categoriesRepo } = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="categories-create"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="categories-create"]').trigger('click')
+    await flushPromises()
+
+    // The dialog is in create mode: type control, not the read-only badge.
+    expect(q('[data-testid="create-category-dialog"]')).not.toBeNull()
+    expect(q('[data-testid="edit-category-type"]')).toBeNull()
+
+    await typeInto('[data-testid="create-category-name"]', 'Pets')
+    await click('[data-testid="create-category-submit"]')
+    expect(categoriesRepo.create).toHaveBeenCalledTimes(1)
+  })
 })

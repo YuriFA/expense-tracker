@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/shared/ui/button'
+import { PageHeader } from '@/shared/ui/page-header'
 import { useAddTransactionDialog } from '@/features/transaction/add'
 import TransactionsBrowser from './TransactionsBrowser.vue'
 
@@ -12,13 +13,13 @@ const { openAddTransactionDialog } = useAddTransactionDialog()
 
 <template>
   <section>
-    <div class="flex gap-4 justify-between items-center">
-      <h1 class="text-[32px] font-bold tracking-tight">{{ t('pages.transactions') }}</h1>
-
-      <Button data-testid="transactions-create" @click="openAddTransactionDialog()">
-        {{ t('actions.create') }}
-      </Button>
-    </div>
+    <PageHeader :title="t('pages.transactions')">
+      <template #actions>
+        <Button data-testid="transactions-create" @click="openAddTransactionDialog()">
+          {{ t('actions.create') }}
+        </Button>
+      </template>
+    </PageHeader>
 
     <TransactionsBrowser class="mt-6" />
   </section>
