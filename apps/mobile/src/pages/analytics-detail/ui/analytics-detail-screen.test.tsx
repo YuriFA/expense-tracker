@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals'
+import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -37,20 +37,47 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack }) }))
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
 const CATEGORIES: Category[] = [
-  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#6366f1', version: 1 },
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#f97316', version: 1 },
+  {
+    id: 'cat-taxi',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#6366f1',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'cat-cafe',
+    name: 'Кафе',
+    type: 'expense',
+    icon: 'cafe',
+    color: '#f97316',
+    archivedAt: null,
+    version: 1,
+  },
   {
     id: 'cat-salary',
     name: 'Зарплата',
     type: 'income',
     icon: 'cash',
     color: '#22c55e',
+    archivedAt: null,
     version: 1,
   },
 ]
 
-// Current-month fixtures follow the transactions-screen test convention:
-// hardcoded August 2026 instants against the runtime's current month.
+// The screen derives "current period" from the wall clock, and the fixtures
+// hardcode mid-August 2026 (the current week must be empty, the month must
+// carry both rows). Freeze the clock there so the suite is deterministic on
+// any run date; RNTL's waitFor advances the fake timers while polling.
+beforeAll(() => {
+  jest.useFakeTimers({ now: new Date('2026-08-14T09:00:00') })
+})
+
+afterAll(() => {
+  jest.useRealTimers()
+})
+
 const TRANSACTIONS: Transaction[] = [
   {
     id: 'tx-taxi',

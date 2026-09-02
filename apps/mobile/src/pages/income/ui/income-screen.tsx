@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { View } from 'react-native'
 import { monthToUtcDayRange } from '@expense-tracker/dates'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { useTransactions } from '@/entities/transaction'
 import { NewTransactionSheet } from '@/features/create-transaction'
 import { EditTransactionSheet } from '@/features/edit-transaction'
@@ -45,7 +45,7 @@ export function IncomeScreen() {
   // income by the repository; children trim to the exact local month via the
   // shared selectors.
   const transactionsQuery = useTransactions({ type: 'income', ...monthToUtcDayRange(cursor) })
-  const categoriesQuery = useCategories('income')
+  const categoriesQuery = useCategoriesIncludingArchived('income')
   const transactions = transactionsQuery.data ?? []
   const categories = categoriesQuery.data ?? []
 

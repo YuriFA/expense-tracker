@@ -587,6 +587,19 @@ func (s *Store) UpdateCategory(
 	if params.Color != nil {
 		c.Color = *params.Color
 	}
+	if params.Archive != nil {
+		if *params.Archive {
+			for _, p := range s.plans {
+				if s.sameHousehold(p.UserID, householdID) && p.CategoryID == id && !p.Deleted() {
+					return nil, domain.ErrCategoryHasPlannedPayments
+				}
+			}
+			now := time.Now().UTC()
+			c.ArchivedAt = &now
+		} else {
+			c.ArchivedAt = nil
+		}
+	}
 	c.UpdatedAt = time.Now().UTC()
 	c.Version++
 	s.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeUpsert, c.Version)
@@ -594,19 +607,21 @@ func (s *Store) UpdateCategory(
 	return &cc, nil
 }
 
-func (s *Store) DeleteCategory(_ context.Context, householdID, actorID, id uuid.UUID) error {
+func (s *Store) DeleteCategory(_ context.Context, householdID, actorID, id uuid.UUID, cascade bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
 	if !ok || !s.sameHousehold(c.UserID, householdID) {
 		return domain.ErrCategoryNotFound
 	}
-	for _, t := range s.transactions {
-		if !s.sameHousehold(t.UserID, householdID) {
-			continue
-		}
-		if t.CategoryID != nil && *t.CategoryID == id {
-			return domain.ErrCategoryHasTransactions
+	if !cascade {
+		for _, t := range s.transactions {
+			if !s.sameHousehold(t.UserID, householdID) {
+				continue
+			}
+			if t.CategoryID != nil && *t.CategoryID == id && !t.Deleted() {
+				return domain.ErrCategoryHasTransactions
+			}
 		}
 	}
 	for _, p := range s.plans {
@@ -619,6 +634,14 @@ func (s *Store) DeleteCategory(_ context.Context, householdID, actorID, id uuid.
 	c.DeletedAt = &now
 	c.Version++
 	s.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeTombstone, c.Version)
+	for _, t := range s.transactions {
+		if t.CategoryID == nil || *t.CategoryID != id || t.Deleted() || !s.sameHousehold(t.UserID, householdID) {
+			continue
+		}
+		t.DeletedAt = &now
+		t.Version++
+		s.appendChange(householdID, actorID, domain.SyncEntityTransaction, t.ID, domain.SyncChangeTombstone, t.Version)
+	}
 	return nil
 }
 
@@ -643,6 +666,9 @@ func (s *Store) GetCategories(
 	var out []domain.Category
 	for _, c := range s.categories {
 		if !s.sameHousehold(c.UserID, householdID) || c.Deleted() {
+			continue
+		}
+		if c.Archived() && !params.IncludeArchived {
 			continue
 		}
 		if params.Type != nil && c.Type != *params.Type {
@@ -1640,6 +1666,40 @@ func (t *fakeSyncTx) TombstoneCategory( //nolint:dupl // tombstone twins: identi
 	t.store.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeTombstone, c.Version)
 	cc := *c
 	return &cc, nil
+}
+
+// CascadeTombstoneCategory mirrors the postgres cascade: the category
+// tombstone plus one tombstone per live household transaction referencing
+// it, each with its own change entry (the in-memory twin of the change_log
+// appends on the batch transaction).
+func (t *fakeSyncTx) CascadeTombstoneCategory(
+	_ context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.Category, error) {
+	c, err := t.TombstoneCategory(context.Background(), householdID, actorID, id)
+	if err != nil {
+		return nil, err
+	}
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+	now := time.Now().UTC()
+	for _, tx := range t.store.transactions {
+		if tx.CategoryID == nil || *tx.CategoryID != id || tx.Deleted() ||
+			!t.store.sameHousehold(tx.UserID, householdID) {
+			continue
+		}
+		tx.DeletedAt = &now
+		tx.Version++
+		t.store.appendChange(
+			householdID,
+			actorID,
+			domain.SyncEntityTransaction,
+			tx.ID,
+			domain.SyncChangeTombstone,
+			tx.Version,
+		)
+	}
+	return c, nil
 }
 
 func (t *fakeSyncTx) CreateTransaction(

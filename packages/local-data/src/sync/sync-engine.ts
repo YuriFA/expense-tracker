@@ -308,7 +308,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
             action: op.op,
             id: op.entityId,
             baseVersion: base,
-            ...(op.op === 'upsert' && data ? { data } : {}),
+            ...(data ? { data } : {}),
           },
         })
 
@@ -319,8 +319,24 @@ export function createSyncEngine(options: SyncEngineOptions) {
     })
   }
 
+  function isRecordLike(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null
+  }
+
   function decodeStoredPayload(op: SyncOutboxRow) {
-    if (op.op === 'delete') return undefined
+    if (op.op === 'delete') {
+      // A category cascade delete stores { cascade: true } as its payload;
+      // plain deletes carry null and send no wire data.
+      try {
+        const parsed = JSON.parse(op.payloadJson) as unknown
+        if (op.entity === 'category' && isRecordLike(parsed) && parsed.cascade === true) {
+          return { cascade: true }
+        }
+      } catch {
+        return undefined
+      }
+      return undefined
+    }
     try {
       return payloadToSyncData(op.entity, JSON.parse(op.payloadJson))
     } catch {

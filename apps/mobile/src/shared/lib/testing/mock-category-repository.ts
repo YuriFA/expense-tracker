@@ -22,6 +22,10 @@ export function createMockCategoryRepository(initial: Category[] = []): MockCate
     snapshot: () => [...items],
     async getAll() {
       calls.getAll += 1
+      return items.filter((category) => category.archivedAt === null)
+    },
+    async getAllIncludingArchived() {
+      calls.getAll += 1
       return [...items]
     },
     async getById(id) {
@@ -29,7 +33,12 @@ export function createMockCategoryRepository(initial: Category[] = []): MockCate
     },
     async create(payload: CreateCategoryPayload) {
       calls.create += 1
-      const category: Category = { ...payload, id: payload.id ?? `cat-${nextId++}`, version: 1 }
+      const category: Category = {
+        ...payload,
+        archivedAt: null,
+        id: payload.id ?? `cat-${nextId++}`,
+        version: 1,
+      }
       items.push(category)
       return { ...category }
     },
@@ -42,8 +51,15 @@ export function createMockCategoryRepository(initial: Category[] = []): MockCate
           apiCode: 'CATEGORY_VERSION_CONFLICT',
         })
       }
-      const { version: _cas, ...fields } = payload
-      items[index] = { ...items[index], ...fields, version: items[index].version + 1 }
+      const { version: _cas, archived, ...fields } = payload
+      items[index] = {
+        ...items[index],
+        ...fields,
+        ...(archived === undefined
+          ? {}
+          : { archivedAt: archived ? '2026-09-01T00:00:00.000Z' : null }),
+        version: items[index].version + 1,
+      }
       return { ...items[index] }
     },
     async remove(id) {

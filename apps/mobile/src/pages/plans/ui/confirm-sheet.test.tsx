@@ -35,7 +35,15 @@ const ACCOUNTS: Account[] = [
 ]
 
 const CATEGORIES: Category[] = [
-  { id: 'cat-utilities', name: 'ЖКХ', type: 'expense', icon: 'home', color: '#7c5cff', version: 1 },
+  {
+    id: 'cat-utilities',
+    name: 'ЖКХ',
+    type: 'expense',
+    icon: 'home',
+    color: '#7c5cff',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 const PLAN: PlannedPayment = {

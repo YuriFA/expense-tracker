@@ -48,6 +48,9 @@ export const categories = sqliteTable('categories', {
   icon: text('icon').notNull(),
   /** Hex color from the predefined palette. */
   color: text('color').notNull(),
+  /** Archive timestamp (ISO); null = active. Archived categories are closed
+   * for new references but keep labeling existing transactions. */
+  archivedAt: text('archived_at'),
   /** Present only for bundled default categories; null for user-created. */
   slug: text('slug'),
   version: integer('version').notNull().default(1),

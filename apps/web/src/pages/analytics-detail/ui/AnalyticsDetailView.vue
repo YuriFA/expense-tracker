@@ -18,7 +18,7 @@ import {
   type AnalyticsDirection,
 } from '@/entities/analytics'
 import { useTransactions } from '@/entities/transaction'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { DonutChart, type DonutChartEntry } from '@/shared/ui/donut-chart'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -69,7 +69,9 @@ const {
   error,
   refetch,
 } = useTransactions(queryOptions)
-const { data: categories, isLoading: categoriesLoading } = useCategories()
+// Including archived: this is a join over existing records -
+// archived categories stay visible in history/analytics/filters.
+const { data: categories, isLoading: categoriesLoading } = useCategoriesIncludingArchived()
 
 const directionCategories = computed(() =>
   (categories.value ?? []).filter((c) => c.type === props.direction),

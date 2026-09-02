@@ -60,6 +60,7 @@ const CATEGORIES = [
     type: 'expense' as const,
     icon: 'cafe',
     color: '#a78bfa',
+    archivedAt: null,
     version: 1,
   },
   {
@@ -68,6 +69,7 @@ const CATEGORIES = [
     type: 'income' as const,
     icon: 'cash',
     color: '#16a34a',
+    archivedAt: null,
     version: 1,
   },
 ]

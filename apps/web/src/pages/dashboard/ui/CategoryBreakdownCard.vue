@@ -5,7 +5,7 @@ import { periodToUtcDayRange, type PeriodCursor } from '@expense-tracker/dates'
 import { categoryTotals, periodTotal, percentLabel } from '@/entities/analytics'
 import { useTransactions } from '@/entities/transaction'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { NewCategoryDialog } from '@/features/transaction/add'
 import DashboardCard from './DashboardCard.vue'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -34,7 +34,9 @@ const {
   isLoading: isLoadingCategories,
   error: categoriesError,
   refetch: refetchCategories,
-} = useCategories()
+// Including archived: this is a join over existing records -
+// archived categories stay visible in history/analytics/filters.
+} = useCategoriesIncludingArchived()
 
 const isLoading = computed(() => isLoadingTx.value || isLoadingCategories.value)
 const error = computed(() => txError.value || categoriesError.value)

@@ -13,6 +13,7 @@ const validCategory: Category = {
   type: 'expense',
   icon: '🍔',
   color: '#FF0000',
+  archivedAt: null,
   slug: 'food',
 }
 

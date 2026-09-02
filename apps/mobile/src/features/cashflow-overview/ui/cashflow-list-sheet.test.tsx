@@ -54,7 +54,15 @@ function dayThisMonth(day: number): string {
 }
 
 const CATEGORIES: Category[] = [
-  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', version: 1 },
+  {
+    id: 'cat-taxi',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#7c5cff',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 const TRANSACTIONS: Transaction[] = [

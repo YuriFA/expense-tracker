@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { currentPeriod, monthLabel, periodToUtcDayRange } from '@expense-tracker/dates'
 import { useTransactions } from '@/entities/transaction'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import AnalyticsOverviewCard from './AnalyticsOverviewCard.vue'
@@ -37,7 +37,9 @@ const {
   isLoading: loadingCategories,
   error: categoriesError,
   refetch: refetchCategories,
-} = useCategories()
+// Including archived: this is a join over existing records -
+// archived categories stay visible in history/analytics/filters.
+} = useCategoriesIncludingArchived()
 
 const isLoading = computed(
   () => loadingExpenses.value || loadingIncomes.value || loadingCategories.value,

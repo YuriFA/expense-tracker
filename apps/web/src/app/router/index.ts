@@ -75,6 +75,13 @@ const routes: RouteRecordRaw[] = [
     name: 'settings',
     component: () => import('@/pages/settings').then((m) => m.SettingsPage),
   },
+  {
+    // Category management sub-screen (category-management screens): reached
+    // from the settings page's categories card, not the global nav.
+    path: '/settings/categories',
+    name: 'settings-categories',
+    component: () => import('@/pages/settings').then((m) => m.CategoriesSettingsPage),
+  },
 ]
 
 const router = createRouter({

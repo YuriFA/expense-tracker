@@ -134,6 +134,9 @@ function validateReferences(
   categoryId: string | null,
   fromAccountId: string | null,
   toAccountId: string | null,
+  /** The category the record already carries (null on create): keeping an
+   * already-assigned archived category is allowed, assigning anew is not. */
+  previousCategoryId: string | null,
 ): void {
   if (type === 'transfer') {
     if (!findLiveAccount(tx, fromAccountId)) {
@@ -171,7 +174,7 @@ function validateReferences(
   }
   const category = categoryId
     ? tx
-        .select({ type: categories.type })
+        .select({ type: categories.type, archivedAt: categories.archivedAt })
         .from(categories)
         .where(and(eq(categories.id, categoryId), isNull(categories.deletedAt)))
         .get()
@@ -182,6 +185,11 @@ function validateReferences(
   if (category.type !== type) {
     throw new InvalidPayloadError('Category type does not match the transaction type', {
       apiCode: 'CATEGORY_TYPE_MISMATCH',
+    })
+  }
+  if (category.archivedAt !== null && previousCategoryId !== categoryId) {
+    throw new InvalidPayloadError('Category is archived and not available for new transactions', {
+      apiCode: 'CATEGORY_ARCHIVED',
     })
   }
 }
@@ -349,6 +357,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
           row.categoryId,
           row.fromAccountId,
           row.toAccountId,
+          null, // fresh assignment: an archived category is rejected
         )
 
         tx.insert(transactions).values(row).run()
@@ -421,6 +430,7 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
           next.categoryId,
           next.fromAccountId,
           next.toAccountId,
+          row.categoryId, // unchanged assignment may keep an archived category
         )
 
         tx.update(transactions).set(next).where(eq(transactions.id, id)).run()

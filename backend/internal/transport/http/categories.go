@@ -19,7 +19,15 @@ func (s *Server) ListCategories(
 		t := domain.TransactionType(*req.Params.Type)
 		typ = &t
 	}
-	cats, err := s.categories.List(ctx, householdID, domain.GetCategoriesParams{Type: typ})
+	includeArchived := false
+	if req.Params.IncludeArchived != nil {
+		includeArchived = *req.Params.IncludeArchived
+	}
+	cats, err := s.categories.List(
+		ctx,
+		householdID,
+		domain.GetCategoriesParams{Type: typ, IncludeArchived: includeArchived},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +96,13 @@ func (s *Server) UpdateCategory(
 		t := domain.TransactionType(*req.Body.Type)
 		typ = &t
 	}
+	var archive *bool
+	if req.Body.Archived != nil {
+		v := *req.Body.Archived
+		archive = &v
+	}
 	c, err := s.categories.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateCategoryParams{
-		Name: name, Type: typ, Icon: icon, Color: color, Version: req.Body.Version,
+		Name: name, Type: typ, Icon: icon, Color: color, Archive: archive, Version: req.Body.Version,
 	})
 	if err != nil {
 		return nil, err
@@ -102,7 +115,11 @@ func (s *Server) DeleteCategory(
 	req api.DeleteCategoryRequestObject,
 ) (api.DeleteCategoryResponseObject, error) {
 	user := s.currentUser(ctx)
-	if err := s.categories.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
+	cascade := false
+	if req.Params.Cascade != nil {
+		cascade = *req.Params.Cascade
+	}
+	if err := s.categories.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, cascade); err != nil {
 		return nil, err
 	}
 	return api.DeleteCategory204Response{}, nil

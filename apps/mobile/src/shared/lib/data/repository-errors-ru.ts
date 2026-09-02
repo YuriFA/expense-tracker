@@ -35,6 +35,8 @@ const API_CODE_ERRORS_RU: Record<string, string> = {
   HOUSEHOLD_INVITATION_NOT_FOUND: 'Приглашение не найдено',
   HOUSEHOLD_CODE_INVALID: 'Неверный код домохозяйства',
   HOUSEHOLD_OWNER_WITH_MEMBERS: 'Владелец не может покинуть домохозяйство с участниками',
+  CATEGORY_ARCHIVED: 'Категория в архиве и недоступна для новых транзакций',
+  PLANNED_PAYMENT_CATEGORY_ARCHIVED: 'Категория в архиве и недоступна для плановых платежей',
 }
 
 /** Human-readable RU message for any repository error (code-keyed). */

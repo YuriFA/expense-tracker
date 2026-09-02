@@ -23,7 +23,7 @@ import {
   type AnalyticsDirection,
   type ChartEntry,
 } from '@/features/analytics'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { useTransactions } from '@/entities/transaction'
 import { Card } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
@@ -133,7 +133,7 @@ export function AnalyticsScreen() {
   const range = periodToUtcDayRange(cursor)
   const expenseQuery = useTransactions({ type: 'expense', ...range })
   const incomeQuery = useTransactions({ type: 'income', ...range })
-  const categoriesQuery = useCategories()
+  const categoriesQuery = useCategoriesIncludingArchived()
   const categories = categoriesQuery.data ?? []
 
   const handleOpenDetail = (direction: AnalyticsDirection) => {

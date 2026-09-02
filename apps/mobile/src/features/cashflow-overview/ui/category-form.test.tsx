@@ -49,6 +49,7 @@ const existingCategory: Category = {
   type: 'expense',
   icon: 'restaurant',
   color: '#f97316',
+  archivedAt: null,
   version: 3,
 }
 
@@ -154,6 +155,7 @@ describe('CategoryForm (create)', () => {
       type: 'income',
       icon: 'bus',
       color: '#6366f1',
+      archivedAt: null,
       version: 1,
     })
   })
@@ -183,6 +185,7 @@ describe('CategoryForm (edit)', () => {
       type: 'expense',
       icon: 'restaurant',
       color: '#f97316',
+      archivedAt: null,
       version: 4,
     })
     expect(repository.calls.create).toBe(0)

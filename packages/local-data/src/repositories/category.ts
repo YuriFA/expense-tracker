@@ -33,6 +33,7 @@ function toCategory(row: CategoryRow): Category {
     type: row.type as Category['type'],
     icon: row.icon,
     color: row.color,
+    archivedAt: row.archivedAt,
     version: row.version,
     ...(row.slug ? { slug: row.slug } : {}),
   }
@@ -57,6 +58,17 @@ function hasDuplicateName(tx: LocalTx, name: string, exceptId?: string): boolean
 export function createLocalCategoryRepository(db: LocalDatabase): CategoryRepository {
   return {
     async getAll() {
+      // Picker default: active (non-archived) categories only.
+      const rows = db
+        .select()
+        .from(categories)
+        .where(and(isNull(categories.deletedAt), isNull(categories.archivedAt)))
+        .orderBy(asc(categories.createdAt), asc(categories.id))
+        .all()
+      return rows.map(toCategory)
+    },
+
+    async getAllIncludingArchived() {
       const rows = db
         .select()
         .from(categories)
@@ -104,6 +116,7 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
           type: payload.type,
           icon: payload.icon,
           color: payload.color,
+          archivedAt: null,
           slug: payload.slug ?? null,
           version: 1,
           serverVersion: 0,
@@ -127,7 +140,8 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
         payload.name !== undefined ||
         payload.type !== undefined ||
         payload.icon !== undefined ||
-        payload.color !== undefined
+        payload.color !== undefined ||
+        payload.archived !== undefined
       if (!hasFields) throw new InvalidPayloadError('No fields to update')
       if (payload.name !== undefined && !payload.name.trim()) {
         throw new InvalidPayloadError('Category name is required')
@@ -154,12 +168,30 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
           })
         }
 
+        // Archiving is blocked while a live planned payment references the
+        // category - the local mirror of the server-side guard.
+        if (payload.archived === true) {
+          const planned = tx
+            .select({ id: plannedPayments.id })
+            .from(plannedPayments)
+            .where(and(eq(plannedPayments.categoryId, id), isNull(plannedPayments.deletedAt)))
+            .get()
+          if (planned) {
+            throw new ReferentialIntegrityError('Category has live planned payments', {
+              apiCode: 'CATEGORY_IN_USE',
+            })
+          }
+        }
+
         const next: CategoryRow = {
           ...row,
           name,
           type: payload.type ?? row.type,
           icon: payload.icon ?? row.icon,
           color: payload.color ?? row.color,
+          ...(payload.archived !== undefined
+            ? { archivedAt: payload.archived ? nowIso() : null }
+            : {}),
           version: row.version + 1,
         }
         tx.update(categories).set(next).where(eq(categories.id, id)).run()
@@ -174,24 +206,29 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
       })
     },
 
-    async remove(id: string) {
+    async remove(id: string, options?: { cascade?: boolean }) {
+      const cascade = options?.cascade === true
       db.transaction((tx) => {
         const row = tx.select().from(categories).where(eq(categories.id, id)).get()
         if (!row || row.deletedAt) throw new NotFoundError('Category not found')
 
-        const referenced = tx
-          .select({ id: transactions.id })
-          .from(transactions)
-          .where(and(eq(transactions.categoryId, id), isNull(transactions.deletedAt)))
-          .get()
-        if (referenced) {
-          throw new ReferentialIntegrityError('Category has referencing transactions', {
-            apiCode: 'CATEGORY_IN_USE',
-          })
+        if (!cascade) {
+          const referenced = tx
+            .select({ id: transactions.id })
+            .from(transactions)
+            .where(and(eq(transactions.categoryId, id), isNull(transactions.deletedAt)))
+            .get()
+          if (referenced) {
+            throw new ReferentialIntegrityError('Category has referencing transactions', {
+              apiCode: 'CATEGORY_IN_USE',
+            })
+          }
         }
 
         // Live plans referencing the category block deletion too (tombstoned
-        // plans never block) - the local mirror of the server-side guard.
+        // plans never block) - the local mirror of the server-side guard, in
+        // both delete modes: a cascade removes transactions, never future
+        // obligations.
         const planned = tx
           .select({ id: plannedPayments.id })
           .from(plannedPayments)
@@ -203,24 +240,62 @@ export function createLocalCategoryRepository(db: LocalDatabase): CategoryReposi
           })
         }
 
+        const referencing = tx
+          .select()
+          .from(transactions)
+          .where(and(eq(transactions.categoryId, id), isNull(transactions.deletedAt)))
+          .all()
+
         if (row.serverVersion === 0 && !hasSentOperations(tx, 'category', id)) {
           // Unborn record (no operation ever left the device): it vanishes
           // and its queued operations go with it - nothing is ever pushed.
+          // Unreferenced-born transactions cannot exist for an unborn
+          // category, so a local cascade just wipes the same unborn rows.
           tx.delete(categories).where(eq(categories.id, id)).run()
           removeOperationsFor(tx, 'category', id)
-        } else {
-          // serverVersion 0 with a SENT create means the server may already
-          // hold the record (in flight / lost response): the delete must
-          // travel as a tombstone after the create, never be wiped.
-          const next = { ...row, deletedAt: nowIso(), version: row.version + 1 }
-          tx.update(categories).set(next).where(eq(categories.id, id)).run()
-          enqueueOperation(tx, {
-            entity: 'category',
-            entityId: id,
-            op: 'delete',
-            payload: null,
-            baseVersion: row.serverVersion,
-          })
+          for (const txRow of referencing) {
+            tx.delete(transactions).where(eq(transactions.id, txRow.id)).run()
+            removeOperationsFor(tx, 'transaction', txRow.id)
+          }
+          return
+        }
+
+        // serverVersion 0 with a SENT create means the server may already
+        // hold the record (in flight / lost response): the delete must
+        // travel as a tombstone after the create, never be wiped.
+        const next = { ...row, deletedAt: nowIso(), version: row.version + 1 }
+        tx.update(categories).set(next).where(eq(categories.id, id)).run()
+        enqueueOperation(tx, {
+          entity: 'category',
+          entityId: id,
+          op: 'delete',
+          // The cascade flag rides the delete payload; the server replays
+          // the cascade atomically and the transaction tombstones come
+          // back through pull.
+          payload: cascade ? { cascade: true } : null,
+          baseVersion: row.serverVersion,
+        })
+
+        if (!cascade) return
+        // Local cascade mirror: tombstone the referencing transactions in
+        // this same transaction WITHOUT individual delete ops - the single
+        // flagged category delete covers them server-side. Unborn ones
+        // vanish; born ones keep their row as a tombstone for the pull to
+        // confirm. Their pending ops are dropped (the cascade outranks them).
+        const stamp = nowIso()
+        for (const txRow of referencing) {
+          const unborn =
+            txRow.serverVersion === 0 && !hasSentOperations(tx, 'transaction', txRow.id)
+          if (unborn) {
+            tx.delete(transactions).where(eq(transactions.id, txRow.id)).run()
+            removeOperationsFor(tx, 'transaction', txRow.id)
+          } else {
+            tx.update(transactions)
+              .set({ ...txRow, deletedAt: stamp, version: txRow.version + 1 })
+              .where(eq(transactions.id, txRow.id))
+              .run()
+            removeOperationsFor(tx, 'transaction', txRow.id)
+          }
         }
       })
     },

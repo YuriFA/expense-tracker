@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -54,6 +55,15 @@ func upsertOp(entity string, opID, recordID uuid.UUID, base int, data any) domai
 func deleteOp(entity string, opID, recordID uuid.UUID) domain.SyncOperation {
 	return domain.SyncOperation{
 		OpID: opID, Entity: entity, Action: domain.SyncActionDelete, ID: recordID,
+	}
+}
+
+// cascadeDeleteOp is a category delete carrying the cascade flag in its
+// data payload ({"cascade": true}).
+func cascadeDeleteOp(entity string, opID, recordID uuid.UUID) domain.SyncOperation {
+	return domain.SyncOperation{
+		OpID: opID, Entity: entity, Action: domain.SyncActionDelete, ID: recordID,
+		Data: json.RawMessage(`{"cascade":true}`),
 	}
 }
 
@@ -492,6 +502,89 @@ func TestSyncPush_CategoryProtocol(t *testing.T) {
 			deleteOp(domain.SyncEntityCategory, uuid.New(), uuid.New()))
 		assert.Equal(t, domain.SyncStatusApplied, res.Status)
 		assert.Equal(t, 0, res.Version)
+	})
+
+	t.Run("cascade delete tombstones the referencing transactions", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID, txID := uuid.New(), uuid.New(), uuid.New()
+		for _, op := range []domain.SyncOperation{
+			upsertOp(domain.SyncEntityAccount, uuid.New(), accountID, 0,
+				&domain.AccountFullState{Name: "Карта", Currency: "RUB"}),
+			upsertOp(domain.SyncEntityCategory, uuid.New(), categoryID, 0,
+				&domain.CategoryFullState{Name: "Продукты", Type: domain.TransactionTypeExpense}),
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), txID, 0,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 250,
+					OccurredAt: time.Now().UTC(), AccountID: &accountID, CategoryID: &categoryID,
+				}),
+		} {
+			require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, user.ID, op).Status)
+		}
+
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			cascadeDeleteOp(domain.SyncEntityCategory, uuid.New(), categoryID))
+		assert.Equal(t, domain.SyncStatusApplied, res.Status)
+		assert.Positive(t, res.Version)
+
+		// The transaction tombstone travels through the pull feed.
+		page, err := syncSvc.Pull(context.Background(), householdID, 0, nil)
+		require.NoError(t, err)
+		tombstoned := map[string]bool{}
+		for _, ch := range page.Changes {
+			if ch.Action == domain.SyncChangeTombstone {
+				tombstoned[ch.Entity+"/"+ch.ID.String()] = true
+			}
+		}
+		assert.True(t, tombstoned[domain.SyncEntityCategory+"/"+categoryID.String()], "category tombstone in feed")
+		assert.True(t, tombstoned[domain.SyncEntityTransaction+"/"+txID.String()], "transaction tombstone in feed")
+	})
+
+	t.Run("cascade delete is still blocked by live planned payments", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID := uuid.New(), uuid.New()
+		for _, op := range []domain.SyncOperation{
+			upsertOp(domain.SyncEntityAccount, uuid.New(), accountID, 0,
+				&domain.AccountFullState{Name: "Карта", Currency: "RUB"}),
+			upsertOp(domain.SyncEntityCategory, uuid.New(), categoryID, 0,
+				&domain.CategoryFullState{Name: "Подписки", Type: domain.TransactionTypeExpense}),
+			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0,
+				&domain.PlannedPaymentFullState{
+					Type: domain.TransactionTypeExpense, Amount: 500, Name: "Интернет",
+					AccountID: accountID, CategoryID: categoryID,
+					NextDue: domain.NewDate(2026, 10, 1), AnchorDate: domain.NewDate(2026, 9, 1),
+					Regularity: domain.PlannedRegularityMonthly, ConfirmMode: domain.PlannedConfirmManual,
+					Reminder: domain.PlannedReminderOff,
+				}),
+		} {
+			require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, user.ID, op).Status)
+		}
+
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			cascadeDeleteOp(domain.SyncEntityCategory, uuid.New(), categoryID))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "CATEGORY_IN_USE", res.Code)
+		assert.Equal(t, "category has planned payments and cannot be deleted", res.Message)
+	})
+
+	t.Run("malformed cascade delete data is a per-item error", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		categoryID := uuid.New()
+		require.Equal(t, domain.SyncStatusApplied, pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityCategory, uuid.New(), categoryID, 0,
+				&domain.CategoryFullState{Name: "Продукты", Type: domain.TransactionTypeExpense})).Status)
+
+		op := domain.SyncOperation{
+			OpID: uuid.New(), Entity: domain.SyncEntityCategory,
+			Action: domain.SyncActionDelete, ID: categoryID,
+			Data: json.RawMessage(`{"cascade":"yes"}`),
+		}
+		res := pushOne(t, syncSvc, householdID, user.ID, op)
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "VALIDATION_FAILED", res.Code)
+		assert.Equal(t, "invalid category delete data", res.Message)
 	})
 }
 

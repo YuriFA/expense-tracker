@@ -93,7 +93,11 @@ type CategoryRepository interface {
 		householdID, actorID, id uuid.UUID,
 		params domain.UpdateCategoryParams,
 	) (*domain.Category, error)
-	DeleteCategory(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	// DeleteCategory tombstones the category; with cascade it tombstones
+	// every referencing live transaction of the household atomically (one
+	// transaction, a change_log row per tombstoned record). Live planned
+	// payments block the delete in both modes.
+	DeleteCategory(ctx context.Context, householdID, actorID, id uuid.UUID, cascade bool) error
 	GetCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
 	GetCategories(
 		ctx context.Context,
@@ -240,6 +244,11 @@ type CategorySyncTx interface {
 		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.CategoryFullState,
 	) (*domain.Category, error)
 	TombstoneCategory(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Category, error)
+	// CascadeTombstoneCategory tombstones the category plus every live
+	// transaction referencing it, appending a change_log row per tombstoned
+	// record on the same transaction. Used by cascade-flagged category delete
+	// push operations (the in-use guard reduced to live planned payments).
+	CascadeTombstoneCategory(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Category, error)
 }
 
 // TransactionSyncTx is the transaction's push contract: the

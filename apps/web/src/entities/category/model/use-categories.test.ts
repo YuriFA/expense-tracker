@@ -4,10 +4,11 @@ import { flushPromises } from '@vue/test-utils'
 import { useQueryCache } from '@pinia/colada'
 import type { Category } from './types'
 import {
-  useCategories,
+  useCategoriesIncludingArchived,
   useCategory,
   useCreateCategory,
   useUpdateCategory,
+  useSetCategoryArchived,
   useDeleteCategory,
 } from './use-categories'
 import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
@@ -20,6 +21,7 @@ const categoryFixture: Category = {
   type: 'expense',
   icon: '🍔',
   color: '#FF0000',
+  archivedAt: null,
   slug: 'food',
 }
 
@@ -38,20 +40,20 @@ function mountWithComposable<T>(
   return { wrapper, result }
 }
 
-describe('useCategories', () => {
+describe('useCategoriesIncludingArchived', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('calls repository.getAll on mount', async () => {
+  it('calls repository.getAllIncludingArchived on mount', async () => {
     const repo = createMockCategoryRepository()
-    repo.getAll.mockResolvedValue([categoryFixture])
-    const { result } = mountWithComposable(() => useCategories(), {
+    repo.getAllIncludingArchived.mockResolvedValue([categoryFixture])
+    const { result } = mountWithComposable(() => useCategoriesIncludingArchived(), {
       repositories: { categories: repo },
     })
     await flushPromises()
     await flushPromises()
-    expect(repo.getAll).toHaveBeenCalled()
+    expect(repo.getAllIncludingArchived).toHaveBeenCalled()
     expect(result.data.value).toEqual([categoryFixture])
   })
 })
@@ -113,6 +115,23 @@ describe('useUpdateCategory', () => {
     expect(repo.update).toHaveBeenCalledWith('c1', { name: 'Updated', version: 1 })
   })
 
+  it('translates the archived flag into an archivedAt patch', async () => {
+    const repo = createMockCategoryRepository()
+    repo.update.mockResolvedValue({ ...categoryFixture, archivedAt: '2026-09-01T00:00:00Z' })
+    const { result } = mountWithComposable(() => {
+      const queryCache = useQueryCache()
+      queryCache.setQueryData<Category[]>(['categories', 'including-archived'], [categoryFixture])
+      return { mutation: useUpdateCategory(), queryCache }
+    }, { repositories: { categories: repo } })
+
+    await result.mutation.mutateAsync({ id: 'c1', payload: { version: 1, archived: true } })
+    await flushPromises()
+
+    const patched = result.queryCache.getQueryData<Category[]>(['categories', 'including-archived'])?.[0]
+    expect(patched?.archivedAt).not.toBeNull()
+    expect(patched).not.toHaveProperty('archived')
+  })
+
   it('optimistically patches category in list and detail caches', async () => {
     const repo = createMockCategoryRepository()
     repo.update.mockResolvedValue({ ...categoryFixture, name: 'Updated' })
@@ -148,6 +167,18 @@ describe('useUpdateCategory', () => {
   })
 })
 
+describe('useSetCategoryArchived', () => {
+  it('calls repository.update with the archived flag', async () => {
+    const repo = createMockCategoryRepository()
+    repo.update.mockResolvedValue(categoryFixture)
+    const { result } = mountWithComposable(() => useSetCategoryArchived(), {
+      repositories: { categories: repo },
+    })
+    await result.mutateAsync({ id: 'c1', version: 3, archived: true })
+    expect(repo.update).toHaveBeenCalledWith('c1', { version: 3, archived: true })
+  })
+})
+
 describe('useDeleteCategory', () => {
   it('calls repository.remove on mutate', async () => {
     const repo = createMockCategoryRepository()
@@ -155,8 +186,18 @@ describe('useDeleteCategory', () => {
     const { result } = mountWithComposable(() => useDeleteCategory(), {
       repositories: { categories: repo },
     })
-    await result.mutateAsync('c1')
-    expect(repo.remove).toHaveBeenCalledWith('c1')
+    await result.mutateAsync({ id: 'c1' })
+    expect(repo.remove).toHaveBeenCalledWith('c1', undefined)
+  })
+
+  it('passes the cascade flag to repository.remove', async () => {
+    const repo = createMockCategoryRepository()
+    repo.remove.mockResolvedValue(undefined)
+    const { result } = mountWithComposable(() => useDeleteCategory(), {
+      repositories: { categories: repo },
+    })
+    await result.mutateAsync({ id: 'c1', cascade: true })
+    expect(repo.remove).toHaveBeenCalledWith('c1', { cascade: true })
   })
 
   it('optimistically removes category from list and detail caches', async () => {
@@ -170,7 +211,7 @@ describe('useDeleteCategory', () => {
       return { mutation: useDeleteCategory(), queryCache }
     }, { repositories: { categories: repo } })
 
-    await result.mutation.mutateAsync('c1')
+    await result.mutation.mutateAsync({ id: 'c1' })
     await flushPromises()
 
     expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual(['c2'])
@@ -186,7 +227,7 @@ describe('useDeleteCategory', () => {
       return { mutation: useDeleteCategory(), queryCache }
     }, { repositories: { categories: repo } })
 
-    await expect(result.mutation.mutateAsync('c1')).rejects.toThrow('boom')
+    await expect(result.mutation.mutateAsync({ id: 'c1' })).rejects.toThrow('boom')
     await flushPromises()
 
     expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual(['c1'])

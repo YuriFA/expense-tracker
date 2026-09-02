@@ -6,7 +6,7 @@ import {
   type Transaction,
 } from '@/entities/transaction'
 import { useAccounts } from '@/entities/account'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { useTransactionsFilters } from '../model/use-transactions-filters'
 import { matchesTransactionsFilters } from '../lib/transactions-query'
 import { useAuthorLabel } from '@/features/household-author'
@@ -54,7 +54,9 @@ const {
   error: categoriesError,
   isLoading: isLoadingCats,
   refetch: refetchCats,
-} = useCategories()
+// Including archived: this is a join over existing records -
+// archived categories stay visible in history/analytics/filters.
+} = useCategoriesIncludingArchived()
 
 const isLoading = computed(
   () => isLoadingTx.value || isLoadingAccounts.value || isLoadingCats.value,

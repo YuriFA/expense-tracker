@@ -63,6 +63,8 @@ var (
 	ErrPlannedPaymentAccountNotFound      = errors.New("planned payment references an account that does not exist")
 	ErrPlannedPaymentCategoryNotFound     = errors.New("planned payment references a category that does not exist")
 	ErrPlannedPaymentCategoryTypeMismatch = errors.New("planned payment category type does not match the plan type")
+	ErrCategoryArchived                   = errors.New("category is archived and not available for new transactions")
+	ErrPlannedPaymentCategoryArchived     = errors.New("planned payment category is archived")
 	ErrAccountHasPlannedPayments          = errors.New("account has planned payments and cannot be deleted")
 	ErrCategoryHasPlannedPayments         = errors.New("category has planned payments and cannot be deleted")
 	ErrInvalidDate                        = errors.New("date must be YYYY-MM-DD")

@@ -1,6 +1,11 @@
 export { CategoryRepositoryProvider, useCategoryRepository } from './api/repository'
 export { createLocalCategoryRepository } from '@expense-tracker/local-data'
-export { useCategories, useCreateCategory, useUpdateCategory } from './model/use-categories'
+export {
+  useCategories,
+  useCategoriesIncludingArchived,
+  useCreateCategory,
+  useUpdateCategory,
+} from './model/use-categories'
 export type { Category } from './model/use-categories'
 export {
   CATEGORY_COLORS,

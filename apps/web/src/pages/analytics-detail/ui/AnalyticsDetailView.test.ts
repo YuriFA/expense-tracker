@@ -11,9 +11,9 @@ import {
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const categories: Category[] = [
-  { id: 'c1', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', version: 1 },
-  { id: 'c2', name: 'Еда', type: 'expense', icon: 'food', color: '#22c55e', version: 1 },
-  { id: 'i1', name: 'Зарплата', type: 'income', icon: 'cash', color: '#3b82f6', version: 1 },
+  { id: 'c1', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', archivedAt: null, version: 1 },
+  { id: 'c2', name: 'Еда', type: 'expense', icon: 'food', color: '#22c55e', archivedAt: null, version: 1 },
+  { id: 'i1', name: 'Зарплата', type: 'income', icon: 'cash', color: '#3b82f6', archivedAt: null, version: 1 },
 ]
 
 function nowTx(overrides: Partial<CashflowTransaction>): CashflowTransaction {

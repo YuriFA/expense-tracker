@@ -27,6 +27,7 @@ import {
   debtors,
   plannedPayments,
   syncOutbox,
+  transactions,
   type SyncEntity,
 } from '../schema'
 import { eq } from 'drizzle-orm'
@@ -463,6 +464,60 @@ describe('sync engine: push phase', () => {
 // --- Pull ------------------------------------------------------------------------
 
 describe('sync engine: pull phase', () => {
+  it('applies a remote category cascade: per-record tombstones land like plain deletes', async () => {
+    // Another device cascaded a category delete: the pull feed carries one
+    // tombstone per tombstoned record (category + its transactions).
+    const account = await accountRepo.create({ name: 'Карта', currency: 'RUB', openingBalance: 0 })
+    const category = await categoryRepo.create(CATEGORY)
+    const transaction = await transactionRepo.create({
+      type: 'expense',
+      amount: 250,
+      description: '',
+      occurredAt: '2026-08-10T12:00:00.000Z',
+      accountId: account.id,
+      categoryId: category.id,
+    })
+    await engine.run({ force: true })
+
+    server.deleteRecord('category', category.id)
+    server.deleteRecord('transaction', transaction.id)
+    const outcome = await engine.run({ force: true })
+
+    expect(outcome.pulled).toBe(2)
+    expect(categoryRow(category.id)?.deletedAt).not.toBeNull()
+    const txRow = db.select().from(transactions).where(eq(transactions.id, transaction.id)).get()
+    expect(txRow?.deletedAt).not.toBeNull()
+    expect(await categoryRepo.getById(category.id)).toBeNull()
+  })
+
+  it('pushes a cascade delete as one flagged wire operation', async () => {
+    const account = await accountRepo.create({ name: 'Карта', currency: 'RUB', openingBalance: 0 })
+    const category = await categoryRepo.create(CATEGORY)
+    await transactionRepo.create({
+      type: 'expense',
+      amount: 250,
+      description: '',
+      occurredAt: '2026-08-10T12:00:00.000Z',
+      accountId: account.id,
+      categoryId: category.id,
+    })
+    await engine.run({ force: true }) // everything confirmed on the server
+
+    await categoryRepo.remove(category.id, { cascade: true })
+    await engine.run({ force: true })
+
+    // One delete operation, carrying the cascade flag in its wire data.
+    const deleteCalls = server.pushCalls.flat().filter((op) => op.action === 'delete')
+    expect(deleteCalls).toHaveLength(1)
+    expect(deleteCalls[0].data).toEqual({ cascade: true })
+    expect(server.records.get(`category:${category.id}`)?.deleted).toBe(true)
+    expect(outboxRows()).toHaveLength(0)
+    // The transaction row converges via the server's cascade tombstone on
+    // pull (the fake echoes it in the feed like the real server).
+    const txRow = db.select().from(transactions).all().find((row) => row.categoryId === category.id)
+    expect(txRow?.deletedAt).not.toBeNull()
+  })
+
   it('applies pulled changes to CLEAN records and advances the cursor once', async () => {
     const category = await categoryRepo.create(CATEGORY)
     await engine.run({ force: true })

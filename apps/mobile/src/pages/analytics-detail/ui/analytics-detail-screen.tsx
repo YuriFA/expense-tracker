@@ -38,7 +38,7 @@ import {
 import { CASHFLOW_KIND_VIEWS, CategoryCashflowSheet } from '@/features/cashflow-overview'
 import { NewTransactionSheet } from '@/features/create-transaction'
 import { EditTransactionSheet } from '@/features/edit-transaction'
-import { useCategories, type Category } from '@/entities/category'
+import { useCategoriesIncludingArchived, type Category } from '@/entities/category'
 import { useTransactions, type Transaction } from '@/entities/transaction'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -168,7 +168,7 @@ export function AnalyticsDetailScreen({ direction }: AnalyticsDetailScreenProps)
     useTransactions({ type: direction, ...periodToUtcDayRange(prevCursor) }).data ?? []
   const nextTransactions =
     useTransactions({ type: direction, ...periodToUtcDayRange(nextCursor) }).data ?? []
-  const categoriesQuery = useCategories(direction)
+  const categoriesQuery = useCategoriesIncludingArchived(direction)
   const transactions = transactionsQuery.data ?? []
   const categories = categoriesQuery.data ?? []
 

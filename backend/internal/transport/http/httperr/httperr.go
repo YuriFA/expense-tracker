@@ -16,6 +16,7 @@ const (
 	ErrCodeCategoryNotFound               = "CATEGORY_NOT_FOUND"
 	ErrCodeCategoryAlreadyExists          = "CATEGORY_ALREADY_EXISTS"
 	ErrCodeCategoryTypeMismatch           = "CATEGORY_TYPE_MISMATCH"
+	ErrCodeCategoryArchived               = "CATEGORY_ARCHIVED"
 	ErrCodeTransactionNotFound            = "TRANSACTION_NOT_FOUND"
 	ErrCodeInternal                       = "INTERNAL_ERROR"
 	ErrCodeForbidden                      = "FORBIDDEN"
@@ -52,6 +53,7 @@ const (
 	ErrCodePlannedPaymentVersionConflict  = "PLANNED_PAYMENT_VERSION_CONFLICT"
 	ErrCodePlannedPaymentAccountNotFound  = "PLANNED_PAYMENT_ACCOUNT_NOT_FOUND"
 	ErrCodePlannedPaymentCategoryNotFound = "PLANNED_PAYMENT_CATEGORY_NOT_FOUND"
+	ErrCodePlannedPaymentCategoryArchived = "PLANNED_PAYMENT_CATEGORY_ARCHIVED"
 
 	// ErrCodeHouseholdInvitationNotFound and the codes below it carry the
 	// household join lifecycle (household-join change).

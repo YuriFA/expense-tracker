@@ -10,15 +10,19 @@ import type { components } from '../schema'
 export type SyncEntityKind = components['schemas']['SyncEntity']
 export type AccountSyncData = components['schemas']['AccountSyncData']
 export type CategorySyncData = components['schemas']['CategorySyncData']
+export type CategoryDeleteData = components['schemas']['CategoryDeleteData']
 export type TransactionSyncData = components['schemas']['TransactionSyncData']
 export type DebtorSyncData = components['schemas']['DebtorSyncData']
 export type DebtOperationSyncData = components['schemas']['DebtOperationSyncData']
 export type PlannedPaymentSyncData = components['schemas']['PlannedPaymentSyncData']
 
-/** Full record state of an operation/change, shape depends on `entity`. */
+/** Full record state of an operation/change, shape depends on `entity`.
+ * A category delete may instead carry its delete options
+ * (`{ cascade: true }`). */
 export type SyncOperationData =
   | AccountSyncData
   | CategorySyncData
+  | CategoryDeleteData
   | TransactionSyncData
   | DebtorSyncData
   | DebtOperationSyncData
@@ -34,7 +38,8 @@ export interface SyncPushOperation {
   id: string
   /** Server version the operation is based on; 0 = create. */
   baseVersion: number
-  /** Full record state; required for upsert, omitted for delete. */
+  /** Full record state (required for upsert); a category delete may carry
+   *   its delete options (`{ cascade: true }`) instead. */
   data?: SyncOperationData
 }
 

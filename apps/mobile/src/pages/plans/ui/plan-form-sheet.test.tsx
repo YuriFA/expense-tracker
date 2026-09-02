@@ -74,6 +74,7 @@ const CATEGORIES: Category[] = [
     type: 'expense',
     icon: 'film',
     color: '#7c5cff',
+    archivedAt: null,
     version: 1,
   },
   {
@@ -82,6 +83,7 @@ const CATEGORIES: Category[] = [
     type: 'income',
     icon: 'cash',
     color: '#22c55e',
+    archivedAt: null,
     version: 1,
   },
 ]

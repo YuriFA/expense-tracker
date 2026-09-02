@@ -31,6 +31,7 @@ func (r *Repository) CreateCategory(ctx context.Context, params domain.CreateCat
 			Type:        string(params.Type),
 			Icon:        params.Icon,
 			Color:       params.Color,
+			ArchivedAt:  params.ArchivedAt,
 		})
 		if err != nil {
 			if pgUniqueViolation(err) {
@@ -61,6 +62,7 @@ func (r *Repository) CreateCategory(ctx context.Context, params domain.CreateCat
 		row.Type,
 		row.Icon,
 		row.Color,
+		row.ArchivedAt,
 		row.CreatedAt,
 		row.UpdatedAt,
 		int(row.Version),
@@ -80,17 +82,42 @@ func (r *Repository) UpdateCategory(
 		typ = &s
 	}
 
+	// Tri-state archive sentinel for the UPDATE: keep / archive / clear.
+	archivedAction := "keep"
+	if params.Archive != nil {
+		if *params.Archive {
+			archivedAction = "archive"
+		} else {
+			archivedAction = "clear"
+		}
+	}
+
 	var row db.UpdateCategoryRow
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
+		// Archiving is blocked while a live planned payment references the
+		// category (the same guard shape as the delete path).
+		if archivedAction == "archive" {
+			inUse, err := q.HasLivePlannedPaymentsForCategory(ctx, db.HasLivePlannedPaymentsForCategoryParams{
+				HouseholdID: householdID,
+				CategoryID:  id,
+			})
+			if err != nil {
+				return err
+			}
+			if inUse {
+				return domain.ErrCategoryHasPlannedPayments
+			}
+		}
 		var err error
 		row, err = q.UpdateCategory(ctx, db.UpdateCategoryParams{
-			ID:          id,
-			HouseholdID: householdID,
-			Name:        params.Name,
-			Type:        typ,
-			Icon:        params.Icon,
-			Color:       params.Color,
-			Version:     int32(params.Version), //nolint:gosec // optimistic version is a small positive int
+			ID:             id,
+			HouseholdID:    householdID,
+			Name:           params.Name,
+			Type:           typ,
+			Icon:           params.Icon,
+			Color:          params.Color,
+			ArchivedAction: archivedAction,
+			Version:        int32(params.Version), //nolint:gosec // optimistic version is a small positive int
 		})
 		if err != nil {
 			if pgUniqueViolation(err) {
@@ -122,29 +149,35 @@ func (r *Repository) UpdateCategory(
 		row.Type,
 		row.Icon,
 		row.Color,
+		row.ArchivedAt,
 		row.CreatedAt,
 		row.UpdatedAt,
 		int(row.Version),
 	), nil
 }
 
-func (r *Repository) DeleteCategory( //nolint:dupl // account/category delete twins: identical guard shape
+func (r *Repository) DeleteCategory(
 	ctx context.Context,
 	householdID, actorID, id uuid.UUID,
+	cascade bool,
 ) error {
 	const op = "repository.postgres.DeleteCategory"
 
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
-		inUse, err := q.HasLiveTransactionsForCategory(ctx, db.HasLiveTransactionsForCategoryParams{
-			HouseholdID: householdID,
-			CategoryID:  &id,
-		})
-		if err != nil {
-			return err
+		if !cascade {
+			inUse, err := q.HasLiveTransactionsForCategory(ctx, db.HasLiveTransactionsForCategoryParams{
+				HouseholdID: householdID,
+				CategoryID:  &id,
+			})
+			if err != nil {
+				return err
+			}
+			if inUse {
+				return domain.ErrCategoryHasTransactions
+			}
 		}
-		if inUse {
-			return domain.ErrCategoryHasTransactions
-		}
+		// Live planned payments block the delete in both modes: a cascade
+		// removes transactions, never future obligations.
 		plansInUse, err := q.HasLivePlannedPaymentsForCategory(ctx, db.HasLivePlannedPaymentsForCategoryParams{
 			HouseholdID: householdID,
 			CategoryID:  id,
@@ -162,9 +195,38 @@ func (r *Repository) DeleteCategory( //nolint:dupl // account/category delete tw
 			}
 			return err
 		}
-		return appendChangeLog(
+		if err := appendChangeLog(
 			ctx, q, householdID, actorID, id, domain.SyncEntityCategory, domain.SyncChangeTombstone, int(version),
-		)
+		); err != nil {
+			return err
+		}
+		if !cascade {
+			return nil
+		}
+		// Cascade: tombstone every live referencing transaction with its own
+		// change_log row (one committed transaction - invariant #17).
+		rows, err := q.SoftDeleteTransactionsForCategory(ctx, db.SoftDeleteTransactionsForCategoryParams{
+			HouseholdID: householdID,
+			CategoryID:  &id,
+		})
+		if err != nil {
+			return err
+		}
+		for _, tx := range rows {
+			if err := appendChangeLog(
+				ctx,
+				q,
+				householdID,
+				actorID,
+				tx.ID,
+				domain.SyncEntityTransaction,
+				domain.SyncChangeTombstone,
+				int(tx.Version),
+			); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		return opWrap(op, err)
@@ -199,6 +261,7 @@ func (r *Repository) GetCategory(ctx context.Context, householdID, id uuid.UUID)
 		row.Type,
 		row.Icon,
 		row.Color,
+		row.ArchivedAt,
 		row.CreatedAt,
 		row.UpdatedAt,
 		int(row.Version),
@@ -218,7 +281,11 @@ func (r *Repository) GetCategories(
 		typ = &s
 	}
 
-	rows, err := r.q.GetCategories(ctx, db.GetCategoriesParams{HouseholdID: householdID, Type: typ})
+	rows, err := r.q.GetCategories(ctx, db.GetCategoriesParams{
+		HouseholdID:     householdID,
+		IncludeArchived: params.IncludeArchived,
+		Type:            typ,
+	})
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -226,7 +293,7 @@ func (r *Repository) GetCategories(
 	for _, row := range rows {
 		out = append(
 			out,
-			*categoryFromFields(row.ID, row.UserID, row.Name, row.Type, row.Icon, row.Color, row.CreatedAt, row.UpdatedAt, int(row.Version)),
+			*categoryFromFields(row.ID, row.UserID, row.Name, row.Type, row.Icon, row.Color, row.ArchivedAt, row.CreatedAt, row.UpdatedAt, int(row.Version)),
 		)
 	}
 	return out, nil
@@ -238,18 +305,20 @@ func (r *Repository) GetCategories(
 func categoryFromFields(
 	id, userID uuid.UUID,
 	name, typ, icon, color string,
+	archivedAt *time.Time,
 	createdAt, updatedAt time.Time,
 	version int,
 ) *domain.Category {
 	return &domain.Category{
-		ID:        id,
-		UserID:    userID,
-		Name:      name,
-		Type:      domain.TransactionType(typ),
-		Icon:      icon,
-		Color:     color,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-		Version:   version,
+		ID:         id,
+		UserID:     userID,
+		Name:       name,
+		Type:       domain.TransactionType(typ),
+		Icon:       icon,
+		Color:      color,
+		ArchivedAt: archivedAt,
+		CreatedAt:  createdAt,
+		UpdatedAt:  updatedAt,
+		Version:    version,
 	}
 }

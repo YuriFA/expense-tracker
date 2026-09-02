@@ -7,7 +7,7 @@ import {
   ResponsiveSelectValue,
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
-import { useCategories } from '../model/use-categories'
+import { useCategoriesIncludingArchived } from '../model/use-categories'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { computed } from 'vue'
 
@@ -22,10 +22,18 @@ const props = defineProps<{
 
 const modelValue = defineModel<string | undefined>()
 
-const { data } = useCategories()
+// Including archived: the trigger must still resolve the label/avatar of an
+// already-assigned archived category (editing a transaction that keeps it),
+// while the option list below offers only active categories (archive spec:
+// pickers exclude archived, existing references keep resolving).
+const { data } = useCategoriesIncludingArchived()
 
 const filteredCategories = computed(() =>
   props.type ? data.value?.filter((category) => category.type === props.type) : data.value,
+)
+// Offered choices: active categories only.
+const selectableCategories = computed(() =>
+  filteredCategories.value?.filter((category) => category.archivedAt === null),
 )
 // The trigger slot must resolve the selected label itself for two reasons:
 // reka's option registry is ephemeral (options unregister on unmount, so it
@@ -59,7 +67,7 @@ const selectedCategory = computed(() =>
       </ResponsiveSelectTrigger>
       <ResponsiveSelectContent :title="props.label">
         <ResponsiveSelectItem
-          v-for="category in filteredCategories"
+          v-for="category in selectableCategories"
           :key="category.id"
           :value="category.id"
         >

@@ -113,6 +113,7 @@ describe('DashboardPage month navigation', () => {
         type: 'expense',
         icon: '🍔',
         color: '#FF0000',
+        archivedAt: null,
         slug: 'food',
       },
     ])

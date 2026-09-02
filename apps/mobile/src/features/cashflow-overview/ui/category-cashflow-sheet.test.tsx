@@ -7,7 +7,7 @@
 // the dashboard's ids and wording; the income kind mirrors them.
 
 import { createRef } from 'react'
-import { describe, expect, it, jest } from '@jest/globals'
+import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -41,28 +41,48 @@ jest.mock('@/entities/household', () => ({
 }))
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
-// --- Date-relative fixtures (current month has two taxi days plus a cafe
-// expense, the previous month one taxi day, older months are empty) ---------
+// --- Date fixtures (current month has two taxi days plus a cafe expense,
+// the previous month one taxi day, older months are empty). The sheet
+// derives "current period" from the wall clock; freeze it mid-month so the
+// distinct-day fixtures stay deterministic on any run date (RNTL's waitFor
+// advances the fake timers while polling) ----------------------------------
 
-function toIso(date: Date): string {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12).toISOString()
-}
+beforeAll(() => {
+  jest.useFakeTimers({ now: new Date('2026-08-14T09:00:00') })
+})
 
-/** Day `day` of the current month, clamped to today, at 12:00 local. */
+afterAll(() => {
+  jest.useRealTimers()
+})
+
+/** Day `day` of the frozen current month (August 2026). */
 function dayThisMonth(day: number): string {
-  const now = new Date()
-  return toIso(new Date(now.getFullYear(), now.getMonth(), Math.min(day, now.getDate()), 12))
+  return new Date(Date.UTC(2026, 7, day, 12)).toISOString()
 }
 
 function dayPrevMonth(day: number): string {
-  const prev = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
-  const lastDay = new Date(prev.getFullYear(), prev.getMonth() + 1, 0).getDate()
-  return toIso(new Date(prev.getFullYear(), prev.getMonth(), Math.min(day, lastDay), 12))
+  return new Date(Date.UTC(2026, 6, day, 12)).toISOString()
 }
 
 const CATEGORIES: Category[] = [
-  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', version: 1 },
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa', version: 1 },
+  {
+    id: 'cat-taxi',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#7c5cff',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'cat-cafe',
+    name: 'Кафе',
+    type: 'expense',
+    icon: 'cafe',
+    color: '#a78bfa',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 const TRANSACTIONS: Transaction[] = [
@@ -254,14 +274,9 @@ describe('CategoryCashflowSheet (expense kind)', () => {
 // --- Period mode (analytics): initialPeriod switches the sheet onto the
 // week/month/year model with the long range label ----------------------------
 
+/** `offsetDays` after the frozen current week's Monday (2026-08-10). */
 function dayThisWeek(offsetDays: number): string {
-  const now = new Date()
-  const monday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() - ((now.getDay() + 6) % 7),
-  )
-  return toIso(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + offsetDays))
+  return new Date(Date.UTC(2026, 7, 10 + offsetDays, 12)).toISOString()
 }
 
 const WEEK_TRANSACTIONS: Transaction[] = [
@@ -335,6 +350,7 @@ const INCOME_CATEGORIES: Category[] = [
     type: 'income',
     icon: 'cash',
     color: '#16a34a',
+    archivedAt: null,
     version: 1,
   },
 ]

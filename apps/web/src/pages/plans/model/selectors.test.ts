@@ -10,7 +10,7 @@ import {
 } from './selectors'
 
 const categories: Category[] = [
-  { id: 'c1', name: 'Развлечения', type: 'expense', icon: 'tv', color: '#7c5cff', version: 1 },
+  { id: 'c1', name: 'Развлечения', type: 'expense', icon: 'tv', color: '#7c5cff', archivedAt: null, version: 1 },
 ]
 
 function plan(overrides: Partial<PlannedPayment> = {}): PlannedPayment {

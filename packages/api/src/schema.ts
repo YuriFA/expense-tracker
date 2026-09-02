@@ -601,7 +601,9 @@ export interface paths {
         };
         /**
          * Список категорий
-         * @description Все не удалённые (не tombstoned) категории текущего user.
+         * @description Все не удалённые (не tombstoned) категории текущего домохозяйства.
+         *     По умолчанию возвращаются только активные (не архивированные);
+         *     `includeArchived=true` добавляет архивные (для UI управления).
          */
         get: operations["listCategories"];
         put?: never;
@@ -628,9 +630,16 @@ export interface paths {
         post?: never;
         /**
          * Удалить категорию
-         * @description 409 если есть привязанные transactions. Удаление мягкое (tombstone):
-         *     категория исчезает из листингов, но сохраняется для синхронизации
-         *     устройств.
+         * @description Удаление мягкое (tombstone): категория исчезает из листингов, но
+         *     сохраняется для синхронизации устройств.
+         *
+         *     Без `cascade`: 409 `CATEGORY_IN_USE`, если есть привязанные
+         *     transactions или live плановые платежи.
+         *
+         *     С `cascade=true`: категория и все привязанные не удалённые
+         *     transactions домохозяйства атомарно получают tombstone (балансы
+         *     счетов пересчитываются); live плановые платежи всё равно блокируют
+         *     удаление (409 `CATEGORY_IN_USE`).
          */
         delete: operations["deleteCategory"];
         options?: never;
@@ -1198,6 +1207,13 @@ export interface components {
             type: "income" | "expense";
             icon: string;
             color: string;
+            /**
+             * Format: date-time
+             * @description Момент архивации; null — активная категория. Архивная категория
+             *     недоступна для новых transactions/планов, но остаётся на
+             *     существующих записях.
+             */
+            archivedAt: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1224,6 +1240,10 @@ export interface components {
         /**
          * @description Все поля кроме `version` optional. `version` — optimistic concurrency:
          *     при параллельном изменении → 409 `CATEGORY_VERSION_CONFLICT`.
+         *     `archived: true` архивирует категорию (сервер проставляет
+         *     `archivedAt`), `archived: false` разархивирует; отсутствие поля —
+         *     без изменения. Архивация запрещена (409 `CATEGORY_IN_USE`), пока
+         *     на категорию ссылаются live плановые платежи.
          */
         CategoryUpdateRequest: {
             /** Format: int */
@@ -1233,6 +1253,7 @@ export interface components {
             type?: "income" | "expense";
             icon?: string;
             color?: string;
+            archived?: boolean;
         };
         /**
          * @description Человек, с которым user отслеживает долги. Балансы не хранятся:
@@ -1490,13 +1511,30 @@ export interface components {
             /** Format: int64 */
             openingBalance: number;
         };
-        /** @description Полное состояние категории в sync-операции (upsert). */
+        /**
+         * @description Полное состояние категории в sync-операции (upsert). `archivedAt`
+         *     опционален для обратной совместимости (отсутствие = null = активная).
+         */
         CategorySyncData: {
             name: string;
             /** @enum {string} */
             type: "income" | "expense";
             icon: string;
             color: string;
+            /**
+             * Format: date-time
+             * @description null — активная категория.
+             */
+            archivedAt?: string | null;
+        };
+        /**
+         * @description Опции удаления категории в sync-операции (delete). Отсутствие
+         *     `data` — обычное guarded-удаление; `{"cascade": true}` — сервер
+         *     атомарно ставит tombstone на категорию и все привязанные не
+         *     удалённые transactions домохозяйства.
+         */
+        CategoryDeleteData: {
+            cascade: boolean;
         };
         /**
          * @description Полное состояние транзакции в sync-операции (upsert). Cashflow
@@ -1590,8 +1628,11 @@ export interface components {
             id: string;
             /** Format: int */
             baseVersion: number;
-            /** @description Полное состояние записи; обязательно для upsert. */
-            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"] | components["schemas"]["PlannedPaymentSyncData"];
+            /**
+             * @description Полное состояние записи (обязательно для upsert) либо опции
+             *     удаления (для delete категории — `{"cascade": true}`).
+             */
+            data?: components["schemas"]["AccountSyncData"] | components["schemas"]["CategorySyncData"] | components["schemas"]["CategoryDeleteData"] | components["schemas"]["TransactionSyncData"] | components["schemas"]["DebtorSyncData"] | components["schemas"]["DebtOperationSyncData"] | components["schemas"]["PlannedPaymentSyncData"];
         };
         SyncPushRequest: {
             operations: components["schemas"]["SyncOperation"][];
@@ -1805,18 +1846,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description Категория имеет привязанные transactions, удаление невозможно. */
+        /**
+         * @description Категория занята: есть привязанные transactions (удаление без
+         *     `cascade`) или live плановые платежи (удаление/архивация).
+         */
         CategoryInUse: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                /**
-                 * @example {
-                 *       "code": "CATEGORY_IN_USE",
-                 *       "message": "category has transactions and cannot be deleted"
-                 *     }
-                 */
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
@@ -3238,6 +3276,8 @@ export interface operations {
         parameters: {
             query?: {
                 type?: "income" | "expense";
+                /** @description Включить архивные категории в ответ. */
+                includeArchived?: boolean;
             };
             header?: never;
             path?: never;
@@ -3313,7 +3353,13 @@ export interface operations {
     };
     deleteCategory: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Удалить вместе с категорией все привязанные transactions
+                 *     (tombstone атомарно, одной транзакцией).
+                 */
+                cascade?: boolean;
+            };
             header?: never;
             path: {
                 id: components["parameters"]["CategoryId"];
@@ -3363,8 +3409,10 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["CategoryNotFound"];
             /**
-             * @description Либо имя уже занята (`CATEGORY_ALREADY_EXISTS`), либо конфликт
-             *     версии (`CATEGORY_VERSION_CONFLICT`).
+             * @description Либо имя уже занято (`CATEGORY_ALREADY_EXISTS`), либо конфликт
+             *     версии (`CATEGORY_VERSION_CONFLICT`), либо категория используется
+             *     live плановыми платежами (`CATEGORY_IN_USE` — архивация/удаление
+             *     занятой планом категории запрещена).
              */
             409: {
                 headers: {
@@ -3709,7 +3757,7 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["PlannedPaymentAlreadyExists"];
-            /** @description Бизнес-правило нарушено — счёт или категория не найдены. */
+            /** @description Бизнес-правило нарушено — счёт или категория не найдены/архивированы. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -3797,7 +3845,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["PlannedPaymentNotFound"];
             409: components["responses"]["PlannedPaymentVersionConflict"];
-            /** @description Бизнес-правило нарушено — счёт или категория не найдены. */
+            /** @description Бизнес-правило нарушено — счёт или категория не найдены/архивированы. */
             422: {
                 headers: {
                     [name: string]: unknown;

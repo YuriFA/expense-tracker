@@ -37,7 +37,7 @@ function transferTx(id: string, amount: number, occurredAt: string): TransferTra
 }
 
 function category(id: string, name: string, type: 'income' | 'expense'): Category {
-  return { id, name, type, icon: 'pricetag', color: `#${id}`, version: 1 }
+  return { id, name, type, icon: 'pricetag', color: `#${id}`, archivedAt: null, version: 1 }
 }
 
 const categories: Category[] = [

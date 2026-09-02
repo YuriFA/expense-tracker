@@ -392,11 +392,11 @@
       "drafts": {
         "fda13a35-5814-4290-b3f3-c413b23f58a2": {
           "title": "Настройки (Бумага) — Обновление заголовков",
-          "visualDirection": "flat cards: language, profile, household members + owner actions, sessions; v4 sync: kbd «N» на CTA сайдбара",
-          "currentVersion": 4
+          "visualDirection": "Direction D warm minimal; v5 + Категории entry card",
+          "currentVersion": 6
         }
       },
-      "updatedAt": "2026-08-28T17:52:32.811341+00:00"
+      "updatedAt": "2026-09-02T17:29:13Z"
     },
     "category-quick-create": {
       "targetKind": "new-ui",
@@ -674,6 +674,45 @@
         }
       },
       "updatedAt": "2026-08-31T14:52:11Z"
+    },
+    "/settings/categories": {
+      "targetKind": "new-ui",
+      "projectId": "e8178e09-b9a9-48f6-af10-99060c3efede",
+      "activeDraftId": "5cf87628-7bce-4d78-83f6-1d8907491aae",
+      "designSystemPath": ".superdesign/design-system.md",
+      "sourceTarget": "/settings",
+      "sourceDraftId": "fda13a35-5814-4290-b3f3-c413b23f58a2",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "apps/web/src/entities/category/config/category-appearance.ts",
+        "apps/web/src/pages/settings/ui/SettingsPage.vue"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "0c7d82a391818d83f4f673e07d1bcdc108df9a111257ad1bf6e3432a859d47fb",
+        "apps/web/src/entities/category/config/category-appearance.ts": "bf52e1efe3ce8bb655ea0fb158f6c5ad2e778c8c2db667ec0a9f732737c50574",
+        "apps/web/src/pages/settings/ui/SettingsPage.vue": "6a53b4fd85c5b73c80b0de769d93eccd8a6f591fb5d48599efa501150a676276"
+      },
+      "drafts": {
+        "5cf87628-7bce-4d78-83f6-1d8907491aae": {
+          "title": "Категории (управление)",
+          "visualDirection": "Direction D warm minimal - category management list",
+          "parentDraftId": "fda13a35-5814-4290-b3f3-c413b23f58a2",
+          "currentVersion": 1
+        },
+        "4d798114-54e0-4b57-9a9b-479af33b2c56": {
+          "title": "Кошелёк — Изменить категорию",
+          "visualDirection": "page + edit dialog state (branch; v2 preset icon+color picker)",
+          "parentDraftId": "5cf87628-7bce-4d78-83f6-1d8907491aae",
+          "currentVersion": 2
+        },
+        "669a9ff4-36a3-4ccf-a117-894dd937fe1a": {
+          "title": "Кошелёк — Удаление категории",
+          "visualDirection": "page + hybrid delete dialog state (branch)",
+          "parentDraftId": "5cf87628-7bce-4d78-83f6-1d8907491aae",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-09-02T17:29:13Z"
     }
   },
   "updatedAt": "2026-08-31T16:40:29.339Z"

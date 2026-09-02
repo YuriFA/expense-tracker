@@ -5,11 +5,13 @@ import { useTransactionsFilters } from '../model/use-transactions-filters'
 import { computed } from 'vue'
 import { Chip } from '@/shared/ui/chip'
 import { useI18n } from 'vue-i18n'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 
 const { filters, removeFilter, toggleIdFilter } = useTransactionsFilters()
 const { data: accounts } = useAccounts()
-const { data: categories } = useCategories()
+// Including archived: this is a join over existing records -
+// archived categories stay visible in history/analytics/filters.
+const { data: categories } = useCategoriesIncludingArchived()
 const transactionOptions = getTransactionTypeOptions()
 const { t } = useI18n()
 

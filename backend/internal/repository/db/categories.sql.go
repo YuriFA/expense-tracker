@@ -38,9 +38,9 @@ func (q *Queries) CategoryNameTaken(ctx context.Context, arg CategoryNameTakenPa
 
 const createCategory = `-- name: CreateCategory :one
 
-INSERT INTO categories (id, household_id, user_id, name, type, icon, color)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
+INSERT INTO categories (id, household_id, user_id, name, type, icon, color, archived_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, user_id, name, type, icon, color, archived_at, created_at, updated_at, version
 `
 
 type CreateCategoryParams struct {
@@ -51,25 +51,28 @@ type CreateCategoryParams struct {
 	Type        string
 	Icon        string
 	Color       string
+	ArchivedAt  *time.Time
 }
 
 type CreateCategoryRow struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Version   int32
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Type       string
+	Icon       string
+	Color      string
+	ArchivedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
 }
 
 // categories (household-scoped, unique name among LIVE rows only - the
 // partial unique index ignores tombstones so a deleted name can be recreated).
 // Scoped by household_id everywhere; user_id stays on rows as authorship;
 // deletes are soft (deleted_at tombstone).
-// id is the optional client-generated id (offline-first clients).
+// id is the optional client-generated id (offline-first clients);
+// archived_at rides along so an offline-archived unborn record syncs as-is.
 func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (CreateCategoryRow, error) {
 	row := q.db.QueryRow(ctx, createCategory,
 		arg.ID,
@@ -79,6 +82,7 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 		arg.Type,
 		arg.Icon,
 		arg.Color,
+		arg.ArchivedAt,
 	)
 	var i CreateCategoryRow
 	err := row.Scan(
@@ -88,6 +92,7 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 		&i.Type,
 		&i.Icon,
 		&i.Color,
+		&i.ArchivedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
@@ -96,34 +101,39 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 }
 
 const getCategories = `-- name: GetCategories :many
-SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
+SELECT id, user_id, name, type, icon, color, archived_at, created_at, updated_at, version
 FROM categories
 WHERE
     household_id = $1
     AND deleted_at IS NULL
-    AND ($2::text IS NULL OR type = $2)
+    AND ($2::boolean OR archived_at IS NULL)
+    AND ($3::text IS NULL OR type = $3)
 ORDER BY created_at, id
 `
 
 type GetCategoriesParams struct {
-	HouseholdID uuid.UUID
-	Type        *string
+	HouseholdID     uuid.UUID
+	IncludeArchived bool
+	Type            *string
 }
 
 type GetCategoriesRow struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Version   int32
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Type       string
+	Icon       string
+	Color      string
+	ArchivedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
 }
 
+// Active-only by default; include_archived flips the archived_at filter for
+// management listings.
 func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([]GetCategoriesRow, error) {
-	rows, err := q.db.Query(ctx, getCategories, arg.HouseholdID, arg.Type)
+	rows, err := q.db.Query(ctx, getCategories, arg.HouseholdID, arg.IncludeArchived, arg.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +148,7 @@ func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([
 			&i.Type,
 			&i.Icon,
 			&i.Color,
+			&i.ArchivedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
@@ -153,7 +164,7 @@ func (q *Queries) GetCategories(ctx context.Context, arg GetCategoriesParams) ([
 }
 
 const getCategory = `-- name: GetCategory :one
-SELECT id, user_id, name, type, icon, color, created_at, updated_at, version
+SELECT id, user_id, name, type, icon, color, archived_at, created_at, updated_at, version
 FROM categories
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
@@ -164,17 +175,20 @@ type GetCategoryParams struct {
 }
 
 type GetCategoryRow struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Version   int32
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Type       string
+	Icon       string
+	Color      string
+	ArchivedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
 }
 
+// Live read including archived rows (archived categories stay visible to
+// their management UI and to reference validation).
 func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (GetCategoryRow, error) {
 	row := q.db.QueryRow(ctx, getCategory, arg.ID, arg.HouseholdID)
 	var i GetCategoryRow
@@ -185,6 +199,7 @@ func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (GetCa
 		&i.Type,
 		&i.Icon,
 		&i.Color,
+		&i.ArchivedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
@@ -193,7 +208,7 @@ func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (GetCa
 }
 
 const getCategoryAny = `-- name: GetCategoryAny :one
-SELECT id, user_id, name, type, icon, color, created_at, updated_at, version, deleted_at
+SELECT id, user_id, name, type, icon, color, archived_at, created_at, updated_at, version, deleted_at
 FROM categories
 WHERE id = $1 AND household_id = $2
 `
@@ -204,16 +219,17 @@ type GetCategoryAnyParams struct {
 }
 
 type GetCategoryAnyRow struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Version   int32
-	DeletedAt *time.Time
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Type       string
+	Icon       string
+	Color      string
+	ArchivedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
+	DeletedAt  *time.Time
 }
 
 // Includes tombstoned rows (sync push + conflict classification).
@@ -227,6 +243,7 @@ func (q *Queries) GetCategoryAny(ctx context.Context, arg GetCategoryAnyParams) 
 		&i.Type,
 		&i.Icon,
 		&i.Color,
+		&i.ArchivedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
@@ -274,8 +291,49 @@ func (q *Queries) SoftDeleteCategory(ctx context.Context, arg SoftDeleteCategory
 	return version, err
 }
 
+const softDeleteTransactionsForCategory = `-- name: SoftDeleteTransactionsForCategory :many
+UPDATE transactions
+SET deleted_at = now(), version = version + 1, updated_at = now()
+WHERE household_id = $1 AND category_id = $2 AND deleted_at IS NULL
+RETURNING id, version
+`
+
+type SoftDeleteTransactionsForCategoryParams struct {
+	HouseholdID uuid.UUID
+	CategoryID  *uuid.UUID
+}
+
+type SoftDeleteTransactionsForCategoryRow struct {
+	ID      uuid.UUID
+	Version int32
+}
+
+// Cascade half of a category delete: tombstone every live transaction of
+// the household referencing the category (balances are derived from live
+// transactions, so they recompute implicitly). Returns id+version per row
+// for the per-record change_log appends.
+func (q *Queries) SoftDeleteTransactionsForCategory(ctx context.Context, arg SoftDeleteTransactionsForCategoryParams) ([]SoftDeleteTransactionsForCategoryRow, error) {
+	rows, err := q.db.Query(ctx, softDeleteTransactionsForCategory, arg.HouseholdID, arg.CategoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SoftDeleteTransactionsForCategoryRow
+	for rows.Next() {
+		var i SoftDeleteTransactionsForCategoryRow
+		if err := rows.Scan(&i.ID, &i.Version); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const syncCategoriesByIDs = `-- name: SyncCategoriesByIDs :many
-SELECT id, user_id, name, type, icon, color, version, deleted_at
+SELECT id, user_id, name, type, icon, color, archived_at, version, deleted_at
 FROM categories
 WHERE household_id = $1 AND id = ANY($2::uuid[])
 `
@@ -286,14 +344,15 @@ type SyncCategoriesByIDsParams struct {
 }
 
 type SyncCategoriesByIDsRow struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	Version   int32
-	DeletedAt *time.Time
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Type       string
+	Icon       string
+	Color      string
+	ArchivedAt *time.Time
+	Version    int32
+	DeletedAt  *time.Time
 }
 
 func (q *Queries) SyncCategoriesByIDs(ctx context.Context, arg SyncCategoriesByIDsParams) ([]SyncCategoriesByIDsRow, error) {
@@ -312,6 +371,7 @@ func (q *Queries) SyncCategoriesByIDs(ctx context.Context, arg SyncCategoriesByI
 			&i.Type,
 			&i.Icon,
 			&i.Color,
+			&i.ArchivedAt,
 			&i.Version,
 			&i.DeletedAt,
 		); err != nil {
@@ -328,14 +388,15 @@ func (q *Queries) SyncCategoriesByIDs(ctx context.Context, arg SyncCategoriesByI
 const syncReplaceCategory = `-- name: SyncReplaceCategory :one
 UPDATE categories
 SET
-    name       = $1,
-    type       = $2,
-    icon       = $3,
-    color      = $4,
-    version    = version + 1,
-    updated_at = now()
-WHERE id = $5 AND household_id = $6 AND deleted_at IS NULL AND version = $7
-RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
+    name         = $1,
+    type         = $2,
+    icon         = $3,
+    color        = $4,
+    archived_at  = $5,
+    version      = version + 1,
+    updated_at   = now()
+WHERE id = $6 AND household_id = $7 AND deleted_at IS NULL AND version = $8
+RETURNING id, user_id, name, type, icon, color, archived_at, created_at, updated_at, version
 `
 
 type SyncReplaceCategoryParams struct {
@@ -343,21 +404,23 @@ type SyncReplaceCategoryParams struct {
 	Type        string
 	Icon        string
 	Color       string
+	ArchivedAt  *time.Time
 	ID          uuid.UUID
 	HouseholdID uuid.UUID
 	BaseVersion int32
 }
 
 type SyncReplaceCategoryRow struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Version   int32
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Type       string
+	Icon       string
+	Color      string
+	ArchivedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
 }
 
 // Full-state CAS upsert from a sync push.
@@ -367,6 +430,7 @@ func (q *Queries) SyncReplaceCategory(ctx context.Context, arg SyncReplaceCatego
 		arg.Type,
 		arg.Icon,
 		arg.Color,
+		arg.ArchivedAt,
 		arg.ID,
 		arg.HouseholdID,
 		arg.BaseVersion,
@@ -379,6 +443,7 @@ func (q *Queries) SyncReplaceCategory(ctx context.Context, arg SyncReplaceCatego
 		&i.Type,
 		&i.Icon,
 		&i.Color,
+		&i.ArchivedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
@@ -389,47 +454,57 @@ func (q *Queries) SyncReplaceCategory(ctx context.Context, arg SyncReplaceCatego
 const updateCategory = `-- name: UpdateCategory :one
 UPDATE categories
 SET
-    name       = COALESCE($1, name),
-    type       = COALESCE($2, type),
-    icon       = COALESCE($3, icon),
-    color      = COALESCE($4, color),
-    version    = version + 1,
-    updated_at = now()
-WHERE id = $5 AND household_id = $6 AND deleted_at IS NULL AND version = $7
-RETURNING id, user_id, name, type, icon, color, created_at, updated_at, version
+    name         = COALESCE($1, name),
+    type         = COALESCE($2, type),
+    icon         = COALESCE($3, icon),
+    color        = COALESCE($4, color),
+    archived_at  = CASE $5::text
+                      WHEN 'archive' THEN now()
+                      WHEN 'clear'   THEN NULL
+                      ELSE archived_at
+                  END,
+    version      = version + 1,
+    updated_at   = now()
+WHERE id = $6 AND household_id = $7 AND deleted_at IS NULL AND version = $8
+RETURNING id, user_id, name, type, icon, color, archived_at, created_at, updated_at, version
 `
 
 type UpdateCategoryParams struct {
-	Name        *string
-	Type        *string
-	Icon        *string
-	Color       *string
-	ID          uuid.UUID
-	HouseholdID uuid.UUID
-	Version     int32
+	Name           *string
+	Type           *string
+	Icon           *string
+	Color          *string
+	ArchivedAction string
+	ID             uuid.UUID
+	HouseholdID    uuid.UUID
+	Version        int32
 }
 
 type UpdateCategoryRow struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Type      string
-	Icon      string
-	Color     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Version   int32
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	Name       string
+	Type       string
+	Icon       string
+	Color      string
+	ArchivedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int32
 }
 
 // Optimistic concurrency: the WHERE clause includes version = @version (and
 // liveness) so a concurrent update yields zero rows. PATCH fields use
-// COALESCE for nil = keep.
+// COALESCE for nil = keep. archived_action is a tri-state text sentinel:
+// 'keep' leaves archived_at, 'archive' stamps now() server-side, 'clear'
+// unarchives (the PATCH contract carries a boolean, never a timestamp).
 func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (UpdateCategoryRow, error) {
 	row := q.db.QueryRow(ctx, updateCategory,
 		arg.Name,
 		arg.Type,
 		arg.Icon,
 		arg.Color,
+		arg.ArchivedAction,
 		arg.ID,
 		arg.HouseholdID,
 		arg.Version,
@@ -442,6 +517,7 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 		&i.Type,
 		&i.Icon,
 		&i.Color,
+		&i.ArchivedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,

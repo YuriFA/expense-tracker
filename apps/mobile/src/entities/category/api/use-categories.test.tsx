@@ -8,7 +8,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { CategoryRepositoryProvider } from '../api/repository'
 import { createMockCategoryRepository } from '@/shared/lib/testing/mock-category-repository'
-import { useCategories, useCreateCategory } from '../model/use-categories'
+import { useCategories, useCategoriesIncludingArchived, useCreateCategory } from '../model/use-categories'
 
 function createWrapper(
   repository: ReturnType<typeof createMockCategoryRepository>,
@@ -22,6 +22,41 @@ function createWrapper(
 }
 
 describe('category hooks', () => {
+  it('useCategories hides archived categories; the including-archived query keeps them', async () => {
+    const repository = createMockCategoryRepository([
+      {
+        id: 'cat-active',
+        name: 'Такси',
+        type: 'expense',
+        icon: 'car',
+        color: '#7c5cff',
+        archivedAt: null,
+        version: 1,
+      },
+      {
+        id: 'cat-archived',
+        name: 'Старое',
+        type: 'expense',
+        icon: 'box',
+        color: '#a78bfa',
+        archivedAt: '2026-09-01T00:00:00.000Z',
+        version: 2,
+      },
+    ])
+    const queryClient = createQueryClient()
+
+    const active = renderHook(() => useCategories(), {
+      wrapper: createWrapper(repository, queryClient),
+    })
+    await waitFor(() => expect(active.result.current.data).toHaveLength(1))
+    expect(active.result.current.data?.[0].id).toBe('cat-active')
+
+    const all = renderHook(() => useCategoriesIncludingArchived(), {
+      wrapper: createWrapper(repository, queryClient),
+    })
+    await waitFor(() => expect(all.result.current.data).toHaveLength(2))
+  })
+
   it('useCategories reads through the repository and filters by type', async () => {
     const repository = createMockCategoryRepository([
       {
@@ -30,6 +65,7 @@ describe('category hooks', () => {
         type: 'expense',
         icon: 'car',
         color: '#7c5cff',
+        archivedAt: null,
         version: 1,
       },
       {
@@ -38,6 +74,7 @@ describe('category hooks', () => {
         type: 'income',
         icon: 'cash',
         color: '#16a34a',
+        archivedAt: null,
         version: 1,
       },
     ])

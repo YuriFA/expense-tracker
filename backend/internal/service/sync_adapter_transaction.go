@@ -60,15 +60,22 @@ func (transactionAdapter) preValidate(
 // postReadValidate enforces the per-type reference rules on the effective
 // refs of the full state (update) or the new record (create) with the REST
 // granularity: unknown live refs -> per-item unknown-references error; type
-// mismatch / same-account transfer -> invalid-payload codes.
+// mismatch / same-account transfer / archived-category assignment -> their
+// codes. An archived category may stay on the record it already labels.
 func (transactionAdapter) postReadValidate(
 	ctx context.Context,
 	t transactionTx,
 	householdID uuid.UUID,
-	_ domain.SyncOperation,
+	op domain.SyncOperation,
 	data domain.TransactionFullState,
 ) (string, string, error) {
-	if code := validateSyncRefs(ctx, t, householdID, &data); code != "" {
+	var prevCategoryID *uuid.UUID
+	if current, found, err := (transactionAdapter{}).getAny(ctx, t, householdID, op.ID); err != nil {
+		return "", "", err
+	} else if found && !current.Deleted() {
+		prevCategoryID = current.CategoryID
+	}
+	if code := validateSyncRefs(ctx, t, householdID, &data, prevCategoryID); code != "" {
 		return code, syncRefMessage(code), nil
 	}
 	return "", "", nil
@@ -144,19 +151,30 @@ func validateTransactionSyncShape(data *domain.TransactionFullState) string {
 // validateSyncRefs enforces the per-type reference rules (cashflow vs
 // transfer vs adjustment) on the LIVE accounts/categories, returning the
 // machine code of the violation ("" = valid). Mirrors
-// TransactionService.validateRefs with sync-tx reads.
+// TransactionService.validateRefs with sync-tx reads; prevCategoryID (the
+// record's category before this push) permits keeping an already-assigned
+// archived category while rejecting new assignments.
 func validateSyncRefs(
 	ctx context.Context,
 	t transactionTx,
 	householdID uuid.UUID,
 	data *domain.TransactionFullState,
+	prevCategoryID *uuid.UUID,
 ) string {
 	switch data.Type {
 	case domain.TransactionTypeIncome, domain.TransactionTypeExpense:
 		if data.FromAccountID != nil || data.ToAccountID != nil || data.AccountID == nil || data.CategoryID == nil {
 			return "INVALID_REFS"
 		}
-		return validateSyncCashflowRefs(ctx, t, householdID, *data.AccountID, *data.CategoryID, data.Type)
+		return validateSyncCashflowRefs(
+			ctx,
+			t,
+			householdID,
+			*data.AccountID,
+			*data.CategoryID,
+			data.Type,
+			prevCategoryID,
+		)
 	case domain.TransactionTypeTransfer:
 		if data.AccountID != nil || data.CategoryID != nil || data.FromAccountID == nil || data.ToAccountID == nil {
 			return "INVALID_REFS"
@@ -190,6 +208,7 @@ func validateSyncCashflowRefs(
 	t transactionTx,
 	householdID, accountID, categoryID uuid.UUID,
 	typ domain.TransactionType,
+	prevCategoryID *uuid.UUID,
 ) string {
 	if code := liveAccountCode(ctx, t, householdID, accountID); code != "" {
 		return code
@@ -200,6 +219,9 @@ func validateSyncCashflowRefs(
 	}
 	if category.Type != typ {
 		return "CATEGORY_TYPE_MISMATCH"
+	}
+	if category.Archived() && (prevCategoryID == nil || *prevCategoryID != categoryID) {
+		return "CATEGORY_ARCHIVED"
 	}
 	return ""
 }
@@ -237,6 +259,8 @@ func syncRefMessage(code string) string {
 		return "category not found"
 	case "CATEGORY_TYPE_MISMATCH":
 		return "transaction type does not match category type"
+	case "CATEGORY_ARCHIVED":
+		return "category is archived and not available for new transactions"
 	case "SAME_ACCOUNT_TRANSFER":
 		return "transaction from and to accounts are the same"
 	case "INVALID_AMOUNT":

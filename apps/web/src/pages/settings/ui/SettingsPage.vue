@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { ChevronRight, Tags } from '@lucide/vue'
 import { useAuthStore, sessionApi } from '@/entities/session'
 import { householdDisplayName, memberLabel, useHousehold } from '@/entities/household'
 import { DissolveHouseholdDialog } from '../features/dissolve-household'
@@ -191,6 +192,35 @@ onMounted(() => {
             </SelectItem>
           </SelectContent>
         </Select>
+      </CardContent>
+    </Card>
+
+    <!-- Category management entry (category-management screens): available
+         to anonymous users too - categories are local-first data, the
+         difference is only synchronization. -->
+    <Card>
+      <CardContent class="p-0">
+        <RouterLink
+          :to="{ name: 'settings-categories' }"
+          class="flex items-center justify-between gap-3 px-6 py-4 transition-colors hover:bg-muted/50"
+          data-testid="settings-categories-link"
+        >
+          <div class="flex min-w-0 items-center gap-3">
+            <span
+              class="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+              aria-hidden="true"
+            >
+              <Tags class="size-4" />
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold">{{ t('categoryManagement.title') }}</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">
+                {{ t('categoryManagement.subtitle') }}
+              </p>
+            </div>
+          </div>
+          <ChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </RouterLink>
       </CardContent>
     </Card>
 

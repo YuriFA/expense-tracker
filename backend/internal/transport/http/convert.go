@@ -101,15 +101,16 @@ func toAPIAccount(a domain.Account) api.Account {
 
 func toAPICategory(c domain.Category) api.Category {
 	return api.Category{
-		Id:        toUUID(c.ID),
-		UserId:    toUUID(c.UserID),
-		Name:      c.Name,
-		Type:      api.CategoryType(c.Type),
-		Icon:      c.Icon,
-		Color:     c.Color,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-		Version:   c.Version,
+		Id:         toUUID(c.ID),
+		UserId:     toUUID(c.UserID),
+		Name:       c.Name,
+		Type:       api.CategoryType(c.Type),
+		Icon:       c.Icon,
+		Color:      c.Color,
+		ArchivedAt: c.ArchivedAt,
+		CreatedAt:  c.CreatedAt,
+		UpdatedAt:  c.UpdatedAt,
+		Version:    c.Version,
 	}
 }
 

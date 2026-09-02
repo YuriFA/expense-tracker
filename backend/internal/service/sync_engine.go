@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/google/uuid"
 
@@ -106,6 +107,30 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 type syncInUseGuard[T repository.SyncCore, R syncRow] interface {
 	inUse(ctx context.Context, t T, householdID, id uuid.UUID) (blocked bool, message string, err error)
 	inUseCode() string
+}
+
+// syncDeleteOptionsResolver is implemented by entities whose delete payload
+// may carry delete options (category: {"cascade": true}). It runs after the
+// existence/liveness checks; a non-empty code turns the item into a per-item
+// error (malformed payload), otherwise cascade reports whether dependants
+// are removed together with the record.
+type syncDeleteOptionsResolver[T repository.SyncCore, R syncRow] interface {
+	resolveDelete(op domain.SyncOperation) (cascade bool, code, message string)
+}
+
+// syncCascadeGuard pairs with a resolved cascade: the dependants the cascade
+// itself removes no longer block the delete (the category cascade removes
+// the referencing transactions), so only the remaining relations (live
+// planned payments) are checked.
+type syncCascadeGuard[T repository.SyncCore, R syncRow] interface {
+	inUseUnderCascade(ctx context.Context, t T, householdID, id uuid.UUID) (blocked bool, message string, err error)
+}
+
+// syncCascadeTombstoner pairs with a resolved cascade: the tombstone write
+// also removes the dependants (each with its own change_log row, on the same
+// batch transaction).
+type syncCascadeTombstoner[T repository.SyncCore, R syncRow] interface {
+	cascadeTombstone(ctx context.Context, t T, householdID, userID, id uuid.UUID) (R, error)
 }
 
 // syncAdapterDefaults carries the no-op answers for the optional adapter
@@ -307,18 +332,65 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 	if current.Deleted() {
 		return appliedResult(op.OpID, ad.version(current)), nil
 	}
-	if guard, ok := any(ad).(syncInUseGuard[T, R]); ok {
-		blocked, message, err := guard.inUse(ctx, t, householdID, op.ID)
-		if err != nil {
-			return domain.SyncPushResult{}, err
-		}
-		if blocked {
-			return errorResult(op.OpID, guard.inUseCode(), message), nil
+	cascade := false
+	if rd, ok := any(ad).(syncDeleteOptionsResolver[T, R]); ok {
+		var code, message string
+		cascade, code, message = rd.resolveDelete(op)
+		if code != "" {
+			return errorResult(op.OpID, code, message), nil
 		}
 	}
-	deleted, err := ad.tombstone(ctx, t, householdID, userID, op.ID)
+	blocked, message, err := inUseBlocked(ctx, ad, t, householdID, op.ID, cascade)
+	if err != nil {
+		return domain.SyncPushResult{}, err
+	}
+	if blocked {
+		return errorResult(op.OpID, guardCode(ad), message), nil
+	}
+	var deleted R
+	if cascade {
+		if ct, ok := any(ad).(syncCascadeTombstoner[T, R]); ok {
+			deleted, err = ct.cascadeTombstone(ctx, t, householdID, userID, op.ID)
+		} else {
+			return domain.SyncPushResult{}, fmt.Errorf(
+				"cascade delete resolved for entity without cascade support: %s",
+				op.Entity,
+			)
+		}
+	} else {
+		deleted, err = ad.tombstone(ctx, t, householdID, userID, op.ID)
+	}
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
 	return appliedResult(op.OpID, ad.version(deleted)), nil
+}
+
+// inUseBlocked runs the delete in-use guard; under a resolved cascade the
+// reduced guard (syncCascadeGuard) replaces the full one when implemented.
+func inUseBlocked[T repository.SyncCore, R syncRow, S any](
+	ctx context.Context,
+	ad syncAdapter[T, R, S],
+	t T,
+	householdID, id uuid.UUID,
+	cascade bool,
+) (bool, string, error) {
+	guard, ok := any(ad).(syncInUseGuard[T, R])
+	if !ok {
+		return false, "", nil
+	}
+	if cascade {
+		if cg, ok := any(ad).(syncCascadeGuard[T, R]); ok {
+			return cg.inUseUnderCascade(ctx, t, householdID, id)
+		}
+	}
+	return guard.inUse(ctx, t, householdID, id)
+}
+
+// guardCode fetches the in-use code without re-asserting the full guard.
+func guardCode[T repository.SyncCore, R syncRow, S any](ad syncAdapter[T, R, S]) string {
+	if guard, ok := any(ad).(syncInUseGuard[T, R]); ok {
+		return guard.inUseCode()
+	}
+	return "IN_USE"
 }

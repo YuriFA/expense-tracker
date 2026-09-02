@@ -144,5 +144,11 @@ func (s *PlannedPaymentService) validateRefs(
 	if cat.Type != typ {
 		return domain.ErrPlannedPaymentCategoryTypeMismatch
 	}
+	// A plan is a future obligation: an archived category is never a valid
+	// reference (archiving is itself blocked while live plans reference the
+	// category, so only new assignments can hit this).
+	if cat.Archived() {
+		return domain.ErrPlannedPaymentCategoryArchived
+	}
 	return nil
 }

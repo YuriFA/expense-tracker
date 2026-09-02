@@ -8,7 +8,7 @@ import {
   pickCategoryColor,
   type Category,
 } from '@/entities/category'
-import { useCategories, useCreateCategory } from '@/entities/category'
+import { useCategoriesIncludingArchived, useCreateCategory } from '@/entities/category'
 import { Button } from '@/shared/ui/button'
 import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
@@ -37,7 +37,9 @@ const open = defineModel<boolean>('open', { default: false })
 
 const { t } = useI18n()
 const { mutateAsync: createCategory, asyncStatus } = useCreateCategory()
-const { data: categories } = useCategories()
+// Including archived: archived categories still render in charts, so their
+// colors count as taken for the distinct-palette walk.
+const { data: categories } = useCategoriesIncludingArchived()
 const name = ref('')
 const icon = ref<string>(DEFAULT_CATEGORY_ICON.icon)
 

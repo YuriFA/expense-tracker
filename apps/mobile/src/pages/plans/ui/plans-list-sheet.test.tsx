@@ -23,9 +23,18 @@ const CATEGORIES: Category[] = [
     type: 'expense',
     icon: 'film',
     color: '#7c5cff',
+    archivedAt: null,
     version: 1,
   },
-  { id: 'cat-loan', name: 'Кредит', type: 'expense', icon: 'card', color: '#a78bfa', version: 1 },
+  {
+    id: 'cat-loan',
+    name: 'Кредит',
+    type: 'expense',
+    icon: 'card',
+    color: '#a78bfa',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 function plan(overrides: Partial<PlannedPayment>): PlannedPayment {

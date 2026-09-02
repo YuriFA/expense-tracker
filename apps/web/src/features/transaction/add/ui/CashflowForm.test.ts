@@ -39,6 +39,7 @@ const incomeCategory: Category = {
   type: 'income',
   icon: '💰',
   color: '#00FF00',
+  archivedAt: null,
   slug: 'salary',
 }
 
@@ -49,6 +50,7 @@ const expenseCategory: Category = {
   type: 'expense',
   icon: '🍔',
   color: '#FF0000',
+  archivedAt: null,
   slug: 'food',
 }
 

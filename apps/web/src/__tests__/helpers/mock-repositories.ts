@@ -43,14 +43,22 @@ export function createMockAccountRepository(
 export function createMockCategoryRepository(
   overrides: Partial<MockedCategoryRepository> = {},
 ): MockedCategoryRepository {
-  return {
+  const repo = {
     getAll: vi.fn<CategoryRepository['getAll']>(),
+    getAllIncludingArchived: vi.fn<CategoryRepository['getAllIncludingArchived']>(),
     getById: vi.fn<CategoryRepository['getById']>(),
     create: vi.fn<CategoryRepository['create']>(),
     update: vi.fn<CategoryRepository['update']>(),
     remove: vi.fn<CategoryRepository['remove']>(),
     ...overrides,
+  } as MockedCategoryRepository
+  // Default: the archived-inclusive listing mirrors `getAll` so test
+  // fixtures (active-only) stay valid for both query surfaces; override
+  // explicitly where the split matters.
+  if (!overrides.getAllIncludingArchived) {
+    repo.getAllIncludingArchived.mockImplementation(async () => repo.getAll())
   }
+  return repo
 }
 
 export function createMockTransactionRepository(

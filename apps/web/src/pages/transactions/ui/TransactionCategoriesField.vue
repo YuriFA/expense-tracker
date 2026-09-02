@@ -3,7 +3,7 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -16,7 +16,9 @@ const props = defineProps<{
 const modelValue = defineModel<string[] | undefined>()
 
 const { t } = useI18n()
-const { data: categories, error, isLoading } = useCategories()
+// Including archived: this is a join over existing records -
+// archived categories stay visible in history/analytics/filters.
+const { data: categories, error, isLoading } = useCategoriesIncludingArchived()
 
 const filteredCategories = computed(() => {
   if (props.type === undefined || props.type === 'adjustment') {

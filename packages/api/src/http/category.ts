@@ -20,6 +20,7 @@ function toCategory(value: ApiCategory): Category {
     type: value.type,
     icon: value.icon,
     color: value.color,
+    archivedAt: value.archivedAt ?? null,
     version: value.version,
   }
 }
@@ -37,6 +38,12 @@ export function createHTTPCategoryRepository(client: ApiClient): CategoryReposit
   return {
     async getAll() {
       const { data } = await client.GET('/api/categories', { params: {} })
+      return requireData(data).map(toCategory)
+    },
+    async getAllIncludingArchived() {
+      const { data } = await client.GET('/api/categories', {
+        params: { query: { includeArchived: true } },
+      })
       return requireData(data).map(toCategory)
     },
     async getById(id: string) {
@@ -63,8 +70,13 @@ export function createHTTPCategoryRepository(client: ApiClient): CategoryReposit
       })
       return toCategory(requireData(data))
     },
-    async remove(id) {
-      await client.DELETE('/api/categories/{id}', { params: { path: { id } } })
+    async remove(id, options) {
+      await client.DELETE('/api/categories/{id}', {
+        params: {
+          path: { id },
+          ...(options?.cascade ? { query: { cascade: true } } : {}),
+        },
+      })
     },
   }
 }
@@ -86,5 +98,6 @@ function toUpdateRequest(payload: UpdateCategoryPayload): CategoryUpdateRequest 
     ...(payload.type !== undefined ? { type: payload.type } : {}),
     ...(payload.icon !== undefined ? { icon: payload.icon } : {}),
     ...(payload.color !== undefined ? { color: payload.color } : {}),
+    ...(payload.archived !== undefined ? { archived: payload.archived } : {}),
   }
 }

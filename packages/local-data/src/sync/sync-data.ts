@@ -98,7 +98,7 @@ export function rowToPayload(entity: SyncEntity, row: EntityRow): Record<string,
   }
   if (entity === 'category') {
     const r = row as CategoryRow
-    return { id: r.id, name: r.name, type: r.type, icon: r.icon, color: r.color }
+    return { id: r.id, name: r.name, type: r.type, icon: r.icon, color: r.color, archivedAt: r.archivedAt }
   }
   if (entity === 'debtor') {
     const r = row as DebtorRow
@@ -178,11 +178,13 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
 
   if (entity === 'category') {
     const type = asString(p.type)
+    const archivedAt = asString(p.archivedAt)
     const data = {
       name: asString(p.name) ?? '',
       type: type === 'income' || type === 'expense' ? type : null,
       icon: asString(p.icon) ?? '',
       color: asString(p.color) ?? '',
+      ...(archivedAt ? { archivedAt } : {}),
     }
     return data.name && data.type && data.icon && data.color ? (data as CategorySyncData) : null
   }
@@ -297,7 +299,7 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
 /** Complete entity-column sets for applying a wire upsert to a local row. */
 export type SyncRowPatch =
   | Pick<AccountRow, 'name' | 'currency' | 'openingBalance'>
-  | Pick<CategoryRow, 'name' | 'type' | 'icon' | 'color' | 'slug'>
+  | Pick<CategoryRow, 'name' | 'type' | 'icon' | 'color' | 'archivedAt' | 'slug'>
   | Pick<
       TransactionRow,
       | 'type'
@@ -359,6 +361,7 @@ export function syncDataToRowPatch(
       type,
       icon: asString(p.icon) ?? '',
       color: asString(p.color) ?? '',
+      archivedAt: asString(p.archivedAt),
       slug: null,
     }
   }

@@ -109,6 +109,39 @@ describe('local transaction repository: create validation', () => {
     expect((error as InvalidPayloadError).apiCode).toBe('CATEGORY_TYPE_MISMATCH')
   })
 
+  it('rejects a new reference to an archived category but allows keeping one', async () => {
+    const other = await categoryRepo.create({
+      name: 'Другое',
+      type: 'expense',
+      icon: 'box',
+      color: '#7c5cff',
+    })
+    // A transaction recorded while the category was active...
+    const kept = await transactionRepo.create(cashflowPayload())
+    await categoryRepo.update(expenseCategoryId, { version: 1, archived: true })
+    await categoryRepo.update(other.id, { version: 1, archived: true })
+
+    // ...keeps it when edited without touching the category...
+    const edited = await transactionRepo.update(kept.id, {
+      version: kept.version,
+      description: 'обновлено',
+    })
+    expect(edited.categoryId).toBe(kept.categoryId)
+
+    // ...but a fresh assignment (create or switch) is rejected with the code.
+    const created = await transactionRepo
+      .create(cashflowPayload())
+      .catch((e) => e)
+    expect(created).toBeInstanceOf(InvalidPayloadError)
+    expect((created as InvalidPayloadError).apiCode).toBe('CATEGORY_ARCHIVED')
+
+    const switched = await transactionRepo
+      .update(kept.id, { version: edited.version, categoryId: other.id })
+      .catch((e) => e)
+    expect(switched).toBeInstanceOf(InvalidPayloadError)
+    expect((switched as InvalidPayloadError).apiCode).toBe('CATEGORY_ARCHIVED')
+  })
+
   it('rejects a same-account transfer with the backend apiCode; distinct accounts pass', async () => {
     const error = await transactionRepo
       .create({

@@ -69,6 +69,7 @@ const CATEGORIES: Category[] = [
     type: 'expense',
     icon: 'film',
     color: '#7c5cff',
+    archivedAt: null,
     version: 1,
   },
 ]

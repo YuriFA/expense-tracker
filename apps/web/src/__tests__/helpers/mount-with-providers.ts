@@ -74,6 +74,12 @@ export function mountWithProviders<T>(
       routes: [
         { path: '/', component: { template: '<div/>' } },
         { path: '/login', name: 'login', component: { template: '<div/>' } },
+        { path: '/settings', name: 'settings', component: { template: '<div/>' } },
+        {
+          path: '/settings/categories',
+          name: 'settings-categories',
+          component: { template: '<div/>' },
+        },
       ],
     })
 

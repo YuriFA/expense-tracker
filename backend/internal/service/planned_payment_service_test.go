@@ -257,7 +257,7 @@ func TestPlannedPaymentService_InUseGuards(t *testing.T) {
 	)
 	require.ErrorIs(
 		t,
-		store.DeleteCategory(ctx, userHH, user.ID, categoryID),
+		store.DeleteCategory(ctx, userHH, user.ID, categoryID, false),
 		domain.ErrCategoryHasPlannedPayments,
 	)
 

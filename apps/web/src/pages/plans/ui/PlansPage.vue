@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePlannedPayments } from '@/entities/planned-payment'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import PlansTypeCard from './PlansTypeCard.vue'
 import PlansListDialog from './PlansListDialog.vue'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -20,7 +20,9 @@ const {
   error,
   refetch,
 } = usePlannedPayments()
-const { data: categories } = useCategories()
+// Including archived: this is a join over existing records -
+// archived categories stay visible in history/analytics/filters.
+const { data: categories } = useCategoriesIncludingArchived()
 
 const expensePlans = computed(() => (plans.value ?? []).filter((plan) => plan.type === 'expense'))
 const incomePlans = computed(() => (plans.value ?? []).filter((plan) => plan.type === 'income'))

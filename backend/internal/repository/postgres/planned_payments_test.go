@@ -117,7 +117,7 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 		)
 		require.ErrorIs(
 			t,
-			testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID),
+			testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID, false),
 			domain.ErrCategoryHasPlannedPayments,
 		)
 

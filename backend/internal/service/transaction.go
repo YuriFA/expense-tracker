@@ -56,6 +56,7 @@ func (s *TransactionService) Create(
 		params.CategoryID,
 		params.FromAccountID,
 		params.ToAccountID,
+		nil, // fresh assignment: any archived category is rejected
 	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -114,6 +115,7 @@ func (s *TransactionService) Update(
 
 	if err := s.validateRefs(ctx, householdID, current.Type,
 		effectiveAccountID, effectiveCategoryID, effectiveFromAccountID, effectiveToAccountID,
+		current.CategoryID, // unchanged assignment may keep an archived category
 	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -226,18 +228,23 @@ func boundPageSize(requested *int) int {
 // transaction type. The not-found errors for FK references are DISTINCT from
 // the by-id fetch errors so the transport error mapper stays a pure 1:1
 // function (422 inside a transaction vs 404 by id).
+// validateRefs verifies the effective reference set after a patch (create
+// passes the same set twice). prevCategoryID is the transaction's category
+// before the change (nil on create): assigning an ARCHIVED category is
+// rejected, but keeping an already-assigned archived category is allowed.
 func (s *TransactionService) validateRefs(
 	ctx context.Context,
 	householdID uuid.UUID,
 	typ domain.TransactionType,
 	accountID, categoryID, fromAccountID, toAccountID *uuid.UUID,
+	prevCategoryID *uuid.UUID,
 ) error {
 	switch typ {
 	case domain.TransactionTypeIncome, domain.TransactionTypeExpense:
 		if fromAccountID != nil || toAccountID != nil || accountID == nil || categoryID == nil {
 			return domain.ErrInvalidRefs
 		}
-		return s.validateCashflowRefs(ctx, householdID, *accountID, *categoryID, typ)
+		return s.validateCashflowRefs(ctx, householdID, *accountID, *categoryID, typ, prevCategoryID)
 	case domain.TransactionTypeTransfer:
 		if accountID != nil || categoryID != nil || fromAccountID == nil || toAccountID == nil {
 			return domain.ErrInvalidRefs
@@ -284,12 +291,14 @@ func (s *TransactionService) validateAdjustmentRefs(
 }
 
 // validateCashflowRefs verifies the income/expense account + category exist,
-// belong to householdID, and that the category type matches the transaction
-// type.
+// belong to householdID, that the category type matches the transaction
+// type, and that an archived category is only kept, never newly assigned
+// (prevCategoryID nil = a fresh assignment).
 func (s *TransactionService) validateCashflowRefs(
 	ctx context.Context,
 	householdID, accountID, categoryID uuid.UUID,
 	typ domain.TransactionType,
+	prevCategoryID *uuid.UUID,
 ) error {
 	if _, err := s.accounts.GetAccount(ctx, householdID, accountID); err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
@@ -306,6 +315,9 @@ func (s *TransactionService) validateCashflowRefs(
 	}
 	if cat.Type != typ {
 		return domain.ErrCategoryTypeMismatch
+	}
+	if cat.Archived() && (prevCategoryID == nil || *prevCategoryID != categoryID) {
+		return domain.ErrCategoryArchived
 	}
 	return nil
 }

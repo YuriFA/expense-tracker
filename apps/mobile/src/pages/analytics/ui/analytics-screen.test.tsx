@@ -17,26 +17,58 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
 const ZERO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
 const CATEGORIES: Category[] = [
-  { id: 'cat-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#6366f1', version: 1 },
-  { id: 'cat-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#f97316', version: 1 },
+  {
+    id: 'cat-taxi',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#6366f1',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'cat-cafe',
+    name: 'Кафе',
+    type: 'expense',
+    icon: 'cafe',
+    color: '#f97316',
+    archivedAt: null,
+    version: 1,
+  },
   {
     id: 'cat-salary',
     name: 'Зарплата',
     type: 'income',
     icon: 'cash',
     color: '#22c55e',
+    archivedAt: null,
     version: 1,
   },
 ]
 
-// Current-month fixtures follow the transactions-screen test convention:
-// hardcoded August 2026 instants against the runtime's current month.
+// Date-relative helpers (the dashboard-suite convention): current-month rows
+// sit on distinct clamped days, outside-month rows on the previous month.
+function toIso(date: Date): string {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12).toISOString()
+}
+
+function dayThisMonth(day: number): string {
+  const now = new Date()
+  return toIso(new Date(now.getFullYear(), now.getMonth(), Math.min(day, now.getDate()), 12))
+}
+
+function dayPrevMonth(day: number): string {
+  const prev = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
+  const lastDay = new Date(prev.getFullYear(), prev.getMonth() + 1, 0).getDate()
+  return toIso(new Date(prev.getFullYear(), prev.getMonth(), Math.min(day, lastDay), 12))
+}
+
 const TRANSACTIONS: Transaction[] = [
   {
     id: 'tx-taxi',
     type: 'expense',
     amount: 400_000,
-    occurredAt: '2026-08-10T12:00:00.000Z',
+    occurredAt: dayThisMonth(2),
     version: 1,
     accountId: 'acc-1',
     categoryId: 'cat-taxi',
@@ -45,7 +77,7 @@ const TRANSACTIONS: Transaction[] = [
     id: 'tx-cafe',
     type: 'expense',
     amount: 100_000,
-    occurredAt: '2026-08-12T12:00:00.000Z',
+    occurredAt: dayThisMonth(4),
     version: 1,
     accountId: 'acc-1',
     categoryId: 'cat-cafe',
@@ -54,7 +86,7 @@ const TRANSACTIONS: Transaction[] = [
     id: 'tx-salary',
     type: 'income',
     amount: 1_000_000,
-    occurredAt: '2026-08-05T09:00:00.000Z',
+    occurredAt: dayThisMonth(1),
     version: 1,
     accountId: 'acc-1',
     categoryId: 'cat-salary',
@@ -64,7 +96,7 @@ const TRANSACTIONS: Transaction[] = [
     id: 'tx-jul',
     type: 'expense',
     amount: 700_000,
-    occurredAt: '2026-07-15T12:00:00.000Z',
+    occurredAt: dayPrevMonth(15),
     version: 1,
     accountId: 'acc-1',
     categoryId: 'cat-taxi',
@@ -74,7 +106,7 @@ const TRANSACTIONS: Transaction[] = [
     id: 'tx-transfer',
     type: 'transfer',
     amount: 50_000,
-    occurredAt: '2026-08-11T12:00:00.000Z',
+    occurredAt: dayThisMonth(3),
     version: 1,
     fromAccountId: 'acc-1',
     toAccountId: 'acc-2',

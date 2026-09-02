@@ -127,3 +127,46 @@ func (categoryAdapter) inUse(
 }
 
 func (categoryAdapter) inUseCode() string { return "CATEGORY_IN_USE" }
+
+// categoryDeleteData is the delete-op payload shape ("cascade": true).
+type categoryDeleteData struct {
+	Cascade bool `json:"cascade"`
+}
+
+// resolveDelete parses the delete payload: absent data is a plain guarded
+// delete; {"cascade": true} cascades to the referencing transactions;
+// anything else is a per-item validation error.
+func (categoryAdapter) resolveDelete(op domain.SyncOperation) (bool, string, string) {
+	if len(op.Data) == 0 || string(op.Data) == "null" {
+		return false, "", ""
+	}
+	var data categoryDeleteData
+	if err := decodeSyncData(op.Data, &data); err != nil {
+		return false, "VALIDATION_FAILED", "invalid category delete data"
+	}
+	return data.Cascade, "", ""
+}
+
+// inUseUnderCascade is the reduced guard for a cascaded delete: the
+// referencing transactions are removed by the cascade itself, so only live
+// planned payments still block (mirrors the REST DeleteCategory order).
+func (categoryAdapter) inUseUnderCascade(
+	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
+) (bool, string, error) {
+	plans, err := t.HasLivePlannedPaymentsForCategory(ctx, householdID, id)
+	if err != nil {
+		return false, "", err
+	}
+	if plans {
+		return true, "category has planned payments and cannot be deleted", nil
+	}
+	return false, "", nil
+}
+
+// cascadeTombstone tombstones the category and every referencing live
+// transaction, each with its own change_log row, on the batch transaction.
+func (categoryAdapter) cascadeTombstone(
+	ctx context.Context, t categoryTx, householdID, userID, id uuid.UUID,
+) (*domain.Category, error) {
+	return t.CascadeTombstoneCategory(ctx, householdID, userID, id)
+}

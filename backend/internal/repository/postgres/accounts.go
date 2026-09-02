@@ -99,7 +99,7 @@ func (r *Repository) UpdateAccount(
 	), nil
 }
 
-func (r *Repository) DeleteAccount( //nolint:dupl // account/category delete twins: identical guard shape
+func (r *Repository) DeleteAccount(
 	ctx context.Context,
 	householdID, actorID, id uuid.UUID,
 ) error {

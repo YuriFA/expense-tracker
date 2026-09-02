@@ -234,6 +234,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		httperr.ErrCodeCategoryTypeMismatch,
 		"transaction type does not match category type",
 	},
+	domain.ErrCategoryArchived: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodeCategoryArchived,
+		"category is archived and not available for new transactions",
+	},
 	domain.ErrSameAccountTransfer: {
 		http.StatusUnprocessableEntity,
 		httperr.ErrCodeSameAccountTransfer,
@@ -258,6 +263,11 @@ var domainErrorMap = map[error]domainErrorSpec{
 		http.StatusUnprocessableEntity,
 		httperr.ErrCodePlannedPaymentCategoryNotFound,
 		"plan type does not match category type",
+	},
+	domain.ErrPlannedPaymentCategoryArchived: {
+		http.StatusUnprocessableEntity,
+		httperr.ErrCodePlannedPaymentCategoryArchived,
+		"category is archived and not available for planned payments",
 	},
 	domain.ErrInvalidDate: {
 		http.StatusBadRequest,

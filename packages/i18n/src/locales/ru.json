@@ -148,14 +148,34 @@
   },
   "editCategory": {
     "title": "Изменить категорию",
-    "submit": "Сохранить"
+    "submit": "Сохранить",
+    "nameLabel": "Название",
+    "iconLabel": "Значок",
+    "typeLabel": "Тип",
+    "typeImmutableHint": "Тип категории изменить нельзя",
+    "success": "Категория обновлена"
   },
   "deleteCategory": {
     "trigger": "Удалить категорию",
-    "confirmDelete": "Удалить эту категорию?",
-    "confirmDeleteDescription": "Это действие нельзя отменить. Категории, привязанные к существующим транзакциям, удалить нельзя.",
     "cancel": "Отмена",
-    "confirm": "Удалить"
+    "confirm": "Удалить",
+    "plainTitle": "Удалить категорию?",
+    "plainDescription": "Это действие нельзя отменить.",
+    "blockedTitle": "Удаление недоступно",
+    "blockedPlans": "Категория используется в активных плановых платежах. Сначала удалите или измените их: {plans}.",
+    "withTransactionsTitle": "Удалить категорию?",
+    "withTransactionsDescription": "Категория используется в {usage}. Архивирование сохранит историю и аналитику; удаление необратимо удалит сами операции и изменит балансы счетов.",
+    "optionArchiveTitle": "Архивировать",
+    "optionArchiveDescription": "Категория исчезнет из выбора, история останется",
+    "optionCascadeTitle": "Удалить вместе с операциями ({count})",
+    "optionCascadeDescription": "Операции будут удалены безвозвратно, балансы пересчитаются",
+    "balanceImpact": "«{account}»: {delta}",
+    "cascadeTitle": "Удалить категорию с операциями?",
+    "cascadeDescription": "Будут безвозвратно удалены категория и {usage}. Балансы счетов изменятся:",
+    "typeToConfirm": "Введите «{name}» для подтверждения",
+    "confirmArchive": "Архивировать",
+    "confirmCascade": "Удалить с операциями",
+    "usageCount": "{count} операция | {count} операции | {count} операций"
   },
   "recentTransactions": {
     "title": "Последние транзакции"
@@ -663,5 +683,29 @@
     "submit": "Сверить",
     "success": "Баланс сверен",
     "error": "Ошибка при сверке баланса"
+  },
+  "categoryManagement": {
+    "title": "Категории",
+    "subtitle": "Управление категориями и архивом",
+    "groupExpense": "Расходы",
+    "groupIncome": "Доходы",
+    "emptyGroup": "Пока нет категорий",
+    "transactionsCount": "{count} операция | {count} операции | {count} операций",
+    "archiveTitle": "Архив",
+    "archiveHint": "Архивные категории не показываются при выборе, но сохраняются в истории и аналитике.",
+    "archivedSince": "в архиве с {date}",
+    "actions": {
+      "edit": "Изменить",
+      "archive": "Архивировать",
+      "unarchive": "Вернуть из архива",
+      "delete": "Удалить"
+    },
+    "archiveSuccess": "Категория архивирована",
+    "unarchiveSuccess": "Категория возвращена из архива",
+    "archiveBlockedTitle": "Архивирование недоступно",
+    "archiveBlockedPlans": "Категория используется в активных плановых платежах. Сначала удалите или измените их: {plans}.",
+    "deleteSuccess": "Категория удалена",
+    "cancel": "Отмена",
+    "noTransactions": "нет операций"
   }
 }

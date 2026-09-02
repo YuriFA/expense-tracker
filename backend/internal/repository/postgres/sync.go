@@ -220,16 +220,17 @@ func (t *syncTx) GetCategoryAny(ctx context.Context, householdID, id uuid.UUID) 
 		return nil, opWrap(op, err)
 	}
 	return &domain.Category{
-		ID:        row.ID,
-		UserID:    row.UserID,
-		Name:      row.Name,
-		Type:      domain.TransactionType(row.Type),
-		Icon:      row.Icon,
-		Color:     row.Color,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
-		Version:   int(row.Version),
-		DeletedAt: row.DeletedAt,
+		ID:         row.ID,
+		UserID:     row.UserID,
+		Name:       row.Name,
+		Type:       domain.TransactionType(row.Type),
+		Icon:       row.Icon,
+		Color:      row.Color,
+		ArchivedAt: row.ArchivedAt,
+		CreatedAt:  row.CreatedAt,
+		UpdatedAt:  row.UpdatedAt,
+		Version:    int(row.Version),
+		DeletedAt:  row.DeletedAt,
 	}, nil
 }
 
@@ -583,6 +584,7 @@ func (t *syncTx) CreateCategory(ctx context.Context, params domain.CreateCategor
 		Type:        string(params.Type),
 		Icon:        params.Icon,
 		Color:       params.Color,
+		ArchivedAt:  params.ArchivedAt,
 	})
 	if err != nil {
 		if pgUniqueViolation(err) {
@@ -599,7 +601,7 @@ func (t *syncTx) CreateCategory(ctx context.Context, params domain.CreateCategor
 	return &domain.Category{
 		ID: row.ID, UserID: row.UserID, Name: row.Name,
 		Type: domain.TransactionType(row.Type), Icon: row.Icon, Color: row.Color,
-		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, Version: int(row.Version),
+		ArchivedAt: row.ArchivedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, Version: int(row.Version),
 	}, nil
 }
 
@@ -618,6 +620,7 @@ func (t *syncTx) ReplaceCategory(
 		Type:        string(st.Type),
 		Icon:        st.Icon,
 		Color:       st.Color,
+		ArchivedAt:  st.ArchivedAt,
 		BaseVersion: int32(baseVersion), //nolint:gosec // server versions are small positive ints
 	})
 	if err != nil {
@@ -641,7 +644,7 @@ func (t *syncTx) ReplaceCategory(
 	return &domain.Category{
 		ID: row.ID, UserID: row.UserID, Name: row.Name,
 		Type: domain.TransactionType(row.Type), Icon: row.Icon, Color: row.Color,
-		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, Version: int(row.Version),
+		ArchivedAt: row.ArchivedAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, Version: int(row.Version),
 	}, nil
 }
 
@@ -673,6 +676,41 @@ func (t *syncTx) TombstoneCategory( //nolint:dupl // account/category/transactio
 	c := &domain.Category{ID: id, UserID: actorID, Version: int(version)}
 	now := time.Now().UTC()
 	c.DeletedAt = &now
+	return c, nil
+}
+
+// CascadeTombstoneCategory is the cascade-flagged category delete: the
+// category tombstone plus one tombstone per live referencing transaction,
+// each with its change_log row, all on the batch transaction (invariants
+// #17-#18). Balances recompute implicitly (they are derived from live
+// transactions).
+func (t *syncTx) CascadeTombstoneCategory(
+	ctx context.Context,
+	householdID, actorID, id uuid.UUID,
+) (*domain.Category, error) {
+	const op = "repository.postgres.syncTx.CascadeTombstoneCategory"
+
+	// Reuse the plain tombstone for the category half (idempotent on an
+	// already-tombstoned record; the engine checks liveness first).
+	c, err := t.TombstoneCategory(ctx, householdID, actorID, id)
+	if err != nil {
+		return nil, opWrap(op, err)
+	}
+	rows, err := t.q.SoftDeleteTransactionsForCategory(ctx, db.SoftDeleteTransactionsForCategoryParams{
+		HouseholdID: householdID,
+		CategoryID:  &id,
+	})
+	if err != nil {
+		return nil, opWrap(op, err)
+	}
+	for _, tx := range rows {
+		if err := appendChangeLog(
+			ctx, t.q, householdID, actorID, tx.ID,
+			domain.SyncEntityTransaction, domain.SyncChangeTombstone, int(tx.Version),
+		); err != nil {
+			return nil, opWrap(op, err)
+		}
+	}
 	return c, nil
 }
 
@@ -1409,10 +1447,11 @@ func pullStateOf(
 	case domain.SyncEntityCategory:
 		if c, ok := categoriesByID[id]; ok {
 			return &domain.CategoryFullState{
-				Name:  c.Name,
-				Type:  domain.TransactionType(c.Type),
-				Icon:  c.Icon,
-				Color: c.Color,
+				Name:       c.Name,
+				Type:       domain.TransactionType(c.Type),
+				Icon:       c.Icon,
+				Color:      c.Color,
+				ArchivedAt: c.ArchivedAt,
 			}
 		}
 	case domain.SyncEntityTransaction:

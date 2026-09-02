@@ -41,7 +41,7 @@ func (s *CategoryService) Update(
 	params domain.UpdateCategoryParams,
 ) (*domain.Category, error) {
 	const op = "service.category.Update"
-	if params.Name == nil && params.Type == nil && params.Icon == nil && params.Color == nil {
+	if params.Name == nil && params.Type == nil && params.Icon == nil && params.Color == nil && params.Archive == nil {
 		return nil, ErrNoFieldsToUpdate
 	}
 	c, err := s.categories.UpdateCategory(ctx, householdID, userID, id, params)
@@ -51,9 +51,9 @@ func (s *CategoryService) Update(
 	return c, nil
 }
 
-func (s *CategoryService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
+func (s *CategoryService) Delete(ctx context.Context, householdID, userID, id uuid.UUID, cascade bool) error {
 	const op = "service.category.Delete"
-	if err := s.categories.DeleteCategory(ctx, householdID, userID, id); err != nil {
+	if err := s.categories.DeleteCategory(ctx, householdID, userID, id, cascade); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

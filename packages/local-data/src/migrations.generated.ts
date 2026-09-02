@@ -40,6 +40,13 @@ export const migrations = {
         "when": 1788220182737,
         "tag": "0004_aromatic_stardust",
         "breakpoints": true
+      },
+      {
+        "idx": 5,
+        "version": "6",
+        "when": 1788366412769,
+        "tag": "0005_worthless_miss_america",
+        "breakpoints": true
       }
     ]
   },
@@ -48,6 +55,7 @@ export const migrations = {
     "m0001": "CREATE TABLE `debt_operations` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`debtor_id` text NOT NULL,\n\t`direction` text NOT NULL,\n\t`kind` text NOT NULL,\n\t`amount` integer NOT NULL,\n\t`note` text DEFAULT '' NOT NULL,\n\t`occurred_at` text NOT NULL,\n\t`version` integer DEFAULT 1 NOT NULL,\n\t`server_version` integer DEFAULT 0 NOT NULL,\n\t`deleted_at` text\n);\n--> statement-breakpoint\nCREATE INDEX `idx_debt_operations_debtor_id` ON `debt_operations` (`debtor_id`);--> statement-breakpoint\nCREATE INDEX `idx_debt_operations_occurred_at` ON `debt_operations` (`occurred_at`);--> statement-breakpoint\nCREATE TABLE `debtors` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`name` text NOT NULL,\n\t`note` text DEFAULT '' NOT NULL,\n\t`version` integer DEFAULT 1 NOT NULL,\n\t`server_version` integer DEFAULT 0 NOT NULL,\n\t`deleted_at` text,\n\t`created_at` text NOT NULL\n);\n",
     "m0002": "CREATE TABLE `planned_payments` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`type` text NOT NULL,\n\t`amount` integer NOT NULL,\n\t`name` text DEFAULT '' NOT NULL,\n\t`account_id` text NOT NULL,\n\t`category_id` text NOT NULL,\n\t`next_due` text NOT NULL,\n\t`anchor_date` text NOT NULL,\n\t`regularity` text NOT NULL,\n\t`confirm_mode` text NOT NULL,\n\t`reminder` text NOT NULL,\n\t`note` text DEFAULT '' NOT NULL,\n\t`version` integer DEFAULT 1 NOT NULL,\n\t`server_version` integer DEFAULT 0 NOT NULL,\n\t`deleted_at` text,\n\t`created_at` text NOT NULL\n);\n--> statement-breakpoint\nCREATE INDEX `idx_planned_payments_next_due` ON `planned_payments` (`next_due`);--> statement-breakpoint\nCREATE INDEX `idx_planned_payments_account_id` ON `planned_payments` (`account_id`);--> statement-breakpoint\nCREATE INDEX `idx_planned_payments_category_id` ON `planned_payments` (`category_id`);",
     "m0003": "ALTER TABLE `accounts` ADD `user_id` text;--> statement-breakpoint\nALTER TABLE `categories` ADD `user_id` text;--> statement-breakpoint\nALTER TABLE `debt_operations` ADD `user_id` text;--> statement-breakpoint\nALTER TABLE `debtors` ADD `user_id` text;--> statement-breakpoint\nALTER TABLE `planned_payments` ADD `user_id` text;--> statement-breakpoint\nALTER TABLE `transactions` ADD `user_id` text;",
-    "m0004": "ALTER TABLE `accounts` DROP COLUMN `manual_adjustment`;"
+    "m0004": "ALTER TABLE `accounts` DROP COLUMN `manual_adjustment`;",
+    "m0005": "ALTER TABLE `categories` ADD `archived_at` text;"
   }
 }

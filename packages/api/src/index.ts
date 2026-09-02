@@ -169,6 +169,7 @@ export {
   type SyncEntityKind,
   type AccountSyncData,
   type CategorySyncData,
+  type CategoryDeleteData,
   type TransactionSyncData,
   type DebtorSyncData,
   type DebtOperationSyncData,

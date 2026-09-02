@@ -18,9 +18,33 @@ const CURSOR = { year: 2026, month: 7 } // August 2026
 const inAugust = (day: number) => `2026-08-${String(day).padStart(2, '0')}T12:00:00.000Z`
 
 const categories: Category[] = [
-  { id: 'c-taxi', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', version: 1 },
-  { id: 'c-cafe', name: 'Кафе', type: 'expense', icon: 'cafe', color: '#a78bfa', version: 1 },
-  { id: 'c-salary', name: 'Зарплата', type: 'income', icon: 'cash', color: '#16a34a', version: 1 },
+  {
+    id: 'c-taxi',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#7c5cff',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'c-cafe',
+    name: 'Кафе',
+    type: 'expense',
+    icon: 'cafe',
+    color: '#a78bfa',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'c-salary',
+    name: 'Зарплата',
+    type: 'income',
+    icon: 'cash',
+    color: '#16a34a',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 const txs: Transaction[] = [

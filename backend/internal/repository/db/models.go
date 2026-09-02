@@ -50,6 +50,7 @@ type Category struct {
 	DeletedAt   *time.Time
 	Version     int32
 	HouseholdID uuid.UUID
+	ArchivedAt  *time.Time
 }
 
 type ChangeLog struct {

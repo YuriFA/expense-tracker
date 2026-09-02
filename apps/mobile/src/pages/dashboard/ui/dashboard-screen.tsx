@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native'
 import { monthToUtcDayRange } from '@expense-tracker/dates'
 import { Screen } from '@/shared/ui/screen'
 import { useAccounts } from '@/entities/account'
-import { useCategories } from '@/entities/category'
+import { useCategoriesIncludingArchived } from '@/entities/category'
 import { useTransactions } from '@/entities/transaction'
 import { SyncStatusBadge } from '@/widgets/sync-status'
 import { NewTransactionSheet } from '@/features/create-transaction'
@@ -35,7 +35,7 @@ export function DashboardScreen() {
   const [editingTransactionId, setEditingTransactionId] = useState<string | undefined>(undefined)
 
   const accountsQuery = useAccounts()
-  const categoriesQuery = useCategories()
+  const categoriesQuery = useCategoriesIncludingArchived()
   // Month-bounded superset (UTC days covering the local month): children trim
   // to the exact local month via the shared selectors.
   const transactionsQuery = useTransactions(monthToUtcDayRange(cursor))

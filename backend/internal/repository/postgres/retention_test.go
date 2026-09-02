@@ -39,9 +39,13 @@ func TestTombstoneRetentionDeletesOnlyExpiredTombstones(t *testing.T) {
 
 	// Soft-delete in dependency order (guards reject deletes while referenced).
 	require.NoError(t, testRepo.DeleteTransaction(ctx, userHH, user.ID, oldTxn.ID), "delete old transaction")
-	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, oldCategory.ID), "delete old category")
+	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, oldCategory.ID, false), "delete old category")
 	require.NoError(t, testRepo.DeleteAccount(ctx, userHH, user.ID, oldAccount.ID), "delete old account")
-	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, recentCategory.ID), "delete recent category")
+	require.NoError(
+		t,
+		testRepo.DeleteCategory(ctx, userHH, user.ID, recentCategory.ID, false),
+		"delete recent category",
+	)
 
 	// Backdate the old tombstones beyond the 90-day cutoff; leave the recent
 	// tombstone at now().
@@ -115,7 +119,7 @@ func TestTombstoneRetentionIsIdempotent(t *testing.T) {
 	ctx := newCtx(t)
 
 	category := seedCategory(t, userHH, user.ID, "idem-cat")
-	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID))
+	require.NoError(t, testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID, false))
 	_, err := testPool.Exec(ctx,
 		"UPDATE categories SET deleted_at = now() - interval '100 days' WHERE id = $1", category.ID)
 	require.NoError(t, err)

@@ -148,14 +148,34 @@
   },
   "editCategory": {
     "title": "Edit category",
-    "submit": "Save"
+    "submit": "Save",
+    "nameLabel": "Name",
+    "iconLabel": "Icon",
+    "typeLabel": "Type",
+    "typeImmutableHint": "The category type cannot be changed",
+    "success": "Category updated"
   },
   "deleteCategory": {
     "trigger": "Delete category",
-    "confirmDelete": "Delete this category?",
-    "confirmDeleteDescription": "This action cannot be undone. Categories linked to existing transactions cannot be deleted.",
     "cancel": "Cancel",
-    "confirm": "Delete"
+    "confirm": "Delete",
+    "plainTitle": "Delete category?",
+    "plainDescription": "This action cannot be undone.",
+    "blockedTitle": "Deleting unavailable",
+    "blockedPlans": "The category is used by active planned payments. Remove or change them first: {plans}.",
+    "withTransactionsTitle": "Delete category?",
+    "withTransactionsDescription": "The category is used in {usage}. Archiving keeps history and analytics; deleting permanently removes the transactions themselves and changes account balances.",
+    "optionArchiveTitle": "Archive",
+    "optionArchiveDescription": "The category disappears from pickers, history stays",
+    "optionCascadeTitle": "Delete together with transactions ({count})",
+    "optionCascadeDescription": "The transactions are deleted permanently, balances are recalculated",
+    "balanceImpact": "{account}: {delta}",
+    "cascadeTitle": "Delete category with transactions?",
+    "cascadeDescription": "The category and {usage} will be deleted permanently. Account balances will change:",
+    "typeToConfirm": "Type \"{name}\" to confirm",
+    "confirmArchive": "Archive",
+    "confirmCascade": "Delete with transactions",
+    "usageCount": "{count} transaction | {count} transactions"
   },
   "recentTransactions": {
     "title": "Recent Transactions"
@@ -663,5 +683,29 @@
     "submit": "Reconcile",
     "success": "Balance reconciled",
     "error": "Failed to reconcile the balance"
+  },
+  "categoryManagement": {
+    "title": "Categories",
+    "subtitle": "Manage categories and archive",
+    "groupExpense": "Expenses",
+    "groupIncome": "Income",
+    "emptyGroup": "No categories yet",
+    "transactionsCount": "{count} transaction | {count} transactions",
+    "archiveTitle": "Archive",
+    "archiveHint": "Archived categories are not offered in pickers, but stay in history and analytics.",
+    "archivedSince": "archived since {date}",
+    "actions": {
+      "edit": "Edit",
+      "archive": "Archive",
+      "unarchive": "Restore from archive",
+      "delete": "Delete"
+    },
+    "archiveSuccess": "Category archived",
+    "unarchiveSuccess": "Category restored from archive",
+    "archiveBlockedTitle": "Archiving unavailable",
+    "archiveBlockedPlans": "The category is used by active planned payments. Remove or change them first: {plans}.",
+    "deleteSuccess": "Category deleted",
+    "cancel": "Cancel",
+    "noTransactions": "no transactions"
   }
 }

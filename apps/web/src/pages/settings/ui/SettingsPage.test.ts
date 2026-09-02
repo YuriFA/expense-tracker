@@ -88,6 +88,11 @@ function mountPage(): ReturnType<typeof mountWithProviders> {
       { path: '/reset-password', name: 'reset-password', component: { template: '<div/>' } },
       { path: '/verify-email', name: 'verify-email', component: { template: '<div/>' } },
       { path: '/', name: 'home', component: { template: '<div/>' } },
+      {
+        path: '/settings/categories',
+        name: 'settings-categories',
+        component: { template: '<div/>' },
+      },
     ],
   })
   // repositories: {} injects the default mock repositories - the dissolve

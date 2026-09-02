@@ -8,6 +8,9 @@ export interface Category {
   type: CategoryType
   icon: string
   color: string
+  /** Archive timestamp (ISO); null = active. Archived categories are closed
+   * for new references but keep labeling existing transactions. */
+  archivedAt: string | null
   /** Optimistic-concurrency revision (bumped on every server update). */
   version: number
   /** Present only for the bundled default categories (localStorage mode); the
@@ -28,6 +31,7 @@ export const normalizeCategory = (value: unknown): Category | null => {
   const type = isCategoryType(value.type) ? value.type : null
   const icon = asString(value.icon)
   const color = asString(value.color)
+  const archivedAt = asString(value.archivedAt)
   const version = asInteger(value.version)
   const slug = asString(value.slug)
 
@@ -41,6 +45,7 @@ export const normalizeCategory = (value: unknown): Category | null => {
     type,
     icon,
     color,
+    archivedAt,
     version,
     ...(slug ? { slug } : {}),
   }
