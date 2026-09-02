@@ -75,7 +75,7 @@ async function submit() {
     class="sm:max-w-sm"
     data-testid="new-category-dialog"
     close-button-in-header
-    header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+    header-variant="bordered-row"
   >
     <template #title>{{ t('addTransaction.newCategory') }}</template>
 

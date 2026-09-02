@@ -16,13 +16,13 @@ import {
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Calendar } from '@/shared/ui/calendar'
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/shared/ui/drawer'
+import { Drawer, DrawerContent, DrawerHeader, DRAWER_SAFE_AREA_BOTTOM, DrawerTitle } from '@/shared/ui/drawer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 
 const props = defineProps<{
   inputId: string
   modelValue?: CalendarDay
-  placeholder?: string
+  placeholder: string
   class?: HTMLAttributes['class']
   ariaInvalid?: boolean
   drawerTitle?: string
@@ -40,7 +40,7 @@ const defaultPlaceholder = toDateValue(currentDay())
 const selectedDateValue = computed(() => (props.modelValue ? toDateValue(props.modelValue) : undefined))
 const label = computed(() => {
   if (!props.modelValue) {
-    return props.placeholder ?? t('transactions.dateFilter.pickDate')
+    return props.placeholder
   }
 
   return formatCalendarDay(props.modelValue, locale.value, { dateStyle: 'long' })
@@ -115,7 +115,7 @@ const handleCalendarPick = (value: DateValue | undefined) => {
       <DrawerHeader>
         <DrawerTitle>{{ props.drawerTitle ?? t('fields.date') }}</DrawerTitle>
       </DrawerHeader>
-      <div class="space-y-4 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div :class="cn('space-y-4 px-6', DRAWER_SAFE_AREA_BOTTOM)">
         <div class="grid grid-cols-3 gap-2">
           <Button
             v-for="option in quickOptions"

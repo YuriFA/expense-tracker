@@ -11,7 +11,7 @@ import { OwnershipGateDialog, useAuthStore } from '@/entities/session'
 import { ConflictCenter } from '@/features/sync-conflicts'
 import { HouseholdChoiceDialog, useHouseholdJoinStore } from '@/features/household-join'
 import { provideSyncController } from '@/shared/lib/local-db'
-import { DESKTOP_PRESENTATION_KEY } from '@/shared/lib/presentation'
+import { DESKTOP_MEDIA_QUERY, DESKTOP_PRESENTATION_KEY } from '@/shared/lib/presentation'
 import { SyncStatusBadge } from '@/widgets/sync-status'
 
 const route = useRoute()
@@ -21,9 +21,9 @@ const showNav = computed(() => !route.meta.public)
 
 // JS-gated (not CSS-hidden) so exactly one instance of the sync/guest badges
 // exists in the DOM per viewport - e2e locators match by testid strictly.
-// 768px is the sidebar <-> bottom-tabs boundary (web-screens: below it the
-// mobile shell replaces the sidebar).
-const isDesktop = useMediaQuery('(min-width: 768px)')
+// The boundary constant (768px, sidebar <-> bottom-tabs per web-screens) is
+// owned by shared/lib/presentation.
+const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
 provide(DESKTOP_PRESENTATION_KEY, isDesktop)
 
 // The sync controller is composed here (the FSD composition root): it needs

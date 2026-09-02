@@ -127,8 +127,7 @@ function openIncome() {
       v-model:open="expenseOpen"
       class="sm:max-w-[400px]"
       close-button-in-header
-      close-button-class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+      header-variant="bordered-row"
     >
       <template #title>{{ t('analytics.expenses') }}</template>
       <CashflowForm type="expense" @success="expenseOpen = false" />
@@ -138,8 +137,7 @@ function openIncome() {
       v-model:open="transferOpen"
       class="sm:max-w-[400px]"
       close-button-in-header
-      close-button-class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+      header-variant="bordered-row"
     >
       <template #title>{{ t('addTransfer.submit') }}</template>
       <TransferForm @success="transferOpen = false" />
@@ -149,8 +147,7 @@ function openIncome() {
       v-model:open="incomeOpen"
       class="sm:max-w-[400px]"
       close-button-in-header
-      close-button-class="rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      header-class="flex-row items-center justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+      header-variant="bordered-row"
     >
       <template #title>{{ t('shell.income') }}</template>
       <CashflowForm type="income" @success="incomeOpen = false" />
