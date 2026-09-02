@@ -38,6 +38,6 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Full gates: `pnpm arch:check`, `pnpm knip`, backend lint+test, web/mobile type-check + tests, `make gen-check`, Redocly lint
-- [ ] 7.2 E2E sanity of the cascade against the real backend (create category + transactions, cascade delete, verify balances and second-device pull) in the closest-to-user flow
-- [ ] 7.3 `openspec validate add-category-management --strict` passes; update `docs/architecture/invariants.md` enforcement notes if the deletion-guard invariant wording changes
+- [x] 7.1 Full gates: `pnpm arch:check`, `pnpm knip`, backend lint+test, web/mobile type-check + tests, `make gen-check`, Redocly lint
+- [x] 7.2 E2E sanity of the cascade against the real backend (create category + transactions, cascade delete, verify balances and second-device pull) in the closest-to-user flow
+- [x] 7.3 `openspec validate add-category-management --strict` passes; update `docs/architecture/invariants.md` enforcement notes if the deletion-guard invariant wording changes
