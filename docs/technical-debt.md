@@ -51,6 +51,13 @@ or stale entries are removed, not archived.
   `site.webmanifest` `theme_color #6366f1` (data-palette indigo, not the
   UI primary `#0f766e`) and `background_color #ffffff` (no such token;
   light background is `#f6f2ec`) predate the Warm Paper re-palette.
+- **Overlay primitives reach into reka-ui internals** (web-mobile-drawers):
+  `shared/ui/drawer/DrawerContent.vue` neutralizes the nested picker's
+  `aria-hidden` via a MutationObserver on reka's content root, and the
+  responsive select components read `injectSelectRootContext` internals
+  (`optionsSet`, `onTriggerChange`, `onOptionAdd`, `contentId`). Both are
+  brittle against reka-ui upgrades (pinned 2.10.x); the tripwires are the
+  overlay-presentation e2e (stack accessibility) and the select unit tests.
 - `pages/accounts` edit-account feature has no public API barrel (FSD
   violation).
 - `TransactionsItemsList.vue` binds one shared `editOpen`/`deleteOpen`
