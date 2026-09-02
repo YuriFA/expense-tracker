@@ -14,6 +14,9 @@ import { cn } from '@/shared/lib/utils'
 // is neutralised; the header strip is a snug py-3 band around the caps
 // label (~40px tall with the hairline), and the content area carries the
 // breathing room (py-5, ~76px for a standard 36px control row).
+// gap-0 kills the shadcn header's title/description row gap: the second
+// explicit grid row is always empty here (no description), but grid gap
+// still applies between tracks and would pad every strip by 6px.
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
@@ -29,7 +32,7 @@ const props = withDefaults(
 
 <template>
   <Card class="gap-0 py-0 md:py-0" v-bind="$attrs">
-    <CardHeader class="border-b py-3">
+    <CardHeader class="gap-0 border-b py-3">
       <slot name="title">
         <CardTitle>{{ title }}</CardTitle>
       </slot>
