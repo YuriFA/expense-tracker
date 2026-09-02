@@ -191,10 +191,13 @@ onMounted(() => {
     <!-- Category management entry (category-management screens): available
          to anonymous users too - categories are local-first data, the
          difference is only synchronization. -->
-    <SettingsCard :title="t('categoryManagement.title')" content-class="p-4 md:p-6">
+    <SettingsCard :title="t('categoryManagement.title')" bleed>
+      <!-- Full-bleed row: the padding belongs to the link so the hover and
+           the click target span the card edge-to-edge; the bottom corners
+           follow the card radius since the hover fill reaches it. -->
       <RouterLink
         :to="{ name: 'settings-categories' }"
-        class="flex items-center justify-between gap-3 transition-colors hover:bg-muted/50"
+        class="flex items-center justify-between gap-3 rounded-b-lg px-4 py-5 transition-colors hover:bg-muted/50 md:px-6"
         data-testid="settings-categories-link"
       >
         <div class="flex min-w-0 items-center gap-3">
