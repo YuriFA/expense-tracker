@@ -37,8 +37,9 @@ verify the same for stacked drawers.
 **Goals:**
 
 - One idiom switch at the existing 768px breakpoint: bottom-sheet drawers for
-  forms/lists below, centered dialogs above; desktop pixel-identical to
-  today.
+  forms/lists below, centered dialogs above; desktop visually equivalent to
+  today (the header markup is unified through the wrapper, so the DOM is not
+  byte-identical — behavior is pinned by the desktop e2e).
 - Stacked picker drawers (account, category, date) inside form drawers.
 - Reuse reka-ui's Drawer primitive — zero new dependencies.
 - Accessibility of the open drawer stack (web mirror of mobile-forms
