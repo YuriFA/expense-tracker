@@ -29,7 +29,7 @@ from local data with no network dependency.
 #### Scenario: Month without data
 
 - **WHEN** the current month contains no transactions of a direction
-- **THEN** that card shows an empty-state message in place of the donut chart and legend, and the card remains selectable
+- **THEN** that card still renders its donut chart — as a single neutral grey ring with the direction's zero total in the center — shows the empty-state message in place of the legend, and the card remains selectable
 
 #### Scenario: Analytics offline
 
@@ -179,9 +179,11 @@ remainder SHALL be aggregated into one «Прочие» segment, and the accompa
 legend SHALL mirror exactly what the chart shows. The detail chart SHALL
 display every included category individually — no cap and no «Прочие»
 aggregate. A period with movement in exactly one category SHALL render as a
-full ring without gaps. The tab cards SHALL replace the chart with an
-empty-state message when the period has no movement (the detail screen
-instead renders its zeroed full layout — see the breakdown requirement). The donut center SHALL show the direction
+full ring without gaps. When the period has no movement, the tab cards
+SHALL render the chart as a single neutral grey ring with the direction's
+zero total in the center, and SHALL show the empty-state message in place
+of the legend (the detail screen likewise renders its zeroed full layout —
+see the breakdown requirement). The donut center SHALL show the direction
 total on the tab cards and the selected period's range label on the detail
 screen.
 
@@ -195,10 +197,10 @@ screen.
 - **WHEN** a category with a violet color is among the displayed categories
 - **THEN** its donut segment and its legend marker are both violet
 
-#### Scenario: No chart without data (tab cards)
+#### Scenario: Empty period renders the neutral ring (tab cards)
 
 - **WHEN** the current month contains no transactions of a direction
-- **THEN** that tab card shows an empty-state message (e.g. «Нет расходов за этот период») in place of the donut and legend
+- **THEN** that tab card's donut renders as a single neutral grey ring with the zero direction total in its center, and the empty-state message (e.g. «Нет расходов за этот период») is shown in place of the legend
 
 ### Requirement: Interactive detail donut
 
