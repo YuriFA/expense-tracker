@@ -23,10 +23,13 @@ const props = withDefaults(
   defineProps<{
     /** Caps micro-header text (i18n-resolved by the caller). */
     title?: string
-    /** Extra classes for the content area (e.g. 'p-0' for full-bleed rows). */
+    /** Full-bleed content: row lists whose rows own their padding; the
+     * hairline separators then span the card edge-to-edge (canvas). */
+    bleed?: boolean
+    /** Extra classes for the content area (e.g. row layout tweaks). */
     contentClass?: HTMLAttributes['class']
   }>(),
-  { title: undefined, contentClass: undefined },
+  { title: undefined, bleed: false, contentClass: undefined },
 )
 </script>
 
@@ -40,7 +43,7 @@ const props = withDefaults(
         <slot name="actions" />
       </div>
     </CardHeader>
-    <CardContent :class="cn('py-5', props.contentClass)">
+    <CardContent :class="cn(props.bleed ? 'px-0 py-0 md:px-0' : 'py-5', props.contentClass)">
       <slot />
     </CardContent>
   </Card>

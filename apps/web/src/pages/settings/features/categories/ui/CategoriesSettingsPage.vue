@@ -107,16 +107,16 @@ async function unarchiveCategory(category: Category): Promise<void> {
 
 <template>
   <section class="flex flex-col gap-7">
-    <div class="flex flex-col gap-1">
+    <div>
       <RouterLink
         :to="{ name: 'settings' }"
-        class="flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        class="mb-4 flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         data-testid="categories-back-link"
       >
         <ArrowLeft class="size-4" aria-hidden="true" />
         {{ t('pages.settings') }}
       </RouterLink>
-      <h1 class="text-3xl font-bold">{{ t('categoryManagement.title') }}</h1>
+      <h1 class="mb-3 text-3xl font-bold">{{ t('categoryManagement.title') }}</h1>
       <p class="text-sm text-muted-foreground">
         {{ t('categoryManagement.pageSubtitle') }}
       </p>
@@ -134,12 +134,12 @@ async function unarchiveCategory(category: Category): Promise<void> {
         ]"
         :key="group.title"
         :title="group.title"
-        content-class="flex flex-col p-0"
+        bleed
         :data-testid="group.testid"
       >
           <p
             v-if="!group.items.length"
-            class="px-6 py-4 text-sm text-muted-foreground"
+            class="px-6 py-5 text-sm text-muted-foreground"
             :data-testid="`${group.testid}-empty`"
           >
             {{ t('categoryManagement.emptyGroup') }}
@@ -147,7 +147,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
           <div
             v-for="category in group.items"
             :key="category.id"
-            class="flex items-center justify-between gap-3 border-b border-border px-6 py-4 last:border-0"
+            class="flex items-center justify-between gap-3 border-b border-border px-6 py-5 last:border-0"
             :data-testid="`category-row-${category.id}`"
           >
             <div class="flex min-w-0 items-center gap-3">
@@ -194,7 +194,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
           </div>
       </SettingsCard>
 
-      <SettingsCard content-class="flex flex-col p-0" data-testid="categories-archive">
+      <SettingsCard bleed data-testid="categories-archive">
         <template #title>
           <button
             type="button"
@@ -221,12 +221,12 @@ async function unarchiveCategory(category: Category): Promise<void> {
           </button>
         </template>
         <div v-if="archiveOpen" class="flex flex-col gap-4">
-          <p class="px-6 pt-4 text-xs text-muted-foreground">
+          <p class="px-6 pt-5 text-xs text-muted-foreground">
             {{ t('categoryManagement.archiveHint') }}
           </p>
           <p
             v-if="!archivedCount"
-            class="px-6 pb-4 text-sm text-muted-foreground"
+            class="px-6 pb-5 text-sm text-muted-foreground"
             data-testid="categories-archive-empty"
           >
             {{ t('categoryManagement.emptyGroup') }}
@@ -234,7 +234,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
           <div
             v-for="category in archived"
             :key="category.id"
-            class="flex items-center justify-between gap-3 border-b border-border px-6 py-4 last:border-0"
+            class="flex items-center justify-between gap-3 border-b border-border px-6 py-5 last:border-0"
             :data-testid="`category-row-${category.id}`"
           >
             <div class="flex min-w-0 items-center gap-3 opacity-75">

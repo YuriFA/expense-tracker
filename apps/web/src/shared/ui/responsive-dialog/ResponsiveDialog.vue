@@ -37,6 +37,10 @@ const props = withDefaults(
     footerClass?: HTMLAttributes['class']
     closeButtonClass?: HTMLAttributes['class']
     headerVariant?: 'default' | 'bordered-row'
+    /** Full-bleed hairline above the footer band (settings design language:
+     * the footer separates from the body like a card header strip). The
+     * drawer footer always has the border; this adds it on desktop. */
+    borderedFooter?: boolean
     showCloseButton?: boolean
     closeButtonInHeader?: boolean
   }>(),
@@ -47,6 +51,7 @@ const props = withDefaults(
     footerClass: undefined,
     closeButtonClass: undefined,
     headerVariant: 'default',
+    borderedFooter: false,
     showCloseButton: true,
     closeButtonInHeader: false,
   },
@@ -94,6 +99,11 @@ const baseFooterClass = computed(() =>
   cn(
     'flex flex-col-reverse gap-2',
     isDesktop.value ? 'sm:flex-row sm:justify-end' : DRAWER_FOOTER_CLASS,
+    // Desktop breakout mirrors BORDERED_ROW_HEADER_CLASS: the hairline
+    // spans the overlay edge-to-edge instead of stopping at the padding.
+    props.borderedFooter &&
+      isDesktop.value &&
+      '-mx-6 -mb-6 border-t border-border px-6 pb-5 pt-4',
     props.footerClass,
   ),
 )

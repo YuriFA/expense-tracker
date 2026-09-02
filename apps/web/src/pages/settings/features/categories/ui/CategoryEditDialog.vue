@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { useQueryCache } from '@pinia/colada'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
@@ -107,6 +106,7 @@ async function submit(): Promise<void> {
     data-testid="edit-category-dialog"
     close-button-in-header
     header-variant="bordered-row"
+    bordered-footer
   >
     <template #title>{{ t('editCategory.title') }}</template>
 
@@ -170,20 +170,21 @@ async function submit(): Promise<void> {
       </Field>
 
       <p class="text-xs text-muted-foreground">{{ t('editCategory.typeImmutableHint') }}</p>
-
-      <DialogFooter>
-        <Button type="button" variant="ghost" data-testid="edit-category-cancel" @click="open = false">
-          {{ t('categoryManagement.cancel') }}
-        </Button>
-        <Button
-          type="submit"
-          :loading="asyncStatus === 'loading'"
-          :disabled="!canSubmit"
-          data-testid="edit-category-submit"
-        >
-          {{ t('editCategory.submit') }}
-        </Button>
-      </DialogFooter>
     </form>
+
+    <template #footer>
+      <Button type="button" variant="ghost" data-testid="edit-category-cancel" @click="open = false">
+        {{ t('categoryManagement.cancel') }}
+      </Button>
+      <Button
+        type="submit"
+        form="edit-category-form"
+        :loading="asyncStatus === 'loading'"
+        :disabled="!canSubmit"
+        data-testid="edit-category-submit"
+      >
+        {{ t('editCategory.submit') }}
+      </Button>
+    </template>
   </ResponsiveDialog>
 </template>

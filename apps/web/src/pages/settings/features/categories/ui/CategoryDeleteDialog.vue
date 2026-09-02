@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Archive, Trash2 } from '@lucide/vue'
 import { Button } from '@/shared/ui/button'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
@@ -140,6 +139,7 @@ async function handleConfirm(): Promise<void> {
     data-testid="delete-category-dialog"
     close-button-in-header
     header-variant="bordered-row"
+    bordered-footer
   >
     <template #title>
       {{
@@ -247,30 +247,31 @@ async function handleConfirm(): Promise<void> {
         </template>
       </template>
 
-      <DialogFooter>
-        <Button variant="ghost" data-testid="delete-category-cancel" @click="open = false">
-          {{ t('categoryManagement.cancel') }}
-        </Button>
-        <Button
-          v-if="mode === 'choice' && choice === 'archive'"
-          :loading="busy"
-          :disabled="!canConfirm"
-          data-testid="delete-category-confirm"
-          @click="handleConfirm"
-        >
-          {{ t('deleteCategory.confirmArchive') }}
-        </Button>
-        <Button
-          v-else-if="mode !== 'blocked'"
-          variant="destructive"
-          :loading="busy"
-          :disabled="!canConfirm"
-          data-testid="delete-category-confirm"
-          @click="handleConfirm"
-        >
-          {{ cascadeChosen ? t('deleteCategory.confirmCascade') : t('deleteCategory.confirm') }}
-        </Button>
-      </DialogFooter>
     </div>
+
+    <template #footer>
+      <Button variant="ghost" data-testid="delete-category-cancel" @click="open = false">
+        {{ t('categoryManagement.cancel') }}
+      </Button>
+      <Button
+        v-if="mode === 'choice' && choice === 'archive'"
+        :loading="busy"
+        :disabled="!canConfirm"
+        data-testid="delete-category-confirm"
+        @click="handleConfirm"
+      >
+        {{ t('deleteCategory.confirmArchive') }}
+      </Button>
+      <Button
+        v-else-if="mode !== 'blocked'"
+        variant="destructive"
+        :loading="busy"
+        :disabled="!canConfirm"
+        data-testid="delete-category-confirm"
+        @click="handleConfirm"
+      >
+        {{ cascadeChosen ? t('deleteCategory.confirmCascade') : t('deleteCategory.confirm') }}
+      </Button>
+    </template>
   </ResponsiveDialog>
 </template>
