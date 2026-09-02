@@ -80,12 +80,13 @@ const chartAriaLabel = computed(() => (hasData.value ? a11yLabel.value : emptyTe
 
 <template>
   <!-- The link IS the card surface (Card has no as-child): card classes on
-       the link, hover lifts the whole card instead of washing an inset box. -->
+       the link; the hover/focus ring matches the dashboard's clickable
+       StatCard link (ring, no lift). -->
   <RouterLink
     :to="`/analytics/${direction}`"
     :data-testid="testId"
     :aria-label="a11yLabel"
-    class="group bg-card text-card-foreground flex flex-col gap-2 rounded-lg border py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-muted-foreground/30 md:py-6"
+    class="group bg-card text-card-foreground flex flex-col gap-2 rounded-lg border py-4 transition-shadow duration-200 hover:ring-1 hover:ring-muted-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50 md:py-6"
   >
     <CardHeader>
       <CardTitle>{{ title }}</CardTitle>
