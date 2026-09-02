@@ -55,7 +55,7 @@ const directionLabel = (direction: DebtDirection) =>
         :to="{ path: '/debts' }"
         data-testid="debts-card-view-all"
       >
-        {{ t('recentTransactions.viewAll') }}
+        {{ t('actions.viewAll') }}
       </RouterLink>
     </template>
     <ErrorState v-if="error" @retry="refetch" />

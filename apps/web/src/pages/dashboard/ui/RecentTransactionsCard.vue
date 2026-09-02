@@ -20,7 +20,7 @@ defineProps<{
         :to="{ path: '/transactions' }"
         data-testid="recent-transactions-all"
       >
-        {{ t('recentTransactions.viewAll') }}
+        {{ t('actions.viewAll') }}
       </RouterLink>
     </template>
     <RecentTransactions :range="range" />

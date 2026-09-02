@@ -30,7 +30,8 @@
     "settings": "Settings"
   },
   "actions": {
-    "create": "Create"
+    "create": "Create",
+    "viewAll": "View all"
   },
   "dashboard": {
     "netWorth": "Net worth",
@@ -157,8 +158,7 @@
     "confirm": "Delete"
   },
   "recentTransactions": {
-    "title": "Recent Transactions",
-    "viewAll": "View all"
+    "title": "Recent Transactions"
   },
   "analytics": {
     "expenses": "Expenses",

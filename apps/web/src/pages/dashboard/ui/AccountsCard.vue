@@ -2,9 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { Plus } from '@lucide/vue'
 import DashboardCard from './DashboardCard.vue'
-import { Button } from '@/shared/ui/button'
 import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/money'
 import { useAccounts } from '@/entities/account'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -26,11 +24,13 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
 <template>
   <DashboardCard :title="t('pages.accounts')" content-class="py-4">
     <template #action>
-      <Button as-child size="icon-sm" class="rounded-full!" data-testid="accounts-card-add">
-        <RouterLink :to="{ path: '/accounts' }" :aria-label="t('addAccount.newAccount')">
-          <Plus class="size-4" aria-hidden="true" />
-        </RouterLink>
-      </Button>
+      <RouterLink
+        class="text-xs font-semibold text-primary hover:underline"
+        :to="{ path: '/accounts' }"
+        data-testid="accounts-card-view-all"
+      >
+        {{ t('actions.viewAll') }}
+      </RouterLink>
     </template>
     <ErrorState v-if="error" @retry="refetch" />
     <template v-else-if="isLoading">

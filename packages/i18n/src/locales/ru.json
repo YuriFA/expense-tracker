@@ -30,7 +30,8 @@
     "settings": "Настройки"
   },
   "actions": {
-    "create": "Создать"
+    "create": "Создать",
+    "viewAll": "Все"
   },
   "dashboard": {
     "netWorth": "Капитал",
@@ -157,8 +158,7 @@
     "confirm": "Удалить"
   },
   "recentTransactions": {
-    "title": "Последние транзакции",
-    "viewAll": "Все"
+    "title": "Последние транзакции"
   },
   "analytics": {
     "expenses": "Расходы",
