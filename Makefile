@@ -43,7 +43,7 @@ deploy-check:
 ## (sha-<short> + main), deploy, then tag the deploy (v<date>) and
 ## publish its GitHub Release (scripts/tag-deploy.sh).
 deploy: deploy-check
-	@[ -z "$$$$(git status --porcelain)" ] || { echo "ERROR: working tree dirty - commit or stash first (a deploy tag must name exactly what ships)"; exit 1; }
+	@[ -z "$$(git status --porcelain)" ] || { echo "ERROR: working tree dirty - commit or stash first (a deploy tag must name exactly what ships)"; exit 1; }
 	./scripts/check-migrations.sh
 	@command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 \
 		|| { echo "ERROR: deploy tagging needs gh: brew install gh && gh auth login"; exit 1; }
