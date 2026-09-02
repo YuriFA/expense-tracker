@@ -106,7 +106,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
 </script>
 
 <template>
-  <section class="flex flex-col gap-6">
+  <section class="flex flex-col gap-7">
     <div class="flex flex-col gap-1">
       <RouterLink
         :to="{ name: 'settings' }"

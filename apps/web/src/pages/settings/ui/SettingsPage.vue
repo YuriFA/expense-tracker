@@ -146,7 +146,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="flex flex-col gap-6">
+  <section class="flex flex-col gap-7">
     <h1 class="text-3xl font-bold">{{ t('pages.settings') }}</h1>
 
     <SettingsCard :title="t('settings.locale')">
