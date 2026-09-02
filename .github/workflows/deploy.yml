@@ -2,12 +2,13 @@ name: Build and deploy
 
 # Manual-only deploys (decided 2026-08-30): nothing fires on push — run
 # "Build and deploy" from the Actions tab; empty image_tag builds and
-# deploys HEAD, a pinned sha- tag rolls back.
+# deploys HEAD (then tags it v<date> + publishes a GitHub Release), a
+# deploy tag (v2026.09.14) or sha- tag rolls back.
 on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Existing image tag to deploy (e.g. sha-abc1234, rollback); empty = build from HEAD"
+        description: "Rollback target: deploy git tag (v2026.09.14) or image tag (sha-abc1234); empty = build from HEAD"
         required: false
         default: ""
 
@@ -129,14 +130,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: write # push the deploy tag + publish its GitHub Release
     steps:
-      - name: Checkout (for compose file)
+      - name: Checkout (compose file, tags, migrations)
         uses: actions/checkout@v4
+        with:
+          # Full history + tags: resolve-image-tag.sh needs git tags, and
+          # tag-deploy.sh computes its notes range from them.
+          fetch-depth: 0
+
+      - name: Guard migrations (rollback safety)
+        run: ./scripts/check-migrations.sh
 
       - name: Resolve deploy tag
         id: tag
-        run: echo "value=${{ inputs.image_tag || needs.build.outputs.image-tag }}" >> "$GITHUB_OUTPUT"
+        env:
+          REF: ${{ inputs.image_tag || needs.build.outputs.image-tag }}
+        run: echo "value=$(scripts/resolve-image-tag.sh "$REF")" >> "$GITHUB_OUTPUT"
 
       - name: Copy compose file to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -179,3 +189,10 @@ jobs:
               | awk '{print $2}' \
               | sort -u \
               | xargs -r docker rmi || true
+
+      - name: Tag deploy and publish release
+        # Rollback dispatches redeploy an existing marker - no new tag.
+        if: inputs.image_tag == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/tag-deploy.sh

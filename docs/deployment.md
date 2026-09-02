@@ -25,6 +25,9 @@ client → https://<subdomain>
 | Backup sidecar (pg_dump + rclone + crond) | `deploy/backup/` — GHCR `<repo>-backup` |
 | Production stack | `docker-compose.prod.yml` + `.env` on the VPS |
 | Build + deploy pipeline | `.github/workflows/deploy.yml` |
+| Deploy markers (tags + releases) | `scripts/tag-deploy.sh` — called by both deploy paths |
+| Rollback tag resolution | `scripts/resolve-image-tag.sh` |
+| Migration rollback guard | `scripts/check-migrations.sh` |
 | Environment example | `.env.production.example` |
 
 ## Prerequisites
@@ -110,17 +113,36 @@ One-time setup on the workstation:
 ```bash
 echo 'SSH_TARGET=deploy@<vps-ip>' > .deploy.env   # gitignored; or an ~/.ssh/config alias
 docker login ghcr.io -u <github-user>              # PAT with write:packages
+gh auth login                                     # every deploy publishes a GitHub Release
 ```
 
 ```bash
-make deploy                     # build + push + deploy current HEAD
-make rollback TAG=sha-03aad8d   # redeploy an already-pushed tag (no build)
+make deploy                     # build + push + deploy current HEAD, then tag + release it
+make rollback TAG=v2026.09.14   # redeploy an already-pushed deploy (no build, no new tag)
 ```
 
 It derives the GHCR repo from `git remote get-url origin`, builds the
 same two images with `sha-<short>` + `main` tags, and runs the same
 remote sequence as CI (scp compose → GHCR login from the VPS `.env` →
 pull → `up -d --remove-orphans` → prune stale local images).
+
+## Deploy tags and releases
+
+Every **successful** deploy — from either path — ends with
+`scripts/tag-deploy.sh`, which:
+
+- pushes a CalVer tag `vYYYY.MM.DD` (UTC) on the deployed commit, `-2`,
+  `-3`, … for later deploys the same day;
+- publishes a GitHub Release for it whose notes list the `feat`/`fix`
+  commits since the previous deploy tag (the Releases page is the
+  project changelog; `docs`/`chore`/`refactor` commits are skipped);
+- refuses a dirty working tree — the tag must name exactly what was
+  built and shipped;
+- is idempotent: a re-deploy of an already-tagged commit keeps the
+  existing tag and only fills in a missing Release.
+
+The first tag appears on the next deploy after this system landed.
+Rollback dispatches (`image_tag` set / `make rollback`) never tag.
 
 ## Redeploy
 
@@ -130,15 +152,27 @@ Run workflow, leave `image_tag` empty. CI builds both images from HEAD
 `docker network create web || true`, GHCR login from the VPS `.env`,
 `pull`, `up -d --remove-orphans`, prune of stale local images. The API
 restarts briefly (boot migrations re-run as needed); offline-capable
-clients queue their sync.
+clients queue their sync. On success the deploy is tagged and released
+(see "Deploy tags and releases").
 
 ## Rollback
 
 Actions → "Build and deploy" → Run workflow with `image_tag` set to a
-previous tag (`sha-<short>` of the last known-good commit; tags are
-listed on the GHCR package page). The build job is skipped — the VPS
-pulls the pinned tag for BOTH api and web (one `IMAGE_TAG` drives
-both) and recreates the stack from it.
+previous **deploy tag** (`v2026.09.14`, listed on the Releases page) or
+a raw image tag (`sha-<short>`; the GHCR package page has those). The
+build job is skipped — the VPS pulls the pinned tag for BOTH api and web
+(one `IMAGE_TAG` drives both) and recreates the stack from it.
+Equivalently from a laptop: `make rollback TAG=v2026.09.14`.
+
+**Rollback never rolls back the database schema.** Down-migrations do
+not run in production; the old images must keep working on the current
+schema. Therefore every up-migration must be additive (expand-contract:
+add the new shape first, drop the old one only in a later deploy after
+the code reading it is retired). `scripts/check-migrations.sh` enforces
+this in CI and before every deploy: it fails on `DROP COLUMN/TABLE/...`,
+`ALTER COLUMN ... TYPE`, `RENAME`, and `ADD COLUMN … NOT NULL` without a
+`DEFAULT` in `*.up.sql` (pre-guard migrations are grandfathered in the
+script).
 
 ```bash
 # equivalently, by hand on the VPS:

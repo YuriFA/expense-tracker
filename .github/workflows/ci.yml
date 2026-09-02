@@ -40,6 +40,16 @@ jobs:
             echo "No baseline spec on base ref; skipping breaking-change check."
           fi
 
+  migrations:
+    # Rollback-safety guard: rollback redeploys old images against the
+    # current schema, so up-migrations must stay additive (expand-contract;
+    # docs/deployment.md, Rollback). Runs on both deploy paths too, but
+    # catching it in a PR is cheaper than at deploy time.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/check-migrations.sh
+
   gen-check:
     runs-on: ubuntu-latest
     defaults:
