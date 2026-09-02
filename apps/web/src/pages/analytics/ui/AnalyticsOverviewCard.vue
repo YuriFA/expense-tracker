@@ -65,6 +65,17 @@ const a11yLabel = computed(
   () =>
     `${title.value}, ${monthLabel(cursor.start.getFullYear(), cursor.start.getMonth(), locale.value)} ${cursor.start.getFullYear()}, ${totalText.value}`,
 )
+
+// No movement in the period: the donut renders its built-in neutral ring
+// with the zero total in the center, and the empty-state message takes the
+// legend's slot (analytics spec - donut presentation).
+const hasData = computed(() => total.value > 0)
+const emptyText = computed(() =>
+  props.direction === 'expense' ? t('analytics.emptyExpense') : t('analytics.emptyIncome'),
+)
+// The empty chart announces the same message shown beside it; with data it
+// summarizes title + period + total like the card link's label.
+const chartAriaLabel = computed(() => (hasData.value ? a11yLabel.value : emptyText.value))
 </script>
 
 <template>
@@ -86,18 +97,21 @@ const a11yLabel = computed(
       </CardAction>
     </CardHeader>
     <CardContent>
-      <div v-if="total > 0" class="flex items-center gap-6">
-        <DonutChart :entries="donutEntries" :size="120" :stroke-width="14" :aria-label="a11yLabel">
+      <div class="flex items-center gap-6">
+        <DonutChart
+          :entries="donutEntries"
+          :size="120"
+          :stroke-width="14"
+          :aria-label="chartAriaLabel"
+        >
           <span class="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
             {{ t('analytics.amountCaption') }}
           </span>
           <span class="text-sm font-semibold">{{ totalText }}</span>
         </DonutChart>
-        <ChartLegend :entries="legendEntries" />
+        <ChartLegend v-if="hasData" :entries="legendEntries" />
+        <p v-else class="text-sm text-muted-foreground">{{ emptyText }}</p>
       </div>
-      <p v-else class="py-6 text-sm text-muted-foreground">
-        {{ direction === 'expense' ? t('analytics.emptyExpense') : t('analytics.emptyIncome') }}
-      </p>
     </CardContent>
   </RouterLink>
 </template>

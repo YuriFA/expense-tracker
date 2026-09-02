@@ -73,7 +73,7 @@ describe('AnalyticsPage', () => {
     expect(expenseCard.find('[data-testid="chart-legend"]').text()).toContain('Такси')
   })
 
-  it('shows the direction empty-state message when the month has no movement, keeping the card selectable', async () => {
+  it('renders the empty direction as a neutral donut with the message in the legend slot, keeping the card selectable', async () => {
     const { wrapper } = mountPage([
       nowMonthTx({ id: 't2', type: 'income', amount: 50000, categoryId: 'c2' }),
     ])
@@ -81,9 +81,14 @@ describe('AnalyticsPage', () => {
 
     const expenseCard = wrapper.find('[data-testid="analytics-card-expenses"]')
     expect(expenseCard.text()).toContain('No expenses for this period')
-    expect(expenseCard.find('[data-testid="donut-chart"]').exists()).toBe(false)
+    expect(expenseCard.find('[data-testid="donut-chart"]').exists()).toBe(true)
+    expect(expenseCard.find('[data-testid="donut-segment"]').exists()).toBe(false)
+    expect(expenseCard.text()).toContain('0.00')
+    expect(expenseCard.find('[data-testid="chart-legend"]').exists()).toBe(false)
+    expect(expenseCard.attributes('href')).toBe('/analytics/expense')
 
     const incomeCard = wrapper.find('[data-testid="analytics-card-income"]')
     expect(incomeCard.find('[data-testid="donut-chart"]').exists()).toBe(true)
+    expect(incomeCard.find('[data-testid="chart-legend"]').exists()).toBe(true)
   })
 })

@@ -67,6 +67,14 @@ or stale entries are removed, not archived.
 
 ## Mobile
 
+- **Analytics tab cards diverge from the spec's empty state** (since
+  `web-analytics-empty-donut`): `openspec/specs/analytics/spec.md` now
+  describes the tab-card empty period as a neutral-ring donut with the
+  zero total in the center and the message in the legend's slot; the web
+  card implements that, while `apps/mobile/src/pages/analytics/ui/
+analytics-screen.tsx` keeps the legacy text-only empty state (no chart,
+  its `DonutChart` also lacks the neutral empty ring). Catch up in a
+  dedicated parity change.
 - **Date-dependent analytics test fixtures** (2026-09-01 audit, A18):
   `category-cashflow-sheet.test.tsx` (day-of-month clamping collapses
   distinct days early in a month) and `analytics-screen` /

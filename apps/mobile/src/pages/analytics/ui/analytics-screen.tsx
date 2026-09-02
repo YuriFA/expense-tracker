@@ -39,6 +39,11 @@ const DIRECTION_VIEWS: Record<
   expense: {
     title: 'Расходы',
     testId: 'analytics-card-expenses',
+    // TODO(spec-drift): the analytics spec's tab-card empty state is now a
+    // neutral-ring donut with the zero total in the center and this message
+    // in the legend's slot (web: web-analytics-empty-donut). Mobile keeps
+    // the legacy text-only state until a parity change lands - see
+    // docs/technical-debt.md (Mobile).
     emptyText: 'Нет расходов за этот период',
   },
   income: {
