@@ -34,7 +34,7 @@ test('month switcher re-scopes month-bound cards and gates the forward step', as
   await page.locator('#account-id').click()
   await page.getByRole('option', { name: /Cash/ }).click()
   await page.getByLabel('Note').fill('Monthly shop')
-  await page.getByRole('spinbutton').fill('42.50')
+  await page.getByLabel('Amount').fill('42.50')
   await page.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(page.getByText('Transaction added')).toBeVisible()
 

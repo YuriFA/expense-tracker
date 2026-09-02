@@ -17,7 +17,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
-import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
+import { AmountField } from '@/shared/ui/amount-field'
 import { notification } from '@/shared/services/notification'
 import { useCreateAccount } from '../model/use-accounts'
 import { createAddAccountSchema, type AddAccountFormValues } from '../model/add-account-schema'
@@ -39,7 +39,9 @@ const open = defineModel<boolean>('open', { default: false })
 const { t, locale } = useI18n()
 const { mutateAsync: createAccount, asyncStatus } = useCreateAccount()
 
-const openingBalancePlaceholder = computed(() => `${(1000).toFixed(2)}`)
+const openingBalancePlaceholder = computed(() =>
+  locale.value.startsWith('ru') ? '1000,00' : '1000.00',
+)
 
 const {
   handleSubmit: handleFormSubmit,
@@ -106,40 +108,23 @@ const handleSubmit = handleFormSubmit(async (data) => {
             <FieldLabel for="new-account-opening-balance">
               {{ t('addAccount.openingBalanceLabel') }}
             </FieldLabel>
-            <NumberField
+            <AmountField
               id="new-account-opening-balance"
-              :locale
-              :format-options="{
-                style: 'currency',
-                currency: DEFAULT_CURRENCY,
-                currencyDisplay: 'symbol',
-                currencySign: 'accounting',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }"
-              :min="0"
-              :step="0.01"
+              data-testid="new-account-opening-balance"
               :model-value="field.value"
+              :currency="DEFAULT_CURRENCY"
+              :errors="errors"
+              :placeholder="openingBalancePlaceholder"
               @update:model-value="
                 (value) => {
-                  if (value) {
+                  if (value !== undefined) {
                     setFieldValue('openingBalance', value)
                   } else {
                     setFieldValue('openingBalance', undefined as unknown as number)
                   }
                 }
               "
-            >
-              <NumberFieldContent>
-                <NumberFieldInput
-                  class="text-left px-2"
-                  data-testid="new-account-opening-balance"
-                  :placeholder="openingBalancePlaceholder"
-                  :aria-invalid="!!errors.length"
-                />
-              </NumberFieldContent>
-            </NumberField>
-            <FieldError v-if="errors.length" :errors="errors" />
+            />
           </Field>
         </VeeField>
 

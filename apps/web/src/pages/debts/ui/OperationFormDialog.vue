@@ -215,7 +215,9 @@ const handleDelete = async () => {
 
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <AmountField
+          id="debts-operation-amount"
           class="w-full"
+          :aria-label="t('fields.amount')"
           :currency="displayCurrency"
           :model-value="value"
           :errors="errors"

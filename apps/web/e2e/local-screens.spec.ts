@@ -62,7 +62,7 @@ test('analytics renders from local data with route-based detail navigation', asy
   await page.locator('#account-id').click()
   await page.getByRole('option', { name: /Cash/ }).click()
   await page.getByLabel('Note').fill('Weekly shop')
-  await page.getByRole('spinbutton').fill('42.50')
+  await page.getByLabel('Amount').fill('42.50')
   await page.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(page.getByText('Transaction added')).toBeVisible()
 
@@ -98,7 +98,7 @@ test('debts: create debtor with first debt, review history, edit the operation',
   // Combined contact + first debt creation for the receivable direction.
   await page.getByTestId('debts-section-add-receivable').click()
   await page.locator('#debts-new-debt-name').fill('Анна')
-  await page.getByRole('spinbutton').fill('50')
+  await page.getByLabel('Amount').fill('50')
   await page.getByTestId('debts-new-debt-submit').click()
   await expect(page.getByText('Debt added')).toBeVisible()
 
@@ -112,7 +112,7 @@ test('debts: create debtor with first debt, review history, edit the operation',
 
   // Edit the operation's amount; the derived balance recalculates.
   await page.locator('[data-testid^="debts-history-op-"]').first().click()
-  await page.getByRole('spinbutton').fill('70')
+  await page.getByLabel('Amount').fill('70')
   await page.getByTestId('debts-operation-submit').click()
   await expect(page.getByText('Operation updated')).toBeVisible()
   await expect(page.getByTestId('debts-history-balance')).toHaveText('₽70.00')
@@ -129,7 +129,7 @@ test('plans: create a plan, confirm it, and the transaction appears', async ({ p
   await page.getByTestId('plans-list-add').click()
 
   await page.getByLabel('Name').fill('Netflix')
-  await page.getByRole('spinbutton').fill('15')
+  await page.getByLabel('Amount').fill('15')
   // Anchor on yesterday (UTC): the default is the form's local today, and
   // whether that already counts as overdue depends on the UTC-vs-local day
   // skew (isPlanOverdue compares against the UTC day, design D2) - so the
@@ -177,7 +177,7 @@ test('quick income entry lands in the cashflow data', async ({ page }) => {
   await page.locator('#account-id').click()
   await page.getByRole('option', { name: /Cash/ }).click()
   await page.getByLabel('Note').fill('Monthly salary')
-  await page.getByRole('spinbutton').fill('100')
+  await page.getByLabel('Amount').fill('100')
   await page.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(page.getByText('Transaction added')).toBeVisible()
 

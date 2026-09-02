@@ -81,6 +81,7 @@ const handleSubmit = async () => {
 
     <form class="flex flex-col gap-3" @submit.prevent="handleSubmit">
       <AmountField
+        id="plans-confirm-amount"
         v-model="amount"
         class="w-full"
         :currency="displayCurrency"

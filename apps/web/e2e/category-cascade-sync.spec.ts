@@ -51,7 +51,7 @@ test('a cascaded category delete reaches a second device through sync', async ({
   await pageA.locator('#account-id').click()
   await pageA.getByRole('option', { name: /Cascade cash/ }).click()
   await pageA.getByLabel('Note').fill('First')
-  await pageA.getByRole('spinbutton').fill('12.00')
+  await pageA.getByLabel('Amount').fill('12.00')
   await pageA.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(pageA.getByText('Transaction added')).toBeVisible()
 
@@ -61,7 +61,7 @@ test('a cascaded category delete reaches a second device through sync', async ({
   await pageA.locator('#account-id').click()
   await pageA.getByRole('option', { name: /Cascade cash/ }).click()
   await pageA.getByLabel('Note').fill('Second')
-  await pageA.getByRole('spinbutton').fill('3.00')
+  await pageA.getByLabel('Amount').fill('3.00')
   await pageA.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(pageA.getByText('Transaction added')).toBeVisible()
 

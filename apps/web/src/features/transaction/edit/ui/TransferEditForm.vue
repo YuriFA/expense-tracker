@@ -134,7 +134,9 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </VeeField>
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <AmountField
+          id="transfer-edit-amount"
           class="min-w-0 w-auto!"
+          :aria-label="t('fields.amount')"
           :currency="fromCurrency"
           :model-value="value"
           :errors="errors"

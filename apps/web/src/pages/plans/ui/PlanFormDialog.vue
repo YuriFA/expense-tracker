@@ -194,7 +194,9 @@ const handleDelete = async () => {
     <form class="flex flex-col gap-3" @submit="handleSubmit">
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <AmountField
+          id="plans-form-amount"
           class="w-full"
+          :aria-label="t('fields.amount')"
           :currency="displayCurrency"
           :model-value="value"
           :errors="errors"

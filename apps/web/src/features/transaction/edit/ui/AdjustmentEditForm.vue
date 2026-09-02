@@ -8,7 +8,7 @@ import { Button } from '@/shared/ui/button'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
-import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
+import { AmountField } from '@/shared/ui/amount-field'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMajorUnits, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
 import { AccountSelect, NewAccountDialog, useAccounts } from '@/entities/account'
@@ -33,7 +33,7 @@ const {
   accountId: string
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const { mutateAsync: updateTransaction } = useUpdateTransaction<AdjustmentTransaction>()
 const { data: accounts } = useAccounts()
 
@@ -87,31 +87,16 @@ const handleSubmit = handleFormSubmit(async (data) => {
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <Field :data-invalid="!!errors.length">
           <FieldLabel for="adjustment-amount">{{ t('fields.amount') }}</FieldLabel>
-          <!-- Signed delta edited directly: unlike AmountField this input has
-               no lower bound (the correction may lower the balance). -->
-          <NumberField
+          <!-- Signed delta edited directly: the shared AmountField switches
+               into signed mode here because the correction may lower the balance. -->
+          <AmountField
             id="adjustment-amount"
             :model-value="value"
-            :locale
-            :format-options="{
-              style: 'currency',
-              currency: accountCurrency,
-              currencyDisplay: 'symbol',
-              currencySign: 'accounting',
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }"
-            :step="0.01"
+            :currency="accountCurrency"
+            :errors="errors"
+            mode="signed"
             @update:model-value="(v) => setValue(v as number)"
-          >
-            <NumberFieldContent>
-              <NumberFieldInput
-                class="text-left px-2"
-                :aria-invalid="!!errors.length"
-              />
-            </NumberFieldContent>
-          </NumberField>
-          <FieldError v-if="errors.length" :errors="errors" />
+          />
         </Field>
       </VeeField>
 

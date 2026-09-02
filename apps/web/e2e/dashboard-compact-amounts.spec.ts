@@ -22,7 +22,7 @@ test('dashboard compiles a million-scale debt into a tile-fitting figure', async
   await page.goto('/debts')
   await page.getByTestId('debts-section-add-receivable').click()
   await page.locator('#debts-new-debt-name').fill('Анна')
-  await page.getByRole('spinbutton').fill('1000100')
+  await page.getByLabel('Amount').fill('1000100')
   await page.getByTestId('debts-new-debt-submit').click()
   await expect(page.locator('[data-testid^="debts-debtor-"]').first()).toContainText('Анна')
 

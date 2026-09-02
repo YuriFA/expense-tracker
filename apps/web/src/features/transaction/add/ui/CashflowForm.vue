@@ -101,6 +101,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       <Field :data-invalid="!!errors.length">
         <FieldLabel for="amount">{{ t('fields.amount') }}</FieldLabel>
         <AmountField
+          id="amount"
           hero
           :currency="accountCurrency"
           :model-value="value"

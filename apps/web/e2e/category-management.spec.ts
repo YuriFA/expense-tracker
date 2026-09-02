@@ -30,7 +30,7 @@ test('category management screen: archive, cascade, and balance impact', async (
     await page.locator('#account-id').click()
     await page.getByRole('option', { name: /Cash/ }).click()
     await page.getByLabel('Note').fill(note)
-    await page.getByRole('spinbutton').fill(amount)
+    await page.getByLabel('Amount').fill(amount)
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await expect(page.getByText('Transaction added')).toBeVisible()
   }
@@ -51,7 +51,7 @@ test('category management screen: archive, cascade, and balance impact', async (
   await page.locator('#account-id').click()
   await page.getByRole('option', { name: /Cash/ }).click()
   await page.getByLabel('Note').fill('Weekly shop')
-  await page.getByRole('spinbutton').fill('10.00')
+  await page.getByLabel('Amount').fill('10.00')
   await page.getByRole('button', { name: 'Add', exact: true }).click()
   await expect(page.getByText('Transaction added')).toBeVisible()
 

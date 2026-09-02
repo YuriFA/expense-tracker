@@ -22,7 +22,7 @@ async function seedAccount(
   await page.goto('/accounts')
   await page.getByRole('button', { name: 'Create' }).first().click()
   await page.locator('#name').fill(name)
-  await page.getByRole('spinbutton').fill(openingBalance)
+  await page.getByLabel('Opening balance').fill(openingBalance)
   await page.getByRole('button', { name: 'Add account' }).click()
   await expect(page.getByText('Account added')).toBeVisible()
 }
@@ -45,7 +45,7 @@ test('reconciling a lower actual balance records a negative adjustment', async (
   await expect(dialog.getByTestId('reconcile-delta-preview')).toContainText(/accurate/i)
   await expect(dialog.getByTestId('reconcile-submit')).toBeDisabled()
 
-  await dialog.getByRole('spinbutton').fill('115')
+  await dialog.getByLabel('Actual balance').fill('115')
   await expect(dialog.getByTestId('reconcile-delta-preview')).toContainText('5')
   await dialog.getByLabel('Note').fill('cash count')
   await dialog.getByTestId('reconcile-submit').click()
@@ -59,7 +59,7 @@ test('reconciling a higher actual balance records a positive adjustment', async 
 
   await openReconcile(page, 'Wallet')
   const dialog = page.getByRole('dialog')
-  await dialog.getByRole('spinbutton').fill('25')
+  await dialog.getByLabel('Actual balance').fill('25')
   await dialog.getByTestId('reconcile-submit').click()
 
   await expect(page.getByText('Balance reconciled')).toBeVisible()
@@ -86,7 +86,7 @@ test('adjustment is visible in history, filterable, and editable', async ({ page
 
   await openReconcile(page, 'Cash')
   const dialog = page.getByRole('dialog')
-  await dialog.getByRole('spinbutton').fill('48')
+  await dialog.getByLabel('Actual balance').fill('48')
   await dialog.getByTestId('reconcile-submit').click()
   await expect(page.getByText('Balance reconciled')).toBeVisible()
 
@@ -105,7 +105,7 @@ test('adjustment is visible in history, filterable, and editable', async ({ page
   await row.getByRole('button', { name: 'Row actions' }).click()
   await page.getByRole('menuitem', { name: 'Edit' }).click()
   const editDialog = page.getByRole('dialog')
-  await editDialog.getByRole('spinbutton').fill('-4')
+  await editDialog.getByLabel('Amount').fill('-4')
   await editDialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Transaction updated')).toBeVisible()
 
@@ -124,7 +124,7 @@ test('the edit-account form offers only the name field', async ({ page }) => {
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   // Name-only: the old balance-adjustment field is gone from the form.
-  await expect(dialog.getByRole('spinbutton')).toHaveCount(0)
+  await expect(dialog.getByLabel('Amount')).toHaveCount(0)
 
   await dialog.locator('#name').fill('Card Pro')
   await dialog.getByRole('button', { name: 'Save changes' }).click()

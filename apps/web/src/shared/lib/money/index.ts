@@ -1,4 +1,4 @@
-export { formatMoney, formatMoneyCompact } from '@expense-tracker/money'
+export { formatMoney, formatMoneyCompact, currencySymbol } from '@expense-tracker/money'
 export {
   DEFAULT_CURRENCY,
   type CurrencyCode,
