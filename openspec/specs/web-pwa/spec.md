@@ -11,7 +11,10 @@ app distributed as a Progressive Web App.
 The web app SHALL provide a complete web app manifest (product name, icons
 including maskable variants, standalone display, token-derived theme and
 background colors) and SHALL be installable as a standalone app on browsers
-supporting PWA installation.
+supporting PWA installation. On iOS only Safari performs PWA installation:
+a home-screen shortcut created from another browser's share menu (e.g.
+Chrome) is a plain web clip, and the offline start below is not guaranteed
+for it — an iOS platform limitation, not an app defect.
 
 #### Scenario: Install on a phone
 
@@ -19,6 +22,21 @@ supporting PWA installation.
   chooses to install it
 - **THEN** the app installs with its name and icons and opens standalone
   without browser chrome
+
+#### Scenario: Install on iOS
+
+- **WHEN** the user on iOS adds the app to the home screen via Safari's
+  share sheet and opens it later with no connectivity
+- **THEN** the installed app starts on the precached shell and local data
+  like on any other platform
+
+#### Scenario: Home-screen shortcut created from Chrome on iOS
+
+- **WHEN** the user on iOS adds the site to the home screen from Chrome's
+  share menu and opens the shortcut with no connectivity
+- **THEN** no offline start is guaranteed, because iOS home-screen
+  shortcuts from non-Safari browsers do not carry the PWA installation;
+  users who need offline on iOS install via Safari
 
 ### Requirement: Offline application shell
 
