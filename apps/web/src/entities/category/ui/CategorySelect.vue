@@ -27,6 +27,10 @@ const { data } = useCategories()
 const filteredCategories = computed(() =>
   props.type ? data.value?.filter((category) => category.type === props.type) : data.value,
 )
+// The trigger slot must resolve the selected label itself for two reasons:
+// reka's option registry is ephemeral (options unregister on unmount, so it
+// is empty once the picker closes), and the trigger shows the category
+// avatar, which SelectValue's text fallback cannot render.
 const selectedCategory = computed(() =>
   filteredCategories.value?.find((category) => category.id === modelValue.value),
 )

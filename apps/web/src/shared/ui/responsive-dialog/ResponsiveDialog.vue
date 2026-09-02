@@ -5,9 +5,16 @@ import { X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useDesktopPresentation } from '@/shared/lib/presentation'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/dialog'
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle } from '@/shared/ui/drawer'
+import {
+  DRAWER_FOOTER_CLASS,
+  DRAWER_HEADER_PADDING,
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+} from '@/shared/ui/drawer'
 
 defineOptions({
   inheritAttrs: false,
@@ -17,32 +24,31 @@ interface OpenChangeDetails {
   reason?: string
 }
 
+// Header layout shared by the FAB speed-dial dialogs and the inline
+// NewCategoryDialog: actions row with a hairline, stretched to the overlay
+// edges on desktop.
+const BORDERED_ROW_HEADER_CLASS = `flex-row items-center justify-between border-b ${DRAWER_HEADER_PADDING} sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6`
+
 const props = withDefaults(
   defineProps<{
     open?: boolean
     class?: HTMLAttributes['class']
     headerClass?: HTMLAttributes['class']
-    bodyClass?: HTMLAttributes['class']
     footerClass?: HTMLAttributes['class']
-    titleClass?: HTMLAttributes['class']
-    descriptionClass?: HTMLAttributes['class']
     closeButtonClass?: HTMLAttributes['class']
+    headerVariant?: 'default' | 'bordered-row'
     showCloseButton?: boolean
     closeButtonInHeader?: boolean
-    showFooterCloseButton?: boolean
   }>(),
   {
     open: false,
     class: undefined,
     headerClass: undefined,
-    bodyClass: undefined,
     footerClass: undefined,
-    titleClass: undefined,
-    descriptionClass: undefined,
     closeButtonClass: undefined,
+    headerVariant: 'default',
     showCloseButton: true,
     closeButtonInHeader: false,
-    showFooterCloseButton: false,
   },
 )
 
@@ -71,23 +77,23 @@ const hasHeader = computed(
 const hasHeaderControls = computed(
   () => hasHeaderActions.value || shouldRenderHeaderCloseButton.value,
 )
-const hasFooterBar = computed(() => hasFooter.value || props.showFooterCloseButton)
 
 const handleOpenChange = (value: boolean, details?: OpenChangeDetails) => {
   emit('update:open', value, details)
 }
 
 const baseHeaderClass = computed(() =>
-  cn(isDesktop.value ? 'text-center sm:text-left' : 'px-6 pb-4 pt-2 text-left', props.headerClass),
+  cn(
+    isDesktop.value ? 'text-center sm:text-left' : `${DRAWER_HEADER_PADDING} text-left`,
+    props.headerVariant === 'bordered-row' && BORDERED_ROW_HEADER_CLASS,
+    props.headerClass,
+  ),
 )
-const baseBodyClass = computed(() =>
-  cn('min-h-0', isDesktop.value ? null : 'px-6 pb-6', props.bodyClass),
-)
+const baseBodyClass = computed(() => cn('min-h-0', isDesktop.value ? null : 'px-6 pb-6'))
 const baseFooterClass = computed(() =>
   cn(
-    isDesktop.value
-      ? 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
-      : 'flex flex-col-reverse gap-2 border-t px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4',
+    'flex flex-col-reverse gap-2',
+    isDesktop.value ? 'sm:flex-row sm:justify-end' : DRAWER_FOOTER_CLASS,
     props.footerClass,
   ),
 )
@@ -115,13 +121,10 @@ const closeButtonClass = computed(() =>
         <header v-if="hasHeader" :class="baseHeaderClass">
           <div :class="hasHeaderControls ? 'flex items-start justify-between gap-4' : ''">
             <div class="min-w-0 flex-1">
-              <DialogTitle v-if="$slots.title" :class="props.titleClass">
+              <DialogTitle v-if="$slots.title">
                 <slot name="title" />
               </DialogTitle>
-              <DialogDescription
-                v-if="$slots.description"
-                :class="cn('mt-2', props.descriptionClass)"
-              >
+              <DialogDescription v-if="$slots.description" class="mt-2">
                 <slot name="description" />
               </DialogDescription>
             </div>
@@ -140,11 +143,8 @@ const closeButtonClass = computed(() =>
           <slot />
         </div>
 
-        <div v-if="hasFooterBar" :class="baseFooterClass">
+        <div v-if="hasFooter" :class="baseFooterClass">
           <slot name="footer" />
-          <DialogClose v-if="showFooterCloseButton" as-child>
-            <Button variant="secondary">{{ t('common.close') }}</Button>
-          </DialogClose>
         </div>
       </div>
     </DialogContent>
@@ -160,13 +160,10 @@ const closeButtonClass = computed(() =>
         <header v-if="hasHeader" :class="baseHeaderClass">
           <div :class="hasHeaderControls ? 'flex items-start justify-between gap-4' : ''">
             <div class="min-w-0 flex-1">
-              <DrawerTitle v-if="$slots.title" :class="props.titleClass">
+              <DrawerTitle v-if="$slots.title">
                 <slot name="title" />
               </DrawerTitle>
-              <DrawerDescription
-                v-if="$slots.description"
-                :class="cn('mt-2', props.descriptionClass)"
-              >
+              <DrawerDescription v-if="$slots.description" class="mt-2">
                 <slot name="description" />
               </DrawerDescription>
             </div>
@@ -185,11 +182,8 @@ const closeButtonClass = computed(() =>
           <slot />
         </div>
 
-        <div v-if="hasFooterBar" :class="baseFooterClass">
+        <div v-if="hasFooter" :class="baseFooterClass">
           <slot name="footer" />
-          <DrawerClose v-if="showFooterCloseButton" as-child>
-            <Button variant="secondary">{{ t('common.close') }}</Button>
-          </DrawerClose>
         </div>
       </div>
     </DrawerContent>

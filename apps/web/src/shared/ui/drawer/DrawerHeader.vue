@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@/shared/lib/utils'
+import { DRAWER_HEADER_PADDING } from './styles'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']
@@ -8,7 +9,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div data-slot="drawer-header" :class="cn('flex flex-col gap-2 px-6 pb-4 pt-2 text-left', props.class)">
+  <div data-slot="drawer-header" :class="cn('flex flex-col gap-2', DRAWER_HEADER_PADDING, 'text-left', props.class)">
     <slot />
   </div>
 </template>

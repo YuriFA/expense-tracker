@@ -26,6 +26,10 @@ const { data } = useAccounts()
 const filteredAccounts = computed(() =>
   props.excludeId ? data.value?.filter((account) => account.id !== props.excludeId) : data.value,
 )
+// The trigger slot must resolve the selected label itself: reka's option
+// registry is ephemeral (options unregister on unmount, so it is empty once
+// the picker closes), which is exactly when the trigger still has to show
+// the value. Same constraint as CategorySelect.
 const selectedAccount = computed(() =>
   filteredAccounts.value?.find((account) => account.id === modelValue.value),
 )
