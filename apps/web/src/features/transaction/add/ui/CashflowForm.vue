@@ -10,7 +10,7 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import { AccountSelect, useAccounts } from '@/entities/account'
+import { AccountSelect, NewAccountDialog, useAccounts } from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
 import NewCategoryDialog from './NewCategoryDialog.vue'
 import { formatCalendarDay, nowIsoString } from '@/shared/lib/date'
@@ -67,6 +67,11 @@ const onDatePick = (value: string) => {
 const newCategoryOpen = ref(false)
 const setCategoryId = useSetFieldValue<CashflowFormValues['categoryId']>('categoryId')
 
+// Inline account creation: with zero accounts the form is a dead end (the
+// NewCategoryDialog contract, account edition).
+const newAccountOpen = ref(false)
+const setAccountId = useSetFieldValue<CashflowFormValues['accountId']>('accountId')
+
 const handleSubmit = handleFormSubmit(async (data) => {
   try {
     await createTransaction({
@@ -107,15 +112,28 @@ const handleSubmit = handleFormSubmit(async (data) => {
 
     <div class="grid gap-4 sm:grid-cols-2">
       <VeeField v-slot="{ value, setValue, errors }" name="accountId">
-        <AccountSelect
-          input-id="account-id"
-          :label="t('addTransaction.accountLabel')"
-          :placeholder="t('addTransaction.accountPlaceholder')"
-          class="w-full"
-          :model-value="value"
-          :errors="errors"
-          @update:model-value="setValue"
-        />
+        <div class="flex w-full items-end gap-2">
+          <AccountSelect
+            input-id="account-id"
+            :label="t('addTransaction.accountLabel')"
+            :placeholder="t('addTransaction.accountPlaceholder')"
+            class="w-full"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="setValue"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            class="mb-0.5 size-9 shrink-0"
+            :aria-label="t('addAccount.newAccount')"
+            :title="t('addAccount.newAccount')"
+            data-testid="open-new-account"
+            @click="newAccountOpen = true"
+          >
+            <PlusIcon class="size-4" />
+          </Button>
+        </div>
       </VeeField>
 
       <VeeField v-slot="{ value, setValue, errors }" name="categoryId">
@@ -178,6 +196,8 @@ const handleSubmit = handleFormSubmit(async (data) => {
     :type="type"
     @created="setCategoryId($event.id)"
   />
+
+  <NewAccountDialog v-model:open="newAccountOpen" @created="setAccountId($event.id)" />
 
   <DialogFooter class="-mx-6 -mb-6 mt-2 flex-col gap-3 border-t px-6 py-4 sm:flex-row">
     <DialogClose as-child>

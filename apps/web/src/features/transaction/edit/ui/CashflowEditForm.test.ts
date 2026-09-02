@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import CashflowEditForm from './CashflowEditForm.vue'
+import { AccountSelect } from '@/entities/account'
 import type { AccountWithBalance } from '@/entities/account'
 import type { Category } from '@/entities/category'
 import type { CashflowTransaction } from '@/entities/transaction'
@@ -49,9 +51,29 @@ const existingTransaction: CashflowTransaction = {
   categoryId: 'cincome',
 } as never
 
+const newAccount: AccountWithBalance = {
+  version: 1,
+  id: 'a-new',
+  name: 'Card',
+  currency: 'RUB',
+  openingBalance: 0,
+  balance: 0,
+}
+
+const mounted: ReturnType<typeof mountWithProviders>[] = []
+
 describe('CashflowEditForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+  afterEach(async () => {
+    // Unmount first: wiping document.body under live teleports (the inline
+    // dialog) breaks patching.
+    for (const wrapper of mounted.splice(0)) {
+      wrapper.unmount()
+    }
+    await flushPromises()
+    document.body.innerHTML = ''
   })
 
   function mountForm(props: Record<string, unknown> = {}) {
@@ -76,6 +98,7 @@ describe('CashflowEditForm', () => {
       // The footer's DialogClose requires a DialogRoot the tests don't mount.
       global: { stubs: { DialogClose: true } },
     })
+    mounted.push(wrapper)
     return { wrapper, accounts, categories, transactions }
   }
 
@@ -92,5 +115,25 @@ describe('CashflowEditForm', () => {
   it('preloads form with initial values', () => {
     const { wrapper } = mountForm()
     expect(wrapper.find('input#description').attributes('value')).toBe('Salary')
+  })
+
+  it('auto-selects an account created inline next to the account select', async () => {
+    const { wrapper, accounts } = mountForm()
+    accounts.create.mockResolvedValue(newAccount)
+    await flushPromises()
+
+    await wrapper.find('[data-testid="open-new-account"]').trigger('click')
+    await flushPromises()
+    // The dialog content teleports to document.body.
+    const name = document.querySelector('input[id="new-account-name"]') as HTMLInputElement
+    name.value = 'Card'
+    name.dispatchEvent(new Event('input', { bubbles: true }))
+    ;(
+      document.querySelector('#new-account-form button[type="submit"]') as HTMLElement
+    ).click()
+    await vi.waitFor(() => expect(accounts.create).toHaveBeenCalledTimes(1))
+    await flushPromises()
+
+    expect(wrapper.findComponent(AccountSelect).props('modelValue')).toBe('a-new')
   })
 })

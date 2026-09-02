@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
+import { computed, ref } from 'vue'
+import { useForm, useFieldValue, useSetFieldValue, Field as VeeField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
+import { PlusIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/shared/ui/button'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
@@ -10,7 +11,7 @@ import { Input } from '@/shared/ui/input'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMajorUnits, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { AccountSelect, useAccounts } from '@/entities/account'
+import { AccountSelect, NewAccountDialog, useAccounts } from '@/entities/account'
 import { useUpdateTransaction, type AdjustmentTransaction } from '@/entities/transaction'
 import { createAdjustmentEditSchema, type AdjustmentEditValues } from '../model/adjustment-schema'
 
@@ -51,6 +52,11 @@ const accountCurrency = computed<CurrencyCode>(() => {
   const account = accounts.value?.find((a) => a.id === accountId.value)
   return account?.currency ?? DEFAULT_CURRENCY
 })
+
+// Inline account creation (the CashflowForm contract): the created account
+// is auto-selected in the triggering selector.
+const newAccountOpen = ref(false)
+const setAccountId = useSetFieldValue<AdjustmentEditValues['accountId']>('accountId')
 
 const handleSubmit = handleFormSubmit(async (data) => {
   try {
@@ -110,15 +116,28 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </VeeField>
 
       <VeeField v-slot="{ value, setValue, errors }" name="accountId">
-        <AccountSelect
-          input-id="adjustment-account-id"
-          :label="t('addTransaction.accountLabel')"
-          :placeholder="t('addTransaction.accountPlaceholder')"
-          class="w-full"
-          :model-value="value"
-          :errors="errors"
-          @update:model-value="setValue"
-        />
+        <div class="flex w-full items-end gap-2">
+          <AccountSelect
+            input-id="adjustment-account-id"
+            :label="t('addTransaction.accountLabel')"
+            :placeholder="t('addTransaction.accountPlaceholder')"
+            class="w-full"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="setValue"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            class="mb-0.5 size-9 shrink-0"
+            :aria-label="t('addAccount.newAccount')"
+            :title="t('addAccount.newAccount')"
+            data-testid="open-new-account"
+            @click="newAccountOpen = true"
+          >
+            <PlusIcon class="size-4" />
+          </Button>
+        </div>
       </VeeField>
 
       <VeeField v-slot="{ field, errors }" name="description">
@@ -152,5 +171,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
         </Button>
       </DialogFooter>
     </form>
+
+    <NewAccountDialog v-model:open="newAccountOpen" @created="setAccountId($event.id)" />
   </div>
 </template>

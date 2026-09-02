@@ -9,14 +9,15 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import { AccountSelect, useAccounts } from '@/entities/account'
+import { AccountSelect, NewAccountDialog, useAccounts } from '@/entities/account'
 import { formatCalendarDay, nowIsoString } from '@/shared/lib/date'
 import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
 import { DateField } from '@/shared/ui/date-field'
-import { computed } from 'vue'
+import { PlusIcon } from '@lucide/vue'
+import { computed, ref } from 'vue'
 
 const emit = defineEmits<{
   success: []
@@ -63,6 +64,14 @@ const setOccurredAt = useSetFieldValue<TransferFormValues['occurredAt']>('occurr
 const onDatePick = (value: string) => {
   setOccurredAt(`${value}${timeSuffix}`)
 }
+
+// Inline account creation for each selector (the CashflowForm contract):
+// the created account flows only into the selector whose "+" was used, so
+// the from ≠ to pairing is decided by the user, never rewritten.
+const fromAccountDialogOpen = ref(false)
+const toAccountDialogOpen = ref(false)
+const setFromAccountId = useSetFieldValue<TransferFormValues['fromAccountId']>('fromAccountId')
+const setToAccountId = useSetFieldValue<TransferFormValues['toAccountId']>('toAccountId')
 
 const handleSubmit = handleFormSubmit(async (data) => {
   const fromAccount = accounts.value?.find((a) => a.id === data.fromAccountId)
@@ -113,29 +122,55 @@ const handleSubmit = handleFormSubmit(async (data) => {
 
     <div class="grid gap-4 sm:grid-cols-2">
       <VeeField v-slot="{ value, setValue, errors }" name="fromAccountId">
-        <AccountSelect
-          input-id="from-account-id"
-          :label="t('addTransfer.fromAccountLabel')"
-          :placeholder="t('addTransfer.fromAccountPlaceholder')"
-          class="w-full"
-          :model-value="value"
-          :errors="errors"
-          :exclude-id="toAccountId"
-          @update:model-value="setValue"
-        />
+        <div class="flex w-full items-end gap-2">
+          <AccountSelect
+            input-id="from-account-id"
+            :label="t('addTransfer.fromAccountLabel')"
+            :placeholder="t('addTransfer.fromAccountPlaceholder')"
+            class="w-full"
+            :model-value="value"
+            :errors="errors"
+            :exclude-id="toAccountId"
+            @update:model-value="setValue"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            class="mb-0.5 size-9 shrink-0"
+            :aria-label="t('addAccount.newAccount')"
+            :title="t('addAccount.newAccount')"
+            data-testid="open-new-from-account"
+            @click="fromAccountDialogOpen = true"
+          >
+            <PlusIcon class="size-4" />
+          </Button>
+        </div>
       </VeeField>
 
       <VeeField v-slot="{ value, setValue, errors }" name="toAccountId">
-        <AccountSelect
-          input-id="to-account-id"
-          :label="t('addTransfer.toAccountLabel')"
-          :placeholder="t('addTransfer.toAccountPlaceholder')"
-          class="w-full"
-          :model-value="value"
-          :errors="errors"
-          :exclude-id="fromAccountId"
-          @update:model-value="setValue"
-        />
+        <div class="flex w-full items-end gap-2">
+          <AccountSelect
+            input-id="to-account-id"
+            :label="t('addTransfer.toAccountLabel')"
+            :placeholder="t('addTransfer.toAccountPlaceholder')"
+            class="w-full"
+            :model-value="value"
+            :errors="errors"
+            :exclude-id="fromAccountId"
+            @update:model-value="setValue"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            class="mb-0.5 size-9 shrink-0"
+            :aria-label="t('addAccount.newAccount')"
+            :title="t('addAccount.newAccount')"
+            data-testid="open-new-to-account"
+            @click="toAccountDialogOpen = true"
+          >
+            <PlusIcon class="size-4" />
+          </Button>
+        </div>
       </VeeField>
     </div>
 
@@ -166,6 +201,17 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </Field>
     </VeeField>
   </form>
+
+  <NewAccountDialog
+    v-model:open="fromAccountDialogOpen"
+    data-testid="new-from-account-dialog"
+    @created="setFromAccountId($event.id)"
+  />
+  <NewAccountDialog
+    v-model:open="toAccountDialogOpen"
+    data-testid="new-to-account-dialog"
+    @created="setToAccountId($event.id)"
+  />
 
   <DialogFooter class="-mx-6 -mb-6 mt-2 flex-col gap-3 border-t px-6 py-4 sm:flex-row">
     <DialogClose as-child>

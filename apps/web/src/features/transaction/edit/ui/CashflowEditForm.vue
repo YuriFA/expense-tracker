@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { useForm, useFieldValue, Field as VeeField } from 'vee-validate'
+import { useForm, useFieldValue, useSetFieldValue, Field as VeeField } from 'vee-validate'
 import type { CashflowTransaction } from '@/entities/transaction'
 import { toTypedSchema } from '@vee-validate/zod'
+import { PlusIcon } from '@lucide/vue'
 import { Button } from '@/shared/ui/button'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import { AccountSelect, useAccounts } from '@/entities/account'
+import { AccountSelect, NewAccountDialog, useAccounts } from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
 import { useUpdateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
@@ -17,7 +18,7 @@ import {
   type CashflowEditValues,
 } from '../model/cashflow-schema'
 import { DEFAULT_CURRENCY, toMajorUnits, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const emit = defineEmits<{
   success: []
@@ -54,6 +55,11 @@ const accountCurrency = computed<CurrencyCode>(() => {
   return account?.currency ?? DEFAULT_CURRENCY
 })
 
+// Inline account creation (the CashflowForm contract): the created account
+// is auto-selected in the triggering selector.
+const newAccountOpen = ref(false)
+const setAccountId = useSetFieldValue<CashflowEditValues['accountId']>('accountId')
+
 const handleSubmit = handleFormSubmit(async (data) => {
   try {
     await updateTransaction({
@@ -84,15 +90,28 @@ const handleSubmit = handleFormSubmit(async (data) => {
     <form id="edit-transaction-form" class="flex flex-col gap-3" @submit="handleSubmit">
     <div class="flex items-end gap-2">
       <VeeField v-slot="{ value, setValue, errors }" name="accountId">
-        <AccountSelect
-          input-id="account-id"
-          :label="t('addTransaction.accountLabel')"
-          :placeholder="t('addTransaction.accountPlaceholder')"
-          class="w-full"
-          :model-value="value"
-          :errors="errors"
-          @update:model-value="setValue"
-        />
+        <div class="flex w-full items-end gap-2">
+          <AccountSelect
+            input-id="account-id"
+            :label="t('addTransaction.accountLabel')"
+            :placeholder="t('addTransaction.accountPlaceholder')"
+            class="w-full"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="setValue"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            class="mb-0.5 size-9 shrink-0"
+            :aria-label="t('addAccount.newAccount')"
+            :title="t('addAccount.newAccount')"
+            data-testid="open-new-account"
+            @click="newAccountOpen = true"
+          >
+            <PlusIcon class="size-4" />
+          </Button>
+        </div>
       </VeeField>
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <AmountField
@@ -147,5 +166,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       </Button>
     </DialogFooter>
   </form>
+
+  <NewAccountDialog v-model:open="newAccountOpen" @created="setAccountId($event.id)" />
   </div>
 </template>

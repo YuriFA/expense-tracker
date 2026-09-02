@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import CashflowForm from './CashflowForm.vue'
@@ -62,14 +62,37 @@ const createdTransaction: CashflowTransaction = {
   categoryId: 'cincome',
 } as never
 
+const newAccount: AccountWithBalance = {
+  version: 1,
+  id: 'a-new',
+  name: 'Card',
+  currency: 'RUB',
+  openingBalance: 0,
+  balance: 0,
+}
+
+const mounted: ReturnType<typeof mountWithProviders>[] = []
+
 describe('CashflowForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
+  afterEach(async () => {
+    // Unmount first: wiping document.body under live teleports (the inline
+    // dialogs) breaks patching.
+    for (const wrapper of mounted.splice(0)) {
+      wrapper.unmount()
+    }
+    await flushPromises()
+    document.body.innerHTML = ''
+  })
 
-  function mountForm(props: Record<string, unknown> = {}) {
+  function mountForm(
+    props: Record<string, unknown> = {},
+    accountsList: AccountWithBalance[] = [account],
+  ) {
     const accounts = createMockAccountRepository()
-    accounts.getAll.mockResolvedValue([account])
+    accounts.getAll.mockResolvedValue(accountsList)
     const categories = createMockCategoryRepository()
     categories.getAll.mockResolvedValue([incomeCategory, expenseCategory])
     const transactions = createMockTransactionRepository()
@@ -81,8 +104,52 @@ describe('CashflowForm', () => {
       // The footer's DialogClose requires a DialogRoot the tests don't mount.
       global: { stubs: { DialogClose: true } },
     })
+    mounted.push(wrapper)
     return { wrapper, accounts, categories, transactions }
   }
+
+  it('offers the inline account creation affordance next to the account select', () => {
+    const { wrapper } = mountForm()
+    expect(wrapper.find('[data-testid="open-new-account"]').exists()).toBe(true)
+  })
+
+  it('auto-selects an account created inline over a zero-account cold start, preserving entered values', async () => {
+    const { wrapper, accounts, transactions } = mountForm({}, [])
+    accounts.create.mockResolvedValue(newAccount)
+    await flushPromises()
+
+    // Values entered before the inline creation must survive it.
+    wrapper.findComponent(AmountField).vm.$emit('update:modelValue', 100)
+    await wrapper.find('input#description').setValue('Salary')
+
+    await wrapper.find('[data-testid="open-new-account"]').trigger('click')
+    await flushPromises()
+    // The dialog content teleports to document.body.
+    const name = document.querySelector('input[id="new-account-name"]') as HTMLInputElement
+    name.value = 'Card'
+    name.dispatchEvent(new Event('input', { bubbles: true }))
+    ;(
+      document.querySelector('#new-account-form button[type="submit"]') as HTMLElement
+    ).click()
+    await vi.waitFor(() => expect(accounts.create).toHaveBeenCalledTimes(1))
+    await flushPromises()
+
+    // The created account is auto-selected in the triggering selector.
+    expect(wrapper.findComponent(AccountSelect).props('modelValue')).toBe('a-new')
+
+    wrapper.findComponent(CategorySelect).vm.$emit('update:modelValue', 'cincome')
+    await nextTick()
+    await wrapper.find('form').trigger('submit')
+    await vi.waitFor(() => expect(transactions.create).toHaveBeenCalledTimes(1))
+
+    expect(transactions.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: 'a-new',
+        amount: 10000,
+        description: 'Salary',
+      }),
+    )
+  })
 
   it('renders form with submit button and description input', () => {
     const { wrapper } = mountForm()

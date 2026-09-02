@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
-import { createAddAccountSchema, type AddAccountFormValues } from '../model/add-account-schema'
+import {
+  createAddAccountSchema,
+  useCreateAccount,
+  type AddAccountFormValues,
+} from '@/entities/account'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
 import { Field as VeeField } from 'vee-validate'
@@ -8,7 +12,6 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { NumberField, NumberFieldContent, NumberFieldInput } from '@/shared/ui/number-field'
 import { DEFAULT_CURRENCY, toMinorUnits } from '@/shared/lib/money'
-import { useCreateAccount } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
 import { notification } from '@/shared/services/notification'
