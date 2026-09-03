@@ -8,7 +8,6 @@ import type { Debtor } from '@/entities/debtor'
 import { useCreateDebtor } from '@/entities/debtor'
 import { useCreateDebtOperation, type DebtDirection } from '@/entities/debt-operation'
 import { createDebtorDebtSchema, type DebtorDebtFormValues } from '../model/schemas'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
@@ -91,7 +90,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
     <template #title>{{ title }}</template>
     <template #description>{{ subtitle }}</template>
 
-    <form class="flex flex-col gap-3" @submit="handleSubmit">
+    <form id="debts-new-debt-form" class="flex flex-col gap-3" @submit="handleSubmit">
       <VeeField v-slot="{ value, setValue, errors }" name="name">
         <Field :data-invalid="!!errors.length">
           <FieldLabel for="debts-new-debt-name">{{ t('fields.name') }}</FieldLabel>
@@ -145,12 +144,17 @@ const handleSubmit = handleFormSubmit(async (data) => {
           />
         </Field>
       </VeeField>
-
-      <DialogFooter class="flex-row">
-        <Button type="submit" class="w-full" :loading="isSubmitting" data-testid="debts-new-debt-submit">
-          {{ t('debts.addDebt') }}
-        </Button>
-      </DialogFooter>
     </form>
+
+    <template #footer>
+      <Button
+        type="submit"
+        form="debts-new-debt-form"
+        :loading="isSubmitting"
+        data-testid="debts-new-debt-submit"
+      >
+        {{ t('debts.addDebt') }}
+      </Button>
+    </template>
   </ResponsiveDialog>
 </template>

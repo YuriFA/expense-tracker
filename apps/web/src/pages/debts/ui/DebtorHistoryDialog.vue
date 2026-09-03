@@ -11,7 +11,6 @@ import { debtorHistoryGroups } from '../model/selectors'
 import { useAuthorLabel } from '@/features/household-author'
 import OperationFormDialog from './OperationFormDialog.vue'
 import DebtorFormDialog from './DebtorFormDialog.vue'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { EmptyState } from '@/shared/ui/empty-state'
@@ -139,32 +138,34 @@ const editDebtorOpen = ref(false)
       </div>
     </div>
 
-    <DialogFooter class="flex-col gap-4 sm:flex-col">
-      <div class="flex w-full items-center justify-between">
-        <span class="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {{ t('debts.balance') }}
-        </span>
-        <span
-          class="text-xl font-bold tabular-nums"
-          :class="{ 'text-destructive': balance < 0 }"
-          data-testid="debts-history-balance"
-        >
-          {{ balanceText }}
-        </span>
+    <template #footer>
+      <div class="flex w-full flex-col gap-4">
+        <div class="flex w-full items-center justify-between">
+          <span class="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            {{ t('debts.balance') }}
+          </span>
+          <span
+            class="text-xl font-bold tabular-nums"
+            :class="{ 'text-destructive': balance < 0 }"
+            data-testid="debts-history-balance"
+          >
+            {{ balanceText }}
+          </span>
+        </div>
+        <div class="grid w-full grid-cols-2 gap-3">
+          <Button
+            variant="secondary"
+            data-testid="debts-new-repayment"
+            @click="openCreate('repayment')"
+          >
+            {{ t('debts.repaymentAction') }}
+          </Button>
+          <Button data-testid="debts-new-operation" @click="openCreate('debt')">
+            {{ t('debts.debtAction') }}
+          </Button>
+        </div>
       </div>
-      <div class="grid w-full grid-cols-2 gap-3">
-        <Button
-          variant="secondary"
-          data-testid="debts-new-repayment"
-          @click="openCreate('repayment')"
-        >
-          {{ t('debts.repaymentAction') }}
-        </Button>
-        <Button data-testid="debts-new-operation" @click="openCreate('debt')">
-          {{ t('debts.debtAction') }}
-        </Button>
-      </div>
-    </DialogFooter>
+    </template>
 
     <OperationFormDialog
       v-if="operationOpen"

@@ -85,6 +85,9 @@ async function handleRevoke(): Promise<void> {
       <p v-else class="text-sm text-muted-foreground" data-testid="household-code-none">
         {{ t('household.codeNone') }}
       </p>
+    </div>
+
+    <template #footer>
       <div class="flex flex-wrap gap-2">
         <template v-if="code">
           <Button variant="secondary" data-testid="household-code-copy" @click="handleCopy">
@@ -116,7 +119,7 @@ async function handleRevoke(): Promise<void> {
           {{ t('household.codeGenerate') }}
         </Button>
       </div>
-    </div>
+    </template>
 
     <AlertDialog v-model:open="rotateConfirmOpen">
       <AlertDialogContent>

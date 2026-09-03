@@ -223,4 +223,17 @@ describe('matchesTransactionsFilters', () => {
     const filters: TransactionsFilters = { accountIds: ['a1'], categoryIds: ['c9'] }
     expect(matchesTransactionsFilters(cashflow(), filters)).toBe(false)
   })
+
+  it('matches account-less cashflow via the «Без счета» sentinel id', () => {
+    const none: TransactionsFilters = { accountIds: ['__no_account__'] }
+    expect(matchesTransactionsFilters(cashflow({ accountId: null }), none)).toBe(true)
+    expect(matchesTransactionsFilters(cashflow(), none)).toBe(false)
+    expect(matchesTransactionsFilters(transfer(), none)).toBe(false)
+  })
+
+  it('treats «Без счета» as one more selectable source next to accounts', () => {
+    const mixed: TransactionsFilters = { accountIds: ['__no_account__', 'a1'] }
+    expect(matchesTransactionsFilters(cashflow({ accountId: null }), mixed)).toBe(true)
+    expect(matchesTransactionsFilters(cashflow(), mixed)).toBe(true)
+  })
 })

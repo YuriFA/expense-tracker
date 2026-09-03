@@ -13,7 +13,6 @@ import {
 import { AccountSelect } from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
 import { createPlanSchema, type PlanFormValues } from '../model/plan-schema'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import {
   AlertDialog,
@@ -191,7 +190,7 @@ const handleDelete = async () => {
       </Button>
     </template>
 
-    <form class="flex flex-col gap-3" @submit="handleSubmit">
+    <form id="plans-form" class="flex flex-col gap-3" @submit="handleSubmit">
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
         <AmountField
           id="plans-form-amount"
@@ -317,13 +316,18 @@ const handleDelete = async () => {
           />
         </Field>
       </VeeField>
-
-      <DialogFooter class="flex-row">
-        <Button type="submit" class="w-full" :loading="isSubmitting" data-testid="plans-form-submit">
-          {{ t('plans.save') }}
-        </Button>
-      </DialogFooter>
     </form>
+
+    <template #footer>
+      <Button
+        type="submit"
+        form="plans-form"
+        :loading="isSubmitting"
+        data-testid="plans-form-submit"
+      >
+        {{ t('plans.save') }}
+      </Button>
+    </template>
 
     <AlertDialog v-model:open="deleteOpen">
       <AlertDialogContent>

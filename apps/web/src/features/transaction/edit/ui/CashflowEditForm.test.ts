@@ -131,7 +131,7 @@ describe('CashflowEditForm', () => {
     name.value = 'Card'
     name.dispatchEvent(new Event('input', { bubbles: true }))
     ;(
-      document.querySelector('#new-account-form button[type="submit"]') as HTMLElement
+      document.querySelector('button[type="submit"][form="new-account-form"]') as HTMLElement
     ).click()
     await vi.waitFor(() => expect(accounts.create).toHaveBeenCalledTimes(1))
     await flushPromises()

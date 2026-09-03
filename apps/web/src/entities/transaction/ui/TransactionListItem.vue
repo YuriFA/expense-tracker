@@ -56,6 +56,11 @@ const account = computed(() => {
   }
   return accounts?.find((account) => account.id === transaction.accountId)
 })
+// Account-less cashflow («Без счета»): no account row matches, the meta
+// line still names the choice instead of silently skipping it.
+const isAccountless = computed(
+  () => !isTransferTransaction(transaction) && !isAdjustmentTransaction(transaction) && !account.value,
+)
 const fromAccount = computed(() => {
   if (isTransferTransaction(transaction)) {
     return accounts?.find((account) => account.id === transaction.fromAccountId)
@@ -141,7 +146,10 @@ const ARROW = '→'
           <span v-if="category">
             {{ category.name }}
           </span>
-          {{ SEPARATOR }} <span v-if="account">{{ account.name }}</span> {{ SEPARATOR }}
+          {{ SEPARATOR }}
+          <span v-if="account">{{ account.name }}</span>
+          <span v-else-if="isAccountless">{{ t('accounts.noAccount') }}</span>
+          {{ SEPARATOR }}
           <span>{{ formattedOccuredAt }}</span>
         </template>
         <template v-if="author">

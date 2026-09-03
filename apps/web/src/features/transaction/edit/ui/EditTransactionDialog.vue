@@ -53,12 +53,7 @@ const handleSuccess = () => {
 </script>
 
 <template>
-  <ResponsiveDialog
-    v-model:open="open"
-    class="sm:max-w-[400px]"
-    close-button-in-header
-    header-class="flex-row items-start justify-between border-b px-6 pb-4 pt-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
-  >
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-[400px]">
     <template #title>{{ t('editTransaction.title') }}</template>
     <template #description>
       <p

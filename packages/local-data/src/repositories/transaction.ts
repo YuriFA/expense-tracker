@@ -12,6 +12,7 @@
 import { and, desc, eq, gte, isNull, lte, or, type SQL } from 'drizzle-orm'
 import { nowIso } from '@expense-tracker/dates'
 import {
+  AlreadyExistsError,
   InvalidPayloadError,
   NotFoundError,
   UnknownReferencesError,
@@ -71,7 +72,8 @@ function toTransaction(row: TransactionRow): Transaction {
   return {
     ...base,
     type: row.type as 'income' | 'expense',
-    accountId: row.accountId as string,
+    // Nullable = account-less («Без счета»): no balance, still in analytics.
+    accountId: row.accountId,
     categoryId: row.categoryId as string,
   }
 }
@@ -169,7 +171,9 @@ function validateReferences(
     return
   }
 
-  if (!findLiveAccount(tx, accountId)) {
+  // Income/expense may be account-less («Без счета»): a null account skips
+  // the existence check; the category rules still apply in full.
+  if (accountId !== null && !findLiveAccount(tx, accountId)) {
     throw new UnknownReferencesError('Account not found', { apiCode: 'ACCOUNT_NOT_FOUND' })
   }
   const category = categoryId
@@ -293,7 +297,11 @@ export function createLocalTransactionRepository(db: LocalDatabase): Transaction
         if (
           tx.select({ id: transactions.id }).from(transactions).where(eq(transactions.id, id)).get()
         ) {
-          throw new InvalidPayloadError('Transaction already exists', {
+          // AlreadyExistsError (not InvalidPayloadError): the coarse
+          // `already-exists` code mirrors the HTTP client's mapping of the
+          // backend's 409 TRANSACTION_ALREADY_EXISTS and survives the
+          // worker bridge, whose rehydration drops `apiCode`.
+          throw new AlreadyExistsError('Transaction already exists', {
             apiCode: 'TRANSACTION_ALREADY_EXISTS',
           })
         }

@@ -72,9 +72,11 @@ const handleSubmit = handleFormSubmit(async (data) => {
           <FieldError v-if="errors.length" :errors="errors" />
         </Field>
       </VeeField>
+    </form>
+    <template #footer>
       <Button form="rename-household-form" type="submit" :loading="isSubmitting">
         {{ t('household.rename') }}
       </Button>
-    </form>
+    </template>
   </ResponsiveDialog>
 </template>

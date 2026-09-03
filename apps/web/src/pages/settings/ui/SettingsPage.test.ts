@@ -93,6 +93,11 @@ function mountPage(): ReturnType<typeof mountWithProviders> {
         name: 'settings-categories',
         component: { template: '<div/>' },
       },
+      {
+        path: '/settings/data',
+        name: 'settings-data',
+        component: { template: '<div/>' },
+      },
     ],
   })
   // repositories: {} injects the default mock repositories - the dissolve

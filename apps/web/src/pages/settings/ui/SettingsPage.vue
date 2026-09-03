@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SettingsCard } from '@/shared/ui/settings-card'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { ChevronRight, Tags } from '@lucide/vue'
+import { ChevronRight, Database, Tags } from '@lucide/vue'
 import { useAuthStore, sessionApi } from '@/entities/session'
 import { householdDisplayName, memberLabel, useHousehold } from '@/entities/household'
 import { DissolveHouseholdDialog } from '../features/dissolve-household'
@@ -217,6 +217,32 @@ onMounted(() => {
             <p class="text-sm font-semibold">{{ t('categoryManagement.title') }}</p>
             <p class="mt-0.5 text-xs text-muted-foreground">
               {{ t('categoryManagement.subtitle') }}
+            </p>
+          </div>
+        </div>
+        <ChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </RouterLink>
+    </SettingsCard>
+
+    <!-- Data transfer entry (web-data-transfer): local-first data tools,
+         available anonymously like the categories card. -->
+    <SettingsCard :title="t('dataTransfer.title')" bleed>
+      <RouterLink
+        :to="{ name: 'settings-data' }"
+        class="flex items-center justify-between gap-3 rounded-b-lg px-4 py-5 transition-colors hover:bg-muted/50 md:px-6"
+        data-testid="settings-data-link"
+      >
+        <div class="flex min-w-0 items-center gap-3">
+          <span
+            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+            aria-hidden="true"
+          >
+            <Database class="size-4" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold">{{ t('dataTransfer.title') }}</p>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+              {{ t('dataTransfer.subtitle') }}
             </p>
           </div>
         </div>

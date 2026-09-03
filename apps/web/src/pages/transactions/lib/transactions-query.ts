@@ -1,5 +1,6 @@
 import type { LocationQuery, LocationQueryRaw, LocationQueryValue } from 'vue-router'
 import type { Transaction, TransactionType } from '@/entities/transaction'
+import { NO_ACCOUNT_ID } from '@/entities/account'
 import {
   currentDay,
   parseCalendarDayOrFallback,
@@ -84,16 +85,22 @@ export const serializeTransactionsQuery = (
  * Client-side multi-select narrowing on top of the repository query (which
  * stays single/id-free): transfers match an account when they touch it on
  * either side — the same semantics as the repository's own account filter.
+ * The «Без счета» sentinel id matches cashflow rows with no account.
  */
 export const matchesTransactionsFilters = (
   transaction: Transaction,
   filters: TransactionsFilters,
 ): boolean => {
   if (filters.accountIds?.length) {
-    const touches = (accountId: string) =>
-      transaction.type === 'transfer'
-        ? transaction.fromAccountId === accountId || transaction.toAccountId === accountId
-        : transaction.accountId === accountId
+    const touches = (accountId: string) => {
+      if (transaction.type === 'transfer') {
+        return transaction.fromAccountId === accountId || transaction.toAccountId === accountId
+      }
+      if (accountId === NO_ACCOUNT_ID) {
+        return transaction.accountId === null
+      }
+      return transaction.accountId === accountId
+    }
 
     if (!filters.accountIds.some(touches)) {
       return false

@@ -75,10 +75,15 @@ describe('isTransaction', () => {
     ).toBe(false)
   })
 
-  it('returns false for missing required cashflow fields', () => {
+  it('returns false for missing category; account-less cashflow is valid', () => {
+    const { categoryId, ...withoutCategory } = incomeTransaction
+    void categoryId
+    expect(isTransaction(withoutCategory)).toBe(false)
+
     const { accountId, ...withoutAccountId } = incomeTransaction
     void accountId
-    expect(isTransaction(withoutAccountId)).toBe(false)
+    expect(isTransaction(withoutAccountId)).toBe(true)
+    expect(isTransaction({ ...incomeTransaction, accountId: null })).toBe(true)
   })
 
   it('returns false for transfer with same from and to account', () => {
@@ -263,14 +268,21 @@ describe('normalizeTransaction', () => {
     expect(normalizeTransaction({ ...incomeTransaction, occurredAt: 'not a date' })).toBeNull()
   })
 
-  it('returns null for valid base but missing cashflow fields', () => {
-    const { accountId, ...withoutAccountId } = incomeTransaction
-    void accountId
-    expect(normalizeTransaction(withoutAccountId)).toBeNull()
+  it('returns null for valid base but missing category (accountId is optional)', () => {
+    const { categoryId, ...withoutCategory } = incomeTransaction
+    void categoryId
+    expect(normalizeTransaction(withoutCategory)).toBeNull()
   })
 
-  it('returns null for valid base but empty accountId', () => {
-    expect(normalizeTransaction({ ...incomeTransaction, accountId: '' })).toBeNull()
+  it('normalizes an account-less cashflow to accountId null («Без счета»)', () => {
+    expect(normalizeTransaction({ ...incomeTransaction, accountId: null })).toEqual({
+      ...incomeTransaction,
+      accountId: null,
+    })
+    expect(normalizeTransaction({ ...incomeTransaction, accountId: '' })).toEqual({
+      ...incomeTransaction,
+      accountId: null,
+    })
   })
 
   it('returns null for valid base but empty categoryId', () => {

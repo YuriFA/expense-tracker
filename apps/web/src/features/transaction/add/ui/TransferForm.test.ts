@@ -212,7 +212,7 @@ async function createAccountInline(wrapper: VueWrapper, openTestId: string, name
   const input = document.querySelector('input[id="new-account-name"]') as HTMLInputElement
   input.value = name
   input.dispatchEvent(new Event('input', { bubbles: true }))
-  ;(document.querySelector('#new-account-form button[type="submit"]') as HTMLElement).click()
+  ;(document.querySelector('button[type="submit"][form="new-account-form"]') as HTMLElement).click()
   await vi.waitFor(() =>
     expect(document.querySelector('#new-account-form')).toBeNull(),
   )

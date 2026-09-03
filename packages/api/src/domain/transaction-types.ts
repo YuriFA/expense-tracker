@@ -19,7 +19,12 @@ type BaseTransaction = {
 
 export type CashflowTransaction = BaseTransaction & {
   type: 'income' | 'expense'
-  accountId: string
+  /**
+   * Referenced account, or null for an account-less («Без счета»)
+   * transaction: visible in history and analytics, contributes to no
+   * account balance.
+   */
+  accountId: string | null
   categoryId: string
 }
 

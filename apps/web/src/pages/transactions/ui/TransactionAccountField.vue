@@ -2,7 +2,7 @@
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { useAccounts } from '@/entities/account'
+import { NO_ACCOUNT_ID, useAccounts } from '@/entities/account'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
@@ -37,21 +37,32 @@ const toggle = (accountId: string, included: boolean) => {
       <div v-else-if="error" class="text-sm text-muted-foreground">
         {{ t('common.errorState.title') }}
       </div>
-      <label
-        v-for="item in data"
-        v-else
-        :key="item.id"
-        class="flex cursor-pointer items-center justify-between gap-3"
-      >
-        <span class="truncate text-sm">{{ item.name }}</span>
-        <Checkbox
-          variant="filter"
-          :model-value="modelValue?.includes(item.id) ?? false"
-          :aria-label="item.name"
-          :data-testid="`transactions-filter-account-${item.id}`"
-          @update:model-value="(checked) => toggle(item.id, !!checked)"
-        />
-      </label>
+      <template v-else>
+        <label class="flex cursor-pointer items-center justify-between gap-3">
+          <span class="truncate text-sm">{{ t('accounts.noAccount') }}</span>
+          <Checkbox
+            variant="filter"
+            :model-value="modelValue?.includes(NO_ACCOUNT_ID) ?? false"
+            :aria-label="t('accounts.noAccount')"
+            data-testid="transactions-filter-account-none"
+            @update:model-value="(checked) => toggle(NO_ACCOUNT_ID, !!checked)"
+          />
+        </label>
+        <label
+          v-for="item in data"
+          :key="item.id"
+          class="flex cursor-pointer items-center justify-between gap-3"
+        >
+          <span class="truncate text-sm">{{ item.name }}</span>
+          <Checkbox
+            variant="filter"
+            :model-value="modelValue?.includes(item.id) ?? false"
+            :aria-label="item.name"
+            :data-testid="`transactions-filter-account-${item.id}`"
+            @update:model-value="(checked) => toggle(item.id, !!checked)"
+          />
+        </label>
+      </template>
     </div>
     <FieldError v-if="$props.errors?.length" :errors="$props.errors" />
   </Field>

@@ -99,17 +99,18 @@ const normalizeCashflowTransaction = (
     return null
   }
 
+  // The account is optional («Без счета» = absent/null); the category is not.
   const accountId = asNonEmptyString(value.accountId)
   const categoryId = asNonEmptyString(value.categoryId)
 
-  if (!accountId || !categoryId) {
+  if (!categoryId) {
     return null
   }
 
   return {
     ...baseTransaction,
     type: baseTransaction.type,
-    accountId,
+    accountId: accountId ?? null,
     categoryId,
   } as CashflowTransaction
 }
@@ -222,8 +223,9 @@ export const hasValidTransactionReferences = (
   const hasAccount = (accountId: string) => accounts.some((account) => account.id === accountId)
   const category = categories.find((item) => item.id === transaction.categoryId)
 
+  // Account-less cashflow (accountId null) references no account by design.
   return (
-    hasAccount(transaction.accountId) &&
+    (transaction.accountId === null || hasAccount(transaction.accountId)) &&
     category !== undefined &&
     category.type === transaction.type
   )

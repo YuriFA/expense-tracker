@@ -37,14 +37,23 @@ describe('TransactionAccountField', () => {
     return { wrapper, emitted }
   }
 
-  it('renders a filter-checkbox row per account', async () => {
+  it('renders a filter-checkbox row per account plus «Без счета»', async () => {
     const { wrapper } = mountField()
     await flushPromises()
 
     const rows = wrapper.findAll('[data-testid="transactions-filter-accounts"] input')
-    expect(rows.length).toBe(2)
+    expect(rows.length).toBe(3)
     expect(wrapper.text()).toContain('Main')
     expect(wrapper.text()).toContain('Cash')
+    expect(wrapper.text()).toContain('No account')
+  })
+
+  it('toggles the «Без счета» sentinel id into the model', async () => {
+    const { wrapper, emitted } = mountField()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="transactions-filter-account-none"]').setValue()
+    expect(emitted.at(-1)).toEqual(['__no_account__'])
   })
 
   it('shows the 20px filter variant checkbox', async () => {

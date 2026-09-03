@@ -74,9 +74,11 @@ const handleSubmit = handleFormSubmit(async (data) => {
           <FieldError v-if="errors.length" :errors="errors" />
         </Field>
       </VeeField>
+    </form>
+    <template #footer>
       <Button form="join-household-form" type="submit" :loading="isSubmitting">
         {{ t('household.join') }}
       </Button>
-    </form>
+    </template>
   </ResponsiveDialog>
 </template>

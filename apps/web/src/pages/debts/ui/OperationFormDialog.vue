@@ -17,7 +17,6 @@ import {
   createOperationSchema,
   type OperationFormValues,
 } from '../model/schemas'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import {
   AlertDialog,
@@ -174,7 +173,7 @@ const handleDelete = async () => {
     <template #title>{{ isEdit ? t('debts.operation') : t('debts.newOperation') }}</template>
     <template #description>{{ debtor.name }}</template>
 
-    <form class="flex flex-col gap-3" @submit="handleSubmit">
+    <form id="debts-operation-form" class="flex flex-col gap-3" @submit="handleSubmit">
       <div class="grid grid-cols-2 gap-2 text-sm">
         <div>
           <p class="text-muted-foreground">{{ t('debts.contact') }}</p>
@@ -259,23 +258,28 @@ const handleDelete = async () => {
           />
         </Field>
       </VeeField>
-
-      <DialogFooter class="flex-row gap-2">
-        <Button
-          v-if="isEdit"
-          type="button"
-          variant="outline"
-          :aria-label="t('debts.deleteOperation')"
-          data-testid="debts-operation-delete"
-          @click="deleteOpen = true"
-        >
-          <Trash2 class="size-4" />
-        </Button>
-        <Button type="submit" class="flex-1" :loading="isSubmitting" data-testid="debts-operation-submit">
-          {{ isEdit ? t('debts.saveOperation') : t('debts.addOperation') }}
-        </Button>
-      </DialogFooter>
     </form>
+
+    <template #footer>
+      <Button
+        v-if="isEdit"
+        type="button"
+        variant="outline"
+        :aria-label="t('debts.deleteOperation')"
+        data-testid="debts-operation-delete"
+        @click="deleteOpen = true"
+      >
+        <Trash2 class="size-4" />
+      </Button>
+      <Button
+        type="submit"
+        form="debts-operation-form"
+        :loading="isSubmitting"
+        data-testid="debts-operation-submit"
+      >
+        {{ isEdit ? t('debts.saveOperation') : t('debts.addOperation') }}
+      </Button>
+    </template>
 
     <AlertDialog v-model:open="deleteOpen">
       <AlertDialogContent>

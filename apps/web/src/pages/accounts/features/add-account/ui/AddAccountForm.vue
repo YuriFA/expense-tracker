@@ -7,6 +7,8 @@ import {
 } from '@/entities/account'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Button } from '@/shared/ui/button'
+import { DialogFooter } from '@/shared/ui/dialog'
+import { DIALOG_FORM_FOOTER_CLASS } from '@/shared/ui/responsive-dialog'
 import { Field as VeeField } from 'vee-validate'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
@@ -95,13 +97,10 @@ const handleSubmit = handleFormSubmit(async (data) => {
         />
       </Field>
     </VeeField>
-    <Button
-      form="add-account-form"
-      type="submit"
-      class="w-full md:ml-auto md:w-auto"
-      :loading="isSubmitting"
-    >
-      {{ t('addAccount.submit') }}
-    </Button>
+    <DialogFooter :class="DIALOG_FORM_FOOTER_CLASS">
+      <Button form="add-account-form" type="submit" :loading="isSubmitting">
+        {{ t('addAccount.submit') }}
+      </Button>
+    </DialogFooter>
   </form>
 </template>

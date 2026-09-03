@@ -8,7 +8,9 @@ import {
 } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { useAccounts } from '../model/use-accounts'
+import { isNoAccount, NO_ACCOUNT_ID } from '../model/no-account'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   label: string
@@ -17,10 +19,14 @@ const props = defineProps<{
   errors?: string[]
   excludeId?: string
   class?: string
+  /** Offer the «Без счета» choice (cashflow forms only; transfers and
+   * adjustments always require a real account). Absent = not offered. */
+  allowNone?: boolean
 }>()
 
 const modelValue = defineModel<string | undefined>()
 
+const { t } = useI18n()
 const { data } = useAccounts()
 
 const filteredAccounts = computed(() =>
@@ -33,6 +39,11 @@ const filteredAccounts = computed(() =>
 const selectedAccount = computed(() =>
   filteredAccounts.value?.find((account) => account.id === modelValue.value),
 )
+const selectedLabel = computed(() => {
+  if (selectedAccount.value) return selectedAccount.value.name
+  if (props.allowNone && isNoAccount(modelValue.value)) return t('accounts.noAccount')
+  return props.placeholder
+})
 </script>
 
 <template>
@@ -45,10 +56,13 @@ const selectedAccount = computed(() =>
         class="w-full! min-w-0"
       >
         <ResponsiveSelectValue :placeholder="props.placeholder">
-          {{ selectedAccount?.name ?? props.placeholder }}
+          {{ selectedLabel }}
         </ResponsiveSelectValue>
       </ResponsiveSelectTrigger>
       <ResponsiveSelectContent :title="props.label">
+        <ResponsiveSelectItem v-if="props.allowNone" :value="NO_ACCOUNT_ID">
+          {{ t('accounts.noAccount') }}
+        </ResponsiveSelectItem>
         <ResponsiveSelectItem v-for="item in filteredAccounts" :key="item.id" :value="item.id">
           {{ item.name }}
         </ResponsiveSelectItem>

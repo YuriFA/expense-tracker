@@ -93,10 +93,13 @@ export function editTransactionDefaultValues(transaction: Transaction): EditTran
       accountId: transaction.accountId,
     }
   }
+  // The cashflow accountId is nullable («Без счета», editable on the web);
+  // this form still requires an account, so an account-less record prefills
+  // empty and the user picks one before saving.
   return {
     type: transaction.type,
     ...base,
-    accountId: transaction.accountId,
+    accountId: transaction.accountId ?? '',
     categoryId: transaction.categoryId,
   }
 }

@@ -100,7 +100,7 @@ const openConfirm = (plan: PlannedPayment) => {
     v-model:open="open"
     class="sm:max-w-md"
     data-testid="plans-list-dialog"
-    footer-class="-mx-6 -mb-6 mt-1 flex-col items-center gap-3 rounded-b-lg border-t bg-muted/50 px-6 py-4 sm:flex-col sm:justify-center"
+    footer-class="flex-col items-center gap-3 rounded-b-lg bg-muted/50 sm:flex-col sm:justify-center"
   >
     <template #title>{{ title }}</template>
 

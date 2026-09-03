@@ -290,10 +290,12 @@ export function payloadToSyncData(entity: SyncEntity, payload: unknown): SyncOpe
     if (!account) return null
     return { ...data, accountId: account }
   }
-  const account = asString(p.accountId)
-  const category = asString(p.categoryId)
-  if (!account || !category) return null
-  return { ...data, accountId: account, categoryId: category }
+  if (type !== 'income' && type !== 'expense') return null
+  // Account-less cashflow («Без счета»): accountId may be null.
+  const accountId = asString(p.accountId)
+  const categoryId = asString(p.categoryId)
+  if (!categoryId) return null
+  return { ...data, accountId, categoryId }
 }
 
 /** Complete entity-column sets for applying a wire upsert to a local row. */
@@ -463,15 +465,16 @@ export function syncDataToRowPatch(
     }
   }
   if (type !== 'income' && type !== 'expense') return null
+  // Account-less cashflow («Без счета»): a null accountId is a valid patch.
   const accountId = asString(p.accountId)
   const categoryId = asString(p.categoryId)
-  if (!accountId || !categoryId) return null
+  if (!categoryId) return null
   return {
     type,
     amount,
     description: asString(p.description) ?? '',
     occurredAt,
-    accountId,
+    accountId: accountId ?? null,
     categoryId,
     fromAccountId: null,
     toAccountId: null,

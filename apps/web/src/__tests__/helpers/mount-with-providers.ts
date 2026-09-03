@@ -80,6 +80,11 @@ export function mountWithProviders<T>(
           name: 'settings-categories',
           component: { template: '<div/>' },
         },
+        {
+          path: '/settings/data',
+          name: 'settings-data',
+          component: { template: '<div/>' },
+        },
       ],
     })
 

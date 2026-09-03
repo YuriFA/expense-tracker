@@ -491,7 +491,8 @@
     "homeEmptyAccountsTitle": "Нет счёта для записи",
     "homeEmptyAccountsDescription": "Создайте счёт на вкладке «Счета», чтобы начать фиксировать транзакции.",
     "homeEmptyAccountsAction": "Перейти к счетам",
-    "actions": "Действия"
+    "actions": "Действия",
+    "noAccount": "Без счета"
   },
   "settings": {
     "locale": "Язык",
@@ -711,5 +712,55 @@
     "deleteSuccess": "Категория удалена",
     "cancel": "Отмена",
     "noTransactions": "нет операций"
+  },
+  "dataTransfer": {
+    "title": "Данные",
+    "subtitle": "Импорт и экспорт транзакций в CSV",
+    "exportTitle": "Экспорт в CSV",
+    "exportDescription": "Полная выгрузка всех транзакций в таблицу (разделитель «;», десятичная запятая — открывается в Excel и Google Таблицах).",
+    "importTitle": "Импорт из CSV",
+    "importDescription": "Загрузите транзакции из файла по шаблону: предпросмотр, автосоздание недостающих категорий, повторный импорт не создаёт дубликаты.",
+    "importButton": "Импортировать из CSV",
+    "templateButton": "Скачать шаблон",
+    "templateHint": "Шаблон можно скачать в окне импорта",
+    "exportButton": "Экспорт CSV",
+    "exportSuccess": "Файл сохранён",
+    "importDone": "Импорт завершён",
+    "types": {
+      "income": "Доход",
+      "expense": "Расход"
+    },
+    "dialog": {
+      "title": "Импорт транзакций",
+      "pickDescription": "Выберите CSV-файл: дата; тип; категория; сумма; примечание; счёт. Колонки распознаются по заголовкам, счёт пустой или «Без счета» — транзакция без счёта.",
+      "chooseFile": "Выбрать файл",
+      "previewValid": "Готовы к импорту: {count}",
+      "previewInvalid": "С ошибками: {count}",
+      "willCreateCategories": "Будут созданы категории:",
+      "includeLabel": "Импортировать",
+      "columnDate": "Дата",
+      "columnType": "Тип",
+      "columnCategory": "Категория",
+      "columnAccount": "Счёт",
+      "columnAmount": "Сумма",
+      "columnStatus": "Примечание",
+      "back": "Назад",
+      "commit": "Импортировать ({count})",
+      "resultCreated": "Добавлено: {count}",
+      "resultSkipped": "Пропущено (уже были): {count}",
+      "resultFailed": "Ошибки: {count}",
+      "done": "Готово",
+      "emptyNote": "—"
+    },
+    "errors": {
+      "missing-columns": "В файле нет обязательных колонок (дата, тип, категория, сумма)",
+      "empty-file": "Файл пустой или не читается",
+      "bad-type": "Неизвестный тип (нужен «доход» или «расход»)",
+      "bad-date": "Некорректная дата (формат ДД.ММ.ГГГГ)",
+      "bad-amount": "Некорректная сумма",
+      "empty-category": "Не указана категория",
+      "unknown-account": "Счёт с таким названием не найден",
+      "category-conflict": "Категория уже использована в другом типе транзакций"
+    }
   }
 }

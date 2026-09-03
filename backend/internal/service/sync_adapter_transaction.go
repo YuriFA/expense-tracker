@@ -151,9 +151,10 @@ func validateTransactionSyncShape(data *domain.TransactionFullState) string {
 // validateSyncRefs enforces the per-type reference rules (cashflow vs
 // transfer vs adjustment) on the LIVE accounts/categories, returning the
 // machine code of the violation ("" = valid). Mirrors
-// TransactionService.validateRefs with sync-tx reads; prevCategoryID (the
-// record's category before this push) permits keeping an already-assigned
-// archived category while rejecting new assignments.
+// TransactionService.validateRefs with sync-tx reads; income/expense MAY be
+// account-less (a nil accountID skips the account liveness check);
+// prevCategoryID (the record's category before this push) permits keeping an
+// already-assigned archived category while rejecting new assignments.
 func validateSyncRefs(
 	ctx context.Context,
 	t transactionTx,
@@ -163,14 +164,14 @@ func validateSyncRefs(
 ) string {
 	switch data.Type {
 	case domain.TransactionTypeIncome, domain.TransactionTypeExpense:
-		if data.FromAccountID != nil || data.ToAccountID != nil || data.AccountID == nil || data.CategoryID == nil {
+		if data.FromAccountID != nil || data.ToAccountID != nil || data.CategoryID == nil {
 			return "INVALID_REFS"
 		}
 		return validateSyncCashflowRefs(
 			ctx,
 			t,
 			householdID,
-			*data.AccountID,
+			data.AccountID,
 			*data.CategoryID,
 			data.Type,
 			prevCategoryID,
@@ -206,12 +207,16 @@ func liveAccountCode(ctx context.Context, t transactionTx, householdID, accountI
 func validateSyncCashflowRefs(
 	ctx context.Context,
 	t transactionTx,
-	householdID, accountID, categoryID uuid.UUID,
+	householdID uuid.UUID,
+	accountID *uuid.UUID,
+	categoryID uuid.UUID,
 	typ domain.TransactionType,
 	prevCategoryID *uuid.UUID,
 ) string {
-	if code := liveAccountCode(ctx, t, householdID, accountID); code != "" {
-		return code
+	if accountID != nil {
+		if code := liveAccountCode(ctx, t, householdID, *accountID); code != "" {
+			return code
+		}
 	}
 	category, err := t.LiveCategory(ctx, householdID, categoryID)
 	if err != nil || category == nil {

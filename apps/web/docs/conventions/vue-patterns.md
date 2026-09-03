@@ -130,6 +130,13 @@ One overlay instance OUTSIDE the loop plus an "active item" ref:
   Put title/description/actions in the container slots; account/category rows
   use the responsive select variant and day picking goes through
   `shared/ui/date-field`.
+- The shell defaults to the bordered anatomy (hairline under the header,
+  full-bleed hairline above the footer band, close X in the header row —
+  canonical example: `CategoryEditDialog`). Put submit/cancel actions in the
+  `#footer` slot, linking them to the body form via the form's `id` + the
+  button's `:form`; when the footer must stay inside the form component
+  (submit state lives there), reuse the exported `DIALOG_FORM_FOOTER_CLASS`
+  instead of hand-rolling the `-mx-6` breakout classes.
 - Exemptions stay explicit at the call site: destructive confirms stay on
   `alert-dialog`, the command palette stays a centered `dialog`, and the
   transactions filters stay `drawer` below 768px plus right-side `sheet` at

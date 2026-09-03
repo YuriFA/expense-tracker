@@ -10,7 +10,6 @@ import {
 } from '@/entities/category'
 import { useCategoriesIncludingArchived, useCreateCategory } from '@/entities/category'
 import { Button } from '@/shared/ui/button'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
@@ -72,13 +71,7 @@ async function submit() {
 </script>
 
 <template>
-  <ResponsiveDialog
-    v-model:open="open"
-    class="sm:max-w-sm"
-    data-testid="new-category-dialog"
-    close-button-in-header
-    header-variant="bordered-row"
-  >
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-sm" data-testid="new-category-dialog">
     <template #title>{{ t('addTransaction.newCategory') }}</template>
 
     <form id="new-category-form" class="flex flex-col gap-3" @submit.prevent="submit">
@@ -116,12 +109,18 @@ async function submit() {
           </button>
         </div>
       </Field>
-      <DialogFooter>
-        <Button type="submit" :loading="asyncStatus === 'loading'" :disabled="!name.trim()">
-          <PlusIcon class="size-4" />
-          {{ t('actions.create') }}
-        </Button>
-      </DialogFooter>
     </form>
+
+    <template #footer>
+      <Button
+        type="submit"
+        form="new-category-form"
+        :loading="asyncStatus === 'loading'"
+        :disabled="!name.trim()"
+      >
+        <PlusIcon class="size-4" />
+        {{ t('actions.create') }}
+      </Button>
+    </template>
   </ResponsiveDialog>
 </template>

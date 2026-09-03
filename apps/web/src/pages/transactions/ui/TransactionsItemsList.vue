@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import {
-  TransactionListItem,
-  TransactionListItemSkeleton,
-  useTransactions,
-  type Transaction,
-} from '@/entities/transaction'
+import { TransactionListItem, TransactionListItemSkeleton, type Transaction } from '@/entities/transaction'
 import { useAccounts } from '@/entities/account'
 import { useCategoriesIncludingArchived } from '@/entities/category'
-import { useTransactionsFilters } from '../model/use-transactions-filters'
-import { matchesTransactionsFilters } from '../lib/transactions-query'
+import { useFilteredTransactions } from '../model/use-filtered-transactions'
 import { useAuthorLabel } from '@/features/household-author'
 import { useI18n } from 'vue-i18n'
 import { EditTransactionDialog } from '@/features/transaction/edit'
@@ -28,21 +22,12 @@ import { computed, ref } from 'vue'
 
 const { t } = useI18n()
 const authorLabel = useAuthorLabel()
-const { filters } = useTransactionsFilters()
-// Multi-select account/category narrowing happens client-side over this
-// base query: the repository seam stays single-select (shared with mobile),
-// and the base list is cache-stable while the checkbox selection changes.
-const repositoryQuery = computed(() => ({
-  type: filters.value.type,
-  fromDate: filters.value.fromDate,
-  toDate: filters.value.toDate,
-}))
 const {
-  data,
+  visibleTransactions,
   error: transactionsError,
   isPending: transactionsPending,
   refetch: refetchTx,
-} = useTransactions(repositoryQuery)
+} = useFilteredTransactions()
 const {
   data: accounts,
   error: accountsError,
@@ -70,12 +55,6 @@ const error = computed(
 
 const refetch = () =>
   Promise.all([refetchTx(), refetchAccounts(), refetchCats()])
-
-const visibleTransactions = computed(() =>
-  (data.value ?? []).filter(
-    (transaction) => matchesTransactionsFilters(transaction, filters.value),
-  ),
-)
 
 // One dialog instance per flow, hoisted out of the row loop: the kebab sets
 // the active transaction, the dialog pair reads it (same pattern as the

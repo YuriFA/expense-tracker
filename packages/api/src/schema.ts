@@ -1022,9 +1022,11 @@ export interface components {
             confirm: boolean;
         };
         /**
-         * @description Cashflow-транзакция (income/expense) содержит `accountId`+`categoryId`.
-         *     Transfer содержит `fromAccountId`+`toAccountId`. Adjustment (сверка
-         *     баланса) содержит только `accountId`. Формы ссылок взаимоисключающие.
+         * @description Cashflow-транзакция (income/expense) содержит `categoryId` и
+         *     опционально `accountId` (null = «без счета»: не влияет ни на один
+         *     баланс). Transfer содержит `fromAccountId`+`toAccountId`. Adjustment
+         *     (сверка баланса) содержит только `accountId`. Формы ссылок
+         *     взаимоисключающие.
          */
         Transaction: {
             /** Format: uuid */
@@ -1085,9 +1087,11 @@ export interface components {
             occurredAt: string;
             /**
              * Format: uuid
-             * @description Required для income/expense/adjustment. Forbidden для transfer.
+             * @description Optional для income/expense (отсутствие/null = «без счета»,
+             *     транзакция не влияет ни на один баланс). Required для
+             *     adjustment. Forbidden для transfer.
              */
-            accountId?: string;
+            accountId?: string | null;
             /**
              * Format: uuid
              * @description Required для income/expense. Forbidden для transfer/adjustment.
@@ -1117,7 +1121,12 @@ export interface components {
             description?: string;
             /** Format: date-time */
             occurredAt?: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Устанавливает счёт для income/expense/adjustment. Очистить счёт
+             *     через PATCH нельзя (null/отсутствие = без изменений): local-first
+             *     клиенты очищают через sync full-state replace.
+             */
             accountId?: string;
             /** Format: uuid */
             categoryId?: string;
@@ -1538,8 +1547,9 @@ export interface components {
         };
         /**
          * @description Полное состояние транзакции в sync-операции (upsert). Cashflow
-         *     (income/expense) несёт `accountId`+`categoryId`, transfer —
-         *     `fromAccountId`+`toAccountId`, adjustment — только `accountId`.
+         *     (income/expense) несёт `categoryId` и опционально `accountId`
+         *     (null = «без счета»), transfer — `fromAccountId`+`toAccountId`,
+         *     adjustment — только `accountId`.
          */
         TransactionSyncData: {
             /** @enum {string} */

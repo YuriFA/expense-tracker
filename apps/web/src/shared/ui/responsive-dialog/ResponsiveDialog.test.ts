@@ -9,7 +9,7 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function mountDialog(desktop: boolean) {
+function mountDialog(desktop: boolean, extraProps: Record<string, unknown> = {}) {
   const Host = defineComponent({
     setup() {
       const open = ref(true)
@@ -20,10 +20,12 @@ function mountDialog(desktop: boolean) {
             open: open.value,
             'onUpdate:open': (value: boolean) => (open.value = value),
             'data-testid': 'responsive-dialog',
+            ...extraProps,
           },
           {
             title: () => 'Overlay title',
             default: () => h('div', { 'data-testid': 'responsive-dialog-body' }, 'Overlay body'),
+            footer: () => h('span', { 'data-testid': 'responsive-dialog-footer' }, 'Overlay footer'),
           },
         )
     },
@@ -39,13 +41,20 @@ function mountDialog(desktop: boolean) {
   })
 }
 
+const content = () => document.querySelector('[data-slot="dialog-content"]')
+const drawerContent = () => document.querySelector('[data-slot="drawer-content"]')
+const surface = () => content() ?? drawerContent()
+const header = () => surface()?.querySelector('header')
+const footerBand = () =>
+  document.querySelector('[data-testid="responsive-dialog-footer"]')?.parentElement
+
 describe('ResponsiveDialog', () => {
   it('renders the desktop dialog presentation when pinned to desktop', async () => {
     mountDialog(true)
     await flushPromises()
 
-    expect(document.querySelector('[data-slot="dialog-content"]')).not.toBeNull()
-    expect(document.querySelector('[data-slot="drawer-content"]')).toBeNull()
+    expect(content()).not.toBeNull()
+    expect(drawerContent()).toBeNull()
     expect(document.querySelector('[data-testid="responsive-dialog-body"]')?.textContent).toBe('Overlay body')
   })
 
@@ -53,8 +62,32 @@ describe('ResponsiveDialog', () => {
     mountDialog(false)
     await flushPromises()
 
-    expect(document.querySelector('[data-slot="drawer-content"]')).not.toBeNull()
-    expect(document.querySelector('[data-slot="dialog-content"]')).toBeNull()
+    expect(drawerContent()).not.toBeNull()
+    expect(content()).toBeNull()
     expect(document.querySelector('[data-testid="responsive-dialog-body"]')?.textContent).toBe('Overlay body')
+  })
+
+  it('borders the header and the footer band by default (settings design language)', async () => {
+    mountDialog(true)
+    await flushPromises()
+
+    expect(header()?.className).toContain('border-b')
+    expect(footerBand()?.className).toContain('border-t')
+  })
+
+  it('keeps the mobile drawer footer bordered by default', async () => {
+    mountDialog(false)
+    await flushPromises()
+
+    expect(header()?.className).toContain('border-b')
+    expect(footerBand()?.className).toContain('border-t')
+  })
+
+  it('drops the hairlines on opt-out (plain header, unbordered footer)', async () => {
+    mountDialog(true, { headerVariant: 'plain', borderedFooter: false })
+    await flushPromises()
+
+    expect(header()?.className).not.toContain('border-b')
+    expect(footerBand()?.className).not.toContain('border-t')
   })
 })

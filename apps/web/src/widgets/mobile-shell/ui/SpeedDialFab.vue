@@ -123,32 +123,17 @@ function openIncome() {
       </button>
     </div>
 
-    <ResponsiveDialog
-      v-model:open="expenseOpen"
-      class="sm:max-w-[400px]"
-      close-button-in-header
-      header-variant="bordered-row"
-    >
+    <ResponsiveDialog v-model:open="expenseOpen" class="sm:max-w-[400px]">
       <template #title>{{ t('analytics.expenses') }}</template>
       <CashflowForm type="expense" @success="expenseOpen = false" />
     </ResponsiveDialog>
 
-    <ResponsiveDialog
-      v-model:open="transferOpen"
-      class="sm:max-w-[400px]"
-      close-button-in-header
-      header-variant="bordered-row"
-    >
+    <ResponsiveDialog v-model:open="transferOpen" class="sm:max-w-[400px]">
       <template #title>{{ t('addTransfer.submit') }}</template>
       <TransferForm @success="transferOpen = false" />
     </ResponsiveDialog>
 
-    <ResponsiveDialog
-      v-model:open="incomeOpen"
-      class="sm:max-w-[400px]"
-      close-button-in-header
-      header-variant="bordered-row"
-    >
+    <ResponsiveDialog v-model:open="incomeOpen" class="sm:max-w-[400px]">
       <template #title>{{ t('shell.income') }}</template>
       <CashflowForm type="income" @success="incomeOpen = false" />
     </ResponsiveDialog>

@@ -133,14 +133,7 @@ async function handleConfirm(): Promise<void> {
 </script>
 
 <template>
-  <ResponsiveDialog
-    v-model:open="open"
-    class="sm:max-w-md"
-    data-testid="delete-category-dialog"
-    close-button-in-header
-    header-variant="bordered-row"
-    bordered-footer
-  >
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-md" data-testid="delete-category-dialog">
     <template #title>
       {{
         mode === 'blocked'

@@ -23,7 +23,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 	acct := seedFakeAccount(t, store, userHH, user.ID)
 	cat := seedFakeCategory(t, store, userHH, user.ID, "CustomIncome", domain.TransactionTypeIncome)
 
-	t.Run("income requires account+category", func(t *testing.T) {
+	t.Run("income without a category rejected (account is optional, category is not)", func(t *testing.T) {
 		t.Parallel()
 		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
@@ -136,6 +136,98 @@ func TestTransactionService_RefValidation(t *testing.T) {
 		after, err := store.GetAccount(context.Background(), userHH, dedicated.ID)
 		require.NoError(t, err)
 		assert.Equal(t, dedicated.Balance-2500, after.Balance)
+	})
+}
+
+func TestTransactionService_AccountlessCashflow(t *testing.T) {
+	t.Parallel()
+	_, _, txSvc, _, _, store := services(t)
+	ctx := context.Background()
+
+	user := seedFakeUser(t, store)
+	userHH := householdOf(t, store, user.ID)
+	acct := seedFakeAccount(t, store, userHH, user.ID)
+	expenseCat := seedFakeCategory(t, store, userHH, user.ID, "Groceries", domain.TransactionTypeExpense)
+	incomeCat := seedFakeCategory(t, store, userHH, user.ID, "Salary", domain.TransactionTypeIncome)
+
+	t.Run("account-less expense creates and leaves balances unchanged", func(t *testing.T) {
+		t.Parallel()
+		// Parallel subtests share the store; a dedicated account keeps the
+		// balance assertion isolated from siblings' mutations.
+		dedicated := seedFakeAccount(t, store, userHH, user.ID)
+		before, err := store.GetAccount(ctx, userHH, dedicated.ID)
+		require.NoError(t, err)
+
+		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+			CategoryID: &expenseCat.ID,
+		})
+		require.NoError(t, err)
+		assert.Nil(t, created.AccountID)
+		assert.Equal(t, &expenseCat.ID, created.CategoryID)
+
+		after, err := store.GetAccount(ctx, userHH, dedicated.ID)
+		require.NoError(t, err)
+		assert.Equal(t, before.Balance, after.Balance)
+	})
+
+	t.Run("account-less income creates", func(t *testing.T) {
+		t.Parallel()
+		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeIncome, Amount: 70000, OccurredAt: time.Now().UTC(),
+			CategoryID: &incomeCat.ID,
+		})
+		require.NoError(t, err)
+		assert.Nil(t, created.AccountID)
+	})
+
+	t.Run("account-less cashflow still requires a category", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidRefs)
+	})
+
+	t.Run("account-less cashflow rejects transfer refs", func(t *testing.T) {
+		t.Parallel()
+		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+			CategoryID: &expenseCat.ID, FromAccountID: &acct.ID, ToAccountID: &acct.ID,
+		})
+		require.ErrorIs(t, err, domain.ErrInvalidRefs)
+	})
+
+	t.Run("update assigns an account to an account-less expense", func(t *testing.T) {
+		t.Parallel()
+		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+			CategoryID: &expenseCat.ID,
+		})
+		require.NoError(t, err)
+
+		updated, err := txSvc.Update(ctx, userHH, user.ID, created.ID, domain.UpdateTransactionParams{
+			Version: created.Version, AccountID: &acct.ID,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, updated.AccountID)
+		assert.Equal(t, acct.ID, *updated.AccountID)
+	})
+
+	t.Run("update of an account-less expense without touching refs succeeds", func(t *testing.T) {
+		t.Parallel()
+		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+			CategoryID: &expenseCat.ID,
+		})
+		require.NoError(t, err)
+
+		newAmount := int64(600)
+		updated, err := txSvc.Update(ctx, userHH, user.ID, created.ID, domain.UpdateTransactionParams{
+			Version: created.Version, Amount: &newAmount,
+		})
+		require.NoError(t, err)
+		assert.Nil(t, updated.AccountID)
 	})
 }
 

@@ -2593,9 +2593,11 @@ components:
     Transaction:
       type: object
       description: |
-        Cashflow-транзакция (income/expense) содержит `accountId`+`categoryId`.
-        Transfer содержит `fromAccountId`+`toAccountId`. Adjustment (сверка
-        баланса) содержит только `accountId`. Формы ссылок взаимоисключающие.
+        Cashflow-транзакция (income/expense) содержит `categoryId` и
+        опционально `accountId` (null = «без счета»: не влияет ни на один
+        баланс). Transfer содержит `fromAccountId`+`toAccountId`. Adjustment
+        (сверка баланса) содержит только `accountId`. Формы ссылок
+        взаимоисключающие.
       properties:
         id:
           type: string
@@ -2688,7 +2690,11 @@ components:
         accountId:
           type: string
           format: uuid
-          description: Required для income/expense/adjustment. Forbidden для transfer.
+          nullable: true
+          description: |
+            Optional для income/expense (отсутствие/null = «без счета»,
+            транзакция не влияет ни на один баланс). Required для
+            adjustment. Forbidden для transfer.
         categoryId:
           type: string
           format: uuid
@@ -2724,6 +2730,10 @@ components:
         accountId:
           type: string
           format: uuid
+          description: |
+            Устанавливает счёт для income/expense/adjustment. Очистить счёт
+            через PATCH нельзя (null/отсутствие = без изменений): local-first
+            клиенты очищают через sync full-state replace.
         categoryId:
           type: string
           format: uuid
@@ -3329,8 +3339,9 @@ components:
       additionalProperties: false
       description: |
         Полное состояние транзакции в sync-операции (upsert). Cashflow
-        (income/expense) несёт `accountId`+`categoryId`, transfer —
-        `fromAccountId`+`toAccountId`, adjustment — только `accountId`.
+        (income/expense) несёт `categoryId` и опционально `accountId`
+        (null = «без счета»), transfer — `fromAccountId`+`toAccountId`,
+        adjustment — только `accountId`.
       required: [type, amount, description, occurredAt]
       properties:
         type:

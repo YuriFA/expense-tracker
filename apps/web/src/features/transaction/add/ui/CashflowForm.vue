@@ -10,7 +10,7 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import { AccountSelect, NewAccountDialog, useAccounts } from '@/entities/account'
+import { AccountSelect, isNoAccount, NewAccountDialog, useAccounts } from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
 import NewCategoryDialog from './NewCategoryDialog.vue'
 import { formatCalendarDay, nowIsoString } from '@/shared/lib/date'
@@ -18,6 +18,7 @@ import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
+import { DIALOG_FORM_FOOTER_CLASS } from '@/shared/ui/responsive-dialog'
 import { DateField } from '@/shared/ui/date-field'
 import { computed, ref } from 'vue'
 
@@ -78,7 +79,8 @@ const handleSubmit = handleFormSubmit(async (data) => {
       type: data.type,
       amount: toMinorUnits(data.amount),
       description: data.description,
-      accountId: data.accountId,
+      // «Без счета» sentinel -> null exactly once, at this mapper seam.
+      accountId: isNoAccount(data.accountId) ? null : data.accountId,
       categoryId: data.categoryId,
       occurredAt: data.occurredAt,
     })
@@ -119,6 +121,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
             :label="t('addTransaction.accountLabel')"
             :placeholder="t('addTransaction.accountPlaceholder')"
             class="w-full"
+            allow-none
             :model-value="value"
             :errors="errors"
             @update:model-value="setValue"
@@ -200,7 +203,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
 
   <NewAccountDialog v-model:open="newAccountOpen" @created="setAccountId($event.id)" />
 
-  <DialogFooter class="-mx-6 -mb-6 mt-2 flex-col gap-3 border-t px-6 py-4 sm:flex-row">
+  <DialogFooter :class="DIALOG_FORM_FOOTER_CLASS">
     <DialogClose as-child>
       <Button type="button" variant="secondary" class="w-full sm:flex-1">
         {{ t('addTransaction.cancel') }}

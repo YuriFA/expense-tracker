@@ -6,7 +6,6 @@ import { toTypedSchema } from '@vee-validate/zod'
 import type { Debtor } from '@/entities/debtor'
 import { useDeleteDebtor, useUpdateDebtor } from '@/entities/debtor'
 import { createDebtorSchema, type DebtorFormValues } from '../model/schemas'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import {
   AlertDialog,
@@ -106,7 +105,7 @@ const handleDelete = async () => {
       </Button>
     </template>
 
-    <form class="flex flex-col gap-3" @submit="handleSubmit">
+    <form id="debts-debtor-form" class="flex flex-col gap-3" @submit="handleSubmit">
       <VeeField v-slot="{ value, setValue, errors }" name="name">
         <Field :data-invalid="!!errors.length">
           <FieldLabel for="debts-debtor-name">{{ t('fields.name') }}</FieldLabel>
@@ -134,13 +133,18 @@ const handleDelete = async () => {
           />
         </Field>
       </VeeField>
-
-      <DialogFooter class="flex-row">
-        <Button type="submit" class="flex-1" :loading="isSubmitting" data-testid="debts-debtor-submit">
-          {{ t('debts.save') }}
-        </Button>
-      </DialogFooter>
     </form>
+
+    <template #footer>
+      <Button
+        type="submit"
+        form="debts-debtor-form"
+        :loading="isSubmitting"
+        data-testid="debts-debtor-submit"
+      >
+        {{ t('debts.save') }}
+      </Button>
+    </template>
 
     <AlertDialog v-model:open="deleteOpen">
       <AlertDialogContent>

@@ -5,11 +5,18 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { PlusIcon } from '@lucide/vue'
 import { Button } from '@/shared/ui/button'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
+import { DIALOG_FORM_FOOTER_CLASS } from '@/shared/ui/responsive-dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { useI18n } from 'vue-i18n'
 import { AmountField } from '@/shared/ui/amount-field'
-import { AccountSelect, NewAccountDialog, useAccounts } from '@/entities/account'
+import {
+  AccountSelect,
+  isNoAccount,
+  NewAccountDialog,
+  NO_ACCOUNT_ID,
+  useAccounts,
+} from '@/entities/account'
 import { CategorySelect } from '@/entities/category'
 import { useUpdateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
@@ -30,7 +37,7 @@ const { id, version, type, amount, description, accountId, categoryId } = define
   type: 'expense' | 'income'
   amount: number
   description: string
-  accountId: string
+  accountId: string | null
   categoryId: string
 }>()
 
@@ -44,7 +51,8 @@ const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<CashflowEditVal
     type,
     amount: toMajorUnits(amount),
     description,
-    accountId,
+    // Account-less records edit through the «Без счета» sentinel choice.
+    accountId: accountId ?? NO_ACCOUNT_ID,
     categoryId,
   },
 })
@@ -67,7 +75,9 @@ const handleSubmit = handleFormSubmit(async (data) => {
       payload: {
         version,
         type: data.type,
-        accountId: data.accountId,
+        // Sentinel -> null exactly once, at this mapper seam (PATCHing null
+        // clears the reference through the local full-state upsert).
+        accountId: isNoAccount(data.accountId) ? null : data.accountId,
         amount: toMinorUnits(data.amount),
         description: data.description,
         categoryId: data.categoryId,
@@ -96,6 +106,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
             :label="t('addTransaction.accountLabel')"
             :placeholder="t('addTransaction.accountPlaceholder')"
             class="w-full"
+            allow-none
             :model-value="value"
             :errors="errors"
             @update:model-value="setValue"
@@ -152,7 +163,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
       />
     </VeeField>
 
-    <DialogFooter class="-mx-6 -mb-6 mt-2 flex-col gap-3 border-t px-6 py-4 sm:flex-row">
+    <DialogFooter :class="DIALOG_FORM_FOOTER_CLASS">
       <DialogClose as-child>
         <Button type="button" variant="secondary" class="w-full sm:flex-1">
           {{ t('editTransaction.cancel') }}

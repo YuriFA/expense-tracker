@@ -15,6 +15,7 @@ import { useCreateTransaction } from '@/entities/transaction'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
 import { DialogClose, DialogFooter } from '@/shared/ui/dialog'
+import { DIALOG_FORM_FOOTER_CLASS } from '@/shared/ui/responsive-dialog'
 import { DateField } from '@/shared/ui/date-field'
 import { PlusIcon } from '@lucide/vue'
 import { computed, ref } from 'vue'
@@ -214,7 +215,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
     @created="setToAccountId($event.id)"
   />
 
-  <DialogFooter class="-mx-6 -mb-6 mt-2 flex-col gap-3 border-t px-6 py-4 sm:flex-row">
+  <DialogFooter :class="DIALOG_FORM_FOOTER_CLASS">
     <DialogClose as-child>
       <Button type="button" variant="secondary" class="w-full sm:flex-1">
         {{ t('addTransfer.cancel') }}

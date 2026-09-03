@@ -6,6 +6,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import {
+  AlreadyExistsError,
+  type CashflowTransaction,
   type CreateTransactionPayload,
   InvalidPayloadError,
   NotFoundError,
@@ -170,6 +172,13 @@ describe('local transaction repository: create validation', () => {
   it('honors a client-supplied id', async () => {
     const transaction = await transactionRepo.create(cashflowPayload({ id: 'tx-client-1' }))
     expect(transaction.id).toBe('tx-client-1')
+
+    // AlreadyExistsError (coarse `already-exists`), mirroring the HTTP
+    // client's mapping of the backend's 409 TRANSACTION_ALREADY_EXISTS:
+    // the coarse code survives the web worker bridge, apiCode does not.
+    const error = await transactionRepo.create(cashflowPayload({ id: 'tx-client-1' })).catch((e) => e)
+    expect(error).toBeInstanceOf(AlreadyExistsError)
+    expect((error as AlreadyExistsError).apiCode).toBe('TRANSACTION_ALREADY_EXISTS')
   })
 
   it('creates an adjustment with a signed amount and no category', async () => {
@@ -425,5 +434,56 @@ describe('local transaction repository: query and pagination', () => {
       entityId: transaction.id,
       baseVersion: 0,
     })
+  })
+})
+
+describe('local transaction repository: account-less cashflow', () => {
+  it('creates an account-less expense, queues a valid upsert, and matches queries', async () => {
+    const transaction = (await transactionRepo.create(
+      cashflowPayload({ accountId: null, description: 'Из старой таблицы' }),
+    )) as CashflowTransaction
+    expect(transaction.accountId).toBeNull()
+    expect(transaction.categoryId).toBe(expenseCategoryId)
+
+    const row = db.select().from(transactions).where(eq(transactions.id, transaction.id)).get()
+    expect(row?.accountId).toBeNull()
+
+    const [op] = db.select().from(syncOutbox).all()
+    expect(op.op).toBe('upsert')
+    expect(JSON.parse(op.payloadJson).accountId).toBeNull()
+
+    const found = await transactionRepo.query({ type: 'expense' })
+    expect(found).toHaveLength(1)
+  })
+
+  it('still requires a category for account-less cashflow', async () => {
+    const error = await transactionRepo
+      .create(cashflowPayload({ accountId: null, categoryId: null }))
+      .catch((e) => e)
+    expect(error).toBeInstanceOf(UnknownReferencesError)
+    expect((error as UnknownReferencesError).apiCode).toBe('CATEGORY_NOT_FOUND')
+  })
+
+  it('update assigns an account to an account-less expense and back', async () => {
+    const created = await transactionRepo.create(cashflowPayload({ accountId: null }))
+
+    const assigned = (await transactionRepo.update(created.id, {
+      version: created.version,
+      accountId: cardId,
+    })) as CashflowTransaction
+    expect(assigned.accountId).toBe(cardId)
+
+    const cleared = (await transactionRepo.update(assigned.id, {
+      version: assigned.version,
+      accountId: null,
+    })) as CashflowTransaction
+    expect(cleared.accountId).toBeNull()
+
+    const [op] = db
+      .select()
+      .from(syncOutbox)
+      .where(eq(syncOutbox.entityId, cleared.id))
+      .all()
+    expect(JSON.parse(op.payloadJson).accountId).toBeNull()
   })
 })

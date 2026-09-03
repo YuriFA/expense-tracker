@@ -491,7 +491,8 @@
     "homeEmptyAccountsTitle": "No account to record against",
     "homeEmptyAccountsDescription": "Create an account in the Accounts tab to start logging transactions.",
     "homeEmptyAccountsAction": "Go to Accounts",
-    "actions": "Actions"
+    "actions": "Actions",
+    "noAccount": "No account"
   },
   "settings": {
     "locale": "Locale",
@@ -711,5 +712,55 @@
     "deleteSuccess": "Category deleted",
     "cancel": "Cancel",
     "noTransactions": "no transactions"
+  },
+  "dataTransfer": {
+    "title": "Data",
+    "subtitle": "Import and export transactions as CSV",
+    "exportTitle": "Export to CSV",
+    "exportDescription": "Download every transaction as a spreadsheet («;» separator, decimal comma — opens in Excel and Google Sheets).",
+    "importTitle": "Import from CSV",
+    "importDescription": "Load transactions from a template file: preview, automatic creation of missing categories, re-importing never duplicates.",
+    "importButton": "Import from CSV",
+    "templateButton": "Download template",
+    "templateHint": "The template can be downloaded from the import dialog",
+    "exportButton": "Export CSV",
+    "exportSuccess": "File saved",
+    "importDone": "Import complete",
+    "types": {
+      "income": "Income",
+      "expense": "Expense"
+    },
+    "dialog": {
+      "title": "Import transactions",
+      "pickDescription": "Pick a CSV file: date; type; category; amount; note; account. Columns are matched by header names; an empty account or «Без счета» imports as no account.",
+      "chooseFile": "Choose file",
+      "previewValid": "Ready to import: {count}",
+      "previewInvalid": "With errors: {count}",
+      "willCreateCategories": "Categories to be created:",
+      "includeLabel": "Import",
+      "columnDate": "Date",
+      "columnType": "Type",
+      "columnCategory": "Category",
+      "columnAccount": "Account",
+      "columnAmount": "Amount",
+      "columnStatus": "Note",
+      "back": "Back",
+      "commit": "Import ({count})",
+      "resultCreated": "Created: {count}",
+      "resultSkipped": "Skipped (already imported): {count}",
+      "resultFailed": "Failed: {count}",
+      "done": "Done",
+      "emptyNote": "—"
+    },
+    "errors": {
+      "missing-columns": "The file is missing required columns (date, type, category, amount)",
+      "empty-file": "The file is empty or unreadable",
+      "bad-type": "Unknown type (expected «доход»/«income» or «расход»/«expense»)",
+      "bad-date": "Invalid date (expected DD.MM.YYYY)",
+      "bad-amount": "Invalid amount",
+      "empty-category": "Category is missing",
+      "unknown-account": "No account with this name exists",
+      "category-conflict": "Category already used with the other transaction type"
+    }
   }
 }

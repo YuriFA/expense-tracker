@@ -36,7 +36,7 @@ function fillName(value: string) {
 }
 
 function submitForm() {
-  ;(inDialog('#new-account-form button[type="submit"]') as HTMLElement).click()
+  ;(inDialog('button[type="submit"][form="new-account-form"]') as HTMLElement).click()
 }
 
 const mounted: ReturnType<typeof mountWithProviders>[] = []

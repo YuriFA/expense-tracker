@@ -82,6 +82,13 @@ const routes: RouteRecordRaw[] = [
     name: 'settings-categories',
     component: () => import('@/pages/settings').then((m) => m.CategoriesSettingsPage),
   },
+  {
+    // Data sub-screen (web-data-transfer): CSV import + full export, reached
+    // from the settings page's data card.
+    path: '/settings/data',
+    name: 'settings-data',
+    component: () => import('@/pages/settings').then((m) => m.DataSettingsPage),
+  },
 ]
 
 const router = createRouter({

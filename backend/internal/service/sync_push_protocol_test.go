@@ -871,6 +871,57 @@ func TestSyncPush_TransactionProtocol(t *testing.T) {
 		}
 	})
 
+	t.Run("account-less cashflow create applies at version 1", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		_, categoryID := seedRefs(t, syncSvc, householdID, user.ID)
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), uuid.New(), 0,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 250, Description: "из старой таблицы",
+					OccurredAt: time.Now().UTC(), CategoryID: &categoryID,
+				}))
+		assert.Equal(t, domain.SyncStatusApplied, res.Status)
+		assert.Equal(t, 1, res.Version)
+	})
+
+	t.Run("account-less cashflow without a category is invalid", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, _ := seedRefs(t, syncSvc, householdID, user.ID)
+		res := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), uuid.New(), 0,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 250, OccurredAt: time.Now().UTC(),
+					AccountID: &accountID,
+				}))
+		assert.Equal(t, domain.SyncStatusError, res.Status)
+		assert.Equal(t, "INVALID_REFS", res.Code)
+	})
+
+	t.Run("full-state replace clears the account of an accounted expense", func(t *testing.T) {
+		t.Parallel()
+		syncSvc, user, householdID := pushFixture(t)
+		accountID, categoryID := seedRefs(t, syncSvc, householdID, user.ID)
+		recordID := uuid.New()
+		created := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), recordID, 0,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 250,
+					OccurredAt: time.Now().UTC(), AccountID: &accountID, CategoryID: &categoryID,
+				}))
+		require.Equal(t, domain.SyncStatusApplied, created.Status)
+
+		cleared := pushOne(t, syncSvc, householdID, user.ID,
+			upsertOp(domain.SyncEntityTransaction, uuid.New(), recordID, 1,
+				&domain.TransactionFullState{
+					Type: domain.TransactionTypeExpense, Amount: 250,
+					OccurredAt: time.Now().UTC(), CategoryID: &categoryID,
+				}))
+		assert.Equal(t, domain.SyncStatusApplied, cleared.Status)
+		assert.Equal(t, 2, cleared.Version)
+	})
+
 	t.Run("update on the current base applies, unknown id conflicts with the zero state", func(t *testing.T) {
 		t.Parallel()
 		syncSvc, user, householdID := pushFixture(t)

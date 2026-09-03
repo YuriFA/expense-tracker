@@ -24,9 +24,9 @@ interface OpenChangeDetails {
   reason?: string
 }
 
-// Header layout shared by the FAB speed-dial dialogs and the inline
-// NewCategoryDialog: actions row with a hairline, stretched to the overlay
-// edges on desktop.
+// Default header: actions row with a hairline under it, stretched to the
+// overlay edges on desktop (the settings design language shared by every
+// dialog surface).
 const BORDERED_ROW_HEADER_CLASS = `flex-row items-center justify-between border-b ${DRAWER_HEADER_PADDING} sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6`
 
 const props = withDefaults(
@@ -36,10 +36,12 @@ const props = withDefaults(
     headerClass?: HTMLAttributes['class']
     footerClass?: HTMLAttributes['class']
     closeButtonClass?: HTMLAttributes['class']
-    headerVariant?: 'default' | 'bordered-row'
+    headerVariant?: 'plain' | 'bordered-row'
     /** Full-bleed hairline above the footer band (settings design language:
-     * the footer separates from the body like a card header strip). The
-     * drawer footer always has the border; this adds it on desktop. */
+     * the footer separates from the body like a card header strip). On by
+     * default; the drawer footer always has the border, this adds it on
+     * desktop. Forms that keep their footer inside the body use
+     * DIALOG_FORM_FOOTER_CLASS instead. */
     borderedFooter?: boolean
     showCloseButton?: boolean
     closeButtonInHeader?: boolean
@@ -50,10 +52,10 @@ const props = withDefaults(
     headerClass: undefined,
     footerClass: undefined,
     closeButtonClass: undefined,
-    headerVariant: 'default',
-    borderedFooter: false,
+    headerVariant: 'bordered-row',
+    borderedFooter: true,
     showCloseButton: true,
-    closeButtonInHeader: false,
+    closeButtonInHeader: true,
   },
 )
 
@@ -99,7 +101,7 @@ const baseFooterClass = computed(() =>
   cn(
     'flex flex-col-reverse gap-2',
     isDesktop.value ? 'sm:flex-row sm:justify-end' : DRAWER_FOOTER_CLASS,
-    // Desktop breakout mirrors BORDERED_ROW_HEADER_CLASS: the hairline
+    // Desktop breakout, mirrors BORDERED_ROW_HEADER_CLASS: the hairline
     // spans the overlay edge-to-edge instead of stopping at the padding.
     props.borderedFooter &&
       isDesktop.value &&

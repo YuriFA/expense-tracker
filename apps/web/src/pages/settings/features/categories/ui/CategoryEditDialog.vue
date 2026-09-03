@@ -150,14 +150,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <ResponsiveDialog
-    v-model:open="open"
-    class="sm:max-w-sm"
-    :data-testid="`${dialogTestId}-dialog`"
-    close-button-in-header
-    header-variant="bordered-row"
-    bordered-footer
-  >
+  <ResponsiveDialog v-model:open="open" class="sm:max-w-sm" :data-testid="`${dialogTestId}-dialog`">
     <template #title>{{ titleLabel }}</template>
 
     <form :id="`${dialogTestId}-form`" class="flex flex-col gap-3" @submit.prevent="submit">

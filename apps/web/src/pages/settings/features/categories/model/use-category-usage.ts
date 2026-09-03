@@ -72,6 +72,9 @@ export function useCategoryUsage(): {
       const entry = ensure(transaction.categoryId)
       entry.transactionCount += 1
       entry.totalMinorUnits += transaction.amount
+      // «Без счета» rows touch no account balance, so they carry no
+      // per-account impact in the cascade-preview dialog.
+      if (transaction.accountId === null) continue
       const byAccount = (impactIndex[transaction.categoryId] ??= {})
       byAccount[transaction.accountId] = (byAccount[transaction.accountId] ?? 0) + transaction.amount
     }

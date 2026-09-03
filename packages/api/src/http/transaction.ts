@@ -150,7 +150,12 @@ function toCreateRequest(payload: CreateTransactionPayload): TransactionCreateRe
   if (payload.type === 'adjustment') {
     return { ...base, accountId: payload.accountId }
   }
-  return { ...base, accountId: payload.accountId, categoryId: payload.categoryId }
+  // Account-less cashflow («Без счета»): omit the field entirely.
+  return {
+    ...base,
+    ...(payload.accountId !== null ? { accountId: payload.accountId } : {}),
+    categoryId: payload.categoryId,
+  }
 }
 
 function toUpdateRequest(payload: UpdateTransactionPayload): TransactionUpdateRequest {

@@ -6,7 +6,6 @@ import type { PlannedPayment } from '@/entities/planned-payment'
 import { useConfirmPlannedPayment } from '@/entities/planned-payment'
 import { useAccounts } from '@/entities/account'
 import { planRowTitle } from '../model/selectors'
-import { DialogFooter } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { Field, FieldLabel } from '@/shared/ui/field'
@@ -79,7 +78,7 @@ const handleSubmit = async () => {
     <template #title>{{ t('plans.confirmTitle') }}</template>
     <template #description>{{ planRowTitle(plan, categories) }}</template>
 
-    <form class="flex flex-col gap-3" @submit.prevent="handleSubmit">
+    <form id="plans-confirm-form" class="flex flex-col gap-3" @submit.prevent="handleSubmit">
       <AmountField
         id="plans-confirm-amount"
         v-model="amount"
@@ -108,12 +107,17 @@ const handleSubmit = async () => {
         <FieldLabel for="plans-confirm-note">{{ t('fields.description') }}</FieldLabel>
         <Input id="plans-confirm-note" v-model="note" type="text" />
       </Field>
-
-      <DialogFooter class="flex-row">
-        <Button type="submit" class="w-full" :loading="asyncStatus === 'loading'" data-testid="plans-confirm-submit">
-          {{ t('plans.confirmSubmit') }}
-        </Button>
-      </DialogFooter>
     </form>
+
+    <template #footer>
+      <Button
+        type="submit"
+        form="plans-confirm-form"
+        :loading="asyncStatus === 'loading'"
+        data-testid="plans-confirm-submit"
+      >
+        {{ t('plans.confirmSubmit') }}
+      </Button>
+    </template>
   </ResponsiveDialog>
 </template>
