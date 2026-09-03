@@ -22,7 +22,10 @@ test('dashboard compiles a million-scale debt into a tile-fitting figure', async
   await page.goto('/debts')
   await page.getByTestId('debts-section-add-receivable').click()
   await page.locator('#debts-new-debt-name').fill('Анна')
-  await page.getByLabel('Amount').fill('1000100')
+  // The suite pins RU (the compacted «1 млн ₽" assertion), so the amount
+  // field's aria-label is localized - address it by its stable id, like the
+  // name field above.
+  await page.locator('#debts-new-debt-amount').fill('1000100')
   await page.getByTestId('debts-new-debt-submit').click()
   await expect(page.locator('[data-testid^="debts-debtor-"]').first()).toContainText('Анна')
 

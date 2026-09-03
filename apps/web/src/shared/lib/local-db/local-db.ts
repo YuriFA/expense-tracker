@@ -2,15 +2,16 @@
 // resolves the typed Comlink `Remote` only after the worker's ready handshake
 // (calls made before that queue behind the promise - messages posted before
 // the worker's `expose` would be lost), and publishes the boot state machine
-// (`booting` -> `ready` | `db-busy`) plus the engine's data-changed signal.
+// (`booting` -> `ready` | `db-busy`) plus the engine's run-completion signal.
 
 import * as Comlink from 'comlink'
 import { readonly, ref } from 'vue'
 import {
   LOCAL_DB_BUSY_SIGNAL,
-  LOCAL_DB_DATA_CHANGED_SIGNAL,
   LOCAL_DB_READY_SIGNAL,
+  LOCAL_DB_RUN_COMPLETE_SIGNAL,
   type LocalDbApi,
+  type LocalDbRunCompleteMessage,
 } from './local-db-api'
 
 type LocalDbBootState = 'booting' | 'ready' | 'db-busy'
@@ -27,7 +28,7 @@ function requestPersistentStorage(): void {
   }
 }
 
-const dataChangedListeners = new Set<() => void>()
+const runCompleteListeners = new Set<(wroteLocalData: boolean) => void>()
 
 function boot(): Promise<LocalDbApi> {
   requestPersistentStorage()
@@ -61,10 +62,12 @@ function boot(): Promise<LocalDbApi> {
     }
 
     // From here on the remaining worker messages are the engine's
-    // data-changed signal (Comlink's wrap endpoint ignores id-less messages).
+    // run-completion signal (Comlink's wrap endpoint ignores id-less
+    // messages).
     worker.addEventListener('message', (event: MessageEvent) => {
-      if (event.data === LOCAL_DB_DATA_CHANGED_SIGNAL) {
-        for (const listener of dataChangedListeners) listener()
+      const data = event.data as LocalDbRunCompleteMessage | undefined
+      if (data?.type === LOCAL_DB_RUN_COMPLETE_SIGNAL) {
+        for (const listener of runCompleteListeners) listener(data.wroteLocalData)
       }
     })
 
@@ -95,10 +98,11 @@ export function useLocalDbBootState() {
 }
 
 /**
- * Subscribes to the sync engine's data-changed signal (the worker wrote local
- * data - invalidate every UI cache). Returns the unsubscribe function.
+ * Subscribes to the sync engine's run-completion signal (the worker ran a
+ * sync cycle; the listener receives whether local rows were written). Returns
+ * the unsubscribe function.
  */
-export function onLocalDataChanged(listener: () => void): () => void {
-  dataChangedListeners.add(listener)
-  return () => dataChangedListeners.delete(listener)
+export function onSyncRunComplete(listener: (wroteLocalData: boolean) => void): () => void {
+  runCompleteListeners.add(listener)
+  return () => runCompleteListeners.delete(listener)
 }

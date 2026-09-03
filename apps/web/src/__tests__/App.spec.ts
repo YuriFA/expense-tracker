@@ -10,7 +10,7 @@ import App from '../App.vue'
 vi.mock('@/shared/lib/local-db/local-db', () => ({
   getLocalDbApi: () => new Promise(() => {}),
   useLocalDbBootState: () => ref('ready'),
-  onLocalDataChanged: () => () => {},
+  onSyncRunComplete: () => () => {},
 }))
 
 describe('App', () => {

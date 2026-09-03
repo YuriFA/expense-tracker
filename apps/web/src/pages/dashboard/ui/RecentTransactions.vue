@@ -34,26 +34,28 @@ const props = defineProps<{
 const {
   data,
   error: transactionsError,
-  isLoading: isLoadingTx,
+  isPending: transactionsPending,
   refetch: refetchTx,
 } = useTransactions(() => ({ limit: 5, ...props.range }))
 const {
   data: accounts,
   error: accountsError,
-  isLoading: isLoadingAccounts,
+  isPending: accountsPending,
   refetch: refetchAccounts,
 } = useAccounts()
 const {
   data: categories,
   error: categoriesError,
-  isLoading: isLoadingCats,
+  isPending: categoriesPending,
   refetch: refetchCats,
 // Including archived: this is a join over existing records -
 // archived categories stay visible in history/analytics/filters.
 } = useCategoriesIncludingArchived()
 
-const isLoading = computed(
-  () => isLoadingTx.value || isLoadingAccounts.value || isLoadingCats.value,
+// Skeletons only while NO data exists yet: background refetches
+// (invalidation, sync cycle) keep the rendered rows in place.
+const isPending = computed(
+  () => transactionsPending.value || accountsPending.value || categoriesPending.value,
 )
 const error = computed(
   () => transactionsError.value || accountsError.value || categoriesError.value,
@@ -80,7 +82,7 @@ const openDelete = (transaction: Transaction) => {
 
 <template>
   <ul class="divide-y divide-border">
-    <template v-if="isLoading">
+    <template v-if="isPending">
       <TransactionListItemSkeleton v-for="n in 5" :key="n" />
     </template>
     <li v-else-if="error">

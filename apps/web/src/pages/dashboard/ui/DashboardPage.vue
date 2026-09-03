@@ -48,35 +48,37 @@ const goNextPeriod = () => {
 
 const {
   data: accounts,
-  isLoading: isLoadingAccounts,
+  isPending: accountsPending,
   error: accountsError,
   refetch: refetchAccounts,
 } = useAccounts()
 const {
   data: expenses,
-  isLoading: isLoadingExpenses,
+  isPending: expensesPending,
   error: expensesError,
   refetch: refetchExpenses,
 } = useTransactions(() => ({ type: 'expense', ...range.value }))
 const {
   data: incomes,
-  isLoading: isLoadingIncomes,
+  isPending: incomesPending,
   error: incomesError,
   refetch: refetchIncomes,
 } = useTransactions(() => ({ type: 'income', ...range.value }))
 const {
   data: debtOperations,
-  isLoading: isLoadingDebts,
+  isPending: debtsPending,
   error: debtsError,
   refetch: refetchDebts,
 } = useDebtOperations()
 
-const isLoading = computed(
+// Skeletons only while NO data exists yet: background refetches
+// (invalidation, sync cycle) keep the rendered stat cards in place.
+const isPending = computed(
   () =>
-    isLoadingAccounts.value ||
-    isLoadingExpenses.value ||
-    isLoadingIncomes.value ||
-    isLoadingDebts.value,
+    accountsPending.value ||
+    expensesPending.value ||
+    incomesPending.value ||
+    debtsPending.value,
 )
 const error = computed(
   () => accountsError.value || expensesError.value || incomesError.value || debtsError.value,
@@ -171,7 +173,7 @@ const stats = computed(() => [
     </PageHeader>
 
     <ErrorState v-if="error" @retry="refetch" />
-    <div v-else-if="isLoading" class="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+    <div v-else-if="isPending" class="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
       <Skeleton v-for="n in 4" :key="n" class="h-23 rounded-lg md:h-31" />
     </div>
     <div

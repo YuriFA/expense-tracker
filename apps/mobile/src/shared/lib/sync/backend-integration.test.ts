@@ -81,7 +81,7 @@ async function createDevice(
   const engine = createSyncEngine({
     db,
     transport: createApiTransport(client),
-    onDataChanged: () => undefined,
+    onRunComplete: () => undefined,
   })
   return {
     client,
@@ -310,7 +310,7 @@ maybe('sync engine vs real backend', () => {
       const engine1 = createSyncEngine({
         db: db1,
         transport: createApiTransport(client),
-        onDataChanged: () => undefined,
+        onRunComplete: () => undefined,
       })
       const categoryRepo = createLocalCategoryRepository(db1)
       const category = await categoryRepo.create({ ...CATEGORY, name: 'Перезагрузка' })
@@ -342,7 +342,7 @@ maybe('sync engine vs real backend', () => {
       const engine2 = createSyncEngine({
         db: db2,
         transport: createApiTransport(client),
-        onDataChanged: () => undefined,
+        onRunComplete: () => undefined,
       })
       const reopened = listUnresolvedConflicts(db2)
       expect(reopened).toHaveLength(1)

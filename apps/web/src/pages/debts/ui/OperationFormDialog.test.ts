@@ -93,9 +93,9 @@ describe('OperationFormDialog', () => {
     expect(
       (inDialog('[data-testid="debts-operation-dialog"] form input:not([type="date"])') as HTMLInputElement)
         .value,
-    // reka-ui formats the input via Intl: en + RUB renders the ISO code
-    // (no common en symbol) with a no-break space separator.
-    ).toBe('RUB\u00A05,000.00')
+    // AmountField renders through the deterministic money formatter: the
+    // en shape prefixes the narrow symbol (₽) with no separator.
+    ).toBe('₽5,000.00')
     expect((inDialog('#debts-operation-date') as HTMLInputElement).value).toBe(
       new Date('2026-08-20T12:00:00.000Z').toLocaleDateString('sv'),
     )

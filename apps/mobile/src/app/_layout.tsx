@@ -155,6 +155,22 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
  */
 const POST_MUTATION_DEBOUNCE_MS = 2_500
 
+/**
+ * Query-key roots backed by the local database (the entity hooks' cache
+ * prefixes). A sync cycle that wrote local rows invalidates these - and ONLY
+ * these: control-plane queries (household, invite preview) are never served
+ * from the local database and must not refetch on sync. Keep in sync with
+ * the key roots declared in the entities' model composables.
+ */
+const LOCAL_DATA_QUERY_KEY_ROOTS = [
+  ['transactions'],
+  ['accounts'],
+  ['categories'],
+  ['debtors'],
+  ['debt-operations'],
+  ['planned-payments'],
+] as const
+
 function SyncProvider({ children }: { children: React.ReactNode }) {
   const db = useLocalDatabase()
   const queryClient = useQueryClient()
@@ -164,10 +180,18 @@ function SyncProvider({ children }: { children: React.ReactNode }) {
     createSyncEngine({
       db,
       transport: createLocalSyncTransport(db),
-      onDataChanged: () => {
-        // The engine is a writer beside the repositories (design D3): after
-        // its writes every cached query (entities + sync status) refetches.
-        void queryClient.invalidateQueries()
+      onRunComplete: ({ wroteLocalData }) => {
+        // The engine is a writer beside the repositories (design D3): every
+        // completed cycle refreshes the sync-status cache (the outbox /
+        // lastSyncedAt may change even on a failed cycle), while the entity
+        // caches refetch only when the cycle actually wrote local rows - a
+        // no-op cycle (caught-up pull, offline failure) leaves them alone.
+        void queryClient.invalidateQueries({ queryKey: ['sync'] })
+        if (wroteLocalData) {
+          for (const queryKey of LOCAL_DATA_QUERY_KEY_ROOTS) {
+            void queryClient.invalidateQueries({ queryKey: [...queryKey] })
+          }
+        }
       },
     }),
   )

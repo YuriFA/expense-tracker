@@ -90,8 +90,14 @@ export function createApiTransport(client: ApiClient): SyncTransport {
 export interface SyncEngineOptions {
   db: LocalDatabase
   transport: SyncTransport
-  /** Called after the engine wrote local data (provider invalidates caches). */
-  onDataChanged?: () => void
+  /**
+   * Fired after EVERY completed cycle (success, transport failure, or a
+   * 401 pause). `wroteLocalData` tells whether the cycle wrote local rows
+   * (applied pulls, push confirmations, conflict/delete-wins writes); a
+   * false means a no-op cycle - providers skip entity-cache invalidation
+   * but still refresh sync status (the outbox/lastSyncedAt may differ).
+   */
+  onRunComplete?: (result: { wroteLocalData: boolean }) => void
   /** Injectable clock for tests. */
   now?: () => Date
   /**
@@ -199,12 +205,14 @@ const eq_ = (opId: string) => eq(syncOutbox.opId, opId)
 export function createSyncEngine(options: SyncEngineOptions) {
   const { db, transport } = options
   const now = options.now ?? (() => new Date())
-  const onDataChanged = options.onDataChanged
+  const onRunComplete = options.onRunComplete
   const knownEntities = options.knownEntities ?? KNOWN_SYNC_ENTITIES
 
   let running = false
   let rerunQueued = false
   let paused = false
+  /** Whether the current run wrote local rows (drives the completion signal). */
+  let runWroteLocalData = false
   const listeners = new Set<() => void>()
 
   function emit() {
@@ -266,8 +274,10 @@ export function createSyncEngine(options: SyncEngineOptions) {
 
         const row = readEntityRow(tx, op.entity, op.entityId)
         if (!row) {
-          // The record vanished (unborn create+delete raced the queue).
+          // The record vanished (unborn create+delete raced the queue):
+          // dropping the op changes the pending count.
           tx.delete(syncOutbox).where(eq_(op.opId)).run()
+          runWroteLocalData = true
           continue
         }
 
@@ -350,6 +360,9 @@ export function createSyncEngine(options: SyncEngineOptions) {
     result: SyncPushResultItem,
     outcome: SyncRunOutcome,
   ): void {
+    // Every push-conflict outcome writes local state (record adoption,
+    // delete-wins, or a conflict row).
+    runWroteLocalData = true
     const serverState = result.serverState ?? { version: 0, deleted: false }
     const row = readEntityRow(tx, wire.entity, wire.id)
 
@@ -470,6 +483,9 @@ export function createSyncEngine(options: SyncEngineOptions) {
         applyPushConfirmations(tx, confirmations)
       })
       outcome.pushed += confirmations.length
+      // Confirmations delete outbox rows and bump row revisions - the sync
+      // status (pending count) changes even when payloads stay identical.
+      if (confirmations.length > 0) runWroteLocalData = true
 
       // No confirmations means no chain progress this batch (conflicts now
       // block their records, errors are backing off) - stop the loop.
@@ -481,6 +497,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
     if (change.action === 'tombstone' || !change.data) return
     const patch = syncDataToRowPatch(change.entity, change.data)
     if (!patch) return
+    runWroteLocalData = true
     const timestamp = now().toISOString()
 
     const author = { userId: change.userId }
@@ -596,6 +613,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
           ...(change.data ? { data: change.data } : {}),
         },
       })
+      runWroteLocalData = true
       return
     }
 
@@ -608,6 +626,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
           version: change.version,
           serverVersion: change.version,
         })
+        runWroteLocalData = true
       } else if (change.data) {
         const patch = syncDataToRowPatch(change.entity, change.data)
         if (patch) {
@@ -618,6 +637,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
             version: change.version,
             serverVersion: change.version,
           })
+          runWroteLocalData = true
         }
       }
       return
@@ -634,6 +654,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
           serverVersion: change.version,
         })
         dropOperationsFor(tx, change.entity, change.id)
+        runWroteLocalData = true
         return
       }
       // Remote delete vs local edit: delete-wins applies immediately; the
@@ -678,6 +699,8 @@ export function createSyncEngine(options: SyncEngineOptions) {
         },
       })
     }
+    // Every DIRTY tail branch writes (delete-wins or a conflict row).
+    runWroteLocalData = true
     outcome.conflicts += 1
   }
 
@@ -721,6 +744,7 @@ export function createSyncEngine(options: SyncEngineOptions) {
 
     running = true
     emit()
+    runWroteLocalData = false
     const outcome: SyncRunOutcome = { status: 'completed', pushed: 0, pulled: 0, conflicts: 0 }
 
     try {
@@ -732,7 +756,10 @@ export function createSyncEngine(options: SyncEngineOptions) {
     } finally {
       running = false
       emit()
-      onDataChanged?.()
+      // Fires after EVERY cycle (also no-ops and failures): sync status may
+      // still differ (outbox freezes, lastSyncedAt), while entity caches
+      // refetch only when local rows were actually written.
+      onRunComplete?.({ wroteLocalData: runWroteLocalData })
     }
 
     if (rerunQueued && !paused) {

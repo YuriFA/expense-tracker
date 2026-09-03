@@ -25,20 +25,22 @@ const range = computed(() => periodToUtcDayRange(props.cursor))
 
 const {
   data: transactions,
-  isLoading: isLoadingTx,
+  isPending: transactionsPending,
   error: txError,
   refetch: refetchTx,
 } = useTransactions(() => ({ type: 'expense', ...range.value }))
 const {
   data: categories,
-  isLoading: isLoadingCategories,
+  isPending: categoriesPending,
   error: categoriesError,
   refetch: refetchCategories,
 // Including archived: this is a join over existing records -
 // archived categories stay visible in history/analytics/filters.
 } = useCategoriesIncludingArchived()
 
-const isLoading = computed(() => isLoadingTx.value || isLoadingCategories.value)
+// Skeletons only while NO data exists yet: background refetches
+// (invalidation, sync cycle) keep the rendered rows in place.
+const isPending = computed(() => transactionsPending.value || categoriesPending.value)
 const error = computed(() => txError.value || categoriesError.value)
 const refetch = () => Promise.all([refetchTx(), refetchCategories()])
 
@@ -62,7 +64,7 @@ const newCategoryOpen = ref(false)
     data-testid="dashboard-category-breakdown"
   >
     <ErrorState v-if="error" @retry="refetch" />
-    <template v-else-if="isLoading">
+    <template v-else-if="isPending">
       <div v-for="n in 3" :key="n" class="flex items-center gap-3 py-3">
         <Skeleton class="size-9 rounded-full" />
         <Skeleton class="h-4 flex-1" />

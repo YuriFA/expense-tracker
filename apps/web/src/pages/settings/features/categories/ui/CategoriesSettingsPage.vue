@@ -25,11 +25,11 @@ const { t, locale } = useI18n()
 const categoriesQuery = useCategoriesIncludingArchived()
 const categories = computed(() => categoriesQuery.data.value ?? [])
 const { expense, income, archived } = groupCategories(categories)
-const { usage, isLoading: usageLoading } = useCategoryUsage()
+const { usage, isPending: usagePending } = useCategoryUsage()
 
-const categoriesLoading = computed(
-  () => categoriesQuery.isLoading.value || usageLoading.value,
-)
+// Skeletons only while NO data exists yet: background refetches
+// (invalidation, sync cycle) keep the rendered list in place.
+const categoriesLoading = computed(() => categoriesQuery.isPending.value || usagePending.value)
 
 const countLabel = (category: Category): string => {
   if (!usage.value) return ''

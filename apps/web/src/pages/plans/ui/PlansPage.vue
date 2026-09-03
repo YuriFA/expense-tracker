@@ -17,7 +17,7 @@ const { t } = useI18n()
 
 const {
   data: plans,
-  isLoading,
+  isPending,
   error,
   refetch,
 } = usePlannedPayments()
@@ -42,7 +42,7 @@ const openList = (type: 'expense' | 'income') => {
   <section>
     <PageHeader :title="t('pages.plans')" />
 
-    <div v-if="isLoading" class="mt-6 grid gap-6 md:grid-cols-2">
+    <div v-if="isPending" class="mt-6 grid gap-6 md:grid-cols-2">
       <Skeleton class="min-h-36 rounded-lg" />
       <Skeleton class="min-h-36 rounded-lg" />
     </div>

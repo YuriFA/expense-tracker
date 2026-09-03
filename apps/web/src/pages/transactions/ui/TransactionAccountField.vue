@@ -12,7 +12,7 @@ defineProps<{
 
 const modelValue = defineModel<string[] | undefined>()
 
-const { data, error, isLoading } = useAccounts()
+const { data, error, isPending } = useAccounts()
 const { t } = useI18n()
 
 /** Toggles one account id inside the committed-on-apply form value. */
@@ -31,7 +31,7 @@ const toggle = (accountId: string, included: boolean) => {
       {{ t('transactions.filters.accountLabel') }}
     </FieldLabel>
     <div class="flex flex-col gap-3" data-testid="transactions-filter-accounts">
-      <template v-if="isLoading">
+      <template v-if="isPending">
         <Skeleton v-for="n in 2" :key="n" class="h-5 w-32" />
       </template>
       <div v-else-if="error" class="text-sm text-muted-foreground">

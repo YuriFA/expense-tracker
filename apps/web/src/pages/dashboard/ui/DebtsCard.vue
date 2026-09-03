@@ -21,17 +21,19 @@ const { t, locale } = useI18n()
 const {
   data: debtors,
   error: debtorsError,
-  isLoading: debtorsLoading,
+  isPending: debtorsPending,
   refetch: refetchDebtors,
 } = useDebtors()
 const {
   data: operations,
   error: operationsError,
-  isLoading: operationsLoading,
+  isPending: operationsPending,
   refetch: refetchOperations,
 } = useDebtOperations()
 
-const isLoading = computed(() => debtorsLoading.value || operationsLoading.value)
+// Skeletons only while NO data exists yet: background refetches
+// (invalidation, sync cycle) keep the rendered rows in place.
+const isPending = computed(() => debtorsPending.value || operationsPending.value)
 const error = computed(() => debtorsError.value || operationsError.value)
 const refetch = () => Promise.all([refetchDebtors(), refetchOperations()])
 
@@ -59,7 +61,7 @@ const directionLabel = (direction: DebtDirection) =>
       </RouterLink>
     </template>
     <ErrorState v-if="error" @retry="refetch" />
-    <template v-else-if="isLoading">
+    <template v-else-if="isPending">
       <div v-for="n in 2" :key="n" class="flex items-center justify-between gap-2 py-3">
         <Skeleton class="h-9 w-32" />
         <Skeleton class="h-4 w-20" />

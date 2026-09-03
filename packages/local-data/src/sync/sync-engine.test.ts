@@ -236,12 +236,15 @@ let categoryRepo: ReturnType<typeof createLocalCategoryRepository>
 let accountRepo: ReturnType<typeof createLocalAccountRepository>
 let transactionRepo: ReturnType<typeof createLocalTransactionRepository>
 
+/** `wroteLocalData` of every completed cycle, in order. */
+let completions: boolean[]
+
 function makeEngine(transport: SyncTransport = server) {
   return createSyncEngine({
     db,
     transport,
     now: () => new Date(clockMs),
-    onDataChanged: () => undefined,
+    onRunComplete: ({ wroteLocalData }) => completions.push(wroteLocalData),
   })
 }
 
@@ -257,6 +260,7 @@ beforeEach(async () => {
   db = await createTestDatabase()
   server = new FakeServer()
   clockMs = Date.parse('2026-08-16T12:00:00.000Z')
+  completions = []
   engine = makeEngine()
   categoryRepo = createLocalCategoryRepository(db)
   accountRepo = createLocalAccountRepository(db)
@@ -833,7 +837,7 @@ describe('sync engine: cycle and restart', () => {
       db: secondDb,
       transport: server,
       now: () => new Date(clockMs),
-      onDataChanged: () => undefined,
+      onRunComplete: () => undefined,
     })
     await secondEngine.run({ force: true })
     const secondRepo = createLocalTransactionRepository(secondDb)
@@ -848,6 +852,56 @@ describe('sync engine: cycle and restart', () => {
     expect(server.records.get(`transaction:${kept.id}`)?.deleted).toBe(true)
     await secondEngine.run({ force: true })
     expect(await secondRepo.query({})).toEqual([])
+  })
+})
+
+// --- Run completion signal --------------------------------------------------------
+
+describe('sync engine: run completion signal', () => {
+  it('signals wroteLocalData=false for a no-op run (empty queue, caught-up cursor)', async () => {
+    await engine.run({ force: true })
+    completions.length = 0
+
+    await engine.run({ force: true })
+
+    expect(completions).toEqual([false])
+  })
+
+  it('signals true when push confirmations or pulled changes wrote local rows', async () => {
+    const category = await categoryRepo.create(CATEGORY)
+    await engine.run({ force: true }) // push confirmation (pull echo skips)
+    expect(completions).toEqual([true])
+
+    completions.length = 0
+    server.mutate('category', category.id, { name: 'Такси 2' })
+    await engine.run({ force: true }) // pulled change applied
+    expect(completions).toEqual([true])
+  })
+
+  it('signals false when the transport fails or the run pauses on 401', async () => {
+    await categoryRepo.create(CATEGORY)
+
+    server.nextPushError = new Error('offline')
+    await engine.run({ force: true })
+    expect(completions.at(-1)).toBe(false)
+
+    server.nextPushReject = new UnauthorizedError('session expired')
+    await engine.run({ force: true })
+    expect(completions.at(-1)).toBe(false)
+    expect(engine.getState().paused).toBe(true)
+  })
+
+  it('signals true when a conflict write lands', async () => {
+    const category = await categoryRepo.create(CATEGORY)
+    await engine.run({ force: true })
+
+    // Local unconfirmed edit vs a remote edit of the same record.
+    await categoryRepo.update(category.id, { name: 'Локально', version: 1 })
+    server.mutate('category', category.id, { name: 'Сервер' })
+    await engine.run({ force: true })
+
+    expect(completions.at(-1)).toBe(true)
+    expect(listUnresolvedConflicts(db)).toHaveLength(1)
   })
 })
 
@@ -917,7 +971,7 @@ describe('sync engine: debts', () => {
       db: secondDb,
       transport: server,
       now: () => new Date(clockMs),
-      onDataChanged: () => undefined,
+      onRunComplete: () => undefined,
     })
     await secondEngine.run({ force: true })
     const secondOperations = await createLocalDebtOperationRepository(secondDb).getAll()
@@ -975,7 +1029,7 @@ describe('sync engine: debts', () => {
       db,
       transport: server,
       now: () => new Date(clockMs),
-      onDataChanged: () => undefined,
+      onRunComplete: () => undefined,
       knownEntities: new Set(['account', 'category', 'transaction', 'debtor', 'debt_operation']),
     })
     const planId = '33333333-3333-4333-8333-333333333333'
@@ -1127,7 +1181,7 @@ describe('sync engine: planned payments', () => {
       db: secondDb,
       transport: server,
       now: () => new Date(clockMs),
-      onDataChanged: () => undefined,
+      onRunComplete: () => undefined,
     })
     await secondEngine.run({ force: true })
     const secondPlan = await createLocalPlannedPaymentRepository(secondDb).getById(plan.id)

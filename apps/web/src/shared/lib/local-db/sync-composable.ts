@@ -11,11 +11,27 @@
 
 import { onScopeDispose, provide, inject, ref, watch, type InjectionKey, type Ref } from 'vue'
 import { proxy } from 'comlink'
-import { useMutationCache, useQueryCache } from '@pinia/colada'
+import { useMutationCache, useQueryCache, type EntryKey } from '@pinia/colada'
 import type { SyncEngineState } from '@expense-tracker/local-data'
-import { getLocalDbApi, onLocalDataChanged } from '@/shared/lib/local-db'
+import { getLocalDbApi, onSyncRunComplete } from '@/shared/lib/local-db'
 
 const POST_MUTATION_DEBOUNCE_MS = 2_500
+
+/**
+ * Query-key roots backed by the local database (the entity composables'
+ * cache prefixes). A sync cycle that wrote local rows invalidates these -
+ * and ONLY these: control-plane queries (household, sessions, invite
+ * preview) are never served from the worker and must not refetch on sync.
+ * Keep in sync with the key roots declared in the entities' model composables.
+ */
+const LOCAL_DATA_QUERY_KEY_ROOTS: readonly EntryKey[] = [
+  ['transactions'],
+  ['accounts'],
+  ['categories'],
+  ['debtors'],
+  ['debt-operations'],
+  ['planned-payments'],
+]
 
 interface SyncControllerOptions {
   /** Auth gate supplied by the app layer: sync runs only while true. */
@@ -107,11 +123,20 @@ export function provideSyncController(options: SyncControllerOptions): SyncContr
     },
   )
 
-  // The engine wrote local data (push confirmations / pulled changes):
-  // invalidate every cached query - the colada equivalent of the mobile
-  // `queryClient.invalidateQueries()` (design D6).
-  const stopDataChanged = onLocalDataChanged(() => {
-    void queryCache.invalidateQueries()
+  // A sync cycle completed: refresh the sync-status cache every time (the
+  // outbox / lastSyncedAt may change even on a failed cycle), but refetch
+  // entity data only when the cycle actually wrote local rows - a no-op
+  // cycle (caught-up pull, offline failure) leaves every screen untouched.
+  // Colada keeps the previous data while a refetch is in flight, so these
+  // invalidations never blank the UI (the screens render skeletons only
+  // while a query is pending its first data).
+  const stopRunComplete = onSyncRunComplete((wroteLocalData) => {
+    void queryCache.invalidateQueries({ key: ['sync'] })
+    if (wroteLocalData) {
+      for (const key of LOCAL_DATA_QUERY_KEY_ROOTS) {
+        void queryCache.invalidateQueries({ key })
+      }
+    }
   })
 
   // Engine state over the RPC bridge: Comlink delivers the listener as a
@@ -119,7 +144,7 @@ export function provideSyncController(options: SyncControllerOptions): SyncContr
   const cleanups: Array<() => void> = [
     stopAuthWatch,
     stopMutationWatch,
-    stopDataChanged,
+    stopRunComplete,
     () => document.removeEventListener('visibilitychange', onVisibilityChange),
     () => window.removeEventListener('online', onOnline),
     () => {

@@ -23,27 +23,29 @@ const monthCaption = computed(
 
 const {
   data: expenses,
-  isLoading: loadingExpenses,
+  isPending: expensesPending,
   error: expensesError,
   refetch: refetchExpenses,
 } = useTransactions({ type: 'expense', ...range })
 const {
   data: incomes,
-  isLoading: loadingIncomes,
+  isPending: incomesPending,
   error: incomesError,
   refetch: refetchIncomes,
 } = useTransactions({ type: 'income', ...range })
 const {
   data: categories,
-  isLoading: loadingCategories,
+  isPending: categoriesPending,
   error: categoriesError,
   refetch: refetchCategories,
 // Including archived: this is a join over existing records -
 // archived categories stay visible in history/analytics/filters.
 } = useCategoriesIncludingArchived()
 
-const isLoading = computed(
-  () => loadingExpenses.value || loadingIncomes.value || loadingCategories.value,
+// Skeletons only while NO data exists yet: background refetches
+// (invalidation, sync cycle) keep the rendered cards in place.
+const isPending = computed(
+  () => expensesPending.value || incomesPending.value || categoriesPending.value,
 )
 const error = computed(
   () => expensesError.value || incomesError.value || categoriesError.value,
@@ -59,7 +61,7 @@ const refetch = () =>
       :subtitle="monthCaption"
     />
 
-    <div v-if="isLoading" class="mt-6 grid gap-4 md:grid-cols-2">
+    <div v-if="isPending" class="mt-6 grid gap-4 md:grid-cols-2">
       <Skeleton class="h-48 rounded-xl" data-testid="analytics-skeleton" />
       <Skeleton class="h-48 rounded-xl" />
     </div>

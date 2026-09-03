@@ -29,17 +29,18 @@ export interface CategoryUsageIndex {
  */
 export function useCategoryUsage(): {
   usage: ComputedRef<CategoryUsageIndex | null>
-  isLoading: ComputedRef<boolean>
+  isPending: ComputedRef<boolean>
 } {
   const transactionsQuery = useTransactions({})
   const accountsQuery = useAccounts()
   const plansQuery = usePlannedPayments({})
 
-  const isLoading = computed(
+  // "No data yet" only: background refetches keep rendered data in place.
+  const isPending = computed(
     () =>
-      transactionsQuery.isLoading.value ||
-      accountsQuery.isLoading.value ||
-      plansQuery.isLoading.value,
+      transactionsQuery.isPending.value ||
+      accountsQuery.isPending.value ||
+      plansQuery.isPending.value,
   )
 
   const usage = computed<CategoryUsageIndex | null>(() => {
@@ -86,7 +87,7 @@ export function useCategoryUsage(): {
     }
   })
 
-  return { usage, isLoading }
+  return { usage, isPending }
 }
 
 function planName(

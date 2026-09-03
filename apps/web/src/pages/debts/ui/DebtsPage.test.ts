@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { createPinia } from 'pinia'
+import { useQueryCache } from '@pinia/colada'
 import DebtsPage from './DebtsPage.vue'
 import {
   createMockDebtorRepository,
@@ -95,6 +97,40 @@ describe('DebtsPage', () => {
 
     expect(wrapper.text()).toContain('Nobody owes you')
     expect(wrapper.text()).toContain("You don't owe anyone")
+  })
+
+  it('keeps rendered rows during a background refetch (no skeleton flicker)', async () => {
+    // The sync cycle / mutation invalidations refetch queries in the
+    // background; skeletons are reserved for "no data yet" (isPending), so
+    // an in-flight refetch must never blank the rendered content.
+    const pinia = createPinia()
+    const debtorsRepo = createMockDebtorRepository()
+    debtorsRepo.getAll.mockResolvedValue(debtors)
+    const operationsRepo = createMockDebtOperationRepository()
+    operationsRepo.query.mockResolvedValue(operations)
+
+    const wrapper = mountWithProviders(
+      DebtsPage,
+      {
+        pinia,
+        repositories: { debtors: debtorsRepo, debtOperations: operationsRepo },
+      },
+    )
+    await flushPromises()
+    expect(wrapper.find('[data-testid="debts-debtor-d2"]').exists()).toBe(true)
+
+    // A slow refetch: the repositories never settle again, exactly like a
+    // worker round-trip still in flight when the re-render happens.
+    debtorsRepo.getAll.mockImplementation(() => new Promise(() => {}))
+    operationsRepo.query.mockImplementation(() => new Promise(() => {}))
+    const queryCache = useQueryCache(pinia)
+    // Not awaited: the invalidation promise resolves only when the (never
+    // settling) refetches finish - the assertion targets the in-flight state.
+    void queryCache.invalidateQueries()
+    await flushPromises()
+
+    expect(wrapper.find('[data-slot="skeleton"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="debts-debtor-d2"]').exists()).toBe(true)
   })
 
   it('opens the debtor history dialog from a row, showing balance and day-grouped ops', async () => {

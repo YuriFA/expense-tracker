@@ -88,7 +88,7 @@ const localDbApi = {
 // here covers both the barrel re-export and the composable's own import.
 vi.mock('@/shared/lib/local-db/local-db', () => ({
   getLocalDbApi: () => Promise.resolve(localDbApi),
-  onLocalDataChanged: () => () => {},
+  onSyncRunComplete: () => () => {},
 }))
 
 const { ConflictCenter } = await import('@/features/sync-conflicts')

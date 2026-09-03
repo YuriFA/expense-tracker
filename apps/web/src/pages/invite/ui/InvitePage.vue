@@ -42,7 +42,9 @@ const previewQuery = useQuery({
   retry: 0,
 })
 
-const isLoading = computed(() => previewQuery.isLoading.value)
+// "No data yet" (pending): also covers the session-restore wait while the
+// query is disabled - the preview has neither data nor an error yet.
+const isPending = computed(() => previewQuery.isPending.value)
 const isAnonymous = computed(() => previewQuery.error.value instanceof UnauthorizedError)
 const apiErrorCode = computed(() => getHouseholdApiErrorCode(previewQuery.error.value))
 const isMismatch = computed(() => apiErrorCode.value === 'HOUSEHOLD_INVITATION_EMAIL_MISMATCH')
@@ -59,7 +61,7 @@ async function goHome(): Promise<void> {
     <h1 class="text-2xl font-semibold">{{ t('household.invite.title') }}</h1>
 
     <div
-      v-if="isLoading"
+      v-if="isPending"
       class="mt-6 flex items-center justify-center gap-3 text-muted-foreground"
       data-testid="invite-page-loading"
     >

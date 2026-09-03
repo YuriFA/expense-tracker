@@ -16,7 +16,7 @@ Server/repository data goes through entity composables (Pinia Colada
 `useQuery`/`useMutation`) — never hand-rolled loading refs.
 
 - Canonical: `pages/dashboard/ui/RecentTransactions.vue` — three queries,
-  `isLoading`/`error` as OR-aggregating computeds over their refs, one
+  `isPending`/`error` as OR-aggregating computeds over their refs, one
   combined `refetch`.
 - Registered deviation: `pages/settings/ui/SettingsPage.vue` keeps
   `sessions`/`sessionsLoading`/`revoking` refs plus `onMounted` and manual
@@ -30,6 +30,22 @@ The seam is fixed and must not be short-circuited: component →
 repository implementation bound to the `apiClient`. No component imports a
 repository, the `apiClient`, or `@expense-tracker/api` directly.
 
+### Loading states: skeletons are for "no data yet" ONLY
+
+Skeletons/empty branches gate on `isPending` (`status === 'pending'`:
+the query has neither data nor an error), never on `isLoading`
+(`asyncStatus === 'loading'`: ANY fetch is in flight, including a
+background refetch). This is the stale-while-revalidate contract: an
+invalidated query refetches in the background while the previous data
+stays rendered — mutations and sync cycles (which invalidate broadly) must
+never blank a screen and redraw it. Colada's `isLoading` is NOT React
+Query's `isLoading` (first load only); it maps to React Query's
+`isFetching` and may only drive non-destructive indicators (e.g. a subtle
+spinner), never replace rendered content. `enabled`-gated queries combine
+`isPending` with the gate (`auth.isAuthenticated &&
+householdQuery.isPending.value` — `SettingsPage.vue`) so a disabled query
+never shows a stuck skeleton.
+
 ### Cache invalidation
 
 Mutations invalidate every affected key in `onSettled`: transaction creates
@@ -39,6 +55,10 @@ invalidates `['categories']` because category labels are locale-mapped
 (`app/setup-i18n-locale-watcher.ts`). Optimistic updates go through
 `shared/lib/use-optimistic-mutation.ts` (snapshot → patch → rollback on
 error → invalidate on settle) — never ad-hoc `setQueryData` in components.
+Sync cycles do NOT invalidate broadly: `sync-composable.ts` refreshes the
+`['sync']` status cache after every completed engine cycle and the local-data
+entity roots (`['transactions']`, `['accounts']`, …) only when the cycle
+actually wrote local rows.
 
 ## 2. Reactivity budget
 

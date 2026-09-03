@@ -72,6 +72,11 @@ const revoking = ref(false)
 // owner cannot leave while other members remain (the backend rejects it).
 const householdQuery = useHousehold({ enabled: () => auth.isAuthenticated })
 const household = computed(() => householdQuery.data.value)
+// First load only (and only while the gated query can actually run):
+// background refetches keep the rendered member list in place.
+const householdPending = computed(
+  () => auth.isAuthenticated && householdQuery.isPending.value,
+)
 const householdLabel = computed(() =>
   household.value ? householdDisplayName(household.value) : null,
 )
@@ -247,10 +252,10 @@ onMounted(() => {
           {{ householdLabel }}
           <template v-if="household"> · {{ t('household.membersCount', members.length) }}</template>
         </p>
-        <Skeleton v-if="householdQuery.isLoading.value" class="h-5 w-40" />
+        <Skeleton v-if="householdPending" class="h-5 w-40" />
 
           <ul
-            v-if="household && !householdQuery.isLoading.value"
+            v-if="household"
             class="flex flex-col"
             data-testid="settings-household-member-list"
           >

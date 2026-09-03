@@ -21,8 +21,19 @@ import type {
 /** Worker -> main boot signals (plain strings: Comlink ignores id-less messages). */
 export const LOCAL_DB_READY_SIGNAL = 'expense-tracker:local-db-ready'
 export const LOCAL_DB_BUSY_SIGNAL = 'expense-tracker:local-db-busy'
-/** The sync engine wrote local data - invalidate every UI cache (design D6). */
-export const LOCAL_DB_DATA_CHANGED_SIGNAL = 'expense-tracker:local-db-data-changed'
+
+/**
+ * The sync engine completed a cycle. Object payload (still id-less, so
+ * Comlink's wrap endpoint ignores it): `wroteLocalData` tells whether the
+ * cycle wrote local rows - providers invalidate entity caches only then,
+ * while the sync-status cache refreshes after every cycle.
+ */
+export const LOCAL_DB_RUN_COMPLETE_SIGNAL = 'expense-tracker:local-db-run-complete'
+
+export interface LocalDbRunCompleteMessage {
+  type: typeof LOCAL_DB_RUN_COMPLETE_SIGNAL
+  wroteLocalData: boolean
+}
 
 /** The Web Locks name guarding single-tab database exclusivity (design D3). */
 export const LOCAL_DB_LOCK_NAME = 'expense-tracker-local-db'

@@ -361,8 +361,11 @@ happens in dialogs, not on dedicated pages.
   (`shared/lib/local-db/sync-composable.ts`, provided in AppShell with the
   auth getter injected) publishes engine state over the RPC `subscribe`,
   wires `visibilitychange`/`online`/post-mutation-debounce (2.5 s)
-  triggers, auth-gates every run, and maps `onDataChanged` to full colada
-  cache invalidation. `widgets/sync-status` renders the badge (hidden in
+  triggers, auth-gates every run, and maps `onRunComplete` to scoped colada
+  invalidation: the `['sync']` status cache after every completed cycle,
+  the local-data entity roots only when the cycle wrote local rows
+  (`wroteLocalData`) — no-op cycles leave every entity cache untouched.
+  `widgets/sync-status` renders the badge (hidden in
   anonymous mode); `features/sync-conflicts` is the global conflict
   center (keep-local/take-server for version conflicts via RPC;
   deleted-kind conflicts offer dismiss plus restore-as-new — re-creating

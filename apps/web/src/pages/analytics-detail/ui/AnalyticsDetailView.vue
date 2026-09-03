@@ -65,13 +65,13 @@ const queryOptions = computed<TransactionQuery>(() => ({
 }))
 const {
   data: transactions,
-  isLoading,
+  isPending,
   error,
   refetch,
 } = useTransactions(queryOptions)
 // Including archived: this is a join over existing records -
 // archived categories stay visible in history/analytics/filters.
-const { data: categories, isLoading: categoriesLoading } = useCategoriesIncludingArchived()
+const { data: categories, isPending: categoriesPending } = useCategoriesIncludingArchived()
 
 const directionCategories = computed(() =>
   (categories.value ?? []).filter((c) => c.type === props.direction),
@@ -209,7 +209,9 @@ const openDrilldown = (category: Category) => {
       </Button>
     </div>
 
-    <div v-if="isLoading || categoriesLoading" class="mt-6">
+    <!-- Skeletons only while NO data exists yet: period switches re-key the
+         query (pending -> skeletons), background refetches keep the chart. -->
+    <div v-if="isPending || categoriesPending" class="mt-6">
       <Skeleton class="h-64 rounded-xl" />
     </div>
     <div v-else-if="error" class="mt-6">

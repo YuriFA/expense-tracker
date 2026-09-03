@@ -18,7 +18,7 @@ const modelValue = defineModel<string[] | undefined>()
 const { t } = useI18n()
 // Including archived: this is a join over existing records -
 // archived categories stay visible in history/analytics/filters.
-const { data: categories, error, isLoading } = useCategoriesIncludingArchived()
+const { data: categories, error, isPending } = useCategoriesIncludingArchived()
 
 const filteredCategories = computed(() => {
   if (props.type === undefined || props.type === 'adjustment') {
@@ -45,7 +45,7 @@ const toggle = (categoryId: string, included: boolean) => {
       {{ t('transactions.filters.categoryLabel') }}
     </FieldLabel>
     <div class="flex flex-col gap-3" data-testid="transactions-filter-categories">
-      <template v-if="isLoading">
+      <template v-if="isPending">
         <Skeleton v-for="n in 2" :key="n" class="h-5 w-32" />
       </template>
       <div v-else-if="error" class="text-sm text-muted-foreground">

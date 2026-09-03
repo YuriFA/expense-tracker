@@ -103,6 +103,12 @@ function mockControlPlane(page: Page, getWithSibling: () => boolean): void {
   void page.route('**/api/household', (route) =>
     fulfillJson(route, 200, householdFixture(getWithSibling())),
   )
+  // The owner-only settings UI also reads the invitations list: mock it or
+  // the request leaks to the dev proxy - a live backend's 401 would trip the
+  // global unauthorized handler and clear the mocked session mid-test.
+  void page.route('**/api/household/invitations', (route) =>
+    fulfillJson(route, 200, []),
+  )
   void page.route('**/api/sync/push', (route) => fulfillJson(route, 200, { results: [] }))
   void page.route('**/api/sync/pull*', (route) => {
     const cursor = Number(new URL(route.request().url()).searchParams.get('cursor') ?? '0')

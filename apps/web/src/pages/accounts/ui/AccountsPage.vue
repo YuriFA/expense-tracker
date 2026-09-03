@@ -14,7 +14,8 @@ import ReconcileAccountDialog from '../features/reconcile-account/ui/ReconcileAc
 import { DeleteAccountDialog } from '../features/delete-account'
 
 const { t, locale } = useI18n()
-const { data, error, isLoading, refetch } = useAccounts()
+// Skeletons only while NO data exists yet (background refetches keep cards).
+const { data, error, isPending, refetch } = useAccounts()
 
 const totalsByCurrency = computed(() => {
   const totals = new Map<CurrencyCode, number>()
@@ -85,7 +86,7 @@ const openDelete = (account: AccountWithBalance) => {
     </Card>
 
     <ul class="mt-6 grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 flex-wrap">
-      <template v-if="isLoading">
+      <template v-if="isPending">
         <li v-for="n in 3" :key="n">
           <AccountCardSkeleton />
         </li>

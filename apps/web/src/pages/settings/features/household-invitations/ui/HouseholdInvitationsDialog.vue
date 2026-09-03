@@ -22,7 +22,8 @@ const queryCache = useQueryCache()
 // The dialog only mounts for the owner, so the listing runs unconditionally.
 const invitationsQuery = useHouseholdInvitations()
 const invitations = computed(() => invitationsQuery.data.value ?? [])
-const isLoading = invitationsQuery.isLoading.value
+// Reactive "no data yet" - a background refetch keeps the rendered list.
+const isPending = computed(() => invitationsQuery.isPending.value)
 
 const open = ref(false)
 
@@ -86,7 +87,7 @@ function notifyError(error: unknown, action: string): void {
   <ResponsiveDialog v-model:open="open">
     <template #title>{{ t('household.invitationsTitle') }}</template>
     <div class="flex flex-col gap-3">
-      <p v-if="isLoading" class="text-sm text-muted-foreground">
+      <p v-if="isPending" class="text-sm text-muted-foreground">
         {{ t('household.loadingInvitations') }}
       </p>
       <p v-else-if="!invitations.length" class="text-sm text-muted-foreground">

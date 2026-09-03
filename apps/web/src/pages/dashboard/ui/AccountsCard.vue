@@ -9,7 +9,8 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { ErrorState } from '@/shared/ui/error-state'
 
 const { t, locale } = useI18n()
-const { data: accounts, error, isLoading, refetch } = useAccounts()
+// Skeletons only while NO data exists yet (background refetches keep rows).
+const { data: accounts, error, isPending, refetch } = useAccounts()
 
 // Accounts aggregate is a plain minor-unit sum in the fixed app display
 // currency (currency-rub-only).
@@ -33,7 +34,7 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
       </RouterLink>
     </template>
     <ErrorState v-if="error" @retry="refetch" />
-    <template v-else-if="isLoading">
+    <template v-else-if="isPending">
       <div v-for="n in 3" :key="n" class="flex items-center justify-between gap-2 py-2">
         <Skeleton class="h-4 w-24" />
         <Skeleton class="h-4 w-20" />

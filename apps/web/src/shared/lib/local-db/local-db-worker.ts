@@ -35,16 +35,17 @@ import {
 import { openLocalDatabase } from './sqlite-wasm-database'
 import {
   LOCAL_DB_BUSY_SIGNAL,
-  LOCAL_DB_DATA_CHANGED_SIGNAL,
   LOCAL_DB_LOCK_NAME,
   LOCAL_DB_READY_SIGNAL,
+  LOCAL_DB_RUN_COMPLETE_SIGNAL,
   type LocalDbApi,
+  type LocalDbRunCompleteMessage,
 } from './local-db-api'
 
 // DedicatedWorkerGlobalScope without pulling the WebWorker lib into the app
-// compilation (DOM lib types `navigator.locks`, `postMessage` is cast here).
+// compilation (DOM lib types `navigator.locks`; `postMessage` is cast here).
 const ctx = self as unknown as {
-  postMessage(message: string): void
+  postMessage(message: string | LocalDbRunCompleteMessage): void
 }
 
 async function boot(): Promise<void> {
@@ -63,10 +64,14 @@ async function boot(): Promise<void> {
     const engine = createSyncEngine({
       db: store.db,
       transport: createApiTransport(apiClient),
-      // The engine wrote local data: tell the main thread to invalidate every
-      // UI cache (design D6). A plain signal - Comlink ignores id-less
-      // messages on its wrap endpoint.
-      onDataChanged: () => ctx.postMessage(LOCAL_DB_DATA_CHANGED_SIGNAL),
+      // A cycle completed (design D6): the flag tells whether local rows were
+      // written. A plain id-less message - Comlink ignores it on the wrap
+      // endpoint.
+      onRunComplete: ({ wroteLocalData }) =>
+        ctx.postMessage({
+          type: LOCAL_DB_RUN_COMPLETE_SIGNAL,
+          wroteLocalData,
+        } satisfies LocalDbRunCompleteMessage),
     })
 
     const api: LocalDbApi = {

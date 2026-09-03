@@ -24,18 +24,20 @@ const { t } = useI18n()
 
 const {
   data: debtors,
-  isLoading: debtorsLoading,
+  isPending: debtorsPending,
   error: debtorsError,
   refetch: refetchDebtors,
 } = useDebtors()
 const {
   data: operations,
-  isLoading: operationsLoading,
+  isPending: operationsPending,
   error: operationsError,
   refetch: refetchOperations,
 } = useDebtOperations()
 
-const isLoading = computed(() => debtorsLoading.value || operationsLoading.value)
+// Skeletons only while NO data exists yet: a background refetch
+// (invalidation, sync cycle) keeps the rendered rows in place.
+const isPending = computed(() => debtorsPending.value || operationsPending.value)
 const error = computed(() => debtorsError.value || operationsError.value)
 const refetch = () => Promise.all([refetchDebtors(), refetchOperations()])
 
@@ -65,7 +67,7 @@ const openNewDebtor = (direction: DebtDirection) => {
   <section>
     <PageHeader :title="t('pages.debts')" />
 
-    <div v-if="isLoading" class="mt-6 space-y-4">
+    <div v-if="isPending" class="mt-6 space-y-4">
       <Skeleton class="h-28 rounded-xl" />
       <Skeleton class="h-40 rounded-xl" />
     </div>
