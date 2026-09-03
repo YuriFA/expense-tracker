@@ -65,18 +65,22 @@ function resolvePageFile(slug: string, exportName: string, depth = 0): string {
 
 // A routed page may be a thin route wrapper (e.g. AnalyticsDetailPage
 // mounts the keyed AnalyticsDetailView that owns the header), so the
-// check follows local relative .vue imports transitively.
-function usesPageHeader(file: string, seen = new Set<string>()): boolean {
+// checks follow local relative .vue imports transitively.
+function pageMatches(file: string, pattern: RegExp, seen = new Set<string>()): boolean {
   if (seen.has(file)) return false
   seen.add(file)
   const source = readFileSync(file, 'utf8')
-  if (/<PageHeader\b/.test(source)) return true
+  if (pattern.test(source)) return true
   return [...source.matchAll(/from '(\.\/.+\.vue)'/g)].some((local) =>
-    usesPageHeader(join(dirname(file), local[1]!), seen),
+    pageMatches(join(dirname(file), local[1]!), pattern, seen),
   )
 }
 
-// The nine shell routes that exist today; keeps the parse honest - a router
+const usesPageHeader = (file: string) => pageMatches(file, /<PageHeader\b/)
+// The canvas header rule names the child-page pattern by its back control.
+const usesBackControl = (file: string) => pageMatches(file, /:?back-to\b/)
+
+// The ten shell routes that exist today; keeps the parse honest - a router
 // format change must fail loudly here, not vacuously below.
 const EXPECTED_ROUTES = [
   '/',
@@ -88,6 +92,19 @@ const EXPECTED_ROUTES = [
   '/accounts',
   '/settings',
   '/settings/categories',
+  '/settings/data',
+]
+
+// Sidebar entries per the canvas header rule; every other shell route is
+// a child page and must carry the round back control in its header.
+const ROOT_ROUTES = [
+  '/',
+  '/transactions',
+  '/analytics',
+  '/debts',
+  '/plans',
+  '/accounts',
+  '/settings',
 ]
 
 describe('shell pages use the shared PageHeader', () => {
@@ -106,6 +123,19 @@ describe('shell pages use the shared PageHeader', () => {
     for (const page of pages) {
       const file = resolvePageFile(page.slug, page.exportName)
       if (!usesPageHeader(file)) {
+        violations.push(`${file} (route ${page.route})`)
+      }
+    }
+    expect(violations).toEqual([])
+  })
+
+  it('renders the back control on every child-page header', () => {
+    const pages = shellPages()
+    const violations: string[] = []
+    for (const page of pages) {
+      if (ROOT_ROUTES.includes(page.route)) continue
+      const file = resolvePageFile(page.slug, page.exportName)
+      if (!usesBackControl(file)) {
         violations.push(`${file} (route ${page.route})`)
       }
     }

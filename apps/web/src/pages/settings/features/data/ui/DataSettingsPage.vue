@@ -20,7 +20,11 @@ const importOpen = ref(false)
 
 <template>
   <section>
-    <PageHeader :title="t('dataTransfer.title')" />
+    <PageHeader
+      :title="t('dataTransfer.title')"
+      :back-to="{ name: 'settings' }"
+      :back-label="t('pages.settings')"
+    />
 
     <div class="mt-6 flex flex-col gap-4">
       <SettingsCard :title="t('dataTransfer.exportTitle')">

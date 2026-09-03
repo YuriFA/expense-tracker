@@ -28,6 +28,17 @@ rows, the edit dialog, debtor history, and plan rows). Analytics selectors
 live in `entities/analytics`; debts/plans screens own their view-model
 selectors under `pages/*/model/`.
 
+## Design contract (UI work)
+
+UI changes follow the design canvas `.superdesign/design-system.md` (repo
+root) — read it before touching UI. It holds the hard rules (page headers
+have two patterns only: root pages, child pages with the back control;
+button variants; dialog anatomy) and the canonical token values: components
+consume tokens via Tailwind classes/CSS vars, never raw hex. The mechanical
+slice is enforced by `src/__tests__/page-header-rule.test.ts` and
+`src/__tests__/design-tokens-raw-hex.test.ts`; a green suite covers only
+the checkable subset — the rest of the canvas still applies.
+
 ## Spec-first (contract from `docs/api/openapi.yaml`)
 
 - Never hand-write fetch/types. `pnpm gen:api` regenerates
