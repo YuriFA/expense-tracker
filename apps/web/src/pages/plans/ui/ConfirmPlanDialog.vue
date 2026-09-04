@@ -79,13 +79,15 @@ const handleSubmit = async () => {
     <template #description>{{ planRowTitle(plan, categories) }}</template>
 
     <form id="plans-confirm-form" class="flex flex-col gap-3" @submit.prevent="handleSubmit">
-      <AmountField
-        id="plans-confirm-amount"
-        v-model="amount"
-        class="w-full"
-        :currency="displayCurrency"
-        :aria-label="t('plans.confirmAmountLabel')"
-      />
+      <Field>
+        <FieldLabel for="plans-confirm-amount">{{ t('fields.amount') }}</FieldLabel>
+        <AmountField
+          id="plans-confirm-amount"
+          v-model="amount"
+          class="w-full"
+          :currency="displayCurrency"
+        />
+      </Field>
 
       <div class="grid grid-cols-2 gap-2 text-sm">
         <div>

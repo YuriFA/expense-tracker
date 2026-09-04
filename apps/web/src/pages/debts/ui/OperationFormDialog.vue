@@ -213,15 +213,17 @@ const handleDelete = async () => {
       </div>
 
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
-        <AmountField
-          id="debts-operation-amount"
-          class="w-full"
-          :aria-label="t('fields.amount')"
-          :currency="displayCurrency"
-          :model-value="value"
-          :errors="errors"
-          @update:model-value="(v) => setValue(v as number)"
-        />
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="debts-operation-amount">{{ t('fields.amount') }}</FieldLabel>
+          <AmountField
+            id="debts-operation-amount"
+            class="w-full"
+            :currency="displayCurrency"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="(v) => setValue(v as number)"
+          />
+        </Field>
       </VeeField>
 
       <p

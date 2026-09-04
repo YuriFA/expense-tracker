@@ -125,15 +125,17 @@ const handleSubmit = handleFormSubmit(async (data) => {
         </div>
       </VeeField>
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
-        <AmountField
-          id="cashflow-edit-amount"
-          class="min-w-0 w-auto"
-          :aria-label="t('fields.amount')"
-          :currency="accountCurrency"
-          :model-value="value"
-          :errors="errors"
-          @update:model-value="(v) => setValue(v as number)"
-        />
+        <Field class="w-40" :data-invalid="!!errors.length">
+          <FieldLabel for="cashflow-edit-amount">{{ t('fields.amount') }}</FieldLabel>
+          <AmountField
+            id="cashflow-edit-amount"
+            class="w-full"
+            :currency="accountCurrency"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="(v) => setValue(v as number)"
+          />
+        </Field>
       </VeeField>
     </div>
 

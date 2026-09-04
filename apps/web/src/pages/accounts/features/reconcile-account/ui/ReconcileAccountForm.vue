@@ -84,7 +84,6 @@ const handleSubmit = handleFormSubmit(async (data) => {
         </FieldLabel>
         <AmountField
           id="reconcile-balance"
-          hero
           :currency="account.currency"
           :model-value="value"
           :errors="errors"

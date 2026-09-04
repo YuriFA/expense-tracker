@@ -20,7 +20,7 @@ export default defineConfig({
     actionTimeout: 0,
     baseURL: 'http://localhost:4179',
     trace: 'on-first-retry',
-    headless: !!process.env.CI,
+    headless: !!process.env.CI || process.env.E2E_HEADLESS === '1',
   },
   projects: [
     {

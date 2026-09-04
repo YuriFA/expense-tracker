@@ -192,15 +192,17 @@ const handleDelete = async () => {
 
     <form id="plans-form" class="flex flex-col gap-3" @submit="handleSubmit">
       <VeeField v-slot="{ value, setValue, errors }" name="amount">
-        <AmountField
-          id="plans-form-amount"
-          class="w-full"
-          :aria-label="t('fields.amount')"
-          :currency="displayCurrency"
-          :model-value="value"
-          :errors="errors"
-          @update:model-value="(v) => setValue(v as number)"
-        />
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="plans-form-amount">{{ t('fields.amount') }}</FieldLabel>
+          <AmountField
+            id="plans-form-amount"
+            class="w-full"
+            :currency="displayCurrency"
+            :model-value="value"
+            :errors="errors"
+            @update:model-value="(v) => setValue(v as number)"
+          />
+        </Field>
       </VeeField>
 
       <VeeField v-slot="{ value, setValue }" name="name">

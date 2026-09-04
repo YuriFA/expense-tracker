@@ -119,3 +119,10 @@ exists in production builds); the sync suites (`sync-backend.spec.ts`,
 projects are chromium + firefox only: the bundled WebKit exposes no OPFS
 (`getDirectory()` throws), so the local-first core cannot boot there — real
 Safari ≥ 17 needs a manual verification pass.
+
+E2E run strategy: never start with the full matrix. During work run only the
+specs covering the touched flows, one project (`--project=firefox`) and
+capped workers (`--workers=2`); the full both-project suite runs ONCE at the
+end of the session, not after every change. Local runs are headed by default
+and the full suite overloads dev machines - pass `E2E_HEADLESS=1` for
+headless (env opt-in in both playwright configs; CI is unaffected).

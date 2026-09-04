@@ -24,7 +24,6 @@ const props = withDefaults(
     errors?: string[]
     placeholder?: string
     class?: string
-    hero?: boolean
     mode?: AmountFieldMode
   }>(),
   {
@@ -33,7 +32,6 @@ const props = withDefaults(
     errors: undefined,
     placeholder: undefined,
     class: undefined,
-    hero: false,
     mode: 'positive',
   },
 )
@@ -182,9 +180,7 @@ function handlePaste(event: ClipboardEvent): void {
         :aria-invalid="!!props.errors?.length"
         :class="
           cn(
-            props.hero
-              ? 'h-14 rounded-none border-0 border-b bg-transparent px-0 pr-10 text-left text-3xl font-bold tabular-nums focus-visible:border-ring focus-visible:ring-0 md:text-3xl'
-              : 'h-10 rounded-input border border-input bg-transparent px-3 pr-10 py-2.5 text-left text-base tabular-nums md:text-sm',
+            'h-10 rounded-input border border-input bg-transparent px-3 pr-10 py-2.5 text-left text-base tabular-nums md:text-sm',
             'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 w-full min-w-0 transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
             'focus-visible:border-ring focus-visible:ring-primary/10 focus-visible:ring-2',
             'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
@@ -199,7 +195,6 @@ function handlePaste(event: ClipboardEvent): void {
       <span
         v-if="showSuffix"
         class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm font-medium text-muted-foreground"
-        :class="props.hero ? 'right-0 text-base' : undefined"
       >
         {{ suffix }}
       </span>

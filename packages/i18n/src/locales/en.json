@@ -276,7 +276,6 @@
     "overdue": "Overdue",
     "empty": "No plans yet",
     "confirmTitle": "Confirm payment",
-    "confirmAmountLabel": "Amount",
     "confirmSubmit": "Confirm",
     "confirmSuccess": "Payment confirmed",
     "deletePlan": "Delete plan",
