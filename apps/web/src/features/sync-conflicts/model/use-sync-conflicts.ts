@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import type { LocalSyncConflict } from '@expense-tracker/local-data'
+import { conflictSubject } from '@expense-tracker/local-data'
 import { getLocalDbApi } from '@/shared/lib/local-db'
 import { useSyncController } from '@/shared/lib/local-db'
 
@@ -35,12 +36,5 @@ export const useResolveConflict = () => {
   })
 }
 
-/** Human label of the conflicting record (name / description), mobile parity. */
-export function conflictSubject(conflict: LocalSyncConflict): string {
-  const state = conflict.localState as Record<string, unknown> | null
-  const source =
-    state ?? (conflict.serverState?.data as Record<string, unknown> | undefined) ?? undefined
-  const name = typeof source?.name === 'string' ? source.name : ''
-  const description = typeof source?.description === 'string' ? source.description : ''
-  return name || description
-}
+/** Re-export so existing ConflictCenter.vue imports keep working. */
+export { conflictSubject }

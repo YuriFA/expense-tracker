@@ -20,13 +20,16 @@ vi.mock('../api/session-api', () => ({
   },
 }))
 
-// Mock the worker RPC surface: the store only touches `meta` (ownership gate).
+// Mock the worker RPC surface: the store only touches `meta` and `sync`.
+const syncMock = {
+  rebindOwner: vi.fn<(userId: string) => Promise<void>>(),
+}
 const metaMock = {
   getOwnerUserId: vi.fn<() => Promise<string | null>>(),
   setOwnerUserId: vi.fn<(userId: string) => Promise<void>>(),
   wipeLocalData: vi.fn<() => Promise<void>>(),
 }
-const localDbApi = { meta: metaMock } as unknown as LocalDbApi
+const localDbApi = { sync: syncMock, meta: metaMock } as unknown as LocalDbApi
 
 vi.mock('@/shared/lib/local-db', () => ({
   getLocalDbApi: () => Promise.resolve(localDbApi),
@@ -62,6 +65,7 @@ describe('useAuthStore', () => {
     metaMock.getOwnerUserId.mockReset()
     metaMock.setOwnerUserId.mockReset().mockResolvedValue(undefined)
     metaMock.wipeLocalData.mockReset().mockResolvedValue(undefined)
+    syncMock.rebindOwner.mockReset().mockResolvedValue(undefined)
     invalidateQueries.mockReset().mockResolvedValue(undefined)
   })
 
@@ -151,7 +155,9 @@ describe('useAuthStore', () => {
 
     it('different owner: delete wipes local data, rebinds and authenticates', async () => {
       vi.mocked(sessionApi.login).mockResolvedValue(otherUser)
-      metaMock.getOwnerUserId.mockResolvedValue(user.id)
+      metaMock.getOwnerUserId
+        .mockResolvedValueOnce(user.id)     // passOwnershipGate reads the current owner
+        .mockResolvedValueOnce(otherUser.id) // completeAuthentication sees the new owner (set by rebindOwner)
 
       const auth = useAuthStore()
       const pending = auth.login('other@example.com', 'password')
@@ -160,8 +166,10 @@ describe('useAuthStore', () => {
       await auth.confirmOwnershipGateDelete()
       await expect(pending).resolves.toEqual({ ok: true })
 
-      expect(metaMock.wipeLocalData).toHaveBeenCalledTimes(1)
-      expect(metaMock.setOwnerUserId).toHaveBeenCalledWith(otherUser.id)
+      expect(syncMock.rebindOwner).toHaveBeenCalledWith(otherUser.id)
+      expect(metaMock.wipeLocalData).not.toHaveBeenCalled()
+      // adoptUnowned skips setOwnerUserId because getOwnerUserId returns the new owner.
+      expect(metaMock.setOwnerUserId).not.toHaveBeenCalled()
       expect(invalidateQueries).toHaveBeenCalledTimes(1)
       expect(auth.status).toBe('authenticated')
       expect(auth.user).toEqual(otherUser)

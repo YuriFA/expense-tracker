@@ -9,6 +9,7 @@ import type {
   User,
 } from '../model/types'
 import { getLocalDbApi } from '@/shared/lib/local-db'
+import { ownershipGateDecision } from '@expense-tracker/local-data'
 
 /**
  * Auth state with the mobile status machine (design D5):
@@ -32,6 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
   /** Binds an unowned database to its first authenticated user, then flips to `authenticated`. */
   async function completeAuthentication(authenticated: User): Promise<void> {
     const db = await getLocalDbApi()
+    // adoptUnowned: bind only if the db is currently unowned (first login / same owner).
     if (!(await db.meta.getOwnerUserId())) {
       await db.meta.setOwnerUserId(authenticated.id)
     }
@@ -48,7 +50,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function passOwnershipGate(authenticated: User): Promise<AuthResult> {
     const db = await getLocalDbApi()
     const owner = await db.meta.getOwnerUserId()
-    if (!owner || owner === authenticated.id) {
+    const decision = ownershipGateDecision(owner, authenticated.id)
+    if (decision.kind === 'pass') {
       await completeAuthentication(authenticated)
       return { ok: true }
     }
@@ -64,8 +67,8 @@ export const useAuthStore = defineStore('auth', () => {
     pendingGate.value = null
 
     const db = await getLocalDbApi()
-    await db.meta.wipeLocalData()
-    await db.meta.setOwnerUserId(pending.user.id)
+    // rebindOwner: wipe ALL local data and set the new owner atomically.
+    await db.sync.rebindOwner(pending.user.id)
     // Everything cached belonged to the wiped dataset.
     await queryCache.invalidateQueries()
     await completeAuthentication(pending.user)

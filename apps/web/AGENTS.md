@@ -82,20 +82,23 @@ suite covers only the checkable subset — the rest of the canvas still applies.
   create sends an `Idempotency-Key`; list is cursor-paginated
   (`{transactions,nextCursor}`).
 - **Auth:** anonymous-first. `entities/session` holds the typed auth API +
-  Pinia store with the mobile status machine (`restoring → anonymous ⇄
-  authenticated`); restore is network-tolerant (401 or unreachable backend ⇒
+  Pinia store with the mobile status machine (`restoring -> anonymous <->
+  authenticated`); restore is network-tolerant (401 or unreachable backend =>
   anonymous); login/register/restored sessions pass the ownership gate
-  (different owner ⇒ wipe-or-cancel AlertDialog); logout keeps local data.
-  The router is public-by-default; `main.ts` wires the 401 interceptor
-  (`setUnauthorizedHandler` → clearSession, no redirect). Session APIs call
-  the apiClient directly — the sanctioned control-plane exception to the
-  repository seam (invariant #11).
-- **Repos:** a single `local` variant — Comlink remotes of the worker-side
+  (different owner => wipe-or-cancel AlertDialog); logout keeps local data.
+  Ownership gate policy (decision table + atomic rebind) lives in
+  `@expense-tracker/local-data` (`sync/ownership.ts`); the store keeps only
+  presentation (AlertDialog) and control-plane side effects (server logout,
+  cache invalidation). The router is public-by-default; `main.ts` wires the
+  401 interceptor (`setUnauthorizedHandler` -> clearSession, no redirect).
+  Session APIs call the apiClient directly - the sanctioned control-plane
+  exception to the repository seam (invariant #11).
+- **Repos:** a single `local` variant - Comlink remotes of the worker-side
   `@expense-tracker/local-data` repositories, provided in
   `app/repositories.ts` (calls queue behind the worker's ready handshake;
   worker errors rehydrate into typed RepositoryErrors). The worker holds a
   Web Locks guard for single-tab exclusivity: a second tab gets the
-  "already open in another tab" state — never assume multi-tab access to the
+  "already open in another tab" state - never assume multi-tab access to the
   database. The Vite dev/preview server proxies `/api` -> `localhost:8080`
   (same-origin cookie, no CORS).
 

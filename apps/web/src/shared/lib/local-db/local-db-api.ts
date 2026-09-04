@@ -13,6 +13,7 @@ import type {
 import type {
   LocalPlannedPaymentRepository,
   LocalSyncConflict,
+  RestoreResult,
   SyncEngineState,
   SyncRunOutcome,
   SyncStatusSnapshot,
@@ -54,6 +55,10 @@ interface LocalDbSyncApi {
   resolveConflictKeepLocal(conflictId: string): Promise<void>
   resolveConflictTakeServer(conflictId: string): Promise<void>
   markConflictResolved(conflictId: string): Promise<void>
+  /** Wipes ALL local data and rebinds the database to a new owner atomically. */
+  rebindOwner(userId: string): Promise<void>
+  /** Restores a delete-vs-edit conflict as a new record; returns a result type. */
+  restoreConflictAsNew(conflictId: string): Promise<RestoreResult>
 }
 
 interface LocalDbMetaApi {

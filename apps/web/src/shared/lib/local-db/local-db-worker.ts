@@ -25,8 +25,10 @@ import {
   listUnresolvedConflicts,
   markConflictResolved,
   rebaseLocalDataForHousehold,
+  rebindOwner,
   resolveConflictKeepLocal,
   resolveConflictTakeServer,
+  restoreConflictAsNew,
   readSyncStatus,
   setLastHousehold,
   setOwnerUserId,
@@ -99,6 +101,12 @@ async function boot(): Promise<void> {
         },
         markConflictResolved: async (conflictId: string) => {
           markConflictResolved(store.db, conflictId)
+        },
+        rebindOwner: async (userId: string) => {
+          rebindOwner(store.db, userId)
+        },
+        restoreConflictAsNew: async (conflictId: string) => {
+          return restoreConflictAsNew(store.db, conflictId)
         },
       },
       meta: {

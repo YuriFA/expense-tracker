@@ -78,13 +78,22 @@ async function handleResolve(action: ConflictAction, conflict: LocalSyncConflict
 
 async function handleRestore(conflict: LocalSyncConflict) {
   try {
-    await restoreAsNew(conflict)
-    notification.success(t('sync.conflicts.restoreSuccess'))
+    const result = await restoreAsNew(conflict)
+    if (result.ok) {
+      notification.success(t('sync.conflicts.restoreSuccess'))
+    } else {
+      notification.mutationError(
+        new Error(result.reason),
+        {
+          title: t('sync.conflicts.restoreError'),
+          feature: 'sync',
+          action: 'restore',
+        },
+      )
+    }
   } catch (error) {
     notification.mutationError(error, {
-      title: canRestoreAsNew(conflict)
-        ? t('sync.conflicts.restoreError')
-        : t('sync.conflicts.restoreUnavailable'),
+      title: t('sync.conflicts.restoreError'),
       feature: 'sync',
       action: 'restore',
     })

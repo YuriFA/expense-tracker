@@ -63,6 +63,8 @@ const listMock = vi.fn<() => Promise<LocalSyncConflict[]>>()
 const keepLocalMock = vi.fn<(id: string) => Promise<void>>()
 const takeServerMock = vi.fn<(id: string) => Promise<void>>()
 const markResolvedMock = vi.fn<(id: string) => Promise<void>>()
+const restoreConflictAsNewMock = vi.fn<(id: string) => Promise<import('@expense-tracker/local-data').RestoreResult>>()
+const rebindOwnerMock = vi.fn<(userId: string) => Promise<void>>()
 const localDbApi = {
   sync: {
     run: runMock,
@@ -75,6 +77,8 @@ const localDbApi = {
     resolveConflictKeepLocal: keepLocalMock,
     resolveConflictTakeServer: takeServerMock,
     markConflictResolved: markResolvedMock,
+    rebindOwner: rebindOwnerMock,
+    restoreConflictAsNew: restoreConflictAsNewMock,
   },
   meta: {
     getOwnerUserId: vi.fn<() => Promise<string | null>>(),
@@ -100,7 +104,8 @@ const {
 
 const hostState: { controller: SyncController | null } = { controller: null }
 
-// The restore-as-new flow injects the entity repositories.
+// Repository providers are still needed by the DI tree even though restore
+// now goes through the bridge.
 const accountsRepo = createMockAccountRepository()
 const debtorsRepo = createMockDebtorRepository()
 
@@ -149,6 +154,8 @@ describe('ConflictCenter', () => {
     takeServerMock.mockReset().mockResolvedValue(undefined)
     markResolvedMock.mockReset().mockResolvedValue(undefined)
     listMock.mockReset()
+    restoreConflictAsNewMock.mockReset().mockResolvedValue({ ok: true, entity: 'account', createdId: 'new-id' })
+    rebindOwnerMock.mockReset().mockResolvedValue(undefined)
   })
 
   afterEach(async () => {
@@ -204,16 +211,9 @@ describe('ConflictCenter', () => {
     restore!.click()
     await flushPromises()
 
-    // The preserved local state is re-created WITHOUT the old id (fresh UUID)
-    // and the conflict is marked resolved.
-    expect(accountsRepo.create).toHaveBeenCalledWith({
-      name: 'Карта',
-      currency: 'RUB',
-      openingBalance: 100000,
-    })
-    const payload = accountsRepo.create.mock.calls[0]![0] as Record<string, unknown>
-    expect('id' in payload && payload.id === 'acc-1').toBe(false)
-    expect(markResolvedMock).toHaveBeenCalledWith('c2')
+    // The bridge method is called with the conflict's id.
+    expect(restoreConflictAsNewMock).toHaveBeenCalledWith('c2')
+    // A successful restore triggers a sync run.
     expect(runMock).toHaveBeenCalled()
   })
 
@@ -223,8 +223,26 @@ describe('ConflictCenter', () => {
     document.querySelector<HTMLElement>('[data-testid="conflict-restore-as-new"]')!.click()
     await flushPromises()
 
-    expect(debtorsRepo.create).toHaveBeenCalledWith({ name: 'Анна', note: 'colleague' })
-    expect(markResolvedMock).toHaveBeenCalledWith('c3')
+    expect(restoreConflictAsNewMock).toHaveBeenCalledWith('c3')
+    expect(runMock).toHaveBeenCalled()
+  })
+
+  it('shows an error notification when the restore is refused', async () => {
+    restoreConflictAsNewMock.mockResolvedValueOnce({
+      ok: false,
+      reason: 'invalid-state',
+      entity: 'account',
+    })
+    await mountOpenWithConflicts([deletedConflict])
+
+    document.querySelector<HTMLElement>('[data-testid="conflict-restore-as-new"]')!.click()
+    await flushPromises()
+
+    // The bridge was called but the restore failed: the conflict stays listed
+    // (listMock still returns it on the next poll) and the run still fires
+    // (onSettled always invalidates and kicks the engine).
+    expect(restoreConflictAsNewMock).toHaveBeenCalledWith('c2')
+    expect(runMock).toHaveBeenCalled()
   })
 
   it('hides the restore action when no local state was preserved', async () => {
