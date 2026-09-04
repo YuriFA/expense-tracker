@@ -1,4 +1,4 @@
-export { PlannedPaymentRepositoryProvider, usePlannedPaymentRepository } from './api/repository'
+export { PlannedPaymentRepositoryProvider } from './api/repository'
 export {
   createLocalPlannedPaymentRepository,
   type ConfirmPlannedPaymentInput,

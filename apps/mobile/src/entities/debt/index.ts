@@ -1,8 +1,4 @@
-export {
-  DebtRepositoryProvider,
-  useDebtorRepository,
-  useDebtOperationRepository,
-} from './api/repository'
+export { DebtRepositoryProvider } from './api/repository'
 export {
   createLocalDebtorRepository,
   createLocalDebtOperationRepository,

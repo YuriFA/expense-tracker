@@ -1,4 +1,4 @@
-export { CategoryRepositoryProvider, useCategoryRepository } from './api/repository'
+export { CategoryRepositoryProvider } from './api/repository'
 export { createLocalCategoryRepository } from '@expense-tracker/local-data'
 export {
   useCategories,
