@@ -105,7 +105,8 @@ suite covers only the checkable subset — the rest of the canvas still applies.
 ## Quality bar
 
 `pnpm type-check`, `pnpm lint` (oxlint + eslint), `pnpm i18n:lint` (strict i18n),
-`pnpm test:unit`, and `pnpm exec steiger src` all green. For UI changes,
+`pnpm format` (oxfmt), `pnpm test:unit`, and `pnpm exec steiger src` all green. For UI
+changes,
 `pnpm lint:design` is part of the required green set. `knip` runs repo-wide
 from the workspace root (`pnpm knip`, config in the root `knip.json`). E2E
 (`apps/web/e2e`, `pnpm test:e2e`): the default suite is backendless (local
