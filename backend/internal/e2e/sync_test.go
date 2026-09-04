@@ -334,28 +334,6 @@ func TestE2E_SyncPushPullFlows(t *testing.T) {
 	assert.Nil(t, resp["nextCursor"], "nextCursor is null when caught up")
 }
 
-func TestE2E_SyncPullIncludesSeededCategoriesWhenEnabled(t *testing.T) {
-	if testing.Short() {
-		t.Skip("e2e requires Postgres")
-	}
-
-	c := &client{t: t, jar: map[string]string{}}
-	resp := c.do(
-		"POST",
-		"/api/auth/register",
-		map[string]any{"email": uniqueEmail(), "password": "supersecret1", "seedCategories": true},
-	)
-	require.Equal(t, 201, resp["__status"], resp["__body"])
-
-	changes, _ := pullAll(t, c, 0)
-	require.NotEmpty(t, changes, "seeded registrations expose their categories via the change feed")
-	for _, change := range changes {
-		assert.Equal(t, "category", change["entity"])
-		assert.Equal(t, "upsert", change["action"])
-		assert.InDelta(t, float64(1), change["version"], 0)
-	}
-}
-
 func TestE2E_RestTombstonesFeedTheChangeLog(t *testing.T) {
 	if testing.Short() {
 		t.Skip("e2e requires Postgres")
@@ -365,10 +343,10 @@ func TestE2E_RestTombstonesFeedTheChangeLog(t *testing.T) {
 	resp := c.do(
 		"POST",
 		"/api/auth/register",
-		map[string]any{"email": uniqueEmail(), "password": "supersecret1", "seedCategories": true},
+		map[string]any{"email": uniqueEmail(), "password": "supersecret1"},
 	)
 	require.Equal(t, 201, resp["__status"], resp["__body"])
-	_, cursor := pullAll(t, c, 0) // consume the seeds
+	_, cursor := pullAll(t, c, 0) // baseline cursor (registration seeds nothing)
 
 	// REST create carries the client id and lands in the change log.
 	accountID := "77777777-7777-4777-8777-777777777777"

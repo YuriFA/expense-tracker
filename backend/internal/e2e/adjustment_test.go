@@ -55,7 +55,7 @@ func TestE2E_AdjustmentTransactions(t *testing.T) {
 	resp := c.do(
 		"POST",
 		"/api/auth/register",
-		map[string]any{"email": uniqueEmail(), "password": "supersecret1", "seedCategories": true},
+		map[string]any{"email": uniqueEmail(), "password": "supersecret1"},
 	)
 	require.Equal(t, 201, resp["__status"], resp["__body"])
 
@@ -82,11 +82,15 @@ func TestE2E_AdjustmentTransactions(t *testing.T) {
 	require.Equal(t, int64(12000), accountBalance())
 
 	// Shape: a category or a transfer pair on an adjustment is rejected.
-	seeded := c.do("GET", "/api/categories?type=income", nil)
-	var categories []map[string]any
-	require.NoError(t, json.Unmarshal([]byte(seeded["__body"].(string)), &categories), seeded["__body"])
-	require.NotEmpty(t, categories)
-	categoryID := categories[0]["id"].(string)
+	catCreated := c.do("POST", "/api/categories", map[string]any{
+		"name": "Пополнение", "type": "income", "icon": "💼", "color": "#7c3aed",
+	})
+	require.Equal(t, 201, catCreated["__status"], catCreated["__body"])
+	var category struct {
+		ID string `json:"id"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(catCreated["__body"].(string)), &category), catCreated["__body"])
+	categoryID := category.ID
 
 	bad := c.doPostTransaction(map[string]any{
 		"type": "adjustment", "amount": -500, "occurredAt": "2026-09-01T10:00:00Z",

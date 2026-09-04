@@ -31,13 +31,10 @@ type User struct {
 	UpdatedAt    time.Time
 }
 
-// RegisterUserParams is the input to create a new user (and, when seeding is
-// explicitly enabled for this registration, the starter categories - default
-// off per the mobile product's empty-start decision).
+// RegisterUserParams is the input to create a new user.
 type RegisterUserParams struct {
-	Email          string
-	PasswordHash   string
-	SeedCategories bool
+	Email        string
+	PasswordHash string
 }
 
 // DisplayName validation bounds (enforced by the profile update service).

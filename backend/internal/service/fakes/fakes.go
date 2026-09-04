@@ -175,25 +175,6 @@ func (s *Store) RegisterUser(_ context.Context, params domain.RegisterUserParams
 	s.memberships[u.ID] = &domain.Membership{
 		HouseholdID: householdID, UserID: u.ID, Role: domain.HouseholdRoleOwner, JoinedAt: now,
 	}
-
-	if params.SeedCategories {
-		for _, c := range domain.DefaultCategories {
-			cat := &domain.Category{
-				ID:        uuid.New(),
-				UserID:    u.ID,
-				Name:      c.Name,
-				Type:      c.Type,
-				Icon:      c.Icon,
-				Color:     c.Color,
-				CreatedAt: now,
-				UpdatedAt: now,
-				Version:   1,
-			}
-			s.categories[cat.ID] = cat
-			s.catUnique[householdID.String()+"|"+c.Name] = struct{}{}
-			s.appendChange(householdID, u.ID, domain.SyncEntityCategory, cat.ID, domain.SyncChangeUpsert, cat.Version)
-		}
-	}
 	return cloneUser(u), nil
 }
 

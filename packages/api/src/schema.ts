@@ -2088,13 +2088,6 @@ export interface operations {
                      * @example strong-password
                      */
                     password: string;
-                    /**
-                     * @description Явно включить посев стартового набора категорий (24) для
-                     *     этой регистрации. По умолчанию off — новый пользователь
-                     *     начинает с пустым списком категорий.
-                     * @default false
-                     */
-                    seedCategories?: boolean;
                 };
             };
         };

@@ -116,13 +116,6 @@ paths:
                   maxLength: 72
                   description: Plaintext (хешируется на сервере).
                   example: strong-password
-                seedCategories:
-                  type: boolean
-                  default: false
-                  description: |
-                    Явно включить посев стартового набора категорий (24) для
-                    этой регистрации. По умолчанию off — новый пользователь
-                    начинает с пустым списком категорий.
       responses:
         "201":
           description: Пользователь создан, сессия установлена.

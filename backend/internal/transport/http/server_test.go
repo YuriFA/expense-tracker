@@ -191,13 +191,13 @@ func TestTransport_RegisterLoginCreateFlow(t *testing.T) {
 	engine := newTestEngine(t)
 	client := newClient(t, engine)
 
-	// Register -> 201 + session cookie.
-	// The web signup keeps seeding enabled (product decision); this flow is
-	// its twin, so the register call opts in explicitly.
+	// Register -> 201 + session cookie. The category list starts empty
+	// (registration no longer seeds anything), so the flow creates its own
+	// category below.
 	rec := client.do(
 		"POST",
 		"/api/auth/register",
-		map[string]any{"email": "flow@example.com", "password": "supersecret1", "seedCategories": true},
+		map[string]any{"email": "flow@example.com", "password": "supersecret1"},
 		nil,
 	)
 	require.Equal(t, 201, rec.Code, rec.Body.String())
@@ -220,13 +220,14 @@ func TestTransport_RegisterLoginCreateFlow(t *testing.T) {
 	assert.InDelta(t, float64(10000), acct["balance"], 0)
 	accountID := acct["id"].(string)
 
-	// Seed categories include income ones.
-	rec = client.do("GET", "/api/categories?type=income", nil, nil)
-	require.Equal(t, 200, rec.Code, rec.Body.String())
-	var cats []map[string]any
-	decode(t, rec, &cats)
-	require.NotEmpty(t, cats)
-	catID := cats[0]["id"].(string)
+	// Create an income category for the transaction.
+	rec = client.do("POST", "/api/categories", map[string]any{
+		"name": "Salary", "type": "income", "icon": "💼", "color": "#7c3aed",
+	}, nil)
+	require.Equal(t, 201, rec.Code, rec.Body.String())
+	var createdCat map[string]any
+	decode(t, rec, &createdCat)
+	catID := createdCat["id"].(string)
 
 	// Create transaction referencing the account + category (idempotent).
 	rec = client.do("POST", "/api/transactions", map[string]any{
