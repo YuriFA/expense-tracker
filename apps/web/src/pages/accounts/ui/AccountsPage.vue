@@ -8,9 +8,10 @@ import { formatMoney, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/lib/m
 import { ErrorState } from '@/shared/ui/error-state'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { computed, ref } from 'vue'
-import { AddAccountDialog } from '../features/add-account'
-import EditAccountDialog from '../features/edit-account/ui/EditAccountDialog.vue'
-import ReconcileAccountDialog from '../features/reconcile-account/ui/ReconcileAccountDialog.vue'
+import { Button } from '@/shared/ui/button'
+import { AddAccountForm } from '../features/add-account'
+import EditAccountForm from '../features/edit-account/ui/EditAccountForm.vue'
+import ReconcileAccountForm from '../features/reconcile-account/ui/ReconcileAccountForm.vue'
 import { DeleteAccountDialog } from '../features/delete-account'
 
 const { t, locale } = useI18n()
@@ -26,14 +27,14 @@ const totalsByCurrency = computed(() => {
   return [...totals.entries()].map(([currency, amount]) => ({ currency, amount }))
 })
 
-const format = (value: number, currency: CurrencyCode) =>
-  formatMoney(value, currency, locale.value)
+const format = (value: number, currency: CurrencyCode) => formatMoney(value, currency, locale.value)
 
 // One dialog instance per flow, hoisted out of the card grid: the card kebab
 // sets the active account, the dialog pair reads it (the list/dialog
 // convention - the RecentTransactions shape).
 const editOpen = ref(false)
 const reconcileOpen = ref(false)
+const addOpen = ref(false)
 const deleteOpen = ref(false)
 const activeAccount = ref<AccountWithBalance | null>(null)
 const pendingDeleteId = ref<string | null>(null)
@@ -59,7 +60,9 @@ const openDelete = (account: AccountWithBalance) => {
   <section>
     <PageHeader :title="t('pages.accounts')" :subtitle="t('accounts.description')">
       <template #actions>
-        <AddAccountDialog />
+        <Button class="max-sm:w-full" data-testid="open-add-account" @click="addOpen = true">
+          {{ t('actions.create') }}
+        </Button>
       </template>
     </PageHeader>
 
@@ -112,16 +115,13 @@ const openDelete = (account: AccountWithBalance) => {
       </template>
     </ul>
 
-    <EditAccountDialog
-      v-if="activeAccount"
-      v-model:open="editOpen"
-      :account="activeAccount"
-    />
-    <ReconcileAccountDialog
+    <EditAccountForm v-if="activeAccount" v-model:open="editOpen" :account="activeAccount" />
+    <ReconcileAccountForm
       v-if="activeAccount"
       v-model:open="reconcileOpen"
       :account="activeAccount"
     />
+    <AddAccountForm v-model:open="addOpen" />
     <DeleteAccountDialog
       v-if="pendingDeleteId"
       v-model:open="deleteOpen"

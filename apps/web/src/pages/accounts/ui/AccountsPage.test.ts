@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import AccountsPage from './AccountsPage.vue'
 import AccountCard from './AccountCard.vue'
-import EditAccountDialog from '../features/edit-account/ui/EditAccountDialog.vue'
+import EditAccountForm from '../features/edit-account/ui/EditAccountForm.vue'
 import { AddAccountForm } from '../features/add-account'
 import type { AccountWithBalance } from '@/entities/account'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
@@ -66,8 +66,11 @@ describe('AccountsPage', () => {
     const wrapper = mountWithProviders(AccountsPage, {
       repositories: { accounts: accountsRepo },
     })
-    // The dialog host is lazy, but the create trigger is always present.
-    expect(wrapper.findComponent(AddAccountForm).exists() || wrapper.text().includes('Create')).toBe(true)
+    // The form owns its dialog; it stays closed, but the create trigger is
+    // always present.
+    expect(
+      wrapper.findComponent(AddAccountForm).exists() || wrapper.text().includes('Create'),
+    ).toBe(true)
   })
 
   it('handles empty accounts list', async () => {
@@ -92,13 +95,13 @@ describe('AccountsPage', () => {
     await flushPromises()
 
     // The dialogs stay closed until a card reports the intent.
-    expect(wrapper.findComponent(EditAccountDialog).exists()).toBe(false)
+    expect(wrapper.findComponent(EditAccountForm).exists()).toBe(false)
 
     // The first card's kebab opens the edit dialog bound to that account.
     const [first] = accounts
     wrapper.findComponent(AccountCard).vm.$emit('edit', first)
     await flushPromises()
-    const editDialog = wrapper.findComponent(EditAccountDialog)
+    const editDialog = wrapper.findComponent(EditAccountForm)
     expect(editDialog.exists()).toBe(true)
     expect(editDialog.props('account')?.id).toBe(first?.id)
   })

@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { flushPromises, type VueWrapper } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ReconcileAccountForm from './ReconcileAccountForm.vue'
-import { AmountField } from '@/shared/ui/amount-field'
 import type { AccountWithBalance } from '@/entities/account'
 import type { AdjustmentTransaction } from '@/entities/transaction'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
 import { createMockTransactionRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
-
 
 const account: AccountWithBalance = {
   version: 1,
@@ -28,8 +26,11 @@ const createdAdjustment: AdjustmentTransaction = {
   accountId: 'a1',
 } as never
 
+// The form owns its ResponsiveDialog, so the open surface renders through a
+// portal: the DOM lives under document.body and is driven at the DOM level.
 describe('ReconcileAccountForm', () => {
   beforeEach(() => {
+    document.body.innerHTML = ''
     vi.clearAllMocks()
   })
 
@@ -39,41 +40,63 @@ describe('ReconcileAccountForm', () => {
     const transactions = createMockTransactionRepository()
     transactions.create.mockResolvedValue(createdAdjustment)
 
-    const wrapper = mountWithProviders(ReconcileAccountForm, {
-      props: { account: target } as never,
+    mountWithProviders(ReconcileAccountForm, {
+      props: { account: target, open: true } as never,
       repositories: { accounts, transactions },
-      global: { stubs: { DialogClose: true } },
     })
-    return { wrapper, transactions }
+    return { transactions }
+  }
+
+  const preview = () => document.querySelector('[data-testid="reconcile-delta-preview"]')
+  const submitButton = () =>
+    document.querySelector<HTMLButtonElement>('[data-testid="reconcile-submit"]')
+
+  async function setAmount(value: string) {
+    const input = document.querySelector<HTMLInputElement>('[data-slot="amount-input"]')!
+    input.dispatchEvent(new FocusEvent('focus'))
+    input.value = value
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new FocusEvent('blur'))
+    await nextTick()
+  }
+
+  async function setNote(value: string) {
+    const input = document.querySelector<HTMLInputElement>('input#reconcile-note')!
+    input.value = value
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+  }
+
+  async function submit() {
+    document
+      .querySelector('#reconcile-account-form')
+      ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await flushPromises()
   }
 
   it('prefills the target with the current balance and shows the zero-delta state', async () => {
-    const { wrapper, transactions } = mountForm()
+    const { transactions } = mountForm()
     await flushPromises()
 
     // 120.00 RUB prefilled: delta 0 -> no-op state, submit disabled.
-    const preview = wrapper.find('[data-testid="reconcile-delta-preview"]')
-    expect(preview.exists()).toBe(true)
-    expect(wrapper.find('[data-testid="reconcile-submit"]').attributes('disabled')).toBeDefined()
+    expect(preview()).not.toBeNull()
+    expect(submitButton()?.hasAttribute('disabled')).toBe(true)
 
-    await submit(wrapper)
-    await nextTick()
+    await submit()
     expect(transactions.create).not.toHaveBeenCalled()
   })
 
   it('creates a negative adjustment with the computed delta and note', async () => {
-    const { wrapper, transactions } = mountForm()
+    const { transactions } = mountForm()
     await flushPromises()
 
-    wrapper.findComponent(AmountField).vm.$emit('update:modelValue', 115)
-    await nextTick()
+    await setAmount('115')
 
-    const preview = wrapper.find('[data-testid="reconcile-delta-preview"]')
-    expect(preview.text()).toContain('5') // |120 - 115| = 5 removed
-    expect(wrapper.find('[data-testid="reconcile-submit"]').attributes('disabled')).toBeUndefined()
+    expect(preview()!.textContent).toContain('5') // |120 - 115| = 5 removed
+    expect(submitButton()?.hasAttribute('disabled')).toBe(false)
 
-    await wrapper.find('input#reconcile-note').setValue('сверка наличных')
-    await submit(wrapper)
+    await setNote('сверка наличных')
+    await submit()
 
     await vi.waitFor(() => expect(transactions.create).toHaveBeenCalledTimes(1))
     expect(transactions.create).toHaveBeenCalledWith({
@@ -86,12 +109,11 @@ describe('ReconcileAccountForm', () => {
   })
 
   it('creates a positive adjustment when the actual balance is higher', async () => {
-    const { wrapper, transactions } = mountForm()
+    const { transactions } = mountForm()
     await flushPromises()
 
-    wrapper.findComponent(AmountField).vm.$emit('update:modelValue', 135)
-    await nextTick()
-    await submit(wrapper)
+    await setAmount('135')
+    await submit()
 
     await vi.waitFor(() => expect(transactions.create).toHaveBeenCalledTimes(1))
     expect(transactions.create).toHaveBeenCalledWith(
@@ -99,8 +121,3 @@ describe('ReconcileAccountForm', () => {
     )
   })
 })
-
-async function submit(wrapper: VueWrapper) {
-  await wrapper.find('form').trigger('submit')
-  await flushPromises()
-}

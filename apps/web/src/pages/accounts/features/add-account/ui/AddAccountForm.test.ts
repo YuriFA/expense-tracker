@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import AddAccountForm from './AddAccountForm.vue'
 import type { AccountWithBalance } from '@/entities/account'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
@@ -14,71 +15,81 @@ const createdAccount: AccountWithBalance = {
   balance: 100,
 }
 
+// The form owns its ResponsiveDialog, so the open surface renders through a
+// portal: the DOM lives under document.body and is driven at the DOM level.
 describe('AddAccountForm', () => {
   beforeEach(() => {
+    document.body.innerHTML = ''
     vi.clearAllMocks()
   })
 
-  it('renders name and opening balance fields', () => {
+  async function mountForm() {
     const accounts = createMockAccountRepository()
-    const wrapper = mountWithProviders(AddAccountForm, {
+    accounts.create.mockResolvedValue(createdAccount)
+    mountWithProviders(AddAccountForm, {
+      props: { open: true } as never,
       repositories: { accounts },
     })
-    expect(wrapper.find('input#name').exists()).toBe(true)
+    // The dialog portal mounts asynchronously.
+    await flushPromises()
+    return { accounts }
+  }
+
+  const query = (selector: string) => document.querySelector(selector)
+
+  async function setName(value: string) {
+    const input = query('input#name') as HTMLInputElement
+    input.value = value
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+  }
+
+  async function submit() {
+    query('#add-account-form')?.dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    )
+    await flushPromises()
+  }
+
+  it('renders name and opening balance fields', async () => {
+    await mountForm()
+    expect(query('input#name')).not.toBeNull()
+    expect(query('input#opening-balance')).not.toBeNull()
   })
 
   // currency-rub-only: no currency picker - RUB is submitted implicitly.
-  it('renders no currency field', () => {
-    const accounts = createMockAccountRepository()
-    const wrapper = mountWithProviders(AddAccountForm, {
-      repositories: { accounts },
-    })
-    expect(wrapper.find('label[for="currency"]').exists()).toBe(false)
-    expect(wrapper.findAllComponents({ name: 'Select' }).length).toBe(0)
-    expect(wrapper.text()).not.toContain('Currency')
+  it('renders no currency field', async () => {
+    await mountForm()
+    expect(query('label[for="currency"]')).toBeNull()
+    expect(document.querySelectorAll('[data-slot="select-trigger"]').length).toBe(0)
+    expect(document.body.textContent).not.toContain('Currency')
   })
 
-  it('renders submit button', () => {
-    const accounts = createMockAccountRepository()
-    const wrapper = mountWithProviders(AddAccountForm, {
-      repositories: { accounts },
-    })
-    expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
+  it('renders submit button', async () => {
+    await mountForm()
+    expect(query('button[form="add-account-form"]')).not.toBeNull()
   })
 
-  it('renders with valid props and exposes handlers', () => {
-    const accounts = createMockAccountRepository()
-    accounts.create.mockResolvedValue(createdAccount)
-    const wrapper = mountWithProviders(AddAccountForm, {
-      repositories: { accounts },
-    })
+  it('renders with valid props and exposes handlers', async () => {
+    await mountForm()
     // Submit button should be rendered and clickable
-    const button = wrapper.find('button[type="submit"]')
-    expect(button.exists()).toBe(true)
+    expect(query('button[form="add-account-form"]')).not.toBeNull()
   })
 
   it('does not call create when name is empty', async () => {
-    const accounts = createMockAccountRepository()
-    accounts.create.mockResolvedValue(createdAccount)
-    const wrapper = mountWithProviders(AddAccountForm, {
-      repositories: { accounts },
-    })
+    const { accounts } = await mountForm()
 
-    await wrapper.find('form').trigger('submit')
-    await flushPromises()
+    expect(query('#add-account-form')).not.toBeNull()
+    await submit()
 
     expect(accounts.create).not.toHaveBeenCalled()
   })
 
   it('submits with the RUB default currency', async () => {
-    const accounts = createMockAccountRepository()
-    accounts.create.mockResolvedValue(createdAccount)
-    const wrapper = mountWithProviders(AddAccountForm, {
-      repositories: { accounts },
-    })
+    const { accounts } = await mountForm()
 
-    await wrapper.find('input#name').setValue('Main')
-    await wrapper.find('form').trigger('submit')
+    await setName('Main')
+    await submit()
     // vee-validate resolves the async schema on its own schedule; poll
     // instead of a fixed flush count.
     await vi.waitFor(() => expect(accounts.create).toHaveBeenCalledTimes(1))
