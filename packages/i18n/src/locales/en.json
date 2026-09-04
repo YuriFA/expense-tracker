@@ -191,6 +191,7 @@
     "amountCaption": "Amount",
     "emptyExpense": "No expenses for this period",
     "emptyIncome": "No income for this period",
+    "periodLabel": "Period",
     "week": "Week",
     "month": "Month",
     "year": "Year",

@@ -191,6 +191,7 @@
     "amountCaption": "Сумма",
     "emptyExpense": "Нет расходов за этот период",
     "emptyIncome": "Нет доходов за этот период",
+    "periodLabel": "Период",
     "week": "Неделя",
     "month": "Месяц",
     "year": "Год",

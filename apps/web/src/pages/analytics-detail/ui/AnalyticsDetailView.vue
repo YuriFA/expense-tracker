@@ -21,6 +21,7 @@ import { useTransactions } from '@/entities/transaction'
 import { useCategoriesIncludingArchived } from '@/entities/category'
 import { DonutChart, type DonutChartEntry } from '@/shared/ui/donut-chart'
 import { Button } from '@/shared/ui/button'
+import { SegmentedControl, type SegmentedControlOption } from '@/shared/ui/segmented-control'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -53,6 +54,13 @@ const periodLabels = computed<Record<AnalyticsPeriodKind, string>>(() => ({
   month: t('analytics.month'),
   year: t('analytics.year'),
 }))
+const periodOptions = computed<SegmentedControlOption<AnalyticsPeriodKind>[]>(() =>
+  PERIOD_KINDS.map((kind) => ({
+    value: kind,
+    label: periodLabels.value[kind],
+    testid: `analytics-period-${kind}`,
+  })),
+)
 
 const kind = ref<AnalyticsPeriodKind>('month')
 const cursor = ref<PeriodCursor>(currentPeriod('month'))
@@ -190,24 +198,13 @@ const openDrilldown = (category: Category) => {
       :back-label="t('common.back')"
     />
 
-    <div
-      class="bg-secondary mx-auto mt-4 flex w-full max-w-md rounded-xl p-1"
-      role="group"
-      :aria-label="title"
-    >
-      <Button
-        v-for="periodKind in PERIOD_KINDS"
-        :key="periodKind"
-        :variant="kind === periodKind ? 'default' : 'ghost'"
-        class="flex-1 rounded-lg"
-        :class="kind === periodKind ? '' : 'text-muted-foreground hover:text-foreground'"
-        :aria-pressed="kind === periodKind"
-        :data-testid="`analytics-period-${periodKind}`"
-        @click="selectKind(periodKind)"
-      >
-        {{ periodLabels[periodKind] }}
-      </Button>
-    </div>
+    <SegmentedControl
+      :model-value="kind"
+      class="mx-auto mt-4 flex w-full max-w-md"
+      :options="periodOptions"
+      :aria-label="t('analytics.periodLabel')"
+      @update:model-value="selectKind"
+    />
 
     <!-- Skeletons only while NO data exists yet: period switches re-key the
          query (pending -> skeletons), background refetches keep the chart. -->

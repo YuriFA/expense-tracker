@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { Button } from '@/shared/ui/button'
+import { SegmentedControl, type SegmentedControlOption } from '@/shared/ui/segmented-control'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { AmountField } from '@/shared/ui/amount-field'
@@ -84,6 +85,11 @@ const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<OperationFormVa
 
 const kindValue = useFieldValue<OperationFormValues['kind']>('kind')
 const setKind = useSetFieldValue<OperationFormValues['kind']>('kind')
+// Literal keys per branch (the i18n lint bans dynamic keys).
+const kindOptions = computed<SegmentedControlOption<OperationFormValues['kind']>[]>(() => [
+  { value: 'debt', label: t('debts.debt') },
+  { value: 'repayment', label: t('debts.repayment') },
+])
 const amountValue = useFieldValue<OperationFormValues['amount']>('amount')
 
 const directionLabel = computed(() =>
@@ -185,26 +191,15 @@ const handleDelete = async () => {
         </div>
       </div>
 
-      <div v-if="!isEdit" class="flex gap-2" data-testid="debts-operation-kind">
-        <Button
-          type="button"
-          :variant="kindValue === 'debt' ? 'default' : 'outline'"
-          class="flex-1"
-          :aria-pressed="kindValue === 'debt'"
-          @click="setKind('debt')"
-        >
-          {{ t('debts.debt') }}
-        </Button>
-        <Button
-          type="button"
-          :variant="kindValue === 'repayment' ? 'default' : 'outline'"
-          class="flex-1"
-          :aria-pressed="kindValue === 'repayment'"
-          @click="setKind('repayment')"
-        >
-          {{ t('debts.repayment') }}
-        </Button>
-      </div>
+      <SegmentedControl
+        v-if="!isEdit"
+        :model-value="kindValue"
+        class="w-full"
+        :options="kindOptions"
+        :aria-label="t('fields.transactionType')"
+        data-testid="debts-operation-kind"
+        @update:model-value="setKind"
+      />
       <div v-else class="text-sm">
         <p class="text-muted-foreground">{{ t('fields.transactionType') }}</p>
         <p class="font-medium">

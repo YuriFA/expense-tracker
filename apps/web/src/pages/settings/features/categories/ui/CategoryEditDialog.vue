@@ -7,6 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
+import { SegmentedControl, type SegmentedControlOption } from '@/shared/ui/segmented-control'
 import { notification } from '@/shared/services/notification'
 import { VersionConflictError } from '@expense-tracker/api'
 import {
@@ -77,6 +78,10 @@ watch(
 )
 
 // Literal keys per branch (the i18n lint bans dynamic keys).
+const typeOptions = computed<SegmentedControlOption<'expense' | 'income'>[]>(() => [
+  { value: 'expense', label: t('transactions.types.expense'), testid: 'create-category-type-expense' },
+  { value: 'income', label: t('transactions.types.income'), testid: 'create-category-type-income' },
+])
 const titleLabel = computed(() =>
   isCreate.value ? t('editCategory.createTitle') : t('editCategory.title'),
 )
@@ -174,30 +179,17 @@ async function submit(): Promise<void> {
         </div>
       </div>
 
-      <!-- Create mode: the type IS choosable (segmented control, design
-           system: pill group on muted track); edit keeps the badge. -->
+      <!-- Create mode: the type IS choosable (segmented control, the shared
+           Tabs-look control); edit keeps the read-only badge. -->
       <Field v-else>
         <FieldLabel>{{ t('editCategory.typeLabel') }}</FieldLabel>
-        <div
-          class="flex w-full rounded-xl bg-secondary p-1"
-          role="group"
+        <SegmentedControl
+          v-model="type"
+          class="w-full"
+          :options="typeOptions"
           :aria-label="t('editCategory.typeLabel')"
           data-testid="create-category-type"
-        >
-          <Button
-            v-for="option in ['expense', 'income'] as const"
-            :key="option"
-            type="button"
-            :variant="type === option ? 'default' : 'ghost'"
-            class="flex-1 rounded-lg"
-            :class="type === option ? '' : 'text-muted-foreground hover:text-foreground'"
-            :aria-pressed="type === option"
-            :data-testid="`create-category-type-${option}`"
-            @click="type = option"
-          >
-            {{ option === 'income' ? t('transactions.types.income') : t('transactions.types.expense') }}
-          </Button>
-        </div>
+        />
       </Field>
 
       <Field>
