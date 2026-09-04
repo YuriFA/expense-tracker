@@ -22,7 +22,6 @@ import {
 } from '@expense-tracker/local-data'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import { useSyncController } from '@/shared/lib/sync/sync-context'
-import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
 
 const ENTITY_NAMES_RU: Record<LocalSyncConflict['entity'], string> = {
   account: 'Счёт',
@@ -95,9 +94,9 @@ export function ConflictCenter() {
         const deletedLocally = conflict.serverState?.deleted === false
         const message = deletedLocally
           ? `${entityName}${subject ? ` «${subject}»` : ''} удалён на этом устройстве и изменён на другом. ` +
-          'Удаление применено; изменение можно восстановить как новую запись.'
+            'Удаление применено; изменение можно восстановить как новую запись.'
           : `${entityName}${subject ? ` «${subject}»` : ''} удалён на другом устройстве, ` +
-          'поэтому локальное изменение отменено. Его можно восстановить как новую запись.'
+            'поэтому локальное изменение отменено. Его можно восстановить как новую запись.'
         Alert.alert(
           'Запись удалена',
           message,
@@ -122,7 +121,7 @@ export function ConflictCenter() {
       Alert.alert(
         'Конфликт изменений',
         `${entityName}${subject ? ` «${subject}»` : ''} изменён на другом устройстве. ` +
-        'Выберите, какую версию сохранить.',
+          'Выберите, какую версию сохранить.',
         [
           { text: 'Оставить мою', onPress: () => resolve('keep-local', conflict) },
           { text: 'Принять серверную', onPress: () => resolve('take-server', conflict) },

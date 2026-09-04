@@ -372,10 +372,10 @@ maybe('sync engine vs real backend', () => {
       .where(eq(transactionsTable.id, newId))
       .get()
     expect(restoredRow).not.toBeUndefined()
-    expect(restoredRow?.type).toBe('adjustment')   // must NOT be 'expense'
-    expect(restoredRow?.amount).toBe(-8_000)        // edited amount preserved
+    expect(restoredRow?.type).toBe('adjustment') // must NOT be 'expense'
+    expect(restoredRow?.amount).toBe(-8_000) // edited amount preserved
     expect(restoredRow?.accountId).toBe(account.id) // account reference intact
-    expect(restoredRow?.deletedAt).toBeNull()        // live record
+    expect(restoredRow?.deletedAt).toBeNull() // live record
 
     // The conflict must be resolved.
     expect(listUnresolvedConflicts(main.db)).toHaveLength(0)
@@ -400,10 +400,8 @@ maybe('sync engine vs real backend', () => {
     //
     // We inject the corrupt conflict directly into the db (bypassing the
     // engine) to simulate a hypothetical corrupt preserved state.
-    const {
-      recordConflict,
-      listUnresolvedConflicts: listConflicts,
-    } = await import('@expense-tracker/local-data')
+    const { recordConflict, listUnresolvedConflicts: listConflicts } =
+      await import('@expense-tracker/local-data')
 
     const corruptConflictId = randomUUID()
     main.db.transaction((tx) =>

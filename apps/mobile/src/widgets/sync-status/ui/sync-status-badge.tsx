@@ -78,7 +78,9 @@ export function SyncStatusBadge() {
     <Pressable
       testID="sync-status-badge"
       accessibilityRole="button"
-      accessibilityLabel={lastError && stateTestId === 'sync-status-failing' ? `${label}. ${lastError}` : label}
+      accessibilityLabel={
+        lastError && stateTestId === 'sync-status-failing' ? `${label}. ${lastError}` : label
+      }
       onPress={onPress}
       className="self-start flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
     >

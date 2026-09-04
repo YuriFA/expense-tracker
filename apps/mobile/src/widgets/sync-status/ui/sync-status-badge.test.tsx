@@ -160,9 +160,7 @@ describe('SyncStatusBadge', () => {
     renderBadge()
 
     await waitFor(() =>
-      expect(screen.getByTestId('sync-status-failing').props.children).toBe(
-        'Ошибка отправки: 1',
-      ),
+      expect(screen.getByTestId('sync-status-failing').props.children).toBe('Ошибка отправки: 1'),
     )
     expect(screen.queryByTestId('sync-status-pending')).toBeNull()
     expect(screen.queryByTestId('sync-status-paused')).toBeNull()

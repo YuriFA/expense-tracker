@@ -8,7 +8,11 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { CategoryRepositoryProvider } from '../api/repository'
 import { createMockCategoryRepository } from '@/shared/lib/testing/mock-category-repository'
-import { useCategories, useCategoriesIncludingArchived, useCreateCategory } from '../model/use-categories'
+import {
+  useCategories,
+  useCategoriesIncludingArchived,
+  useCreateCategory,
+} from '../model/use-categories'
 
 function createWrapper(
   repository: ReturnType<typeof createMockCategoryRepository>,

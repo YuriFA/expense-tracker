@@ -55,7 +55,11 @@ export function SyncSection() {
             {`Ошибок отправки: ${syncStatusQuery.data.failingOperations}`}
           </Text>
           {syncStatusQuery.data.lastError ? (
-            <Text variant="body-sm" className="text-muted-foreground" testID="settings-sync-last-error">
+            <Text
+              variant="body-sm"
+              className="text-muted-foreground"
+              testID="settings-sync-last-error"
+            >
               {syncStatusQuery.data.lastError}
             </Text>
           ) : null}
