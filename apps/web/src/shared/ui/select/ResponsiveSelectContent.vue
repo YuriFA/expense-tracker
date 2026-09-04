@@ -59,9 +59,11 @@ const contentClass = computed(() =>
     @update:open="(value: boolean) => context.onOpenChange(value)"
   >
     <DrawerContent :id="context.contentId" class="max-h-[calc(100dvh-1rem)]">
-      <DrawerHeader v-if="props.title">
-        <DrawerTitle>{{ props.title }}</DrawerTitle>
-      </DrawerHeader>
+      <template v-if="props.title" #header>
+        <DrawerHeader>
+          <DrawerTitle>{{ props.title }}</DrawerTitle>
+        </DrawerHeader>
+      </template>
       <div class="px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <slot />
       </div>

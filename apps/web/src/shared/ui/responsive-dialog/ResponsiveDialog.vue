@@ -91,15 +91,27 @@ const handleOpenChange = (value: boolean, details?: OpenChangeDetails) => {
 
 const baseHeaderClass = computed(() =>
   cn(
+    'shrink-0',
     isDesktop.value ? 'text-center sm:text-left' : `${DRAWER_HEADER_PADDING} text-left`,
     props.headerVariant === 'bordered-row' && BORDERED_ROW_HEADER_CLASS,
     props.headerClass,
   ),
 )
-const baseBodyClass = computed(() => cn('min-h-0', isDesktop.value ? null : 'px-6 pb-6'))
+// The body is the only scrolling region. On desktop it breaks out of the
+// panel padding into a full-bleed scroll area so the pinned header/footer
+// hairlines stay edge-to-edge; on the drawer the DrawerContent scroll
+// wrapper wraps just this block (header/footer slots sit outside it).
+const baseBodyClass = computed(() =>
+  cn(
+    'min-h-0',
+    isDesktop.value
+      ? '-mx-6 -mb-6 flex-1 overflow-y-auto px-6 pb-6'
+      : 'px-6 pb-6 pt-4',
+  ),
+)
 const baseFooterClass = computed(() =>
   cn(
-    'flex flex-col-reverse gap-2',
+    'flex shrink-0 flex-col-reverse gap-2',
     isDesktop.value ? 'sm:flex-row sm:justify-end' : DRAWER_FOOTER_CLASS,
     // Desktop breakout, mirrors BORDERED_ROW_HEADER_CLASS: the hairline
     // spans the overlay edge-to-edge instead of stopping at the padding.
@@ -129,7 +141,7 @@ const closeButtonClass = computed(() =>
       :class="props.class"
       :show-close-button="shouldRenderDesktopCornerCloseButton"
     >
-      <div class="flex min-h-0 flex-col gap-4">
+      <div class="flex min-h-0 flex-1 flex-col gap-4">
         <header v-if="hasHeader" :class="baseHeaderClass">
           <div :class="hasHeaderControls ? 'flex items-start justify-between gap-4' : ''">
             <div class="min-w-0 flex-1">
@@ -168,8 +180,8 @@ const closeButtonClass = computed(() =>
       :aria-describedby="hasDescription ? undefined : ''"
       :class="props.class"
     >
-      <div class="flex min-h-0 flex-col gap-4">
-        <header v-if="hasHeader" :class="baseHeaderClass">
+      <template v-if="hasHeader" #header>
+        <header :class="baseHeaderClass">
           <div :class="hasHeaderControls ? 'flex items-start justify-between gap-4' : ''">
             <div class="min-w-0 flex-1">
               <DrawerTitle v-if="$slots.title">
@@ -189,15 +201,17 @@ const closeButtonClass = computed(() =>
             </div>
           </div>
         </header>
+      </template>
 
-        <div :class="baseBodyClass">
-          <slot />
-        </div>
+      <div :class="baseBodyClass">
+        <slot />
+      </div>
 
-        <div v-if="hasFooter" :class="baseFooterClass">
+      <template v-if="hasFooter" #footer>
+        <div :class="baseFooterClass">
           <slot name="footer" />
         </div>
-      </div>
+      </template>
     </DrawerContent>
   </Drawer>
 </template>

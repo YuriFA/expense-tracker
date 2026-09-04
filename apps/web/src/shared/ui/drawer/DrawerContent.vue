@@ -71,12 +71,17 @@ onBeforeUnmount(() => {
       "
     >
       <DrawerHandle />
+      <!-- Header/footer slots sit outside the scroll area so they stay pinned;
+           the scroll area is flex so bounded flex children (e.g. the
+           transactions filters form) hand overflow to their inner scroller. -->
+      <slot name="header" />
       <div
         :ref="setScrollElement"
-        class="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        class="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
       >
         <slot />
       </div>
+      <slot name="footer" />
     </DrawerContent>
   </DrawerPortal>
 </template>

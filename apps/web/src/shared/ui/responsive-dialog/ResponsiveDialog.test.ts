@@ -3,7 +3,7 @@ import { defineComponent, h, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 import { DESKTOP_PRESENTATION_KEY } from '@/shared/lib/presentation'
-import { ResponsiveDialog } from '.'
+import { DIALOG_FORM_FOOTER_CLASS, ResponsiveDialog } from '.'
 
 afterEach(() => {
   document.body.innerHTML = ''
@@ -47,6 +47,14 @@ const surface = () => content() ?? drawerContent()
 const header = () => surface()?.querySelector('header')
 const footerBand = () =>
   document.querySelector('[data-testid="responsive-dialog-footer"]')?.parentElement
+// The dialog's only scrolling region: the closest ancestor of the body slot
+// content that carries overflow-y-auto (the body wrapper itself on desktop,
+// the DrawerContent scroll wrapper on mobile).
+const scrollRegion = () => {
+  let node = document.querySelector<HTMLElement>('[data-testid="responsive-dialog-body"]')
+  while (node && !node.className.includes('overflow-y-auto')) node = node.parentElement
+  return node
+}
 
 describe('ResponsiveDialog', () => {
   it('renders the desktop dialog presentation when pinned to desktop', async () => {
@@ -89,5 +97,33 @@ describe('ResponsiveDialog', () => {
 
     expect(header()?.className).not.toContain('border-b')
     expect(footerBand()?.className).not.toContain('border-t')
+  })
+
+  it('pins the header and footer band outside the desktop scroll region', async () => {
+    mountDialog(true)
+    await flushPromises()
+
+    const region = scrollRegion()
+    expect(region).not.toBeNull()
+    expect(region?.className).toContain('min-h-0')
+    expect(region?.contains(document.querySelector('[data-testid="responsive-dialog-body"]'))).toBe(true)
+    expect(region?.contains(header() ?? null)).toBe(false)
+    expect(region?.contains(footerBand() ?? null)).toBe(false)
+  })
+
+  it('pins the drawer header and footer band outside the scroll region', async () => {
+    mountDialog(false)
+    await flushPromises()
+
+    const region = scrollRegion()
+    expect(region).not.toBeNull()
+    expect(region?.contains(document.querySelector('[data-testid="responsive-dialog-body"]'))).toBe(true)
+    expect(region?.contains(header() ?? null)).toBe(false)
+    expect(region?.contains(footerBand() ?? null)).toBe(false)
+  })
+
+  it('keeps the in-body form footer sticky so it stays visible while the body scrolls', () => {
+    expect(DIALOG_FORM_FOOTER_CLASS).toContain('sticky bottom-0')
+    expect(DIALOG_FORM_FOOTER_CLASS).toContain('bg-card')
   })
 })

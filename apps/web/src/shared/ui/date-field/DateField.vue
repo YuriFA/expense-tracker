@@ -112,9 +112,11 @@ const handleCalendarPick = (value: DateValue | undefined) => {
     </Button>
 
     <DrawerContent>
-      <DrawerHeader>
-        <DrawerTitle>{{ props.drawerTitle ?? t('fields.date') }}</DrawerTitle>
-      </DrawerHeader>
+      <template #header>
+        <DrawerHeader>
+          <DrawerTitle>{{ props.drawerTitle ?? t('fields.date') }}</DrawerTitle>
+        </DrawerHeader>
+      </template>
       <div :class="cn('space-y-4 px-6', DRAWER_SAFE_AREA_BOTTOM)">
         <div class="grid grid-cols-3 gap-2">
           <Button

@@ -195,10 +195,10 @@ const commit = async () => {
 
 <template>
   <!-- Wide on desktop: the 7-column preview needs the room; capped height
-       with its own vertical scroll so tall content never clips off-screen. -->
+       with the shell's scrolling body so tall content never clips off-screen. -->
   <ResponsiveDialog
     v-model:open="open"
-    class="max-h-[calc(100dvh-4rem)] w-full overflow-y-auto sm:max-w-4xl"
+    class="max-h-[calc(100dvh-4rem)] w-full sm:max-w-4xl"
   >
     <template #title>{{ t('dataTransfer.dialog.title') }}</template>
     <template #description>

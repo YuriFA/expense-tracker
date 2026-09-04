@@ -35,9 +35,11 @@ const handleSubmit = () => {
 
   <Drawer v-else v-model:open="open">
     <DrawerContent class="gap-0 p-0">
-      <DrawerHeader class="border-b border-border px-6 py-5">
-        <DrawerTitle>{{ t('transactions.filtersTitle') }}</DrawerTitle>
-      </DrawerHeader>
+      <template #header>
+        <DrawerHeader class="border-b border-border px-6 py-5">
+          <DrawerTitle>{{ t('transactions.filtersTitle') }}</DrawerTitle>
+        </DrawerHeader>
+      </template>
       <TransactionsFilters class="min-h-0 flex-1" @submit="handleSubmit" />
     </DrawerContent>
   </Drawer>

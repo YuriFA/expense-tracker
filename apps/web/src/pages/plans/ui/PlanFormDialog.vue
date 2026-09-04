@@ -173,7 +173,7 @@ const handleDelete = async () => {
 <template>
   <ResponsiveDialog
     v-model:open="open"
-    class="max-h-[85vh] overflow-y-auto sm:max-w-md"
+    class="max-h-[85vh] sm:max-w-md"
     data-testid="plans-form-dialog"
   >
     <template #title>{{ dialogTitle }}</template>
