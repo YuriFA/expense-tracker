@@ -4,12 +4,14 @@
   "private": true,
   "packageManager": "pnpm@10.28.1",
   "scripts": {
-    "knip": "knip",
     "arch:check": "depcruise packages/api/src packages/dates/src packages/money/src packages/i18n/src packages/local-data/src --config .dependency-cruiser.packages.cjs && pnpm -C apps/mobile exec depcruise src --config ../../.dependency-cruiser.mobile.cjs && depcruise apps/web/src --config .dependency-cruiser.web.cjs",
-    "lint:design": "pnpm --filter web lint:design && pnpm --filter mobile lint:design"
+    "knip": "knip",
+    "lint:design": "pnpm --filter web lint:design && pnpm --filter mobile lint:design",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "dependency-cruiser": "^18.2.0",
-    "knip": "^6.32.2"
+    "knip": "^6.32.2",
+    "lefthook": "^2.1.12"
   }
 }

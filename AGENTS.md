@@ -95,6 +95,11 @@ onto `@expense-tracker/dates`) are tracked in `docs/assumptions.md`.
 
 ## Monorepo tooling
 
+Pre-commit formatting runs via lefthook (`lefthook.yml`, installed by the
+root `prepare` script on any `pnpm install`): staged files under `apps/web/src`
+and `apps/mobile/src` are oxfmt-formatted and re-staged automatically
+(`stage_fixed`). No CI format gate by design; skip once with `LEFTHOOK=0`.
+
 `pnpm knip` (workspace root) checks every workspace (`apps/*`, `packages/*`)
 for unused files, dependencies, and exports. Single config: the root
 `knip.json` `workspaces` object (knip 6 takes the workspace list from
