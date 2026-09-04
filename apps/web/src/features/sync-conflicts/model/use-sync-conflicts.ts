@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
-import type { LocalSyncConflict } from '@expense-tracker/local-data'
 import { conflictSubject } from '@expense-tracker/local-data'
 import { getLocalDbApi } from '@/shared/lib/local-db'
 import { useSyncController } from '@/shared/lib/local-db'

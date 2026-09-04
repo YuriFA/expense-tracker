@@ -24,10 +24,18 @@ interface OpenChangeDetails {
   reason?: string
 }
 
-// Default header: actions row with a hairline under it, stretched to the
-// overlay edges on desktop (the settings design language shared by every
-// dialog surface).
-const BORDERED_ROW_HEADER_CLASS = `flex-row items-center justify-between border-b ${DRAWER_HEADER_PADDING} sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6`
+// Default header: actions row with a hairline under it (the settings
+// design language shared by every dialog surface). The section owns its
+// padding, so the border spans the panel edge-to-edge on its own - no
+// negative-margin breakout needed (the drawer shell never had panel padding
+// and never needed one; the desktop panel's baked-in p-6 is neutralized
+// below, which is what these breakouts used to fight).
+const BORDERED_ROW_HEADER_CLASS = `flex-row items-center justify-between border-b`
+
+// Strips DialogContent's baked-in panel padding: every section carries its
+// own (px-6 + per-side rhythm), mirroring the drawer shell geometry. Consumer
+// classes merge after this and still win.
+const PANEL_UNPADDED_CLASS = 'p-0'
 
 const props = withDefaults(
   defineProps<{
@@ -91,33 +99,35 @@ const handleOpenChange = (value: boolean, details?: OpenChangeDetails) => {
 
 const baseHeaderClass = computed(() =>
   cn(
-    'shrink-0',
-    isDesktop.value ? 'text-center sm:text-left' : `${DRAWER_HEADER_PADDING} text-left`,
+    'shrink-0 text-left',
+    isDesktop.value ? 'px-6 pt-6 pb-4' : DRAWER_HEADER_PADDING,
     props.headerVariant === 'bordered-row' && BORDERED_ROW_HEADER_CLASS,
     props.headerClass,
   ),
 )
-// The body is the only scrolling region. On desktop it breaks out of the
-// panel padding into a full-bleed scroll area so the pinned header/footer
-// hairlines stay edge-to-edge; on the drawer the DrawerContent scroll
-// wrapper wraps just this block (header/footer slots sit outside it).
+// The body is the only scrolling region. On desktop it fills the unpadded
+// panel as a full-bleed scroll area (the pinned header/footer hairlines stay
+// edge-to-edge); on the drawer the DrawerContent scroll wrapper wraps just
+// this block (header/footer slots sit outside it).
 const baseBodyClass = computed(() =>
   cn(
     'min-h-0',
     isDesktop.value
-      ? '-mx-6 -mb-6 flex-1 overflow-y-auto px-6 pb-6'
+      ? 'flex-1 overflow-y-auto px-6 pt-4 pb-6'
       : 'px-6 pb-6 pt-4',
   ),
 )
 const baseFooterClass = computed(() =>
   cn(
     'flex shrink-0 flex-col-reverse gap-2',
-    isDesktop.value ? 'sm:flex-row sm:justify-end' : DRAWER_FOOTER_CLASS,
-    // Desktop breakout, mirrors BORDERED_ROW_HEADER_CLASS: the hairline
-    // spans the overlay edge-to-edge instead of stopping at the padding.
+    isDesktop.value ? 'flex-row justify-end' : DRAWER_FOOTER_CLASS,
+    // Desktop hairline above the footer band (settings design language: the
+    // footer separates from the body like a card header strip), full-bleed
+    // because the section owns its padding. On by default; forms that keep
+    // their footer inside the body use DIALOG_FORM_FOOTER_CLASS instead.
     props.borderedFooter &&
       isDesktop.value &&
-      '-mx-6 -mb-6 border-t border-border px-6 pb-5 pt-4',
+      'border-t border-border px-6 pt-4 pb-5',
     props.footerClass,
   ),
 )
@@ -138,10 +148,10 @@ const closeButtonClass = computed(() =>
     <DialogContent
       v-bind="attrs"
       :aria-describedby="hasDescription ? undefined : ''"
-      :class="props.class"
+      :class="cn(PANEL_UNPADDED_CLASS, props.class)"
       :show-close-button="shouldRenderDesktopCornerCloseButton"
     >
-      <div class="flex min-h-0 flex-1 flex-col gap-4">
+      <div class="flex min-h-0 flex-1 flex-col">
         <header v-if="hasHeader" :class="baseHeaderClass">
           <div :class="hasHeaderControls ? 'flex items-start justify-between gap-4' : ''">
             <div class="min-w-0 flex-1">

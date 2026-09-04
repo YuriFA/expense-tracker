@@ -135,7 +135,11 @@ One overlay instance OUTSIDE the loop plus an "active item" ref:
   canonical example: `CategoryEditDialog`). The header is pinned to the top
   and the footer band to the bottom of the overlay; the body is the only
   scrolling region (desktop: the shell body carries `overflow-y-auto`,
-  mobile: the `drawer` shell wraps just the body slot). Put submit/cancel
+  mobile: the `drawer` shell wraps just the body slot). Panel geometry lives
+  on the sections, not the panel - the desktop shell neutralizes the
+  `dialog/` panel's built-in `p-6` and every section pads itself, mirroring
+  the drawer shell; a contract test in `ResponsiveDialog.test.ts` bans
+  negative-margin breakouts from the shell classes. Put submit/cancel
   actions in the `#footer` slot, linking them to the body form via the
   form's `id` + the button's `:form`; when the footer must stay inside the
   form component (submit state lives there), reuse the exported

@@ -122,6 +122,30 @@ describe('ResponsiveDialog', () => {
     expect(region?.contains(footerBand() ?? null)).toBe(false)
   })
 
+  it('keeps geometry on the sections - no negative-margin breakouts', async () => {
+    for (const desktop of [true, false]) {
+      mountDialog(desktop)
+      await flushPromises()
+
+      const body = document.querySelector('[data-testid="responsive-dialog-body"]')?.parentElement
+      const sections = [surface()?.className, header()?.className, body?.className, footerBand()?.className]
+      const offenders = sections.flatMap((cls) =>
+        (cls ?? '')
+          .split(' ')
+          .filter((c) => c.startsWith('-m'))
+          .map((c) => `${desktop ? 'desktop' : 'mobile'}: ${c}`),
+      )
+      expect(offenders).toEqual([])
+      // Desktop panel padding is neutralized (sections own it); the drawer
+      // panel never had any.
+      const panelClass = (content() ?? drawerContent())?.className ?? ''
+      expect(panelClass).not.toMatch(/(^|\s)p-6(\s|$)/)
+      expect(panelClass.includes('p-0')).toBe(desktop)
+
+      document.body.innerHTML = ''
+    }
+  })
+
   it('keeps the in-body form footer sticky so it stays visible while the body scrolls', () => {
     expect(DIALOG_FORM_FOOTER_CLASS).toContain('sticky bottom-0')
     expect(DIALOG_FORM_FOOTER_CLASS).toContain('bg-card')
