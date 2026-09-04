@@ -47,7 +47,8 @@ test('reconciling a lower actual balance records a negative adjustment', async (
 
   await dialog.getByLabel('Actual balance').fill('115')
   await expect(dialog.getByTestId('reconcile-delta-preview')).toContainText('5')
-  await dialog.getByLabel('Note').fill('cash count')
+  // Note-free: the old note field is gone from the reconcile dialog.
+  await expect(dialog.getByLabel('Note')).toHaveCount(0)
   await dialog.getByTestId('reconcile-submit').click()
 
   await expect(page.getByText('Balance reconciled')).toBeVisible()
@@ -90,7 +91,7 @@ test('adjustment is visible in history, filterable, and editable', async ({ page
   await dialog.getByTestId('reconcile-submit').click()
   await expect(page.getByText('Balance reconciled')).toBeVisible()
 
-  // History: badge + signed amount + note, no category.
+  // History: badge + signed amount, no category, no description.
   await page.goto('/transactions')
   const row = page.getByRole('listitem').filter({ hasText: 'Adjustment' })
   await expect(row).toBeVisible()

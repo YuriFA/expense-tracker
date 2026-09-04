@@ -10,7 +10,6 @@ export const createReconcileAccountSchema = () => {
     targetBalance: z
       .number({ error: t('validation.enter', { field: t('reconcileAccount.balanceLabel') }) })
       .min(0, t('validation.mustBeNonNegative', { field: t('reconcileAccount.balanceLabel') })),
-    note: z.string().max(200, t('reconcileAccount.noteTooLong')).optional(),
   })
 }
 

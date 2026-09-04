@@ -21,7 +21,7 @@ const createdAdjustment: AdjustmentTransaction = {
   id: 'adj1',
   type: 'adjustment',
   amount: -500,
-  description: 'сверка наличных',
+  description: '',
   occurredAt: '2026-09-01T12:00:00.000Z',
   accountId: 'a1',
 } as never
@@ -60,13 +60,6 @@ describe('ReconcileAccountForm', () => {
     await nextTick()
   }
 
-  async function setNote(value: string) {
-    const input = document.querySelector<HTMLInputElement>('input#reconcile-note')!
-    input.value = value
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    await nextTick()
-  }
-
   async function submit() {
     document
       .querySelector('#reconcile-account-form')
@@ -86,7 +79,7 @@ describe('ReconcileAccountForm', () => {
     expect(transactions.create).not.toHaveBeenCalled()
   })
 
-  it('creates a negative adjustment with the computed delta and note', async () => {
+  it('creates a negative adjustment with the computed delta and an empty description', async () => {
     const { transactions } = mountForm()
     await flushPromises()
 
@@ -95,14 +88,13 @@ describe('ReconcileAccountForm', () => {
     expect(preview()!.textContent).toContain('5') // |120 - 115| = 5 removed
     expect(submitButton()?.hasAttribute('disabled')).toBe(false)
 
-    await setNote('сверка наличных')
     await submit()
 
     await vi.waitFor(() => expect(transactions.create).toHaveBeenCalledTimes(1))
     expect(transactions.create).toHaveBeenCalledWith({
       type: 'adjustment',
       amount: -500,
-      description: 'сверка наличных',
+      description: '',
       occurredAt: expect.any(String),
       accountId: 'a1',
     })

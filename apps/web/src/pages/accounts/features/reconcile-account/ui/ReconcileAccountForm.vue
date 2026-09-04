@@ -7,7 +7,6 @@ import { Button } from '@/shared/ui/button'
 import { DialogClose } from '@/shared/ui/dialog'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
-import { Input } from '@/shared/ui/input'
 import { AmountField } from '@/shared/ui/amount-field'
 import { notification } from '@/shared/services/notification'
 import { formatMoney, toMinorUnits, toMajorUnits } from '@/shared/lib/money'
@@ -61,7 +60,7 @@ const handleSubmit = handleFormSubmit(async (data) => {
     await createTransaction({
       type: 'adjustment',
       amount,
-      description: data.note ?? '',
+      description: '',
       occurredAt: new Date().toISOString(),
       accountId: account.id,
     })
@@ -112,21 +111,6 @@ const handleSubmit = handleFormSubmit(async (data) => {
               : t('reconcileAccount.deltaRemoved', { amount: deltaLabel })
         }}
       </p>
-
-      <VeeField v-slot="{ field, errors }" name="note">
-        <Field class="w-full" :data-invalid="!!errors.length">
-          <FieldLabel for="reconcile-note">{{ t('reconcileAccount.noteLabel') }}</FieldLabel>
-          <Input
-            id="reconcile-note"
-            :placeholder="t('reconcileAccount.notePlaceholder')"
-            :model-value="field.value"
-            :aria-invalid="!!errors.length"
-            @update:model-value="field.onChange"
-            @blur="field.onBlur"
-          />
-          <FieldError v-if="errors.length" :errors="errors" />
-        </Field>
-      </VeeField>
     </form>
 
     <template #footer>
