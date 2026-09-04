@@ -21,7 +21,12 @@ import { setUnauthorizedHandler, UnauthorizedError } from '@expense-tracker/api'
 import { sessionApi } from '../api/session-api'
 import type { AuthResult, AuthStatus, User } from './types'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
-import { getOwnerUserId, setOwnerUserId, wipeLocalData } from '@expense-tracker/local-data'
+import {
+  adoptUnowned,
+  getOwnerUserId,
+  ownershipGateDecision,
+  rebindOwner,
+} from '@expense-tracker/local-data'
 
 export interface AuthController {
   status: AuthStatus
@@ -59,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** Binds the owner (first login) and flips to authenticated. */
   const completeAuthentication = useCallback(
     (authenticatedUser: User) => {
-      if (!getOwnerUserId(db)) setOwnerUserId(db, authenticatedUser.id)
+      adoptUnowned(db, authenticatedUser.id)
       setUser(authenticatedUser)
       setStatus('authenticated')
     },
@@ -74,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const passOwnershipGate = useCallback(
     (authenticatedUser: User): Promise<AuthResult> =>
       new Promise((resolve) => {
-        const owner = getOwnerUserId(db)
-        if (!owner || owner === authenticatedUser.id) {
+        const owner = ownershipGateDecision(getOwnerUserId(db), authenticatedUser.id)
+        if (owner.kind === 'pass') {
           completeAuthentication(authenticatedUser)
           resolve({ ok: true })
           return
@@ -98,8 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               text: 'Удалить данные',
               style: 'destructive',
               onPress: () => {
-                wipeLocalData(db)
-                setOwnerUserId(db, authenticatedUser.id)
+                rebindOwner(db, authenticatedUser.id)
                 void queryClient.invalidateQueries()
                 completeAuthentication(authenticatedUser)
                 resolve({ ok: true })
@@ -124,8 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getCurrentUser()
       .then((restored) => {
         if (cancelled) return
-        const owner = getOwnerUserId(db)
-        if (!owner || owner === restored.id) {
+        const decision = ownershipGateDecision(getOwnerUserId(db), restored.id)
+        if (decision.kind === 'pass') {
           completeAuthentication(restored)
           return
         }

@@ -23,6 +23,7 @@ import { createLocalPlannedPaymentRepository } from '@/entities/planned-payment'
 import {
   categories,
   syncOutbox,
+  transactions,
   listUnresolvedConflicts,
   recordConflict,
 } from '@expense-tracker/local-data'
@@ -254,5 +255,109 @@ describe('ConflictCenter', () => {
     const remaining = db.select().from(categories).all()
     expect(remaining).toHaveLength(1) // only the tombstone
     expect(remaining[0]?.deletedAt).not.toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Regression tests: adjustment-restore and refused-restore paths
+// ---------------------------------------------------------------------------
+
+describe('ConflictCenter - restore-as-new regression cases', () => {
+  it('[REGRESSION] restoring an adjustment conflict creates an adjustment transaction (not expense)', async () => {
+    // Seed a live account so the adjustment reference is valid.
+    const accountRepo = createLocalAccountRepository(db)
+    const account = await accountRepo.create({
+      name: 'Карта',
+      currency: 'RUB',
+      openingBalance: 0,
+    })
+
+    // Create a tombstoned transaction row to represent the deleted record.
+    db.transaction((tx) =>
+      recordConflict(tx, {
+        entity: 'transaction',
+        entityId: 'old-adj-id',
+        opId: null,
+        kind: 'deleted',
+        baseVersion: 1,
+        serverVersion: 2,
+        localState: {
+          id: 'old-adj-id',
+          type: 'adjustment',
+          amount: -3000,
+          description: 'correction',
+          occurredAt: '2026-01-15T10:00:00.000Z',
+          accountId: account.id,
+        },
+        serverState: { version: 2, deleted: true },
+      }),
+    )
+
+    renderCenter()
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledTimes(1))
+    expect(alertTitle).toBe('Запись удалена')
+
+    await act(async () => {
+      alertButtons.find((b) => b.text === 'Восстановить как новую')?.onPress?.()
+    })
+
+    await waitFor(() => expect(listUnresolvedConflicts(db)).toHaveLength(0))
+
+    const allTx = db.select().from(transactions).all()
+    // Only the restored copy should exist (no tombstoned original in the db).
+    expect(allTx).toHaveLength(1)
+    const restored = allTx[0]!
+    // Must be adjustment, not coerced to expense.
+    expect(restored.type).toBe('adjustment')
+    expect(restored.amount).toBe(-3000)
+    expect(restored.accountId).toBe(account.id)
+    // Must have a new id.
+    expect(restored.id).not.toBe('old-adj-id')
+  })
+
+  it('a refused restore (incomplete state) leaves the conflict unresolved', async () => {
+    // The adjustment accountId is missing - the decoder should refuse it.
+    db.transaction((tx) =>
+      recordConflict(tx, {
+        entity: 'transaction',
+        entityId: 'bad-adj-id',
+        opId: null,
+        kind: 'deleted',
+        baseVersion: 1,
+        serverVersion: 2,
+        localState: {
+          id: 'bad-adj-id',
+          type: 'adjustment',
+          amount: 1000,
+          occurredAt: '2026-01-15T10:00:00.000Z',
+          // accountId intentionally missing
+        },
+        serverState: { version: 2, deleted: true },
+      }),
+    )
+
+    renderCenter()
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledTimes(1))
+    expect(alertTitle).toBe('Запись удалена')
+
+    // Clear mocked alert state so we can detect the failure alert.
+    jest.clearAllMocks()
+    jest.spyOn(Alert, 'alert').mockImplementation((title, _message, buttons) => {
+      alertTitle = title
+      alertButtons = (buttons ?? []) as typeof alertButtons
+    })
+
+    await act(async () => {
+      // The initial dialog buttons are from the first render; "Восстановить"
+      // was already captured before the clearAllMocks.
+      const restoreBtn = alertButtons.find((b) => b.text === 'Восстановить как новую')
+      expect(restoreBtn).toBeDefined()
+      restoreBtn?.onPress?.()
+    })
+
+    // The failure alert should fire and the conflict must remain unresolved.
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalled())
+    expect(alertTitle).toBe('Восстановление не удалось')
+    expect(listUnresolvedConflicts(db)).toHaveLength(1)
   })
 })

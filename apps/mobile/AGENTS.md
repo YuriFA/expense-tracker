@@ -236,17 +236,23 @@ Hard rules:
 
 Code map:
 
-- `@expense-tracker/local-data` (`packages/local-data`) — the whole local-first
+- `@expense-tracker/local-data` (`packages/local-data`) - the whole local-first
   layer: drizzle schema, outbox, sync engine with conflicts, local
-  repositories, recurrence math, migrations. Generate migrations with
+  repositories, recurrence math, migrations. **Also houses ownership gate
+  policy** (`sync/ownership.ts`: decision table, `adoptUnowned`, `rebindOwner`)
+  and **restore-as-new policy** (`sync/restore.ts`: `restoreConflictAsNew`,
+  `canRestoreAsNew`) and `conflictSubject`; apps keep only presentation and
+  control-plane side effects. Generate migrations with
   `pnpm -C packages/local-data db:generate`.
-- `shared/lib/db/database.ts` — the expo-sqlite driver + migrations call
+- `shared/lib/db/database.ts` - the expo-sqlite driver + migrations call
   (the only production touchpoint of the driver; types come from the package).
-- `shared/lib/sync/` — app-side wiring only: `transport.ts` (API-client
+- `shared/lib/sync/` - app-side wiring only: `transport.ts` (API-client
   binding), `sync-context.tsx` (the provider composes in
   `src/app/_layout.tsx`), `background-sync.ts`; conflict UI in
   `features/sync-conflicts`.
-- `entities/session` (`AuthProvider`/`useAuth`), `widgets/sync-status`.
+- `entities/session` (`AuthProvider`/`useAuth`) - delegates ownership gate
+  decisions to the package; keeps Alert presentation + server-side logout.
+- `widgets/sync-status`.
 
 Env / tests: backend URL `EXPO_PUBLIC_API_URL`; integration suite against a
 real backend: `SYNC_INTEGRATION_API=<url> pnpm test backend-integration`

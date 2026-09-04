@@ -178,20 +178,17 @@ Composition across slices: features never import each other; the page
 composes them and passes callbacks (`onNewTransaction` in
 `category-cashflow-sheet.tsx` — invariant #15).
 
-## 6. Known deviations (registered — do not copy)
+## 6. Known deviations (registered - do not copy)
 
 Observed 2026-08-21; listed as anti-references:
 
-- `entities/session/model/use-auth.tsx` — `statusRef` is written every render
+- `entities/session/model/use-auth.tsx` - `statusRef` is written every render
   and never read (dead code).
-- `src/app/(tabs)/_layout.tsx` — `useTransactionActions` contains no hooks
+- `src/app/(tabs)/_layout.tsx` - `useTransactionActions` contains no hooks
   and rebuilds its icon elements every render (§3).
-- `entities/category/model/use-categories.ts` — `useCategories(type)` spreads
+- `entities/category/model/use-categories.ts` - `useCategories(type)` spreads
   the query result into a fresh object identity per render; harmless today, a
   footgun near memo boundaries.
-- `features/sync-conflicts/ui/conflict-center.tsx` — a local `toMinorUnits`
-  with different semantics (parsing an already-minor serialized value) shadows
-  the shared converter's name from `@expense-tracker/money`.
-- `pages/accounts/ui/accounts-screen.tsx` — screen-local error state for a
+- `pages/accounts/ui/accounts-screen.tsx` - screen-local error state for a
   mutation; other screens surface errors through the RHF root slot or a
   badge.

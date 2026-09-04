@@ -26,9 +26,11 @@ import type { LocalDatabase } from '@/shared/lib/db/database'
 import { createTestDatabase } from '@expense-tracker/local-data/testing'
 import {
   categories as categoriesTable,
+  transactions as transactionsTable,
   syncOutbox,
   listUnresolvedConflicts,
   resolveConflictTakeServer,
+  restoreConflictAsNew,
   createApiTransport,
   createSyncEngine,
 } from '@expense-tracker/local-data'
@@ -295,6 +297,149 @@ maybe('sync engine vs real backend', () => {
     expect(
       serverCategories?.some((c) => c.id === restored.id && c.name === 'Локальная правка'),
     ).toBe(true)
+  })
+
+  it('[REGRESSION] restoreConflictAsNew preserves the transaction type: adjustment stays adjustment after a delete-vs-edit cycle', async () => {
+    // Device A creates an account and an adjustment transaction, syncs clean.
+    const accountRepo = createLocalAccountRepository(main.db)
+    const transactionRepo = createLocalTransactionRepository(main.db)
+
+    const account = await accountRepo.create({
+      name: `Счёт ${randomUUID().slice(0, 8)}`,
+      currency: 'RUB',
+      openingBalance: 0,
+    })
+    const adj = await transactionRepo.create({
+      type: 'adjustment',
+      amount: -7_500,
+      description: 'balance correction',
+      occurredAt: '2026-09-01T12:00:00.000Z',
+      accountId: account.id,
+    })
+    await main.engine.run({ force: true })
+    // Queue drained: both records are clean on the server.
+    expect(main.db.select().from(syncOutbox).all()).toHaveLength(0)
+
+    // Another device (simulated via REST) deletes the adjustment on the server.
+    const { response: delResp } = await main.client.DELETE('/api/transactions/{id}', {
+      params: { path: { id: adj.id } },
+    })
+    expect(delResp.status).toBe(204)
+
+    // Device A edits the adjustment locally (unaware of the remote delete),
+    // producing a dirty DIRTY row that conflicts on the next push.
+    const localRow = main.db
+      .select()
+      .from(transactionsTable)
+      .where(eq(transactionsTable.id, adj.id))
+      .get()
+    await transactionRepo.update(adj.id, {
+      amount: -8_000,
+      version: localRow?.version ?? 1,
+    })
+
+    // Sync: server tombstone wins (delete-wins). Engine records the conflict.
+    await main.engine.run({ force: true })
+
+    const conflicts = listUnresolvedConflicts(main.db)
+    expect(conflicts).toHaveLength(1)
+    const conflict = conflicts[0]!
+    expect(conflict.kind).toBe('deleted')
+    expect(conflict.entity).toBe('transaction')
+    // The preserved local state must carry the amount the user edited to.
+    expect((conflict.localState as { amount?: number }).amount).toBe(-8_000)
+    // The adjustment must still be tombstoned and the outbox empty.
+    const tombstone = main.db
+      .select()
+      .from(transactionsTable)
+      .where(eq(transactionsTable.id, adj.id))
+      .get()
+    expect(tombstone?.deletedAt).not.toBeNull()
+    expect(main.db.select().from(syncOutbox).all()).toHaveLength(0)
+
+    // --- Core regression: restoreConflictAsNew must recreate an adjustment,
+    //     not silently coerce it to an expense as the old mobile decoder did.
+    const result = await restoreConflictAsNew(main.db, conflict.id)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const newId = result.createdId
+    expect(newId).not.toBe(adj.id) // fresh id
+
+    const restoredRow = main.db
+      .select()
+      .from(transactionsTable)
+      .where(eq(transactionsTable.id, newId))
+      .get()
+    expect(restoredRow).not.toBeUndefined()
+    expect(restoredRow?.type).toBe('adjustment')   // must NOT be 'expense'
+    expect(restoredRow?.amount).toBe(-8_000)        // edited amount preserved
+    expect(restoredRow?.accountId).toBe(account.id) // account reference intact
+    expect(restoredRow?.deletedAt).toBeNull()        // live record
+
+    // The conflict must be resolved.
+    expect(listUnresolvedConflicts(main.db)).toHaveLength(0)
+
+    // Push the restored transaction to the server and verify it arrives.
+    await main.engine.run({ force: true })
+    expect(main.db.select().from(syncOutbox).all()).toHaveLength(0)
+
+    const { data: serverTransactions } = await main.client.GET('/api/transactions')
+    const pushed = serverTransactions?.transactions.find((t) => t.id === newId)
+    expect(pushed).not.toBeUndefined()
+    expect(pushed?.type).toBe('adjustment')
+    expect(pushed?.amount).toBe(-8_000)
+  })
+
+  it('restoreConflictAsNew refuses an incomplete preserved state without creating a record', async () => {
+    // Manufacture a conflict whose localState is missing the required
+    // accountId for an adjustment. This cannot happen via normal sync
+    // (every row that was written passed local validation), but the test
+    // pins the refusal path end-to-end: no record is created, the conflict
+    // stays unresolved, the outbox stays empty.
+    //
+    // We inject the corrupt conflict directly into the db (bypassing the
+    // engine) to simulate a hypothetical corrupt preserved state.
+    const {
+      recordConflict,
+      listUnresolvedConflicts: listConflicts,
+    } = await import('@expense-tracker/local-data')
+
+    const corruptConflictId = randomUUID()
+    main.db.transaction((tx) =>
+      recordConflict(tx, {
+        entity: 'transaction',
+        entityId: corruptConflictId,
+        opId: null,
+        kind: 'deleted',
+        baseVersion: 1,
+        serverVersion: 2,
+        // accountId intentionally omitted - decoder must refuse this
+        localState: {
+          type: 'adjustment',
+          amount: -1_000,
+          occurredAt: '2026-09-01T12:00:00.000Z',
+        },
+        serverState: { version: 2, deleted: true },
+      }),
+    )
+
+    const before = listConflicts(main.db)
+    const conflictRow = before.find((c) => c.entityId === corruptConflictId)
+    expect(conflictRow).not.toBeUndefined()
+
+    const outboxBefore = main.db.select().from(syncOutbox).all().length
+    const result = await restoreConflictAsNew(main.db, conflictRow!.id)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.reason).toBe('invalid-state')
+    expect(result.field).toBe('accountId')
+
+    // Conflict still unresolved; outbox unchanged.
+    const after = listConflicts(main.db)
+    expect(after.some((c) => c.id === conflictRow!.id)).toBe(true)
+    expect(main.db.select().from(syncOutbox).all().length).toBe(outboxBefore)
   })
 
   it('restart with open conflicts: a new engine over the same file keeps them resolvable', async () => {
