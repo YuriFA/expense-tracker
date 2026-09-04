@@ -131,5 +131,8 @@ migrations). `make gen-check` is the CI drift gate. Both generated trees are com
   Includes depguard architecture rules: layering + sqlc confinement; the
   middleware allowlist exception (see Layering above) lives in
   `issues.exclusions` - do not add files there without a decision.
+  Formatting is part of the same gate (v2 `formatters`: goimports with the
+  module local-prefix + golines at 120 cols - `run` reports drift, CI fails
+  on it); fix with `golangci-lint fmt` from `backend/`.
 - Build: `go build ./...` from `backend/`. Docker image is CGO-free
   (`CGO_ENABLED=0`); `docker compose up` brings up `db` (postgres:17) + `app`.
