@@ -1,10 +1,10 @@
 // Category form behavior: submit-driven name validation, payload with the
-// picked type/icon/color, server errors at the root slot with the name
-// preserved, reset after a successful create, and pending blocking
-// duplicates. The edit mode prefills from the record and writes through
-// `update` with the record's version. The form renders standalone - under
-// jest the @gorhom mock degrades BottomSheetInput to a plain input (no sheet
-// context needed).
+// picked type/icon and the icon-paired color, server errors at the root slot
+// with the name preserved, reset after a successful create, and pending
+// blocking duplicates. The edit mode prefills from the record and writes
+// through `update` with the record's version. The form renders standalone -
+// under jest the @gorhom mock degrades BottomSheetInput to a plain input (no
+// sheet context needed).
 
 import { describe, expect, it, beforeEach, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
@@ -39,14 +39,15 @@ function renderForm(
 function fillValid() {
   fireEvent.changeText(screen.getByTestId('home-new-category-name'), 'Транспорт')
   fireEvent.press(screen.getByTestId('home-new-category-type-income'))
-  fireEvent.press(screen.getByTestId('home-new-category-icon-bus'))
-  fireEvent.press(screen.getByTestId('home-new-category-color-6366f1'))
+  fireEvent.press(screen.getByTestId('home-new-category-icon-💼'))
 }
 
 const existingCategory: Category = {
   id: 'cat-1',
   name: 'Кафе',
   type: 'expense',
+  // Legacy Ionicons glyph stored before the unified emoji set: it renders
+  // (through the legacy map) but is not offered by the picker.
   icon: 'restaurant',
   color: '#f97316',
   archivedAt: null,
@@ -69,7 +70,7 @@ describe('CategoryForm (create)', () => {
     expect(repository.snapshot()).toHaveLength(0)
   })
 
-  it('submits the name with the picked type, icon, and color', async () => {
+  it('submits the name with the picked type, icon, and the icon-paired color', async () => {
     const repository = renderForm()
 
     fillValid()
@@ -79,8 +80,49 @@ describe('CategoryForm (create)', () => {
     expect(repository.snapshot()[0]).toMatchObject({
       name: 'Транспорт',
       type: 'income',
-      icon: 'bus',
-      color: '#6366f1',
+      icon: '💼',
+      color: '#6d28d9',
+    })
+  })
+
+  it('filters the icon list by the selected type', async () => {
+    renderForm()
+
+    // Expense set by default: an income-only icon is absent, an expense one is offered.
+    expect(screen.queryByTestId('home-new-category-icon-💼')).toBeNull()
+    expect(screen.getByTestId('home-new-category-icon-🛒')).toBeTruthy()
+
+    fireEvent.press(screen.getByTestId('home-new-category-type-income'))
+    expect(screen.getByTestId('home-new-category-icon-💼')).toBeTruthy()
+    expect(screen.queryByTestId('home-new-category-icon-🛒')).toBeNull()
+  })
+
+  it('falls back to the type default icon when the type switch drops the picked one', async () => {
+    const repository = renderForm()
+
+    // The shared 🎁 survives a type switch (offered for both types)...
+    fireEvent.press(screen.getByTestId('home-new-category-icon-🎁'))
+    fireEvent.press(screen.getByTestId('home-new-category-type-income'))
+    expect(screen.getByTestId('home-new-category-icon-🎁').props.accessibilityState.selected).toBe(
+      true,
+    )
+
+    // ...but an income-exclusive icon does not: switching back to expense
+    // falls back to the expense default 🛒.
+    fireEvent.press(screen.getByTestId('home-new-category-icon-💼'))
+    fireEvent.press(screen.getByTestId('home-new-category-type-expense'))
+    expect(screen.getByTestId('home-new-category-icon-🛒').props.accessibilityState.selected).toBe(
+      true,
+    )
+
+    fireEvent.changeText(screen.getByTestId('home-new-category-name'), 'Подарки')
+    fireEvent.press(screen.getByTestId('home-new-category-submit'))
+    await waitFor(() => expect(repository.snapshot()).toHaveLength(1))
+    expect(repository.snapshot()[0]).toMatchObject({
+      name: 'Подарки',
+      type: 'expense',
+      icon: '🛒',
+      color: '#16a34a',
     })
   })
 
@@ -127,8 +169,8 @@ describe('CategoryForm (create)', () => {
     expect(repository.snapshot()[1]).toMatchObject({
       name: 'Другая',
       type: 'expense',
-      icon: 'pricetag',
-      color: '#7c5cff',
+      icon: '🛒',
+      color: '#16a34a',
     })
   })
 
@@ -153,8 +195,8 @@ describe('CategoryForm (create)', () => {
       id: 'cat-new',
       name: 'Транспорт',
       type: 'income',
-      icon: 'bus',
-      color: '#6366f1',
+      icon: '💼',
+      color: '#6d28d9',
       archivedAt: null,
       version: 1,
     })
@@ -179,12 +221,15 @@ describe('CategoryForm (edit)', () => {
     fireEvent.press(screen.getByTestId('category-edit-submit'))
 
     await waitFor(() => expect(repository.calls.update).toBe(1))
+    // The legacy icon survives the save (no tile selected, value untouched);
+    // the color re-derives through the nearest-free walk, which for an
+    // out-of-set icon anchors at the palette head.
     expect(repository.snapshot()[0]).toMatchObject({
       id: 'cat-1',
       name: 'Кафе и десерты',
       type: 'expense',
       icon: 'restaurant',
-      color: '#f97316',
+      color: '#16a34a',
       archivedAt: null,
       version: 4,
     })

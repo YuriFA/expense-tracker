@@ -23,6 +23,7 @@ import { CategoryPickerSheet } from '@/shared/ui/category-picker-sheet'
 import { DatePickerSheet } from '@/shared/ui/date-picker-sheet'
 import { FormError } from '@/shared/ui/form'
 import { Icon, type IconName } from '@/shared/ui/icon'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { Pressable } from '@/shared/ui/pressable'
 import { SheetContentPortal } from '@/shared/ui/sheet-content-portal'
 import { Text } from '@/shared/ui/text'
@@ -241,19 +242,12 @@ export function CategoryRow() {
         value={selected?.name}
         placeholder="Выберите категорию"
         leadingIcon={
-          <View
-            className={cn(
-              'size-5 items-center justify-center rounded-full',
-              selected ? undefined : 'bg-muted',
-            )}
-            style={selected ? { backgroundColor: selected.color } : undefined}
-          >
-            <Icon
-              name={(selected?.icon ?? 'pricetag-outline') as IconName}
-              size={12}
-              colorClassName="accent-white"
-            />
-          </View>
+          <CategoryAvatar
+            icon={selected?.icon ?? '🏷️'}
+            color={selected?.color}
+            boxClassName="size-5"
+            iconSize={11}
+          />
         }
         onPress={() => pickerRef.current?.present()}
         testID="plans-form-category"

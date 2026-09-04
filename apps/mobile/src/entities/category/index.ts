@@ -8,8 +8,7 @@ export {
 } from './model/use-categories'
 export type { Category } from './model/use-categories'
 export {
-  CATEGORY_COLORS,
-  CATEGORY_ICONS,
-  DEFAULT_CATEGORY_COLOR,
-  DEFAULT_CATEGORY_ICON,
+  categoryIconsForType,
+  defaultCategoryIcon,
+  pickCategoryColor,
 } from './config/category-appearance'

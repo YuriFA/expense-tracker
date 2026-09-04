@@ -12,7 +12,8 @@ import { notification } from '@/shared/services/notification'
 import { VersionConflictError } from '@expense-tracker/api'
 import {
   CATEGORY_ICONS,
-  DEFAULT_CATEGORY_ICON,
+  categoryIconsForType,
+  defaultCategoryIcon,
   pickCategoryColor,
   useCategoriesIncludingArchived,
   useCreateCategory,
@@ -62,12 +63,26 @@ watch(
       icon.value = category.icon
     } else {
       name.value = ''
-      icon.value = DEFAULT_CATEGORY_ICON.icon
+      icon.value = defaultCategoryIcon('expense')
       type.value = 'expense'
     }
   },
   { immediate: true },
 )
+
+// The icon vocabulary follows the category's type (create: the chosen
+// type; edit: the immutable record type). Toggling the type in create mode
+// replaces an icon the new type does not offer with that type's default.
+const effectiveType = computed(() =>
+  isCreate.value ? type.value : (props.category?.type ?? 'expense'),
+)
+const iconOptions = computed(() => categoryIconsForType(effectiveType.value))
+watch(type, (next, previous) => {
+  if (next === previous) return
+  if (!iconOptions.value.some((option) => option.icon === icon.value)) {
+    icon.value = defaultCategoryIcon(next)
+  }
+})
 
 // Literal keys per branch (the i18n lint bans dynamic keys).
 const typeOptions = computed<SegmentedControlOption<'expense' | 'income'>[]>(() => [
@@ -206,7 +221,7 @@ async function submit(): Promise<void> {
           :aria-label="t('editCategory.iconLabel')"
         >
           <button
-            v-for="(option, index) in CATEGORY_ICONS"
+            v-for="(option, index) in iconOptions"
             :key="option.icon"
             type="button"
             role="radio"

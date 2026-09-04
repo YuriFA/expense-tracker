@@ -1,9 +1,9 @@
 import { View } from 'react-native'
 import type { Category } from '@expense-tracker/api'
-import { Icon, type IconName } from '@/shared/ui/icon'
+import { Icon } from '@/shared/ui/icon'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { Text } from '@/shared/ui/text'
 import { Pressable } from '@/shared/ui/pressable'
-import { cn } from '@/shared/lib/utils'
 import {
   BottomSheet,
   BottomSheetHeader,
@@ -59,19 +59,12 @@ export function CategoryPickerSheet({
                   className="flex-row items-center gap-3 py-3"
                   onPress={() => handleSelect(category.id)}
                 >
-                  <View
-                    className={cn(
-                      'h-10 w-10 items-center justify-center rounded-full',
-                      category.color ? undefined : 'bg-muted',
-                    )}
-                    style={category.color ? { backgroundColor: category.color } : undefined}
-                  >
-                    <Icon
-                      name={category.icon as IconName}
-                      size={20}
-                      colorClassName="accent-white"
-                    />
-                  </View>
+                  <CategoryAvatar
+                    icon={category.icon}
+                    color={category.color}
+                    boxClassName="h-10 w-10"
+                    iconSize={20}
+                  />
                   <Text variant="body" className="flex-1 text-foreground" numberOfLines={1}>
                     {category.name}
                   </Text>

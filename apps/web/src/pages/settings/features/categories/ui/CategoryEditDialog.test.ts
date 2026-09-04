@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import type { Category } from '@expense-tracker/api'
-import { CATEGORY_ICONS } from '@/entities/category'
+import { categoryIconsForType } from '@/entities/category'
 import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 import CategoryEditDialog from './CategoryEditDialog.vue'
@@ -62,9 +62,10 @@ describe('CategoryEditDialog', () => {
     const { categoriesRepo } = mountDialog()
     await flushPromises()
 
-    // Pick a different preset: 🍕 with its own paired color.
-    const pizza = CATEGORY_ICONS.find((option) => option.icon === '🍕')!
-    q('[data-testid="edit-category-icon-2"]')!.click()
+    // Pick a different preset: 🍽️ with its own paired color.
+    const expenseOptions = categoryIconsForType('expense')
+    const restaurant = expenseOptions.find((option) => option.icon === '🍽️')!
+    q(`[data-testid="edit-category-icon-${expenseOptions.indexOf(restaurant)}"]`)!.click()
     await flushPromises()
 
     const submit = q<HTMLButtonElement>('[data-testid="edit-category-submit"]')!
@@ -73,8 +74,8 @@ describe('CategoryEditDialog', () => {
 
     expect(categoriesRepo.update).toHaveBeenCalledWith('c-food', {
       name: 'Food',
-      icon: '🍕',
-      color: pizza.color,
+      icon: '🍽️',
+      color: restaurant.color,
       version: 3,
     })
   })
@@ -132,18 +133,37 @@ describe('CategoryEditDialog (create mode)', () => {
     const { categoriesRepo } = mountCreateDialog()
     await flushPromises()
 
-    const pizza = CATEGORY_ICONS.find((option) => option.icon === '🍕')!
+    const incomeOptions = categoryIconsForType('income')
+    const freelance = incomeOptions.find((option) => option.icon === '🖥️')!
     await click('[data-testid="create-category-type-income"]')
     await typeInto('[data-testid="create-category-name"]', 'Salary')
-    await click('[data-testid="create-category-icon-2"]')
+    await click(`[data-testid="create-category-icon-${incomeOptions.indexOf(freelance)}"]`)
     await click('[data-testid="create-category-submit"]')
 
     expect(categoriesRepo.create).toHaveBeenCalledWith({
       name: 'Salary',
-      icon: '🍕',
-      color: pizza.color,
+      icon: '🖥️',
+      color: freelance.color,
       type: 'income',
     })
     expect(categoriesRepo.update).not.toHaveBeenCalled()
+  })
+
+  it('replaces the picked icon with the type default when the type switch drops it', async () => {
+    const { categoriesRepo } = mountCreateDialog()
+    await flushPromises()
+
+    // Default flow: expense default 🛒 selected; switching to income must
+    // fall back to the income default 💼 (🛒 is not offered for income).
+    await click('[data-testid="create-category-type-income"]')
+    await typeInto('[data-testid="create-category-name"]', 'Бонус')
+    await click('[data-testid="create-category-submit"]')
+
+    expect(categoriesRepo.create).toHaveBeenCalledWith({
+      name: 'Бонус',
+      icon: '💼',
+      color: '#6d28d9',
+      type: 'income',
+    })
   })
 })

@@ -1,21 +1,29 @@
-// Category form: name, type toggle, icon picker, and color picker (both from
-// the predefined lists). Create mode writes through `useCreateCategory`; edit
-// mode (a `category` prop) prefills from the record and writes through
-// `useUpdateCategory`, sending the record's version as the CAS token.
+// Category form: name, type toggle, and the type-filtered icon picker from
+// the unified emoji set. The color is never picked: it is the icon's
+// pre-paired color (displaced to the nearest free one when another
+// category already holds it). Create mode writes through
+// `useCreateCategory`; edit mode (a `category` prop) prefills from the
+// record and writes through `useUpdateCategory`, sending the record's
+// version as the CAS token.
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
-import { Pressable, ScrollView, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import type { Category, CategoryType } from '@expense-tracker/api'
 import { BottomSheetInput } from '@/shared/ui/bottom-sheet'
 import { Button } from '@/shared/ui/button'
 import { FormError, FormField, FormLabel } from '@/shared/ui/form'
-import { Icon } from '@/shared/ui/icon'
 import { Text } from '@/shared/ui/text'
 import { cn } from '@/shared/lib/utils'
 import { getRepositoryErrorText } from '@/shared/lib/data/repository-errors-ru'
-import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/entities/category'
-import { useCreateCategory, useUpdateCategory } from '@/entities/category'
+import {
+  categoryIconsForType,
+  defaultCategoryIcon,
+  pickCategoryColor,
+  useCategoriesIncludingArchived,
+  useCreateCategory,
+  useUpdateCategory,
+} from '@/entities/category'
 import {
   newCategoryDefaultValues,
   newCategorySchema,
@@ -39,12 +47,9 @@ function categoryInitialValues(
 ): NewCategoryFormValues {
   if (!category)
     return { ...newCategoryDefaultValues, type: defaultType ?? newCategoryDefaultValues.type }
-  return {
-    name: category.name,
-    type: category.type,
-    icon: category.icon,
-    color: category.color,
-  }
+  // A stored icon outside the current set stays as-is: it renders, simply
+  // without a selected tile, and survives the save unless the user picks one.
+  return { name: category.name, type: category.type, icon: category.icon }
 }
 
 export function CategoryForm({
@@ -65,23 +70,44 @@ export function CategoryForm({
   })
   const createCategory = useCreateCategory()
   const updateCategory = useUpdateCategory()
+  const { data: allCategories } = useCategoriesIncludingArchived()
   const pending =
     form.formState.isSubmitting || createCategory.isPending || updateCategory.isPending
 
+  const type = form.watch('type')
+  const icon = form.watch('icon')
+  const iconOptions = categoryIconsForType(type)
+
   const handleSubmit = async (values: NewCategoryFormValues) => {
+    // Colors taken by OTHER categories (archived included - they still
+    // render in charts) displace to the nearest free palette color.
+    const takenColors = (allCategories ?? [])
+      .filter((candidate) => candidate.id !== category?.id)
+      .map((candidate) => candidate.color)
+    const color = pickCategoryColor(values.icon, takenColors)
+
     try {
       if (isEdit && category) {
         await updateCategory.mutateAsync({
           id: category.id,
-          payload: { ...values, version: category.version },
+          payload: { ...values, color, version: category.version },
         })
       } else {
-        await createCategory.mutateAsync(values)
+        await createCategory.mutateAsync({ ...values, color })
         form.reset(createDefaults)
       }
       onSuccess?.()
     } catch (cause) {
       form.setError('root', { message: getRepositoryErrorText(cause) })
+    }
+  }
+
+  const selectType = (next: CategoryType, onChange: (type: CategoryType) => void) => {
+    onChange(next)
+    // The icon vocabulary follows the type: an icon not offered for the
+    // new type falls back to that type's default.
+    if (!categoryIconsForType(next).some((option) => option.icon === icon)) {
+      form.setValue('icon', defaultCategoryIcon(next), { shouldDirty: true })
     }
   }
 
@@ -117,14 +143,14 @@ export function CategoryForm({
               variant={field.value === 'expense' ? 'primary' : 'outline'}
               text="Расход"
               className="flex-1"
-              onPress={() => field.onChange('expense')}
+              onPress={() => selectType('expense', field.onChange)}
               testID={`${id}-type-expense`}
             />
             <Button
               variant={field.value === 'income' ? 'primary' : 'outline'}
               text="Доход"
               className="flex-1"
-              onPress={() => field.onChange('income')}
+              onPress={() => selectType('income', field.onChange)}
               testID={`${id}-type-income`}
             />
           </View>
@@ -137,56 +163,22 @@ export function CategoryForm({
         render={({ field }) => (
           <View className="gap-2">
             <Text variant="label">Иконка</Text>
-            <ScrollView horizontal testID={`${id}-icons`} contentContainerStyle={{ gap: 8 }}>
-              {CATEGORY_ICONS.map((option) => (
+            <View className="flex-row flex-wrap gap-2" testID={`${id}-icons`}>
+              {iconOptions.map((option) => (
                 <Pressable
-                  key={option}
-                  testID={`${id}-icon-${option}`}
+                  key={option.icon}
+                  testID={`${id}-icon-${option.icon}`}
                   accessibilityRole="button"
-                  accessibilityLabel={`Иконка ${option}`}
-                  accessibilityState={{ selected: field.value === option }}
+                  accessibilityLabel={`Иконка ${option.icon}`}
+                  accessibilityState={{ selected: field.value === option.icon }}
                   className={cn(
-                    'h-11 w-11 items-center justify-center rounded-xl border',
-                    field.value === option ? 'border-primary bg-secondary' : 'border-border',
+                    'h-11 w-11 items-center justify-center rounded-full border-2',
+                    field.value === option.icon ? 'border-primary' : 'border-transparent',
                   )}
-                  onPress={() => field.onChange(option)}
+                  style={{ backgroundColor: `${option.color}26` }}
+                  onPress={() => field.onChange(option.icon)}
                 >
-                  <Icon
-                    name={option}
-                    size={22}
-                    colorClassName={field.value === option ? 'accent-primary' : 'accent-foreground'}
-                  />
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-      />
-
-      <Controller
-        control={form.control}
-        name="color"
-        render={({ field }) => (
-          <View className="gap-2">
-            <Text variant="label">Цвет</Text>
-            <View className="flex-row flex-wrap gap-2" testID={`${id}-colors`}>
-              {CATEGORY_COLORS.map((option) => (
-                <Pressable
-                  key={option}
-                  testID={`${id}-color-${option.replace('#', '')}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Цвет ${option}`}
-                  accessibilityState={{ selected: field.value === option }}
-                  className={cn(
-                    'h-10 w-10 items-center justify-center rounded-full border-2',
-                    field.value === option ? 'border-primary' : 'border-transparent',
-                  )}
-                  style={{ backgroundColor: option }}
-                  onPress={() => field.onChange(option)}
-                >
-                  {field.value === option ? (
-                    <Icon name="checkmark" size={18} colorClassName="accent-white" />
-                  ) : null}
+                  <Text style={{ fontSize: 20 }}>{option.icon}</Text>
                 </Pressable>
               ))}
             </View>

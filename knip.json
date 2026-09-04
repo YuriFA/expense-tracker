@@ -4,6 +4,9 @@
     ".": {
       "ignore": [
         ".dependency-cruiser.mobile.cjs"
+      ],
+      "ignoreBinaries": [
+        "oxfmt"
       ]
     },
     "apps/web": {

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlusIcon } from '@lucide/vue'
 import {
-  CATEGORY_ICONS,
-  DEFAULT_CATEGORY_ICON,
+  categoryIconsForType,
+  defaultCategoryIcon,
   pickCategoryColor,
   type Category,
 } from '@/entities/category'
@@ -16,13 +16,13 @@ import { Input } from '@/shared/ui/input'
 import { notification } from '@/shared/services/notification'
 
 // Inline category creation for the transaction form (mobile's
-// new-category-sheet parity): the backend seeds defaults only on
-// registration, so anonymous local mode starts with no categories - without
-// this affordance an income/expense transaction cannot be created at all.
-// User-created categories are ordinary local records: they sync as creates
-// on first login, exactly like mobile. Icon and color are a pre-paired set
-// (category-appearance config): the user picks only the emoji, the color is
-// assigned automatically and stored on the record.
+// new-category-sheet parity): the category list starts empty for a new
+// user - without this affordance an income/expense transaction cannot be
+// created at all. User-created categories are ordinary local records: they
+// sync as creates on first login, exactly like mobile. Icon and color are a
+// pre-paired set (category-appearance config): the user picks only the
+// emoji, the color is assigned automatically and stored on the record. The
+// icon list is filtered by the transaction form's category type.
 
 const { type } = defineProps<{
   type: 'expense' | 'income'
@@ -40,7 +40,8 @@ const { mutateAsync: createCategory, asyncStatus } = useCreateCategory()
 // colors count as taken for the distinct-palette walk.
 const { data: categories } = useCategoriesIncludingArchived()
 const name = ref('')
-const icon = ref<string>(DEFAULT_CATEGORY_ICON.icon)
+const icon = ref<string>(defaultCategoryIcon(type))
+const iconOptions = computed(() => categoryIconsForType(type))
 
 async function submit() {
   const trimmed = name.value.trim()
@@ -58,7 +59,7 @@ async function submit() {
     notification.success(t('addTransaction.categoryCreated'))
     emit('created', category)
     name.value = ''
-    icon.value = DEFAULT_CATEGORY_ICON.icon
+    icon.value = defaultCategoryIcon(type)
     open.value = false
   } catch (error) {
     notification.mutationError(error, {
@@ -94,7 +95,7 @@ async function submit() {
           :aria-label="t('addTransaction.categoryIcon')"
         >
           <button
-            v-for="(option, index) in CATEGORY_ICONS"
+            v-for="(option, index) in iconOptions"
             :key="option.icon"
             type="button"
             role="radio"

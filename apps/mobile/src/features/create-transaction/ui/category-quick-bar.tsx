@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import type { Category } from '@expense-tracker/api'
-import { Icon, type IconName } from '@/shared/ui/icon'
+import { Icon } from '@/shared/ui/icon'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { Text } from '@/shared/ui/text'
 import { Pressable } from '@/shared/ui/pressable'
 import { cn } from '@/shared/lib/utils'
@@ -75,15 +76,12 @@ export function CategoryQuickBar({
               }
               onPress={() => onSelect(category.id)}
             >
-              <View
-                className={cn(
-                  'size-9 items-center justify-center rounded-full',
-                  category.color ? undefined : 'bg-muted',
-                )}
-                style={category.color ? { backgroundColor: category.color } : undefined}
-              >
-                <Icon name={category.icon as IconName} size={14} colorClassName="accent-white" />
-              </View>
+              <CategoryAvatar
+                icon={category.icon}
+                color={category.color}
+                boxClassName="size-9"
+                iconSize={16}
+              />
               <Text
                 variant="body-sm"
                 className={selected ? 'font-medium text-primary' : 'text-foreground'}

@@ -1,8 +1,7 @@
 import { Text } from '@/shared/ui/text'
-import { Icon, type IconName } from '@/shared/ui/icon'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { Pressable } from '@/shared/ui/pressable'
 import { View } from 'react-native'
-import { cn } from '@/shared/lib/utils'
 import { CASHFLOW_KIND_VIEWS } from './kind'
 import type { CashflowKind } from '../model/selectors'
 
@@ -10,7 +9,8 @@ interface CategoryRowProps {
   kind: CashflowKind
   categoryId: string
   name: string
-  icon: IconName
+  /** Stored icon string (emoji or a legacy Ionicons glyph name). */
+  icon: string
   /** Data color (hex from the category record); falls back to `bg-muted`. */
   color: string | undefined
   amountText: string
@@ -37,15 +37,7 @@ export function CategoryRow({
       onPress={() => onPress(categoryId)}
     >
       <View className="flex-row items-center gap-2 py-1">
-        <View
-          className={cn(
-            'h-10 w-10 items-center justify-center rounded-full',
-            color ? undefined : 'bg-muted',
-          )}
-          style={color ? { backgroundColor: color } : undefined}
-        >
-          <Icon name={icon} size={20} colorClassName="accent-white" />
-        </View>
+        <CategoryAvatar icon={icon} color={color} boxClassName="h-10 w-10" iconSize={20} />
         <Text variant="body" className="flex-1 text-foreground">
           {name}
         </Text>

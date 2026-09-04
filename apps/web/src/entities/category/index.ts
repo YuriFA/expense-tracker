@@ -10,6 +10,7 @@ export {
 export { default as CategorySelect } from './ui/CategorySelect.vue'
 export {
   CATEGORY_ICONS,
-  DEFAULT_CATEGORY_ICON,
+  categoryIconsForType,
+  defaultCategoryIcon,
   pickCategoryColor,
 } from './config/category-appearance'

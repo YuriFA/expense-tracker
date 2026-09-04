@@ -2,43 +2,74 @@
 // icon set carries its own strongly distinct background color (one color per
 // icon - the pair travels together, the user only picks the emoji). The
 // chosen color is STORED on the category record (API field `color`), and
-// charts rely on the palette staying mutually distinct. Web copy of the set;
-// the mobile category-appearance config keeps its own until mobile adopts
-// the paired model.
+// charts rely on the palette staying mutually distinct. The list is
+// type-filtered at creation time: expense categories draw from the expense
+// icons, income categories from the income icons (🎁 is offered for both).
+//
+// This is the WEB MIRROR of the set: the mobile config is canonical and a
+// drift guard test (category-icons-sync) fails when this copy diverges.
 //
 // Colors are raw hex DATA rendered via inline styles (tinted circle
 // backgrounds, chart fills), not Tailwind classes.
 
+import type { CategoryType } from '@expense-tracker/api'
+
 export interface CategoryIconOption {
   icon: string
   color: string
+  /** Category types this icon is offered for. */
+  types: readonly CategoryType[]
 }
 
 export const CATEGORY_ICONS: readonly CategoryIconOption[] = [
-  { icon: '☕', color: '#92400e' },
-  { icon: '🍔', color: '#ea580c' },
-  { icon: '🍕', color: '#dc2626' },
-  { icon: '🥗', color: '#65a30d' },
-  { icon: '🛒', color: '#16a34a' },
-  { icon: '🚗', color: '#64748b' },
-  { icon: '🚌', color: '#d97706' },
-  { icon: '✈️', color: '#0284c7' },
-  { icon: '🏠', color: '#0d9488' },
-  { icon: '🛠️', color: '#78716c' },
-  { icon: '🐾', color: '#0f766e' },
-  { icon: '🎁', color: '#db2777' },
-  { icon: '🎬', color: '#7c3aed' },
-  { icon: '🎮', color: '#4f46e5' },
-  { icon: '📚', color: '#2563eb' },
-  { icon: '🎓', color: '#9333ea' },
-  { icon: '💪', color: '#0891b2' },
-  { icon: '❤️', color: '#e11d48' },
-  { icon: '💼', color: '#c026d3' },
-  { icon: '💰', color: '#a16207' },
+  // Food
+  { icon: '🛒', color: '#16a34a', types: ['expense'] }, // groceries
+  { icon: '🍽️', color: '#ea580c', types: ['expense'] }, // restaurant
+  { icon: '☕', color: '#92400e', types: ['expense'] }, // cafes
+  { icon: '🛵', color: '#e11d48', types: ['expense'] }, // food delivery
+  { icon: '🍔', color: '#dc2626', types: ['expense'] }, // fast food
+  // Transport & travel
+  { icon: '🚗', color: '#64748b', types: ['expense'] }, // car / taxi
+  { icon: '🚌', color: '#d97706', types: ['expense'] }, // public transport
+  { icon: '⛽', color: '#075985', types: ['expense'] }, // fuel
+  { icon: '✈️', color: '#0284c7', types: ['expense'] }, // flight tickets
+  { icon: '🏝️', color: '#0d9488', types: ['expense'] }, // vacation
+  // Home
+  { icon: '🏠', color: '#115e59', types: ['expense'] }, // rent / home
+  { icon: '🧾', color: '#78716c', types: ['expense'] }, // utilities / bills
+  { icon: '🛠️', color: '#57534e', types: ['expense'] }, // repairs
+  // Health
+  { icon: '💊', color: '#b91c1c', types: ['expense'] }, // pharmacy / medicine
+  { icon: '💪', color: '#0891b2', types: ['expense'] }, // sport
+  // Entertainment & education
+  { icon: '🎬', color: '#7c3aed', types: ['expense'] }, // cinema
+  { icon: '🎮', color: '#4f46e5', types: ['expense'] }, // games
+  { icon: '📚', color: '#2563eb', types: ['expense'] }, // education
+  // Singles
+  { icon: '👕', color: '#c026d3', types: ['expense'] }, // clothing
+  { icon: '📱', color: '#65a30d', types: ['expense'] }, // connection / internet
+  { icon: '📺', color: '#9333ea', types: ['expense'] }, // subscriptions
+  { icon: '🐾', color: '#14b8a6', types: ['expense'] }, // pets
+  { icon: '🎁', color: '#db2777', types: ['expense', 'income'] }, // gifts
+  { icon: '❤️', color: '#9f1239', types: ['expense'] }, // charity
+  // Income
+  { icon: '💼', color: '#6d28d9', types: ['income'] }, // salary
+  { icon: '🖥️', color: '#475569', types: ['income'] }, // freelance
+  { icon: '📈', color: '#059669', types: ['income'] }, // investments
+  { icon: '💰', color: '#a16207', types: ['income'] }, // savings
+  { icon: '🎉', color: '#ca8a04', types: ['income'] }, // bonuses
+  { icon: '💵', color: '#15803d', types: ['income'] }, // other income
 ]
 
-/** Default picker selection. */
-export const DEFAULT_CATEGORY_ICON = CATEGORY_ICONS[0]!
+/** Icons offered for a category of the given type (picker filter). */
+export function categoryIconsForType(type: CategoryType): readonly CategoryIconOption[] {
+  return CATEGORY_ICONS.filter((option) => option.types.includes(type))
+}
+
+/** Default picker selection for a category type. */
+export function defaultCategoryIcon(type: CategoryType): string {
+  return type === 'income' ? '💼' : '🛒'
+}
 
 /**
  * Color for a new category: the icon's paired color, or the nearest free

@@ -1,5 +1,5 @@
 import { Card } from '@/shared/ui/card'
-import { Icon, type IconName } from '@/shared/ui/icon'
+import { Icon } from '@/shared/ui/icon'
 import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import type { Category, Transaction } from '@expense-tracker/api'
@@ -88,7 +88,7 @@ export function CategorySection({
                 kind={kind}
                 categoryId={category.id}
                 name={category.name}
-                icon={category.icon as IconName}
+                icon={category.icon}
                 color={category.color}
                 amountText={formatAmount(totalMinor)}
                 onPress={(categoryId) => {

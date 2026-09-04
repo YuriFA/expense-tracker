@@ -1,11 +1,11 @@
 import { useMemo, useRef } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
-import { View } from 'react-native'
 import { fullDayLabel } from '@expense-tracker/dates'
 import { useAccounts } from '@/entities/account'
 import { useCategories } from '@/entities/category'
 import { BottomSheetInput, type BottomSheetRef } from '@/shared/ui/bottom-sheet'
-import { Icon, type IconName } from '@/shared/ui/icon'
+import { Icon } from '@/shared/ui/icon'
+import { CategoryAvatar } from '@/shared/ui/category-avatar'
 import { Pressable } from '@/shared/ui/pressable'
 import { Text } from '@/shared/ui/text'
 import { AccountPickerSheet } from '@/shared/ui/account-picker-sheet'
@@ -206,19 +206,12 @@ export function CategoryFieldRow({ kind }: { kind: 'expense' | 'income' }) {
         value={category?.name}
         placeholder="Выберите категорию"
         leadingIcon={
-          <View
-            className={cn(
-              'size-5 items-center justify-center rounded-full',
-              category ? undefined : 'bg-muted',
-            )}
-            style={category ? { backgroundColor: category.color } : undefined}
-          >
-            <Icon
-              name={(category?.icon ?? 'pricetag-outline') as IconName}
-              size={12}
-              colorClassName="accent-white"
-            />
-          </View>
+          <CategoryAvatar
+            icon={category?.icon ?? '🏷️'}
+            color={category?.color}
+            boxClassName="size-5"
+            iconSize={11}
+          />
         }
         onPress={() => pickerRef.current?.present()}
         testID="edit-transaction-category"

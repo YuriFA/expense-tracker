@@ -331,8 +331,8 @@ describe('DashboardScreen (Home)', () => {
     expect(screen.getByTestId('home-new-category-sheet')).toBeTruthy()
 
     fireEvent.changeText(screen.getByTestId('home-new-category-name'), 'Транспорт')
-    fireEvent.press(screen.getByTestId('home-new-category-icon-bus'))
     fireEvent.press(screen.getByTestId('home-new-category-type-income'))
+    fireEvent.press(screen.getByTestId('home-new-category-icon-💼'))
     fireEvent.press(screen.getByTestId('home-new-category-submit'))
 
     await waitFor(() => expect(categoryRepository.snapshot()).toHaveLength(4))

@@ -9,7 +9,7 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { formatMoney, DEFAULT_CURRENCY } from '@/shared/lib/money'
 import { useAccounts } from '@/entities/account'
 import {
-  DEFAULT_CATEGORY_ICON,
+  defaultCategoryIcon,
   pickCategoryColor,
   useCategoriesIncludingArchived,
   useCreateCategory,
@@ -147,11 +147,12 @@ const commit = async () => {
     const takenColors = (existingCategories.value ?? []).map((category) => category.color)
     for (const category of categoriesToCreate.value) {
       try {
+        const icon = defaultCategoryIcon(category.direction)
         const created = await createCategory({
           name: category.name,
           type: category.direction,
-          icon: DEFAULT_CATEGORY_ICON.icon,
-          color: pickCategoryColor(DEFAULT_CATEGORY_ICON.icon, takenColors),
+          icon,
+          color: pickCategoryColor(icon, takenColors),
         })
         nameToId.set(category.name.toLowerCase(), created.id)
       } catch {
