@@ -3,7 +3,13 @@ import type { SelectContentEmits, SelectContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { computed } from 'vue'
-import { SelectContent, SelectPortal, SelectViewport, injectSelectRootContext, useForwardPropsEmits } from 'reka-ui'
+import {
+  SelectContent,
+  SelectPortal,
+  SelectViewport,
+  injectSelectRootContext,
+  useForwardPropsEmits,
+} from 'reka-ui'
 import { useDesktopPresentation } from '@/shared/lib/presentation'
 import { cn } from '@/shared/lib/utils'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/shared/ui/drawer'
@@ -36,7 +42,11 @@ const contentClass = computed(() =>
 
 <template>
   <SelectPortal v-if="isDesktop">
-    <SelectContent data-slot="select-content" v-bind="{ ...$attrs, ...forwarded }" :class="contentClass">
+    <SelectContent
+      data-slot="select-content"
+      v-bind="{ ...$attrs, ...forwarded }"
+      :class="contentClass"
+    >
       <SelectScrollUpButton />
       <SelectViewport
         :class="

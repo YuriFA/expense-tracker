@@ -15,7 +15,11 @@ const versionConflict: LocalSyncConflict = {
   baseVersion: 1,
   serverVersion: 2,
   localState: { name: 'Кафе', type: 'expense', icon: 'cafe', color: '#fff' },
-  serverState: { version: 2, deleted: false, data: { name: 'Coffee', type: 'expense', icon: 'cafe', color: '#000' } },
+  serverState: {
+    version: 2,
+    deleted: false,
+    data: { name: 'Coffee', type: 'expense', icon: 'cafe', color: '#000' },
+  },
   createdAt: '2026-01-01T00:00:00Z',
 }
 
@@ -27,7 +31,13 @@ const deletedConflict: LocalSyncConflict = {
   kind: 'deleted',
   baseVersion: 3,
   serverVersion: 4,
-  localState: { id: 'acc-1', name: 'Карта', currency: 'RUB', openingBalance: 100000, manualAdjustment: 0 },
+  localState: {
+    id: 'acc-1',
+    name: 'Карта',
+    currency: 'RUB',
+    openingBalance: 100000,
+    manualAdjustment: 0,
+  },
   serverState: { version: 4, deleted: true },
   createdAt: '2026-01-01T00:00:00Z',
 }
@@ -63,13 +73,16 @@ const listMock = vi.fn<() => Promise<LocalSyncConflict[]>>()
 const keepLocalMock = vi.fn<(id: string) => Promise<void>>()
 const takeServerMock = vi.fn<(id: string) => Promise<void>>()
 const markResolvedMock = vi.fn<(id: string) => Promise<void>>()
-const restoreConflictAsNewMock = vi.fn<(id: string) => Promise<import('@expense-tracker/local-data').RestoreResult>>()
+const restoreConflictAsNewMock =
+  vi.fn<(id: string) => Promise<import('@expense-tracker/local-data').RestoreResult>>()
 const rebindOwnerMock = vi.fn<(userId: string) => Promise<void>>()
 const localDbApi = {
   sync: {
     run: runMock,
     resume: vi.fn<() => Promise<void>>(),
-    getState: vi.fn<() => Promise<{ running: boolean; paused: boolean; lastRunAt: null }>>(async () => ({ running: false, paused: false, lastRunAt: null })),
+    getState: vi.fn<() => Promise<{ running: boolean; paused: boolean; lastRunAt: null }>>(
+      async () => ({ running: false, paused: false, lastRunAt: null }),
+    ),
     subscribe: vi.fn<(listener: () => void) => Promise<() => void>>(async () => () => {}),
     readStatus: vi.fn<() => Promise<unknown>>(),
     listUnresolvedConflicts: listMock,
@@ -97,10 +110,8 @@ vi.mock('@/shared/lib/local-db/local-db', () => ({
 
 const { ConflictCenter } = await import('@/features/sync-conflicts')
 const { provideSyncController } = await import('@/shared/lib/local-db')
-const {
-  createMockAccountRepository,
-  createMockDebtorRepository,
-} = await import('@/__tests__/helpers/mock-repositories')
+const { createMockAccountRepository, createMockDebtorRepository } =
+  await import('@/__tests__/helpers/mock-repositories')
 
 const hostState: { controller: SyncController | null } = { controller: null }
 
@@ -118,9 +129,11 @@ function mountConflictCenter() {
       return () => h('div', [h(ConflictCenter)])
     },
   })
-  mounted.push(mountWithProviders(Host, {
-    repositories: { accounts: accountsRepo, debtors: debtorsRepo },
-  }))
+  mounted.push(
+    mountWithProviders(Host, {
+      repositories: { accounts: accountsRepo, debtors: debtorsRepo },
+    }),
+  )
 }
 
 // reka-ui teleports the open dialog to document.body, so assertions query
@@ -154,7 +167,9 @@ describe('ConflictCenter', () => {
     takeServerMock.mockReset().mockResolvedValue(undefined)
     markResolvedMock.mockReset().mockResolvedValue(undefined)
     listMock.mockReset()
-    restoreConflictAsNewMock.mockReset().mockResolvedValue({ ok: true, entity: 'account', createdId: 'new-id' })
+    restoreConflictAsNewMock
+      .mockReset()
+      .mockResolvedValue({ ok: true, entity: 'account', createdId: 'new-id' })
     rebindOwnerMock.mockReset().mockResolvedValue(undefined)
   })
 

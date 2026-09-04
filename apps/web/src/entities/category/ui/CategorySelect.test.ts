@@ -8,8 +8,26 @@ import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 import { DESKTOP_PRESENTATION_KEY } from '@/shared/lib/presentation'
 
 const categories: Category[] = [
-  { id: 'cincome', name: 'Salary', type: 'income', icon: '💰', color: '#00FF00', archivedAt: null, slug: 'salary', version: 1 },
-  { id: 'cexpense', name: 'Food', type: 'expense', icon: '🍔', color: '#FF0000', archivedAt: null, slug: 'food', version: 1 },
+  {
+    id: 'cincome',
+    name: 'Salary',
+    type: 'income',
+    icon: '💰',
+    color: '#00FF00',
+    archivedAt: null,
+    slug: 'salary',
+    version: 1,
+  },
+  {
+    id: 'cexpense',
+    name: 'Food',
+    type: 'expense',
+    icon: '🍔',
+    color: '#FF0000',
+    archivedAt: null,
+    slug: 'food',
+    version: 1,
+  },
 ]
 
 const archivedCategory: Category = {
@@ -29,7 +47,10 @@ const baseProps = {
   inputId: 'category-id',
 }
 
-function mountField(props: Record<string, unknown> = {}, repositories: Record<string, unknown> = {}) {
+function mountField(
+  props: Record<string, unknown> = {},
+  repositories: Record<string, unknown> = {},
+) {
   const Wrapper = defineComponent({
     setup() {
       return () => h(CategorySelect, { ...baseProps, ...props })
@@ -76,10 +97,7 @@ describe('CategorySelect', () => {
   it('resolves an archived current value while offering only active options', async () => {
     const categoriesRepo = createMockCategoryRepository()
     categoriesRepo.getAllIncludingArchived.mockResolvedValue([...categories, archivedCategory])
-    const wrapper = mountField(
-      { modelValue: 'carchived' },
-      { categories: categoriesRepo },
-    )
+    const wrapper = mountField({ modelValue: 'carchived' }, { categories: categoriesRepo })
     await flushPromises()
 
     expect(wrapper.text()).toContain('Subscriptions')

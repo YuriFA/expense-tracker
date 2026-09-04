@@ -14,9 +14,7 @@ export function utcTodayKey(now: Date = new Date()): string {
 
 /** Next-due ascending (overdue plans first by construction); ties by id. */
 export function plansSortedByNextDue(plans: readonly PlannedPayment[]): PlannedPayment[] {
-  return [...plans].sort(
-    (a, b) => a.nextDue.localeCompare(b.nextDue) || a.id.localeCompare(b.id),
-  )
+  return [...plans].sort((a, b) => a.nextDue.localeCompare(b.nextDue) || a.id.localeCompare(b.id))
 }
 
 export function isPlanOverdue(plan: PlannedPayment, today: string): boolean {

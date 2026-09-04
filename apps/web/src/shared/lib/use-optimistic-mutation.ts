@@ -22,9 +22,7 @@ interface OptimisticContext {
   invalidateKeys: EntryKey[]
 }
 
-function normalizePatches(
-  patches: OptimisticPatch[] | OptimisticPatch,
-): OptimisticPatch[] {
+function normalizePatches(patches: OptimisticPatch[] | OptimisticPatch): OptimisticPatch[] {
   return Array.isArray(patches) ? patches : [patches]
 }
 
@@ -77,11 +75,7 @@ export function useOptimisticMutation<TPayload, TResult>(
     },
     onSettled: async (_data, _error, _payload, context) => {
       if (!context?.invalidateKeys) return
-      await Promise.all(
-        context.invalidateKeys.map((key) =>
-          queryCache.invalidateQueries({ key }),
-        ),
-      )
+      await Promise.all(context.invalidateKeys.map((key) => queryCache.invalidateQueries({ key })))
     },
   })
 }

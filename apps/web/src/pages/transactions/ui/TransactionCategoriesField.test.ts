@@ -7,8 +7,26 @@ import { createMockCategoryRepository } from '@/__tests__/helpers/mock-repositor
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const categories: Category[] = [
-  { id: 'cincome', name: 'Salary', type: 'income', icon: '💰', color: '#00FF00', archivedAt: null, slug: 'salary', version: 1 },
-  { id: 'cexpense', name: 'Food', type: 'expense', icon: '🍔', color: '#FF0000', archivedAt: null, slug: 'food', version: 1 },
+  {
+    id: 'cincome',
+    name: 'Salary',
+    type: 'income',
+    icon: '💰',
+    color: '#00FF00',
+    archivedAt: null,
+    slug: 'salary',
+    version: 1,
+  },
+  {
+    id: 'cexpense',
+    name: 'Food',
+    type: 'expense',
+    icon: '🍔',
+    color: '#FF0000',
+    archivedAt: null,
+    slug: 'food',
+    version: 1,
+  },
 ]
 
 describe('TransactionCategoriesField', () => {
@@ -16,9 +34,7 @@ describe('TransactionCategoriesField', () => {
     vi.clearAllMocks()
   })
 
-  function mountField(
-    options: { modelValue?: string[]; type?: 'expense' | 'income' } = {},
-  ) {
+  function mountField(options: { modelValue?: string[]; type?: 'expense' | 'income' } = {}) {
     const categoriesRepo = createMockCategoryRepository()
     categoriesRepo.getAll.mockResolvedValue(categories)
     const emitted: string[][] = []
@@ -27,8 +43,8 @@ describe('TransactionCategoriesField', () => {
         const model = ref(options.modelValue)
         return () =>
           h(TransactionCategoriesField, {
-            'type': options.type,
-            'modelValue': model.value,
+            type: options.type,
+            modelValue: model.value,
             'onUpdate:modelValue': (value: string[] | undefined) => {
               model.value = value
               emitted.push(value ?? [])
@@ -46,9 +62,7 @@ describe('TransactionCategoriesField', () => {
 
     const rows = wrapper.findAll('[data-testid="transactions-filter-categories"] input')
     expect(rows.length).toBe(2)
-    expect(wrapper.find('[data-testid="transactions-filter-category-cincome"]').exists()).toBe(
-      true,
-    )
+    expect(wrapper.find('[data-testid="transactions-filter-category-cincome"]').exists()).toBe(true)
   })
 
   it('filters rows by the selected transaction type', async () => {

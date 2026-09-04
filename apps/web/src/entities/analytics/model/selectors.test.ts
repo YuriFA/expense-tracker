@@ -1,19 +1,46 @@
 import { describe, it, expect } from 'vitest'
 import type { Category, Transaction } from '@expense-tracker/api'
 import { currentPeriod, shiftPeriod } from '@expense-tracker/dates'
-import {
-  categoryTotals,
-  percentLabel,
-  periodTotal,
-  toChartEntries,
-} from './selectors'
+import { categoryTotals, percentLabel, periodTotal, toChartEntries } from './selectors'
 import { OTHER_ENTRY_ID } from './other-entry'
 
 const categories: Category[] = [
-  { id: 'c1', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', archivedAt: null, version: 1 },
-  { id: 'c2', name: 'Еда', type: 'expense', icon: 'food', color: '#22c55e', archivedAt: null, version: 1 },
-  { id: 'c3', name: 'Книги', type: 'expense', icon: 'book', color: '#f97316', archivedAt: null, version: 1 },
-  { id: 'i1', name: 'Зарплата', type: 'income', icon: 'cash', color: '#3b82f6', archivedAt: null, version: 1 },
+  {
+    id: 'c1',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#7c5cff',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'c2',
+    name: 'Еда',
+    type: 'expense',
+    icon: 'food',
+    color: '#22c55e',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'c3',
+    name: 'Книги',
+    type: 'expense',
+    icon: 'book',
+    color: '#f97316',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'i1',
+    name: 'Зарплата',
+    type: 'income',
+    icon: 'cash',
+    color: '#3b82f6',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 function tx(overrides: Partial<Transaction>): Transaction {

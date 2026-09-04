@@ -19,13 +19,16 @@ export type {
 } from '@expense-tracker/api'
 export type { ConfirmPlannedPaymentInput } from '@expense-tracker/local-data'
 
-export const PLANNED_PAYMENT_REPOSITORY_KEY: InjectionKey<LocalPlannedPaymentRepository> =
-  Symbol('planned-payment-repository')
+export const PLANNED_PAYMENT_REPOSITORY_KEY: InjectionKey<LocalPlannedPaymentRepository> = Symbol(
+  'planned-payment-repository',
+)
 
 export function usePlannedPaymentRepository(): LocalPlannedPaymentRepository {
   const repo = inject(PLANNED_PAYMENT_REPOSITORY_KEY)
   if (!repo) {
-    throw new Error('PlannedPaymentRepository not provided. Call provideRepositories(app) in main.ts.')
+    throw new Error(
+      'PlannedPaymentRepository not provided. Call provideRepositories(app) in main.ts.',
+    )
   }
   return repo
 }

@@ -16,7 +16,13 @@ import {
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Calendar } from '@/shared/ui/calendar'
-import { Drawer, DrawerContent, DrawerHeader, DRAWER_SAFE_AREA_BOTTOM, DrawerTitle } from '@/shared/ui/drawer'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DRAWER_SAFE_AREA_BOTTOM,
+  DrawerTitle,
+} from '@/shared/ui/drawer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 
 const props = defineProps<{
@@ -37,7 +43,9 @@ const isDesktop = useDesktopPresentation()
 const open = ref(false)
 const defaultPlaceholder = toDateValue(currentDay())
 
-const selectedDateValue = computed(() => (props.modelValue ? toDateValue(props.modelValue) : undefined))
+const selectedDateValue = computed(() =>
+  props.modelValue ? toDateValue(props.modelValue) : undefined,
+)
 const label = computed(() => {
   if (!props.modelValue) {
     return props.placeholder
@@ -75,7 +83,13 @@ const handleCalendarPick = (value: DateValue | undefined) => {
         :id="props.inputId"
         type="button"
         variant="outline"
-        :class="cn('w-full justify-between text-left font-normal', !props.modelValue && 'text-muted-foreground', props.class)"
+        :class="
+          cn(
+            'w-full justify-between text-left font-normal',
+            !props.modelValue && 'text-muted-foreground',
+            props.class,
+          )
+        "
         :aria-invalid="props.ariaInvalid"
       >
         <span>{{ label }}</span>
@@ -103,7 +117,13 @@ const handleCalendarPick = (value: DateValue | undefined) => {
       :id="props.inputId"
       type="button"
       variant="outline"
-      :class="cn('w-full justify-between text-left font-normal', !props.modelValue && 'text-muted-foreground', props.class)"
+      :class="
+        cn(
+          'w-full justify-between text-left font-normal',
+          !props.modelValue && 'text-muted-foreground',
+          props.class,
+        )
+      "
       :aria-invalid="props.ariaInvalid"
       @click="open = true"
     >

@@ -13,10 +13,7 @@ import {
   type DebtDirection,
   type DebtOperation,
 } from '@/entities/debt-operation'
-import {
-  createOperationSchema,
-  type OperationFormValues,
-} from '../model/schemas'
+import { createOperationSchema, type OperationFormValues } from '../model/schemas'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import {
   AlertDialog,

@@ -100,28 +100,31 @@ describe('useHouseholdActions', () => {
     ['revokeCode', undefined],
     ['removeMember', 'u2'],
     ['dissolve', undefined],
-  ] as const)('%s wraps the API method and invalidates the household query', async (action, vars) => {
-    const { result } = mountHarness(() => {
-      const query = useHousehold()
-      const actions = useHouseholdActions()
-      return { query, actions }
-    })
+  ] as const)(
+    '%s wraps the API method and invalidates the household query',
+    async (action, vars) => {
+      const { result } = mountHarness(() => {
+        const query = useHousehold()
+        const actions = useHouseholdActions()
+        return { query, actions }
+      })
 
-    await flushPromises()
-    expect(result.query.data.value?.name).toBe('Before')
+      await flushPromises()
+      expect(result.query.data.value?.name).toBe('Before')
 
-    const mutation = result.actions[action]
-    await mutation.mutateAsync(vars as never)
+      const mutation = result.actions[action]
+      await mutation.mutateAsync(vars as never)
 
-    const apiMethod = householdApiMocks[action]
-    expect(apiMethod).toHaveBeenCalledTimes(1)
-    // Zero-arg actions (generateCode/revokeCode/dissolve) forward no args.
-    expect(apiMethod.mock.calls[0]).toEqual(vars === undefined ? [] : [vars])
+      const apiMethod = householdApiMocks[action]
+      expect(apiMethod).toHaveBeenCalledTimes(1)
+      // Zero-arg actions (generateCode/revokeCode/dissolve) forward no args.
+      expect(apiMethod.mock.calls[0]).toEqual(vars === undefined ? [] : [vars])
 
-    // Invalidation refetched the household query against the (mocked) server.
-    await flushPromises()
-    expect(householdApiMocks.getHousehold).toHaveBeenCalledTimes(2)
-  })
+      // Invalidation refetched the household query against the (mocked) server.
+      await flushPromises()
+      expect(householdApiMocks.getHousehold).toHaveBeenCalledTimes(2)
+    },
+  )
 
   it('still invalidates when the action rejects', async () => {
     householdApiMocks.rename.mockRejectedValue(new Error('boom'))

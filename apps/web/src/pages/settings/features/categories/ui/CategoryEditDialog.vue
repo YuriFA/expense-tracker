@@ -39,19 +39,11 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { default: false })
 
 const { data: allCategories } = useCategoriesIncludingArchived()
-const {
-  mutateAsync: updateCategory,
-  asyncStatus: updateStatus,
-} = useUpdateCategory()
-const {
-  mutateAsync: createCategory,
-  asyncStatus: createStatus,
-} = useCreateCategory()
+const { mutateAsync: updateCategory, asyncStatus: updateStatus } = useUpdateCategory()
+const { mutateAsync: createCategory, asyncStatus: createStatus } = useCreateCategory()
 
 const isCreate = computed(() => !props.category)
-const asyncStatus = computed(() =>
-  isCreate.value ? createStatus.value : updateStatus.value,
-)
+const asyncStatus = computed(() => (isCreate.value ? createStatus.value : updateStatus.value))
 
 const name = ref('')
 const icon = ref('')
@@ -79,7 +71,11 @@ watch(
 
 // Literal keys per branch (the i18n lint bans dynamic keys).
 const typeOptions = computed<SegmentedControlOption<'expense' | 'income'>[]>(() => [
-  { value: 'expense', label: t('transactions.types.expense'), testid: 'create-category-type-expense' },
+  {
+    value: 'expense',
+    label: t('transactions.types.expense'),
+    testid: 'create-category-type-expense',
+  },
   { value: 'income', label: t('transactions.types.income'), testid: 'create-category-type-income' },
 ])
 const titleLabel = computed(() =>
@@ -89,9 +85,7 @@ const submitLabel = computed(() =>
   isCreate.value ? t('editCategory.createSubmit') : t('editCategory.submit'),
 )
 const hintLabel = computed(() =>
-  isCreate.value
-    ? t('editCategory.autoColorHint')
-    : t('editCategory.typeImmutableHint'),
+  isCreate.value ? t('editCategory.autoColorHint') : t('editCategory.typeImmutableHint'),
 )
 const typeLabel = computed(() =>
   (isCreate.value ? type.value : props.category?.type) === 'income'

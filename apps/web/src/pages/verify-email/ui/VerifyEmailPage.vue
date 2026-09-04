@@ -86,7 +86,10 @@ function errorMessage(err: unknown): string {
 
     <div v-if="isVerified" class="mt-6 rounded-md border border-border p-4 text-sm">
       <p>{{ t('auth.emailVerified') }}</p>
-      <RouterLink :to="{ name: 'home' }" class="mt-2 inline-block text-muted-foreground hover:underline">
+      <RouterLink
+        :to="{ name: 'home' }"
+        class="mt-2 inline-block text-muted-foreground hover:underline"
+      >
         {{ t('nav.dashboard') }}
       </RouterLink>
     </div>
@@ -108,12 +111,7 @@ function errorMessage(err: unknown): string {
       <Button type="submit" :loading="isSubmitting">{{ t('auth.submitVerify') }}</Button>
 
       <div class="flex items-center justify-between text-sm">
-        <Button
-          variant="ghost"
-          type="button"
-          :disabled="resendIn > 0"
-          @click="resend"
-        >
+        <Button variant="ghost" type="button" :disabled="resendIn > 0" @click="resend">
           {{ resendIn > 0 ? `${t('auth.submitResend')} (${resendIn}s)` : t('auth.submitResend') }}
         </Button>
         <RouterLink :to="{ name: 'login' }" class="text-muted-foreground hover:underline">

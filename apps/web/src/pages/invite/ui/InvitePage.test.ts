@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { RepositoryError, UnauthorizedError } from '@expense-tracker/api'
-import type {
-  Household,
-  HouseholdInvitationPreview,
-} from '@expense-tracker/api'
+import type { Household, HouseholdInvitationPreview } from '@expense-tracker/api'
 import type { User } from '@/entities/session'
 import type { LocalDbApi } from '@/shared/lib/local-db'
 import InvitePage from './InvitePage.vue'
@@ -233,9 +230,7 @@ describe('InvitePage', () => {
 
     // Pick the clean option through its radio input (jsdom does not forward
     // label activation to nested controls deterministically).
-    await wrapper
-      .find('[data-testid="invite-choice-clean"] input[type="radio"]')
-      .setValue(true)
+    await wrapper.find('[data-testid="invite-choice-clean"] input[type="radio"]').setValue(true)
     await wrapper.find('[data-testid="invite-accept-button"]').trigger('click')
     await flushPromises()
 

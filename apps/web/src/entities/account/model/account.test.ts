@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Account } from './types'
-import {
-  normalizeAccount,
-  parseAccountsStorage,
-  serializeAccountsStorage,
-} from './account'
+import { normalizeAccount, parseAccountsStorage, serializeAccountsStorage } from './account'
 
 const accountFixture: Account = {
   version: 1,
@@ -22,19 +18,17 @@ describe('normalizeAccount', () => {
 
   it('returns null when id is missing or empty', () => {
     expect(normalizeAccount({ name: 'Main', currency: 'USD', openingBalance: 0 })).toBeNull()
-    expect(normalizeAccount({ id: '', name: 'Main', currency: 'USD', openingBalance: 0 })).toBeNull()
+    expect(
+      normalizeAccount({ id: '', name: 'Main', currency: 'USD', openingBalance: 0 }),
+    ).toBeNull()
   })
 
   it('returns null when name is missing', () => {
-    expect(
-      normalizeAccount({ id: 'a1', currency: 'USD', openingBalance: 0 }),
-    ).toBeNull()
+    expect(normalizeAccount({ id: 'a1', currency: 'USD', openingBalance: 0 })).toBeNull()
   })
 
   it('returns null when currency is missing', () => {
-    expect(
-      normalizeAccount({ id: 'a1', name: 'Main', openingBalance: 0 }),
-    ).toBeNull()
+    expect(normalizeAccount({ id: 'a1', name: 'Main', openingBalance: 0 })).toBeNull()
   })
 
   it('returns null when currency is not a supported code', () => {
@@ -60,7 +54,13 @@ describe('normalizeAccount', () => {
 
   it('returns null when manualAdjustment is not a number', () => {
     expect(
-      normalizeAccount({ id: 'a1', name: 'Main', currency: 'USD', openingBalance: 0, manualAdjustment: 'x' }),
+      normalizeAccount({
+        id: 'a1',
+        name: 'Main',
+        currency: 'USD',
+        openingBalance: 0,
+        manualAdjustment: 'x',
+      }),
     ).toBeNull()
   })
 

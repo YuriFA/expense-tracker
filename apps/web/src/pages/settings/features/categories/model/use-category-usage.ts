@@ -76,7 +76,8 @@ export function useCategoryUsage(): {
       // per-account impact in the cascade-preview dialog.
       if (transaction.accountId === null) continue
       const byAccount = (impactIndex[transaction.categoryId] ??= {})
-      byAccount[transaction.accountId] = (byAccount[transaction.accountId] ?? 0) + transaction.amount
+      byAccount[transaction.accountId] =
+        (byAccount[transaction.accountId] ?? 0) + transaction.amount
     }
     for (const [categoryId, byAccount] of Object.entries(impactIndex)) {
       byCategory[categoryId]!.impactByAccount = Object.entries(byAccount).map(
@@ -93,18 +94,13 @@ export function useCategoryUsage(): {
   return { usage, isPending }
 }
 
-function planName(
-  plan: PlannedPayment,
-  accounts: { id: string; name: string }[],
-): string {
+function planName(plan: PlannedPayment, accounts: { id: string; name: string }[]): string {
   const account = accounts.find((candidate) => candidate.id === plan.accountId)
   return plan.name || account?.name || ''
 }
 
 /** Grouping for the management list: active by type, archived separately. */
-export function groupCategories(
-  categories: MaybeRefOrGetter<Category[] | undefined>,
-): {
+export function groupCategories(categories: MaybeRefOrGetter<Category[] | undefined>): {
   expense: ComputedRef<Category[]>
   income: ComputedRef<Category[]>
   archived: ComputedRef<Category[]>

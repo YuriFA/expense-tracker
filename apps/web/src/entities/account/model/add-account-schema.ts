@@ -10,9 +10,7 @@ export const createAddAccountSchema = () => {
       .min(1, t('validation.enter', { field: t('fields.name') })),
     openingBalance: z
       .number({ error: t('validation.enter', { field: t('fields.openingBalance') }) })
-      .nonnegative(
-        t('validation.mustBeNonNegative', { field: t('fields.openingBalance') }),
-      ),
+      .nonnegative(t('validation.mustBeNonNegative', { field: t('fields.openingBalance') })),
   })
 }
 

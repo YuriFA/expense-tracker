@@ -11,8 +11,7 @@ export type {
   UpdateDebtorPayload,
 } from '@expense-tracker/api'
 
-export const DEBTOR_REPOSITORY_KEY: InjectionKey<DebtorRepository> =
-  Symbol('debtor-repository')
+export const DEBTOR_REPOSITORY_KEY: InjectionKey<DebtorRepository> = Symbol('debtor-repository')
 
 export function useDebtorRepository(): DebtorRepository {
   const repo = inject(DEBTOR_REPOSITORY_KEY)

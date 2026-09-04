@@ -21,7 +21,10 @@ export type OperationFormValues = z.infer<ReturnType<typeof createOperationSchem
 export const createDebtorDebtSchema = () => {
   const { t } = i18n.global
   return z.object({
-    name: z.string().trim().min(1, t('validation.enter', { field: t('fields.name') })),
+    name: z
+      .string()
+      .trim()
+      .min(1, t('validation.enter', { field: t('fields.name') })),
     amount: z
       .number({ error: t('validation.enter', { field: t('fields.amount') }) })
       .positive(t('validation.mustBePositive', { field: t('fields.amount') })),
@@ -34,7 +37,10 @@ export type DebtorDebtFormValues = z.infer<ReturnType<typeof createDebtorDebtSch
 export const createDebtorSchema = () => {
   const { t } = i18n.global
   return z.object({
-    name: z.string().trim().min(1, t('validation.enter', { field: t('fields.name') })),
+    name: z
+      .string()
+      .trim()
+      .min(1, t('validation.enter', { field: t('fields.name') })),
     note: z.string(),
   })
 }

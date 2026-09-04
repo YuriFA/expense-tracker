@@ -31,8 +31,9 @@ const cardTitle = computed(() =>
 const description = computed(() =>
   props.type === 'expense' ? t('plans.expensesDescription') : t('plans.incomeDescription'),
 )
-const monthlyText = computed(() =>
-  `${formatMoney(monthlyTotal(props.plans), displayCurrency.value, locale.value)}${t('plans.perMonth')}`,
+const monthlyText = computed(
+  () =>
+    `${formatMoney(monthlyTotal(props.plans), displayCurrency.value, locale.value)}${t('plans.perMonth')}`,
 )
 </script>
 

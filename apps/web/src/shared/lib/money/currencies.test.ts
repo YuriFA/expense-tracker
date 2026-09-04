@@ -12,7 +12,7 @@ describe('currencies', () => {
     expect(AVAILABLE_CURRENCIES).toEqual(['USD', 'EUR', 'RUB'])
   })
 
-  it("defaults to RUB (app display currency, currency-rub-only)", () => {
+  it('defaults to RUB (app display currency, currency-rub-only)', () => {
     expect(DEFAULT_CURRENCY).toBe('RUB')
   })
 

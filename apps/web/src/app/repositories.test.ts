@@ -23,7 +23,9 @@ function createDeferred<T>() {
 function createFakeApi(): LocalDbApi {
   return {
     accounts: {
-      getAll: vi.fn<() => Promise<Array<{ id: string; name: string }>>>(() => Promise.resolve([{ id: 'a1', name: 'Main' }])),
+      getAll: vi.fn<() => Promise<Array<{ id: string; name: string }>>>(() =>
+        Promise.resolve([{ id: 'a1', name: 'Main' }]),
+      ),
       getById: vi.fn<(id: string) => Promise<null>>(() => Promise.resolve(null)),
       create: vi.fn<(payload: unknown) => Promise<unknown>>(),
       update: vi.fn<(id: string, payload: unknown) => Promise<unknown>>(),
@@ -42,10 +44,14 @@ function createFakeApi(): LocalDbApi {
       create: vi.fn<(payload: unknown) => Promise<unknown>>(),
       update: vi.fn<(id: string, payload: unknown) => Promise<unknown>>(),
       remove: vi.fn<(id: string) => Promise<void>>(),
-      query: vi.fn<() => Promise<{ transactions: unknown[]; nextCursor: null }>>(() => Promise.resolve({ transactions: [], nextCursor: null })),
+      query: vi.fn<() => Promise<{ transactions: unknown[]; nextCursor: null }>>(() =>
+        Promise.resolve({ transactions: [], nextCursor: null }),
+      ),
     },
     debtors: {
-      getAll: vi.fn<() => Promise<Array<{ id: string; name: string }>>>(() => Promise.resolve([{ id: 'd1', name: 'Ann' }])),
+      getAll: vi.fn<() => Promise<Array<{ id: string; name: string }>>>(() =>
+        Promise.resolve([{ id: 'd1', name: 'Ann' }]),
+      ),
       getById: vi.fn<(id: string) => Promise<null>>(() => Promise.resolve(null)),
       create: vi.fn<(payload: unknown) => Promise<unknown>>(),
       update: vi.fn<(id: string, payload: unknown) => Promise<unknown>>(),
@@ -88,7 +94,9 @@ function createFakeApi(): LocalDbApi {
     household: {
       rebase: vi.fn<(householdId: string) => Promise<void>>().mockResolvedValue(undefined),
       getLastHousehold: vi.fn<() => Promise<string | null>>().mockResolvedValue(null),
-      setLastHousehold: vi.fn<(householdId: string) => Promise<void>>().mockResolvedValue(undefined),
+      setLastHousehold: vi
+        .fn<(householdId: string) => Promise<void>>()
+        .mockResolvedValue(undefined),
     },
   } as unknown as LocalDbApi
 }
@@ -167,8 +175,12 @@ describe('provideRepositories', () => {
       getById: (id: string) => Promise<unknown>
     }
     vi.mocked(fakeApi.accounts.getById)
-      .mockRejectedValueOnce(Object.assign(new Error('account not found'), { name: 'NotFoundError' }))
-      .mockRejectedValueOnce(Object.assign(new Error('account not found'), { name: 'NotFoundError' }))
+      .mockRejectedValueOnce(
+        Object.assign(new Error('account not found'), { name: 'NotFoundError' }),
+      )
+      .mockRejectedValueOnce(
+        Object.assign(new Error('account not found'), { name: 'NotFoundError' }),
+      )
 
     await expect(accounts.getById('missing')).rejects.toBeInstanceOf(NotFoundError)
     await expect(accounts.getById('missing')).rejects.toMatchObject({ code: 'not-found' })

@@ -9,10 +9,7 @@ const props = defineProps<{
 
 <template>
   <!-- Spec-sanctioned shimmer: neutral token-only sweep for loading states. -->
-  <div
-    data-slot="skeleton"
-    :class="cn('skeleton-shimmer rounded-md', props.class)"
-  />
+  <div data-slot="skeleton" :class="cn('skeleton-shimmer rounded-md', props.class)" />
 </template>
 
 <style scoped>

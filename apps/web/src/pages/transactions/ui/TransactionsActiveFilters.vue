@@ -51,7 +51,8 @@ const activeFilters = computed(() => {
     const category = categories.value?.find((item) => item.id === categoryId)
     items.push({
       key: `categoryIds:${categoryId}`,
-      label: `${t('transactions.filters.activeCategory')}: ${category?.icon ?? ''} ${category?.name ?? categoryId}`.trimEnd(),
+      label:
+        `${t('transactions.filters.activeCategory')}: ${category?.icon ?? ''} ${category?.name ?? categoryId}`.trimEnd(),
       onRemove: () => {
         void toggleIdFilter('categoryIds', categoryId, false)
       },

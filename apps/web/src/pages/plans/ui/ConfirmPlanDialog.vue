@@ -49,7 +49,7 @@ const categoryName = computed(
   () => props.categories.find((category) => category.id === props.plan.categoryId)?.name ?? '',
 )
 const accountLabel = computed(() =>
-  props.plan.type === 'expense' ? t('plans.withdrawalAccount') : t('plans.depositAccount')
+  props.plan.type === 'expense' ? t('plans.withdrawalAccount') : t('plans.depositAccount'),
 )
 
 const handleSubmit = async () => {

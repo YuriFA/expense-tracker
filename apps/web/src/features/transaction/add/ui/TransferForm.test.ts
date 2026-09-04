@@ -86,7 +86,11 @@ describe('TransferForm', () => {
 
     const wrapper = mountWithProviders(TransferForm, {
       props: { ...props } as never,
-      repositories: { accounts: accountsRepo, categories: categoriesRepo, transactions: transactionsRepo },
+      repositories: {
+        accounts: accountsRepo,
+        categories: categoriesRepo,
+        transactions: transactionsRepo,
+      },
       // The footer's DialogClose requires a DialogRoot the tests don't mount.
       global: { stubs: { DialogClose: true } },
     })
@@ -131,8 +135,7 @@ describe('TransferForm', () => {
     await createAccountInline(wrapper, 'open-new-from-account', 'Card')
 
     const selects = () => wrapper.findAllComponents(AccountSelect)
-    const fromSelect = () =>
-      selects().find((s) => s.props('inputId') === 'from-account-id')!
+    const fromSelect = () => selects().find((s) => s.props('inputId') === 'from-account-id')!
     const toSelect = () => selects().find((s) => s.props('inputId') === 'to-account-id')!
     expect(fromSelect().props('modelValue')).toBe('a-new-from')
     // The other selector is untouched (its form initial value).
@@ -159,7 +162,11 @@ describe('TransferForm', () => {
     await vi.waitFor(() => expect(transactionsRepo.create).toHaveBeenCalledTimes(1))
 
     expect(transactionsRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ fromAccountId: 'a-new-from', toAccountId: 'a-new-to', amount: 10000 }),
+      expect.objectContaining({
+        fromAccountId: 'a-new-from',
+        toAccountId: 'a-new-to',
+        amount: 10000,
+      }),
     )
   })
 
@@ -213,8 +220,6 @@ async function createAccountInline(wrapper: VueWrapper, openTestId: string, name
   input.value = name
   input.dispatchEvent(new Event('input', { bubbles: true }))
   ;(document.querySelector('button[type="submit"][form="new-account-form"]') as HTMLElement).click()
-  await vi.waitFor(() =>
-    expect(document.querySelector('#new-account-form')).toBeNull(),
-  )
+  await vi.waitFor(() => expect(document.querySelector('#new-account-form')).toBeNull())
   await flushPromises()
 }

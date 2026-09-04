@@ -11,9 +11,33 @@ import {
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const categories: Category[] = [
-  { id: 'c1', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', archivedAt: null, version: 1 },
-  { id: 'c2', name: 'Еда', type: 'expense', icon: 'food', color: '#22c55e', archivedAt: null, version: 1 },
-  { id: 'i1', name: 'Зарплата', type: 'income', icon: 'cash', color: '#3b82f6', archivedAt: null, version: 1 },
+  {
+    id: 'c1',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#7c5cff',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'c2',
+    name: 'Еда',
+    type: 'expense',
+    icon: 'food',
+    color: '#22c55e',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'i1',
+    name: 'Зарплата',
+    type: 'income',
+    icon: 'cash',
+    color: '#3b82f6',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 function nowTx(overrides: Partial<CashflowTransaction>): CashflowTransaction {
@@ -63,7 +87,9 @@ describe('AnalyticsDetailView', () => {
     ])
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="analytics-period-month"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="analytics-period-month"]').attributes('aria-pressed')).toBe(
+      'true',
+    )
     expect(wrapper.find('[data-testid="analytics-detail-total"]').text()).toBe('₽303.25')
 
     // The summary row carries the full total and 100%; rows show percentages
@@ -81,7 +107,9 @@ describe('AnalyticsDetailView', () => {
     expect(transactionsRepo.query).toHaveBeenCalledTimes(1)
 
     await wrapper.find('[data-testid="analytics-period-week"]').trigger('click')
-    expect(wrapper.find('[data-testid="analytics-period-week"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="analytics-period-week"]').attributes('aria-pressed')).toBe(
+      'true',
+    )
     expect(transactionsRepo.query).toHaveBeenCalledTimes(2)
     const lastOptions = transactionsRepo.query.mock.lastCall![0] as {
       fromDate: string
@@ -98,13 +126,16 @@ describe('AnalyticsDetailView', () => {
   it('prev/next step one period and never block at the current period', async () => {
     const { wrapper, transactionsRepo } = mountView([])
     await flushPromises()
-    const firstFromDate = (transactionsRepo.query.mock.lastCall![0] as { fromDate: string }).fromDate
+    const firstFromDate = (transactionsRepo.query.mock.lastCall![0] as { fromDate: string })
+      .fromDate
 
     await wrapper.find('[data-testid="analytics-period-next"]').trigger('click')
     await flushPromises()
     const nextFromDate = (transactionsRepo.query.mock.lastCall![0] as { fromDate: string }).fromDate
     expect(new Date(nextFromDate).getTime()).toBeGreaterThan(new Date(firstFromDate).getTime())
-    expect(wrapper.find('[data-testid="analytics-period-next"]').attributes('disabled')).toBeUndefined()
+    expect(
+      wrapper.find('[data-testid="analytics-period-next"]').attributes('disabled'),
+    ).toBeUndefined()
   })
 
   it('renders the zeroed full layout (neutral ring, all rows at 0) for an empty period', async () => {

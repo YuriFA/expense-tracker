@@ -9,7 +9,15 @@ const accounts: Account[] = [
   { id: 'a2', name: 'Тинькофф', currency: 'RUB', openingBalance: 0, version: 1 },
 ]
 const categories: Category[] = [
-  { id: 'c1', name: 'Продукты', type: 'expense', icon: '', color: '', archivedAt: null, version: 1 },
+  {
+    id: 'c1',
+    name: 'Продукты',
+    type: 'expense',
+    icon: '',
+    color: '',
+    archivedAt: null,
+    version: 1,
+  },
   { id: 'c2', name: 'Зарплата', type: 'income', icon: '', color: '', archivedAt: null, version: 1 },
 ]
 
@@ -57,15 +65,25 @@ describe('buildTransactionsCsv', () => {
   })
 
   it('keeps the adjustment sign and ignores unknown-ref label fallbacks', () => {
-    const csv = buildTransactionsCsv([tx({ type: 'adjustment', amount: -750, accountId: 'a1', categoryId: undefined } as Partial<Transaction>)], { accounts, categories })
+    const csv = buildTransactionsCsv(
+      [
+        tx({
+          type: 'adjustment',
+          amount: -750,
+          accountId: 'a1',
+          categoryId: undefined,
+        } as Partial<Transaction>),
+      ],
+      { accounts, categories },
+    )
     expect(csv.split('\r\n')[1]).toBe('20.08.2026;корректировка;;Наличка;-7,50;')
   })
 
   it('quotes fields with delimiters, quotes, or line breaks', () => {
-    const csv = buildTransactionsCsv(
-      [tx({ description: 'хлеб;молоко "5",\nсписок' })],
-      { accounts: [{ ...accounts[0]!, name: 'Счёт; основной' }], categories },
-    )
+    const csv = buildTransactionsCsv([tx({ description: 'хлеб;молоко "5",\nсписок' })], {
+      accounts: [{ ...accounts[0]!, name: 'Счёт; основной' }],
+      categories,
+    })
     expect(csv.split('\r\n')[1]).toContain('"хлеб;молоко ""5"",')
     expect(csv).toContain('"Счёт; основной"')
   })

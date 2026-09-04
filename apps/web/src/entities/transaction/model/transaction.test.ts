@@ -70,9 +70,7 @@ describe('isTransaction', () => {
   })
 
   it('returns false for invalid amount type', () => {
-    expect(
-      isTransaction({ ...incomeTransaction, amount: '100' as unknown as number }),
-    ).toBe(false)
+    expect(isTransaction({ ...incomeTransaction, amount: '100' as unknown as number })).toBe(false)
   })
 
   it('returns false for missing category; account-less cashflow is valid', () => {
@@ -87,9 +85,7 @@ describe('isTransaction', () => {
   })
 
   it('returns false for transfer with same from and to account', () => {
-    expect(
-      isTransaction({ ...transferTransaction, toAccountId: 'a1' }),
-    ).toBe(false)
+    expect(isTransaction({ ...transferTransaction, toAccountId: 'a1' })).toBe(false)
   })
 
   it('returns false for non-record input', () => {
@@ -259,9 +255,7 @@ describe('normalizeTransaction', () => {
   })
 
   it('returns null for non-integer amount (kopeks invariant)', () => {
-    expect(
-      normalizeTransaction({ ...incomeTransaction, amount: 100.5 }),
-    ).toBeNull()
+    expect(normalizeTransaction({ ...incomeTransaction, amount: 100.5 })).toBeNull()
   })
 
   it('returns null for invalid occurredAt', () => {
@@ -302,21 +296,15 @@ describe('normalizeTransaction', () => {
   })
 
   it('returns null for transfer with missing fromAccountId', () => {
-    expect(
-      normalizeTransaction({ ...transferTransaction, fromAccountId: '' }),
-    ).toBeNull()
+    expect(normalizeTransaction({ ...transferTransaction, fromAccountId: '' })).toBeNull()
   })
 
   it('returns null for transfer with missing toAccountId', () => {
-    expect(
-      normalizeTransaction({ ...transferTransaction, toAccountId: '' }),
-    ).toBeNull()
+    expect(normalizeTransaction({ ...transferTransaction, toAccountId: '' })).toBeNull()
   })
 
   it('returns null for transfer with same from and to account', () => {
-    expect(
-      normalizeTransaction({ ...transferTransaction, toAccountId: 'a1' }),
-    ).toBeNull()
+    expect(normalizeTransaction({ ...transferTransaction, toAccountId: 'a1' })).toBeNull()
   })
 
   it('preserves optional updatedAt when valid', () => {
@@ -325,9 +313,7 @@ describe('normalizeTransaction', () => {
   })
 
   it('returns null when updatedAt is present but invalid', () => {
-    expect(
-      normalizeTransaction({ ...incomeTransaction, updatedAt: 'not a date' }),
-    ).toBeNull()
+    expect(normalizeTransaction({ ...incomeTransaction, updatedAt: 'not a date' })).toBeNull()
   })
 })
 

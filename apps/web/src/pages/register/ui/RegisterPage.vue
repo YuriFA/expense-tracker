@@ -28,10 +28,13 @@ async function submit() {
   errors.value = {}
   const parsed = schema.safeParse(form)
   if (!parsed.success) {
-    errors.value.email = !form.email ? t('validation.enter', { field: t('auth.emailLabel') }) : undefined
-    errors.value.password = form.password.length < 8
-      ? t('validation.mustBeNonNegative', { field: t('auth.passwordLabel') })
+    errors.value.email = !form.email
+      ? t('validation.enter', { field: t('auth.emailLabel') })
       : undefined
+    errors.value.password =
+      form.password.length < 8
+        ? t('validation.mustBeNonNegative', { field: t('auth.passwordLabel') })
+        : undefined
     return
   }
   isSubmitting.value = true
@@ -54,7 +57,11 @@ async function submit() {
     if (error instanceof AlreadyExistsError) {
       errors.value.form = t('errors.alreadyExists')
     } else {
-      notification.mutationError(error, { title: t('auth.signUp'), feature: 'session', action: 'register' })
+      notification.mutationError(error, {
+        title: t('auth.signUp'),
+        feature: 'session',
+        action: 'register',
+      })
     }
   } finally {
     isSubmitting.value = false
@@ -94,7 +101,10 @@ async function submit() {
 
       <Button type="submit" :loading="isSubmitting">{{ t('auth.submitSignUp') }}</Button>
 
-      <RouterLink :to="{ name: 'login' }" class="text-center text-sm text-muted-foreground hover:underline">
+      <RouterLink
+        :to="{ name: 'login' }"
+        class="text-center text-sm text-muted-foreground hover:underline"
+      >
         {{ t('auth.haveAccount') }} {{ t('auth.signIn') }}
       </RouterLink>
     </form>

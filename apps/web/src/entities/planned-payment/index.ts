@@ -1,8 +1,5 @@
 export type { PlannedPayment } from './model/types'
-export {
-  PLANNED_PAYMENT_REPOSITORY_KEY,
-  usePlannedPaymentRepository,
-} from './api/repository'
+export { PLANNED_PAYMENT_REPOSITORY_KEY, usePlannedPaymentRepository } from './api/repository'
 export {
   usePlannedPayments,
   useCreatePlannedPayment,

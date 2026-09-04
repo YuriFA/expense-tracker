@@ -85,9 +85,7 @@ describe('DashboardPage month navigation', () => {
     )
     expect(wrapper.find('[data-testid="period-nav-label"]').text()).toBe(previousCaption())
     // Forward stepping unlocks once the cursor left the current month.
-    expect(
-      wrapper.find('[data-testid="period-nav-next"]').attributes('disabled'),
-    ).toBeUndefined()
+    expect(wrapper.find('[data-testid="period-nav-next"]').attributes('disabled')).toBeUndefined()
   })
 
   it('re-scopes the category breakdown with the month', async () => {
@@ -184,10 +182,20 @@ describe('DashboardPage stat card links', () => {
     const bounds = monthQueryBounds(shiftPeriod(currentPeriod('month'), -1))
 
     expect(
-      hrefs.some((h) => h.includes('type=income') && h.includes(`from=${bounds.from}`) && h.includes(`to=${bounds.to}`)),
+      hrefs.some(
+        (h) =>
+          h.includes('type=income') &&
+          h.includes(`from=${bounds.from}`) &&
+          h.includes(`to=${bounds.to}`),
+      ),
     ).toBe(true)
     expect(
-      hrefs.some((h) => h.includes('type=expense') && h.includes(`from=${bounds.from}`) && h.includes(`to=${bounds.to}`)),
+      hrefs.some(
+        (h) =>
+          h.includes('type=expense') &&
+          h.includes(`from=${bounds.from}`) &&
+          h.includes(`to=${bounds.to}`),
+      ),
     ).toBe(true)
   })
 

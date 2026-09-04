@@ -73,9 +73,7 @@ export const useDeleteTransaction = () => {
       {
         keyPrefix: ['transactions'],
         updater: (current) =>
-          Array.isArray(current)
-            ? current.filter((transaction) => transaction.id !== id)
-            : current,
+          Array.isArray(current) ? current.filter((transaction) => transaction.id !== id) : current,
       },
       {
         key: ['transactions', id],

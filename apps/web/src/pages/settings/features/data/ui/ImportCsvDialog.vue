@@ -18,7 +18,11 @@ import { useCreateTransaction, type CashflowTransaction } from '@/entities/trans
 import { RepositoryError } from '@/shared/lib/data'
 import { notification } from '@/shared/services/notification'
 import { downloadTextFile } from '@/features/export-csv'
-import { parseImportCsv, type ParsedImportRow, type ValidImportRow } from '../model/parse-import-csv'
+import {
+  parseImportCsv,
+  type ParsedImportRow,
+  type ValidImportRow,
+} from '../model/parse-import-csv'
 import { IMPORT_TEMPLATE_CSV } from '../model/template'
 
 // CSV import wizard (web-data-transfer): pick file → preview (per-row
@@ -45,7 +49,9 @@ const excluded = ref(new Set<number>())
 const isCommitting = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
-const validRows = computed(() => rows.value.filter((row): row is ValidImportRow => row.status === 'valid'))
+const validRows = computed(() =>
+  rows.value.filter((row): row is ValidImportRow => row.status === 'valid'),
+)
 const invalidRows = computed(() => rows.value.filter((row) => row.status === 'invalid'))
 const includedRows = computed(() => validRows.value.filter((row) => !excluded.value.has(row.line)))
 
@@ -196,10 +202,7 @@ const commit = async () => {
 <template>
   <!-- Wide on desktop: the 7-column preview needs the room; capped height
        with the shell's scrolling body so tall content never clips off-screen. -->
-  <ResponsiveDialog
-    v-model:open="open"
-    class="max-h-[calc(100dvh-4rem)] w-full sm:max-w-4xl"
-  >
+  <ResponsiveDialog v-model:open="open" class="max-h-[calc(100dvh-4rem)] w-full sm:max-w-4xl">
     <template #title>{{ t('dataTransfer.dialog.title') }}</template>
     <template #description>
       {{ t('dataTransfer.dialog.pickDescription') }}
@@ -295,9 +298,7 @@ const commit = async () => {
               <th class="sticky top-0 z-10 border-b border-border bg-background p-2">
                 {{ t('dataTransfer.dialog.columnAccount') }}
               </th>
-              <th
-                class="sticky top-0 z-10 border-b border-border bg-background p-2 text-right"
-              >
+              <th class="sticky top-0 z-10 border-b border-border bg-background p-2 text-right">
                 {{ t('dataTransfer.dialog.columnAmount') }}
               </th>
               <th class="sticky top-0 z-10 border-b border-border bg-background p-2">
@@ -325,23 +326,24 @@ const commit = async () => {
                 <td class="p-2 whitespace-nowrap">{{ formatDay(row.occurredAt) }}</td>
                 <td class="p-2">{{ typeLabel(row.direction) }}</td>
                 <td class="p-2">
-                  <span class="block truncate" :title="row.categoryName">{{ row.categoryName }}</span>
+                  <span class="block truncate" :title="row.categoryName">{{
+                    row.categoryName
+                  }}</span>
                 </td>
                 <td class="p-2">
                   <span class="block truncate" :title="row.accountName ?? undefined">
                     {{ row.accountName ?? t('accounts.noAccount') }}
                   </span>
                 </td>
-                <td class="p-2 text-right whitespace-nowrap">{{ formatAmount(row.amountMinor) }}</td>
+                <td class="p-2 text-right whitespace-nowrap">
+                  {{ formatAmount(row.amountMinor) }}
+                </td>
                 <td class="p-2">
                   <!-- Empty notes render a dash: an all-empty last column
                        reads as a rendering glitch, not as data. -->
-                  <span
-                    v-if="row.note"
-                    class="block truncate"
-                    :title="row.note"
-                    >{{ row.note }}</span
-                  >
+                  <span v-if="row.note" class="block truncate" :title="row.note">{{
+                    row.note
+                  }}</span>
                   <span v-else class="text-muted-foreground">{{
                     t('dataTransfer.dialog.emptyNote')
                   }}</span>

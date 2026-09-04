@@ -37,7 +37,7 @@
   width: 100px;
   height: 100%;
   box-shadow: var(--bprogress-box-shadow);
-  opacity: 1.0;
+  opacity: 1;
   transform: rotate(3deg) translate(0px, -4px);
 }
 
@@ -102,21 +102,43 @@
 }
 
 @-webkit-keyframes bprogress-spinner {
-  0%   { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
-  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes bprogress-spinner {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes bprogress-indeterminate-increase {
-  from { left: -5%; width: 5%; }
-  to { left: 130%; width: 100%; }
+  from {
+    left: -5%;
+    width: 5%;
+  }
+  to {
+    left: 130%;
+    width: 100%;
+  }
 }
 
 @keyframes bprogress-indeterminate-decrease {
-  from { left: -80%; width: 80%; }
-  to { left: 110%; width: 10%; }
+  from {
+    left: -80%;
+    width: 80%;
+  }
+  to {
+    left: 110%;
+    width: 10%;
+  }
 }

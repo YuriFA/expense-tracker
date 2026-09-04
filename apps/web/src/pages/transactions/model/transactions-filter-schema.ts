@@ -5,26 +5,18 @@ export const createTransactionsFilterSchema = () => {
   const { t } = i18n.global
 
   return z.object({
-    fromDate: z
-      .date({ error: t('validation.mustBeDate', { field: t('fields.date') }) })
-      .optional(),
-    toDate: z
-      .date({ error: t('validation.mustBeDate', { field: t('fields.date') }) })
-      .optional(),
+    fromDate: z.date({ error: t('validation.mustBeDate', { field: t('fields.date') }) }).optional(),
+    toDate: z.date({ error: t('validation.mustBeDate', { field: t('fields.date') }) }).optional(),
     type: z
       .enum(['expense', 'income', 'transfer', 'adjustment'], {
         message: t('validation.select', { field: t('fields.transactionType') }),
       })
       .optional(),
     accountId: z
-      .array(
-        z.string({ error: t('validation.select', { field: t('fields.account') }) }).min(1),
-      )
+      .array(z.string({ error: t('validation.select', { field: t('fields.account') }) }).min(1))
       .optional(),
     categoryId: z
-      .array(
-        z.string({ error: t('validation.select', { field: t('fields.category') }) }).min(1),
-      )
+      .array(z.string({ error: t('validation.select', { field: t('fields.category') }) }).min(1))
       .optional(),
   })
 }

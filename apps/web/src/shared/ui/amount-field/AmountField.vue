@@ -3,7 +3,13 @@ import { computed, nextTick, ref, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Field, FieldError } from '@/shared/ui/field'
 import { cn } from '@/shared/lib/utils'
-import { currencySymbol, formatMoney, DEFAULT_CURRENCY, toMinorUnits, type CurrencyCode } from '@/shared/lib/money'
+import {
+  currencySymbol,
+  formatMoney,
+  DEFAULT_CURRENCY,
+  toMinorUnits,
+  type CurrencyCode,
+} from '@/shared/lib/money'
 import {
   defaultAmountPlaceholder,
   formatEditableAmount,

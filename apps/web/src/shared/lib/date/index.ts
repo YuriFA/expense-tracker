@@ -1,11 +1,7 @@
 import { internationalizedDateAdapter } from './adapters/internationalized-date-adapter'
 import type { BrandedCalendarDay, CalendarDay } from './types'
 
-export type {
-  BrandedCalendarDay,
-
-  CalendarDay,
-} from './types'
+export type { BrandedCalendarDay, CalendarDay } from './types'
 
 export { fromDateValue, toDateValue } from './date-value-bridge'
 export { isIsoDateTime, nowIsoString } from './datetime'

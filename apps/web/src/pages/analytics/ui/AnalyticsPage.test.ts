@@ -24,8 +24,24 @@ function nowMonthTx(overrides: Partial<CashflowTransaction>): CashflowTransactio
 }
 
 const categories: Category[] = [
-  { id: 'c1', name: 'Такси', type: 'expense', icon: 'car', color: '#7c5cff', archivedAt: null, version: 1 },
-  { id: 'c2', name: 'Зарплата', type: 'income', icon: 'cash', color: '#3b82f6', archivedAt: null, version: 1 },
+  {
+    id: 'c1',
+    name: 'Такси',
+    type: 'expense',
+    icon: 'car',
+    color: '#7c5cff',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'c2',
+    name: 'Зарплата',
+    type: 'income',
+    icon: 'cash',
+    color: '#3b82f6',
+    archivedAt: null,
+    version: 1,
+  },
 ]
 
 describe('AnalyticsPage', () => {

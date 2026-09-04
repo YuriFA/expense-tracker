@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { capitalizeFirstLetter } from '@/shared/lib/capitalize'
 import { useSettingsStore } from '@/shared/store/use-settings-store'
 import type { Settings } from '@/shared/config/settings'
@@ -74,9 +68,7 @@ const householdQuery = useHousehold({ enabled: () => auth.isAuthenticated })
 const household = computed(() => householdQuery.data.value)
 // First load only (and only while the gated query can actually run):
 // background refetches keep the rendered member list in place.
-const householdPending = computed(
-  () => auth.isAuthenticated && householdQuery.isPending.value,
-)
+const householdPending = computed(() => auth.isAuthenticated && householdQuery.isPending.value)
 const householdLabel = computed(() =>
   household.value ? householdDisplayName(household.value) : null,
 )
@@ -92,9 +84,7 @@ const canLeave = computed(() => !isOwner.value || members.value.length === 1)
 const removeTarget = ref<HouseholdMember | null>(null)
 const removeOpen = ref(false)
 
-const joinedFormatter = computed(
-  () => new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }),
-)
+const joinedFormatter = computed(() => new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }))
 const formatJoined = (iso: string) => joinedFormatter.value.format(new Date(iso))
 
 const myDisplayName = computed(() => myMember.value?.displayName ?? '')
@@ -120,7 +110,11 @@ async function loadSessions() {
   try {
     sessions.value = await sessionApi.listSessions()
   } catch (error) {
-    notification.mutationError(error, { title: t('auth.sessionsTitle'), feature: 'session', action: 'list' })
+    notification.mutationError(error, {
+      title: t('auth.sessionsTitle'),
+      feature: 'session',
+      action: 'list',
+    })
   } finally {
     sessionsLoading.value = false
   }
@@ -133,7 +127,11 @@ async function revokeOtherSessions() {
     notification.success(t('auth.sessionsRevoked'))
     await loadSessions()
   } catch (error) {
-    notification.mutationError(error, { title: t('auth.revokeOtherSessions'), feature: 'session', action: 'revoke' })
+    notification.mutationError(error, {
+      title: t('auth.revokeOtherSessions'),
+      feature: 'session',
+      action: 'revoke',
+    })
   } finally {
     revoking.value = false
   }
@@ -178,10 +176,7 @@ onMounted(() => {
         <p class="text-xs text-muted-foreground">
           {{ t('settings.appearanceDescription') }}
         </p>
-        <Select
-          :model-value="settings.theme"
-          @update:model-value="onThemeChange"
-        >
+        <Select :model-value="settings.theme" @update:model-value="onThemeChange">
           <SelectTrigger class="w-full shrink-0 sm:w-56" :aria-label="t('settings.appearance')">
             <SelectValue :placeholder="t('settings.appearance')" />
           </SelectTrigger>
@@ -265,7 +260,11 @@ onMounted(() => {
       <!-- Mounts only once the household read resolves: the editor's initial
            form value comes from the member entry and would otherwise seed
            empty while the query is in flight. -->
-      <SettingsCard :title="t('profile.title')" content-class="flex flex-col gap-4" data-testid="settings-profile-card">
+      <SettingsCard
+        :title="t('profile.title')"
+        content-class="flex flex-col gap-4"
+        data-testid="settings-profile-card"
+      >
         <DisplayNameEditor
           v-if="auth.user && household"
           :email="auth.user.email"
@@ -273,81 +272,89 @@ onMounted(() => {
         />
       </SettingsCard>
 
-      <SettingsCard :title="t('household.title')" content-class="flex flex-col gap-4" data-testid="settings-household-card">
+      <SettingsCard
+        :title="t('household.title')"
+        content-class="flex flex-col gap-4"
+        data-testid="settings-household-card"
+      >
         <p class="text-sm font-semibold" data-testid="settings-household-name">
           {{ householdLabel }}
           <template v-if="household"> · {{ t('household.membersCount', members.length) }}</template>
         </p>
         <Skeleton v-if="householdPending" class="h-5 w-40" />
 
-          <ul
-            v-if="household"
-            class="flex flex-col"
-            data-testid="settings-household-member-list"
+        <ul v-if="household" class="flex flex-col" data-testid="settings-household-member-list">
+          <li
+            v-for="member in members"
+            :key="member.userId"
+            class="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"
+            :data-testid="`settings-household-member-${member.userId}`"
           >
-            <li
-              v-for="member in members"
-              :key="member.userId"
-              class="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0"
-              :data-testid="`settings-household-member-${member.userId}`"
-            >
-              <div class="flex min-w-0 items-center gap-3">
-                <span
-                  class="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                  :class="
-                    member.role === 'owner'
-                      ? 'bg-accent text-primary'
-                      : 'bg-muted text-muted-foreground'
-                  "
-                  aria-hidden="true"
-                >
-                  {{ memberInitials(member) }}
-                </span>
-                <div class="min-w-0">
-                  <p class="truncate text-sm font-semibold">
-                    {{ memberLabel(member) }}
-                    <span v-if="member.userId === auth.user?.id" class="font-normal text-muted-foreground">
-                      ({{ t('household.you') }})
-                    </span>
-                  </p>
-                  <p class="truncate text-[11px] text-muted-foreground">
-                    {{ member.email }} · {{ t('household.joinedAt', { date: formatJoined(member.joinedAt) }) }}
-                  </p>
-                </div>
+            <div class="flex min-w-0 items-center gap-3">
+              <span
+                class="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                :class="
+                  member.role === 'owner'
+                    ? 'bg-accent text-primary'
+                    : 'bg-muted text-muted-foreground'
+                "
+                aria-hidden="true"
+              >
+                {{ memberInitials(member) }}
+              </span>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold">
+                  {{ memberLabel(member) }}
+                  <span
+                    v-if="member.userId === auth.user?.id"
+                    class="font-normal text-muted-foreground"
+                  >
+                    ({{ t('household.you') }})
+                  </span>
+                </p>
+                <p class="truncate text-[11px] text-muted-foreground">
+                  {{ member.email }} ·
+                  {{ t('household.joinedAt', { date: formatJoined(member.joinedAt) }) }}
+                </p>
               </div>
-              <div class="flex shrink-0 items-center gap-3">
-                <Badge
-                  variant="outline"
-                  class="rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
-                >
-                  {{ roleLabel(member.role) }}
-                </Badge>
-                <Button
-                  v-if="isOwner && member.role !== 'owner'"
-                  variant="ghost"
-                  size="sm"
-                  class="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-destructive"
-                  :data-testid="`settings-household-remove-${member.userId}`"
-                  @click="openRemove(member)"
-                >
-                  {{ t('household.removeMember') }}
-                </Button>
-              </div>
-            </li>
-          </ul>
+            </div>
+            <div class="flex shrink-0 items-center gap-3">
+              <Badge
+                variant="outline"
+                class="rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+              >
+                {{ roleLabel(member.role) }}
+              </Badge>
+              <Button
+                v-if="isOwner && member.role !== 'owner'"
+                variant="ghost"
+                size="sm"
+                class="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-destructive"
+                :data-testid="`settings-household-remove-${member.userId}`"
+                @click="openRemove(member)"
+              >
+                {{ t('household.removeMember') }}
+              </Button>
+            </div>
+          </li>
+        </ul>
 
-          <div v-if="isOwner && household" class="flex flex-wrap gap-2" data-testid="settings-household-owner-actions">
-            <InviteMemberDialog />
-            <HouseholdInvitationsDialog />
-            <HouseholdCodeDialog />
-            <RenameHouseholdDialog :initial-name="household.name" />
-            <DissolveHouseholdDialog />
-          </div>
+        <div
+          v-if="isOwner && household"
+          class="flex flex-wrap gap-2"
+          data-testid="settings-household-owner-actions"
+        >
+          <InviteMemberDialog />
+          <HouseholdInvitationsDialog />
+          <HouseholdCodeDialog />
+          <RenameHouseholdDialog :initial-name="household.name" />
+          <DissolveHouseholdDialog />
+        </div>
 
-          <div class="flex flex-wrap gap-2 border-t border-border pt-4">
-            <JoinHouseholdDialog />
-            <LeaveHouseholdButton v-if="canLeave" />
-          </div>
+        <div class="flex flex-wrap gap-2 border-t border-border pt-4">
+          <JoinHouseholdDialog />
+          <LeaveHouseholdButton v-if="canLeave" />
+        </div>
       </SettingsCard>
 
       <RemoveMemberDialog v-model="removeOpen" :member="removeTarget" />
@@ -356,21 +363,21 @@ onMounted(() => {
         <p class="text-xs text-muted-foreground">
           {{ t('auth.sessionsDescription') }}
         </p>
-          <ul v-if="sessions.length" class="flex flex-col text-sm">
-            <li
-              v-for="(session, index) in sessions"
-              :key="index"
-              class="flex items-center justify-between border-b border-border py-2.5 last:border-0"
-            >
-              <span>
-                {{ t('auth.sessionExpiresAt') }}: {{ formatExpiry(session.expiresAt) }}
-                <span v-if="session.isCurrent" class="ml-2 text-muted-foreground">
-                  ({{ t('auth.sessionCurrent') }})
-                </span>
+        <ul v-if="sessions.length" class="flex flex-col text-sm">
+          <li
+            v-for="(session, index) in sessions"
+            :key="index"
+            class="flex items-center justify-between border-b border-border py-2.5 last:border-0"
+          >
+            <span>
+              {{ t('auth.sessionExpiresAt') }}: {{ formatExpiry(session.expiresAt) }}
+              <span v-if="session.isCurrent" class="ml-2 text-muted-foreground">
+                ({{ t('auth.sessionCurrent') }})
               </span>
-            </li>
-          </ul>
-          <p v-else-if="!sessionsLoading" class="text-sm text-muted-foreground">-</p>
+            </span>
+          </li>
+        </ul>
+        <p v-else-if="!sessionsLoading" class="text-sm text-muted-foreground">-</p>
         <div class="flex flex-wrap gap-2">
           <Button variant="ghost" size="sm" :loading="sessionsLoading" @click="loadSessions">
             {{ t('common.errorState.retry') }}
@@ -387,7 +394,10 @@ onMounted(() => {
         </div>
       </SettingsCard>
 
-      <RouterLink :to="{ name: 'reset-password' }" class="text-sm text-muted-foreground hover:underline">
+      <RouterLink
+        :to="{ name: 'reset-password' }"
+        class="text-sm text-muted-foreground hover:underline"
+      >
         {{ t('auth.forgotPassword') }}
       </RouterLink>
     </template>

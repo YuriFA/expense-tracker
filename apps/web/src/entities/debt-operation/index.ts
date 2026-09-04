@@ -13,8 +13,4 @@ export {
   totalsByDirection,
   type DirectionBalances,
 } from '@expense-tracker/local-data'
-export {
-  debtorSection,
-  debtorBalanceRows,
-  initialsOf,
-} from './model/debtor-section'
+export { debtorSection, debtorBalanceRows, initialsOf } from './model/debtor-section'

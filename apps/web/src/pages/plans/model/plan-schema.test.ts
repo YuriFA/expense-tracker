@@ -38,8 +38,6 @@ describe('plan form schema', () => {
   })
 
   it('keeps name and note optional (empty strings)', () => {
-    expect(
-      createPlanSchema().safeParse({ ...valid, name: '', note: '' }).success,
-    ).toBe(true)
+    expect(createPlanSchema().safeParse({ ...valid, name: '', note: '' }).success).toBe(true)
   })
 })

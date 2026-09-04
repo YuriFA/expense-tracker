@@ -101,7 +101,9 @@ async function submit() {
             :aria-checked="icon === option.icon"
             :data-testid="`new-category-icon-${index}`"
             class="flex size-10 items-center justify-center rounded-full text-lg transition-shadow"
-            :class="icon === option.icon ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''"
+            :class="
+              icon === option.icon ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
+            "
             :style="{ backgroundColor: `color-mix(in srgb, ${option.color} 15%, transparent)` }"
             @click="icon = option.icon"
           >

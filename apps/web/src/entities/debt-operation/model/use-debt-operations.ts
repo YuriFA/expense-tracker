@@ -32,13 +32,8 @@ export const useUpdateDebtOperation = () => {
   const queryCache = useQueryCache()
   const debtOperations = useDebtOperationRepository()
   return useMutation({
-    mutation: ({
-      id,
-      payload,
-    }: {
-      id: string
-      payload: UpdateDebtOperationPayload
-    }) => debtOperations.update(id, payload),
+    mutation: ({ id, payload }: { id: string; payload: UpdateDebtOperationPayload }) =>
+      debtOperations.update(id, payload),
     onSettled: () => {
       queryCache.invalidateQueries({ key: ['debt-operations'] })
     },

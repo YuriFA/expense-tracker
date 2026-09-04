@@ -41,10 +41,15 @@ const auth = useAuthStore()
 const householdQuery = useHousehold({ enabled: () => auth.isAuthenticated })
 const author = computed(() => {
   if (!auth.isAuthenticated) return null
-  return authorLabel(transaction.authorId, householdQuery.data.value?.members ?? [], auth.user?.id, {
-    selfLabel: t('household.authorSelf'),
-    includeSingleMember: true,
-  })
+  return authorLabel(
+    transaction.authorId,
+    householdQuery.data.value?.members ?? [],
+    auth.user?.id,
+    {
+      selfLabel: t('household.authorSelf'),
+      includeSingleMember: true,
+    },
+  )
 })
 
 const handleSuccess = () => {

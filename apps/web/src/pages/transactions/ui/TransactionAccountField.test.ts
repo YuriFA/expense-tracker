@@ -25,7 +25,7 @@ describe('TransactionAccountField', () => {
         const model = ref(modelValue)
         return () =>
           h(TransactionAccountField, {
-            'modelValue': model.value,
+            modelValue: model.value,
             'onUpdate:modelValue': (value: string[] | undefined) => {
               model.value = value
               emitted.push(value ?? [])

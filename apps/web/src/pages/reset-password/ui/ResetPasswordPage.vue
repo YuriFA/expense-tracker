@@ -43,7 +43,11 @@ async function requestReset() {
     requested.value = true
     notification.success(t('auth.resetRequested'))
   } catch (error) {
-    notification.mutationError(error, { title: t('auth.resetPasswordTitle'), feature: 'session', action: 'password-reset' })
+    notification.mutationError(error, {
+      title: t('auth.resetPasswordTitle'),
+      feature: 'session',
+      action: 'password-reset',
+    })
   } finally {
     isSubmitting.value = false
   }
@@ -52,9 +56,12 @@ async function requestReset() {
 async function confirmReset() {
   errors.value = {}
   if (!confirmSchema.safeParse(form).success) {
-    if (form.token.length === 0) errors.value.token = t('validation.enter', { field: t('auth.resetTokenLabel') })
+    if (form.token.length === 0)
+      errors.value.token = t('validation.enter', { field: t('auth.resetTokenLabel') })
     if (form.newPassword.length < 8) {
-      errors.value.newPassword = t('validation.mustBeNonNegative', { field: t('auth.passwordLabel') })
+      errors.value.newPassword = t('validation.mustBeNonNegative', {
+        field: t('auth.passwordLabel'),
+      })
     }
     return
   }
@@ -64,7 +71,11 @@ async function confirmReset() {
     notification.success(t('auth.passwordReset'))
     await router.push({ name: 'login' })
   } catch (error) {
-    notification.mutationError(error, { title: t('auth.confirmResetTitle'), feature: 'session', action: 'password-reset' })
+    notification.mutationError(error, {
+      title: t('auth.confirmResetTitle'),
+      feature: 'session',
+      action: 'password-reset',
+    })
   } finally {
     isSubmitting.value = false
   }
@@ -122,7 +133,10 @@ async function confirmReset() {
       </form>
     </template>
 
-    <RouterLink :to="{ name: 'login' }" class="mt-6 inline-block text-center text-sm text-muted-foreground hover:underline">
+    <RouterLink
+      :to="{ name: 'login' }"
+      class="mt-6 inline-block text-center text-sm text-muted-foreground hover:underline"
+    >
       {{ t('auth.backToSignIn') }}
     </RouterLink>
   </section>

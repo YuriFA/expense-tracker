@@ -39,10 +39,7 @@ function boot(): Promise<LocalDbApi> {
 
   const signal = new Promise<string>((resolve) => {
     const onMessage = (event: MessageEvent) => {
-      if (
-        event.data === LOCAL_DB_READY_SIGNAL ||
-        event.data === LOCAL_DB_BUSY_SIGNAL
-      ) {
+      if (event.data === LOCAL_DB_READY_SIGNAL || event.data === LOCAL_DB_BUSY_SIGNAL) {
         worker.removeEventListener('message', onMessage)
         resolve(event.data as string)
       }

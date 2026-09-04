@@ -51,7 +51,11 @@ async function submit() {
       retryAfter.value = error.retryAfter
       errors.value.form = t('auth.rateLimited', { seconds: error.retryAfter ?? 0 })
     } else {
-      notification.mutationError(error, { title: t('auth.signIn'), feature: 'session', action: 'login' })
+      notification.mutationError(error, {
+        title: t('auth.signIn'),
+        feature: 'session',
+        action: 'login',
+      })
     }
   } finally {
     isSubmitting.value = false

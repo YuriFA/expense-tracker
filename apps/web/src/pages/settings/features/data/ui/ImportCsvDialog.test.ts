@@ -62,7 +62,7 @@ describe('ImportCsvDialog', () => {
         const open = ref(true)
         return () =>
           h(ImportCsvDialog, {
-            'open': open.value,
+            open: open.value,
             'onUpdate:open': (value: boolean) => {
               open.value = value
             },
@@ -136,7 +136,15 @@ describe('ImportCsvDialog', () => {
 
   it('counts already-imported rows as skipped, not failed', async () => {
     categoryRepo.getAll.mockResolvedValue([
-      { id: 'c1', name: 'Транспорт', type: 'expense', icon: '', color: '', archivedAt: null, version: 1 },
+      {
+        id: 'c1',
+        name: 'Транспорт',
+        type: 'expense',
+        icon: '',
+        color: '',
+        archivedAt: null,
+        version: 1,
+      },
     ] as never)
     transactionRepo.create.mockRejectedValue(
       new AlreadyExistsError('Transaction already exists', {
@@ -163,7 +171,9 @@ describe('ImportCsvDialog', () => {
 
     // Uncheck the first valid row (line 2): the checkbox is a native input
     // bound with v-model, so flip `checked` and fire `change`.
-    const includeBox = allInDialog('[data-testid="import-row-2"] input[type="checkbox"]')[0] as HTMLInputElement
+    const includeBox = allInDialog(
+      '[data-testid="import-row-2"] input[type="checkbox"]',
+    )[0] as HTMLInputElement
     includeBox.checked = false
     includeBox.dispatchEvent(new Event('change'))
     await flushPromises()

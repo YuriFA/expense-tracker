@@ -3,7 +3,13 @@ import { defineComponent, h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { useQueryCache } from '@pinia/colada'
 import type { AccountWithBalance } from './types'
-import { useAccounts, useAccount, useCreateAccount, useUpdateAccount, useDeleteAccount } from './use-accounts'
+import {
+  useAccounts,
+  useAccount,
+  useCreateAccount,
+  useUpdateAccount,
+  useDeleteAccount,
+} from './use-accounts'
 import { createMockAccountRepository } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
@@ -88,7 +94,11 @@ describe('useCreateAccount', () => {
       repositories: { accounts: repo },
     })
     await result.mutateAsync({ name: 'Main', currency: 'USD', openingBalance: 1000 })
-    expect(repo.create).toHaveBeenCalledWith({ name: 'Main', currency: 'USD', openingBalance: 1000 })
+    expect(repo.create).toHaveBeenCalledWith({
+      name: 'Main',
+      currency: 'USD',
+      openingBalance: 1000,
+    })
   })
 })
 
@@ -106,39 +116,49 @@ describe('useUpdateAccount', () => {
   it('optimistically patches the list cache and leaves a missing detail query alone', async () => {
     const repo = createMockAccountRepository()
     repo.update.mockResolvedValue({ ...accountFixture, name: 'Updated' })
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture])
-      return { mutation: useUpdateAccount(), queryCache }
-    }, { repositories: { accounts: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture])
+        return { mutation: useUpdateAccount(), queryCache }
+      },
+      { repositories: { accounts: repo } },
+    )
 
     await result.mutation.mutateAsync({ id: 'a1', payload: { name: 'Updated', version: 1 } })
     await flushPromises()
 
-    expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.[0]?.name).toBe('Updated')
+    expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.[0]?.name).toBe(
+      'Updated',
+    )
   })
 
   it('skips optimistic patch when payload touches manualAdjustment', async () => {
     const repo = createMockAccountRepository()
     repo.update.mockResolvedValue(accountFixture)
     const invalidateSpy = vi.fn<(...args: unknown[]) => void>()
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture])
-      // Track invalidate to confirm server-roundtrip path still invalidates
-      const original = queryCache.invalidateQueries.bind(queryCache)
-      queryCache.invalidateQueries = (...args: Parameters<typeof original>) => {
-        invalidateSpy(...args)
-        return original(...args)
-      }
-      return { mutation: useUpdateAccount(), queryCache }
-    }, { repositories: { accounts: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture])
+        // Track invalidate to confirm server-roundtrip path still invalidates
+        const original = queryCache.invalidateQueries.bind(queryCache)
+        queryCache.invalidateQueries = (...args: Parameters<typeof original>) => {
+          invalidateSpy(...args)
+          return original(...args)
+        }
+        return { mutation: useUpdateAccount(), queryCache }
+      },
+      { repositories: { accounts: repo } },
+    )
 
     await result.mutation.mutateAsync({ id: 'a1', payload: { version: 1 } })
     await flushPromises()
 
     // Cache stays untouched optimistically; rely on invalidate + refetch
-    expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.[0]?.name).toBe('Main')
+    expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.[0]?.name).toBe(
+      'Main',
+    )
     expect(invalidateSpy).toHaveBeenCalled()
   })
 })
@@ -158,32 +178,42 @@ describe('useDeleteAccount', () => {
     const repo = createMockAccountRepository()
     repo.remove.mockResolvedValue(undefined)
     const other: AccountWithBalance = { ...accountFixture, id: 'a2' }
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture, other])
-      queryCache.setQueryData<AccountWithBalance>(['accounts', 'a1'], accountFixture)
-      return { mutation: useDeleteAccount(), queryCache }
-    }, { repositories: { accounts: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture, other])
+        queryCache.setQueryData<AccountWithBalance>(['accounts', 'a1'], accountFixture)
+        return { mutation: useDeleteAccount(), queryCache }
+      },
+      { repositories: { accounts: repo } },
+    )
 
     await result.mutation.mutateAsync('a1')
     await flushPromises()
 
-    expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.map((a) => a.id)).toEqual(['a2'])
+    expect(
+      result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.map((a) => a.id),
+    ).toEqual(['a2'])
     expect(result.queryCache.getQueryData(['accounts', 'a1'])).toBeUndefined()
   })
 
   it('rolls back list cache on error', async () => {
     const repo = createMockAccountRepository()
     repo.remove.mockRejectedValue(new Error('boom'))
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture])
-      return { mutation: useDeleteAccount(), queryCache }
-    }, { repositories: { accounts: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<AccountWithBalance[]>(['accounts'], [accountFixture])
+        return { mutation: useDeleteAccount(), queryCache }
+      },
+      { repositories: { accounts: repo } },
+    )
 
     await expect(result.mutation.mutateAsync('a1')).rejects.toThrow('boom')
     await flushPromises()
 
-    expect(result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.map((a) => a.id)).toEqual(['a1'])
+    expect(
+      result.queryCache.getQueryData<AccountWithBalance[]>(['accounts'])?.map((a) => a.id),
+    ).toEqual(['a1'])
   })
 })

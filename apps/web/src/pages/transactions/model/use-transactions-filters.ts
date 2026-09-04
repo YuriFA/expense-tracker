@@ -36,9 +36,7 @@ export function useTransactionsFilters() {
     included: boolean,
   ) => {
     const current = filters.value[key]
-    const next = included
-      ? [...(current ?? []), id]
-      : removeIdFromList(current, id)
+    const next = included ? [...(current ?? []), id] : removeIdFromList(current, id)
 
     await setFilters(key === 'accountIds' ? { accountIds: next } : { categoryIds: next })
   }

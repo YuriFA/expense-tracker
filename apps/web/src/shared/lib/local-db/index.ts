@@ -3,8 +3,4 @@
 export { getLocalDbApi, useLocalDbBootState, onSyncRunComplete } from './local-db'
 export type { LocalDbApi } from './local-db-api'
 export { rehydrateRepositoryError } from './rehydrate-repository-error'
-export {
-  provideSyncController,
-  useSyncController,
-  type SyncController,
-} from './sync-composable'
+export { provideSyncController, useSyncController, type SyncController } from './sync-composable'

@@ -49,9 +49,7 @@ const mode = computed<Mode>(() => {
 })
 
 const transactionCount = computed(() => props.usage?.transactionCount ?? 0)
-const busy = computed(
-  () => deleteStatus.value === 'loading' || archiveStatus.value === 'loading',
-)
+const busy = computed(() => deleteStatus.value === 'loading' || archiveStatus.value === 'loading')
 
 // Usage string for the with-transactions copy ("12 операций", pluralized
 // by vue-i18n over the dedicated nominative key).
@@ -73,7 +71,11 @@ const balanceImpact = computed(() => {
     const account = accountList.find((candidate) => candidate.id === accountId)
     // Explicit sign prefix: deleting an expense raises the balance and vice
     // versa; formatMoney itself drops the plus.
-    const magnitude = formatMoney(Math.abs(amountMinorUnits), account?.currency ?? 'RUB', locale.value)
+    const magnitude = formatMoney(
+      Math.abs(amountMinorUnits),
+      account?.currency ?? 'RUB',
+      locale.value,
+    )
     return {
       account: account?.name ?? '',
       delta: `${sign * amountMinorUnits >= 0 ? '+' : '−'}${magnitude}`,
@@ -221,7 +223,11 @@ async function handleConfirm(): Promise<void> {
         <!-- Typed confirmation + balance impact once the cascade is in play -->
         <template v-if="cascadeChosen">
           <ul v-if="balanceImpact.length" class="flex flex-col gap-1 text-xs text-muted-foreground">
-            <li v-for="(line, index) in balanceImpact" :key="index" data-testid="delete-category-impact">
+            <li
+              v-for="(line, index) in balanceImpact"
+              :key="index"
+              data-testid="delete-category-impact"
+            >
               {{ t('deleteCategory.balanceImpact', { account: line.account, delta: line.delta }) }}
             </li>
           </ul>
@@ -239,7 +245,6 @@ async function handleConfirm(): Promise<void> {
           </Field>
         </template>
       </template>
-
     </div>
 
     <template #footer>

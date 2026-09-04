@@ -43,7 +43,10 @@ describe('parseImportCsv', () => {
   })
 
   it('maps columns by header name regardless of order and language', async () => {
-    const result = await parseImportCsv('amount;date;type;account;note;category\n1.5;2026-09-03;income;Наличка;зп;Работа', { accounts })
+    const result = await parseImportCsv(
+      'amount;date;type;account;note;category\n1.5;2026-09-03;income;Наличка;зп;Работа',
+      { accounts },
+    )
     expect(result.rows[0]).toMatchObject({
       status: 'valid',
       direction: 'income',
@@ -87,7 +90,11 @@ describe('parseImportCsv', () => {
 
   it('rejects the same category name under both directions', async () => {
     const result = await parseImportCsv(
-      ['дата;тип;категория;сумма', '01.09.2026;расход;Хобби;100', '02.09.2026;доход;Хобби;100'].join('\n'),
+      [
+        'дата;тип;категория;сумма',
+        '01.09.2026;расход;Хобби;100',
+        '02.09.2026;доход;Хобби;100',
+      ].join('\n'),
       { accounts },
     )
     expect(result.rows[1]).toMatchObject({ status: 'invalid', code: 'category-conflict' })
@@ -101,8 +108,24 @@ describe('parseImportCsv', () => {
   it('round-trips an export back into identical rows', async () => {
     const exportAccounts: Account[] = accounts.map((a) => ({ ...a }))
     const categories: Category[] = [
-      { id: 'c1', name: 'Продукты', type: 'expense', icon: '', color: '', archivedAt: null, version: 1 },
-      { id: 'c2', name: 'Зарплата', type: 'income', icon: '', color: '', archivedAt: null, version: 1 },
+      {
+        id: 'c1',
+        name: 'Продукты',
+        type: 'expense',
+        icon: '',
+        color: '',
+        archivedAt: null,
+        version: 1,
+      },
+      {
+        id: 'c2',
+        name: 'Зарплата',
+        type: 'income',
+        icon: '',
+        color: '',
+        archivedAt: null,
+        version: 1,
+      },
     ]
     const transactions: Transaction[] = [
       {

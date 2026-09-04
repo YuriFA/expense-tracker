@@ -48,12 +48,19 @@ const amountSizeClass = computed(() => {
   <div class="bg-card text-card-foreground rounded-lg border p-3 md:p-5">
     <div class="flex items-center gap-2 md:gap-3">
       <span
-        :class="cn('flex size-8 shrink-0 items-center justify-center rounded-full md:size-10', toneClasses[props.tone])"
+        :class="
+          cn(
+            'flex size-8 shrink-0 items-center justify-center rounded-full md:size-10',
+            toneClasses[props.tone],
+          )
+        "
         aria-hidden="true"
       >
         <component :is="props.icon" class="size-4 md:size-5" />
       </span>
-      <p class="truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground md:text-xs">
+      <p
+        class="truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground md:text-xs"
+      >
         {{ props.label }}
       </p>
     </div>

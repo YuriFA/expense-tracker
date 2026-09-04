@@ -8,7 +8,9 @@ const props = defineProps<DialogCloseProps>()
 
 const dialogContext = injectDialogRootContext(null)
 const drawerContext = injectDrawerRootContext(null)
-const closeComponent = computed(() => (drawerContext !== null && dialogContext === null ? RekaDrawerClose : RekaDialogClose))
+const closeComponent = computed(() =>
+  drawerContext !== null && dialogContext === null ? RekaDrawerClose : RekaDialogClose,
+)
 </script>
 
 <template>

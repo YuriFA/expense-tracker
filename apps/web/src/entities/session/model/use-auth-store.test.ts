@@ -156,7 +156,7 @@ describe('useAuthStore', () => {
     it('different owner: delete wipes local data, rebinds and authenticates', async () => {
       vi.mocked(sessionApi.login).mockResolvedValue(otherUser)
       metaMock.getOwnerUserId
-        .mockResolvedValueOnce(user.id)     // passOwnershipGate reads the current owner
+        .mockResolvedValueOnce(user.id) // passOwnershipGate reads the current owner
         .mockResolvedValueOnce(otherUser.id) // completeAuthentication sees the new owner (set by rebindOwner)
 
       const auth = useAuthStore()

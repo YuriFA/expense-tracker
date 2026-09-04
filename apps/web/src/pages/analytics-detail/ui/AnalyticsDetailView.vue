@@ -71,12 +71,7 @@ const queryOptions = computed<TransactionQuery>(() => ({
   type: props.direction,
   ...periodToUtcDayRange(cursor.value),
 }))
-const {
-  data: transactions,
-  isPending,
-  error,
-  refetch,
-} = useTransactions(queryOptions)
+const { data: transactions, isPending, error, refetch } = useTransactions(queryOptions)
 // Including archived: this is a join over existing records -
 // archived categories stay visible in history/analytics/filters.
 const { data: categories, isPending: categoriesPending } = useCategoriesIncludingArchived()
@@ -129,9 +124,7 @@ const chartEntries = computed<DonutChartEntry[]>(() => {
     value: entry.totalMinor,
   }))
 })
-const chartedTotal = computed(() =>
-  chartEntries.value.reduce((sum, entry) => sum + entry.value, 0),
-)
+const chartedTotal = computed(() => chartEntries.value.reduce((sum, entry) => sum + entry.value, 0))
 
 const chartAriaLabel = computed(() => {
   if (chartedTotal.value <= 0) return t('analytics.noData')
@@ -192,11 +185,7 @@ const openDrilldown = (category: Category) => {
 
 <template>
   <section>
-    <PageHeader
-      :title="title"
-      back-to="/analytics"
-      :back-label="t('common.back')"
-    />
+    <PageHeader :title="title" back-to="/analytics" :back-label="t('common.back')" />
 
     <SegmentedControl
       :model-value="kind"
@@ -231,7 +220,9 @@ const openDrilldown = (category: Category) => {
             <span class="text-2xl font-bold" data-testid="analytics-detail-total">
               {{ totalText }}
             </span>
-            <span class="ml-1 text-sm text-muted-foreground">{{ t('analytics.totalCaption') }}</span>
+            <span class="ml-1 text-sm text-muted-foreground">{{
+              t('analytics.totalCaption')
+            }}</span>
           </div>
           <Button
             variant="outline"
@@ -268,10 +259,7 @@ const openDrilldown = (category: Category) => {
           <CardTitle class="text-base">{{ allLabel }}</CardTitle>
         </CardHeader>
         <CardContent class="pb-4">
-          <div
-            class="flex items-center gap-3 border-b pb-3"
-            data-testid="analytics-total-row"
-          >
+          <div class="flex items-center gap-3 border-b pb-3" data-testid="analytics-total-row">
             <Checkbox
               :model-value="allIncluded"
               class="text-primary"
@@ -317,7 +305,9 @@ const openDrilldown = (category: Category) => {
               >
                 {{ row.category.name }}
               </button>
-              <span class="text-sm">{{ formatMoney(row.totalMinor, displayCurrency, locale) }}</span>
+              <span class="text-sm">{{
+                formatMoney(row.totalMinor, displayCurrency, locale)
+              }}</span>
               <span class="w-12 text-right text-xs text-muted-foreground">
                 {{ percentLabel(row.totalMinor, total, locale) }}
               </span>

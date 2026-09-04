@@ -9,7 +9,10 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div data-slot="drawer-footer" :class="cn('mt-auto flex flex-col-reverse gap-2', DRAWER_FOOTER_CLASS, props.class)">
+  <div
+    data-slot="drawer-footer"
+    :class="cn('mt-auto flex flex-col-reverse gap-2', DRAWER_FOOTER_CLASS, props.class)"
+  >
     <slot />
   </div>
 </template>

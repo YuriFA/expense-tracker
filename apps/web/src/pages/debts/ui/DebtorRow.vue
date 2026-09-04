@@ -26,9 +26,7 @@ const { locale, t } = useI18n()
 // (currency-rub-only).
 const displayCurrency = computed(() => DEFAULT_CURRENCY)
 
-const balanceText = computed(() =>
-  formatMoney(props.balance, displayCurrency.value, locale.value),
-)
+const balanceText = computed(() => formatMoney(props.balance, displayCurrency.value, locale.value))
 
 const balanceClass = computed(() => {
   if (props.balance < 0) return 'text-destructive'
@@ -39,9 +37,7 @@ const balanceClass = computed(() => {
 // tint (teal receivable / terracotta payable).
 const avatarClass = computed(() => {
   if (props.balance === 0) return 'bg-muted text-muted-foreground'
-  return props.direction === 'receivable'
-    ? 'bg-accent text-primary'
-    : 'bg-warning/10 text-warning'
+  return props.direction === 'receivable' ? 'bg-accent text-primary' : 'bg-warning/10 text-warning'
 })
 
 const metaText = computed(() => {

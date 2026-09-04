@@ -59,7 +59,8 @@ const account = computed(() => {
 // Account-less cashflow («Без счета»): no account row matches, the meta
 // line still names the choice instead of silently skipping it.
 const isAccountless = computed(
-  () => !isTransferTransaction(transaction) && !isAdjustmentTransaction(transaction) && !account.value,
+  () =>
+    !isTransferTransaction(transaction) && !isAdjustmentTransaction(transaction) && !account.value,
 )
 const fromAccount = computed(() => {
   if (isTransferTransaction(transaction)) {
@@ -167,7 +168,8 @@ const ARROW = '→'
       :class="{
         'text-success': transaction.type === 'income' || isAdjustmentAndPositive,
         'text-destructive': transaction.type === 'expense' || isAdjustmentAndNegative,
-        'text-foreground': transaction.type === 'transfer' || (isAdjustment && transaction.amount === 0),
+        'text-foreground':
+          transaction.type === 'transfer' || (isAdjustment && transaction.amount === 0),
       }"
     >
       <span v-if="transaction.type === 'income'">+</span>

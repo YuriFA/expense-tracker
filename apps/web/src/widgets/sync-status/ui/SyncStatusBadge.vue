@@ -69,7 +69,13 @@ const view = computed(() => {
     }
   }
   if (engineState.value.running) {
-    return { id: 'sync-status-running', label: t('sync.status.running'), destructive: false, tinted: false, showSpinner: true }
+    return {
+      id: 'sync-status-running',
+      label: t('sync.status.running'),
+      destructive: false,
+      tinted: false,
+      showSpinner: true,
+    }
   }
   if (pending.value > 0) {
     return {
@@ -80,7 +86,13 @@ const view = computed(() => {
       showSpinner: false,
     }
   }
-  return { id: 'sync-status-synced', label: t('sync.status.synced'), destructive: false, tinted: false, showSpinner: false }
+  return {
+    id: 'sync-status-synced',
+    label: t('sync.status.synced'),
+    destructive: false,
+    tinted: false,
+    showSpinner: false,
+  }
 })
 
 // Compact tint/icon mapping: conflicts and failing ops get the destructive
@@ -144,12 +156,10 @@ function activate() {
     />
     <CloudUploadIcon v-else class="size-3.5" />
     <span
-      v-if="
-        (view.id === 'sync-status-pending' || view.id === 'sync-status-failing') &&
-        pending > 0
-      "
+      v-if="(view.id === 'sync-status-pending' || view.id === 'sync-status-failing') && pending > 0"
       class="absolute -top-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-warning px-0.5 text-[8px] font-bold leading-none text-warning-foreground"
-    >{{ failing > 0 ? failing : pending }}</span>
+      >{{ failing > 0 ? failing : pending }}</span
+    >
     <span class="sr-only" :data-testid="view.id">{{ view.label }}</span>
   </Button>
 </template>

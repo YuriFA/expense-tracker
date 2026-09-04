@@ -195,9 +195,7 @@ describe('useHouseholdJoinStore', () => {
     })
 
     it('skips silently when the household cannot be fetched (offline)', async () => {
-      vi.mocked(householdApi.getHousehold).mockRejectedValue(
-        new UnauthorizedError('no session'),
-      )
+      vi.mocked(householdApi.getHousehold).mockRejectedValue(new UnauthorizedError('no session'))
       const join = useHouseholdJoinStore()
 
       await expect(join.ensureCurrentHousehold()).resolves.toBeUndefined()

@@ -20,9 +20,9 @@ function loadSqlite3(): Promise<Sqlite3Static> {
     const wasmBinary = await fetch(wasmUrl).then((response) => response.arrayBuffer())
     // The typings omit the emscripten config bag; `wasmBinary` is supported at
     // runtime by the bundler-friendly build.
-    const init = initSqlite3Module as unknown as (
-      config: { wasmBinary: ArrayBuffer },
-    ) => Promise<Sqlite3Static>
+    const init = initSqlite3Module as unknown as (config: {
+      wasmBinary: ArrayBuffer
+    }) => Promise<Sqlite3Static>
     const sqlite3 = await init({ wasmBinary })
     // OPFS persistence (single-tab - the Web Locks guard in the worker entry
     // enforces it): registers the 'opfs-sahpool' VFS.
@@ -63,9 +63,7 @@ function createSqliteWasmClient(sqlite3: Sqlite3Static, raw: Database) {
           }
           return {
             changes: Number(raw.changes()),
-            lastInsertRowid: Number(
-              sqlite3.capi.sqlite3_last_insert_rowid(raw.pointer ?? 0),
-            ),
+            lastInsertRowid: Number(sqlite3.capi.sqlite3_last_insert_rowid(raw.pointer ?? 0)),
             getAllSync: () => rows(source, params, 'object'),
             getFirstSync: () => rows(source, params, 'object')[0] ?? null,
           }
@@ -124,9 +122,7 @@ export async function openLocalDatabase(): Promise<WebLocalDatabase> {
   // The adapter implements the driver's runtime surface; the type satisfies
   // the generic LocalDatabase only through this cast (as in the package's
   // test factory).
-  const client = createSqliteWasmClient(sqlite3, raw) as unknown as Parameters<
-    typeof drizzle
-  >[0]
+  const client = createSqliteWasmClient(sqlite3, raw) as unknown as Parameters<typeof drizzle>[0]
   const db = drizzle(client, { schema }) as unknown as LocalDatabase
   await migrateLocalDatabase(db)
   return { db, raw }

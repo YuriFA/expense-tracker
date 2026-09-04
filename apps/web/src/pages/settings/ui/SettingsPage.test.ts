@@ -51,11 +51,7 @@ const user: User = {
 const OWNER_MEMBER = householdMember('u1', 'wife@example.com', 'owner')
 const MY_MEMBER = householdMember('u2', 'user@example.com', 'member')
 
-function householdMember(
-  userId: string,
-  email: string,
-  role: 'owner' | 'member',
-): HouseholdMember {
+function householdMember(userId: string, email: string, role: 'owner' | 'member'): HouseholdMember {
   return {
     userId,
     email,

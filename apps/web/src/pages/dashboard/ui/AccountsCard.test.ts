@@ -56,7 +56,9 @@ describe('AccountsCard', () => {
     await flushPromises()
     // Empty-state message instead of account rows; no zero total alongside it.
     expect(wrapper.text()).toContain('No accounts yet')
-    const accountLinks = wrapper.findAll('a').filter((a) => a.attributes('href')?.includes('accountId'))
+    const accountLinks = wrapper
+      .findAll('a')
+      .filter((a) => a.attributes('href')?.includes('accountId'))
     expect(accountLinks.length).toBe(0)
     expect(wrapper.text()).not.toContain('₽0.00')
   })

@@ -53,4 +53,3 @@ describe('AccountCard', () => {
     expect(wrapper.text()).not.toContain('$')
   })
 })
-

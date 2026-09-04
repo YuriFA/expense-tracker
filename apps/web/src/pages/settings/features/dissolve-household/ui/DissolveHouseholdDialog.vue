@@ -16,10 +16,7 @@ import { Button } from '@/shared/ui/button'
 import { useTransactionRepository } from '@/entities/transaction'
 import { useDebtOperationRepository } from '@/entities/debt-operation'
 import { usePlannedPaymentRepository } from '@/entities/planned-payment'
-import {
-  getHouseholdErrorMessage,
-  householdApi,
-} from '@/entities/household'
+import { getHouseholdErrorMessage, householdApi } from '@/entities/household'
 import { useHouseholdJoinStore } from '@/features/household-join'
 import { notification } from '@/shared/services/notification'
 

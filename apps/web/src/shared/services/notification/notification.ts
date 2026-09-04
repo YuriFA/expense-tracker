@@ -1,9 +1,6 @@
 import { toast } from 'vue-sonner'
 import type { ErrorContext, MutationErrorOptions } from './types'
-import {
-  getRepositoryErrorMessage,
-  getRepositoryErrorMessages,
-} from '@/shared/lib/data'
+import { getRepositoryErrorMessage, getRepositoryErrorMessages } from '@/shared/lib/data'
 import { logErrorToBackend } from './log-error'
 
 class NotificationService {

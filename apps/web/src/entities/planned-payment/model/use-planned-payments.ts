@@ -31,13 +31,8 @@ export const useUpdatePlannedPayment = () => {
   const queryCache = useQueryCache()
   const plannedPayments = usePlannedPaymentRepository()
   return useMutation({
-    mutation: ({
-      id,
-      payload,
-    }: {
-      id: string
-      payload: UpdatePlannedPaymentPayload
-    }) => plannedPayments.update(id, payload),
+    mutation: ({ id, payload }: { id: string; payload: UpdatePlannedPaymentPayload }) =>
+      plannedPayments.update(id, payload),
     onSettled: () => {
       queryCache.invalidateQueries({ key: ['planned-payments'] })
     },
@@ -62,8 +57,7 @@ export const useConfirmPlannedPayment = () => {
   const queryCache = useQueryCache()
   const plannedPayments = usePlannedPaymentRepository()
   return useMutation({
-    mutation: (input: ConfirmPlannedPaymentInput) =>
-      plannedPayments.confirmPlannedPayment(input),
+    mutation: (input: ConfirmPlannedPaymentInput) => plannedPayments.confirmPlannedPayment(input),
     onSettled: () => {
       queryCache.invalidateQueries({ key: ['planned-payments'] })
       queryCache.invalidateQueries({ key: ['transactions'] })

@@ -34,8 +34,8 @@ const {
   isPending: categoriesPending,
   error: categoriesError,
   refetch: refetchCategories,
-// Including archived: this is a join over existing records -
-// archived categories stay visible in history/analytics/filters.
+  // Including archived: this is a join over existing records -
+  // archived categories stay visible in history/analytics/filters.
 } = useCategoriesIncludingArchived()
 
 // Skeletons only while NO data exists yet: background refetches

@@ -47,7 +47,9 @@ const showSettled = ref(false)
         type="button"
         class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors"
         :class="
-          direction === 'receivable' ? 'text-primary hover:bg-accent' : 'text-warning hover:bg-warning/10'
+          direction === 'receivable'
+            ? 'text-primary hover:bg-accent'
+            : 'text-warning hover:bg-warning/10'
         "
         :aria-label="addTitle"
         :data-testid="`debts-section-add-${direction}`"
@@ -81,7 +83,9 @@ const showSettled = ref(false)
       @click="showSettled = !showSettled"
     >
       {{
-        showSettled ? t('debts.hideSettled') : t('debts.showSettled', { count: section.settled.length })
+        showSettled
+          ? t('debts.hideSettled')
+          : t('debts.showSettled', { count: section.settled.length })
       }}
     </button>
     <template v-if="showSettled">

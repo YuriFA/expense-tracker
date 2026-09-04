@@ -48,8 +48,7 @@ const isPending = computed(() => previewQuery.isPending.value)
 const isAnonymous = computed(() => previewQuery.error.value instanceof UnauthorizedError)
 const apiErrorCode = computed(() => getHouseholdApiErrorCode(previewQuery.error.value))
 const isMismatch = computed(() => apiErrorCode.value === 'HOUSEHOLD_INVITATION_EMAIL_MISMATCH')
-const deadMessage = computed(() =>
-  getHouseholdErrorMessage(previewQuery.error.value))
+const deadMessage = computed(() => getHouseholdErrorMessage(previewQuery.error.value))
 
 async function goHome(): Promise<void> {
   await router.push({ name: 'home' })
@@ -119,11 +118,7 @@ async function goHome(): Promise<void> {
       </CardContent>
     </Card>
 
-    <ErrorState
-      v-else-if="previewQuery.error.value"
-      class="mt-6"
-      @retry="previewQuery.refetch()"
-    />
+    <ErrorState v-else-if="previewQuery.error.value" class="mt-6" @retry="previewQuery.refetch()" />
 
     <Card v-else-if="previewQuery.data.value" class="mt-6">
       <CardContent class="pt-6">

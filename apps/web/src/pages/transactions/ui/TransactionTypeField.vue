@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { getTransactionTypeOptions } from '@/entities/transaction'
 import { useI18n } from 'vue-i18n'

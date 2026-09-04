@@ -3,11 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Debtor } from '@/entities/debtor'
 import { useDebtors } from '@/entities/debtor'
-import {
-  totalsByDirection,
-  useDebtOperations,
-  type DebtDirection,
-} from '@/entities/debt-operation'
+import { totalsByDirection, useDebtOperations, type DebtDirection } from '@/entities/debt-operation'
 import DebtsSummaryCard from './DebtsSummaryCard.vue'
 import DebtorSection from './DebtorSection.vue'
 import DebtorHistoryDialog from './DebtorHistoryDialog.vue'
@@ -82,7 +78,7 @@ const openNewDebtor = (direction: DebtDirection) => {
       <!-- Composite list card: full-bleed sections, paper band between them
            (warm-minimal design D1). -->
       <div class="mt-4 overflow-hidden rounded-lg border bg-card text-card-foreground">
-        <template v-for="direction in (['receivable', 'payable'] as const)" :key="direction">
+        <template v-for="direction in ['receivable', 'payable'] as const" :key="direction">
           <div
             v-if="direction === 'payable'"
             class="h-4 border-y border-border bg-background"

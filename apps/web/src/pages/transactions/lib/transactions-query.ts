@@ -1,11 +1,7 @@
 import type { LocationQuery, LocationQueryRaw, LocationQueryValue } from 'vue-router'
 import type { Transaction, TransactionType } from '@/entities/transaction'
 import { NO_ACCOUNT_ID } from '@/entities/account'
-import {
-  currentDay,
-  parseCalendarDayOrFallback,
-  type CalendarDay,
-} from '@/shared/lib/date'
+import { currentDay, parseCalendarDayOrFallback, type CalendarDay } from '@/shared/lib/date'
 
 export type TransactionsFilters = {
   fromDate?: CalendarDay
@@ -17,12 +13,7 @@ export type TransactionsFilters = {
   categoryIds?: string[]
 }
 
-const TRANSACTION_TYPES = new Set<TransactionType>([
-  'expense',
-  'income',
-  'transfer',
-  'adjustment',
-])
+const TRANSACTION_TYPES = new Set<TransactionType>(['expense', 'income', 'transfer', 'adjustment'])
 
 type QueryParamValue = LocationQueryValue | LocationQueryValue[] | undefined
 

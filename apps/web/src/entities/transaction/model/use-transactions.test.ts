@@ -171,13 +171,19 @@ describe('useDeleteTransaction', () => {
     const repo = createMockTransactionRepository()
     repo.remove.mockResolvedValue(undefined)
     const other: CashflowTransaction = { ...incomeTransaction, id: 't3' } as never
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<Transaction[]>(['transactions', {}], [incomeTransaction, other])
-      queryCache.setQueryData<Transaction[]>(['transactions', { type: 'income' }], [incomeTransaction])
-      queryCache.setQueryData<Transaction>(['transactions', 't1'], incomeTransaction)
-      return { mutation: useDeleteTransaction(), queryCache }
-    }, { repositories: { transactions: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<Transaction[]>(['transactions', {}], [incomeTransaction, other])
+        queryCache.setQueryData<Transaction[]>(
+          ['transactions', { type: 'income' }],
+          [incomeTransaction],
+        )
+        queryCache.setQueryData<Transaction>(['transactions', 't1'], incomeTransaction)
+        return { mutation: useDeleteTransaction(), queryCache }
+      },
+      { repositories: { transactions: repo } },
+    )
 
     await result.mutation.mutateAsync('t1')
     await flushPromises()
@@ -194,12 +200,15 @@ describe('useDeleteTransaction', () => {
   it('rolls back all caches on error', async () => {
     const repo = createMockTransactionRepository()
     repo.remove.mockRejectedValue(new Error('boom'))
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<Transaction[]>(['transactions', {}], [incomeTransaction])
-      queryCache.setQueryData<Transaction>(['transactions', 't1'], incomeTransaction)
-      return { mutation: useDeleteTransaction(), queryCache }
-    }, { repositories: { transactions: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<Transaction[]>(['transactions', {}], [incomeTransaction])
+        queryCache.setQueryData<Transaction>(['transactions', 't1'], incomeTransaction)
+        return { mutation: useDeleteTransaction(), queryCache }
+      },
+      { repositories: { transactions: repo } },
+    )
 
     await expect(result.mutation.mutateAsync('t1')).rejects.toThrow('boom')
     await flushPromises()
@@ -213,10 +222,13 @@ describe('useDeleteTransaction', () => {
   it('invalidates accounts cache on settle to refresh balance', async () => {
     const repo = createMockTransactionRepository()
     repo.remove.mockResolvedValue(undefined)
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      return { mutation: useDeleteTransaction(), queryCache }
-    }, { repositories: { transactions: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        return { mutation: useDeleteTransaction(), queryCache }
+      },
+      { repositories: { transactions: repo } },
+    )
     const invalidateSpy = vi.spyOn(result.queryCache, 'invalidateQueries')
 
     await result.mutation.mutateAsync('t1')

@@ -56,7 +56,9 @@ const format = (value: number, currency: CurrencyCode = DEFAULT_CURRENCY) =>
           {{ format(account.balance, account.currency) }}
         </p>
       </div>
-      <div class="mt-3 -mx-4 md:-mx-6 px-4 md:px-6 flex items-center justify-between gap-2 border-t border-border pt-3">
+      <div
+        class="mt-3 -mx-4 md:-mx-6 px-4 md:px-6 flex items-center justify-between gap-2 border-t border-border pt-3"
+      >
         <p class="text-xs font-bold uppercase tracking-wider">{{ t('dashboard.total') }}</p>
         <p class="text-lg font-bold tabular-nums">{{ format(totalMinor) }}</p>
       </div>

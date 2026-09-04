@@ -123,7 +123,8 @@ export function normalizePastedAmount(text: string, mode: AmountFieldMode): stri
   }
 
   const lastSeparatorIndex = Math.max(unsigned.lastIndexOf('.'), unsigned.lastIndexOf(','))
-  const hasDecimalSeparator = lastSeparatorIndex !== -1 && countDigits(unsigned.slice(lastSeparatorIndex + 1)) <= 2
+  const hasDecimalSeparator =
+    lastSeparatorIndex !== -1 && countDigits(unsigned.slice(lastSeparatorIndex + 1)) <= 2
 
   let integerPart = ''
   let fractionPart = ''

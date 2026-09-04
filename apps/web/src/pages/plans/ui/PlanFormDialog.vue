@@ -28,10 +28,7 @@ import { Button } from '@/shared/ui/button'
 import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { AmountField } from '@/shared/ui/amount-field'
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from '@/shared/ui/native-select'
+import { NativeSelect, NativeSelectOption } from '@/shared/ui/native-select'
 import { Trash2 } from '@lucide/vue'
 import { notification } from '@/shared/services/notification'
 import { DEFAULT_CURRENCY, toMajorUnits, toMinorUnits } from '@/shared/lib/money'
@@ -93,8 +90,16 @@ const regularityOptions = [
 ] as const
 
 const confirmModeOptions = [
-  { value: 'manual', label: t('plans.confirmModeLabel.manual'), caption: t('plans.confirmModeCaption.manual') },
-  { value: 'auto', label: t('plans.confirmModeLabel.auto'), caption: t('plans.confirmModeCaption.auto') },
+  {
+    value: 'manual',
+    label: t('plans.confirmModeLabel.manual'),
+    caption: t('plans.confirmModeCaption.manual'),
+  },
+  {
+    value: 'auto',
+    label: t('plans.confirmModeLabel.auto'),
+    caption: t('plans.confirmModeCaption.auto'),
+  },
 ] as const
 
 const reminderOptions = [
@@ -266,7 +271,11 @@ const handleDelete = async () => {
             class="w-full"
             @update:model-value="(option) => setValue(option as PlanFormValues['regularity'])"
           >
-            <NativeSelectOption v-for="option in regularityOptions" :key="option.value" :value="option.value">
+            <NativeSelectOption
+              v-for="option in regularityOptions"
+              :key="option.value"
+              :value="option.value"
+            >
               {{ option.label }}
             </NativeSelectOption>
           </NativeSelect>
@@ -283,7 +292,11 @@ const handleDelete = async () => {
             class="w-full"
             @update:model-value="(option) => setValue(option as PlanFormValues['confirmMode'])"
           >
-            <NativeSelectOption v-for="option in confirmModeOptions" :key="option.value" :value="option.value">
+            <NativeSelectOption
+              v-for="option in confirmModeOptions"
+              :key="option.value"
+              :value="option.value"
+            >
               {{ t('plans.confirmModeOption', { label: option.label, caption: option.caption }) }}
             </NativeSelectOption>
           </NativeSelect>
@@ -299,7 +312,11 @@ const handleDelete = async () => {
             class="w-full"
             @update:model-value="(option) => setValue(option as PlanFormValues['reminder'])"
           >
-            <NativeSelectOption v-for="option in reminderOptions" :key="option.value" :value="option.value">
+            <NativeSelectOption
+              v-for="option in reminderOptions"
+              :key="option.value"
+              :value="option.value"
+            >
               {{ option.label }}
             </NativeSelectOption>
           </NativeSelect>

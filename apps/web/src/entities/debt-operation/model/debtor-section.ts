@@ -38,9 +38,7 @@ export function debtorSection(
     const balance = balanceInDirection(operations, debtor.id, direction)
     ;(balance === 0 ? settled : visible).push({ debtor, balance })
   }
-  visible.sort(
-    (a, b) => b.balance - a.balance || a.debtor.name.localeCompare(b.debtor.name),
-  )
+  visible.sort((a, b) => b.balance - a.balance || a.debtor.name.localeCompare(b.debtor.name))
   settled.sort((a, b) => a.debtor.name.localeCompare(b.debtor.name))
   return { visible, settled }
 }

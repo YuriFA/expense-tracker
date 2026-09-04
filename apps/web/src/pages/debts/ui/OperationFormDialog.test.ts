@@ -46,10 +46,7 @@ describe('OperationFormDialog', () => {
     document.body.innerHTML = ''
   })
 
-  function mountDialog(props: {
-    operation?: DebtOperation | null
-    operations?: DebtOperation[]
-  }) {
+  function mountDialog(props: { operation?: DebtOperation | null; operations?: DebtOperation[] }) {
     const operationsRepo = createMockDebtOperationRepository()
     operationsRepo.update.mockResolvedValue(debtOperation)
     operationsRepo.remove.mockResolvedValue(undefined)
@@ -91,10 +88,13 @@ describe('OperationFormDialog', () => {
     const dialog = inDialog('[data-testid="debts-operation-dialog"]')!
     expect(dialog.textContent).toContain('Debt')
     expect(
-      (inDialog('[data-testid="debts-operation-dialog"] form input:not([type="date"])') as HTMLInputElement)
-        .value,
-    // AmountField renders through the deterministic money formatter: the
-    // en shape prefixes the narrow symbol (₽) with no separator.
+      (
+        inDialog(
+          '[data-testid="debts-operation-dialog"] form input:not([type="date"])',
+        ) as HTMLInputElement
+      ).value,
+      // AmountField renders through the deterministic money formatter: the
+      // en shape prefixes the narrow symbol (₽) with no separator.
     ).toBe('₽5,000.00')
     expect((inDialog('#debts-operation-date') as HTMLInputElement).value).toBe(
       new Date('2026-08-20T12:00:00.000Z').toLocaleDateString('sv'),
@@ -112,9 +112,9 @@ describe('OperationFormDialog', () => {
       '₽5,000.00',
     )
     // The submit button stays enabled: over-repayment is a warning, not a block.
-    expect(
-      (inDialog('[data-testid="debts-operation-submit"]') as HTMLButtonElement).disabled,
-    ).toBe(false)
+    expect((inDialog('[data-testid="debts-operation-submit"]') as HTMLButtonElement).disabled).toBe(
+      false,
+    )
   })
 
   it('deletes from edit mode after confirmation', async () => {

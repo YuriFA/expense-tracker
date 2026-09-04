@@ -3,7 +3,13 @@ import type { SelectItemProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { Check } from '@lucide/vue'
-import { SelectItem, SelectItemIndicator, SelectItemText, injectSelectRootContext, useForwardProps } from 'reka-ui'
+import {
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  injectSelectRootContext,
+  useForwardProps,
+} from 'reka-ui'
 import { computed, onMounted, onUnmounted, onUpdated, ref } from 'vue'
 import { useDesktopPresentation } from '@/shared/lib/presentation'
 import { cn } from '@/shared/lib/utils'
@@ -19,7 +25,7 @@ let registeredOption: { value: unknown; disabled?: boolean; textContent: string 
 
 const itemClass = computed(() =>
   cn(
-    'focus:bg-accent focus:text-accent-foreground [&_svg:not([class*=\'text-\'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-3 rounded-sm py-2.5 pr-8 pl-4 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=\'size-\'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2',
+    "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-3 rounded-sm py-2.5 pr-8 pl-4 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
     props.class,
   ),
 )

@@ -49,17 +49,32 @@ describe('createCashflowSchema', () => {
   })
 
   it('rejects empty accountId', () => {
-    const result = schema.safeParse({ type: 'income', accountId: '', amount: 100, categoryId: 'c1' })
+    const result = schema.safeParse({
+      type: 'income',
+      accountId: '',
+      amount: 100,
+      categoryId: 'c1',
+    })
     expect(result.success).toBe(false)
   })
 
   it('rejects empty categoryId', () => {
-    const result = schema.safeParse({ type: 'income', accountId: 'a1', amount: 100, categoryId: '' })
+    const result = schema.safeParse({
+      type: 'income',
+      accountId: 'a1',
+      amount: 100,
+      categoryId: '',
+    })
     expect(result.success).toBe(false)
   })
 
   it('rejects zero amount', () => {
-    const result = schema.safeParse({ type: 'income', accountId: 'a1', amount: 0, categoryId: 'c1' })
+    const result = schema.safeParse({
+      type: 'income',
+      accountId: 'a1',
+      amount: 0,
+      categoryId: 'c1',
+    })
     expect(result.success).toBe(false)
   })
 

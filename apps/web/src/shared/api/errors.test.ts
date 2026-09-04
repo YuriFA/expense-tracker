@@ -44,17 +44,17 @@ describe('mapApiError', () => {
 
   it('maps 409 ACCOUNT_IN_USE / CATEGORY_IN_USE to ReferentialIntegrityError', () => {
     for (const code of ['ACCOUNT_IN_USE', 'CATEGORY_IN_USE']) {
-      expect(
-        mapApiError(409, { code, message: 'in use' }, response(409)),
-      ).toBeInstanceOf(ReferentialIntegrityError)
+      expect(mapApiError(409, { code, message: 'in use' }, response(409))).toBeInstanceOf(
+        ReferentialIntegrityError,
+      )
     }
   })
 
   it('maps 409 CATEGORY_ALREADY_EXISTS / USER_ALREADY_EXISTS to AlreadyExistsError', () => {
     for (const code of ['CATEGORY_ALREADY_EXISTS', 'USER_ALREADY_EXISTS']) {
-      expect(
-        mapApiError(409, { code, message: 'exists' }, response(409)),
-      ).toBeInstanceOf(AlreadyExistsError)
+      expect(mapApiError(409, { code, message: 'exists' }, response(409))).toBeInstanceOf(
+        AlreadyExistsError,
+      )
     }
   })
 
@@ -68,11 +68,7 @@ describe('mapApiError', () => {
   })
 
   it('maps 422 INVALID_REFS to UnknownReferencesError', () => {
-    const error = mapApiError(
-      422,
-      { code: 'INVALID_REFS', message: 'invalid refs' },
-      response(422),
-    )
+    const error = mapApiError(422, { code: 'INVALID_REFS', message: 'invalid refs' }, response(422))
     expect(error).toBeInstanceOf(UnknownReferencesError)
   })
 

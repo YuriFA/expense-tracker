@@ -10,10 +10,14 @@ const context = injectSelectRootContext()
 const slots = useSlots()
 const isDesktop = useDesktopPresentation()
 
-const hasValue = computed(() => context.modelValue.value !== undefined && context.modelValue.value !== '')
+const hasValue = computed(
+  () => context.modelValue.value !== undefined && context.modelValue.value !== '',
+)
 const selectedText = computed(() => {
   const modelValue = context.modelValue.value
-  const option = Array.from(context.optionsSet.value).find((candidate) => candidate.value === modelValue)
+  const option = Array.from(context.optionsSet.value).find(
+    (candidate) => candidate.value === modelValue,
+  )
 
   return option?.textContent || props.placeholder || ''
 })

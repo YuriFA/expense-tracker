@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import type { AccountWithBalance, Category, PlannedPayment, Transaction } from '@expense-tracker/api'
+import type {
+  AccountWithBalance,
+  Category,
+  PlannedPayment,
+  Transaction,
+} from '@expense-tracker/api'
 import { CategoriesSettingsPage } from '../'
-import { createMockAccountRepository, createMockCategoryRepository, createMockPlannedPaymentRepository, createMockTransactionRepository } from '@/__tests__/helpers/mock-repositories'
+import {
+  createMockAccountRepository,
+  createMockCategoryRepository,
+  createMockPlannedPaymentRepository,
+  createMockTransactionRepository,
+} from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 const accounts: AccountWithBalance[] = [
@@ -10,9 +20,33 @@ const accounts: AccountWithBalance[] = [
 ]
 
 const categories: Category[] = [
-  { id: 'c-food', name: 'Food', type: 'expense', icon: '🛒', color: '#16a34a', archivedAt: null, version: 2 },
-  { id: 'c-taxi', name: 'Taxi', type: 'expense', icon: '🚗', color: '#64748b', archivedAt: null, version: 1 },
-  { id: 'c-salary', name: 'Salary', type: 'income', icon: '💼', color: '#c026d3', archivedAt: null, version: 1 },
+  {
+    id: 'c-food',
+    name: 'Food',
+    type: 'expense',
+    icon: '🛒',
+    color: '#16a34a',
+    archivedAt: null,
+    version: 2,
+  },
+  {
+    id: 'c-taxi',
+    name: 'Taxi',
+    type: 'expense',
+    icon: '🚗',
+    color: '#64748b',
+    archivedAt: null,
+    version: 1,
+  },
+  {
+    id: 'c-salary',
+    name: 'Salary',
+    type: 'income',
+    icon: '💼',
+    color: '#c026d3',
+    archivedAt: null,
+    version: 1,
+  },
   {
     id: 'c-subs',
     name: 'Subscriptions',
@@ -24,13 +58,50 @@ const categories: Category[] = [
   },
 ]
 
-const transactions = (overrides: Partial<Transaction>[] = []): Transaction[] => [
-  { id: 't1', type: 'expense', amount: 1000, description: '', occurredAt: '2026-08-14T10:00:00Z', version: 1, accountId: 'a1', categoryId: 'c-food' },
-  { id: 't2', type: 'expense', amount: 2500, description: '', occurredAt: '2026-08-15T10:00:00Z', version: 1, accountId: 'a1', categoryId: 'c-food' },
-  { id: 't3', type: 'income', amount: 80000, description: '', occurredAt: '2026-08-20T10:00:00Z', version: 1, accountId: 'a1', categoryId: 'c-salary' },
-  { id: 't4', type: 'expense', amount: 599, description: '', occurredAt: '2026-07-01T10:00:00Z', version: 1, accountId: 'a1', categoryId: 'c-subs' },
-  ...overrides,
-] as Transaction[]
+const transactions = (overrides: Partial<Transaction>[] = []): Transaction[] =>
+  [
+    {
+      id: 't1',
+      type: 'expense',
+      amount: 1000,
+      description: '',
+      occurredAt: '2026-08-14T10:00:00Z',
+      version: 1,
+      accountId: 'a1',
+      categoryId: 'c-food',
+    },
+    {
+      id: 't2',
+      type: 'expense',
+      amount: 2500,
+      description: '',
+      occurredAt: '2026-08-15T10:00:00Z',
+      version: 1,
+      accountId: 'a1',
+      categoryId: 'c-food',
+    },
+    {
+      id: 't3',
+      type: 'income',
+      amount: 80000,
+      description: '',
+      occurredAt: '2026-08-20T10:00:00Z',
+      version: 1,
+      accountId: 'a1',
+      categoryId: 'c-salary',
+    },
+    {
+      id: 't4',
+      type: 'expense',
+      amount: 599,
+      description: '',
+      occurredAt: '2026-07-01T10:00:00Z',
+      version: 1,
+      accountId: 'a1',
+      categoryId: 'c-subs',
+    },
+    ...overrides,
+  ] as Transaction[]
 
 const planOn = (categoryId: string): PlannedPayment => ({
   id: 'p1',
@@ -83,7 +154,6 @@ function mountPage(options: MountOptions = {}) {
     plannedPaymentsRepo,
   }
 }
-
 
 // Dialogs teleport to document.body - reach them through the DOM.
 const q = <T extends HTMLElement = HTMLElement>(selector: string): T | null =>

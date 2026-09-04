@@ -15,12 +15,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 
 const { t } = useI18n()
 
-const {
-  data: plans,
-  isPending,
-  error,
-  refetch,
-} = usePlannedPayments()
+const { data: plans, isPending, error, refetch } = usePlannedPayments()
 // Including archived: this is a join over existing records -
 // archived categories stay visible in history/analytics/filters.
 const { data: categories } = useCategoriesIncludingArchived()

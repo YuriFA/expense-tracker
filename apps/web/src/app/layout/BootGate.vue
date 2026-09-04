@@ -29,11 +29,7 @@ function reload() {
     </div>
   </div>
 
-  <div
-    v-else
-    class="flex min-h-screen items-center justify-center p-6"
-    data-testid="local-db-busy"
-  >
+  <div v-else class="flex min-h-screen items-center justify-center p-6" data-testid="local-db-busy">
     <div class="max-w-md space-y-4 text-center">
       <h1 class="text-lg font-semibold">{{ t('boot.busyTitle') }}</h1>
       <p class="text-sm text-muted-foreground">{{ t('boot.busyDescription') }}</p>

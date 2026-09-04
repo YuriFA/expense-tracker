@@ -88,9 +88,9 @@ describe('ResponsiveSelect', () => {
     await trigger.trigger('click')
     await flushPromises()
 
-    const savings = [...document.querySelectorAll<HTMLButtonElement>('[data-slot="select-item"]')].find(
-      (button) => button.textContent?.includes('Savings'),
-    )
+    const savings = [
+      ...document.querySelectorAll<HTMLButtonElement>('[data-slot="select-item"]'),
+    ].find((button) => button.textContent?.includes('Savings'))
     savings?.click()
     await flushPromises()
 

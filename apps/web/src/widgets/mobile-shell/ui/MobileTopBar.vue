@@ -15,7 +15,9 @@ const auth = useAuthStore()
 </script>
 
 <template>
-  <header class="bg-background/90 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4 backdrop-blur">
+  <header
+    class="bg-background/90 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4 backdrop-blur"
+  >
     <RouterLink :to="{ path: '/' }" class="flex items-center gap-2">
       <span
         class="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground"

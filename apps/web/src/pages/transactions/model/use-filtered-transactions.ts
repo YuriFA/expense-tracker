@@ -22,7 +22,9 @@ export function useFilteredTransactions() {
   const { data, error, isPending, refetch } = useTransactions(repositoryQuery)
 
   const visibleTransactions = computed(() =>
-    (data.value ?? []).filter((transaction) => matchesTransactionsFilters(transaction, filters.value)),
+    (data.value ?? []).filter((transaction) =>
+      matchesTransactionsFilters(transaction, filters.value),
+    ),
   )
 
   return { visibleTransactions, error, isPending, refetch }

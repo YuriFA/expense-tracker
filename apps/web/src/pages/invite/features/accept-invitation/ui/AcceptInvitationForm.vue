@@ -32,8 +32,8 @@ const acceptError = ref<string | null>(null)
 
 // The preview carries no member list; unset names fall back to the inviter's
 // email prefix (the spec's "derived label from the owner's account").
-const householdLabel = computed(() =>
-  props.preview.householdName ?? emailLocalPart(props.preview.inviterEmail),
+const householdLabel = computed(
+  () => props.preview.householdName ?? emailLocalPart(props.preview.inviterEmail),
 )
 const inviterLabel = computed(() => props.preview.inviterDisplayName ?? props.preview.inviterEmail)
 
@@ -59,7 +59,9 @@ async function accept(): Promise<void> {
 <template>
   <div class="flex flex-col gap-4" data-testid="invite-page-preview">
     <div class="space-y-1">
-      <h2 class="text-lg font-semibold" data-testid="invite-household-name">{{ householdLabel }}</h2>
+      <h2 class="text-lg font-semibold" data-testid="invite-household-name">
+        {{ householdLabel }}
+      </h2>
       <p class="text-sm text-muted-foreground">
         {{ t('household.invite.invitedBy', { name: inviterLabel }) }} ·
         {{ t('household.membersCount', preview.membersCount) }}
@@ -98,12 +100,7 @@ async function accept(): Promise<void> {
 
     <p v-if="acceptError" class="text-sm text-destructive">{{ acceptError }}</p>
 
-    <Button
-      data-testid="invite-accept-button"
-      type="button"
-      :loading="isAccepting"
-      @click="accept"
-    >
+    <Button data-testid="invite-accept-button" type="button" :loading="isAccepting" @click="accept">
       {{ t('household.invite.join') }}
     </Button>
   </div>

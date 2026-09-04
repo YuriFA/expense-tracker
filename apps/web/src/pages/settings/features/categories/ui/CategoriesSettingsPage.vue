@@ -42,9 +42,7 @@ const countLabel = (category: Category): string => {
 const archiveOpen = ref(true)
 const archivedCount = computed(() => archived.value.length)
 
-const dateFormatter = computed(
-  () => new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }),
-)
+const dateFormatter = computed(() => new Intl.DateTimeFormat(locale.value, { dateStyle: 'long' }))
 const formatArchivedSince = (category: Category): string =>
   t('categoryManagement.archivedSince', {
     date: dateFormatter.value.format(new Date(category.archivedAt!)),
@@ -132,69 +130,83 @@ async function unarchiveCategory(category: Category): Promise<void> {
     <template v-else>
       <SettingsCard
         v-for="group in [
-          { title: t('categoryManagement.groupExpense'), items: expense, testid: 'categories-expense' },
-          { title: t('categoryManagement.groupIncome'), items: income, testid: 'categories-income' },
+          {
+            title: t('categoryManagement.groupExpense'),
+            items: expense,
+            testid: 'categories-expense',
+          },
+          {
+            title: t('categoryManagement.groupIncome'),
+            items: income,
+            testid: 'categories-income',
+          },
         ]"
         :key="group.title"
         :title="group.title"
         bleed
         :data-testid="group.testid"
       >
-          <p
-            v-if="!group.items.length"
-            class="px-6 py-5 text-sm text-muted-foreground"
-            :data-testid="`${group.testid}-empty`"
-          >
-            {{ t('categoryManagement.emptyGroup') }}
-          </p>
-          <div
-            v-for="category in group.items"
-            :key="category.id"
-            class="flex items-center justify-between gap-3 border-b border-border px-6 py-5 last:border-0"
-            :data-testid="`category-row-${category.id}`"
-          >
-            <div class="flex min-w-0 items-center gap-3">
-              <CategoryAvatar :icon="category.icon" :color="category.color" class="size-9 text-lg" />
-              <div class="min-w-0">
-                <p class="truncate text-sm font-semibold" :data-testid="`category-name-${category.id}`">
-                  {{ category.name }}
-                </p>
-                <p class="text-xs text-muted-foreground" :data-testid="`category-count-${category.id}`">
-                  {{ countLabel(category) }}
-                </p>
-              </div>
-            </div>
-            <div class="flex shrink-0 items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                :aria-label="t('categoryManagement.actions.edit')"
-                :data-testid="`category-edit-${category.id}`"
-                @click="openEdit(category)"
+        <p
+          v-if="!group.items.length"
+          class="px-6 py-5 text-sm text-muted-foreground"
+          :data-testid="`${group.testid}-empty`"
+        >
+          {{ t('categoryManagement.emptyGroup') }}
+        </p>
+        <div
+          v-for="category in group.items"
+          :key="category.id"
+          class="flex items-center justify-between gap-3 border-b border-border px-6 py-5 last:border-0"
+          :data-testid="`category-row-${category.id}`"
+        >
+          <div class="flex min-w-0 items-center gap-3">
+            <CategoryAvatar :icon="category.icon" :color="category.color" class="size-9 text-lg" />
+            <div class="min-w-0">
+              <p
+                class="truncate text-sm font-semibold"
+                :data-testid="`category-name-${category.id}`"
               >
-                <Pencil class="size-4" aria-hidden="true" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                :aria-label="t('categoryManagement.actions.archive')"
-                :data-testid="`category-archive-${category.id}`"
-                @click="archiveCategory(category)"
+                {{ category.name }}
+              </p>
+              <p
+                class="text-xs text-muted-foreground"
+                :data-testid="`category-count-${category.id}`"
               >
-                <Archive class="size-4" aria-hidden="true" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="hover:text-destructive"
-                :aria-label="t('categoryManagement.actions.delete')"
-                :data-testid="`category-delete-${category.id}`"
-                @click="openDelete(category)"
-              >
-                <Trash2 class="size-4" aria-hidden="true" />
-              </Button>
+                {{ countLabel(category) }}
+              </p>
             </div>
           </div>
+          <div class="flex shrink-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              :aria-label="t('categoryManagement.actions.edit')"
+              :data-testid="`category-edit-${category.id}`"
+              @click="openEdit(category)"
+            >
+              <Pencil class="size-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              :aria-label="t('categoryManagement.actions.archive')"
+              :data-testid="`category-archive-${category.id}`"
+              @click="archiveCategory(category)"
+            >
+              <Archive class="size-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="hover:text-destructive"
+              :aria-label="t('categoryManagement.actions.delete')"
+              :data-testid="`category-delete-${category.id}`"
+              @click="openDelete(category)"
+            >
+              <Trash2 class="size-4" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
       </SettingsCard>
 
       <SettingsCard bleed data-testid="categories-archive">
@@ -206,7 +218,9 @@ async function unarchiveCategory(category: Category): Promise<void> {
             data-testid="categories-archive-toggle"
             @click="archiveOpen = !archiveOpen"
           >
-            <span class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <span
+              class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground"
+            >
               {{ t('categoryManagement.archiveTitle') }}
               <Badge
                 v-if="archivedCount"
@@ -241,7 +255,11 @@ async function unarchiveCategory(category: Category): Promise<void> {
             :data-testid="`category-row-${category.id}`"
           >
             <div class="flex min-w-0 items-center gap-3 opacity-75">
-              <CategoryAvatar :icon="category.icon" :color="category.color" class="size-9 text-lg" />
+              <CategoryAvatar
+                :icon="category.icon"
+                :color="category.color"
+                class="size-9 text-lg"
+              />
               <div class="min-w-0">
                 <p class="truncate text-sm font-semibold">{{ category.name }}</p>
                 <p class="text-xs text-muted-foreground">
@@ -288,7 +306,7 @@ async function unarchiveCategory(category: Category): Promise<void> {
     <CategoryDeleteDialog
       v-model:open="deleteOpen"
       :category="deleteTarget"
-      :usage="deleteTarget ? usage?.byCategory[deleteTarget.id] ?? null : null"
+      :usage="deleteTarget ? (usage?.byCategory[deleteTarget.id] ?? null) : null"
       :plan-names="usage?.planNames ?? null"
     />
   </section>

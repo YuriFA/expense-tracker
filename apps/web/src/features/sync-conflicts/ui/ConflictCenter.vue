@@ -82,14 +82,11 @@ async function handleRestore(conflict: LocalSyncConflict) {
     if (result.ok) {
       notification.success(t('sync.conflicts.restoreSuccess'))
     } else {
-      notification.mutationError(
-        new Error(result.reason),
-        {
-          title: t('sync.conflicts.restoreError'),
-          feature: 'sync',
-          action: 'restore',
-        },
-      )
+      notification.mutationError(new Error(result.reason), {
+        title: t('sync.conflicts.restoreError'),
+        feature: 'sync',
+        action: 'restore',
+      })
     }
   } catch (error) {
     notification.mutationError(error, {

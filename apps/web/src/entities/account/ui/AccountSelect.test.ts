@@ -18,7 +18,10 @@ const baseProps = {
   inputId: 'account-id',
 }
 
-function mountField(props: Record<string, unknown> = {}, repositories: Record<string, unknown> = {}) {
+function mountField(
+  props: Record<string, unknown> = {},
+  repositories: Record<string, unknown> = {},
+) {
   const Wrapper = defineComponent({
     setup() {
       return () => h(AccountSelect, { ...baseProps, ...props })

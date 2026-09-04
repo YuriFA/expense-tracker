@@ -129,8 +129,12 @@ function mapHeaders(headerCells: string[]): Partial<Record<ColumnKey, number>> |
       if (aliases.includes(normalized) && mapping[key] === undefined) mapping[key] = index
     }
   })
-  if (mapping.date === undefined || mapping.type === undefined ||
-      mapping.category === undefined || mapping.amount === undefined) {
+  if (
+    mapping.date === undefined ||
+    mapping.type === undefined ||
+    mapping.category === undefined ||
+    mapping.amount === undefined
+  ) {
     return null
   }
   return mapping
@@ -209,21 +213,33 @@ function sha256Hex(input: string): string {
   while (padded.length % 64 !== 56) padded.push(0)
   for (let i = 7; i >= 0; i--) padded.push((bitLength / 2 ** (8 * i)) & 0xff)
 
-  const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+  const h = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+  ]
   const rotr = (x: number, n: number) => (x >>> n) | (x << (32 - n))
 
   for (let block = 0; block < padded.length; block += 64) {
     const w = Array.from({ length: 64 }, () => 0)
     for (let i = 0; i < 16; i++) {
-      w[i] = (padded[block + i * 4]! << 24) | (padded[block + i * 4 + 1]! << 16) |
-        (padded[block + i * 4 + 2]! << 8) | padded[block + i * 4 + 3]!
+      w[i] =
+        (padded[block + i * 4]! << 24) |
+        (padded[block + i * 4 + 1]! << 16) |
+        (padded[block + i * 4 + 2]! << 8) |
+        padded[block + i * 4 + 3]!
     }
     for (let i = 16; i < 64; i++) {
       const s0 = rotr(w[i - 15]!, 7) ^ rotr(w[i - 15]!, 18) ^ (w[i - 15]! >>> 3)
       const s1 = rotr(w[i - 2]!, 17) ^ rotr(w[i - 2]!, 19) ^ (w[i - 2]! >>> 10)
       w[i] = (w[i - 16]! + s0 + w[i - 7]! + s1) | 0
     }
-    let a = h[0]!, b = h[1]!, c = h[2]!, d = h[3]!, e = h[4]!, f = h[5]!, g = h[6]!, hh = h[7]!
+    let a = h[0]!,
+      b = h[1]!,
+      c = h[2]!,
+      d = h[3]!,
+      e = h[4]!,
+      f = h[5]!,
+      g = h[6]!,
+      hh = h[7]!
     for (let i = 0; i < 64; i++) {
       const s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)
       const ch = (e & f) ^ (~e & g)

@@ -75,21 +75,13 @@ const {
 // (invalidation, sync cycle) keep the rendered stat cards in place.
 const isPending = computed(
   () =>
-    accountsPending.value ||
-    expensesPending.value ||
-    incomesPending.value ||
-    debtsPending.value,
+    accountsPending.value || expensesPending.value || incomesPending.value || debtsPending.value,
 )
 const error = computed(
   () => accountsError.value || expensesError.value || incomesError.value || debtsError.value,
 )
 const refetch = () =>
-  Promise.all([
-    refetchAccounts(),
-    refetchExpenses(),
-    refetchIncomes(),
-    refetchDebts(),
-  ])
+  Promise.all([refetchAccounts(), refetchExpenses(), refetchIncomes(), refetchDebts()])
 
 // Dashboard tiles show compact figures (whole units below one million, an
 // abbreviated magnitude above) so long amounts fit the half-width mobile
@@ -189,12 +181,7 @@ const stats = computed(() => [
         :to="stat.to"
         class="block min-w-0 rounded-lg cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-muted-foreground/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
       >
-        <StatCard
-          :label="stat.label"
-          :amount="stat.amount"
-          :icon="stat.icon"
-          :tone="stat.tone"
-        />
+        <StatCard :label="stat.label" :amount="stat.amount" :icon="stat.icon" :tone="stat.tone" />
       </RouterLink>
     </div>
 

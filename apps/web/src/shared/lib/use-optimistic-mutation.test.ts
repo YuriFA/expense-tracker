@@ -16,9 +16,7 @@ const INITIAL_ITEMS: Item[] = [
 ]
 
 interface SetupResult {
-  mutation: ReturnType<
-    typeof useOptimisticMutation<string, void>
-  >
+  mutation: ReturnType<typeof useOptimisticMutation<string, void>>
   queryCache: ReturnType<typeof useQueryCache>
 }
 
@@ -52,8 +50,7 @@ describe('useOptimisticMutation', () => {
       (id) => remove(id),
       (id) => ({
         key: ['items'],
-        updater: (current) =>
-          (current as Item[] | undefined)?.filter((item) => item.id !== id),
+        updater: (current) => (current as Item[] | undefined)?.filter((item) => item.id !== id),
       }),
     )
 
@@ -70,8 +67,7 @@ describe('useOptimisticMutation', () => {
       (id) => remove(id),
       (id) => ({
         key: ['items'],
-        updater: (current) =>
-          (current as Item[] | undefined)?.filter((item) => item.id !== id),
+        updater: (current) => (current as Item[] | undefined)?.filter((item) => item.id !== id),
       }),
     )
 
@@ -87,8 +83,7 @@ describe('useOptimisticMutation', () => {
       (id) => remove(id),
       (id) => ({
         key: ['items'],
-        updater: (current) =>
-          (current as Item[] | undefined)?.filter((item) => item.id !== id),
+        updater: (current) => (current as Item[] | undefined)?.filter((item) => item.id !== id),
       }),
     )
     const cancelSpy = vi.spyOn(queryCache, 'cancelQueries')
@@ -106,8 +101,7 @@ describe('useOptimisticMutation', () => {
       (id) => [
         {
           key: ['items'],
-          updater: (current) =>
-            (current as Item[] | undefined)?.filter((item) => item.id !== id),
+          updater: (current) => (current as Item[] | undefined)?.filter((item) => item.id !== id),
         },
         {
           key: ['count'],
@@ -131,8 +125,7 @@ describe('useOptimisticMutation', () => {
       (id) => remove(id),
       (id) => ({
         key: ['items'],
-        updater: (current) =>
-          (current as Item[] | undefined)?.filter((item) => item.id !== id),
+        updater: (current) => (current as Item[] | undefined)?.filter((item) => item.id !== id),
       }),
       (id) => [['related', id]],
     )
@@ -153,8 +146,7 @@ describe('useOptimisticMutation', () => {
       (id) => [
         {
           key: ['items'],
-          updater: (current) =>
-            (current as Item[] | undefined)?.filter((item) => item.id !== id),
+          updater: (current) => (current as Item[] | undefined)?.filter((item) => item.id !== id),
         },
         {
           key: ['count'],
@@ -177,8 +169,7 @@ describe('useOptimisticMutation', () => {
       (id) => remove(id),
       (id) => ({
         keyPrefix: ['items'],
-        updater: (current) =>
-          (current as Item[] | undefined)?.filter((item) => item.id !== id),
+        updater: (current) => (current as Item[] | undefined)?.filter((item) => item.id !== id),
       }),
     )
     // Simulate two filtered variants of the same list
@@ -188,11 +179,9 @@ describe('useOptimisticMutation', () => {
     await mutation.mutateAsync('a')
     await flushPromises()
 
-    expect(
-      queryCache.getQueryData<Item[]>(['items', { filter: 'all' }])?.map((i) => i.id),
-    ).toEqual(['b'])
-    expect(
-      queryCache.getQueryData<Item[]>(['items', { filter: 'recent' }]),
-    ).toEqual([])
+    expect(queryCache.getQueryData<Item[]>(['items', { filter: 'all' }])?.map((i) => i.id)).toEqual(
+      ['b'],
+    )
+    expect(queryCache.getQueryData<Item[]>(['items', { filter: 'recent' }])).toEqual([])
   })
 })

@@ -118,16 +118,22 @@ describe('useUpdateCategory', () => {
   it('translates the archived flag into an archivedAt patch', async () => {
     const repo = createMockCategoryRepository()
     repo.update.mockResolvedValue({ ...categoryFixture, archivedAt: '2026-09-01T00:00:00Z' })
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<Category[]>(['categories', 'including-archived'], [categoryFixture])
-      return { mutation: useUpdateCategory(), queryCache }
-    }, { repositories: { categories: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<Category[]>(['categories', 'including-archived'], [categoryFixture])
+        return { mutation: useUpdateCategory(), queryCache }
+      },
+      { repositories: { categories: repo } },
+    )
 
     await result.mutation.mutateAsync({ id: 'c1', payload: { version: 1, archived: true } })
     await flushPromises()
 
-    const patched = result.queryCache.getQueryData<Category[]>(['categories', 'including-archived'])?.[0]
+    const patched = result.queryCache.getQueryData<Category[]>([
+      'categories',
+      'including-archived',
+    ])?.[0]
     expect(patched?.archivedAt).not.toBeNull()
     expect(patched).not.toHaveProperty('archived')
   })
@@ -135,12 +141,15 @@ describe('useUpdateCategory', () => {
   it('optimistically patches category in list and detail caches', async () => {
     const repo = createMockCategoryRepository()
     repo.update.mockResolvedValue({ ...categoryFixture, name: 'Updated' })
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
-      queryCache.setQueryData<Category>(['categories', 'c1'], categoryFixture)
-      return { mutation: useUpdateCategory(), queryCache }
-    }, { repositories: { categories: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
+        queryCache.setQueryData<Category>(['categories', 'c1'], categoryFixture)
+        return { mutation: useUpdateCategory(), queryCache }
+      },
+      { repositories: { categories: repo } },
+    )
 
     await result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated', version: 1 } })
     await flushPromises()
@@ -152,11 +161,14 @@ describe('useUpdateCategory', () => {
   it('rolls back list cache on error', async () => {
     const repo = createMockCategoryRepository()
     repo.update.mockRejectedValue(new Error('boom'))
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
-      return { mutation: useUpdateCategory(), queryCache }
-    }, { repositories: { categories: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
+        return { mutation: useUpdateCategory(), queryCache }
+      },
+      { repositories: { categories: repo } },
+    )
 
     await expect(
       result.mutation.mutateAsync({ id: 'c1', payload: { name: 'Updated', version: 1 } }),
@@ -204,32 +216,42 @@ describe('useDeleteCategory', () => {
     const repo = createMockCategoryRepository()
     repo.remove.mockResolvedValue(undefined)
     const otherCategory: Category = { ...categoryFixture, id: 'c2' }
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture, otherCategory])
-      queryCache.setQueryData<Category>(['categories', 'c1'], categoryFixture)
-      return { mutation: useDeleteCategory(), queryCache }
-    }, { repositories: { categories: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<Category[]>(['categories'], [categoryFixture, otherCategory])
+        queryCache.setQueryData<Category>(['categories', 'c1'], categoryFixture)
+        return { mutation: useDeleteCategory(), queryCache }
+      },
+      { repositories: { categories: repo } },
+    )
 
     await result.mutation.mutateAsync({ id: 'c1' })
     await flushPromises()
 
-    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual(['c2'])
+    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual([
+      'c2',
+    ])
     expect(result.queryCache.getQueryData(['categories', 'c1'])).toBeUndefined()
   })
 
   it('rolls back list cache on error', async () => {
     const repo = createMockCategoryRepository()
     repo.remove.mockRejectedValue(new Error('boom'))
-    const { result } = mountWithComposable(() => {
-      const queryCache = useQueryCache()
-      queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
-      return { mutation: useDeleteCategory(), queryCache }
-    }, { repositories: { categories: repo } })
+    const { result } = mountWithComposable(
+      () => {
+        const queryCache = useQueryCache()
+        queryCache.setQueryData<Category[]>(['categories'], [categoryFixture])
+        return { mutation: useDeleteCategory(), queryCache }
+      },
+      { repositories: { categories: repo } },
+    )
 
     await expect(result.mutation.mutateAsync({ id: 'c1' })).rejects.toThrow('boom')
     await flushPromises()
 
-    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual(['c1'])
+    expect(result.queryCache.getQueryData<Category[]>(['categories'])?.map((c) => c.id)).toEqual([
+      'c1',
+    ])
   })
 })

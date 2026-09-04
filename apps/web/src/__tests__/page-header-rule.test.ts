@@ -110,9 +110,7 @@ const ROOT_ROUTES = [
 describe('shell pages use the shared PageHeader', () => {
   it('derives the shell page set from the router', () => {
     const pages = shellPages()
-    const missing = EXPECTED_ROUTES.filter(
-      (route) => !pages.some((page) => page.route === route),
-    )
+    const missing = EXPECTED_ROUTES.filter((route) => !pages.some((page) => page.route === route))
     expect(missing).toEqual([])
   })
 

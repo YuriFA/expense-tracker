@@ -54,10 +54,7 @@ export const useCreateCategory = () => {
 
 // Patch one cached category record: field updates apply as-is, the
 // `archived` flag translates to the record's `archivedAt` timestamp.
-const patchCategoryRecord = (
-  category: Category,
-  payload: UpdateCategoryPayload,
-): Category => {
+const patchCategoryRecord = (category: Category, payload: UpdateCategoryPayload): Category => {
   const { archived, ...fields } = payload
   return {
     ...category,

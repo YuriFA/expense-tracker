@@ -36,7 +36,11 @@ const displayCurrency = computed(() => DEFAULT_CURRENCY)
 const { mutateAsync: createDebtor } = useCreateDebtor()
 const { mutateAsync: createOperation } = useCreateDebtOperation()
 
-const { handleSubmit: handleFormSubmit, isSubmitting, resetForm } = useForm<DebtorDebtFormValues>({
+const {
+  handleSubmit: handleFormSubmit,
+  isSubmitting,
+  resetForm,
+} = useForm<DebtorDebtFormValues>({
   validationSchema: toTypedSchema(createDebtorDebtSchema()),
   initialValues: {
     name: '',

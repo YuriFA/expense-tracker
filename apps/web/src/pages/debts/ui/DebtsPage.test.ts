@@ -57,10 +57,7 @@ describe('DebtsPage', () => {
     document.body.innerHTML = ''
   })
 
-  function mountPage(
-    debtorsData: typeof debtors,
-    operationsData: typeof operations,
-  ) {
+  function mountPage(debtorsData: typeof debtors, operationsData: typeof operations) {
     const debtorsRepo = createMockDebtorRepository()
     debtorsRepo.getAll.mockResolvedValue(debtorsData)
     const operationsRepo = createMockDebtOperationRepository()
@@ -81,8 +78,9 @@ describe('DebtsPage', () => {
     expect(wrapper.find('[data-testid="debts-total-payable"]').text()).toBe('₽2,000.00')
 
     // Debtor rows with derived balances in their direction's section.
-    const receivable = wrapper.find('[data-testid="debts-section-add-receivable"]').element
-      .closest('section')!
+    const receivable = wrapper
+      .find('[data-testid="debts-section-add-receivable"]')
+      .element.closest('section')!
     expect(receivable.textContent).toContain('Анна')
     expect(receivable.textContent).toContain('₽3,500.00')
     expect(wrapper.find('[data-testid="debts-debtor-d2"]').text()).toContain('Борис')
@@ -109,13 +107,10 @@ describe('DebtsPage', () => {
     const operationsRepo = createMockDebtOperationRepository()
     operationsRepo.query.mockResolvedValue(operations)
 
-    const wrapper = mountWithProviders(
-      DebtsPage,
-      {
-        pinia,
-        repositories: { debtors: debtorsRepo, debtOperations: operationsRepo },
-      },
-    )
+    const wrapper = mountWithProviders(DebtsPage, {
+      pinia,
+      repositories: { debtors: debtorsRepo, debtOperations: operationsRepo },
+    })
     await flushPromises()
     expect(wrapper.find('[data-testid="debts-debtor-d2"]').exists()).toBe(true)
 
@@ -142,9 +137,9 @@ describe('DebtsPage', () => {
 
     const history = document.querySelector('[data-testid="debts-history-dialog"]')
     expect(history).not.toBeNull()
-    expect(
-      document.querySelector('[data-testid="debts-history-balance"]')!.textContent,
-    ).toBe('₽3,500.00')
+    expect(document.querySelector('[data-testid="debts-history-balance"]')!.textContent).toBe(
+      '₽3,500.00',
+    )
     expect(history!.textContent).toContain('Займ')
     // The repayment's amount renders signed.
     expect(history!.textContent).toContain('−')

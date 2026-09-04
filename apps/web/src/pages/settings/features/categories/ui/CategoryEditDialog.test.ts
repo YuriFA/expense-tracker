@@ -54,7 +54,7 @@ describe('CategoryEditDialog', () => {
     mountDialog()
     await flushPromises()
 
-    expect((q<HTMLInputElement>('[data-testid="edit-category-name"]')!).value).toBe('Food')
+    expect(q<HTMLInputElement>('[data-testid="edit-category-name"]')!.value).toBe('Food')
     expect(q('[data-testid="edit-category-type"]')?.textContent).toContain('Expense')
   })
 
@@ -88,9 +88,9 @@ describe('CategoryEditDialog', () => {
     input.dispatchEvent(new Event('input'))
     await flushPromises()
 
-    expect(q<HTMLButtonElement>('[data-testid="edit-category-submit"]')!.hasAttribute('disabled')).toBe(
-      true,
-    )
+    expect(
+      q<HTMLButtonElement>('[data-testid="edit-category-submit"]')!.hasAttribute('disabled'),
+    ).toBe(true)
   })
 })
 

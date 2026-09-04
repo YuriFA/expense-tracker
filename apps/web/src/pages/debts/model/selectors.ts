@@ -8,10 +8,7 @@
 import { calendarDayKey, fullDayLabel } from '@expense-tracker/dates'
 import type { DebtDirection, DebtOperation } from '@/entities/debt-operation'
 
-export {
-  debtorSection,
-  initialsOf,
-} from '@/entities/debt-operation'
+export { debtorSection, initialsOf } from '@/entities/debt-operation'
 
 export interface DebtorHistoryGroup {
   key: string

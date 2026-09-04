@@ -17,7 +17,11 @@ function mountField(props: Record<string, unknown> = {}) {
               value.value = next
             },
           }),
-          h('output', { 'data-testid': 'model' }, value.value === undefined ? 'undefined' : String(value.value)),
+          h(
+            'output',
+            { 'data-testid': 'model' },
+            value.value === undefined ? 'undefined' : String(value.value),
+          ),
         ])
     },
   })

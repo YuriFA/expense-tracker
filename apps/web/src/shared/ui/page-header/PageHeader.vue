@@ -27,10 +27,7 @@ defineProps<{
 </script>
 
 <template>
-  <header
-    v-bind="$attrs"
-    class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
-  >
+  <header v-bind="$attrs" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
     <div class="flex min-w-0 items-center gap-3">
       <Button
         v-if="backTo"

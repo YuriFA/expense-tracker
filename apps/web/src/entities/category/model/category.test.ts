@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Category } from './types'
-import {
-  normalizeCategory,
-  parseCategoriesStorage,
-  serializeCategoriesStorage,
-} from './category'
+import { normalizeCategory, parseCategoriesStorage, serializeCategoriesStorage } from './category'
 
 const validCategory: Category = {
   version: 1,

@@ -59,15 +59,7 @@ const toStartOfDay = (value: CalendarDay) => {
 const toEndOfDay = (value: CalendarDay) => {
   const date = toStartOfDay(value)
 
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    23,
-    59,
-    59,
-    999,
-  )
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
 }
 
 export const internationalizedDateAdapter: BusinessDateAdapter = {

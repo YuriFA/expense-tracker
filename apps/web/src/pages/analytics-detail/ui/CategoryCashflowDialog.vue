@@ -50,12 +50,8 @@ const queryOptions = computed(() => ({
 const { data } = useTransactions(queryOptions, { enabled: computed(() => open.value) })
 
 // Repository day filters are a UTC superset; exact membership stays local.
-const transactions = computed(() =>
-  transactionsInPeriod(data.value ?? [], localCursor.value),
-)
-const total = computed(() =>
-  transactions.value.reduce((sum, tx) => sum + tx.amount, 0),
-)
+const transactions = computed(() => transactionsInPeriod(data.value ?? [], localCursor.value))
+const total = computed(() => transactions.value.reduce((sum, tx) => sum + tx.amount, 0))
 const totalText = computed(() => formatMoney(total.value, displayCurrency.value, locale.value))
 const rangeLabel = computed(() => periodRangeLabel(localCursor.value, locale.value))
 
@@ -95,9 +91,7 @@ const emptyText = computed(() => {
 })
 
 const totalWord = computed(() =>
-  props.direction === 'expense'
-    ? t('analytics.spentWord')
-    : t('analytics.receivedWord'),
+  props.direction === 'expense' ? t('analytics.spentWord') : t('analytics.receivedWord'),
 )
 
 function stepPeriod(steps: number) {
@@ -140,9 +134,7 @@ const openDelete = (transaction: Transaction) => {
         <p class="text-sm font-medium" data-testid="category-cashflow-range">
           {{ rangeLabel }}
         </p>
-        <p class="text-xs text-muted-foreground">
-          {{ totalText }} {{ totalWord }}
-        </p>
+        <p class="text-xs text-muted-foreground">{{ totalText }} {{ totalWord }}</p>
       </div>
       <Button
         variant="outline"
@@ -167,7 +159,11 @@ const openDelete = (transaction: Transaction) => {
 
     <div class="max-h-80 space-y-4 overflow-y-auto">
       <EmptyState v-if="groups.length === 0" :title="emptyText" />
-      <div v-for="group in groups" :key="group.key" :data-testid="`category-cashflow-day-${group.key}`">
+      <div
+        v-for="group in groups"
+        :key="group.key"
+        :data-testid="`category-cashflow-day-${group.key}`"
+      >
         <p class="text-xs font-medium uppercase text-muted-foreground">{{ group.title }}</p>
         <div class="mt-1 space-y-1">
           <div
@@ -184,7 +180,9 @@ const openDelete = (transaction: Transaction) => {
             >
               {{ transaction.description || category.name }}
             </button>
-            <span class="text-sm font-medium">{{ formatMoney(transaction.amount, displayCurrency, locale) }}</span>
+            <span class="text-sm font-medium">{{
+              formatMoney(transaction.amount, displayCurrency, locale)
+            }}</span>
             <Button
               variant="ghost"
               size="icon"

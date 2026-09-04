@@ -50,6 +50,8 @@ export function pickCategoryColor(icon: string, existingColors: readonly string[
   const index = CATEGORY_ICONS.findIndex((option) => option.icon === icon)
   const anchor = index === -1 ? CATEGORY_ICONS[0]! : CATEGORY_ICONS[index]!
   const ordered =
-    index === -1 ? CATEGORY_ICONS : [...CATEGORY_ICONS.slice(index), ...CATEGORY_ICONS.slice(0, index)]
+    index === -1
+      ? CATEGORY_ICONS
+      : [...CATEGORY_ICONS.slice(index), ...CATEGORY_ICONS.slice(0, index)]
   return ordered.find((option) => !taken.has(option.color))?.color ?? anchor.color
 }

@@ -14,8 +14,13 @@ describe('Drawer', () => {
       setup() {
         const open = ref(true)
         return () =>
-          h(Drawer, { open: open.value, 'onUpdate:open': (value: boolean) => (open.value = value) }, () =>
-            h(DrawerContent, { class: 'custom-drawer' }, () => h('div', { 'data-testid': 'drawer-body' }, 'Body')),
+          h(
+            Drawer,
+            { open: open.value, 'onUpdate:open': (value: boolean) => (open.value = value) },
+            () =>
+              h(DrawerContent, { class: 'custom-drawer' }, () =>
+                h('div', { 'data-testid': 'drawer-body' }, 'Body'),
+              ),
           )
       },
     })

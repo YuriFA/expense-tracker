@@ -40,16 +40,18 @@ function mountCard(operations: DebtOperation[]) {
 describe('DebtsCard', () => {
   it('renders one row per debtor and direction', async () => {
     const wrapper = mountCard([
-      operation({ id: 'op1', debtorId: 'd1', direction: 'receivable', kind: 'debt', amount: 700_000 }),
+      operation({
+        id: 'op1',
+        debtorId: 'd1',
+        direction: 'receivable',
+        kind: 'debt',
+        amount: 700_000,
+      }),
       operation({ id: 'op2', debtorId: 'd2', direction: 'payable', kind: 'debt', amount: 200_000 }),
     ])
     await flushPromises()
-    expect(
-      wrapper.find('[data-testid="debts-card-debtor-d1-receivable"]').exists(),
-    ).toBe(true)
-    expect(
-      wrapper.find('[data-testid="debts-card-debtor-d2-payable"]').exists(),
-    ).toBe(true)
+    expect(wrapper.find('[data-testid="debts-card-debtor-d1-receivable"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="debts-card-debtor-d2-payable"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('+₽7,000.00')
     expect(wrapper.text()).toContain('−₽2,000.00')
     expect(wrapper.text()).toContain('Owed to me')
@@ -60,32 +62,42 @@ describe('DebtsCard', () => {
 
   it('subtracts repayments inside a direction', async () => {
     const wrapper = mountCard([
-      operation({ id: 'op1', debtorId: 'd1', direction: 'receivable', kind: 'debt', amount: 700_000 }),
-      operation({ id: 'op2', debtorId: 'd1', direction: 'receivable', kind: 'repayment', amount: 500_000 }),
+      operation({
+        id: 'op1',
+        debtorId: 'd1',
+        direction: 'receivable',
+        kind: 'debt',
+        amount: 700_000,
+      }),
+      operation({
+        id: 'op2',
+        debtorId: 'd1',
+        direction: 'receivable',
+        kind: 'repayment',
+        amount: 500_000,
+      }),
     ])
     await flushPromises()
-    expect(
-      wrapper.find('[data-testid="debts-card-debtor-d1-receivable"]').exists(),
-    ).toBe(true)
+    expect(wrapper.find('[data-testid="debts-card-debtor-d1-receivable"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('+₽2,000.00')
     // Zero directions stay hidden instead of rendering a 0 row.
-    expect(
-      wrapper.find('[data-testid="debts-card-debtor-d2-payable"]').exists(),
-    ).toBe(false)
+    expect(wrapper.find('[data-testid="debts-card-debtor-d2-payable"]').exists()).toBe(false)
   })
 
   it('never nets a debtor active in both directions', async () => {
     const wrapper = mountCard([
-      operation({ id: 'op1', debtorId: 'd1', direction: 'receivable', kind: 'debt', amount: 500_000 }),
+      operation({
+        id: 'op1',
+        debtorId: 'd1',
+        direction: 'receivable',
+        kind: 'debt',
+        amount: 500_000,
+      }),
       operation({ id: 'op2', debtorId: 'd1', direction: 'payable', kind: 'debt', amount: 200_000 }),
     ])
     await flushPromises()
-    expect(
-      wrapper.find('[data-testid="debts-card-debtor-d1-receivable"]').exists(),
-    ).toBe(true)
-    expect(
-      wrapper.find('[data-testid="debts-card-debtor-d1-payable"]').exists(),
-    ).toBe(true)
+    expect(wrapper.find('[data-testid="debts-card-debtor-d1-receivable"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="debts-card-debtor-d1-payable"]').exists()).toBe(true)
   })
 
   it('renders the empty state when there are no operations', async () => {
