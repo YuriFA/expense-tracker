@@ -8,7 +8,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <!-- Specimen: hairline sweep shimmer (paper system), not a pulse. -->
+  <!-- Spec-sanctioned shimmer: neutral token-only sweep for loading states. -->
   <div
     data-slot="skeleton"
     :class="cn('skeleton-shimmer rounded-md', props.class)"

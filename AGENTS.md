@@ -109,6 +109,10 @@ both apps. Backend layering is enforced by depguard rules in
 `backend/.golangci.yml` (middleware allowlist exception lives in
 `issues.exclusions` there).
 
+`pnpm lint:design` (workspace root) runs the mechanical design-system checks
+for web/mobile UI code and `.superdesign/design-system.md` drift. Run it for UI
+changes.
+
 ## Agent skills
 
 Vendored agent skills live in `.agents/skills/` (git-tracked, canonical).

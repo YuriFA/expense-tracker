@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "type-check": "tsc --noEmit",
     "lint": "oxlint . --fix",
+    "lint:design": "jest src/shared/lib/design-tokens-guard.test.ts src/shared/lib/design-tokens-sync.test.ts src/shared/lib/design-flat-system.test.ts --runInBand",
     "format": "oxfmt src/",
     "test": "jest",
     "test:e2e": "./scripts/e2e/run-maestro-ios.sh"

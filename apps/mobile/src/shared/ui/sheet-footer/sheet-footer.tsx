@@ -29,7 +29,7 @@ export const SheetFooter = ({
     <BottomSheetFooter bottomInset={bottomSafeArea} animatedFooterPosition={animatedFooterPosition}>
       <View
         pointerEvents="none"
-        className="absolute inset-x-0 -bottom-safe h-32 bg-linear-to-t from-white to-transparent"
+        className="absolute inset-x-0 -bottom-safe h-32 bg-linear-to-t from-background via-background/95 to-transparent"
       />
       <Animated.View
         className="items-center"

@@ -332,6 +332,7 @@ Before reporting a task complete, run the checks relevant to the change:
 ```bash
 pnpm type-check
 pnpm lint
+pnpm lint:design
 pnpm format
 pnpm test
 pnpm test:e2e
@@ -378,8 +379,9 @@ domain/server constraints mirrored on the client only for UX; repository/
 TanStack Query boundaries respected; loading/error/empty states handled;
 accessibility/testIDs added; unit/component tests added where behavior
 warrants them; Maestro flow added/updated; `pnpm test:e2e` passes; type-check/
-lint/format/tests pass; no unnecessary duplicated state; no raw colors; no
-architectural shortcuts hidden inside UI components.
+lint/format/tests pass; for UI changes `pnpm lint:design` passes; no
+unnecessary duplicated state; no raw colors; no architectural shortcuts hidden
+inside UI components.
 
 If a requirement conflicts with an existing architecture rule, stop and
 explain the conflict rather than silently violating it.

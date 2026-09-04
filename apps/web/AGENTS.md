@@ -35,9 +35,11 @@ root) — read it before touching UI. It holds the hard rules (page headers
 have two patterns only: root pages, child pages with the back control;
 button variants; dialog anatomy) and the canonical token values: components
 consume tokens via Tailwind classes/CSS vars, never raw hex. The mechanical
-slice is enforced by `src/__tests__/page-header-rule.test.ts` and
-`src/__tests__/design-tokens-raw-hex.test.ts`; a green suite covers only
-the checkable subset — the rest of the canvas still applies.
+slice is enforced by `pnpm lint:design` (`src/__tests__/page-header-rule.test.ts`,
+`src/__tests__/design-tokens-raw-hex.test.ts`,
+`src/__tests__/design-flat-system.test.ts`,
+`src/__tests__/design-system-spec.test.ts`); run it after UI changes. A green
+suite covers only the checkable subset — the rest of the canvas still applies.
 
 ## Spec-first (contract from `docs/api/openapi.yaml`)
 
@@ -100,7 +102,8 @@ the checkable subset — the rest of the canvas still applies.
 ## Quality bar
 
 `pnpm type-check`, `pnpm lint` (oxlint + eslint), `pnpm i18n:lint` (strict i18n),
-`pnpm test:unit`, and `pnpm exec steiger src` all green. `knip` runs repo-wide
+`pnpm test:unit`, and `pnpm exec steiger src` all green. For UI changes,
+`pnpm lint:design` is part of the required green set. `knip` runs repo-wide
 from the workspace root (`pnpm knip`, config in the root `knip.json`). E2E
 (`apps/web/e2e`, `pnpm test:e2e`): the default suite is backendless (local
 CRUD, reload persistence, offline via `context.setOffline`, multi-tab lock
