@@ -86,6 +86,7 @@ export {
   normalizeHouseholdInvitationPreview,
   normalizeHouseholdCode,
 } from './domain/household'
+export { authorLabel, type AuthorLabelOptions } from './domain/author-label'
 export type {
   DebtOperation,
   DebtDirection,

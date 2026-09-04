@@ -53,6 +53,9 @@
       }
     },
     "packages/api": {
+      "entry": [
+        "src/**/*.test.ts"
+      ],
       "ignoreIssues": {
         "src/schema.ts": [
           "exports",

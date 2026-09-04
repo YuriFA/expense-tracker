@@ -190,6 +190,20 @@ export function getConflictById(db: LocalDatabase, id: string): LocalSyncConflic
   return row ? toConflict(row) : null
 }
 
+/**
+ * Human label of the conflicting record (name / description): prefer the
+ * local state, fall back to the server state. Returns an empty string when
+ * neither carries a name or description.
+ */
+export function conflictSubject(conflict: LocalSyncConflict): string {
+  const state = conflict.localState as Record<string, unknown> | null
+  const source =
+    state ?? (conflict.serverState?.data as Record<string, unknown> | undefined) ?? undefined
+  const name = typeof source?.name === 'string' ? source.name : ''
+  const description = typeof source?.description === 'string' ? source.description : ''
+  return name || description
+}
+
 export function markConflictResolved(db: LocalDatabase, id: string): void {
   db.update(syncConflicts).set({ resolvedAt: nowIso() }).where(eq(syncConflicts.id, id)).run()
 }

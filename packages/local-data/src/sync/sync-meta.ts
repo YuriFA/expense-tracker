@@ -87,26 +87,31 @@ export function householdNeedsRebase(db: DbLike, currentHouseholdId: string): bo
  */
 export function wipeLocalData(db: LocalDatabase): void {
   db.transaction((tx) => {
-    tx.delete(transactions).run()
-    // Plans reference accounts/categories: wipe referencing rows first,
-    // mirroring the retention order.
-    tx.delete(plannedPayments).run()
-    tx.delete(accounts).run()
-    tx.delete(categories).run()
-    // Debt rows go referencing-rows-first, mirroring the retention order.
-    tx.delete(debtOperations).run()
-    tx.delete(debtors).run()
-    tx.delete(syncOutbox).run()
-    tx.delete(syncConflicts).run()
-    tx.delete(syncMeta)
-      .where(
-        inArray(syncMeta.key, [
-          OWNER_USER_ID_KEY,
-          PULL_CURSOR_KEY,
-          LAST_SYNCED_AT_KEY,
-          LAST_HOUSEHOLD_KEY,
-        ]),
-      )
-      .run()
+    wipeLocalDataInTx(tx)
   })
+}
+
+/** Core wipe logic that operates inside an already-open transaction. */
+export function wipeLocalDataInTx(tx: LocalTransaction): void {
+  tx.delete(transactions).run()
+  // Plans reference accounts/categories: wipe referencing rows first,
+  // mirroring the retention order.
+  tx.delete(plannedPayments).run()
+  tx.delete(accounts).run()
+  tx.delete(categories).run()
+  // Debt rows go referencing-rows-first, mirroring the retention order.
+  tx.delete(debtOperations).run()
+  tx.delete(debtors).run()
+  tx.delete(syncOutbox).run()
+  tx.delete(syncConflicts).run()
+  tx.delete(syncMeta)
+    .where(
+      inArray(syncMeta.key, [
+        OWNER_USER_ID_KEY,
+        PULL_CURSOR_KEY,
+        LAST_SYNCED_AT_KEY,
+        LAST_HOUSEHOLD_KEY,
+      ]),
+    )
+    .run()
 }
