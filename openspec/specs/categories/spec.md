@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Per-user classification of income and expense transactions, with an
-icon and color, seeded with a starter set on registration and guarded
-against deletion while transactions reference them.
+Per-user classification of income and expense transactions with an
+icon and color, starting empty on registration and guarded against
+deletion while transactions reference them.
 
 ## Requirements
 
@@ -58,25 +58,6 @@ sync protocol's operation idempotency, not by this rule.)
 
 - **WHEN** a create request arrives with an identifier that already exists for the user
 - **THEN** the request is rejected with an already-exists error and the existing category is unchanged
-
-### Requirement: Seed categories on registration
-
-Registering a user SHALL NOT create categories by default: the category
-list starts empty, matching the mobile product's from-scratch start.
-Registration MAY create the starter set (24, covering both income and
-expense) when seeding is explicitly enabled for that registration (for
-example, the web signup flow). Seeded categories behave like
-user-created ones (editable, deletable under the same rules).
-
-#### Scenario: New user can categorize immediately
-
-- **WHEN** a user registers through a flow that explicitly enables seeding
-- **THEN** their category list contains the seeded starter set without any user action, so they can record transactions immediately
-
-#### Scenario: Registration without seeding
-
-- **WHEN** a user registers with seeding not enabled
-- **THEN** their category list is empty and contains no seeded categories
 
 ### Requirement: Category type constrains transaction use
 
