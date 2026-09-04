@@ -108,13 +108,18 @@ const baseHeaderClass = computed(() =>
 // The body is the only scrolling region. On desktop it fills the unpadded
 // panel as a full-bleed scroll area (the pinned header/footer hairlines stay
 // edge-to-edge); on the drawer the DrawerContent scroll wrapper wraps just
-// this block (header/footer slots sit outside it).
+// this block (header/footer slots sit outside it). The bottom padding lives
+// on the inner slot wrapper, NOT on this scroll container: a sticky element
+// pins to the containing block's content-box bottom edge, so padding on the
+// scroller itself would show as a dead strip under a stuck footer band
+// (DIALOG_FORM_FOOTER_CLASS cancels the wrapper's pb-6 with -mb-6 and
+// settles flush at the scrollport bottom).
 const baseBodyClass = computed(() =>
   cn(
     'min-h-0',
     isDesktop.value
-      ? 'flex-1 overflow-y-auto px-6 pt-4 pb-6'
-      : 'px-6 pb-6 pt-4',
+      ? 'flex-1 overflow-y-auto px-6 pt-4'
+      : 'px-6 pt-4',
   ),
 )
 const baseFooterClass = computed(() =>
@@ -173,8 +178,10 @@ const closeButtonClass = computed(() =>
           </div>
         </header>
 
-        <div :class="baseBodyClass">
-          <slot />
+        <div data-slot="dialog-body" :class="baseBodyClass">
+          <div class="pb-6">
+            <slot />
+          </div>
         </div>
 
         <div v-if="hasFooter" :class="baseFooterClass">
@@ -213,8 +220,10 @@ const closeButtonClass = computed(() =>
         </header>
       </template>
 
-      <div :class="baseBodyClass">
-        <slot />
+      <div data-slot="dialog-body" :class="baseBodyClass">
+        <div class="pb-6">
+          <slot />
+        </div>
       </div>
 
       <template v-if="hasFooter" #footer>

@@ -25,13 +25,16 @@ const transactionTypes = getAddTransactionTypeOptions()
         {{ item.label }}
       </TabsTrigger>
     </TabsList>
-    <TabsContent value="expense">
+    <!-- gap-0: the in-body form band owns its spacing (mt-6); the content
+         gap would stack on top of it and push the hairline 16px lower than
+         in the FAB dialog that hosts the same forms without tabs. -->
+    <TabsContent value="expense" class="gap-0">
       <CashflowForm type="expense" @success="$emit('success')" />
     </TabsContent>
-    <TabsContent value="income">
+    <TabsContent value="income" class="gap-0">
       <CashflowForm type="income" @success="$emit('success')" />
     </TabsContent>
-    <TabsContent value="transfer">
+    <TabsContent value="transfer" class="gap-0">
       <TransferForm @success="$emit('success')" />
     </TabsContent>
   </Tabs>

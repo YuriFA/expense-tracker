@@ -127,8 +127,9 @@ describe('ResponsiveDialog', () => {
       mountDialog(desktop)
       await flushPromises()
 
-      const body = document.querySelector('[data-testid="responsive-dialog-body"]')?.parentElement
-      const sections = [surface()?.className, header()?.className, body?.className, footerBand()?.className]
+      const body = document.querySelector('[data-slot="dialog-body"]')
+      const slotWrapper = document.querySelector('[data-testid="responsive-dialog-body"]')?.parentElement
+      const sections = [surface()?.className, header()?.className, body?.className, slotWrapper?.className, footerBand()?.className]
       const offenders = sections.flatMap((cls) =>
         (cls ?? '')
           .split(' ')
@@ -136,6 +137,10 @@ describe('ResponsiveDialog', () => {
           .map((c) => `${desktop ? 'desktop' : 'mobile'}: ${c}`),
       )
       expect(offenders).toEqual([])
+      // Sticky physics invariant: the scroll container must not own bottom
+      // padding (a stuck band would float above it); the slot wrapper does.
+      expect(body?.className.split(' ')).not.toContain('pb-6')
+      expect(slotWrapper?.className.split(' ')).toContain('pb-6')
       // Desktop panel padding is neutralized (sections own it); the drawer
       // panel never had any.
       const panelClass = (content() ?? drawerContent())?.className ?? ''
