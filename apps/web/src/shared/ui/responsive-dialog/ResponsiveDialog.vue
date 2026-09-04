@@ -5,7 +5,13 @@ import { X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useDesktopPresentation } from '@/shared/lib/presentation'
 import { cn } from '@/shared/lib/utils'
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/dialog'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 import {
   DRAWER_FOOTER_CLASS,
   DRAWER_HEADER_PADDING,
@@ -45,6 +51,10 @@ const props = withDefaults(
     footerClass?: HTMLAttributes['class']
     closeButtonClass?: HTMLAttributes['class']
     headerVariant?: 'plain' | 'bordered-row'
+    /** Full-bleed body: drops the body's horizontal padding for content
+     * that pads itself (edge-to-edge lists). The top rhythm and the scroll
+     * wrapper's bottom padding stay. */
+    bodyVariant?: 'default' | 'flush'
     /** Full-bleed hairline above the footer band (settings design language:
      * the footer separates from the body like a card header strip). On by
      * default; the drawer footer always has the border, this adds it on
@@ -61,6 +71,7 @@ const props = withDefaults(
     footerClass: undefined,
     closeButtonClass: undefined,
     headerVariant: 'bordered-row',
+    bodyVariant: 'default',
     borderedFooter: true,
     showCloseButton: true,
     closeButtonInHeader: true,
@@ -87,7 +98,11 @@ const shouldRenderDesktopCornerCloseButton = computed(
   () => props.showCloseButton && isDesktop.value && !props.closeButtonInHeader,
 )
 const hasHeader = computed(
-  () => hasTitle.value || hasDescription.value || hasHeaderActions.value || shouldRenderHeaderCloseButton.value,
+  () =>
+    hasTitle.value ||
+    hasDescription.value ||
+    hasHeaderActions.value ||
+    shouldRenderHeaderCloseButton.value,
 )
 const hasHeaderControls = computed(
   () => hasHeaderActions.value || shouldRenderHeaderCloseButton.value,
@@ -117,9 +132,10 @@ const baseHeaderClass = computed(() =>
 const baseBodyClass = computed(() =>
   cn(
     'min-h-0',
-    isDesktop.value
-      ? 'flex-1 overflow-y-auto px-6 pt-4'
-      : 'px-6 pt-4',
+    isDesktop.value && 'flex-1 overflow-y-auto',
+    // 'flush' serves edge-to-edge body content that pads itself; the top
+    // rhythm stays on the shell.
+    props.bodyVariant === 'flush' ? 'pt-4' : 'px-6 pt-4',
   ),
 )
 const baseFooterClass = computed(() =>
@@ -130,9 +146,7 @@ const baseFooterClass = computed(() =>
     // footer separates from the body like a card header strip), full-bleed
     // because the section owns its padding. On by default; forms that keep
     // their footer inside the body use DIALOG_FORM_FOOTER_CLASS instead.
-    props.borderedFooter &&
-      isDesktop.value &&
-      'border-t border-border px-6 pt-4 pb-5',
+    props.borderedFooter && isDesktop.value && 'border-t border-border px-6 pt-4 pb-5',
     props.footerClass,
   ),
 )
@@ -145,11 +159,7 @@ const closeButtonClass = computed(() =>
 </script>
 
 <template>
-  <Dialog
-    v-if="isDesktop"
-    :open="open"
-    @update:open="(value: boolean) => handleOpenChange(value)"
-  >
+  <Dialog v-if="isDesktop" :open="open" @update:open="(value: boolean) => handleOpenChange(value)">
     <DialogContent
       v-bind="attrs"
       :aria-describedby="hasDescription ? undefined : ''"

@@ -99,12 +99,13 @@ const openConfirm = (plan: PlannedPayment) => {
   <ResponsiveDialog
     v-model:open="open"
     class="sm:max-w-md"
+    body-variant="flush"
     data-testid="plans-list-dialog"
     footer-class="flex-col items-center gap-3 rounded-b-lg bg-muted/50 sm:flex-col sm:justify-center"
   >
     <template #title>{{ title }}</template>
 
-    <div class="-mx-6 max-h-96 overflow-y-auto px-4">
+    <div class="max-h-96 overflow-y-auto px-4">
       <EmptyState v-if="sorted.length === 0" :title="t('plans.empty')" />
       <ul v-else class="divide-y divide-border/60">
         <li v-for="plan in sorted" :key="plan.id" class="py-1.5 first:pt-0">

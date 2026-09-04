@@ -43,9 +43,7 @@ const directionLabel = computed(() =>
 const balance = computed(() =>
   balanceInDirection(props.operations, props.debtor.id, props.direction),
 )
-const balanceText = computed(() =>
-  formatMoney(balance.value, displayCurrency.value, locale.value),
-)
+const balanceText = computed(() => formatMoney(balance.value, displayCurrency.value, locale.value))
 const groups = computed(() =>
   debtorHistoryGroups(props.operations, props.debtor.id, props.direction, locale.value),
 )
@@ -76,7 +74,12 @@ const editDebtorOpen = ref(false)
 </script>
 
 <template>
-  <ResponsiveDialog v-model:open="open" class="sm:max-w-md" data-testid="debts-history-dialog">
+  <ResponsiveDialog
+    v-model:open="open"
+    class="sm:max-w-md"
+    body-variant="flush"
+    data-testid="debts-history-dialog"
+  >
     <template #title>{{ debtor.name }}</template>
     <template #description>
       <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -95,7 +98,7 @@ const editDebtorOpen = ref(false)
       </Button>
     </template>
 
-    <div class="-mx-6 max-h-80 overflow-y-auto">
+    <div class="max-h-80 overflow-y-auto">
       <EmptyState v-if="groups.length === 0" :title="t('debts.historyEmpty')" />
       <div v-for="group in groups" :key="group.key" :data-testid="`debts-history-day-${group.key}`">
         <div class="border-y border-border bg-muted/50 px-6 py-2.5 first:border-t-0">

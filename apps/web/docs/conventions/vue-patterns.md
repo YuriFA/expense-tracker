@@ -124,7 +124,10 @@ One overlay instance OUTSIDE the loop plus an "active item" ref:
 - Overlay container owns presentation and lifecycle; the inner form/list owns
   only its own state and submission. Use one `open` ref in the container,
   close on success there, and keep reusable form logic out of
-  `responsive-dialog` / `drawer` specifics.
+  `responsive-dialog` / `drawer` specifics. Exception: a form used by exactly
+  one dialog surface owns its shell instead (v-model:open + title +
+  `#footer`; canonical example: `EditAccountForm`) so the thin wrapper
+disappears.
 - Modal create/edit/detail/history surfaces use `shared/ui/responsive-dialog`:
   below 768px it renders the shared `drawer/`, at 768px+ the shared `dialog/`.
   Put title/description/actions in the container slots; account/category rows
@@ -146,7 +149,10 @@ One overlay instance OUTSIDE the loop plus an "active item" ref:
   `DIALOG_FORM_FOOTER_CLASS` instead of hand-rolling the `-mx-6` breakout
   classes — it sticks to the bottom of the scrolling body so the buttons
   stay visible. Don't put `overflow-y-auto` on the panel `class` — cap
-  height only (`max-h-[...]`), the body already scrolls.
+  height only (`max-h-[...]`), the body already scrolls. For edge-to-edge
+  body content (full-bleed lists that pad themselves), use
+  `body-variant="flush"` on the shell instead of hand-rolled `-mx-6`
+breakouts (canonical example: `DebtorHistoryDialog`).
 - Exemptions stay explicit at the call site: destructive confirms stay on
   `alert-dialog`, the command palette stays a centered `dialog`, and the
   transactions filters stay `drawer` below 768px plus right-side `sheet` at

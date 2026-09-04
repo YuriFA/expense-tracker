@@ -25,7 +25,8 @@ function mountDialog(desktop: boolean, extraProps: Record<string, unknown> = {})
           {
             title: () => 'Overlay title',
             default: () => h('div', { 'data-testid': 'responsive-dialog-body' }, 'Overlay body'),
-            footer: () => h('span', { 'data-testid': 'responsive-dialog-footer' }, 'Overlay footer'),
+            footer: () =>
+              h('span', { 'data-testid': 'responsive-dialog-footer' }, 'Overlay footer'),
           },
         )
     },
@@ -63,7 +64,9 @@ describe('ResponsiveDialog', () => {
 
     expect(content()).not.toBeNull()
     expect(drawerContent()).toBeNull()
-    expect(document.querySelector('[data-testid="responsive-dialog-body"]')?.textContent).toBe('Overlay body')
+    expect(document.querySelector('[data-testid="responsive-dialog-body"]')?.textContent).toBe(
+      'Overlay body',
+    )
   })
 
   it('renders the mobile drawer presentation when pinned to mobile', async () => {
@@ -72,7 +75,9 @@ describe('ResponsiveDialog', () => {
 
     expect(drawerContent()).not.toBeNull()
     expect(content()).toBeNull()
-    expect(document.querySelector('[data-testid="responsive-dialog-body"]')?.textContent).toBe('Overlay body')
+    expect(document.querySelector('[data-testid="responsive-dialog-body"]')?.textContent).toBe(
+      'Overlay body',
+    )
   })
 
   it('borders the header and the footer band by default (settings design language)', async () => {
@@ -106,7 +111,9 @@ describe('ResponsiveDialog', () => {
     const region = scrollRegion()
     expect(region).not.toBeNull()
     expect(region?.className).toContain('min-h-0')
-    expect(region?.contains(document.querySelector('[data-testid="responsive-dialog-body"]'))).toBe(true)
+    expect(region?.contains(document.querySelector('[data-testid="responsive-dialog-body"]'))).toBe(
+      true,
+    )
     expect(region?.contains(header() ?? null)).toBe(false)
     expect(region?.contains(footerBand() ?? null)).toBe(false)
   })
@@ -117,7 +124,9 @@ describe('ResponsiveDialog', () => {
 
     const region = scrollRegion()
     expect(region).not.toBeNull()
-    expect(region?.contains(document.querySelector('[data-testid="responsive-dialog-body"]'))).toBe(true)
+    expect(region?.contains(document.querySelector('[data-testid="responsive-dialog-body"]'))).toBe(
+      true,
+    )
     expect(region?.contains(header() ?? null)).toBe(false)
     expect(region?.contains(footerBand() ?? null)).toBe(false)
   })
@@ -128,8 +137,16 @@ describe('ResponsiveDialog', () => {
       await flushPromises()
 
       const body = document.querySelector('[data-slot="dialog-body"]')
-      const slotWrapper = document.querySelector('[data-testid="responsive-dialog-body"]')?.parentElement
-      const sections = [surface()?.className, header()?.className, body?.className, slotWrapper?.className, footerBand()?.className]
+      const slotWrapper = document.querySelector(
+        '[data-testid="responsive-dialog-body"]',
+      )?.parentElement
+      const sections = [
+        surface()?.className,
+        header()?.className,
+        body?.className,
+        slotWrapper?.className,
+        footerBand()?.className,
+      ]
       const offenders = sections.flatMap((cls) =>
         (cls ?? '')
           .split(' ')
@@ -149,6 +166,15 @@ describe('ResponsiveDialog', () => {
 
       document.body.innerHTML = ''
     }
+  })
+
+  it('drops body horizontal padding on the flush variant', async () => {
+    mountDialog(true, { bodyVariant: 'flush' })
+    await flushPromises()
+
+    const body = document.querySelector('[data-slot="dialog-body"]')
+    expect(body?.className).not.toContain('px-6')
+    expect(body?.className).toContain('pt-4')
   })
 
   it('keeps the in-body form footer sticky so it stays visible while the body scrolls', () => {
