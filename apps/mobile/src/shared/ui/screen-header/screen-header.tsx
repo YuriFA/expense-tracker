@@ -122,7 +122,7 @@ export function ScreenHeader({ title, showBack = true, onBack, right }: ScreenHe
         >
           {showBack ? (
             <IconButton
-              className="bg-brand-indigo/10 size-10 rounded-full items-center justify-center"
+              className="size-10 items-center justify-center rounded-full border border-border bg-card"
               testID="screen-header-back"
               icon="chevron-back"
               accessibilityLabel="Назад"

@@ -107,6 +107,22 @@ jobs:
       - name: Run architecture checks
         run: pnpm arch:check
 
+  design-lint:
+    # Mechanical design-system rules: token usage, shared spec drift,
+    # shell headers, and flat-system guardrails in web/mobile UI code.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json packageManager
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run design lint
+        run: pnpm lint:design
+
   lint-test:
     runs-on: ubuntu-latest
     defaults:

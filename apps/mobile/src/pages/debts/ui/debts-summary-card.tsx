@@ -13,7 +13,7 @@ import { Card } from '@/shared/ui/card'
  */
 export function DebtsSummaryCard({ totals }: { totals: DirectionBalances }) {
   return (
-    <Card variant="elevated" className="bg-brand-indigo/20" testID="debts-summary">
+    <Card variant="elevated" className="bg-accent" testID="debts-summary">
       <SummaryRow
         testID="debts-total-receivable"
         label={DEBT_DIRECTION_VIEWS.receivable.summaryLabel}

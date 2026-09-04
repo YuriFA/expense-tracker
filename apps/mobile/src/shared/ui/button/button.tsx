@@ -16,7 +16,7 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-linear-to-bl from-primary/50 to-primary to-[50%]',
+  primary: 'bg-primary',
   secondary: 'bg-secondary',
   outline: 'bg-transparent border border-border',
   ghost: 'bg-transparent',
@@ -42,9 +42,9 @@ const indicatorVariantStyles: Record<ButtonVariant, string> = {
 }
 
 const sizeStyles: Record<ButtonSize, { container: string; text: string }> = {
-  sm: { container: 'px-3 py-1.5 rounded-3xl', text: 'text-sm' },
-  md: { container: 'px-4 py-3 rounded-3xl', text: 'text-base' },
-  lg: { container: 'px-6 py-3 rounded-3xl', text: 'text-lg' },
+  sm: { container: 'px-3 py-1.5 rounded-input', text: 'text-sm' },
+  md: { container: 'px-4 py-3 rounded-input', text: 'text-base' },
+  lg: { container: 'px-6 py-3 rounded-input', text: 'text-lg' },
 }
 
 export function Button({

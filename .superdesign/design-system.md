@@ -41,14 +41,15 @@ Outfit 400/500/600/700 only. Scale: 12 / 14 (body) / 16 / 20 (card titles) / 24 
 **Brand data palette (vivid, theme-independent):** aliceblue `#f1f3fd`, indigo `#6366f1`, violet `#7c5cff`, lilac `#a78bfa`, orange `#f97316`, green `#22c55e`, leaf `#16a34a` — categorical DATA colors for charts/categories only, never a UI accent.
 
 ### Guardrails
-- Flat system: no gradients, no photography; depth = surfaces + hairline borders, not elevation/shadows.
+- Flat system on product surfaces: no decorative gradients, no photography; depth = surfaces + hairline borders, not elevation/shadows.
+- Narrow utility exceptions are allowed when they do NOT introduce a second color system: token-only skeleton shimmer, transient overlay/scrim gradients, bottom-sheet footer fades, and mask-based fades that improve readability or focus handling.
 - Semantic green/red strictly tied to positive/negative amounts — never decorative.
 - Category/transaction rows stay flat divider-separated rows inside cards; do not box individual rows.
 - Teal accent is rationed to actions, active states and small icon accents; large surfaces stay neutral warm paper.
 - Dark drafts use the dark token block above; never invent a second dark palette.
 
 ### Motion
-Fast and utilitarian: color/opacity transitions `0.15s cubic-bezier(0.4, 0, 0.2, 1)`, transform-based movement `0.3s` same curve; dialogs fade+zoom (tw-animate), drawers slide, hover on clickable stat cards = 1px muted ring (not a lift). Route-change top progress bar stays. No parallax, no decorative loops.
+Fast and utilitarian: color/opacity transitions `0.15s cubic-bezier(0.4, 0, 0.2, 1)`, transform-based movement `0.3s` same curve; dialogs fade+zoom (tw-animate), drawers slide, hover on clickable stat cards = 1px muted ring (not a lift). Route-change top progress bar stays. Skeleton shimmer is the one sanctioned looping loading motion; overlay gradients/masks may fade focus toward the active control. No parallax or decorative loops.
 
 ### Spacing & shape
 4px base grid; card padding 20–24px; list row height ~56px; icon tiles 40–44px; sidebar width 248px; controls (buttons, inputs, selects) share the 12px control radius; cards and the big sidebar CTA use the 14px card radius; full-round pills are reserved for badges, chips and status pills.
@@ -74,5 +75,5 @@ Fast and utilitarian: color/opacity transitions `0.15s cubic-bezier(0.4, 0, 0.2,
 - **No invented features.** The product has NO budgets/limits and NO goals — no limit tiles, no limit CTAs, no progress bars tied to limits, no «Цели» blocks anywhere. Category breakdown shows amount + percentage only (as the analytics page already does). Every block must map to an implemented surface: accounts, transactions, category breakdown with percentages, debts, planned payments, sync status, household.
 - Anonymous-first: guest badge + sign-in entry must be visible without an account.
 - Responsive: ≥768px shows the desktop sidebar; <768px the mobile shell (slim sticky top bar + floating bottom tab bar with a central FAB speed-dial) replaces the old hamburger drawer (web-mobile-bottom-nav). Right rail stacks below main.
-- Mobile shell speed-dial tiles follow the icon-tile pattern: pastel semantic tint (~10%) + saturated glyph (перевод teal, расход terracotta, доход green), labels under circles, white 70% scrim; the only solid accent surface is the teal FAB.
+- Mobile shell speed-dial tiles follow the icon-tile pattern: pastel semantic tint (~10%) + saturated glyph (перевод teal, расход terracotta, доход green), labels under circles, white 70% scrim. The scrim may use a bottom-emphasized token gradient plus blur/mask to keep the dial readable without turning the whole screen into a tinted surface; the only solid accent surface is the teal FAB.
 - Tokens are canonical: drafts may only use the token values above; never render raw hex outside them. A genuinely new color is a deliberate token change in `packages/tokens` (web+mobile copies share identical sRGB values; the mobile copy is canonical).
