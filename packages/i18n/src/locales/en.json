@@ -636,7 +636,8 @@
       "pending": "Pending upload: {count}",
       "running": "Syncing…",
       "paused": "Session expired",
-      "conflicts": "Conflicts: {count}"
+      "conflicts": "Conflicts: {count}",
+      "failing": "Upload error: {count}"
     },
     "conflicts": {
       "title": "Sync conflicts",

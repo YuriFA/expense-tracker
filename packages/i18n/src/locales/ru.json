@@ -636,7 +636,8 @@
       "pending": "Ожидает отправки: {count}",
       "running": "Синхронизация…",
       "paused": "Сессия истекла",
-      "conflicts": "Конфликты: {count}"
+      "conflicts": "Конфликты: {count}",
+      "failing": "Ошибка отправки: {count}"
     },
     "conflicts": {
       "title": "Конфликты синхронизации",

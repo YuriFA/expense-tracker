@@ -8,7 +8,8 @@ import { createTestDatabase } from '@expense-tracker/local-data/testing'
 import { DatabaseProvider } from '@/shared/lib/db/database-context'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { enqueueOperation, recordConflict } from '@expense-tracker/local-data'
+import { enqueueOperation, recordConflict, syncOutbox } from '@expense-tracker/local-data'
+import { eq } from 'drizzle-orm'
 import { SyncStatusBadge } from './sync-status-badge'
 
 const mockUseAuth = { status: 'authenticated', replace: jest.fn() }
@@ -134,6 +135,39 @@ describe('SyncStatusBadge', () => {
     await waitFor(() =>
       expect(screen.getByTestId('sync-status-pending').props.children).toBe('2 ожидает отправки'),
     )
+  })
+
+  it('shows the failing state with the rejected count over pending and paused', async () => {
+    mockUseAuth.status = 'authenticated'
+    mockController.engineState = { running: false, paused: true, lastRunAt: null }
+    db.transaction((tx) => {
+      enqueueOperation(tx, {
+        entity: 'category',
+        entityId: 'c1',
+        op: 'upsert',
+        payload: {},
+        baseVersion: 0,
+      })
+    })
+    // Mark the queued op as server-rejected (per-item error result).
+    const opId = db.select({ opId: syncOutbox.opId }).from(syncOutbox).get()?.opId
+    if (opId) {
+      db.update(syncOutbox)
+        .set({ lastError: 'INVALID_REFS: invalid references' })
+        .where(eq(syncOutbox.opId, opId))
+        .run()
+    }
+    renderBadge()
+
+    await waitFor(() =>
+      expect(screen.getByTestId('sync-status-failing').props.children).toBe(
+        'Ошибка отправки: 1',
+      ),
+    )
+    expect(screen.queryByTestId('sync-status-pending')).toBeNull()
+    expect(screen.queryByTestId('sync-status-paused')).toBeNull()
+    fireEvent.press(screen.getByTestId('sync-status-badge'))
+    expect(mockController.runNow).toHaveBeenCalledTimes(1)
   })
 
   it('shows the in-flight state', async () => {

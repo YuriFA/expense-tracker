@@ -9,7 +9,13 @@ import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
 
 // The worker RPC surface, mocked: the engine state listener is captured so
 // tests can push state changes exactly like the worker would.
-const status: SyncStatusSnapshot = { pendingOperations: 0, unresolvedConflicts: 0, lastSyncedAt: null }
+const status: SyncStatusSnapshot = {
+  pendingOperations: 0,
+  unresolvedConflicts: 0,
+  lastSyncedAt: null,
+  failingOperations: 0,
+  lastError: null,
+}
 let engineState: SyncEngineState = { running: false, paused: false, lastRunAt: null }
 let stateListener: (() => void) | null = null
 
@@ -88,6 +94,8 @@ describe('SyncStatusBadge', () => {
   beforeEach(() => {
     status.pendingOperations = 0
     status.unresolvedConflicts = 0
+    status.failingOperations = 0
+    status.lastError = null
     engineState = { running: false, paused: false, lastRunAt: null }
     runMock.mockReset().mockResolvedValue({ status: 'completed' })
     stateListener = null
@@ -133,6 +141,32 @@ describe('SyncStatusBadge', () => {
     expect(hostState.controller?.conflictsOpen.value).toBe(true)
   })
 
+  it('shows the failing state with the rejected count and last error tooltip', async () => {
+    status.pendingOperations = 5
+    status.failingOperations = 4
+    status.lastError = 'INVALID_REFS: invalid references'
+    const wrapper = await mountAuthenticated()
+
+    const label = wrapper.find('[data-testid="sync-status-failing"]')
+    expect(label.text()).toContain('4')
+    expect(wrapper.find('[data-testid="sync-status-pending"]').exists()).toBe(false)
+    // The raw stored error is one hover away - no devtools needed.
+    expect(wrapper.find('[data-testid="sync-status-badge"]').attributes('title')).toBe(
+      'INVALID_REFS: invalid references',
+    )
+  })
+
+  it('keeps the failing state over paused and pending', async () => {
+    status.pendingOperations = 5
+    status.failingOperations = 1
+    status.lastError = 'CATEGORY_IN_USE: category has transactions'
+    pushEngineState({ running: false, paused: true, lastRunAt: null })
+    const wrapper = await mountAuthenticated()
+
+    expect(wrapper.find('[data-testid="sync-status-failing"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sync-status-paused"]').exists()).toBe(false)
+  })
+
   it('forces a manual run on click when no conflicts exist', async () => {
     const wrapper = await mountAuthenticated()
     await wrapper.find('[data-testid="sync-status-badge"]').trigger('click')
@@ -159,5 +193,15 @@ describe('SyncStatusBadge', () => {
 
     expect(wrapper.find('[data-testid="sync-status-pending"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="sync-status-badge"]').text()).toContain('3')
+  })
+
+  it('compact failing state shows the rejected count as a corner badge', async () => {
+    status.pendingOperations = 7
+    status.failingOperations = 2
+    status.lastError = 'INVALID_REFS: invalid references'
+    const wrapper = await mountAuthenticated(true)
+
+    expect(wrapper.find('[data-testid="sync-status-failing"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sync-status-badge"]').text()).toContain('2')
   })
 })

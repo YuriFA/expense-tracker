@@ -1,9 +1,10 @@
 // Sync status badge (task 4.5): a compact pill surfacing the sync state -
-// unresolved conflicts first, then the paused (auth expired) state, the
-// in-flight cycle, the pending outbox count, and the settled "synced" state.
-// Tapping it opens the conflict resolution flow when conflicts exist and
-// otherwise forces a manual sync run. Hidden entirely while anonymous: the
-// app is fully usable offline and the badge only describes SERVER sync.
+// unresolved conflicts first, then operations the server keeps rejecting, the
+// paused (auth expired) state, the in-flight cycle, the pending outbox
+// count, and the settled "synced" state. Tapping it opens the conflict
+// resolution flow when conflicts exist and otherwise forces a manual sync
+// run. Hidden entirely while anonymous: the app is fully usable offline and
+// the badge only describes SERVER sync.
 
 import { ActivityIndicator } from 'react-native'
 import { Pressable } from '@/shared/ui/pressable'
@@ -29,6 +30,11 @@ export function SyncStatusBadge() {
   if (authStatus !== 'authenticated') return null
 
   const pending = statusQuery.data?.pendingOperations ?? 0
+  // Failing = the server (or local wire validation) rejected the operation's
+  // last attempt: waiting will not clear it, so it must not read as plain
+  // "waiting to send". A subset of `pending`.
+  const failing = statusQuery.data?.failingOperations ?? 0
+  const lastError = statusQuery.data?.lastError ?? null
   const conflicts = statusQuery.data?.unresolvedConflicts ?? 0
 
   let iconName: Parameters<typeof Icon>[0]['name'] = 'checkmark-circle'
@@ -45,6 +51,12 @@ export function SyncStatusBadge() {
     iconClassName = 'accent-destructive'
     onPress = presentConflicts
     stateTestId = 'sync-status-conflicts'
+  } else if (failing > 0) {
+    iconName = 'cloud-offline-outline'
+    label = `Ошибка отправки: ${failing}`
+    iconClassName = 'accent-destructive'
+    onPress = runNow
+    stateTestId = 'sync-status-failing'
   } else if (engineState.paused) {
     iconName = 'time'
     label = 'Сессия истекла'
@@ -66,7 +78,7 @@ export function SyncStatusBadge() {
     <Pressable
       testID="sync-status-badge"
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={lastError && stateTestId === 'sync-status-failing' ? `${label}. ${lastError}` : label}
       onPress={onPress}
       className="self-start flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
     >

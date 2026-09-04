@@ -49,6 +49,18 @@ export function SyncSection() {
           {`Ожидают отправки: ${syncStatusQuery.data.pendingOperations}`}
         </Text>
       ) : null}
+      {syncStatusQuery.data && syncStatusQuery.data.failingOperations > 0 ? (
+        <>
+          <Text variant="body-sm" className="text-destructive" testID="settings-sync-failing">
+            {`Ошибок отправки: ${syncStatusQuery.data.failingOperations}`}
+          </Text>
+          {syncStatusQuery.data.lastError ? (
+            <Text variant="body-sm" className="text-muted-foreground" testID="settings-sync-last-error">
+              {syncStatusQuery.data.lastError}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
       {syncStatusQuery.data && syncStatusQuery.data.unresolvedConflicts > 0 ? (
         <Text variant="body-sm" className="text-destructive">
           {`Неразрешённых конфликтов: ${syncStatusQuery.data.unresolvedConflicts}`}
