@@ -80,8 +80,10 @@ const handleSubmit = handleFormSubmit(async (data) => {
               :placeholder="t('profile.displayNamePlaceholder')"
               maxlength="100"
               class="flex-1"
-              v-bind="field"
+              :model-value="field.value"
               :aria-invalid="!!errors.length"
+              @update:model-value="field.onChange"
+              @blur="field.onBlur"
             />
             <Button
               form="display-name-form"

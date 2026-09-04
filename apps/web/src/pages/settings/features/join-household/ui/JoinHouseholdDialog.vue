@@ -68,8 +68,10 @@ const handleSubmit = handleFormSubmit(async (data) => {
             :placeholder="t('household.codePlaceholder')"
             autocomplete="off"
             class="uppercase"
-            v-bind="field"
+            :model-value="field.value"
             :aria-invalid="!!errors.length"
+            @update:model-value="field.onChange"
+            @blur="field.onBlur"
           />
           <FieldError v-if="errors.length" :errors="errors" />
         </Field>

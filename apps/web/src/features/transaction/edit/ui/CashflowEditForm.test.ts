@@ -116,7 +116,10 @@ describe('CashflowEditForm', () => {
 
   it('preloads form with initial values', () => {
     const { wrapper } = mountForm()
-    expect(wrapper.find('input#description').attributes('value')).toBe('Salary')
+    // The visible value lives in the DOM property (vee state flows through
+    // modelValue), not the attribute.
+    const description = wrapper.find('input#description').element as HTMLInputElement
+    expect(description.value).toBe('Salary')
   })
 
   it('auto-selects an account created inline next to the account select', async () => {

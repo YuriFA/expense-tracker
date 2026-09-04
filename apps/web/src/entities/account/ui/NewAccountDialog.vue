@@ -79,10 +79,12 @@ const handleSubmit = handleFormSubmit(async (data) => {
           <FieldLabel for="new-account-name">{{ t('addAccount.nameLabel') }}</FieldLabel>
           <Input
             id="new-account-name"
-            v-bind="field"
+            :model-value="field.value"
             data-testid="new-account-name"
             :placeholder="t('addAccount.namePlaceholder')"
             :aria-invalid="!!errors.length"
+            @update:model-value="field.onChange"
+            @blur="field.onBlur"
           />
           <FieldError v-if="errors.length" :errors="errors" />
         </Field>

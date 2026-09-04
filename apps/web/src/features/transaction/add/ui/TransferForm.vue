@@ -195,8 +195,10 @@ const handleSubmit = handleFormSubmit(async (data) => {
         <Input
           id="transfer-description"
           :placeholder="t('addTransfer.descriptionPlaceholder')"
-          v-bind="field"
+          :model-value="field.value"
           :aria-invalid="!!errors.length"
+          @update:model-value="field.onChange"
+          @blur="field.onBlur"
         />
         <FieldError v-if="errors.length" :errors="errors" />
       </Field>

@@ -10,7 +10,10 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { getHouseholdErrorMessage, householdApi } from '@/entities/household'
 import { notification } from '@/shared/services/notification'
-import { createInviteMemberSchema, type InviteMemberFormValues } from '../model/invite-member-schema'
+import {
+  createInviteMemberSchema,
+  type InviteMemberFormValues,
+} from '../model/invite-member-schema'
 
 // Invite by email (household-ux 3.2, owner only): one email field with inline
 // validation; re-inviting a pending email refreshes its token/expiry. Mirrors
@@ -67,8 +70,10 @@ const handleSubmit = handleFormSubmit(async (data) => {
             id="household-invite-email"
             type="email"
             autocomplete="off"
-            v-bind="field"
+            :model-value="field.value"
             :aria-invalid="!!errors.length"
+            @update:model-value="field.onChange"
+            @blur="field.onBlur"
           />
           <FieldError v-if="errors.length" :errors="errors" />
         </Field>

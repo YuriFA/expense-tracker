@@ -10,7 +10,10 @@ import { Field, FieldError, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
 import { getHouseholdErrorMessage, householdApi } from '@/entities/household'
 import { notification } from '@/shared/services/notification'
-import { createRenameHouseholdSchema, type RenameHouseholdFormValues } from '../model/rename-household-schema'
+import {
+  createRenameHouseholdSchema,
+  type RenameHouseholdFormValues,
+} from '../model/rename-household-schema'
 
 // Household rename (household-ux 3.2, owner only): one name field preloaded
 // with the current display name; an emptied submission clears it (PATCH
@@ -22,10 +25,7 @@ const props = defineProps<{ initialName: string | null }>()
 
 const open = ref(false)
 
-const {
-  handleSubmit: handleFormSubmit,
-  isSubmitting,
-} = useForm<RenameHouseholdFormValues>({
+const { handleSubmit: handleFormSubmit, isSubmitting } = useForm<RenameHouseholdFormValues>({
   validationSchema: toTypedSchema(createRenameHouseholdSchema()),
   initialValues: { name: props.initialName ?? '' },
 })
@@ -66,8 +66,10 @@ const handleSubmit = handleFormSubmit(async (data) => {
             id="household-name"
             :placeholder="t('household.renameLabel')"
             maxlength="100"
-            v-bind="field"
+            :model-value="field.value"
             :aria-invalid="!!errors.length"
+            @update:model-value="field.onChange"
+            @blur="field.onBlur"
           />
           <FieldError v-if="errors.length" :errors="errors" />
         </Field>
