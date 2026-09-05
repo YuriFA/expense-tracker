@@ -124,18 +124,23 @@ only via local runs (Node ≥ 22), not in CI.
   client classifies errors primarily by the body `code` (e.g. 409
   `ACCOUNT_IN_USE` vs `TRANSACTION_VERSION_CONFLICT` are different classes).
 - **Evidence**: `backend/internal/transport/http/errormap.go:29-53`
-  (single `HandlerErrorFunc`, sentinel table 64-196); codes defined once in
-  `httperr/httperr.go:12-43` and mirrored in spec examples;
-  `packages/api/src/api-errors.ts` `mapApiError` keyed on `body.code` with
-  status fallbacks; root `AGENTS.md` states the rule. Nuance: middleware
-  writes some responses directly (auth/validation/idempotency/rate-limit)
+  (single `HandlerErrorFunc`, sentinel table 64-196); domain codes defined
+  once in `domain/errspec.go` (`errorSpecs` table), transport-only codes in
+  `httperr/httperr.go`; `packages/api/src/api-errors.ts` `mapApiError`
+  keyed on `body.code` with status fallbacks; root `AGENTS.md` states the
+  rule. Nuance: middleware writes some responses directly (auth/validation/idempotency/rate-limit)
   but shares the same shape via `httperr.Write`.
 - **Risk if violated**: Frontends would branch on statuses and lose the
   ability to distinguish conflicts; error UX and conflict handling
   (sync, version conflicts) degrade or break.
-- **Current enforcement**: code review; transport/service tests exercise
-  some mappings; the spec examples document codes.
-- **Automated**: no.
+- **Current enforcement**: automated — `domain/errspec_parity_test.go`
+  pins both directions (every emitted code — `errorSpecs` + httperr
+  constants — appears as a `code:` example in openapi.yaml, and every
+  documented code is emitted somewhere; `ORIGIN_REJECTED` is the single
+  allowlisted undocumented code, per ADR-0001). The catalog side of the
+  contract is gated by `pnpm sync-catalog:parity` (CI `ts-gen-check`).
+  Transport/service tests exercise the mappings.
+- **Automated**: yes (CI `go test ./...` via lint-test).
 
 ### 5. Household ownership: every shared-resource query is scoped by `household_id` (resolved from the auth context), and identities never come from the wire
 
