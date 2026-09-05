@@ -5,15 +5,10 @@ import type { Category } from '@expense-tracker/api'
 import type { PlannedPayment } from '@/entities/planned-payment'
 import { monthlyTotal } from '@/entities/planned-payment'
 import { CategoryAvatar } from '@/shared/ui/category-avatar'
-import {
-  isPlanOverdue,
-  nextDueLabel,
-  planRowTitle,
-  plansSortedByNextDue,
-  utcTodayKey,
-} from '../model/selectors'
+import { isPlanOverdue, nextDueLabel, planRowTitle, plansSortedByNextDue } from '../model/selectors'
 import PlanFormDialog from './PlanFormDialog.vue'
 import ConfirmPlanDialog from './ConfirmPlanDialog.vue'
+import { currentDay } from '@/shared/lib/date'
 import { ResponsiveDialog } from '@/shared/ui/responsive-dialog'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
@@ -52,7 +47,8 @@ const totalText = computed(
     `${t('plans.approx')}${formatMoney(monthlyTotal(props.plans), displayCurrency.value, locale.value)}`,
 )
 
-const today = computed(() => utcTodayKey())
+// The visible "today" is the user's local calendar day (facade `currentDay`).
+const today = computed(() => currentDay())
 const sorted = computed(() => plansSortedByNextDue(props.plans))
 
 // Literal keys per branch (the i18n lint bans dynamic keys).

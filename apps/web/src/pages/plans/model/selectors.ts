@@ -7,16 +7,18 @@ import type { Category } from '@expense-tracker/api'
 import type { PlannedPayment } from '@/entities/planned-payment'
 import { fullDayLabel } from '@expense-tracker/dates'
 
-/** Today as a UTC calendar-day key (`YYYY-MM-DD`). */
-export function utcTodayKey(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10)
-}
-
 /** Next-due ascending (overdue plans first by construction); ties by id. */
 export function plansSortedByNextDue(plans: readonly PlannedPayment[]): PlannedPayment[] {
   return [...plans].sort((a, b) => a.nextDue.localeCompare(b.nextDue) || a.id.localeCompare(b.id))
 }
 
+/**
+ * Whether the plan's next occurrence is overdue. `today` is the USER'S
+ * local calendar day (the visible day boundary - `currentDay()`); the
+ * server's auto-confirm job keeps its own UTC day boundary (design D2:
+ * it has no user timezone). "Due" means the scheduled calendar day has
+ * arrived, so a due-today plan is already overdue.
+ */
 export function isPlanOverdue(plan: PlannedPayment, today: string): boolean {
   return plan.nextDue <= today
 }

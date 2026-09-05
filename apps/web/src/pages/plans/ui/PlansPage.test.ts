@@ -9,9 +9,10 @@ import {
   createMockTransactionRepository,
 } from '@/__tests__/helpers/mock-repositories'
 import { mountWithProviders } from '@/__tests__/helpers/mount-with-providers'
+import { currentDay } from '@/shared/lib/date'
 
 const today = new Date()
-const todayKey = today.toISOString().slice(0, 10)
+const todayKey = currentDay()
 
 function plan(overrides: Partial<PlannedPayment>): PlannedPayment {
   return {

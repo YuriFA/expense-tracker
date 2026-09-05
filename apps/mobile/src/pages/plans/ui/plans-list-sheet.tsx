@@ -28,13 +28,8 @@ import { Text } from '@/shared/ui/text'
 import { formatAmount } from '@/shared/lib/format/format'
 import { authorLabel } from '@/entities/household'
 import { PLANS_COPY, PLANS_REGULARITY_PHRASES, PLAN_TYPE_VIEWS } from '../model/kind'
-import {
-  isPlanOverdue,
-  nextDueLabel,
-  planRowTitle,
-  plansSortedByNextDue,
-  utcTodayKey,
-} from '../model/selectors'
+import { isPlanOverdue, nextDueLabel, planRowTitle, plansSortedByNextDue } from '../model/selectors'
+import { calendarDayKey } from '@expense-tracker/dates'
 
 const AnimatedBottomSheetScrollView = Animated.createAnimatedComponent(BottomSheetScrollView)
 
@@ -125,7 +120,8 @@ function PlanRow({
   onPress: () => void
   onConfirm: () => void
 }) {
-  const overdue = isPlanOverdue(plan, utcTodayKey())
+  // The visible "today" is the user's local calendar day.
+  const overdue = isPlanOverdue(plan, calendarDayKey(new Date()))
   const title = planRowTitle(plan, categories)
   const subtitle = `${PLANS_REGULARITY_PHRASES[plan.regularity]} · ${nextDueLabel(plan.nextDue)}`
   const authorMarker = author

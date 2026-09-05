@@ -16,14 +16,6 @@ import { monthlyTotal } from '@/entities/planned-payment'
 import { formatAmount } from '@/shared/lib/format/format'
 import { PLANS_COPY } from './kind'
 
-/**
- * The UTC "today" the overdue flag is evaluated against — the same day
- * boundary the server's auto-confirm job uses (design D2).
- */
-export function utcTodayKey(now: Date = new Date()): CalendarDay {
-  return now.toISOString().slice(0, 10)
-}
-
 export interface PlanCardFigures {
   /** Live plans of the type. */
   count: number
@@ -46,7 +38,13 @@ export function plansSortedByNextDue(plans: PlannedPayment[]): PlannedPayment[] 
   )
 }
 
-/** An occurrence is due once its calendar day has arrived (spec: overdue semantics). */
+/**
+ * An occurrence is due once its scheduled calendar day has arrived, so a
+ * due-today plan is already overdue. `today` is the USER'S local calendar
+ * day (the visible day boundary - `calendarDayKey`); the server's
+ * auto-confirm job keeps its own UTC day boundary (design D2: it has no
+ * user timezone).
+ */
 export function isPlanOverdue(plan: PlannedPayment, today: CalendarDay): boolean {
   return plan.nextDue <= today
 }

@@ -10,6 +10,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import type { Category, PlannedPayment } from '@expense-tracker/api'
 import { ThemeProvider } from '@/shared/config/theme'
 import { createQueryClient } from '@/shared/lib/query/query-client'
+import { calendarDayKey } from '@expense-tracker/dates'
 import { BottomSheetProvider } from '@/shared/ui/bottom-sheet/bottom-sheet-provider'
 import type { BottomSheetRef } from '@/shared/ui/bottom-sheet'
 import { PlansListSheet } from './plans-list-sheet'
@@ -60,7 +61,7 @@ function plan(overrides: Partial<PlannedPayment>): PlannedPayment {
 // past next-due) must come first despite being listed last.
 const PLANS: PlannedPayment[] = [
   plan({ id: 'plan-future', nextDue: '2099-06-01', name: 'Страховка' }),
-  plan({ id: 'plan-today', nextDue: new Date().toISOString().slice(0, 10), name: 'Аренда' }),
+  plan({ id: 'plan-today', nextDue: calendarDayKey(new Date()), name: 'Аренда' }),
   plan({ id: 'plan-overdue', nextDue: '2020-01-31', name: 'Гимназия' }),
   plan({ id: 'plan-auto', nextDue: '2099-02-10', name: 'Кредит', confirmMode: 'auto' }),
 ]

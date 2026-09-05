@@ -1,13 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Category } from '@expense-tracker/api'
 import type { PlannedPayment } from '@/entities/planned-payment'
-import {
-  isPlanOverdue,
-  nextDueLabel,
-  planRowTitle,
-  plansSortedByNextDue,
-  utcTodayKey,
-} from './selectors'
+import { isPlanOverdue, nextDueLabel, planRowTitle, plansSortedByNextDue } from './selectors'
 
 const categories: Category[] = [
   {
@@ -56,10 +50,6 @@ describe('plans selectors', () => {
     expect(isPlanOverdue(plan({ nextDue: '2026-08-27' }), today)).toBe(true)
     expect(isPlanOverdue(plan({ nextDue: '2026-08-26' }), today)).toBe(true)
     expect(isPlanOverdue(plan({ nextDue: '2026-08-28' }), today)).toBe(false)
-  })
-
-  it('utcTodayKey yields the UTC calendar day', () => {
-    expect(utcTodayKey(new Date('2026-08-27T23:30:00Z'))).toBe('2026-08-27')
   })
 
   it('the row title falls back to the category name for unnamed plans', () => {

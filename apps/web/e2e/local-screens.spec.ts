@@ -130,10 +130,9 @@ test('plans: create a plan, confirm it, and the transaction appears', async ({ p
 
   await page.getByLabel('Name').fill('Netflix')
   await page.getByLabel('Amount').fill('15')
-  // Anchor on yesterday (UTC): the default is the form's local today, and
-  // whether that already counts as overdue depends on the UTC-vs-local day
-  // skew (isPlanOverdue compares against the UTC day, design D2) - so the
-  // test pins a day that is always past.
+  // Anchor on yesterday so the row is deterministically overdue: the
+  // default (the form's local today) already counts as due-today, but a
+  // past anchor keeps the assertion independent of day-boundary timing.
   await page.locator('#plans-form-date').fill(new Date(Date.now() - 86_400_000).toISOString().slice(0, 10))
   await page.locator('#plans-form-account').click()
   await page.getByRole('option', { name: /Cash/ }).click()
