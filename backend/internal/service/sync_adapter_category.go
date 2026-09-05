@@ -59,7 +59,10 @@ func (categoryAdapter) preValidate(
 		return "", "", err
 	}
 	if nameTaken {
-		return "CATEGORY_ALREADY_EXISTS", "category name already exists", nil
+		// The shared wire spec (domain.ErrorSpecFor) - the same wording the
+		// REST surface answers with.
+		spec, _ := domain.ErrorSpecFor(domain.ErrCategoryAlreadyExists)
+		return spec.Code, spec.Message, nil
 	}
 	return "", "", nil
 }
@@ -108,27 +111,12 @@ func (categoryAdapter) tombstone(
 // inUse reports the category's live dependants in the REST order (postgres
 // DeleteCategory): live transactions first, then live planned payments - the
 // message names the relation that fired.
+// inUse runs the category delete rule (ADR-0005) against the batch tx.
 func (categoryAdapter) inUse(
 	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
-) (bool, string, error) {
-	transactions, err := t.HasLiveTransactionsForCategory(ctx, householdID, id)
-	if err != nil {
-		return false, "", err
-	}
-	if transactions {
-		return true, "category has transactions and cannot be deleted", nil
-	}
-	plans, err := t.HasLivePlannedPaymentsForCategory(ctx, householdID, id)
-	if err != nil {
-		return false, "", err
-	}
-	if plans {
-		return true, "category has planned payments and cannot be deleted", nil
-	}
-	return false, "", nil
+) error {
+	return ValidateCategoryDelete(ctx, t, householdID, id)
 }
-
-func (categoryAdapter) inUseCode() string { return "CATEGORY_IN_USE" }
 
 // categoryDeleteData is the delete-op payload shape ("cascade": true).
 type categoryDeleteData struct {
@@ -149,20 +137,13 @@ func (categoryAdapter) resolveDelete(op domain.SyncOperation) (bool, string, str
 	return data.Cascade, "", ""
 }
 
-// inUseUnderCascade is the reduced guard for a cascaded delete: the
-// referencing transactions are removed by the cascade itself, so only live
-// planned payments still block (mirrors the REST DeleteCategory order).
+// inUseUnderCascade runs the reduced rule (ADR-0005) for a cascaded
+// delete: the referencing transactions are removed by the cascade itself,
+// so only live planned payments still block.
 func (categoryAdapter) inUseUnderCascade(
 	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
-) (bool, string, error) {
-	plans, err := t.HasLivePlannedPaymentsForCategory(ctx, householdID, id)
-	if err != nil {
-		return false, "", err
-	}
-	if plans {
-		return true, "category has planned payments and cannot be deleted", nil
-	}
-	return false, "", nil
+) error {
+	return ValidateCategoryDeleteUnderCascade(ctx, t, householdID, id)
 }
 
 // cascadeTombstone tombstones the category and every referencing live

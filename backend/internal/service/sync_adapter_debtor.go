@@ -55,7 +55,10 @@ func (debtorAdapter) preValidate(
 		return "", "", err
 	}
 	if nameTaken {
-		return "DEBTOR_ALREADY_EXISTS", "debtor name already exists", nil
+		// The shared wire spec (domain.ErrorSpecFor) - the same wording the
+		// REST surface answers with.
+		spec, _ := domain.ErrorSpecFor(domain.ErrDebtorAlreadyExists)
+		return spec.Code, spec.Message, nil
 	}
 	return "", "", nil
 }
@@ -100,17 +103,9 @@ func (debtorAdapter) tombstone(
 	return t.TombstoneDebtor(ctx, householdID, userID, id)
 }
 
+// inUse runs the debtor delete rule (ADR-0005) against the batch tx.
 func (debtorAdapter) inUse(
 	ctx context.Context, t debtorTx, householdID, id uuid.UUID,
-) (bool, string, error) {
-	operations, err := t.HasLiveDebtOperationsForDebtor(ctx, householdID, id)
-	if err != nil {
-		return false, "", err
-	}
-	if operations {
-		return true, "debtor has debt operations and cannot be deleted", nil
-	}
-	return false, "", nil
+) error {
+	return ValidateDebtorDelete(ctx, t, householdID, id)
 }
-
-func (debtorAdapter) inUseCode() string { return "DEBTOR_IN_USE" }

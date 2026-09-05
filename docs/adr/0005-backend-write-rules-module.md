@@ -87,9 +87,24 @@ spec tidiness. The spec is therefore not tightened.
   archived category (reproduced red first in the e2e suite) and the
   type-mismatch wording follows the shared wire spec. The one test edit was
   the assertion of that old divergent wording.
-- Remaining entities migrate one by one (debt_operation, then account /
-  category / debtor). Delete guards (account in-use, category cascade) join
-  the module as those entities are reached.
+- Debt operation is migrated (`ValidateDebtOperationWrite`, live-debtor
+  seam; `ValidateDebtOperationImmutable`). Behavior-preserving, no test
+  edits.
+- Delete guards are migrated (account, category incl. the cascade variant,
+  debtor): the canonical rule lives in `write_rules_{account,category,
+  debtor}.go` as sentinel-returning functions over structural read seams;
+  the sync engine's in-use hook now returns a sentinel and derives the
+  per-item code + message from `domain.ErrorSpecFor` in one place
+  (`inUseCode` and the adapters' message literals are gone). The postgres
+  deletes enforce the identical rule inside their locked transactions
+  (REST atomicity; the repository cannot import the service module, so the
+  mirrored statement carries a pointer comment) - the sentinels and their
+  wire specs are shared, which is what makes drift visible.
+- The sync name-uniqueness pre-checks (category, debtor) answer with the
+  shared wire specs instead of their own wording; the enforcement
+  mechanisms stay per-surface (REST unique index vs advisory-lock
+  pre-check under the batch tx) by design.
+- All six sync entities are migrated; the rollout is complete.
 - A new sentinel error must get a `domain.errorSpecs` row (and a transport
   status row); the coverage test fails otherwise at the transport seam.
 - Client-side (web/mobile) validation is intentionally out of scope: it is a

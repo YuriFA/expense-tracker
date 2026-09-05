@@ -101,12 +101,12 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 
 // syncInUseGuard is implemented by the entities whose delete is blocked by
 // live dependants (account, category, debtor); the other synced entities
-// tombstone unconditionally. inUse reports which relation blocks the delete
-// by returning its message (an entity with several dependants checks them in
-// the REST order and names the one that fired).
+// tombstone unconditionally. inUse returns the domain sentinel of the
+// relation that blocks the delete (nil = not blocked); the engine maps it
+// to the shared wire spec (domain.ErrorSpecFor), so an entity with several
+// dependants names the one that fired through its sentinel message.
 type syncInUseGuard[T repository.SyncCore, R syncRow] interface {
-	inUse(ctx context.Context, t T, householdID, id uuid.UUID) (blocked bool, message string, err error)
-	inUseCode() string
+	inUse(ctx context.Context, t T, householdID, id uuid.UUID) error
 }
 
 // syncDeleteOptionsResolver is implemented by entities whose delete payload
@@ -121,9 +121,9 @@ type syncDeleteOptionsResolver[T repository.SyncCore, R syncRow] interface {
 // syncCascadeGuard pairs with a resolved cascade: the dependants the cascade
 // itself removes no longer block the delete (the category cascade removes
 // the referencing transactions), so only the remaining relations (live
-// planned payments) are checked.
+// planned payments) are checked. Returns the blocking sentinel or nil.
 type syncCascadeGuard[T repository.SyncCore, R syncRow] interface {
-	inUseUnderCascade(ctx context.Context, t T, householdID, id uuid.UUID) (blocked bool, message string, err error)
+	inUseUnderCascade(ctx context.Context, t T, householdID, id uuid.UUID) error
 }
 
 // syncCascadeTombstoner pairs with a resolved cascade: the tombstone write
@@ -340,12 +340,11 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 			return errorResult(op.OpID, code, message), nil
 		}
 	}
-	blocked, message, err := inUseBlocked(ctx, ad, t, householdID, op.ID, cascade)
-	if err != nil {
-		return domain.SyncPushResult{}, err
-	}
-	if blocked {
-		return errorResult(op.OpID, guardCode(ad), message), nil
+	if guardErr := inUseBlocked(ctx, ad, t, householdID, op.ID, cascade); guardErr != nil {
+		if spec, ok := domain.ErrorSpecFor(guardErr); ok {
+			return errorResult(op.OpID, spec.Code, spec.Message), nil
+		}
+		return domain.SyncPushResult{}, guardErr
 	}
 	var deleted R
 	if cascade {
@@ -366,18 +365,21 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 	return appliedResult(op.OpID, ad.version(deleted)), nil
 }
 
-// inUseBlocked runs the delete in-use guard; under a resolved cascade the
-// reduced guard (syncCascadeGuard) replaces the full one when implemented.
+// inUseBlocked runs the delete in-use guard: the blocking sentinel when a
+// relation blocks (its ErrorSpec carries the per-item code + message), an
+// infrastructure error otherwise, nil when nothing blocks. Under a resolved
+// cascade the reduced guard (syncCascadeGuard) replaces the full one when
+// implemented.
 func inUseBlocked[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
 	ad syncAdapter[T, R, S],
 	t T,
 	householdID, id uuid.UUID,
 	cascade bool,
-) (bool, string, error) {
+) error {
 	guard, ok := any(ad).(syncInUseGuard[T, R])
 	if !ok {
-		return false, "", nil
+		return nil
 	}
 	if cascade {
 		if cg, ok := any(ad).(syncCascadeGuard[T, R]); ok {
@@ -385,12 +387,4 @@ func inUseBlocked[T repository.SyncCore, R syncRow, S any](
 		}
 	}
 	return guard.inUse(ctx, t, householdID, id)
-}
-
-// guardCode fetches the in-use code without re-asserting the full guard.
-func guardCode[T repository.SyncCore, R syncRow, S any](ad syncAdapter[T, R, S]) string {
-	if guard, ok := any(ad).(syncInUseGuard[T, R]); ok {
-		return guard.inUseCode()
-	}
-	return "IN_USE"
 }

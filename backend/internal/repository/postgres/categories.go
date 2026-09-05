@@ -163,6 +163,9 @@ func (r *Repository) DeleteCategory(
 ) error {
 	const op = "repository.postgres.DeleteCategory"
 
+	// Same rule as service.ValidateCategoryDelete (ADR-0005), enforced here
+	// inside the locked transaction for REST atomicity.
+
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		if !cascade {
 			inUse, err := q.HasLiveTransactionsForCategory(ctx, db.HasLiveTransactionsForCategoryParams{

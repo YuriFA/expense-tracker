@@ -105,6 +105,9 @@ func (r *Repository) DeleteAccount(
 ) error {
 	const op = "repository.postgres.DeleteAccount"
 
+	// Same rule as service.ValidateAccountDelete (ADR-0005), enforced here
+	// inside the locked transaction for REST atomicity.
+
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		inUse, err := q.HasLiveTransactionsForAccount(ctx, db.HasLiveTransactionsForAccountParams{
 			HouseholdID: householdID,

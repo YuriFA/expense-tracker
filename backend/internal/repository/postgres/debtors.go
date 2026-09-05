@@ -102,6 +102,9 @@ func (r *Repository) UpdateDebtor(
 func (r *Repository) DeleteDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) error {
 	const op = "repository.postgres.DeleteDebtor"
 
+	// Same rule as service.ValidateDebtorDelete (ADR-0005), enforced here
+	// inside the transaction for REST atomicity.
+
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {
 		inUse, err := q.HasLiveDebtOperationsForDebtor(ctx, db.HasLiveDebtOperationsForDebtorParams{
 			HouseholdID: householdID,

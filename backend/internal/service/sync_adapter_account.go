@@ -106,27 +106,10 @@ func (accountAdapter) tombstone(
 	return t.TombstoneAccount(ctx, householdID, userID, id)
 }
 
-// inUse reports the account's live dependants in the REST order (postgres
-// DeleteAccount): live transactions first, then live planned payments - the
-// message names the relation that fired.
+// inUse runs the account delete rule (ADR-0005) against the batch tx,
+// returning the sentinel of the relation that blocks.
 func (accountAdapter) inUse(
 	ctx context.Context, t accountTx, householdID, id uuid.UUID,
-) (bool, string, error) {
-	transactions, err := t.HasLiveTransactionsForAccount(ctx, householdID, id)
-	if err != nil {
-		return false, "", err
-	}
-	if transactions {
-		return true, "account has transactions and cannot be deleted", nil
-	}
-	plans, err := t.HasLivePlannedPaymentsForAccount(ctx, householdID, id)
-	if err != nil {
-		return false, "", err
-	}
-	if plans {
-		return true, "account has planned payments and cannot be deleted", nil
-	}
-	return false, "", nil
+) error {
+	return ValidateAccountDelete(ctx, t, householdID, id)
 }
-
-func (accountAdapter) inUseCode() string { return "ACCOUNT_IN_USE" }
