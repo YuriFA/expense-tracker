@@ -9,9 +9,7 @@
 // dev server (and reinstall the Expo Go bundle) after changing them.
 
 import { createApiClient } from '@expense-tracker/api'
-
-/** Backend origin for the startup version line (spec: `app-version`). */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+import { API_BASE_URL } from '@/shared/config/api'
 
 export const apiClient = createApiClient({
   baseUrl: API_BASE_URL,

@@ -34,7 +34,7 @@ import {
 import { registerBackgroundSync } from '@/shared/lib/sync/background-sync'
 import { createLocalSyncTransport } from '@/shared/lib/sync/transport'
 import { APP_VERSION } from '@/shared/config/app-version'
-import { API_BASE_URL } from '@/shared/api/client'
+import { API_BASE_URL } from '@/shared/config/api'
 import {
   configureIdFactory,
   createSyncEngine,
