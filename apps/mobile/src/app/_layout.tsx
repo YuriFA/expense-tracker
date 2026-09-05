@@ -33,6 +33,8 @@ import {
 } from '@/entities/planned-payment'
 import { registerBackgroundSync } from '@/shared/lib/sync/background-sync'
 import { createLocalSyncTransport } from '@/shared/lib/sync/transport'
+import { APP_VERSION } from '@/shared/config/app-version'
+import { API_BASE_URL } from '@/shared/api/client'
 import {
   configureIdFactory,
   createSyncEngine,
@@ -46,6 +48,26 @@ import { HouseholdRebaseGuard } from '@/features/household-join'
 // Hermes has no WebCrypto: bind the shared id factory to expo-crypto before
 // any database work (ids are minted inside @expense-tracker/local-data).
 configureIdFactory(randomUUID)
+
+// Boot version line (spec: `app-version`): one console.info identifying the
+// running build, so "is the app on the right version?" is answered without
+// server access and mobile/api drift is visible. The API part is
+// fire-and-forget and bypasses the API client (no session semantics): an
+// offline start logs the mobile-only line and never blocks boot.
+async function logBuildVersions(): Promise<void> {
+  const parts = [`mobile ${APP_VERSION}`]
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/health`)
+    if (res.ok) {
+      const health = (await res.json()) as { version?: string }
+      if (health.version) parts.push(`api ${health.version}`)
+    }
+  } catch {
+    // API unreachable: keep the mobile-only line.
+  }
+  console.info(`[expense-tracker] ${parts.join(' · ')}`)
+}
+void logBuildVersions()
 
 /**
  * Feeds safe-area insets into Uniwind so `*-safe` utilities (e.g. Screen's

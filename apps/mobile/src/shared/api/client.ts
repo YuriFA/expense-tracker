@@ -10,6 +10,9 @@
 
 import { createApiClient } from '@expense-tracker/api'
 
+/** Backend origin for the startup version line (spec: `app-version`). */
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080'
+
 export const apiClient = createApiClient({
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080',
+  baseUrl: API_BASE_URL,
 })
