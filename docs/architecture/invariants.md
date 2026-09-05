@@ -223,7 +223,12 @@ only via local runs (Node ≥ 22), not in CI.
   appends change_log on the same tx)") reached through the push engine's
   adapters (`service/sync_engine.go` + `sync_adapter_*.go`, ADR-0003; the
   2026-09-01 audit's fake `CreateCategory` change-log drift fixed with it);
-  per-method calls through `postgres/sync.go`; seeding logs each
+  per-method calls through `postgres/sync.go` — the six tombstone twins and
+  the insert-classification ladders collapsed into shared cores
+  (`tombstoneEntity` in both `postgres/sync.go` and `service/fakes`, plus
+  `classifyInsertErr`), one home per layer, with the SQL twins pinned by
+  `postgres/sync_tombstones_test.go` (all six entities, real Postgres);
+  seeding logs each
   row (`postgres/users.go` RegisterUser); rationale documented in
   `migrations/000002_sync.up.sql` (per-scoping-unit lock) and re-keyed in
   `000005_household.up.sql`; per-household seq monotonicity + pull
@@ -233,7 +238,10 @@ only via local runs (Node ≥ 22), not in CI.
 - **Risk if violated**: Gaps/reordered `change_log.seq` would make sync
   pull miss or misorder changes; offline clients silently diverge.
 - **Current enforcement**: all REST mutations and sync push go through
-  `withinLockedTx` (structure); e2e + service sync tests cover the paths.
+  `withinLockedTx` (structure); e2e + service sync tests cover the paths;
+  the sync-side tombstone protocol (write + change-log row + idempotent
+  re-delete) is asserted per entity on real Postgres
+  (`postgres/sync_tombstones_test.go`).
 - **Automated**: yes (backend tests in CI); but nothing forces a *new*
   mutation to use the helper — that part is convention.
 
@@ -476,7 +484,12 @@ only via local runs (Node ≥ 22), not in CI.
   `postgres/accounts.go:130-136`). The sync surface keeps the same split
   (ADR-0003): the service-layer push engine owns the four-way conflict
   classification; postgres only maps zero-row writes to its per-entity
-  sentinels (`classifySyncWrite` in `postgres/sync.go`). Registered
+  sentinels — `classifySyncWrite` plus the `tombstoneEntity` /
+  `classifyInsertErr` cores and their thin per-entity wrappers in
+  `postgres/sync.go`, mirrored by the fakes' own `tombstoneEntity`
+  (R2: the protocol cores are shared per layer, the wrappers carry only
+  per-entity facts). The derived balance is mechanics and lives in one
+  place, the `account_with_balance` view (migration 000009). Registered
   deviations (migration deferred by decision; no UoW seam introduced):
   `RegisterUser` seeding (`postgres/users.go:47-70`), `VerifyEmailCode`
   attempt accounting (`postgres/email_verification.go:114-126`).

@@ -74,12 +74,18 @@ source of truth.
   `internal/service/sync_engine.go` owns the protocol skeleton,
   `sync_adapter_<entity>.go` supplies the entity half, and
   `repository/interfaces.go` composes `SyncTx` from `SyncCore` + per-entity
-  `*SyncTx` contracts.
+  `*SyncTx` contracts. The repository side follows the same shape (R2): the
+  tombstone/insert protocol lives in shared cores — `tombstoneEntity` +
+  `classifyInsertErr` in `postgres/sync.go`, `tombstoneEntity` in
+  `service/fakes` — and each per-entity method is a thin wrapper carrying
+  only its facts (sqlc call, sentinel, entity const, result constructor).
 - Behavior is frozen (ADR-0003 decision 4): per-item codes, ordering, and
   conflict shapes are pinned by `service/sync_push_protocol_test.go` and the
-  e2e sync suites; the known protocol oddities (string-literal error codes,
-  batch-in-one-transaction semantics, orphan adoption without a tombstone)
-  stay unchanged until their own changes.
+  e2e sync suites — plus `postgres/sync_tombstones_test.go`, which pins the
+  tombstone twins against real SQL for all six entities; the known protocol
+  oddities (string-literal error codes, batch-in-one-transaction semantics,
+  orphan adoption without a tombstone) stay unchanged until their own
+  changes.
 
 ## Codegen
 
