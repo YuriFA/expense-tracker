@@ -13,8 +13,8 @@ func (s *Server) ListAccounts(
 	ctx context.Context,
 	_ api.ListAccountsRequestObject,
 ) (api.ListAccountsResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	accounts, err := s.accounts.List(ctx, householdID)
+	scope := s.currentScope(ctx)
+	accounts, err := s.accounts.List(ctx, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +49,8 @@ func (s *Server) GetAccount(
 	ctx context.Context,
 	req api.GetAccountRequestObject,
 ) (api.GetAccountResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	a, err := s.accounts.Get(ctx, householdID, req.Id)
+	scope := s.currentScope(ctx)
+	a, err := s.accounts.Get(ctx, scope, req.Id)
 	if err != nil {
 		return nil, err
 	}

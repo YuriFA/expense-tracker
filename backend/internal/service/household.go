@@ -88,11 +88,18 @@ func NewHouseholdServiceWithClock(
 	return svc
 }
 
+// membershipScope is the household service's Scope construction: household
+// services are membership-scoped (resolved once by the transport), so both
+// scope ids come from the same membership record.
+func membershipScope(membership *domain.Membership) domain.Scope {
+	return domain.Scope{HouseholdID: membership.HouseholdID, ActorID: membership.UserID}
+}
+
 // Get returns the household with all of its members (email, display name,
 // role, joined date).
-func (s *HouseholdService) Get(ctx context.Context, householdID uuid.UUID) (*domain.Household, error) {
+func (s *HouseholdService) Get(ctx context.Context, scope domain.Scope) (*domain.Household, error) {
 	const op = "service.household.Get"
-	h, err := s.households.GetHouseholdWithMembers(ctx, householdID)
+	h, err := s.households.GetHouseholdWithMembers(ctx, scope)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -116,10 +123,10 @@ func (s *HouseholdService) UpdateName(
 		}
 		name = &trimmed
 	}
-	if err := s.households.UpdateHouseholdName(ctx, membership.HouseholdID, name); err != nil {
+	if err := s.households.UpdateHouseholdName(ctx, membershipScope(membership), name); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	return s.Get(ctx, membership.HouseholdID)
+	return s.Get(ctx, membershipScope(membership))
 }
 
 func (s *HouseholdService) requireOwner(membership *domain.Membership) error {
@@ -144,7 +151,7 @@ func (s *HouseholdService) CreateInvitation(
 	email = strings.TrimSpace(email)
 
 	// Inviting an existing member is pointless and confusing - reject clearly.
-	h, err := s.households.GetHouseholdWithMembers(ctx, membership.HouseholdID)
+	h, err := s.households.GetHouseholdWithMembers(ctx, membershipScope(membership))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -154,7 +161,7 @@ func (s *HouseholdService) CreateInvitation(
 		}
 	}
 
-	sends, err := s.households.CountHouseholdInvitationSends(ctx, membership.HouseholdID)
+	sends, err := s.households.CountHouseholdInvitationSends(ctx, membershipScope(membership))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -191,7 +198,7 @@ func (s *HouseholdService) ListInvitations(
 	if err := s.requireOwner(membership); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	return s.households.ListHouseholdInvitations(ctx, membership.HouseholdID)
+	return s.households.ListHouseholdInvitations(ctx, membershipScope(membership))
 }
 
 // RevokeInvitation revokes an invitation (owner only, idempotent).
@@ -204,7 +211,7 @@ func (s *HouseholdService) RevokeInvitation(
 	if err := s.requireOwner(membership); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if err := s.households.RevokeHouseholdInvitation(ctx, membership.HouseholdID, invitationID); err != nil {
+	if err := s.households.RevokeHouseholdInvitation(ctx, membershipScope(membership), invitationID); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
@@ -266,7 +273,7 @@ func (s *HouseholdService) PreviewInvitation(
 		return nil, fmt.Errorf("%s: %w", op, domain.ErrInvitationEmailMismatch)
 	}
 
-	h, err := s.households.GetHouseholdWithMembers(ctx, invitation.HouseholdID)
+	h, err := s.households.GetHouseholdWithMembers(ctx, domain.Scope{HouseholdID: invitation.HouseholdID})
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -342,7 +349,7 @@ func (s *HouseholdService) GenerateCode(
 	if err := s.requireOwner(membership); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	code, err := s.households.GenerateHouseholdCode(ctx, membership.HouseholdID)
+	code, err := s.households.GenerateHouseholdCode(ctx, membershipScope(membership))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -355,7 +362,7 @@ func (s *HouseholdService) RevokeCode(ctx context.Context, membership *domain.Me
 	if err := s.requireOwner(membership); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if err := s.households.RevokeHouseholdCode(ctx, membership.HouseholdID); err != nil {
+	if err := s.households.RevokeHouseholdCode(ctx, membershipScope(membership)); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
@@ -372,7 +379,7 @@ func (s *HouseholdService) Leave(
 	const op = "service.household.Leave"
 
 	if membership.Role == domain.HouseholdRoleOwner {
-		h, err := s.households.GetHouseholdWithMembers(ctx, membership.HouseholdID)
+		h, err := s.households.GetHouseholdWithMembers(ctx, membershipScope(membership))
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -418,7 +425,7 @@ func (s *HouseholdService) Dissolve(
 	if !confirm {
 		return fmt.Errorf("%s: %w", op, domain.ErrHouseholdDissolveConfirmRequired)
 	}
-	if err := s.households.DissolveHousehold(ctx, membership.HouseholdID); err != nil {
+	if err := s.households.DissolveHousehold(ctx, membershipScope(membership)); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

@@ -66,10 +66,10 @@ func TestSync_PerHouseholdSeqMonotonic(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		pageA, err := syncSvc.Pull(ctx, hhA, lastSeq(seqsA), nil)
+		pageA, err := syncSvc.Pull(ctx, domain.Scope{HouseholdID: hhA}, lastSeq(seqsA), nil)
 		require.NoError(t, err)
 		seqsA = appendSeqs(seqsA, pageA)
-		pageB, err := syncSvc.Pull(ctx, hhB, lastSeq(seqsB), nil)
+		pageB, err := syncSvc.Pull(ctx, domain.Scope{HouseholdID: hhB}, lastSeq(seqsB), nil)
 		require.NoError(t, err)
 		seqsB = appendSeqs(seqsB, pageB)
 		_ = i
@@ -105,12 +105,12 @@ func TestSync_PullIsolationBetweenHouseholds(t *testing.T) {
 	require.NoError(t, err)
 
 	// Each pull delivers ONLY its household's records.
-	pageA, err := syncSvc.Pull(ctx, hhA, 0, nil)
+	pageA, err := syncSvc.Pull(ctx, domain.Scope{HouseholdID: hhA}, 0, nil)
 	require.NoError(t, err)
 	require.Len(t, pageA.Changes, 1)
 	assert.Equal(t, recordA, pageA.Changes[0].ID)
 
-	pageB, err := syncSvc.Pull(ctx, hhB, 0, nil)
+	pageB, err := syncSvc.Pull(ctx, domain.Scope{HouseholdID: hhB}, 0, nil)
 	require.NoError(t, err)
 	require.Len(t, pageB.Changes, 1)
 	assert.Equal(t, recordB, pageB.Changes[0].ID)
@@ -184,10 +184,10 @@ func TestSync_OpIdIdempotencyScopedByHousehold(t *testing.T) {
 	// Each household's pull sees its own records only: A has its original +
 	// the foreign-record target, B has its own single record (the probe was a
 	// conflict and created nothing).
-	pageA, err := syncSvc.Pull(ctx, hhA, 0, nil)
+	pageA, err := syncSvc.Pull(ctx, domain.Scope{HouseholdID: hhA}, 0, nil)
 	require.NoError(t, err)
 	require.Len(t, pageA.Changes, 2)
-	pageB, err := syncSvc.Pull(ctx, hhB, 0, nil)
+	pageB, err := syncSvc.Pull(ctx, domain.Scope{HouseholdID: hhB}, 0, nil)
 	require.NoError(t, err)
 	require.Len(t, pageB.Changes, 1)
 }

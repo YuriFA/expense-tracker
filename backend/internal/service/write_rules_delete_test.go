@@ -20,13 +20,13 @@ type stubAccountDeleteReads struct {
 }
 
 func (s stubAccountDeleteReads) HasLiveTransactionsForAccount(
-	_ context.Context, _, _ uuid.UUID,
+	_ context.Context, _ domain.Scope, _ uuid.UUID,
 ) (bool, error) {
 	return s.transactions, nil
 }
 
 func (s stubAccountDeleteReads) HasLivePlannedPaymentsForAccount(
-	_ context.Context, _, _ uuid.UUID,
+	_ context.Context, _ domain.Scope, _ uuid.UUID,
 ) (bool, error) {
 	return s.plans, nil
 }
@@ -55,7 +55,7 @@ func TestValidateAccountDelete(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := service.ValidateAccountDelete(context.Background(), tc.reads, hh, id)
+			err := service.ValidateAccountDelete(context.Background(), tc.reads, domain.Scope{HouseholdID: hh}, id)
 			if tc.wantErr == nil {
 				require.NoError(t, err)
 				return
@@ -70,13 +70,13 @@ type stubCategoryDeleteReads struct {
 }
 
 func (s stubCategoryDeleteReads) HasLiveTransactionsForCategory(
-	_ context.Context, _, _ uuid.UUID,
+	_ context.Context, _ domain.Scope, _ uuid.UUID,
 ) (bool, error) {
 	return s.transactions, nil
 }
 
 func (s stubCategoryDeleteReads) HasLivePlannedPaymentsForCategory(
-	_ context.Context, _, _ uuid.UUID,
+	_ context.Context, _ domain.Scope, _ uuid.UUID,
 ) (bool, error) {
 	return s.plans, nil
 }
@@ -89,21 +89,25 @@ func TestValidateCategoryDelete(t *testing.T) {
 	t.Run("plain delete follows the account order: transactions, then plans", func(t *testing.T) {
 		t.Parallel()
 		require.ErrorIs(t, service.ValidateCategoryDelete(
-			context.Background(), stubCategoryDeleteReads{transactions: true, plans: true}, hh, id),
+			context.Background(),
+			stubCategoryDeleteReads{transactions: true, plans: true},
+			domain.Scope{HouseholdID: hh},
+			id,
+		),
 			domain.ErrCategoryHasTransactions)
 		require.ErrorIs(t, service.ValidateCategoryDelete(
-			context.Background(), stubCategoryDeleteReads{plans: true}, hh, id),
+			context.Background(), stubCategoryDeleteReads{plans: true}, domain.Scope{HouseholdID: hh}, id),
 			domain.ErrCategoryHasPlannedPayments)
 		require.NoError(t, service.ValidateCategoryDelete(
-			context.Background(), stubCategoryDeleteReads{}, hh, id))
+			context.Background(), stubCategoryDeleteReads{}, domain.Scope{HouseholdID: hh}, id))
 	})
 
 	t.Run("cascaded delete is blocked only by live planned payments", func(t *testing.T) {
 		t.Parallel()
 		require.NoError(t, service.ValidateCategoryDeleteUnderCascade(
-			context.Background(), stubCategoryDeleteReads{transactions: true}, hh, id))
+			context.Background(), stubCategoryDeleteReads{transactions: true}, domain.Scope{HouseholdID: hh}, id))
 		require.ErrorIs(t, service.ValidateCategoryDeleteUnderCascade(
-			context.Background(), stubCategoryDeleteReads{plans: true}, hh, id),
+			context.Background(), stubCategoryDeleteReads{plans: true}, domain.Scope{HouseholdID: hh}, id),
 			domain.ErrCategoryHasPlannedPayments)
 	})
 }
@@ -113,7 +117,7 @@ type stubDebtorDeleteReads struct {
 }
 
 func (s stubDebtorDeleteReads) HasLiveDebtOperationsForDebtor(
-	_ context.Context, _, _ uuid.UUID,
+	_ context.Context, _ domain.Scope, _ uuid.UUID,
 ) (bool, error) {
 	return s.operations, nil
 }
@@ -123,8 +127,8 @@ func TestValidateDebtorDelete(t *testing.T) {
 
 	hh, id := uuid.New(), uuid.New()
 	require.NoError(t, service.ValidateDebtorDelete(
-		context.Background(), stubDebtorDeleteReads{}, hh, id))
+		context.Background(), stubDebtorDeleteReads{}, domain.Scope{HouseholdID: hh}, id))
 	require.ErrorIs(t, service.ValidateDebtorDelete(
-		context.Background(), stubDebtorDeleteReads{operations: true}, hh, id),
+		context.Background(), stubDebtorDeleteReads{operations: true}, domain.Scope{HouseholdID: hh}, id),
 		domain.ErrDebtorHasOperations)
 }

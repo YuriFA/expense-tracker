@@ -35,10 +35,10 @@ func householdOf(t *testing.T, store *fakes.Store, userID uuid.UUID) uuid.UUID {
 	return m.HouseholdID
 }
 
-func seedFakeAccount(t *testing.T, store *fakes.Store, householdID, userID uuid.UUID) *domain.Account {
+func seedFakeAccount(t *testing.T, store *fakes.Store, scope domain.Scope, userID uuid.UUID) *domain.Account {
 	t.Helper()
 	a, err := store.CreateAccount(context.Background(), domain.CreateAccountParams{
-		HouseholdID: householdID, UserID: userID, Name: "A", Currency: "USD", OpeningBalance: 0,
+		HouseholdID: scope.HouseholdID, UserID: userID, Name: "A", Currency: "USD", OpeningBalance: 0,
 	})
 	if err != nil {
 		t.Fatalf("seedFakeAccount: %v", err)
@@ -49,13 +49,13 @@ func seedFakeAccount(t *testing.T, store *fakes.Store, householdID, userID uuid.
 func seedFakeCategory(
 	t *testing.T,
 	store *fakes.Store,
-	householdID, userID uuid.UUID,
+	scope domain.Scope, userID uuid.UUID,
 	name string,
 	typ domain.TransactionType,
 ) *domain.Category {
 	t.Helper()
 	c, err := store.CreateCategory(context.Background(), domain.CreateCategoryParams{
-		HouseholdID: householdID, UserID: userID, Name: name, Type: typ, Icon: "i", Color: "#fff",
+		HouseholdID: scope.HouseholdID, UserID: userID, Name: name, Type: typ, Icon: "i", Color: "#fff",
 	})
 	if err != nil {
 		t.Fatalf("seedFakeCategory: %v", err)

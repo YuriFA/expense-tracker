@@ -13,7 +13,7 @@ func (s *Server) ListCategories(
 	ctx context.Context,
 	req api.ListCategoriesRequestObject,
 ) (api.ListCategoriesResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
+	scope := s.currentScope(ctx)
 	var typ *domain.TransactionType
 	if req.Params.Type != nil {
 		t := domain.TransactionType(*req.Params.Type)
@@ -25,7 +25,7 @@ func (s *Server) ListCategories(
 	}
 	cats, err := s.categories.List(
 		ctx,
-		householdID,
+		scope,
 		domain.GetCategoriesParams{Type: typ, IncludeArchived: includeArchived},
 	)
 	if err != nil {
@@ -63,8 +63,8 @@ func (s *Server) GetCategory(
 	ctx context.Context,
 	req api.GetCategoryRequestObject,
 ) (api.GetCategoryResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	c, err := s.categories.Get(ctx, householdID, req.Id)
+	scope := s.currentScope(ctx)
+	c, err := s.categories.Get(ctx, scope, req.Id)
 	if err != nil {
 		return nil, err
 	}

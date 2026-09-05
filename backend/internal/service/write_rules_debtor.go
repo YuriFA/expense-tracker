@@ -19,7 +19,7 @@ import (
 // DebtorDeleteReads is the dependants-reading seam; the sync tx contract
 // satisfies it structurally.
 type DebtorDeleteReads interface {
-	HasLiveDebtOperationsForDebtor(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	HasLiveDebtOperationsForDebtor(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
 }
 
 // ValidateDebtorDelete returns ErrDebtorHasOperations when live debt
@@ -27,9 +27,9 @@ type DebtorDeleteReads interface {
 func ValidateDebtorDelete(
 	ctx context.Context,
 	reads DebtorDeleteReads,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) error {
-	operations, err := reads.HasLiveDebtOperationsForDebtor(ctx, householdID, id)
+	operations, err := reads.HasLiveDebtOperationsForDebtor(ctx, scope, id)
 	if err != nil {
 		return err
 	}

@@ -37,7 +37,7 @@ func (s *DebtOperationService) Create(
 	const op = "service.debtOperation.Create"
 
 	if err := ValidateDebtOperationWrite(
-		ctx, repoDebtorRefReads{debtors: s.debtors}, scope.HouseholdID, params.DebtorID,
+		ctx, repoDebtorRefReads{debtors: s.debtors}, scope, params.DebtorID,
 	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -76,9 +76,13 @@ func (s *DebtOperationService) Delete(ctx context.Context, scope domain.Scope, i
 	return nil
 }
 
-func (s *DebtOperationService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error) {
+func (s *DebtOperationService) Get(
+	ctx context.Context,
+	scope domain.Scope,
+	id uuid.UUID,
+) (*domain.DebtOperation, error) {
 	const op = "service.debtOperation.Get"
-	o, err := s.operations.GetDebtOperation(ctx, householdID, id)
+	o, err := s.operations.GetDebtOperation(ctx, scope, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -87,11 +91,11 @@ func (s *DebtOperationService) Get(ctx context.Context, householdID, id uuid.UUI
 
 func (s *DebtOperationService) List(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetDebtOperationsParams,
 ) ([]domain.DebtOperation, error) {
 	const op = "service.debtOperation.List"
-	o, err := s.operations.GetDebtOperations(ctx, householdID, params)
+	o, err := s.operations.GetDebtOperations(ctx, scope, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

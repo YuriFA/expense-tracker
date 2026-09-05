@@ -41,7 +41,7 @@ const (
 // transaction (due scan, transaction create, plan advancement) and the
 // household work list.
 type Store interface {
-	WithinHouseholdTx(ctx context.Context, householdID uuid.UUID, fn func(t repository.SyncTx) error) error
+	WithinHouseholdTx(ctx context.Context, scope domain.Scope, fn func(t repository.SyncTx) error) error
 	HouseholdsWithDueAutoPlannedPayments(ctx context.Context, today time.Time) ([]uuid.UUID, error)
 }
 
@@ -107,8 +107,8 @@ func (j *Job) runOnce(ctx context.Context) {
 // auto-created records is the plan's author (the job acts on their behalf).
 func (j *Job) executeHousehold(ctx context.Context, householdID uuid.UUID, today time.Time) error {
 	var created int
-	err := j.db.WithinHouseholdTx(ctx, householdID, func(t repository.SyncTx) error {
-		plans, err := t.DueAutoPlannedPayments(ctx, householdID, today)
+	err := j.db.WithinHouseholdTx(ctx, domain.Scope{HouseholdID: householdID}, func(t repository.SyncTx) error {
+		plans, err := t.DueAutoPlannedPayments(ctx, domain.Scope{HouseholdID: householdID}, today)
 		if err != nil {
 			return err
 		}

@@ -224,7 +224,8 @@ func (s *Store) GetMembershipByUser(_ context.Context, userID uuid.UUID) (*domai
 	return &c, nil
 }
 
-func (s *Store) GetHouseholdWithMembers(_ context.Context, householdID uuid.UUID) (*domain.Household, error) {
+func (s *Store) GetHouseholdWithMembers(_ context.Context, scope domain.Scope) (*domain.Household, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.householdWithMembersLocked(householdID)
@@ -469,7 +470,8 @@ func (s *Store) DeleteAccount(_ context.Context, scope domain.Scope, id uuid.UUI
 	return nil
 }
 
-func (s *Store) GetAccount(_ context.Context, householdID, id uuid.UUID) (*domain.Account, error) {
+func (s *Store) GetAccount(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Account, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
@@ -481,7 +483,8 @@ func (s *Store) GetAccount(_ context.Context, householdID, id uuid.UUID) (*domai
 	return &c, nil
 }
 
-func (s *Store) GetAccounts(_ context.Context, householdID uuid.UUID) ([]domain.Account, error) {
+func (s *Store) GetAccounts(_ context.Context, scope domain.Scope) ([]domain.Account, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Account
@@ -630,7 +633,8 @@ func (s *Store) DeleteCategory(_ context.Context, scope domain.Scope, id uuid.UU
 	return nil
 }
 
-func (s *Store) GetCategory(_ context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
+func (s *Store) GetCategory(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
@@ -643,9 +647,10 @@ func (s *Store) GetCategory(_ context.Context, householdID, id uuid.UUID) (*doma
 
 func (s *Store) GetCategories(
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetCategoriesParams,
 ) ([]domain.Category, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Category
@@ -766,7 +771,8 @@ func (s *Store) DeleteTransaction(_ context.Context, scope domain.Scope, id uuid
 	return nil
 }
 
-func (s *Store) GetTransaction(_ context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
+func (s *Store) GetTransaction(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Transaction, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
@@ -779,9 +785,10 @@ func (s *Store) GetTransaction(_ context.Context, householdID, id uuid.UUID) (*d
 
 func (s *Store) GetTransactions(
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetTransactionsParams,
 ) ([]domain.Transaction, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Transaction
@@ -932,7 +939,8 @@ func (s *Store) DeleteDebtor(_ context.Context, scope domain.Scope, id uuid.UUID
 	return nil
 }
 
-func (s *Store) GetDebtor(_ context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
+func (s *Store) GetDebtor(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Debtor, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.debtors[id]
@@ -943,7 +951,8 @@ func (s *Store) GetDebtor(_ context.Context, householdID, id uuid.UUID) (*domain
 	return &c, nil
 }
 
-func (s *Store) GetDebtors(_ context.Context, householdID uuid.UUID) ([]domain.Debtor, error) {
+func (s *Store) GetDebtors(_ context.Context, scope domain.Scope) ([]domain.Debtor, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.Debtor
@@ -1036,7 +1045,8 @@ func (s *Store) DeleteDebtOperation(_ context.Context, scope domain.Scope, id uu
 	return nil
 }
 
-func (s *Store) GetDebtOperation(_ context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error) {
+func (s *Store) GetDebtOperation(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.DebtOperation, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, ok := s.debtOps[id]
@@ -1049,9 +1059,10 @@ func (s *Store) GetDebtOperation(_ context.Context, householdID, id uuid.UUID) (
 
 func (s *Store) GetDebtOperations( //nolint:dupl // per-entity list twins: identical filter/sort shape
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetDebtOperationsParams,
 ) ([]domain.DebtOperation, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.DebtOperation
@@ -1294,7 +1305,7 @@ var _ repository.SyncTx = (*fakeSyncTx)(nil)
 
 func (s *Store) WithinHouseholdTx(
 	_ context.Context,
-	_ uuid.UUID,
+	_ domain.Scope,
 	fn func(t repository.SyncTx) error,
 ) error {
 	return fn(&fakeSyncTx{store: s})
@@ -1302,10 +1313,11 @@ func (s *Store) WithinHouseholdTx(
 
 func (s *Store) PullChanges(
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	afterSeq int64,
 	limit int,
 ) ([]domain.SyncChange, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.SyncChange
@@ -1363,14 +1375,20 @@ func (s *Store) currentState(householdID uuid.UUID, entity string, id uuid.UUID)
 // create with an id used in another household cannot collide here - always
 // free to create. The cross-household semantics live in the Postgres layer
 // (global PK) and are covered by its e2e tests.
-func (t *fakeSyncTx) AdoptOrphanedID(_ context.Context, _ string, _, _ uuid.UUID) (*domain.SyncServerState, error) {
+func (t *fakeSyncTx) AdoptOrphanedID(
+	_ context.Context,
+	_ string,
+	_ uuid.UUID,
+	_ domain.Scope,
+) (*domain.SyncServerState, error) {
 	return nil, nil //nolint:nilnil // (nil, nil) is the documented "absent" signal
 }
 
 func (t *fakeSyncTx) GetAppliedOperation(
 	_ context.Context,
-	householdID, opID uuid.UUID,
+	scope domain.Scope, opID uuid.UUID,
 ) (*domain.AppliedOperation, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	if op, ok := t.store.appliedOps[idemOpKey(householdID, opID)]; ok {
@@ -1393,7 +1411,8 @@ func idemOpKey(householdID, opID uuid.UUID) string {
 	return householdID.String() + "|" + opID.String()
 }
 
-func (t *fakeSyncTx) GetAccountAny(_ context.Context, householdID, id uuid.UUID) (*domain.Account, error) {
+func (t *fakeSyncTx) GetAccountAny(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Account, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	a, ok := t.store.accounts[id]
@@ -1404,7 +1423,8 @@ func (t *fakeSyncTx) GetAccountAny(_ context.Context, householdID, id uuid.UUID)
 	return &c, nil
 }
 
-func (t *fakeSyncTx) GetCategoryAny(_ context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
+func (t *fakeSyncTx) GetCategoryAny(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	c, ok := t.store.categories[id]
@@ -1415,7 +1435,12 @@ func (t *fakeSyncTx) GetCategoryAny(_ context.Context, householdID, id uuid.UUID
 	return &cc, nil
 }
 
-func (t *fakeSyncTx) GetTransactionAny(_ context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
+func (t *fakeSyncTx) GetTransactionAny(
+	_ context.Context,
+	scope domain.Scope,
+	id uuid.UUID,
+) (*domain.Transaction, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	tx, ok := t.store.transactions[id]
@@ -1426,7 +1451,8 @@ func (t *fakeSyncTx) GetTransactionAny(_ context.Context, householdID, id uuid.U
 	return &c, nil
 }
 
-func (t *fakeSyncTx) GetDebtorAny(_ context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
+func (t *fakeSyncTx) GetDebtorAny(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Debtor, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	d, ok := t.store.debtors[id]
@@ -1437,7 +1463,12 @@ func (t *fakeSyncTx) GetDebtorAny(_ context.Context, householdID, id uuid.UUID) 
 	return &c, nil
 }
 
-func (t *fakeSyncTx) GetDebtOperationAny(_ context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error) {
+func (t *fakeSyncTx) GetDebtOperationAny(
+	_ context.Context,
+	scope domain.Scope,
+	id uuid.UUID,
+) (*domain.DebtOperation, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	o, ok := t.store.debtOps[id]
@@ -1448,13 +1479,13 @@ func (t *fakeSyncTx) GetDebtOperationAny(_ context.Context, householdID, id uuid
 	return &c, nil
 }
 
-func (t *fakeSyncTx) LiveAccountExists(_ context.Context, householdID, id uuid.UUID) (bool, error) {
-	a, _ := t.GetAccountAny(context.Background(), householdID, id)
+func (t *fakeSyncTx) LiveAccountExists(_ context.Context, scope domain.Scope, id uuid.UUID) (bool, error) {
+	a, _ := t.GetAccountAny(context.Background(), scope, id)
 	return a != nil && !a.Deleted(), nil
 }
 
-func (t *fakeSyncTx) LiveCategory(_ context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
-	c, _ := t.GetCategoryAny(context.Background(), householdID, id)
+func (t *fakeSyncTx) LiveCategory(_ context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error) {
+	c, _ := t.GetCategoryAny(context.Background(), scope, id)
 	if c == nil || c.Deleted() {
 		return nil, domain.ErrCategoryNotFound
 	}
@@ -1463,10 +1494,11 @@ func (t *fakeSyncTx) LiveCategory(_ context.Context, householdID, id uuid.UUID) 
 
 func (t *fakeSyncTx) CategoryNameTaken(
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	name string,
 	exceptID uuid.UUID,
 ) (bool, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, c := range t.store.categories {
@@ -1479,8 +1511,9 @@ func (t *fakeSyncTx) CategoryNameTaken(
 
 func (t *fakeSyncTx) HasLiveTransactionsForAccount(
 	_ context.Context,
-	householdID, accountID uuid.UUID,
+	scope domain.Scope, accountID uuid.UUID,
 ) (bool, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, tx := range t.store.transactions {
@@ -1498,8 +1531,9 @@ func (t *fakeSyncTx) HasLiveTransactionsForAccount(
 
 func (t *fakeSyncTx) HasLiveTransactionsForCategory(
 	_ context.Context,
-	householdID, categoryID uuid.UUID,
+	scope domain.Scope, categoryID uuid.UUID,
 ) (bool, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, tx := range t.store.transactions {
@@ -1511,17 +1545,18 @@ func (t *fakeSyncTx) HasLiveTransactionsForCategory(
 	return false, nil
 }
 
-func (t *fakeSyncTx) LiveDebtorExists(_ context.Context, householdID, id uuid.UUID) (bool, error) {
-	d, _ := t.GetDebtorAny(context.Background(), householdID, id)
+func (t *fakeSyncTx) LiveDebtorExists(_ context.Context, scope domain.Scope, id uuid.UUID) (bool, error) {
+	d, _ := t.GetDebtorAny(context.Background(), scope, id)
 	return d != nil && !d.Deleted(), nil
 }
 
 func (t *fakeSyncTx) DebtorNameTaken(
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	name string,
 	exceptID uuid.UUID,
 ) (bool, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, d := range t.store.debtors {
@@ -1534,8 +1569,9 @@ func (t *fakeSyncTx) DebtorNameTaken(
 
 func (t *fakeSyncTx) HasLiveDebtOperationsForDebtor(
 	_ context.Context,
-	householdID, debtorID uuid.UUID,
+	scope domain.Scope, debtorID uuid.UUID,
 ) (bool, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, o := range t.store.debtOps {

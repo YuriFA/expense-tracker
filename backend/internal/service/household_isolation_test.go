@@ -91,15 +91,15 @@ func TestHouseholdScoping_MemberSeesSiblingRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	// The sibling lists the household's records like their own.
-	accounts, err := f.acctSvc.List(ctx, f.ownerHH)
+	accounts, err := f.acctSvc.List(ctx, domain.Scope{HouseholdID: f.ownerHH})
 	require.NoError(t, err)
 	assert.Len(t, accounts, 1)
-	categories, err := f.catSvc.List(ctx, f.ownerHH, domain.GetCategoriesParams{})
+	categories, err := f.catSvc.List(ctx, domain.Scope{HouseholdID: f.ownerHH}, domain.GetCategoriesParams{})
 	require.NoError(t, err)
 	assert.Len(t, categories, 1)
 
 	// The sibling reads the owner's record by id.
-	got, err := f.acctSvc.Get(ctx, f.ownerHH, acct.ID)
+	got, err := f.acctSvc.Get(ctx, domain.Scope{HouseholdID: f.ownerHH}, acct.ID)
 	require.NoError(t, err)
 	assert.Equal(t, acct.ID, got.ID)
 
@@ -117,14 +117,14 @@ func TestHouseholdScoping_MemberSeesSiblingRecords(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, f.sibling.ID, tx.UserID, "authorship = the acting member")
 
-	listed, err := f.txSvc.List(ctx, f.ownerHH, service.TransactionListQuery{})
+	listed, err := f.txSvc.List(ctx, domain.Scope{HouseholdID: f.ownerHH}, service.TransactionListQuery{})
 	require.NoError(t, err)
 	require.Len(t, listed.Transactions, 1)
 	assert.Equal(t, f.sibling.ID, listed.Transactions[0].UserID)
 
 	// Balances are household-wide: the sibling sees the owner's account
 	// balance (via the listing) including their own transaction.
-	relisted, err := f.acctSvc.List(ctx, f.ownerHH)
+	relisted, err := f.acctSvc.List(ctx, domain.Scope{HouseholdID: f.ownerHH})
 	require.NoError(t, err)
 	require.Len(t, relisted, 1)
 	assert.Equal(t, int64(500), relisted[0].Balance)
@@ -159,15 +159,15 @@ func TestHouseholdScoping_NonMemberGetsNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	// Reads by id: not-found, never the row.
-	_, err = f.acctSvc.Get(ctx, f.outsiderHH, acct.ID)
+	_, err = f.acctSvc.Get(ctx, domain.Scope{HouseholdID: f.outsiderHH}, acct.ID)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
-	_, err = f.catSvc.Get(ctx, f.outsiderHH, cat.ID)
+	_, err = f.catSvc.Get(ctx, domain.Scope{HouseholdID: f.outsiderHH}, cat.ID)
 	require.ErrorIs(t, err, domain.ErrCategoryNotFound)
-	_, err = f.debtorSvc.Get(ctx, f.outsiderHH, debtor.ID)
+	_, err = f.debtorSvc.Get(ctx, domain.Scope{HouseholdID: f.outsiderHH}, debtor.ID)
 	require.ErrorIs(t, err, domain.ErrDebtorNotFound)
 
 	// Listings are empty, not an error.
-	accounts, err := f.acctSvc.List(ctx, f.outsiderHH)
+	accounts, err := f.acctSvc.List(ctx, domain.Scope{HouseholdID: f.outsiderHH})
 	require.NoError(t, err)
 	assert.Empty(t, accounts)
 
@@ -262,7 +262,7 @@ func TestHouseholdService_ListsMembers(t *testing.T) {
 	f := newIsolationFixture(t)
 	ctx := context.Background()
 
-	h, err := f.householdSvc.Get(ctx, f.ownerHH)
+	h, err := f.householdSvc.Get(ctx, domain.Scope{HouseholdID: f.ownerHH})
 	require.NoError(t, err)
 	require.Len(t, h.Members, 2)
 	assert.Equal(t, f.owner.ID, h.Members[0].UserID)
@@ -276,7 +276,7 @@ func TestHouseholdService_ListsMembers(t *testing.T) {
 func TestHouseholdService_UnknownHousehold(t *testing.T) {
 	t.Parallel()
 	f := newIsolationFixture(t)
-	_, err := f.householdSvc.Get(context.Background(), uuid.New())
+	_, err := f.householdSvc.Get(context.Background(), domain.Scope{HouseholdID: uuid.New()})
 	require.ErrorIs(t, err, domain.ErrHouseholdNotFound)
 }
 
@@ -311,7 +311,7 @@ func TestAuthService_UpdateDisplayName(t *testing.T) {
 		service.HouseholdJoinConfig{},
 	)
 	householdID := householdOf(t, store, user.ID)
-	h, err := householdSvc.Get(ctx, householdID)
+	h, err := householdSvc.Get(ctx, domain.Scope{HouseholdID: householdID})
 	require.NoError(t, err)
 	require.Len(t, h.Members, 1)
 	require.NotNil(t, h.Members[0].DisplayName)

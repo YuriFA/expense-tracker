@@ -19,7 +19,7 @@ import (
 type debtOperationTx interface {
 	repository.SyncCore
 	repository.DebtOperationSyncTx
-	LiveDebtorExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	LiveDebtorExists(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
 }
 
 var _ debtOperationTx = repository.SyncTx(nil)
@@ -55,7 +55,7 @@ func (debtOperationAdapter) invalidDataMessage() string {
 func (debtOperationAdapter) preValidate(
 	ctx context.Context,
 	t debtOperationTx,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	_ domain.SyncOperation,
 	data domain.DebtOperationFullState,
 ) (string, string, error) {
@@ -68,7 +68,7 @@ func (debtOperationAdapter) preValidate(
 	if data.Kind != domain.DebtOperationKindDebt && data.Kind != domain.DebtOperationKindRepayment {
 		return "VALIDATION_FAILED", "invalid debt operation kind", nil
 	}
-	err := ValidateDebtOperationWrite(ctx, syncDebtorRefReads{src: t}, householdID, data.DebtorID)
+	err := ValidateDebtOperationWrite(ctx, syncDebtorRefReads{src: t}, scope, data.DebtorID)
 	if err != nil {
 		if spec, ok := domain.ErrorSpecFor(err); ok {
 			return spec.Code, spec.Message, nil
@@ -94,9 +94,9 @@ func (debtOperationAdapter) isWriteRace(err error) bool {
 }
 
 func (debtOperationAdapter) getAny(
-	ctx context.Context, t debtOperationTx, householdID, id uuid.UUID,
+	ctx context.Context, t debtOperationTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.DebtOperation, bool, error) {
-	o, err := t.GetDebtOperationAny(ctx, householdID, id)
+	o, err := t.GetDebtOperationAny(ctx, scope, id)
 	if err != nil || o == nil {
 		return nil, false, err
 	}

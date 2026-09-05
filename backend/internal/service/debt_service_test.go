@@ -167,16 +167,19 @@ func TestDebtorService_DeleteInUseCountsLiveOperationsOnly(t *testing.T) {
 	)
 
 	// Tombstone the operation via the sync surface (delete-wins path).
-	require.NoError(t, store.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
-		_, err := tx.TombstoneDebtOperation(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, op.ID)
-		return err
-	}))
+	require.NoError(
+		t,
+		store.WithinHouseholdTx(ctx, domain.Scope{HouseholdID: userHH}, func(tx repository.SyncTx) error {
+			_, err := tx.TombstoneDebtOperation(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, op.ID)
+			return err
+		}),
+	)
 
 	// Only tombstoned operations remain: the debtor is deletable.
 	require.NoError(t, debtorSvc.Delete(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, debtor.ID))
 
 	// The deleted debtor is gone; the name is reusable.
-	_, err = debtorSvc.Get(ctx, user.ID, debtor.ID)
+	_, err = debtorSvc.Get(ctx, domain.Scope{HouseholdID: userHH}, debtor.ID)
 	require.ErrorIs(t, err, domain.ErrDebtorNotFound)
 	_, err = debtorSvc.Create(
 		ctx,
@@ -279,12 +282,16 @@ func TestDebtOperationService_Rules(t *testing.T) {
 			)
 			require.NoError(t, err)
 		}
-		ops, err := opSvc.List(ctx, userHH, domain.GetDebtOperationsParams{DebtorID: &first.ID})
+		ops, err := opSvc.List(
+			ctx,
+			domain.Scope{HouseholdID: userHH},
+			domain.GetDebtOperationsParams{DebtorID: &first.ID},
+		)
 		require.NoError(t, err)
 		assert.Len(t, ops, 1)
 		assert.Equal(t, first.ID, ops[0].DebtorID)
 
-		all, err := opSvc.List(ctx, userHH, domain.GetDebtOperationsParams{})
+		all, err := opSvc.List(ctx, domain.Scope{HouseholdID: userHH}, domain.GetDebtOperationsParams{})
 		require.NoError(t, err)
 		// Parallel sibling subtests add operations for the same user; only the
 		// floor is deterministic here.

@@ -51,7 +51,7 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 	preValidate(
 		ctx context.Context,
 		t T,
-		householdID uuid.UUID,
+		scope domain.Scope,
 		op domain.SyncOperation,
 		data S,
 	) (code, message string, err error)
@@ -60,7 +60,7 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 	postReadValidate(
 		ctx context.Context,
 		t T,
-		householdID uuid.UUID,
+		scope domain.Scope,
 		op domain.SyncOperation,
 		data S,
 	) (code, message string, err error)
@@ -69,7 +69,7 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 	fullState(row R) any
 	// getAny reads the row including tombstones; found = false means the id
 	// was never created in this household.
-	getAny(ctx context.Context, t T, householdID, id uuid.UUID) (row R, found bool, err error)
+	getAny(ctx context.Context, t T, scope domain.Scope, id uuid.UUID) (row R, found bool, err error)
 
 	// immutable fires between the deleted-check and the version-check of the
 	// update branch (an immutable-field violation outranks the version
@@ -83,7 +83,7 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 	onCreateError(
 		ctx context.Context,
 		t T,
-		householdID uuid.UUID,
+		scope domain.Scope,
 		op domain.SyncOperation,
 		err error,
 	) (result domain.SyncPushResult, handled bool, ferr error)
@@ -106,7 +106,7 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 // to the shared wire spec (domain.ErrorSpecFor), so an entity with several
 // dependants names the one that fired through its sentinel message.
 type syncInUseGuard[T repository.SyncCore, R syncRow] interface {
-	inUse(ctx context.Context, t T, householdID, id uuid.UUID) error
+	inUse(ctx context.Context, t T, scope domain.Scope, id uuid.UUID) error
 }
 
 // syncDeleteOptionsResolver is implemented by entities whose delete payload
@@ -123,7 +123,7 @@ type syncDeleteOptionsResolver[T repository.SyncCore, R syncRow] interface {
 // the referencing transactions), so only the remaining relations (live
 // planned payments) are checked. Returns the blocking sentinel or nil.
 type syncCascadeGuard[T repository.SyncCore, R syncRow] interface {
-	inUseUnderCascade(ctx context.Context, t T, householdID, id uuid.UUID) error
+	inUseUnderCascade(ctx context.Context, t T, scope domain.Scope, id uuid.UUID) error
 }
 
 // syncCascadeTombstoner pairs with a resolved cascade: the tombstone write
@@ -140,13 +140,13 @@ type syncCascadeTombstoner[T repository.SyncCore, R syncRow] interface {
 type syncAdapterDefaults[T repository.SyncCore, R syncRow, S any] struct{}
 
 func (syncAdapterDefaults[T, R, S]) preValidate(
-	context.Context, T, uuid.UUID, domain.SyncOperation, S,
+	context.Context, T, domain.Scope, domain.SyncOperation, S,
 ) (string, string, error) {
 	return "", "", nil
 }
 
 func (syncAdapterDefaults[T, R, S]) postReadValidate(
-	context.Context, T, uuid.UUID, domain.SyncOperation, S,
+	context.Context, T, domain.Scope, domain.SyncOperation, S,
 ) (string, string, error) {
 	return "", "", nil
 }
@@ -156,7 +156,7 @@ func (syncAdapterDefaults[T, R, S]) immutable(R, S) (string, string) {
 }
 
 func (syncAdapterDefaults[T, R, S]) onCreateError(
-	context.Context, T, uuid.UUID, domain.SyncOperation, error,
+	context.Context, T, domain.Scope, domain.SyncOperation, error,
 ) (domain.SyncPushResult, bool, error) {
 	return domain.SyncPushResult{}, false, nil
 }
@@ -201,17 +201,17 @@ func applySyncEntity[T repository.SyncCore, R syncRow, S any](
 			ad.invalidDataMessage(),
 		), nil
 	}
-	if code, message, verr := ad.preValidate(ctx, t, scope.HouseholdID, op, data); verr != nil {
+	if code, message, verr := ad.preValidate(ctx, t, scope, op, data); verr != nil {
 		return domain.SyncPushResult{}, verr
 	} else if code != "" {
 		return errorResult(op.OpID, code, message), nil
 	}
 
-	current, found, err := ad.getAny(ctx, t, scope.HouseholdID, op.ID)
+	current, found, err := ad.getAny(ctx, t, scope, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
-	if code, message, verr := ad.postReadValidate(ctx, t, scope.HouseholdID, op, data); verr != nil {
+	if code, message, verr := ad.postReadValidate(ctx, t, scope, op, data); verr != nil {
 		return domain.SyncPushResult{}, verr
 	} else if code != "" {
 		return errorResult(op.OpID, code, message), nil
@@ -241,7 +241,7 @@ func createSyncEntity[T repository.SyncCore, R syncRow, S any](
 			serverStateOf(ad.version(current), current.Deleted(), ad.fullState(current)),
 		), nil
 	}
-	if res, err := adoptOrphanedOrConflict(ctx, t, ad.entity(), op, scope.HouseholdID,
+	if res, err := adoptOrphanedOrConflict(ctx, t, ad.entity(), op, scope,
 		ad.label()+" already exists in another household"); err != nil {
 		return domain.SyncPushResult{}, err
 	} else if res.Status != "" {
@@ -249,7 +249,7 @@ func createSyncEntity[T repository.SyncCore, R syncRow, S any](
 	}
 	created, err := ad.create(ctx, t, scope, op.ID, data)
 	if err != nil {
-		if res, handled, ferr := ad.onCreateError(ctx, t, scope.HouseholdID, op, err); ferr != nil {
+		if res, handled, ferr := ad.onCreateError(ctx, t, scope, op, err); ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		} else if handled {
 			return res, nil
@@ -295,7 +295,7 @@ func updateSyncEntity[T repository.SyncCore, R syncRow, S any](
 	if ad.isWriteRace(err) {
 		// Lost a race inside the batch (two ops touching the same record);
 		// report the conflict, the client re-pushes on the new base.
-		fresh, _, ferr := ad.getAny(ctx, t, scope.HouseholdID, op.ID)
+		fresh, _, ferr := ad.getAny(ctx, t, scope, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -321,7 +321,7 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 	op domain.SyncOperation,
 	ad syncAdapter[T, R, S],
 ) (domain.SyncPushResult, error) {
-	current, found, err := ad.getAny(ctx, t, scope.HouseholdID, op.ID)
+	current, found, err := ad.getAny(ctx, t, scope, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -340,7 +340,7 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 			return errorResult(op.OpID, code, message), nil
 		}
 	}
-	if guardErr := inUseBlocked(ctx, ad, t, scope.HouseholdID, op.ID, cascade); guardErr != nil {
+	if guardErr := inUseBlocked(ctx, ad, t, scope, op.ID, cascade); guardErr != nil {
 		if spec, ok := domain.ErrorSpecFor(guardErr); ok {
 			return errorResult(op.OpID, spec.Code, spec.Message), nil
 		}
@@ -374,7 +374,7 @@ func inUseBlocked[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
 	ad syncAdapter[T, R, S],
 	t T,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	cascade bool,
 ) error {
 	guard, ok := any(ad).(syncInUseGuard[T, R])
@@ -383,8 +383,8 @@ func inUseBlocked[T repository.SyncCore, R syncRow, S any](
 	}
 	if cascade {
 		if cg, ok := any(ad).(syncCascadeGuard[T, R]); ok {
-			return cg.inUseUnderCascade(ctx, t, householdID, id)
+			return cg.inUseUnderCascade(ctx, t, scope, id)
 		}
 	}
-	return guard.inUse(ctx, t, householdID, id)
+	return guard.inUse(ctx, t, scope, id)
 }

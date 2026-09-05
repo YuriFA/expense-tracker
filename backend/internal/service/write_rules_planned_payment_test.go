@@ -74,7 +74,7 @@ func TestValidatePlannedPaymentWrite(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			err := service.ValidatePlannedPaymentWrite(
-				context.Background(), reads, hh, tc.accountID, tc.categoryID, tc.typ,
+				context.Background(), reads, domain.Scope{HouseholdID: hh}, tc.accountID, tc.categoryID, tc.typ,
 			)
 			if tc.wantErr == nil {
 				require.NoError(t, err)

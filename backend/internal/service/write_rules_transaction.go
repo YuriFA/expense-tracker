@@ -47,7 +47,7 @@ type TransactionWriteState struct {
 func ValidateTransactionWrite(
 	ctx context.Context,
 	reads RefReads,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	state TransactionWriteState,
 ) error {
 	if err := ValidateAmount(state.Type, state.Amount); err != nil {
@@ -58,19 +58,19 @@ func ValidateTransactionWrite(
 		if state.FromAccountID != nil || state.ToAccountID != nil || state.CategoryID == nil {
 			return domain.ErrInvalidRefs
 		}
-		return validateCashflowWriteRefs(ctx, reads, householdID, state)
+		return validateCashflowWriteRefs(ctx, reads, scope, state)
 	case domain.TransactionTypeTransfer:
 		if state.AccountID != nil || state.CategoryID != nil ||
 			state.FromAccountID == nil || state.ToAccountID == nil {
 			return domain.ErrInvalidRefs
 		}
-		return validateTransferWriteRefs(ctx, reads, householdID, *state.FromAccountID, *state.ToAccountID)
+		return validateTransferWriteRefs(ctx, reads, scope, *state.FromAccountID, *state.ToAccountID)
 	case domain.TransactionTypeAdjustment:
 		if state.CategoryID != nil || state.FromAccountID != nil || state.ToAccountID != nil ||
 			state.AccountID == nil {
 			return domain.ErrInvalidRefs
 		}
-		return validateAdjustmentWriteRefs(ctx, reads, householdID, *state.AccountID)
+		return validateAdjustmentWriteRefs(ctx, reads, scope, *state.AccountID)
 	}
 	return nil
 }
@@ -104,9 +104,9 @@ func ValidateTransactionTypeImmutable(cur, next domain.TransactionType) error {
 // writeAccountExists maps the seam's account read to the sentinel of the
 // from/to/plain call site.
 func writeAccountExists(
-	ctx context.Context, reads RefReads, householdID, id uuid.UUID, notFound error,
+	ctx context.Context, reads RefReads, scope domain.Scope, id uuid.UUID, notFound error,
 ) error {
-	exists, err := reads.AccountExists(ctx, householdID, id)
+	exists, err := reads.AccountExists(ctx, scope, id)
 	if err != nil {
 		return err
 	}
@@ -119,17 +119,17 @@ func writeAccountExists(
 func validateCashflowWriteRefs(
 	ctx context.Context,
 	reads RefReads,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	state TransactionWriteState,
 ) error {
 	if state.AccountID != nil {
 		if err := writeAccountExists(
-			ctx, reads, householdID, *state.AccountID, domain.ErrTransactionAccountNotFound,
+			ctx, reads, scope, *state.AccountID, domain.ErrTransactionAccountNotFound,
 		); err != nil {
 			return err
 		}
 	}
-	cat, err := reads.Category(ctx, householdID, *state.CategoryID)
+	cat, err := reads.Category(ctx, scope, *state.CategoryID)
 	if err != nil {
 		if errors.Is(err, domain.ErrCategoryNotFound) {
 			return domain.ErrTransactionCategoryNotFound
@@ -151,15 +151,15 @@ func validateCashflowWriteRefs(
 func validateTransferWriteRefs(
 	ctx context.Context,
 	reads RefReads,
-	householdID, fromAccountID, toAccountID uuid.UUID,
+	scope domain.Scope, fromAccountID, toAccountID uuid.UUID,
 ) error {
 	if err := writeAccountExists(
-		ctx, reads, householdID, fromAccountID, domain.ErrTransactionFromAccountNotFound,
+		ctx, reads, scope, fromAccountID, domain.ErrTransactionFromAccountNotFound,
 	); err != nil {
 		return err
 	}
 	if err := writeAccountExists(
-		ctx, reads, householdID, toAccountID, domain.ErrTransactionToAccountNotFound,
+		ctx, reads, scope, toAccountID, domain.ErrTransactionToAccountNotFound,
 	); err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func validateTransferWriteRefs(
 func validateAdjustmentWriteRefs(
 	ctx context.Context,
 	reads RefReads,
-	householdID, accountID uuid.UUID,
+	scope domain.Scope, accountID uuid.UUID,
 ) error {
-	return writeAccountExists(ctx, reads, householdID, accountID, domain.ErrTransactionAccountNotFound)
+	return writeAccountExists(ctx, reads, scope, accountID, domain.ErrTransactionAccountNotFound)
 }

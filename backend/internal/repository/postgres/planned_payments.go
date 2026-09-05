@@ -149,8 +149,9 @@ func classifyPlannedPaymentWrite(ctx context.Context, q *db.Queries, householdID
 
 func (r *Repository) GetPlannedPayment(
 	ctx context.Context,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetPlannedPayment"
 
 	row, err := r.q.GetPlannedPayment(ctx, db.GetPlannedPaymentParams{ID: id, HouseholdID: householdID})
@@ -169,9 +170,10 @@ func (r *Repository) GetPlannedPayment(
 
 func (r *Repository) GetPlannedPayments(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetPlannedPaymentsParams,
 ) ([]domain.PlannedPayment, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetPlannedPayments"
 
 	var typePtr *string

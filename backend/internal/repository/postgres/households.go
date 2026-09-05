@@ -31,7 +31,8 @@ func (r *Repository) GetMembershipByUser(ctx context.Context, userID uuid.UUID) 
 
 // GetHouseholdWithMembers loads the household with its full member listing
 // (email, display name, role, joined date). Unknown id -> ErrHouseholdNotFound.
-func (r *Repository) GetHouseholdWithMembers(ctx context.Context, householdID uuid.UUID) (*domain.Household, error) {
+func (r *Repository) GetHouseholdWithMembers(ctx context.Context, scope domain.Scope) (*domain.Household, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetHouseholdWithMembers"
 
 	h, err := r.q.GetHouseholdByID(ctx, householdID)

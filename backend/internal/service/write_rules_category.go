@@ -21,8 +21,8 @@ import (
 // CategoryDeleteReads is the dependants-reading seam; the sync tx
 // contract satisfies it structurally.
 type CategoryDeleteReads interface {
-	HasLiveTransactionsForCategory(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	HasLivePlannedPaymentsForCategory(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	HasLiveTransactionsForCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
+	HasLivePlannedPaymentsForCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
 }
 
 // ValidateCategoryDelete returns the sentinel of the first relation that
@@ -31,16 +31,16 @@ type CategoryDeleteReads interface {
 func ValidateCategoryDelete(
 	ctx context.Context,
 	reads CategoryDeleteReads,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) error {
-	transactions, err := reads.HasLiveTransactionsForCategory(ctx, householdID, id)
+	transactions, err := reads.HasLiveTransactionsForCategory(ctx, scope, id)
 	if err != nil {
 		return err
 	}
 	if transactions {
 		return domain.ErrCategoryHasTransactions
 	}
-	plans, err := reads.HasLivePlannedPaymentsForCategory(ctx, householdID, id)
+	plans, err := reads.HasLivePlannedPaymentsForCategory(ctx, scope, id)
 	if err != nil {
 		return err
 	}
@@ -56,9 +56,9 @@ func ValidateCategoryDelete(
 func ValidateCategoryDeleteUnderCascade(
 	ctx context.Context,
 	reads CategoryDeleteReads,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) error {
-	plans, err := reads.HasLivePlannedPaymentsForCategory(ctx, householdID, id)
+	plans, err := reads.HasLivePlannedPaymentsForCategory(ctx, scope, id)
 	if err != nil {
 		return err
 	}

@@ -13,8 +13,8 @@ func (s *Server) ListDebtors(
 	ctx context.Context,
 	_ api.ListDebtorsRequestObject,
 ) (api.ListDebtorsResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	debtors, err := s.debtors.List(ctx, householdID)
+	scope := s.currentScope(ctx)
+	debtors, err := s.debtors.List(ctx, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -52,8 +52,8 @@ func (s *Server) GetDebtor(
 	ctx context.Context,
 	req api.GetDebtorRequestObject,
 ) (api.GetDebtorResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	d, err := s.debtors.Get(ctx, householdID, req.Id)
+	scope := s.currentScope(ctx)
+	d, err := s.debtors.Get(ctx, scope, req.Id)
 	if err != nil {
 		return nil, err
 	}

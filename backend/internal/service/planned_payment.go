@@ -43,7 +43,7 @@ func (s *PlannedPaymentService) Create(
 	const op = "service.plannedPayment.Create"
 
 	if err := ValidatePlannedPaymentWrite(
-		ctx, s.refReads(), scope.HouseholdID, params.AccountID, params.CategoryID, params.Type,
+		ctx, s.refReads(), scope, params.AccountID, params.CategoryID, params.Type,
 	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -72,7 +72,7 @@ func (s *PlannedPaymentService) Update(
 	if params.AccountID != nil || params.CategoryID != nil {
 		// Type is immutable and comes from the stored plan; re-reading also
 		// surfaces not-found before any ref work.
-		current, err := s.plans.GetPlannedPayment(ctx, scope.HouseholdID, id)
+		current, err := s.plans.GetPlannedPayment(ctx, scope, id)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -85,7 +85,7 @@ func (s *PlannedPaymentService) Update(
 			categoryID = *params.CategoryID
 		}
 		if err := ValidatePlannedPaymentWrite(
-			ctx, s.refReads(), scope.HouseholdID, accountID, categoryID, current.Type,
+			ctx, s.refReads(), scope, accountID, categoryID, current.Type,
 		); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -106,9 +106,13 @@ func (s *PlannedPaymentService) Delete(ctx context.Context, scope domain.Scope, 
 	return nil
 }
 
-func (s *PlannedPaymentService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.PlannedPayment, error) {
+func (s *PlannedPaymentService) Get(
+	ctx context.Context,
+	scope domain.Scope,
+	id uuid.UUID,
+) (*domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.Get"
-	p, err := s.plans.GetPlannedPayment(ctx, householdID, id)
+	p, err := s.plans.GetPlannedPayment(ctx, scope, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -117,11 +121,11 @@ func (s *PlannedPaymentService) Get(ctx context.Context, householdID, id uuid.UU
 
 func (s *PlannedPaymentService) List(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetPlannedPaymentsParams,
 ) ([]domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.List"
-	p, err := s.plans.GetPlannedPayments(ctx, householdID, params)
+	p, err := s.plans.GetPlannedPayments(ctx, scope, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

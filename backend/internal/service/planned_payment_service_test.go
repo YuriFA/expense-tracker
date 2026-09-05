@@ -23,15 +23,15 @@ func planServices(t *testing.T) (*service.PlannedPaymentService, *fakes.Store) {
 func seedPlanRefs(
 	t *testing.T,
 	store *fakes.Store,
-	householdID, userID uuid.UUID,
+	scope domain.Scope, userID uuid.UUID,
 ) (*domain.Account, *domain.Category) {
 	t.Helper()
 	account, err := store.CreateAccount(context.Background(), domain.CreateAccountParams{
-		HouseholdID: householdID, UserID: userID, Name: "Карта", Currency: "RUB",
+		HouseholdID: scope.HouseholdID, UserID: userID, Name: "Карта", Currency: "RUB",
 	})
 	require.NoError(t, err)
 	category, err := store.CreateCategory(context.Background(), domain.CreateCategoryParams{
-		HouseholdID: householdID, UserID: userID, Name: "Подписки", Type: domain.TransactionTypeExpense,
+		HouseholdID: scope.HouseholdID, UserID: userID, Name: "Подписки", Type: domain.TransactionTypeExpense,
 	})
 	require.NoError(t, err)
 	return account, category
@@ -61,7 +61,7 @@ func TestPlannedPaymentService_Rules(t *testing.T) {
 	user := seedFakeUser(t, store)
 	userHH := householdOf(t, store, user.ID)
 	other := seedFakeUser(t, store)
-	account, category := seedPlanRefs(t, store, userHH, user.ID)
+	account, category := seedPlanRefs(t, store, domain.Scope{HouseholdID: userHH}, user.ID)
 	accountID, categoryID := account.ID, category.ID
 
 	created, err := planSvc.Create(
@@ -252,7 +252,7 @@ func TestPlannedPaymentService_Rules(t *testing.T) {
 		expenseType := domain.TransactionTypeExpense
 		expenses, err := planSvc.List(
 			ctx,
-			user.ID,
+			domain.Scope{HouseholdID: userHH},
 			domain.GetPlannedPaymentsParams{Type: &expenseType},
 		)
 		require.NoError(t, err)
@@ -261,7 +261,7 @@ func TestPlannedPaymentService_Rules(t *testing.T) {
 		}
 
 		require.NoError(t, planSvc.Delete(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, created.ID))
-		all, err := planSvc.List(ctx, userHH, domain.GetPlannedPaymentsParams{})
+		all, err := planSvc.List(ctx, domain.Scope{HouseholdID: userHH}, domain.GetPlannedPaymentsParams{})
 		require.NoError(t, err)
 		for _, p := range all {
 			assert.NotEqual(t, created.ID, p.ID)
@@ -282,7 +282,7 @@ func TestPlannedPaymentService_Rules(t *testing.T) {
 			planSvc.Delete(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, p.ID),
 			"second delete of the tombstoned plan stays idempotent in the fake",
 		)
-		_, err = planSvc.Get(ctx, user.ID, p.ID)
+		_, err = planSvc.Get(ctx, domain.Scope{HouseholdID: userHH}, p.ID)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
 	})
 }
@@ -294,7 +294,7 @@ func TestPlannedPaymentService_InUseGuards(t *testing.T) {
 
 	user := seedFakeUser(t, store)
 	userHH := householdOf(t, store, user.ID)
-	account, category := seedPlanRefs(t, store, userHH, user.ID)
+	account, category := seedPlanRefs(t, store, domain.Scope{HouseholdID: userHH}, user.ID)
 	accountID, categoryID := account.ID, category.ID
 	_, err := planSvc.Create(
 		ctx,

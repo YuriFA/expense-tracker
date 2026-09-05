@@ -20,8 +20,8 @@ import (
 type transactionTx interface {
 	repository.SyncCore
 	repository.TransactionSyncTx
-	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	LiveAccountExists(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error)
 }
 
 var _ transactionTx = repository.SyncTx(nil)
@@ -55,7 +55,7 @@ func (transactionAdapter) invalidDataMessage() string {
 // (ValidateTransactionWrite checks amount first, so the error precedence is
 // unchanged: malformed type > amount > references).
 func (transactionAdapter) preValidate(
-	_ context.Context, _ transactionTx, _ uuid.UUID, _ domain.SyncOperation, data domain.TransactionFullState,
+	_ context.Context, _ transactionTx, _ domain.Scope, _ domain.SyncOperation, data domain.TransactionFullState,
 ) (string, string, error) {
 	switch data.Type {
 	case domain.TransactionTypeIncome,
@@ -75,17 +75,17 @@ func (transactionAdapter) preValidate(
 func (transactionAdapter) postReadValidate(
 	ctx context.Context,
 	t transactionTx,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	data domain.TransactionFullState,
 ) (string, string, error) {
 	var prevCategoryID *uuid.UUID
-	if current, found, err := (transactionAdapter{}).getAny(ctx, t, householdID, op.ID); err != nil {
+	if current, found, err := (transactionAdapter{}).getAny(ctx, t, scope, op.ID); err != nil {
 		return "", "", err
 	} else if found && !current.Deleted() {
 		prevCategoryID = current.CategoryID
 	}
-	err := ValidateTransactionWrite(ctx, syncRefReads{src: t}, householdID, TransactionWriteState{
+	err := ValidateTransactionWrite(ctx, syncRefReads{src: t}, scope, TransactionWriteState{
 		Type: data.Type, Amount: data.Amount,
 		AccountID: data.AccountID, CategoryID: data.CategoryID,
 		FromAccountID: data.FromAccountID, ToAccountID: data.ToAccountID,
@@ -116,9 +116,9 @@ func (transactionAdapter) isWriteRace(err error) bool {
 }
 
 func (transactionAdapter) getAny(
-	ctx context.Context, t transactionTx, householdID, id uuid.UUID,
+	ctx context.Context, t transactionTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Transaction, bool, error) {
-	tr, err := t.GetTransactionAny(ctx, householdID, id)
+	tr, err := t.GetTransactionAny(ctx, scope, id)
 	if err != nil || tr == nil {
 		return nil, false, err
 	}

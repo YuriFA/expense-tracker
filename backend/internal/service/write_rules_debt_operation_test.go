@@ -20,7 +20,7 @@ type stubDebtorRefReads struct {
 	debtors map[uuid.UUID]bool
 }
 
-func (s stubDebtorRefReads) DebtorExists(_ context.Context, _ uuid.UUID, id uuid.UUID) (bool, error) {
+func (s stubDebtorRefReads) DebtorExists(_ context.Context, _ domain.Scope, id uuid.UUID) (bool, error) {
 	return s.debtors[id], nil
 }
 
@@ -33,12 +33,20 @@ func TestValidateDebtOperationWrite(t *testing.T) {
 
 	t.Run("live debtor ok", func(t *testing.T) {
 		t.Parallel()
-		require.NoError(t, service.ValidateDebtOperationWrite(context.Background(), reads, hh, live))
+		require.NoError(
+			t,
+			service.ValidateDebtOperationWrite(context.Background(), reads, domain.Scope{HouseholdID: hh}, live),
+		)
 	})
 
 	t.Run("missing or tombstoned debtor is not found", func(t *testing.T) {
 		t.Parallel()
-		err := service.ValidateDebtOperationWrite(context.Background(), reads, hh, uuid.New())
+		err := service.ValidateDebtOperationWrite(
+			context.Background(),
+			reads,
+			domain.Scope{HouseholdID: hh},
+			uuid.New(),
+		)
 		require.ErrorIs(t, err, domain.ErrDebtOperationDebtorNotFound)
 	})
 }

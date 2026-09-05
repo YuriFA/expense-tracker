@@ -14,7 +14,7 @@ func (s *Server) ListTransactions(
 	ctx context.Context,
 	req api.ListTransactionsRequestObject,
 ) (api.ListTransactionsResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
+	scope := s.currentScope(ctx)
 
 	q := service.TransactionListQuery{
 		AccountID:  req.Params.AccountId,
@@ -35,7 +35,7 @@ func (s *Server) ListTransactions(
 		q.ToDate = &to
 	}
 
-	page, err := s.txn.List(ctx, householdID, q)
+	page, err := s.txn.List(ctx, scope, q)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *Server) CreateTransaction(
 	req api.CreateTransactionRequestObject,
 ) (api.CreateTransactionResponseObject, error) {
 	user := s.currentUser(ctx)
-	householdID := s.currentHouseholdID(ctx)
+	scope := s.currentScope(ctx)
 
 	var id uuid.UUID
 	if req.Body.Id != nil {
@@ -63,7 +63,7 @@ func (s *Server) CreateTransaction(
 
 	params := domain.CreateTransactionParams{
 		ID:            id,
-		HouseholdID:   householdID,
+		HouseholdID:   scope.HouseholdID,
 		UserID:        user.ID,
 		Type:          domain.TransactionType(req.Body.Type),
 		Amount:        req.Body.Amount,
@@ -88,8 +88,8 @@ func (s *Server) GetTransaction(
 	ctx context.Context,
 	req api.GetTransactionRequestObject,
 ) (api.GetTransactionResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	tx, err := s.txn.Get(ctx, householdID, req.Id)
+	scope := s.currentScope(ctx)
+	tx, err := s.txn.Get(ctx, scope, req.Id)
 	if err != nil {
 		return nil, err
 	}

@@ -27,8 +27,8 @@ func (s *Server) GetHousehold(
 	ctx context.Context,
 	_ api.GetHouseholdRequestObject,
 ) (api.GetHouseholdResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	h, err := s.households.Get(ctx, householdID)
+	scope := s.currentScope(ctx)
+	h, err := s.households.Get(ctx, scope)
 	if err != nil {
 		return nil, err
 	}

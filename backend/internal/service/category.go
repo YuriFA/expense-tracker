@@ -59,9 +59,9 @@ func (s *CategoryService) Delete(ctx context.Context, scope domain.Scope, id uui
 	return nil
 }
 
-func (s *CategoryService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
+func (s *CategoryService) Get(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error) {
 	const op = "service.category.Get"
-	c, err := s.categories.GetCategory(ctx, householdID, id)
+	c, err := s.categories.GetCategory(ctx, scope, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -70,11 +70,11 @@ func (s *CategoryService) Get(ctx context.Context, householdID, id uuid.UUID) (*
 
 func (s *CategoryService) List(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetCategoriesParams,
 ) ([]domain.Category, error) {
 	const op = "service.category.List"
-	c, err := s.categories.GetCategories(ctx, householdID, params)
+	c, err := s.categories.GetCategories(ctx, scope, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

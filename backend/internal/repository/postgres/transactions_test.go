@@ -45,7 +45,11 @@ func TestTransactionCursorPagination(t *testing.T) {
 
 	// Page 1 (fetch): newest 3 = ids[4], ids[3], ids[2]. Service trims to the
 	// first 2 and encodes the cursor from the 2nd item (ids[3]).
-	first, err := testRepo.GetTransactions(ctx, userHH, domain.GetTransactionsParams{Limit: &fetch})
+	first, err := testRepo.GetTransactions(
+		ctx,
+		domain.Scope{HouseholdID: userHH},
+		domain.GetTransactionsParams{Limit: &fetch},
+	)
 	require.NoError(t, err)
 	require.Len(t, first, 3)
 	assert.Equal(t, ids[4], first[0].ID.String())
@@ -56,7 +60,7 @@ func TestTransactionCursorPagination(t *testing.T) {
 	remaining := 10
 	second, err := testRepo.GetTransactions(
 		ctx,
-		userHH,
+		domain.Scope{HouseholdID: userHH},
 		domain.GetTransactionsParams{Limit: &remaining, Cursor: cursor},
 	)
 	require.NoError(t, err)
@@ -92,7 +96,11 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	rows, err := testRepo.GetTransactions(ctx, userHH, domain.GetTransactionsParams{Limit: ptrInt(10)})
+	rows, err := testRepo.GetTransactions(
+		ctx,
+		domain.Scope{HouseholdID: userHH},
+		domain.GetTransactionsParams{Limit: ptrInt(10)},
+	)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	// Both share occurred_at; the lex-higher id comes first (DESC).
@@ -104,7 +112,7 @@ func TestTransactionCursorTieBreakOnEqualOccurredAt(t *testing.T) {
 	cursor := &domain.TransactionCursor{OccurredAt: same, ID: higher}
 	rows2, err := testRepo.GetTransactions(
 		ctx,
-		userHH,
+		domain.Scope{HouseholdID: userHH},
 		domain.GetTransactionsParams{Limit: ptrInt(10), Cursor: cursor},
 	)
 	require.NoError(t, err)
@@ -173,7 +181,7 @@ func TestTransactionIDORScoping(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = testRepo.GetTransaction(ctx, intruderHH, tx.ID)
+	_, err = testRepo.GetTransaction(ctx, domain.Scope{HouseholdID: intruderHH}, tx.ID)
 	require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 
 	err = testRepo.DeleteTransaction(ctx, domain.Scope{HouseholdID: intruderHH, ActorID: intruder.ID}, tx.ID)

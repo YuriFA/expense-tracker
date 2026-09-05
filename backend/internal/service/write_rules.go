@@ -20,15 +20,15 @@ import (
 
 // RefReads is the seam both surfaces adapt their reads to.
 type RefReads interface {
-	AccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	Category(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	AccountExists(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
+	Category(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error)
 }
 
 // liveRefSource is the minimal live-read surface every sync tx contract
 // exposes; the per-entity tx interfaces satisfy it structurally.
 type liveRefSource interface {
-	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	LiveAccountExists(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error)
 }
 
 // repoRefReads adapts the full REST repositories to the seam. GetCategory
@@ -40,9 +40,9 @@ type repoRefReads struct {
 }
 
 func (r repoRefReads) AccountExists(
-	ctx context.Context, householdID, id uuid.UUID,
+	ctx context.Context, scope domain.Scope, id uuid.UUID,
 ) (bool, error) {
-	if _, err := r.accounts.GetAccount(ctx, householdID, id); err != nil {
+	if _, err := r.accounts.GetAccount(ctx, scope, id); err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			return false, nil
 		}
@@ -52,9 +52,9 @@ func (r repoRefReads) AccountExists(
 }
 
 func (r repoRefReads) Category(
-	ctx context.Context, householdID, id uuid.UUID,
+	ctx context.Context, scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
-	return r.categories.GetCategory(ctx, householdID, id)
+	return r.categories.GetCategory(ctx, scope, id)
 }
 
 // syncRefReads adapts the sync batch-tx live reads to the seam.
@@ -63,13 +63,13 @@ type syncRefReads struct {
 }
 
 func (r syncRefReads) AccountExists(
-	ctx context.Context, householdID, id uuid.UUID,
+	ctx context.Context, scope domain.Scope, id uuid.UUID,
 ) (bool, error) {
-	return r.src.LiveAccountExists(ctx, householdID, id)
+	return r.src.LiveAccountExists(ctx, scope, id)
 }
 
 func (r syncRefReads) Category(
-	ctx context.Context, householdID, id uuid.UUID,
+	ctx context.Context, scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
-	return r.src.LiveCategory(ctx, householdID, id)
+	return r.src.LiveCategory(ctx, scope, id)
 }

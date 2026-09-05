@@ -130,8 +130,9 @@ func (s *Store) DeletePlannedPayment(_ context.Context, scope domain.Scope, id u
 
 func (s *Store) GetPlannedPayment(
 	_ context.Context,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, ok := s.plans[id]
@@ -144,9 +145,10 @@ func (s *Store) GetPlannedPayment(
 
 func (s *Store) GetPlannedPayments( //nolint:dupl // per-entity list twins: identical filter/sort shape
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetPlannedPaymentsParams,
 ) ([]domain.PlannedPayment, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []domain.PlannedPayment
@@ -178,8 +180,9 @@ func dayStart(t time.Time) time.Time {
 
 func (t *fakeSyncTx) GetPlannedPaymentAny(
 	_ context.Context,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]
@@ -192,8 +195,9 @@ func (t *fakeSyncTx) GetPlannedPaymentAny(
 
 func (t *fakeSyncTx) HasLivePlannedPaymentsForAccount(
 	_ context.Context,
-	householdID, accountID uuid.UUID,
+	scope domain.Scope, accountID uuid.UUID,
 ) (bool, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, p := range t.store.plans {
@@ -206,8 +210,9 @@ func (t *fakeSyncTx) HasLivePlannedPaymentsForAccount(
 
 func (t *fakeSyncTx) HasLivePlannedPaymentsForCategory(
 	_ context.Context,
-	householdID, categoryID uuid.UUID,
+	scope domain.Scope, categoryID uuid.UUID,
 ) (bool, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	for _, p := range t.store.plans {
@@ -220,9 +225,10 @@ func (t *fakeSyncTx) HasLivePlannedPaymentsForCategory(
 
 func (t *fakeSyncTx) DueAutoPlannedPayments(
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	today time.Time,
 ) ([]domain.PlannedPayment, error) {
+	householdID := scope.HouseholdID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	var out []domain.PlannedPayment

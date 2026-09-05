@@ -61,18 +61,18 @@ func (s *DebtorService) Delete(ctx context.Context, scope domain.Scope, id uuid.
 	return nil
 }
 
-func (s *DebtorService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
+func (s *DebtorService) Get(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Debtor, error) {
 	const op = "service.debtor.Get"
-	d, err := s.debtors.GetDebtor(ctx, householdID, id)
+	d, err := s.debtors.GetDebtor(ctx, scope, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return d, nil
 }
 
-func (s *DebtorService) List(ctx context.Context, householdID uuid.UUID) ([]domain.Debtor, error) {
+func (s *DebtorService) List(ctx context.Context, scope domain.Scope) ([]domain.Debtor, error) {
 	const op = "service.debtor.List"
-	d, err := s.debtors.GetDebtors(ctx, householdID)
+	d, err := s.debtors.GetDebtors(ctx, scope)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

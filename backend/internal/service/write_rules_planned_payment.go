@@ -29,17 +29,17 @@ import (
 func ValidatePlannedPaymentWrite(
 	ctx context.Context,
 	reads RefReads,
-	householdID, accountID, categoryID uuid.UUID,
+	scope domain.Scope, accountID, categoryID uuid.UUID,
 	typ domain.TransactionType,
 ) error {
-	exists, err := reads.AccountExists(ctx, householdID, accountID)
+	exists, err := reads.AccountExists(ctx, scope, accountID)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return domain.ErrPlannedPaymentAccountNotFound
 	}
-	cat, err := reads.Category(ctx, householdID, categoryID)
+	cat, err := reads.Category(ctx, scope, categoryID)
 	if err != nil {
 		if errors.Is(err, domain.ErrCategoryNotFound) {
 			return domain.ErrPlannedPaymentCategoryNotFound

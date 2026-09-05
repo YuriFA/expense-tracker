@@ -159,7 +159,12 @@ func classifyTransactionWrite(ctx context.Context, q *db.Queries, householdID, i
 	return domain.ErrTransactionVersionConflict
 }
 
-func (r *Repository) GetTransaction(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
+func (r *Repository) GetTransaction(
+	ctx context.Context,
+	scope domain.Scope,
+	id uuid.UUID,
+) (*domain.Transaction, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetTransaction"
 
 	row, err := r.q.GetTransaction(ctx, db.GetTransactionParams{ID: id, HouseholdID: householdID})
@@ -178,9 +183,10 @@ func (r *Repository) GetTransaction(ctx context.Context, householdID, id uuid.UU
 
 func (r *Repository) GetTransactions(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetTransactionsParams,
 ) ([]domain.Transaction, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetTransactions"
 
 	var typ *string

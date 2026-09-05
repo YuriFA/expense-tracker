@@ -16,7 +16,8 @@ import (
 	"github.com/yurifa/expense-tracker-api/internal/domain"
 )
 
-func (s *Store) UpdateHouseholdName(_ context.Context, householdID uuid.UUID, name *string) error {
+func (s *Store) UpdateHouseholdName(_ context.Context, scope domain.Scope, name *string) error {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	h, ok := s.households[householdID]
@@ -27,7 +28,8 @@ func (s *Store) UpdateHouseholdName(_ context.Context, householdID uuid.UUID, na
 	return nil
 }
 
-func (s *Store) CountHouseholdInvitationSends(_ context.Context, householdID uuid.UUID) (int, error) {
+func (s *Store) CountHouseholdInvitationSends(_ context.Context, scope domain.Scope) (int, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	count := 0
@@ -77,8 +79,9 @@ func (s *Store) CreateHouseholdInvitation(
 
 func (s *Store) ListHouseholdInvitations(
 	_ context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 ) ([]domain.HouseholdInvitation, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	out := make([]domain.HouseholdInvitation, 0)
@@ -96,7 +99,8 @@ func (s *Store) ListHouseholdInvitations(
 	return out, nil
 }
 
-func (s *Store) RevokeHouseholdInvitation(_ context.Context, householdID, invitationID uuid.UUID) error {
+func (s *Store) RevokeHouseholdInvitation(_ context.Context, scope domain.Scope, invitationID uuid.UUID) error {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, inv := range s.invitations {
@@ -206,7 +210,8 @@ func (s *Store) claimInvitationLocked(invitationID uuid.UUID) error {
 	return nil
 }
 
-func (s *Store) GenerateHouseholdCode(_ context.Context, householdID uuid.UUID) (*domain.HouseholdCode, error) {
+func (s *Store) GenerateHouseholdCode(_ context.Context, scope domain.Scope) (*domain.HouseholdCode, error) {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	code := &domain.HouseholdCode{
@@ -219,7 +224,8 @@ func (s *Store) GenerateHouseholdCode(_ context.Context, householdID uuid.UUID) 
 	return &c, nil
 }
 
-func (s *Store) RevokeHouseholdCode(_ context.Context, householdID uuid.UUID) error {
+func (s *Store) RevokeHouseholdCode(_ context.Context, scope domain.Scope) error {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if code, ok := s.codes[householdID]; ok {
@@ -264,7 +270,8 @@ func (s *Store) RemoveHouseholdMember(_ context.Context, householdID, targetUser
 	return nil
 }
 
-func (s *Store) DissolveHousehold(_ context.Context, householdID uuid.UUID) error {
+func (s *Store) DissolveHousehold(_ context.Context, scope domain.Scope) error {
+	householdID := scope.HouseholdID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, m := range s.memberships {

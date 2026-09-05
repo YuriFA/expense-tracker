@@ -19,13 +19,13 @@ func (s *Server) ListPlannedPayments(
 	ctx context.Context,
 	req api.ListPlannedPaymentsRequestObject,
 ) (api.ListPlannedPaymentsResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
+	scope := s.currentScope(ctx)
 	var typeFilter *domain.TransactionType
 	if req.Params.Type != nil {
 		t := domain.TransactionType(*req.Params.Type)
 		typeFilter = &t
 	}
-	plans, err := s.plans.List(ctx, householdID, domain.GetPlannedPaymentsParams{Type: typeFilter})
+	plans, err := s.plans.List(ctx, scope, domain.GetPlannedPaymentsParams{Type: typeFilter})
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +83,8 @@ func (s *Server) GetPlannedPayment(
 	ctx context.Context,
 	req api.GetPlannedPaymentRequestObject,
 ) (api.GetPlannedPaymentResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
-	p, err := s.plans.Get(ctx, householdID, req.Id)
+	scope := s.currentScope(ctx)
+	p, err := s.plans.Get(ctx, scope, req.Id)
 	if err != nil {
 		return nil, err
 	}

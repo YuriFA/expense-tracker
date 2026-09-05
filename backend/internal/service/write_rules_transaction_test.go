@@ -22,11 +22,11 @@ type stubRefReads struct {
 	categories map[uuid.UUID]*domain.Category
 }
 
-func (s stubRefReads) AccountExists(_ context.Context, _ uuid.UUID, id uuid.UUID) (bool, error) {
+func (s stubRefReads) AccountExists(_ context.Context, _ domain.Scope, id uuid.UUID) (bool, error) {
 	return s.accounts[id], nil
 }
 
-func (s stubRefReads) Category(_ context.Context, _ uuid.UUID, id uuid.UUID) (*domain.Category, error) {
+func (s stubRefReads) Category(_ context.Context, _ domain.Scope, id uuid.UUID) (*domain.Category, error) {
 	if c, ok := s.categories[id]; ok {
 		return c, nil
 	}
@@ -62,7 +62,12 @@ func TestValidateTransactionWrite_AmountRule(t *testing.T) {
 			// before any read, except cashflow's category requirement, so
 			// give cashflow a dummy category id set and expect ErrInvalidRefs
 			// only when amount passed.
-			err := service.ValidateTransactionWrite(context.Background(), reads, uuid.Nil, state)
+			err := service.ValidateTransactionWrite(
+				context.Background(),
+				reads,
+				domain.Scope{HouseholdID: uuid.Nil},
+				state,
+			)
 			if tc.wantErr != nil {
 				require.ErrorIs(t, err, tc.wantErr)
 				return
@@ -168,7 +173,12 @@ func TestValidateTransactionWrite_CashflowRefs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := service.ValidateTransactionWrite(context.Background(), reads, hh, tc.state)
+			err := service.ValidateTransactionWrite(
+				context.Background(),
+				reads,
+				domain.Scope{HouseholdID: hh},
+				tc.state,
+			)
 			if tc.wantErr == nil {
 				require.NoError(t, err)
 				return
@@ -240,7 +250,12 @@ func TestValidateTransactionWrite_TransferRefs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := service.ValidateTransactionWrite(context.Background(), reads, hh, tc.state)
+			err := service.ValidateTransactionWrite(
+				context.Background(),
+				reads,
+				domain.Scope{HouseholdID: hh},
+				tc.state,
+			)
 			if tc.wantErr == nil {
 				require.NoError(t, err)
 				return
@@ -299,7 +314,12 @@ func TestValidateTransactionWrite_AdjustmentRefs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := service.ValidateTransactionWrite(context.Background(), reads, hh, tc.state)
+			err := service.ValidateTransactionWrite(
+				context.Background(),
+				reads,
+				domain.Scope{HouseholdID: hh},
+				tc.state,
+			)
 			if tc.wantErr == nil {
 				require.NoError(t, err)
 				return

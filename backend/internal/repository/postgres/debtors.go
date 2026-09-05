@@ -146,7 +146,8 @@ func classifyDebtorWrite(ctx context.Context, q *db.Queries, householdID, id uui
 	return domain.ErrDebtorVersionConflict
 }
 
-func (r *Repository) GetDebtor(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error) {
+func (r *Repository) GetDebtor(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Debtor, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetDebtor"
 
 	row, err := r.q.GetDebtor(ctx, db.GetDebtorParams{ID: id, HouseholdID: householdID})
@@ -159,7 +160,8 @@ func (r *Repository) GetDebtor(ctx context.Context, householdID, id uuid.UUID) (
 	return debtorFromFields(row.ID, row.UserID, row.Name, row.Note, row.CreatedAt, row.UpdatedAt, int(row.Version)), nil
 }
 
-func (r *Repository) GetDebtors(ctx context.Context, householdID uuid.UUID) ([]domain.Debtor, error) {
+func (r *Repository) GetDebtors(ctx context.Context, scope domain.Scope) ([]domain.Debtor, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetDebtors"
 
 	rows, err := r.q.GetDebtors(ctx, householdID)

@@ -76,7 +76,7 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 	t.Run("scoping: another user sees not-found", func(t *testing.T) {
 		intruder := seedUser(t, "plans-intruder")
 		intruderHH := householdOf(t, intruder.ID)
-		_, err := testRepo.GetPlannedPayment(ctx, intruderHH, created.ID)
+		_, err := testRepo.GetPlannedPayment(ctx, domain.Scope{HouseholdID: intruderHH}, created.ID)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
 	})
 
@@ -132,20 +132,31 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 
 		// Tombstone every live plan of the account (the duplicate-name subtest
 		// added a second one) through the sync surface; the guards clear.
-		plans, err := testRepo.GetPlannedPayments(ctx, userHH, domain.GetPlannedPaymentsParams{})
+		plans, err := testRepo.GetPlannedPayments(
+			ctx,
+			domain.Scope{HouseholdID: userHH},
+			domain.GetPlannedPaymentsParams{},
+		)
 		require.NoError(t, err)
 		for _, p := range plans {
 			planID := p.ID
-			require.NoError(t, testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
-				_, err := tx.TombstonePlannedPayment(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, planID)
-				return err
-			}))
+			require.NoError(
+				t,
+				testRepo.WithinHouseholdTx(ctx, domain.Scope{HouseholdID: userHH}, func(tx repository.SyncTx) error {
+					_, err := tx.TombstonePlannedPayment(
+						ctx,
+						domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+						planID,
+					)
+					return err
+				}),
+			)
 		}
 		require.NoError(t, testRepo.DeleteAccount(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, account.ID))
 	})
 
 	t.Run("tombstoned reads classify as not-found", func(t *testing.T) {
-		_, err := testRepo.GetPlannedPayment(ctx, userHH, created.ID)
+		_, err := testRepo.GetPlannedPayment(ctx, domain.Scope{HouseholdID: userHH}, created.ID)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
 		amount := int64(1)
 		_, err = testRepo.UpdatePlannedPayment(
@@ -200,7 +211,7 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	// The sync-tx advancement (auto-confirm job path) bumps next_due and the
 	// version and appends its own change-log row.
 	var advanced *domain.PlannedPayment
-	err = testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
+	err = testRepo.WithinHouseholdTx(ctx, domain.Scope{HouseholdID: userHH}, func(tx repository.SyncTx) error {
 		next := domain.AdvanceNextDue(plan.NextDue, plan.AnchorDate, plan.Regularity)
 		advanced, err = tx.AdvancePlannedPayment(
 			ctx,
@@ -217,7 +228,7 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	// Unguarded delete is a tombstone with a version bump.
 	require.NoError(t, testRepo.DeletePlannedPayment(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, plan.ID))
 
-	changes, err := testRepo.PullChanges(ctx, userHH, 0, 100)
+	changes, err := testRepo.PullChanges(ctx, domain.Scope{HouseholdID: userHH}, 0, 100)
 	require.NoError(t, err)
 	var upserts, tombstones, accounts, categories int
 	for _, change := range changes {
@@ -256,7 +267,11 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	_, err = testRepo.CreatePlannedPayment(ctx, income)
 	require.NoError(t, err)
 
-	expenses, err := testRepo.GetPlannedPayments(ctx, userHH, domain.GetPlannedPaymentsParams{Type: &expenseType})
+	expenses, err := testRepo.GetPlannedPayments(
+		ctx,
+		domain.Scope{HouseholdID: userHH},
+		domain.GetPlannedPaymentsParams{Type: &expenseType},
+	)
 	require.NoError(t, err)
 	for _, p := range expenses {
 		assert.Equal(t, domain.TransactionTypeExpense, p.Type)

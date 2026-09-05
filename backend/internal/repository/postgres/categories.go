@@ -249,7 +249,8 @@ func classifyCategoryWrite(ctx context.Context, q *db.Queries, householdID, id u
 	return domain.ErrCategoryVersionConflict
 }
 
-func (r *Repository) GetCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error) {
+func (r *Repository) GetCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetCategory"
 
 	row, err := r.q.GetCategory(ctx, db.GetCategoryParams{ID: id, HouseholdID: householdID})
@@ -275,9 +276,10 @@ func (r *Repository) GetCategory(ctx context.Context, householdID, id uuid.UUID)
 
 func (r *Repository) GetCategories(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetCategoriesParams,
 ) ([]domain.Category, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetCategories"
 
 	var typ *string

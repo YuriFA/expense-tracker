@@ -250,7 +250,7 @@ func TestSyncPush_AccountProtocol(t *testing.T) {
 			upsertOp(domain.SyncEntityAccount, opID, fresh, 0, accountData))
 		assert.Equal(t, first, replayed)
 
-		page, err := syncSvc.Pull(context.Background(), householdID, 0, nil)
+		page, err := syncSvc.Pull(context.Background(), domain.Scope{HouseholdID: householdID}, 0, nil)
 		require.NoError(t, err)
 		accountCreates := 0
 		for _, change := range page.Changes {
@@ -532,7 +532,7 @@ func TestSyncPush_CategoryProtocol(t *testing.T) {
 		assert.Positive(t, res.Version)
 
 		// The transaction tombstone travels through the pull feed.
-		page, err := syncSvc.Pull(context.Background(), householdID, 0, nil)
+		page, err := syncSvc.Pull(context.Background(), domain.Scope{HouseholdID: householdID}, 0, nil)
 		require.NoError(t, err)
 		tombstoned := map[string]bool{}
 		for _, ch := range page.Changes {

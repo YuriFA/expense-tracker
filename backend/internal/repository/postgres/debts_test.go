@@ -51,7 +51,7 @@ func TestRepository_Debtors_CRUDAndGuards(t *testing.T) {
 	t.Run("scoping: another user sees not-found", func(t *testing.T) {
 		intruder := seedUser(t, "debtors-intruder")
 		intruderHH := householdOf(t, intruder.ID)
-		_, err := testRepo.GetDebtor(ctx, intruderHH, created.ID)
+		_, err := testRepo.GetDebtor(ctx, domain.Scope{HouseholdID: intruderHH}, created.ID)
 		require.ErrorIs(t, err, domain.ErrDebtorNotFound)
 		_, err = testRepo.UpdateDebtor(
 			ctx,
@@ -104,14 +104,17 @@ func TestRepository_Debtors_CRUDAndGuards(t *testing.T) {
 		)
 
 		// Tombstone the operation through the sync surface; the guard clears.
-		require.NoError(t, testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
-			_, err := tx.TombstoneDebtOperation(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, op.ID)
-			return err
-		}))
+		require.NoError(
+			t,
+			testRepo.WithinHouseholdTx(ctx, domain.Scope{HouseholdID: userHH}, func(tx repository.SyncTx) error {
+				_, err := tx.TombstoneDebtOperation(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, op.ID)
+				return err
+			}),
+		)
 		require.NoError(t, testRepo.DeleteDebtor(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, created.ID))
 
 		// Tombstoned reads classify as not-found; updates and deletes too.
-		_, err = testRepo.GetDebtor(ctx, userHH, created.ID)
+		_, err = testRepo.GetDebtor(ctx, domain.Scope{HouseholdID: userHH}, created.ID)
 		require.ErrorIs(t, err, domain.ErrDebtorNotFound)
 		_, err = testRepo.UpdateDebtor(
 			ctx,
@@ -195,10 +198,10 @@ func TestRepository_DebtOperations_CheckConstraintsAndChangeLog(t *testing.T) {
 	assert.Equal(t, 2, updated.Version)
 
 	require.NoError(t, testRepo.DeleteDebtOperation(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, op.ID))
-	_, err = testRepo.GetDebtOperation(ctx, userHH, op.ID)
+	_, err = testRepo.GetDebtOperation(ctx, domain.Scope{HouseholdID: userHH}, op.ID)
 	require.ErrorIs(t, err, domain.ErrDebtOperationNotFound)
 
-	changes, err := testRepo.PullChanges(ctx, userHH, 0, 100)
+	changes, err := testRepo.PullChanges(ctx, domain.Scope{HouseholdID: userHH}, 0, 100)
 	require.NoError(t, err)
 	var debtorUpserts, opUpserts, opTombstones int
 	for _, change := range changes {

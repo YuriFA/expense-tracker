@@ -147,8 +147,9 @@ func classifyDebtOperationWrite(ctx context.Context, q *db.Queries, householdID,
 
 func (r *Repository) GetDebtOperation(
 	ctx context.Context,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.DebtOperation, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetDebtOperation"
 
 	row, err := r.q.GetDebtOperation(ctx, db.GetDebtOperationParams{ID: id, HouseholdID: householdID})
@@ -166,9 +167,10 @@ func (r *Repository) GetDebtOperation(
 
 func (r *Repository) GetDebtOperations(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	params domain.GetDebtOperationsParams,
 ) ([]domain.DebtOperation, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetDebtOperations"
 
 	rows, err := r.q.GetDebtOperations(ctx, db.GetDebtOperationsParams{

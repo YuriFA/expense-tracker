@@ -159,7 +159,8 @@ func classifyAccountWrite(ctx context.Context, q *db.Queries, householdID, id uu
 	return domain.ErrAccountVersionConflict
 }
 
-func (r *Repository) GetAccount(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error) {
+func (r *Repository) GetAccount(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Account, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetAccount"
 
 	row, err := r.q.GetAccount(ctx, db.GetAccountParams{ID: id, HouseholdID: householdID})
@@ -175,7 +176,8 @@ func (r *Repository) GetAccount(ctx context.Context, householdID, id uuid.UUID) 
 	), nil
 }
 
-func (r *Repository) GetAccounts(ctx context.Context, householdID uuid.UUID) ([]domain.Account, error) {
+func (r *Repository) GetAccounts(ctx context.Context, scope domain.Scope) ([]domain.Account, error) {
+	householdID := scope.HouseholdID
 	const op = "repository.postgres.GetAccounts"
 
 	rows, err := r.q.GetAccounts(ctx, householdID)

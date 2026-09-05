@@ -54,7 +54,7 @@ func (s *SyncService) Push(
 	const op = "service.sync.Push"
 
 	results := make([]domain.SyncPushResult, 0, len(ops))
-	err := s.sync.WithinHouseholdTx(ctx, scope.HouseholdID, func(t repository.SyncTx) error {
+	err := s.sync.WithinHouseholdTx(ctx, scope, func(t repository.SyncTx) error {
 		for _, operation := range ops {
 			result, err := applySyncOperation(ctx, t, scope, operation, s.appliers)
 			if err != nil {
@@ -81,7 +81,7 @@ type SyncPullPage struct {
 // nextCursor; the following pull then reports caught-up (nil cursor).
 func (s *SyncService) Pull(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	afterSeq int64,
 	limit *int,
 ) (*SyncPullPage, error) {
@@ -92,7 +92,7 @@ func (s *SyncService) Pull(
 		pageSize = min(*limit, maxSyncPullLimit)
 	}
 
-	changes, err := s.sync.PullChanges(ctx, householdID, afterSeq, pageSize)
+	changes, err := s.sync.PullChanges(ctx, scope, afterSeq, pageSize)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -118,7 +118,7 @@ func applySyncOperation(
 	// Persistent idempotency: an already-applied opId replays its stored
 	// result without side effects (retry after a lost response, duplicate
 	// delivery across batches), scoped to this household's applied operations.
-	if previous, err := t.GetAppliedOperation(ctx, scope.HouseholdID, op.OpID); err != nil {
+	if previous, err := t.GetAppliedOperation(ctx, scope, op.OpID); err != nil {
 		return domain.SyncPushResult{}, err
 	} else if previous != nil {
 		return previous.Result, nil
@@ -164,10 +164,10 @@ func adoptOrphanedOrConflict(
 	t repository.SyncCore,
 	entity string,
 	op domain.SyncOperation,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	message string,
 ) (domain.SyncPushResult, error) {
-	blocked, err := t.AdoptOrphanedID(ctx, entity, op.ID, householdID)
+	blocked, err := t.AdoptOrphanedID(ctx, entity, op.ID, scope)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}

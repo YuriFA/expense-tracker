@@ -155,11 +155,11 @@ func TestMigration_HouseholdBackfill(t *testing.T) {
 	hhA, err := repo.GetMembershipByUser(ctx, mustUUID(userA))
 	require.NoError(t, err)
 	assert.Equal(t, domain.HouseholdRoleOwner, hhA.Role)
-	accounts, err := repo.GetAccounts(ctx, hhA.HouseholdID)
+	accounts, err := repo.GetAccounts(ctx, domain.Scope{HouseholdID: hhA.HouseholdID})
 	require.NoError(t, err)
 	require.Len(t, accounts, 1)
 	assert.Equal(t, "A", accounts[0].Name)
-	changes, err := repo.PullChanges(ctx, hhA.HouseholdID, 0, 100)
+	changes, err := repo.PullChanges(ctx, domain.Scope{HouseholdID: hhA.HouseholdID}, 0, 100)
 	require.NoError(t, err)
 	require.Len(t, changes, 1, "legacy change_log rows pull for the household")
 

@@ -22,13 +22,13 @@ import (
 // rules. Both read styles have identical semantics: live-only (a
 // tombstoned debtor reads as not found).
 type DebtorRefReads interface {
-	DebtorExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	DebtorExists(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
 }
 
 // debtLiveSource is the minimal live-read surface the sync tx contract
 // exposes; debtOperationTx satisfies it structurally.
 type debtLiveSource interface {
-	LiveDebtorExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	LiveDebtorExists(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
 }
 
 // repoDebtorRefReads adapts the full REST debtor repository to the seam.
@@ -37,9 +37,9 @@ type repoDebtorRefReads struct {
 }
 
 func (r repoDebtorRefReads) DebtorExists(
-	ctx context.Context, householdID, id uuid.UUID,
+	ctx context.Context, scope domain.Scope, id uuid.UUID,
 ) (bool, error) {
-	if _, err := r.debtors.GetDebtor(ctx, householdID, id); err != nil {
+	if _, err := r.debtors.GetDebtor(ctx, scope, id); err != nil {
 		if errors.Is(err, domain.ErrDebtorNotFound) {
 			return false, nil
 		}
@@ -54,9 +54,9 @@ type syncDebtorRefReads struct {
 }
 
 func (r syncDebtorRefReads) DebtorExists(
-	ctx context.Context, householdID, id uuid.UUID,
+	ctx context.Context, scope domain.Scope, id uuid.UUID,
 ) (bool, error) {
-	return r.src.LiveDebtorExists(ctx, householdID, id)
+	return r.src.LiveDebtorExists(ctx, scope, id)
 }
 
 // ValidateDebtOperationWrite checks the debtor reference is a LIVE debtor of
@@ -65,9 +65,9 @@ func (r syncDebtorRefReads) DebtorExists(
 func ValidateDebtOperationWrite(
 	ctx context.Context,
 	reads DebtorRefReads,
-	householdID, debtorID uuid.UUID,
+	scope domain.Scope, debtorID uuid.UUID,
 ) error {
-	exists, err := reads.DebtorExists(ctx, householdID, debtorID)
+	exists, err := reads.DebtorExists(ctx, scope, debtorID)
 	if err != nil {
 		return err
 	}

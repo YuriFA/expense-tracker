@@ -37,7 +37,7 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 		AccountID:   &acct,
 	})
 	require.NoError(t, err)
-	updated, err := testRepo.GetAccount(ctx, userHH, created.ID)
+	updated, err := testRepo.GetAccount(ctx, domain.Scope{HouseholdID: userHH}, created.ID)
 	require.NoError(t, err)
 	assert.Equal(t, int64(7500), updated.Balance)
 
@@ -55,12 +55,12 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 
 	// Get + list; the listing carries the computed balance (clients sum
 	// per currency client-side since the balances endpoint was removed).
-	got, err := testRepo.GetAccount(ctx, userHH, created.ID)
+	got, err := testRepo.GetAccount(ctx, domain.Scope{HouseholdID: userHH}, created.ID)
 	require.NoError(t, err)
 	assert.Equal(t, updated.Name, got.Name)
 	assert.Equal(t, int64(7500), got.Balance)
 
-	all, err := testRepo.GetAccounts(ctx, userHH)
+	all, err := testRepo.GetAccounts(ctx, domain.Scope{HouseholdID: userHH})
 	require.NoError(t, err)
 	require.Len(t, all, 1)
 	assert.Equal(t, int64(7500), all[0].Balance)
@@ -69,7 +69,7 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 	// in use while any live transaction references it).
 	require.NoError(t, testRepo.DeleteTransaction(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, adjTx.ID))
 	require.NoError(t, testRepo.DeleteAccount(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, created.ID))
-	_, err = testRepo.GetAccount(ctx, userHH, created.ID)
+	_, err = testRepo.GetAccount(ctx, domain.Scope{HouseholdID: userHH}, created.ID)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 }
 
@@ -90,7 +90,7 @@ func TestAccountIDORScoping(t *testing.T) {
 	require.NoError(t, err)
 
 	// Intruder cannot read owner's account -> not found.
-	_, err = testRepo.GetAccount(ctx, intruderHH, acct.ID)
+	_, err = testRepo.GetAccount(ctx, domain.Scope{HouseholdID: intruderHH}, acct.ID)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 
 	// Intruder cannot delete owner's account -> not found (NOT a FK error).

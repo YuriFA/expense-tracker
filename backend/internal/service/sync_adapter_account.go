@@ -49,9 +49,9 @@ func (accountAdapter) isWriteRace(err error) bool {
 }
 
 func (accountAdapter) getAny(
-	ctx context.Context, t accountTx, householdID, id uuid.UUID,
+	ctx context.Context, t accountTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Account, bool, error) {
-	a, err := t.GetAccountAny(ctx, householdID, id)
+	a, err := t.GetAccountAny(ctx, scope, id)
 	if err != nil || a == nil {
 		return nil, false, err
 	}
@@ -72,12 +72,12 @@ func (accountAdapter) create(
 // an id taken OUTSIDE this household (a cross-household collision) conflicts
 // with no serverState - the foreign record must not be revealed.
 func (accountAdapter) onCreateError(
-	ctx context.Context, t accountTx, householdID uuid.UUID, op domain.SyncOperation, err error,
+	ctx context.Context, t accountTx, scope domain.Scope, op domain.SyncOperation, err error,
 ) (domain.SyncPushResult, bool, error) {
 	if !errors.Is(err, domain.ErrAccountAlreadyExists) {
 		return domain.SyncPushResult{}, false, nil
 	}
-	fresh, ferr := t.GetAccountAny(ctx, householdID, op.ID)
+	fresh, ferr := t.GetAccountAny(ctx, scope, op.ID)
 	if ferr != nil {
 		return domain.SyncPushResult{}, false, ferr
 	}
@@ -109,7 +109,7 @@ func (accountAdapter) tombstone(
 // inUse runs the account delete rule (ADR-0005) against the batch tx,
 // returning the sentinel of the relation that blocks.
 func (accountAdapter) inUse(
-	ctx context.Context, t accountTx, householdID, id uuid.UUID,
+	ctx context.Context, t accountTx, scope domain.Scope, id uuid.UUID,
 ) error {
-	return ValidateAccountDelete(ctx, t, householdID, id)
+	return ValidateAccountDelete(ctx, t, scope, id)
 }

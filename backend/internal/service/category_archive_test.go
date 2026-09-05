@@ -26,7 +26,14 @@ func TestCategoryService_ArchiveLifecycle(t *testing.T) {
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
 	userHH := householdOf(t, store, user.ID)
-	c := seedFakeCategory(t, store, userHH, user.ID, "Продукты", domain.TransactionTypeExpense)
+	c := seedFakeCategory(
+		t,
+		store,
+		domain.Scope{HouseholdID: userHH},
+		user.ID,
+		"Продукты",
+		domain.TransactionTypeExpense,
+	)
 
 	archived, err := catSvc.Update(
 		ctx,
@@ -41,17 +48,17 @@ func TestCategoryService_ArchiveLifecycle(t *testing.T) {
 	assert.True(t, archived.Archived())
 
 	// Default listing is active-only; includeArchived surfaces it again.
-	active, err := catSvc.List(ctx, userHH, domain.GetCategoriesParams{})
+	active, err := catSvc.List(ctx, domain.Scope{HouseholdID: userHH}, domain.GetCategoriesParams{})
 	require.NoError(t, err)
 	assert.Empty(t, active)
 
-	all, err := catSvc.List(ctx, userHH, domain.GetCategoriesParams{IncludeArchived: true})
+	all, err := catSvc.List(ctx, domain.Scope{HouseholdID: userHH}, domain.GetCategoriesParams{IncludeArchived: true})
 	require.NoError(t, err)
 	require.Len(t, all, 1)
 	assert.True(t, all[0].Archived())
 
 	// By id the archived category stays readable (management UI).
-	fetched, err := catSvc.Get(ctx, userHH, c.ID)
+	fetched, err := catSvc.Get(ctx, domain.Scope{HouseholdID: userHH}, c.ID)
 	require.NoError(t, err)
 	assert.True(t, fetched.Archived())
 
@@ -78,7 +85,7 @@ func TestCategoryService_ArchiveLifecycle(t *testing.T) {
 	)
 	require.NoError(t, err)
 	assert.Nil(t, active2.ArchivedAt)
-	listed, err := catSvc.List(ctx, userHH, domain.GetCategoriesParams{})
+	listed, err := catSvc.List(ctx, domain.Scope{HouseholdID: userHH}, domain.GetCategoriesParams{})
 	require.NoError(t, err)
 	require.Len(t, listed, 1)
 }
@@ -89,7 +96,14 @@ func TestCategoryService_ArchivedNameReserved(t *testing.T) {
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
 	userHH := householdOf(t, store, user.ID)
-	archived := seedFakeCategory(t, store, userHH, user.ID, "Food", domain.TransactionTypeExpense)
+	archived := seedFakeCategory(
+		t,
+		store,
+		domain.Scope{HouseholdID: userHH},
+		user.ID,
+		"Food",
+		domain.TransactionTypeExpense,
+	)
 	_, err := catSvc.Update(
 		ctx,
 		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
@@ -106,7 +120,14 @@ func TestCategoryService_ArchivedNameReserved(t *testing.T) {
 	})
 	require.ErrorIs(t, err, domain.ErrCategoryAlreadyExists)
 
-	other := seedFakeCategory(t, store, userHH, user.ID, "Cafe", domain.TransactionTypeExpense)
+	other := seedFakeCategory(
+		t,
+		store,
+		domain.Scope{HouseholdID: userHH},
+		user.ID,
+		"Cafe",
+		domain.TransactionTypeExpense,
+	)
 	_, err = catSvc.Update(
 		ctx,
 		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
@@ -127,8 +148,15 @@ func TestCategoryService_ArchiveBlockedByLivePlannedPayment(t *testing.T) {
 	catSvc := service.NewCategoryService(store)
 	planSvc := service.NewPlannedPaymentService(store, store, store)
 
-	acct := seedFakeAccount(t, store, userHH, user.ID)
-	cat := seedFakeCategory(t, store, userHH, user.ID, "Подписки", domain.TransactionTypeExpense)
+	acct := seedFakeAccount(t, store, domain.Scope{HouseholdID: userHH}, user.ID)
+	cat := seedFakeCategory(
+		t,
+		store,
+		domain.Scope{HouseholdID: userHH},
+		user.ID,
+		"Подписки",
+		domain.TransactionTypeExpense,
+	)
 	_, err := planSvc.Create(
 		ctx,
 		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
@@ -161,8 +189,8 @@ func TestTransactionService_ArchivedCategoryReferences(t *testing.T) {
 	catSvc := service.NewCategoryService(store)
 	txSvc := service.NewTransactionService(store, store, store)
 
-	acct := seedFakeAccount(t, store, userHH, user.ID)
-	cat := seedFakeCategory(t, store, userHH, user.ID, "Кафе", domain.TransactionTypeExpense)
+	acct := seedFakeAccount(t, store, domain.Scope{HouseholdID: userHH}, user.ID)
+	cat := seedFakeCategory(t, store, domain.Scope{HouseholdID: userHH}, user.ID, "Кафе", domain.TransactionTypeExpense)
 	// A transaction recorded while the category was active.
 	tx, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 		Type: domain.TransactionTypeExpense, Amount: 300, OccurredAt: time.Now().UTC(),
@@ -187,7 +215,14 @@ func TestTransactionService_ArchivedCategoryReferences(t *testing.T) {
 	})
 	require.ErrorIs(t, err, domain.ErrCategoryArchived)
 
-	otherCat := seedFakeCategory(t, store, userHH, user.ID, "Другое", domain.TransactionTypeExpense)
+	otherCat := seedFakeCategory(
+		t,
+		store,
+		domain.Scope{HouseholdID: userHH},
+		user.ID,
+		"Другое",
+		domain.TransactionTypeExpense,
+	)
 	_, err = txSvc.Update(
 		ctx,
 		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
@@ -197,7 +232,7 @@ func TestTransactionService_ArchivedCategoryReferences(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	tx2, err := txSvc.Get(ctx, userHH, tx.ID)
+	tx2, err := txSvc.Get(ctx, domain.Scope{HouseholdID: userHH}, tx.ID)
 	require.NoError(t, err)
 
 	// ...switching TO the archived category is rejected...
@@ -248,8 +283,15 @@ func TestPlannedPaymentService_ArchivedCategoryRejected(t *testing.T) {
 	catSvc := service.NewCategoryService(store)
 	planSvc := service.NewPlannedPaymentService(store, store, store)
 
-	acct := seedFakeAccount(t, store, userHH, user.ID)
-	cat := seedFakeCategory(t, store, userHH, user.ID, "Связь", domain.TransactionTypeExpense)
+	acct := seedFakeAccount(t, store, domain.Scope{HouseholdID: userHH}, user.ID)
+	cat := seedFakeCategory(
+		t,
+		store,
+		domain.Scope{HouseholdID: userHH},
+		user.ID,
+		"Связь",
+		domain.TransactionTypeExpense,
+	)
 	_, err := catSvc.Update(
 		ctx,
 		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
@@ -278,8 +320,15 @@ func TestCategoryService_HybridDelete(t *testing.T) {
 	catSvc := service.NewCategoryService(store)
 	txSvc := service.NewTransactionService(store, store, store)
 
-	acct := seedFakeAccount(t, store, userHH, user.ID)
-	cat := seedFakeCategory(t, store, userHH, user.ID, "Вредное", domain.TransactionTypeExpense)
+	acct := seedFakeAccount(t, store, domain.Scope{HouseholdID: userHH}, user.ID)
+	cat := seedFakeCategory(
+		t,
+		store,
+		domain.Scope{HouseholdID: userHH},
+		user.ID,
+		"Вредное",
+		domain.TransactionTypeExpense,
+	)
 	txIDs := make([]uuid.UUID, 0, 2)
 	for range 2 {
 		tx, err := txSvc.Create(
@@ -300,15 +349,15 @@ func TestCategoryService_HybridDelete(t *testing.T) {
 
 	// Cascade tombstones the category and the referencing transactions.
 	require.NoError(t, catSvc.Delete(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, cat.ID, true))
-	_, err = catSvc.Get(ctx, userHH, cat.ID)
+	_, err = catSvc.Get(ctx, domain.Scope{HouseholdID: userHH}, cat.ID)
 	require.ErrorIs(t, err, domain.ErrCategoryNotFound)
 	for _, id := range txIDs {
-		_, err := txSvc.Get(ctx, userHH, id)
+		_, err := txSvc.Get(ctx, domain.Scope{HouseholdID: userHH}, id)
 		require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 	}
 
 	// Every tombstone landed in the change feed (category + 2 transactions).
-	changes, err := store.PullChanges(ctx, userHH, 0, 1000)
+	changes, err := store.PullChanges(ctx, domain.Scope{HouseholdID: userHH}, 0, 1000)
 	require.NoError(t, err)
 	tombstones := 0
 	for _, ch := range changes {
@@ -323,8 +372,15 @@ func TestCategoryService_CascadeDeleteByAnyMember(t *testing.T) {
 	t.Parallel()
 	f := newIsolationFixture(t)
 	ctx := context.Background()
-	acct := seedFakeAccount(t, f.store, f.ownerHH, f.owner.ID)
-	cat := seedFakeCategory(t, f.store, f.ownerHH, f.owner.ID, "Общее", domain.TransactionTypeExpense)
+	acct := seedFakeAccount(t, f.store, domain.Scope{HouseholdID: f.ownerHH}, f.owner.ID)
+	cat := seedFakeCategory(
+		t,
+		f.store,
+		domain.Scope{HouseholdID: f.ownerHH},
+		f.owner.ID,
+		"Общее",
+		domain.TransactionTypeExpense,
+	)
 	// The owner's transaction; the sibling (a member, not the owner) cascades.
 	_, err := f.txSvc.Create(
 		ctx,
@@ -337,6 +393,6 @@ func TestCategoryService_CascadeDeleteByAnyMember(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, f.catSvc.Delete(ctx, domain.Scope{HouseholdID: f.ownerHH, ActorID: f.sibling.ID}, cat.ID, true))
-	_, err = f.catSvc.Get(ctx, f.ownerHH, cat.ID)
+	_, err = f.catSvc.Get(ctx, domain.Scope{HouseholdID: f.ownerHH}, cat.ID)
 	require.ErrorIs(t, err, domain.ErrCategoryNotFound)
 }

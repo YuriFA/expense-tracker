@@ -132,7 +132,7 @@ func TestAccountService_NoFieldsToUpdate(t *testing.T) {
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
 	userHH := householdOf(t, store, user.ID)
-	a := seedFakeAccount(t, store, userHH, user.ID)
+	a := seedFakeAccount(t, store, domain.Scope{HouseholdID: userHH}, user.ID)
 
 	_, err := acctSvc.Update(
 		ctx,
@@ -149,7 +149,7 @@ func TestCategoryService_NoFieldsToUpdate(t *testing.T) {
 	ctx := context.Background()
 	user := seedFakeUser(t, store)
 	userHH := householdOf(t, store, user.ID)
-	c := seedFakeCategory(t, store, userHH, user.ID, "Z", domain.TransactionTypeIncome)
+	c := seedFakeCategory(t, store, domain.Scope{HouseholdID: userHH}, user.ID, "Z", domain.TransactionTypeIncome)
 
 	_, err := catSvc.Update(
 		ctx,

@@ -20,8 +20,8 @@ import (
 type plannedPaymentTx interface {
 	repository.SyncCore
 	repository.PlannedPaymentSyncTx
-	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+	LiveAccountExists(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error)
 }
 
 var _ plannedPaymentTx = repository.SyncTx(nil)
@@ -57,7 +57,7 @@ func (plannedPaymentAdapter) invalidDataMessage() string {
 func (plannedPaymentAdapter) preValidate(
 	ctx context.Context,
 	t plannedPaymentTx,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	_ domain.SyncOperation,
 	data domain.PlannedPaymentFullState,
 ) (string, string, error) {
@@ -65,7 +65,7 @@ func (plannedPaymentAdapter) preValidate(
 		return code, (plannedPaymentAdapter{}).invalidDataMessage(), nil
 	}
 	err := ValidatePlannedPaymentWrite(
-		ctx, syncRefReads{src: t}, householdID, data.AccountID, data.CategoryID, data.Type,
+		ctx, syncRefReads{src: t}, scope, data.AccountID, data.CategoryID, data.Type,
 	)
 	if err != nil {
 		if spec, ok := domain.ErrorSpecFor(err); ok {
@@ -95,9 +95,9 @@ func (plannedPaymentAdapter) isWriteRace(err error) bool {
 }
 
 func (plannedPaymentAdapter) getAny(
-	ctx context.Context, t plannedPaymentTx, householdID, id uuid.UUID,
+	ctx context.Context, t plannedPaymentTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, bool, error) {
-	p, err := t.GetPlannedPaymentAny(ctx, householdID, id)
+	p, err := t.GetPlannedPaymentAny(ctx, scope, id)
 	if err != nil || p == nil {
 		return nil, false, err
 	}

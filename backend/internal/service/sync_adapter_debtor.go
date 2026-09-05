@@ -46,11 +46,11 @@ func (debtorAdapter) invalidDataMessage() string {
 func (debtorAdapter) preValidate(
 	ctx context.Context,
 	t debtorTx,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	data domain.DebtorFullState,
 ) (string, string, error) {
-	nameTaken, err := t.DebtorNameTaken(ctx, householdID, data.Name, op.ID)
+	nameTaken, err := t.DebtorNameTaken(ctx, scope, data.Name, op.ID)
 	if err != nil {
 		return "", "", err
 	}
@@ -70,9 +70,9 @@ func (debtorAdapter) isWriteRace(err error) bool {
 }
 
 func (debtorAdapter) getAny(
-	ctx context.Context, t debtorTx, householdID, id uuid.UUID,
+	ctx context.Context, t debtorTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Debtor, bool, error) {
-	d, err := t.GetDebtorAny(ctx, householdID, id)
+	d, err := t.GetDebtorAny(ctx, scope, id)
 	if err != nil || d == nil {
 		return nil, false, err
 	}
@@ -105,7 +105,7 @@ func (debtorAdapter) tombstone(
 
 // inUse runs the debtor delete rule (ADR-0005) against the batch tx.
 func (debtorAdapter) inUse(
-	ctx context.Context, t debtorTx, householdID, id uuid.UUID,
+	ctx context.Context, t debtorTx, scope domain.Scope, id uuid.UUID,
 ) error {
-	return ValidateDebtorDelete(ctx, t, householdID, id)
+	return ValidateDebtorDelete(ctx, t, scope, id)
 }

@@ -47,14 +47,14 @@ func (categoryAdapter) invalidDataMessage() string {
 func (categoryAdapter) preValidate(
 	ctx context.Context,
 	t categoryTx,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	data domain.CategoryFullState,
 ) (string, string, error) {
 	if data.Type != domain.TransactionTypeIncome && data.Type != domain.TransactionTypeExpense {
 		return "VALIDATION_FAILED", "invalid category type", nil
 	}
-	nameTaken, err := t.CategoryNameTaken(ctx, householdID, data.Name, op.ID)
+	nameTaken, err := t.CategoryNameTaken(ctx, scope, data.Name, op.ID)
 	if err != nil {
 		return "", "", err
 	}
@@ -74,9 +74,9 @@ func (categoryAdapter) isWriteRace(err error) bool {
 }
 
 func (categoryAdapter) getAny(
-	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
+	ctx context.Context, t categoryTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, bool, error) {
-	c, err := t.GetCategoryAny(ctx, householdID, id)
+	c, err := t.GetCategoryAny(ctx, scope, id)
 	if err != nil || c == nil {
 		return nil, false, err
 	}
@@ -113,9 +113,9 @@ func (categoryAdapter) tombstone(
 // message names the relation that fired.
 // inUse runs the category delete rule (ADR-0005) against the batch tx.
 func (categoryAdapter) inUse(
-	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
+	ctx context.Context, t categoryTx, scope domain.Scope, id uuid.UUID,
 ) error {
-	return ValidateCategoryDelete(ctx, t, householdID, id)
+	return ValidateCategoryDelete(ctx, t, scope, id)
 }
 
 // categoryDeleteData is the delete-op payload shape ("cascade": true).
@@ -141,9 +141,9 @@ func (categoryAdapter) resolveDelete(op domain.SyncOperation) (bool, string, str
 // delete: the referencing transactions are removed by the cascade itself,
 // so only live planned payments still block.
 func (categoryAdapter) inUseUnderCascade(
-	ctx context.Context, t categoryTx, householdID, id uuid.UUID,
+	ctx context.Context, t categoryTx, scope domain.Scope, id uuid.UUID,
 ) error {
-	return ValidateCategoryDeleteUnderCascade(ctx, t, householdID, id)
+	return ValidateCategoryDeleteUnderCascade(ctx, t, scope, id)
 }
 
 // cascadeTombstone tombstones the category and every referencing live

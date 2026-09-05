@@ -78,7 +78,11 @@ func TestJob_ExecutesDueAutoPlansWithCatchUp(t *testing.T) {
 	runJobUntilSettled(t, store)
 
 	// Daily occurrences due: today-3, today-2, today-1, today = four.
-	transactions, err := store.GetTransactions(ctx, householdID, domain.GetTransactionsParams{})
+	transactions, err := store.GetTransactions(
+		ctx,
+		domain.Scope{HouseholdID: householdID},
+		domain.GetTransactionsParams{},
+	)
 	require.NoError(t, err)
 	require.Len(t, transactions, 4)
 	for _, txn := range transactions {
@@ -95,13 +99,13 @@ func TestJob_ExecutesDueAutoPlansWithCatchUp(t *testing.T) {
 		assert.Equal(t, plan.CategoryID, *txn.CategoryID)
 	}
 
-	updated, err := store.GetPlannedPayment(ctx, householdID, plan.ID)
+	updated, err := store.GetPlannedPayment(ctx, domain.Scope{HouseholdID: householdID}, plan.ID)
 	require.NoError(t, err)
 	assert.True(t, updated.NextDue.Equal(today.AddDate(0, 0, 1)),
 		"next_due lands on the first future occurrence")
 	assert.Equal(t, 5, updated.Version, "one version bump per executed occurrence")
 
-	manualPlan, err := store.GetPlannedPayment(ctx, householdID, manual.ID)
+	manualPlan, err := store.GetPlannedPayment(ctx, domain.Scope{HouseholdID: householdID}, manual.ID)
 	require.NoError(t, err)
 	assert.True(t, manualPlan.NextDue.Equal(start), "manual plans are never auto-executed")
 	assert.Equal(t, 1, manualPlan.Version)
@@ -135,7 +139,11 @@ func TestJob_RerunIsIdempotentAndDeletedPlansProduceNothing(t *testing.T) {
 
 	runJobUntilSettled(t, store)
 
-	transactions, err := store.GetTransactions(ctx, householdID, domain.GetTransactionsParams{})
+	transactions, err := store.GetTransactions(
+		ctx,
+		domain.Scope{HouseholdID: householdID},
+		domain.GetTransactionsParams{},
+	)
 	require.NoError(t, err)
 	assert.Empty(t, transactions, "a deleted overdue plan produces nothing")
 }

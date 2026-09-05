@@ -18,8 +18,8 @@ import (
 // AccountDeleteReads is the dependants-reading seam; both the sync tx
 // contract and any other caller satisfy it structurally.
 type AccountDeleteReads interface {
-	HasLiveTransactionsForAccount(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	HasLivePlannedPaymentsForAccount(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	HasLiveTransactionsForAccount(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
+	HasLivePlannedPaymentsForAccount(ctx context.Context, scope domain.Scope, id uuid.UUID) (bool, error)
 }
 
 // ValidateAccountDelete returns the sentinel of the first relation that
@@ -29,16 +29,16 @@ type AccountDeleteReads interface {
 func ValidateAccountDelete(
 	ctx context.Context,
 	reads AccountDeleteReads,
-	householdID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) error {
-	transactions, err := reads.HasLiveTransactionsForAccount(ctx, householdID, id)
+	transactions, err := reads.HasLiveTransactionsForAccount(ctx, scope, id)
 	if err != nil {
 		return err
 	}
 	if transactions {
 		return domain.ErrAccountHasTransactions
 	}
-	plans, err := reads.HasLivePlannedPaymentsForAccount(ctx, householdID, id)
+	plans, err := reads.HasLivePlannedPaymentsForAccount(ctx, scope, id)
 	if err != nil {
 		return err
 	}

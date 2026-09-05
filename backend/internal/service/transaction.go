@@ -49,7 +49,7 @@ func (s *TransactionService) Create(
 ) (*domain.Transaction, error) {
 	const op = "service.transaction.Create"
 
-	if err := ValidateTransactionWrite(ctx, s.refReads(), scope.HouseholdID, TransactionWriteState{
+	if err := ValidateTransactionWrite(ctx, s.refReads(), scope, TransactionWriteState{
 		Type:          params.Type,
 		Amount:        params.Amount,
 		AccountID:     params.AccountID,
@@ -83,7 +83,7 @@ func (s *TransactionService) Update(
 		return nil, ErrNoFieldsToUpdate
 	}
 
-	current, err := s.transactions.GetTransaction(ctx, scope.HouseholdID, id)
+	current, err := s.transactions.GetTransaction(ctx, scope, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -111,7 +111,7 @@ func (s *TransactionService) Update(
 		effectiveAmount = *params.Amount
 	}
 
-	if err := ValidateTransactionWrite(ctx, s.refReads(), scope.HouseholdID, TransactionWriteState{
+	if err := ValidateTransactionWrite(ctx, s.refReads(), scope, TransactionWriteState{
 		Type:          current.Type,
 		Amount:        effectiveAmount,
 		AccountID:     effectiveAccountID,
@@ -139,9 +139,9 @@ func (s *TransactionService) Delete(ctx context.Context, scope domain.Scope, id 
 	return nil
 }
 
-func (s *TransactionService) Get(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error) {
+func (s *TransactionService) Get(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Transaction, error) {
 	const op = "service.transaction.Get"
-	tx, err := s.transactions.GetTransaction(ctx, householdID, id)
+	tx, err := s.transactions.GetTransaction(ctx, scope, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -172,7 +172,7 @@ type TransactionListQuery struct {
 // item of the page and trims to pageSize.
 func (s *TransactionService) List(
 	ctx context.Context,
-	householdID uuid.UUID,
+	scope domain.Scope,
 	q TransactionListQuery,
 ) (*TransactionListPage, error) {
 	const op = "service.transaction.List"
@@ -189,7 +189,7 @@ func (s *TransactionService) List(
 	}
 
 	fetchLimit := pageSize + 1
-	rows, err := s.transactions.GetTransactions(ctx, householdID, domain.GetTransactionsParams{
+	rows, err := s.transactions.GetTransactions(ctx, scope, domain.GetTransactionsParams{
 		Type:       q.Type,
 		AccountID:  q.AccountID,
 		CategoryID: q.CategoryID,

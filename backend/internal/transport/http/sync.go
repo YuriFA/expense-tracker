@@ -68,14 +68,14 @@ func (s *Server) SyncPull(
 	ctx context.Context,
 	req api.SyncPullRequestObject,
 ) (api.SyncPullResponseObject, error) {
-	householdID := s.currentHouseholdID(ctx)
+	scope := s.currentScope(ctx)
 
 	var afterSeq int64
 	if req.Params.Cursor != nil {
 		afterSeq = *req.Params.Cursor
 	}
 
-	page, err := s.sync.Pull(ctx, householdID, afterSeq, req.Params.Limit)
+	page, err := s.sync.Pull(ctx, scope, afterSeq, req.Params.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (s *Server) SyncPull(
 		changes = append(changes, change)
 	}
 	s.log.InfoContext(ctx, "sync pull metrics",
-		slog.String("household_id", householdID.String()),
+		slog.String("household_id", scope.HouseholdID.String()),
 		slog.String("request_id", httpctx.RequestID(ginCtx(ctx))),
 		slog.Int64("cursor", afterSeq),
 		slog.Int("changes", len(page.Changes)),
