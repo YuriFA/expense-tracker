@@ -129,8 +129,10 @@ export function provideSyncController(options: SyncControllerOptions): SyncContr
   })
 
   // AppShell hosts the controller for the app's whole lifetime, but stay
-  // correct if the hosting scope is ever disposed.
+  // correct if the hosting scope is ever disposed: flagging first lets the
+  // pending subscription unsubscribe itself instead of leaking.
   onScopeDispose(() => {
+    disposed = true
     for (const cleanup of cleanups) cleanup()
   })
 
