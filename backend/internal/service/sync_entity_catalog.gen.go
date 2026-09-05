@@ -4,20 +4,6 @@ package service
 
 import "github.com/yurifa/expense-tracker-api/internal/domain"
 
-var catalogBackedSyncEntities = map[string]struct{}{
-	domain.SyncEntityAccount:        {},
-	domain.SyncEntityCategory:       {},
-	domain.SyncEntityDebtor:         {},
-	domain.SyncEntityDebtOperation:  {},
-	domain.SyncEntityPlannedPayment: {},
-	domain.SyncEntityTransaction:    {},
-}
-
-func isCatalogBackedSyncEntity(entity string) bool {
-	_, ok := catalogBackedSyncEntities[entity]
-	return ok
-}
-
 func catalogSyncEntityLabel(entity string) string {
 	switch entity {
 	case domain.SyncEntityAccount:

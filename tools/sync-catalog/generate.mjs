@@ -483,20 +483,10 @@ function renderGo() {
   const invalidCases = entities
     .map((entity) => `\tcase ${entity.goDomainConst}:\n\t\treturn ${JSON.stringify(entity.goInvalidDataMessage)}`)
     .join('\n')
-  const includes = entities.map((entity) => `\t${entity.goDomainConst}: {},`).join('\n')
   return `${header('tools/sync-catalog/manifest.json')}
 package service
 
 import "github.com/yurifa/expense-tracker-api/internal/domain"
-
-var catalogBackedSyncEntities = map[string]struct{}{
-${includes}
-}
-
-func isCatalogBackedSyncEntity(entity string) bool {
-\t_, ok := catalogBackedSyncEntities[entity]
-\treturn ok
-}
 
 func catalogSyncEntityLabel(entity string) string {
 \tswitch entity {
