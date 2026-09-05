@@ -1670,7 +1670,8 @@ export interface components {
             /**
              * @description Machine-readable код (для conflict/error): `SYNC_VERSION_CONFLICT`,
              *     `SYNC_ALREADY_EXISTS`, `SYNC_DELETED_CONFLICT` либо коды
-             *     бизнес-правил (`CATEGORY_IN_USE`, `INVALID_REFS`, ...).
+             *     бизнес-правил (`CATEGORY_IN_USE`, `INVALID_REFS`,
+             *     `INVALID_AMOUNT`, ...).
              */
             code?: string;
             /** @description Human-readable сообщение (для conflict/error). */
@@ -2993,7 +2994,15 @@ export interface operations {
                     };
                 };
             };
-            400: components["responses"]["ValidationError"];
+            /** @description Неверные query-параметры, либо не декодируется курсор. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             500: components["responses"]["InternalError"];
         };
@@ -3026,7 +3035,15 @@ export interface operations {
                     "application/json": components["schemas"]["Transaction"];
                 };
             };
-            400: components["responses"]["ValidationError"];
+            /** @description Неверное тело запроса, либо отсутствует заголовок `Idempotency-Key`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             /** @description Либо idempotency-конфликт, либо дубликат клиентского `id`. */
             409: {
@@ -3714,7 +3731,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Фильтр по типу плана. */
-                type?: "income" | "expense";
+                type?: "expense" | "income";
             };
             header?: never;
             path?: never;
