@@ -86,6 +86,7 @@ export {
   normalizeHouseholdCode,
 } from './domain/household'
 export { authorLabel, type AuthorLabelOptions } from './domain/author-label'
+export { emailLocalPart, householdDisplayName, memberLabel } from './domain/household-label'
 export type {
   DebtOperation,
   DebtDirection,
