@@ -62,11 +62,27 @@ actually wrote local rows.
 
 ## 2. Reactivity budget
 
-The entire app has exactly two production `watch()` calls, and both bridge
-external systems: settings store → i18n global locale (`main.ts`), i18n
-locale → category-cache invalidation (`setup-i18n-locale-watcher.ts`). That
-is the budget to keep — a new `watch`/`watchEffect` must be justifying
-itself against those two.
+Production `watch()` calls are the exception, and every one bridges an
+external system that cannot emit a component event:
+
+- i18n: settings store → global locale, locale → category-cache
+  invalidation (`app/setup-i18n-locale-watcher.ts`, two watchers);
+- theme: settings store → `<html>` class (`app/setup-theme-watcher.ts`);
+- sync: auth state and the mutation outbox drive the engine
+  (`shared/lib/local-db/sync-composable.ts`, two watchers);
+- router: navigation dismisses the transient speed dial
+  (`widgets/mobile-shell/ui/SpeedDialFab.vue` — no parent could pass an
+  event between the sibling shell widgets);
+- one semantic UI watcher: the create-category type switch replaces an
+  icon the new type does not offer (`CategoryEditDialog.vue`).
+
+That is the budget — a new `watch` must justify itself against this list.
+Draft/commit UI state syncs through event handlers, not watchers. That
+includes open-triggered effects: a hosted dialog resets by remount
+(§4 destroy-on-close — a fresh mount IS the reset, no reseed watches), and
+a self-hosted dialog whose trigger must stay mounted resets or loads on
+open inside an `@update:open` handler (canonical: `ImportCsvDialog`,
+`DissolveHouseholdDialog`).
 
 - Derived values are `computed` — never a `ref` kept in sync by a watch or
   an event: `entities/transaction/ui/TransactionListItem.vue` derives
@@ -102,8 +118,13 @@ itself against those two.
   `setFieldError` (it needs the accounts list); if you can express the rule
   in the schema, do.
 - Failure: toast via `notification.mutationError` (code-keyed, never HTTP
-  status); success: `emit('success')` to the parent; entered values are kept
-  on error.
+  status); the error context is typed — `feature`/`action` are closed
+  unions (`shared/services/notification/types.ts`), so a typo'd context
+  fails type-check instead of silently landing in the logs. Success:
+  `emit('success')` to the parent; entered values are kept on error.
+  Delete confirms are the one exception that closes in `finally` — no
+  draft to keep, the toast carries the failure (canonical:
+  `DeleteTransactionDialog`, `CategoryDeleteDialog`).
 - Known trade-off: schema factories snapshot `t()` at creation — validation
   messages switch locale only on remount. Accepted; don't "fix" silently.
 
@@ -113,14 +134,16 @@ One overlay instance OUTSIDE the loop plus an "active item" ref:
 
 - Canonical: `pages/dashboard/ui/RecentTransactions.vue` —
   `activeTransaction`/`pendingDeleteId` refs; row actions call
-  `openEdit(item)`/`openDelete(item)`; the two dialogs render once after the
-  list.
-- Registered defect (technical-debt.md):
-  `pages/transactions/ui/TransactionsItemsList.vue` renders
-  `EditTransactionDialog` + `DeleteTransactionDialog` inside the per-row
-  `#actions` slot, all bound to one shared `editOpen`/`deleteOpen` — every
-  row instantiates its own pair and one toggle targets all of them. New list
-  screens follow the RecentTransactions shape.
+  `openEdit(item)`/`openDelete(item)`; the two dialogs render once after
+  the list. `pages/transactions/ui/TransactionsItemsList.vue` follows the
+  same hoisted shape (its historical per-row defect is fixed).
+- Dialog drafts reset by remount (destroy-on-close): the host renders the
+  dialog under `v-if="open"` + `:key="<target id>"`, so the draft seeds are
+  plain initializers from props and a fresh mount IS the reset — no reseed
+  watches (canonical: `CategoriesSettingsPage` → `CategoryEditDialog`/
+  `CategoryDeleteDialog`; `DebtsPage`). A self-hosted dialog whose trigger
+  must stay mounted cannot remount: its open-triggered reset/effects go in
+  an `@update:open` handler (§2).
 - Overlay container owns presentation and lifecycle; the inner form/list owns
   only its own state and submission. Use one `open` ref in the container,
   close on success there, and keep reusable form logic out of
