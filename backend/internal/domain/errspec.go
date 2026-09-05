@@ -149,9 +149,10 @@ var errorSpecs = map[error]ErrorSpec{
 		"PLANNED_PAYMENT_CATEGORY_ARCHIVED",
 		"category is archived and not available for planned payments",
 	},
-	ErrInvalidDate:   {"VALIDATION_FAILED", "date must be YYYY-MM-DD"},
-	ErrInvalidRefs:   {"INVALID_REFS", "invalid references"},
-	ErrInvalidAmount: {"INVALID_AMOUNT", "invalid amount"},
+	ErrPlannedPaymentTypeImmutable: {"VALIDATION_FAILED", "plan type is immutable"},
+	ErrInvalidDate:                 {"VALIDATION_FAILED", "date must be YYYY-MM-DD"},
+	ErrInvalidRefs:                 {"INVALID_REFS", "invalid references"},
+	ErrInvalidAmount:               {"INVALID_AMOUNT", "invalid amount"},
 
 	// --- PATCH / cursor request-shape errors ---
 	ErrNoFieldsToUpdate: {"VALIDATION_FAILED", "no fields to update"},

@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/yurifa/expense-tracker-api/internal/domain"
-	"github.com/yurifa/expense-tracker-api/internal/repository"
 )
 
 // Transaction write rules (ADR-0005): the single home of the
@@ -22,59 +21,6 @@ import (
 // the adapter, and REST update cannot change the type at all (structural
 // immutability: the update params omit it). The write path itself (create vs
 // replace vs tombstone) is decided by the callers, not here.
-
-// TransactionRefReads is the reference-reading seam of the transaction write
-// rules. Both read styles have identical semantics: accounts are live-only
-// (a tombstoned account reads as not found), categories are live but
-// ARCHIVED rows are returned (archival is a rule, not a read filter) and a
-// missing category reads as domain.ErrCategoryNotFound.
-type TransactionRefReads interface {
-	AccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
-	Category(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
-}
-
-// repoTransactionRefReads adapts the full REST repositories to the seam.
-// GetCategory already reads exactly what the seam wants (live, archived
-// included, ErrCategoryNotFound when missing), so it delegates as-is.
-type repoTransactionRefReads struct {
-	accounts   repository.AccountRepository
-	categories repository.CategoryRepository
-}
-
-func (r repoTransactionRefReads) AccountExists(
-	ctx context.Context, householdID, id uuid.UUID,
-) (bool, error) {
-	if _, err := r.accounts.GetAccount(ctx, householdID, id); err != nil {
-		if errors.Is(err, domain.ErrAccountNotFound) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func (r repoTransactionRefReads) Category(
-	ctx context.Context, householdID, id uuid.UUID,
-) (*domain.Category, error) {
-	return r.categories.GetCategory(ctx, householdID, id)
-}
-
-// syncTransactionRefReads adapts the sync batch-tx live reads to the seam.
-type syncTransactionRefReads struct {
-	t transactionTx
-}
-
-func (r syncTransactionRefReads) AccountExists(
-	ctx context.Context, householdID, id uuid.UUID,
-) (bool, error) {
-	return r.t.LiveAccountExists(ctx, householdID, id)
-}
-
-func (r syncTransactionRefReads) Category(
-	ctx context.Context, householdID, id uuid.UUID,
-) (*domain.Category, error) {
-	return r.t.LiveCategory(ctx, householdID, id)
-}
 
 // TransactionWriteState is the effective full state of a transaction write.
 type TransactionWriteState struct {
@@ -100,7 +46,7 @@ type TransactionWriteState struct {
 // caller can fail the request / batch item without a machine code.
 func ValidateTransactionWrite(
 	ctx context.Context,
-	reads TransactionRefReads,
+	reads RefReads,
 	householdID uuid.UUID,
 	state TransactionWriteState,
 ) error {
@@ -158,7 +104,7 @@ func ValidateTransactionTypeImmutable(cur, next domain.TransactionType) error {
 // writeAccountExists maps the seam's account read to the sentinel of the
 // from/to/plain call site.
 func writeAccountExists(
-	ctx context.Context, reads TransactionRefReads, householdID, id uuid.UUID, notFound error,
+	ctx context.Context, reads RefReads, householdID, id uuid.UUID, notFound error,
 ) error {
 	exists, err := reads.AccountExists(ctx, householdID, id)
 	if err != nil {
@@ -172,7 +118,7 @@ func writeAccountExists(
 
 func validateCashflowWriteRefs(
 	ctx context.Context,
-	reads TransactionRefReads,
+	reads RefReads,
 	householdID uuid.UUID,
 	state TransactionWriteState,
 ) error {
@@ -204,7 +150,7 @@ func validateCashflowWriteRefs(
 
 func validateTransferWriteRefs(
 	ctx context.Context,
-	reads TransactionRefReads,
+	reads RefReads,
 	householdID, fromAccountID, toAccountID uuid.UUID,
 ) error {
 	if err := writeAccountExists(
@@ -225,7 +171,7 @@ func validateTransferWriteRefs(
 
 func validateAdjustmentWriteRefs(
 	ctx context.Context,
-	reads TransactionRefReads,
+	reads RefReads,
 	householdID, accountID uuid.UUID,
 ) error {
 	return writeAccountExists(ctx, reads, householdID, accountID, domain.ErrTransactionAccountNotFound)

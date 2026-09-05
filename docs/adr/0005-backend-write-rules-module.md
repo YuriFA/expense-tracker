@@ -78,10 +78,18 @@ spec tidiness. The spec is therefore not tightened.
   `ValidateTransactionWrite`. Table tests in `write_rules_transaction_test.go`
   are the new home of rule coverage; the existing service/sync suites passed
   unmodified - the behavior-preserving proof.
-- Remaining entities migrate one by one (planned payment next; its three real
-  divergences get resolved to the canonical REST behavior in an OpenSpec
-  change in the same PR). Delete guards (account in-use, category cascade)
-  join the module as those entities are reached.
+- Planned payment is migrated the same way
+  (`ValidatePlannedPaymentWrite` + a shared `RefReads` seam in
+  `write_rules.go`). Its divergences turned out to be spec violations, not
+  spec gaps: the planned-payments spec already demands archived-category
+  rejection and the sync-protocol spec already demands push validation
+  parity, so no OpenSpec change was needed - the sync path now rejects an
+  archived category (reproduced red first in the e2e suite) and the
+  type-mismatch wording follows the shared wire spec. The one test edit was
+  the assertion of that old divergent wording.
+- Remaining entities migrate one by one (debt_operation, then account /
+  category / debtor). Delete guards (account in-use, category cascade) join
+  the module as those entities are reached.
 - A new sentinel error must get a `domain.errorSpecs` row (and a transport
   status row); the coverage test fails otherwise at the transport seam.
 - Client-side (web/mobile) validation is intentionally out of scope: it is a

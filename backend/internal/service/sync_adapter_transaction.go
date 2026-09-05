@@ -85,7 +85,7 @@ func (transactionAdapter) postReadValidate(
 	} else if found && !current.Deleted() {
 		prevCategoryID = current.CategoryID
 	}
-	err := ValidateTransactionWrite(ctx, syncTransactionRefReads{t: t}, householdID, TransactionWriteState{
+	err := ValidateTransactionWrite(ctx, syncRefReads{src: t}, householdID, TransactionWriteState{
 		Type: data.Type, Amount: data.Amount,
 		AccountID: data.AccountID, CategoryID: data.CategoryID,
 		FromAccountID: data.FromAccountID, ToAccountID: data.ToAccountID,

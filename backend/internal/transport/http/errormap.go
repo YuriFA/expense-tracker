@@ -113,6 +113,7 @@ var domainErrorStatus = map[error]int{
 	domain.ErrPlannedPaymentCategoryNotFound:     http.StatusUnprocessableEntity,
 	domain.ErrPlannedPaymentCategoryTypeMismatch: http.StatusUnprocessableEntity,
 	domain.ErrPlannedPaymentCategoryArchived:     http.StatusUnprocessableEntity,
+	domain.ErrPlannedPaymentTypeImmutable:        http.StatusUnprocessableEntity,
 	domain.ErrInvalidRefs:                        http.StatusUnprocessableEntity,
 	domain.ErrInvalidAmount:                      http.StatusUnprocessableEntity,
 

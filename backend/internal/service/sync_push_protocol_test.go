@@ -1097,7 +1097,9 @@ func TestSyncPush_PlannedPaymentProtocol(t *testing.T) {
 			upsertOp(domain.SyncEntityPlannedPayment, uuid.New(), uuid.New(), 0, mismatch))
 		assert.Equal(t, domain.SyncStatusError, res.Status)
 		assert.Equal(t, "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", res.Code)
-		assert.Equal(t, "category type does not match the plan type", res.Message)
+		// The shared wire spec (domain.ErrorSpecFor): the same wording the
+		// REST surface answers with (write-rules unification, ADR-0005).
+		assert.Equal(t, "plan type does not match category type", res.Message)
 	})
 
 	t.Run("update on the current base applies, unknown id conflicts with the zero state", func(t *testing.T) {

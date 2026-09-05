@@ -38,8 +38,8 @@ func NewTransactionService(
 }
 
 // refReads adapts the service's repositories to the write-rules seam.
-func (s *TransactionService) refReads() TransactionRefReads {
-	return repoTransactionRefReads{accounts: s.accounts, categories: s.categories}
+func (s *TransactionService) refReads() RefReads {
+	return repoRefReads{accounts: s.accounts, categories: s.categories}
 }
 
 func (s *TransactionService) Create(

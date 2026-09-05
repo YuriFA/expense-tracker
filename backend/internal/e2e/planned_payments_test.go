@@ -315,6 +315,26 @@ func TestE2E_PlannedPaymentsSyncFlows(t *testing.T) {
 	assert.Equal(t, "error", results[1]["status"])
 	assert.Equal(t, "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", results[1]["code"])
 
+	// --- Plan referencing an archived category: per-item error (push
+	// validation parity with the REST surface; a live category is
+	// non-deleted AND non-archived) ---
+	archivedCategoryID := seedPlanCategory(t, c, "Архив", "expense")
+	archived := c.do("PATCH", "/api/categories/"+archivedCategoryID,
+		map[string]any{"version": 1, "archived": true})
+	require.Equal(t, 200, archived["__status"], archived["__body"])
+
+	archivedPlan := planData("2026-11-15")
+	archivedPlan["categoryId"] = archivedCategoryID
+	results = push(t, c, []map[string]any{
+		{
+			"opId": "88888888-abcd-4abc-8abc-abcabcabcabc", "entity": "planned_payment", "action": "upsert",
+			"id": "88888888-abce-4abc-8abc-abcabcabcabc", "baseVersion": 0, "data": archivedPlan,
+		},
+	})
+	require.Len(t, results, 1)
+	assert.Equal(t, "error", results[0]["status"], "%v", results[0])
+	assert.Equal(t, "PLANNED_PAYMENT_CATEGORY_ARCHIVED", results[0]["code"])
+
 	// --- Pull delivers planned-payment upserts and tombstones ---
 	changes, _ := pullAll(t, c, cursor)
 	var planUpserts, planTombstones int

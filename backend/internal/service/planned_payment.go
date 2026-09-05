@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -31,6 +30,11 @@ func NewPlannedPaymentService(
 	return &PlannedPaymentService{plans: plans, accounts: accounts, categories: categories}
 }
 
+// refReads adapts the service's repositories to the write-rules seam.
+func (s *PlannedPaymentService) refReads() RefReads {
+	return repoRefReads{accounts: s.accounts, categories: s.categories}
+}
+
 func (s *PlannedPaymentService) Create(
 	ctx context.Context,
 	householdID, userID uuid.UUID,
@@ -38,7 +42,9 @@ func (s *PlannedPaymentService) Create(
 ) (*domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.Create"
 
-	if err := s.validateRefs(ctx, householdID, params.AccountID, params.CategoryID, params.Type); err != nil {
+	if err := ValidatePlannedPaymentWrite(
+		ctx, s.refReads(), householdID, params.AccountID, params.CategoryID, params.Type,
+	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -78,7 +84,9 @@ func (s *PlannedPaymentService) Update(
 		if params.CategoryID != nil {
 			categoryID = *params.CategoryID
 		}
-		if err := s.validateRefs(ctx, householdID, accountID, categoryID, current.Type); err != nil {
+		if err := ValidatePlannedPaymentWrite(
+			ctx, s.refReads(), householdID, accountID, categoryID, current.Type,
+		); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
@@ -118,37 +126,4 @@ func (s *PlannedPaymentService) List(
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return p, nil
-}
-
-// validateRefs verifies the account and category exist, belong to householdID, and
-// that the category type matches the plan type (the plan type domain is
-// expense|income; transfer is rejected at the contract layer).
-func (s *PlannedPaymentService) validateRefs(
-	ctx context.Context,
-	householdID, accountID, categoryID uuid.UUID,
-	typ domain.TransactionType,
-) error {
-	if _, err := s.accounts.GetAccount(ctx, householdID, accountID); err != nil {
-		if errors.Is(err, domain.ErrAccountNotFound) {
-			return domain.ErrPlannedPaymentAccountNotFound
-		}
-		return err
-	}
-	cat, err := s.categories.GetCategory(ctx, householdID, categoryID)
-	if err != nil {
-		if errors.Is(err, domain.ErrCategoryNotFound) {
-			return domain.ErrPlannedPaymentCategoryNotFound
-		}
-		return err
-	}
-	if cat.Type != typ {
-		return domain.ErrPlannedPaymentCategoryTypeMismatch
-	}
-	// A plan is a future obligation: an archived category is never a valid
-	// reference (archiving is itself blocked while live plans reference the
-	// category, so only new assignments can hit this).
-	if cat.Archived() {
-		return domain.ErrPlannedPaymentCategoryArchived
-	}
-	return nil
 }

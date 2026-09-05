@@ -1,0 +1,75 @@
+package service
+
+import (
+	"context"
+	"errors"
+
+	"github.com/google/uuid"
+
+	"github.com/yurifa/expense-tracker-api/internal/domain"
+	"github.com/yurifa/expense-tracker-api/internal/repository"
+)
+
+// Shared reference-reading seam of the write rules modules (ADR-0005). The
+// entity rule files (write_rules_<entity>.go) validate against this seam so
+// the REST services and the sync push adapters run the same rules over the
+// same read semantics: accounts are live-only (a tombstoned account reads as
+// not found), categories are live but ARCHIVED rows are returned (archival
+// is a rule, not a read filter) and a missing category reads as
+// domain.ErrCategoryNotFound.
+
+// RefReads is the seam both surfaces adapt their reads to.
+type RefReads interface {
+	AccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	Category(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+}
+
+// liveRefSource is the minimal live-read surface every sync tx contract
+// exposes; the per-entity tx interfaces satisfy it structurally.
+type liveRefSource interface {
+	LiveAccountExists(ctx context.Context, householdID, id uuid.UUID) (bool, error)
+	LiveCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
+}
+
+// repoRefReads adapts the full REST repositories to the seam. GetCategory
+// already reads exactly what the seam wants (live, archived included,
+// ErrCategoryNotFound when missing), so it delegates as-is.
+type repoRefReads struct {
+	accounts   repository.AccountRepository
+	categories repository.CategoryRepository
+}
+
+func (r repoRefReads) AccountExists(
+	ctx context.Context, householdID, id uuid.UUID,
+) (bool, error) {
+	if _, err := r.accounts.GetAccount(ctx, householdID, id); err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (r repoRefReads) Category(
+	ctx context.Context, householdID, id uuid.UUID,
+) (*domain.Category, error) {
+	return r.categories.GetCategory(ctx, householdID, id)
+}
+
+// syncRefReads adapts the sync batch-tx live reads to the seam.
+type syncRefReads struct {
+	src liveRefSource
+}
+
+func (r syncRefReads) AccountExists(
+	ctx context.Context, householdID, id uuid.UUID,
+) (bool, error) {
+	return r.src.LiveAccountExists(ctx, householdID, id)
+}
+
+func (r syncRefReads) Category(
+	ctx context.Context, householdID, id uuid.UUID,
+) (*domain.Category, error) {
+	return r.src.LiveCategory(ctx, householdID, id)
+}

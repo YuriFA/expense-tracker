@@ -49,9 +49,11 @@ func (plannedPaymentAdapter) invalidDataMessage() string {
 	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityPlannedPayment)
 }
 
-// preValidate checks the shape a plan upsert must satisfy regardless of the
-// transport (the REST surface gets this from the OpenAPI request validator),
-// then the references against the LIVE records (REST granularity).
+// preValidate checks the shape rules (the per-item guard the REST surface
+// gets from the OpenAPI request validator), then the write rules (ADR-0005)
+// on the LIVE references, mapping the domain sentinel to the shared wire
+// spec (domain.ErrorSpecFor) - the same code + message the REST surface
+// answers with.
 func (plannedPaymentAdapter) preValidate(
 	ctx context.Context,
 	t plannedPaymentTx,
@@ -60,14 +62,16 @@ func (plannedPaymentAdapter) preValidate(
 	data domain.PlannedPaymentFullState,
 ) (string, string, error) {
 	if code := validatePlannedPaymentSyncData(&data); code != "" {
-		return code, "invalid planned payment data", nil
+		return code, (plannedPaymentAdapter{}).invalidDataMessage(), nil
 	}
-	code, message, err := plannedPaymentRefViolation(ctx, t, householdID, &data)
+	err := ValidatePlannedPaymentWrite(
+		ctx, syncRefReads{src: t}, householdID, data.AccountID, data.CategoryID, data.Type,
+	)
 	if err != nil {
+		if spec, ok := domain.ErrorSpecFor(err); ok {
+			return spec.Code, spec.Message, nil
+		}
 		return "", "", err
-	}
-	if code != "" {
-		return code, message, nil
 	}
 	return "", "", nil
 }
@@ -76,8 +80,10 @@ func (plannedPaymentAdapter) immutable(
 	cur *domain.PlannedPayment,
 	data domain.PlannedPaymentFullState,
 ) (string, string) {
-	if cur.Type != data.Type {
-		return "VALIDATION_FAILED", "plan type is immutable"
+	if err := ValidatePlannedPaymentTypeImmutable(cur.Type, data.Type); err != nil {
+		if spec, ok := domain.ErrorSpecFor(err); ok {
+			return spec.Code, spec.Message
+		}
 	}
 	return "", ""
 }
@@ -124,36 +130,6 @@ func (plannedPaymentAdapter) tombstone(
 	ctx context.Context, t plannedPaymentTx, householdID, userID, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
 	return t.TombstonePlannedPayment(ctx, householdID, userID, id)
-}
-
-// plannedPaymentRefViolation validates a plan's account/category references
-// against the LIVE records (REST granularity): a missing/tombstoned account
-// or category, or a category whose type does not match the plan, returns the
-// per-item machine code + message ("" = valid).
-func plannedPaymentRefViolation(
-	ctx context.Context,
-	t plannedPaymentTx,
-	householdID uuid.UUID,
-	data *domain.PlannedPaymentFullState,
-) (string, string, error) {
-	liveAccount, err := t.LiveAccountExists(ctx, householdID, data.AccountID)
-	if err != nil {
-		return "", "", err
-	}
-	if !liveAccount {
-		return "PLANNED_PAYMENT_ACCOUNT_NOT_FOUND", "account not found", nil
-	}
-	category, err := t.LiveCategory(ctx, householdID, data.CategoryID)
-	if err != nil {
-		if errors.Is(err, domain.ErrCategoryNotFound) {
-			return "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", "category not found", nil
-		}
-		return "", "", err
-	}
-	if category.Type != data.Type {
-		return "PLANNED_PAYMENT_CATEGORY_NOT_FOUND", "category type does not match the plan type", nil
-	}
-	return "", "", nil
 }
 
 // validatePlannedPaymentSyncData checks the shape a plan upsert must satisfy
