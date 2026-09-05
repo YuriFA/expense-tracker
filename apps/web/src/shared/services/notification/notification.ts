@@ -21,11 +21,6 @@ class NotificationService {
     toast.error(message)
   }
 
-  repositoryError(error: unknown, context?: ErrorContext) {
-    logErrorToBackend(error, context)
-    toast.error(getRepositoryErrorMessage(error, getRepositoryErrorMessages()))
-  }
-
   mutationError(error: unknown, options: MutationErrorOptions) {
     const { title, feature, action } = options
     logErrorToBackend(error, { feature, action })

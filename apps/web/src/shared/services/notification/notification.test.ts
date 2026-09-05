@@ -40,28 +40,6 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('repositoryError', () => {
-  it.each([
-    [new NotFoundError('x'), 'NOT_FOUND_MSG'],
-    [new ReferentialIntegrityError('x'), 'HAS_REFS_MSG'],
-    [new InvalidPayloadError('x'), 'INVALID_PAYLOAD_MSG'],
-    [new UnknownReferencesError('x'), 'UNKNOWN_REFS_MSG'],
-  ])('maps %s to message', (error, expected) => {
-    notification.repositoryError(error)
-    expect(toast.error).toHaveBeenCalledWith(expected)
-  })
-
-  it('falls back to generic for non-repository errors', () => {
-    notification.repositoryError(new Error('whatever'))
-    expect(toast.error).toHaveBeenCalledWith('GENERIC_MSG')
-  })
-
-  it('logs to console with action tag', () => {
-    notification.repositoryError(new Error('x'), { action: 'delete' })
-    expect(console.error).toHaveBeenCalledWith('[delete]', expect.any(Error))
-  })
-})
-
 describe('mutationError', () => {
   it('shows title with description', () => {
     notification.mutationError(new NotFoundError('x'), {
@@ -71,5 +49,25 @@ describe('mutationError', () => {
     expect(toast.error).toHaveBeenCalledWith('Error adding account', {
       description: 'NOT_FOUND_MSG',
     })
+  })
+
+  it.each([
+    [new NotFoundError('x'), 'NOT_FOUND_MSG'],
+    [new ReferentialIntegrityError('x'), 'HAS_REFS_MSG'],
+    [new InvalidPayloadError('x'), 'INVALID_PAYLOAD_MSG'],
+    [new UnknownReferencesError('x'), 'UNKNOWN_REFS_MSG'],
+  ])('maps %s to the description', (error, expected) => {
+    notification.mutationError(error, { title: 'T', action: 'delete' })
+    expect(toast.error).toHaveBeenCalledWith('T', { description: expected })
+  })
+
+  it('falls back to generic for non-repository errors', () => {
+    notification.mutationError(new Error('whatever'), { title: 'T' })
+    expect(toast.error).toHaveBeenCalledWith('T', { description: 'GENERIC_MSG' })
+  })
+
+  it('logs to console with action tag', () => {
+    notification.mutationError(new Error('x'), { title: 'T', action: 'delete' })
+    expect(console.error).toHaveBeenCalledWith('[delete]', expect.any(Error))
   })
 })
