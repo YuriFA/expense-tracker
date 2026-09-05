@@ -11,6 +11,7 @@ import {
   useHouseholdInvitations,
 } from '@/entities/household'
 import { notification } from '@/shared/services/notification'
+import type { ErrorAction } from '@/shared/services/notification'
 import type { HouseholdInvitation } from '@expense-tracker/api'
 
 // Outgoing invitations (household-ux 3.2, owner only): the household's
@@ -67,7 +68,7 @@ async function handleRevoke(invitationId: string): Promise<void> {
   }
 }
 
-function notifyError(error: unknown, action: string): void {
+function notifyError(error: unknown, action: ErrorAction): void {
   const mapped = getHouseholdErrorMessage(error)
   if (mapped) notification.error(mapped, { feature: 'household', action })
   else
