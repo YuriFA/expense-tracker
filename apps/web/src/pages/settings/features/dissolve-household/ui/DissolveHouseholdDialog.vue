@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   AlertDialog,
@@ -52,9 +52,13 @@ async function loadCounts(): Promise<void> {
   }
 }
 
-watch(open, (isOpen) => {
+// Open-triggered effect as an event handler, not a watch (vue-patterns §2):
+// the trigger button must stay mounted, so the dialog cannot reset by
+// remount - counts load every time it opens.
+const handleOpenChange = (isOpen: boolean): void => {
+  open.value = isOpen
   if (isOpen) void loadCounts()
-})
+}
 
 async function handleConfirm(): Promise<void> {
   dissolving.value = true
@@ -81,7 +85,7 @@ async function handleConfirm(): Promise<void> {
 </script>
 
 <template>
-  <AlertDialog v-model:open="open">
+  <AlertDialog :open="open" @update:open="handleOpenChange">
     <AlertDialogTrigger as-child>
       <Button variant="destructive" data-testid="household-dissolve-button">
         {{ t('household.dissolve') }}

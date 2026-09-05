@@ -48,7 +48,8 @@ const formatArchivedSince = (category: Category): string =>
     date: dateFormatter.value.format(new Date(category.archivedAt!)),
   })
 
-// One dialog pair outside the lists + the active category (vue-patterns §4).
+// One dialog pair outside the lists + the active category; both mount per
+// open (destroy-on-close) so their drafts reset by remount (vue-patterns §4).
 const editTarget = ref<Category | null>(null)
 const editOpen = ref(false)
 const deleteTarget = ref<Category | null>(null)
@@ -302,8 +303,15 @@ async function unarchiveCategory(category: Category): Promise<void> {
       </SettingsCard>
     </template>
 
-    <CategoryEditDialog v-model:open="editOpen" :category="editTarget" />
+    <CategoryEditDialog
+      v-if="editOpen"
+      :key="editTarget?.id ?? 'create'"
+      v-model:open="editOpen"
+      :category="editTarget"
+    />
     <CategoryDeleteDialog
+      v-if="deleteOpen"
+      :key="deleteTarget?.id"
       v-model:open="deleteOpen"
       :category="deleteTarget"
       :usage="deleteTarget ? (usage?.byCategory[deleteTarget.id] ?? null) : null"

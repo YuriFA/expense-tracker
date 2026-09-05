@@ -46,29 +46,12 @@ const { mutateAsync: createCategory, asyncStatus: createStatus } = useCreateCate
 const isCreate = computed(() => !props.category)
 const asyncStatus = computed(() => (isCreate.value ? createStatus.value : updateStatus.value))
 
-const name = ref('')
-const icon = ref('')
-const type = ref<'expense' | 'income'>('expense')
-
-// Reseed the draft each time the dialog opens (the shared dialog instance
-// lives outside the row loop; `immediate` covers mounting with the dialog
-// already open): the row's category in edit mode, clean defaults in
-// create mode.
-watch(
-  () => [open.value, props.category] as const,
-  ([isOpen, category]) => {
-    if (!isOpen) return
-    if (category) {
-      name.value = category.name
-      icon.value = category.icon
-    } else {
-      name.value = ''
-      icon.value = defaultCategoryIcon('expense')
-      type.value = 'expense'
-    }
-  },
-  { immediate: true },
-)
+// The draft seeds from the record at mount - the host mounts the dialog
+// per open (destroy-on-close, vue-patterns §4), so a fresh mount IS the
+// reseed: the row's category in edit mode, clean defaults in create mode.
+const name = ref(props.category?.name ?? '')
+const icon = ref(props.category?.icon ?? defaultCategoryIcon('expense'))
+const type = ref<'expense' | 'income'>(props.category?.type ?? 'expense')
 
 // The icon vocabulary follows the category's type (create: the chosen
 // type; edit: the immutable record type). Toggling the type in create mode

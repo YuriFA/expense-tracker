@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Archive, Trash2 } from '@lucide/vue'
 import { Button } from '@/shared/ui/button'
@@ -83,20 +83,10 @@ const balanceImpact = computed(() => {
   })
 })
 
-// Choice state resets whenever the dialog opens for a category.
+// Choice state starts clean every time: the host mounts the dialog per
+// open (destroy-on-close, vue-patterns §4), so a fresh mount IS the reset.
 const choice = ref<Choice>('archive')
 const confirmation = ref('')
-
-watch(
-  () => [open.value, props.category] as const,
-  ([isOpen]) => {
-    if (isOpen) {
-      choice.value = 'archive'
-      confirmation.value = ''
-    }
-  },
-  { immediate: true },
-)
 
 const cascadeChosen = computed(() => mode.value === 'cascade' || choice.value === 'cascade')
 const confirmationMatches = computed(
@@ -123,13 +113,16 @@ async function handleConfirm(): Promise<void> {
       await deleteCategory({ id: category.id, cascade: cascade || undefined })
       notification.success(t('categoryManagement.deleteSuccess'))
     }
-    open.value = false
   } catch (error) {
     notification.mutationError(error, {
       title: t('deleteCategory.trigger'),
       feature: 'category',
       action: 'delete',
     })
+  } finally {
+    // Same close rule as every delete confirm: no draft to keep, the toast
+    // carries the failure (vue-patterns §3).
+    open.value = false
   }
 }
 </script>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DownloadIcon, FileUpIcon } from '@lucide/vue'
 import { Button } from '@/shared/ui/button'
@@ -80,9 +80,13 @@ const reset = () => {
   isCommitting.value = false
 }
 
-watch(open, (isOpen) => {
+// Open-triggered effect as an event handler, not a watch (vue-patterns §2):
+// the trigger button must stay mounted, so the wizard cannot reset by
+// remount - the stage machine starts clean every time it opens.
+const handleOpenChange = (isOpen: boolean): void => {
+  open.value = isOpen
   if (isOpen) reset()
-})
+}
 
 const errorLabel = (code: string): string => {
   switch (code) {
@@ -203,7 +207,11 @@ const commit = async () => {
 <template>
   <!-- Wide on desktop: the 7-column preview needs the room; capped height
        with the shell's scrolling body so tall content never clips off-screen. -->
-  <ResponsiveDialog v-model:open="open" class="max-h-[calc(100dvh-4rem)] w-full sm:max-w-4xl">
+  <ResponsiveDialog
+    :open="open"
+    class="max-h-[calc(100dvh-4rem)] w-full sm:max-w-4xl"
+    @update:open="handleOpenChange"
+  >
     <template #title>{{ t('dataTransfer.dialog.title') }}</template>
     <template #description>
       {{ t('dataTransfer.dialog.pickDescription') }}
