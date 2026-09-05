@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -37,10 +36,9 @@ func (s *DebtOperationService) Create(
 ) (*domain.DebtOperation, error) {
 	const op = "service.debtOperation.Create"
 
-	if _, err := s.debtors.GetDebtor(ctx, householdID, params.DebtorID); err != nil {
-		if errors.Is(err, domain.ErrDebtorNotFound) {
-			return nil, fmt.Errorf("%s: %w", op, domain.ErrDebtOperationDebtorNotFound)
-		}
+	if err := ValidateDebtOperationWrite(
+		ctx, repoDebtorRefReads{debtors: s.debtors}, householdID, params.DebtorID,
+	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 

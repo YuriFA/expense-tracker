@@ -109,6 +109,7 @@ var domainErrorStatus = map[error]int{
 	domain.ErrSameAccountTransfer:                http.StatusUnprocessableEntity,
 	domain.ErrTransactionTypeImmutable:           http.StatusUnprocessableEntity,
 	domain.ErrDebtOperationDebtorNotFound:        http.StatusUnprocessableEntity,
+	domain.ErrDebtOperationImmutable:             http.StatusUnprocessableEntity,
 	domain.ErrPlannedPaymentAccountNotFound:      http.StatusUnprocessableEntity,
 	domain.ErrPlannedPaymentCategoryNotFound:     http.StatusUnprocessableEntity,
 	domain.ErrPlannedPaymentCategoryTypeMismatch: http.StatusUnprocessableEntity,

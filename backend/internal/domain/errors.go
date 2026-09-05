@@ -58,6 +58,7 @@ var (
 	ErrDebtOperationAlreadyExists         = errors.New("debt operation already exists")
 	ErrDebtOperationVersionConflict       = errors.New("debt operation version conflict")
 	ErrDebtOperationDebtorNotFound        = errors.New("debt operation references a debtor that does not exist")
+	ErrDebtOperationImmutable             = errors.New("debt operation debtor, direction, and kind are immutable")
 	ErrPlannedPaymentNotFound             = errors.New("planned payment not found")
 	ErrPlannedPaymentAlreadyExists        = errors.New("planned payment already exists")
 	ErrPlannedPaymentVersionConflict      = errors.New("planned payment version conflict")

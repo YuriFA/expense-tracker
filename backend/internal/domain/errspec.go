@@ -133,6 +133,7 @@ var errorSpecs = map[error]ErrorSpec{
 		"DEBT_OPERATION_DEBTOR_NOT_FOUND",
 		"debtor not found",
 	},
+	ErrDebtOperationImmutable: {"VALIDATION_FAILED", "debtor, direction, and kind are immutable"},
 	ErrPlannedPaymentAccountNotFound: {
 		"PLANNED_PAYMENT_ACCOUNT_NOT_FOUND",
 		"account not found",

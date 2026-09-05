@@ -47,9 +47,11 @@ func (debtOperationAdapter) invalidDataMessage() string {
 	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityDebtOperation)
 }
 
-// preValidate checks the shape rules, then the debtor reference against the
-// LIVE debtors (a tombstoned debtor is "not found") - with the REST
-// granularity.
+// preValidate checks the shape rules, then the debtor reference (the
+// write rules, ADR-0005) against the LIVE debtors - a tombstoned debtor is
+// "not found" - mapping the domain sentinel to the shared wire spec
+// (domain.ErrorSpecFor), the same code + message the REST surface answers
+// with.
 func (debtOperationAdapter) preValidate(
 	ctx context.Context,
 	t debtOperationTx,
@@ -66,19 +68,21 @@ func (debtOperationAdapter) preValidate(
 	if data.Kind != domain.DebtOperationKindDebt && data.Kind != domain.DebtOperationKindRepayment {
 		return "VALIDATION_FAILED", "invalid debt operation kind", nil
 	}
-	live, err := t.LiveDebtorExists(ctx, householdID, data.DebtorID)
+	err := ValidateDebtOperationWrite(ctx, syncDebtorRefReads{src: t}, householdID, data.DebtorID)
 	if err != nil {
+		if spec, ok := domain.ErrorSpecFor(err); ok {
+			return spec.Code, spec.Message, nil
+		}
 		return "", "", err
-	}
-	if !live {
-		return "DEBT_OPERATION_DEBTOR_NOT_FOUND", "debtor not found", nil
 	}
 	return "", "", nil
 }
 
 func (debtOperationAdapter) immutable(cur *domain.DebtOperation, data domain.DebtOperationFullState) (string, string) {
-	if cur.DebtorID != data.DebtorID || cur.Direction != data.Direction || cur.Kind != data.Kind {
-		return "VALIDATION_FAILED", "debtor, direction, and kind are immutable"
+	if err := ValidateDebtOperationImmutable(cur, data); err != nil {
+		if spec, ok := domain.ErrorSpecFor(err); ok {
+			return spec.Code, spec.Message
+		}
 	}
 	return "", ""
 }
