@@ -1616,27 +1616,61 @@ func (t *fakeSyncTx) ReplaceAccount(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneAccount( //nolint:dupl // tombstone twins: identical protocol shape
+// tombstoneEntity is the fakes' shared tombstone protocol, mirroring the
+// postgres tombstoneEntity core: locked map lookup with household scoping,
+// idempotent re-delete (stored row back), version bump + change append.
+// Wrappers supply the map access, the not-found sentinel, the sync entity
+// const, and the transition apply (live-name unique-key release where the
+// entity has one, plus the DeletedAt/Version stamp). PT is the row pointer
+// type; the constraint needs its Deleted() for the idempotency check.
+func tombstoneEntity[U any, PT interface {
+	*U
+	Deleted() bool
+}](
+	s *Store,
+	scope domain.Scope,
+	notFound error,
+	entity string,
+	locked func() (PT, bool),
+	apply func(PT) (uuid.UUID, int),
+) (PT, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var zero PT
+	row, ok := locked()
+	if !ok {
+		return zero, notFound
+	}
+	if !row.Deleted() {
+		id, version := apply(row)
+		s.appendChange(householdID, actorID, entity, id, domain.SyncChangeTombstone, version)
+	}
+	out := *row
+	return PT(&out), nil
+}
+
+func (t *fakeSyncTx) TombstoneAccount(
 	_ context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.Account, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	t.store.mu.Lock()
-	defer t.store.mu.Unlock()
-	a, ok := t.store.accounts[id]
-	if !ok || !t.store.sameHousehold(a.UserID, householdID) {
-		return nil, domain.ErrAccountNotFound
-	}
-	if a.Deleted() {
-		c := *a
-		return &c, nil // idempotent
-	}
-	now := time.Now().UTC()
-	a.DeletedAt = &now
-	a.Version++
-	t.store.appendChange(householdID, actorID, domain.SyncEntityAccount, a.ID, domain.SyncChangeTombstone, a.Version)
-	c := *a
-	return &c, nil
+	return tombstoneEntity(t.store, scope,
+		domain.ErrAccountNotFound, domain.SyncEntityAccount,
+		func() (*domain.Account, bool) {
+			a, ok := t.store.accounts[id]
+			if !ok || !t.store.sameHousehold(a.UserID, scope.HouseholdID) {
+				return nil, false
+			}
+			return a, true
+		},
+		func(a *domain.Account) (uuid.UUID, int) {
+			now := time.Now().UTC()
+			a.DeletedAt = &now
+			a.Version++
+			return a.ID, a.Version
+		},
+	)
 }
 
 func (t *fakeSyncTx) CreateCategory(_ context.Context, params domain.CreateCategoryParams) (*domain.Category, error) {
@@ -1675,28 +1709,27 @@ func (t *fakeSyncTx) ReplaceCategory(
 	return &cc, nil
 }
 
-func (t *fakeSyncTx) TombstoneCategory( //nolint:dupl // tombstone twins: identical protocol shape
+func (t *fakeSyncTx) TombstoneCategory( //nolint:dupl // thin tombstoneEntity wrapper, names differ from debtor
 	_ context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	t.store.mu.Lock()
-	defer t.store.mu.Unlock()
-	c, ok := t.store.categories[id]
-	if !ok || !t.store.sameHousehold(c.UserID, householdID) {
-		return nil, domain.ErrCategoryNotFound
-	}
-	if c.Deleted() {
-		cc := *c
-		return &cc, nil // idempotent
-	}
-	delete(t.store.catUnique, catUniqueKey(householdID, c.Name))
-	now := time.Now().UTC()
-	c.DeletedAt = &now
-	c.Version++
-	t.store.appendChange(householdID, actorID, domain.SyncEntityCategory, c.ID, domain.SyncChangeTombstone, c.Version)
-	cc := *c
-	return &cc, nil
+	return tombstoneEntity(t.store, scope,
+		domain.ErrCategoryNotFound, domain.SyncEntityCategory,
+		func() (*domain.Category, bool) {
+			c, ok := t.store.categories[id]
+			if !ok || !t.store.sameHousehold(c.UserID, scope.HouseholdID) {
+				return nil, false
+			}
+			return c, true
+		},
+		func(c *domain.Category) (uuid.UUID, int) {
+			delete(t.store.catUnique, catUniqueKey(scope.HouseholdID, c.Name))
+			now := time.Now().UTC()
+			c.DeletedAt = &now
+			c.Version++
+			return c.ID, c.Version
+		},
+	)
 }
 
 // CascadeTombstoneCategory mirrors the postgres cascade: the category
@@ -1774,34 +1807,26 @@ func (t *fakeSyncTx) ReplaceTransaction(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneTransaction( //nolint:dupl // tombstone twins: identical protocol shape
+func (t *fakeSyncTx) TombstoneTransaction(
 	_ context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.Transaction, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	t.store.mu.Lock()
-	defer t.store.mu.Unlock()
-	tx, ok := t.store.transactions[id]
-	if !ok || !t.store.sameHousehold(tx.UserID, householdID) {
-		return nil, domain.ErrTransactionNotFound
-	}
-	if tx.Deleted() {
-		c := *tx
-		return &c, nil // idempotent
-	}
-	now := time.Now().UTC()
-	tx.DeletedAt = &now
-	tx.Version++
-	t.store.appendChange(
-		householdID,
-		actorID,
-		domain.SyncEntityTransaction,
-		tx.ID,
-		domain.SyncChangeTombstone,
-		tx.Version,
+	return tombstoneEntity(t.store, scope,
+		domain.ErrTransactionNotFound, domain.SyncEntityTransaction,
+		func() (*domain.Transaction, bool) {
+			tx, ok := t.store.transactions[id]
+			if !ok || !t.store.sameHousehold(tx.UserID, scope.HouseholdID) {
+				return nil, false
+			}
+			return tx, true
+		},
+		func(tx *domain.Transaction) (uuid.UUID, int) {
+			now := time.Now().UTC()
+			tx.DeletedAt = &now
+			tx.Version++
+			return tx.ID, tx.Version
+		},
 	)
-	c := *tx
-	return &c, nil
 }
 
 func (t *fakeSyncTx) CreateDebtor(_ context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error) {
@@ -1838,28 +1863,27 @@ func (t *fakeSyncTx) ReplaceDebtor(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneDebtor( //nolint:dupl // tombstone twins: identical protocol shape
+func (t *fakeSyncTx) TombstoneDebtor( //nolint:dupl // thin tombstoneEntity wrapper, names differ from category
 	_ context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.Debtor, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	t.store.mu.Lock()
-	defer t.store.mu.Unlock()
-	d, ok := t.store.debtors[id]
-	if !ok || !t.store.sameHousehold(d.UserID, householdID) {
-		return nil, domain.ErrDebtorNotFound
-	}
-	if d.Deleted() {
-		c := *d
-		return &c, nil // idempotent
-	}
-	delete(t.store.debtorUnique, debtorUniqueKey(householdID, d.Name))
-	now := time.Now().UTC()
-	d.DeletedAt = &now
-	d.Version++
-	t.store.appendChange(householdID, actorID, domain.SyncEntityDebtor, d.ID, domain.SyncChangeTombstone, d.Version)
-	c := *d
-	return &c, nil
+	return tombstoneEntity(t.store, scope,
+		domain.ErrDebtorNotFound, domain.SyncEntityDebtor,
+		func() (*domain.Debtor, bool) {
+			d, ok := t.store.debtors[id]
+			if !ok || !t.store.sameHousehold(d.UserID, scope.HouseholdID) {
+				return nil, false
+			}
+			return d, true
+		},
+		func(d *domain.Debtor) (uuid.UUID, int) {
+			delete(t.store.debtorUnique, debtorUniqueKey(scope.HouseholdID, d.Name))
+			now := time.Now().UTC()
+			d.DeletedAt = &now
+			d.Version++
+			return d.ID, d.Version
+		},
+	)
 }
 
 func (t *fakeSyncTx) CreateDebtOperation(
@@ -1901,32 +1925,24 @@ func (t *fakeSyncTx) ReplaceDebtOperation(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneDebtOperation( //nolint:dupl // tombstone twins: identical protocol shape
+func (t *fakeSyncTx) TombstoneDebtOperation(
 	_ context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.DebtOperation, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	t.store.mu.Lock()
-	defer t.store.mu.Unlock()
-	o, ok := t.store.debtOps[id]
-	if !ok || !t.store.sameHousehold(o.UserID, householdID) {
-		return nil, domain.ErrDebtOperationNotFound
-	}
-	if o.Deleted() {
-		c := *o
-		return &c, nil // idempotent
-	}
-	now := time.Now().UTC()
-	o.DeletedAt = &now
-	o.Version++
-	t.store.appendChange(
-		householdID,
-		actorID,
-		domain.SyncEntityDebtOperation,
-		o.ID,
-		domain.SyncChangeTombstone,
-		o.Version,
+	return tombstoneEntity(t.store, scope,
+		domain.ErrDebtOperationNotFound, domain.SyncEntityDebtOperation,
+		func() (*domain.DebtOperation, bool) {
+			o, ok := t.store.debtOps[id]
+			if !ok || !t.store.sameHousehold(o.UserID, scope.HouseholdID) {
+				return nil, false
+			}
+			return o, true
+		},
+		func(o *domain.DebtOperation) (uuid.UUID, int) {
+			now := time.Now().UTC()
+			o.DeletedAt = &now
+			o.Version++
+			return o.ID, o.Version
+		},
 	)
-	c := *o
-	return &c, nil
 }

@@ -300,34 +300,26 @@ func (t *fakeSyncTx) ReplacePlannedPayment(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstonePlannedPayment( //nolint:dupl // tombstone twins: identical protocol shape
+func (t *fakeSyncTx) TombstonePlannedPayment(
 	_ context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	t.store.mu.Lock()
-	defer t.store.mu.Unlock()
-	p, ok := t.store.plans[id]
-	if !ok || !t.store.sameHousehold(p.UserID, householdID) {
-		return nil, domain.ErrPlannedPaymentNotFound
-	}
-	if p.Deleted() {
-		c := *p
-		return &c, nil // idempotent
-	}
-	now := time.Now().UTC()
-	p.DeletedAt = &now
-	p.Version++
-	t.store.appendChange(
-		householdID,
-		actorID,
-		domain.SyncEntityPlannedPayment,
-		p.ID,
-		domain.SyncChangeTombstone,
-		p.Version,
+	return tombstoneEntity(t.store, scope,
+		domain.ErrPlannedPaymentNotFound, domain.SyncEntityPlannedPayment,
+		func() (*domain.PlannedPayment, bool) {
+			p, ok := t.store.plans[id]
+			if !ok || !t.store.sameHousehold(p.UserID, scope.HouseholdID) {
+				return nil, false
+			}
+			return p, true
+		},
+		func(p *domain.PlannedPayment) (uuid.UUID, int) {
+			now := time.Now().UTC()
+			p.DeletedAt = &now
+			p.Version++
+			return p.ID, p.Version
+		},
 	)
-	c := *p
-	return &c, nil
 }
 
 func (t *fakeSyncTx) AdvancePlannedPayment(
