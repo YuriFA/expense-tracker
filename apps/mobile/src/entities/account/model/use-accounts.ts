@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import type {
   AccountWithBalance,
   CreateAccountPayload,
@@ -9,7 +10,7 @@ import { useAccountRepository } from '../api/repository'
 export function useAccounts() {
   const repository = useAccountRepository()
   return useQuery({
-    queryKey: ['accounts'],
+    queryKey: SYNC_QUERY_KEY_ROOTS.accounts,
     queryFn: () => repository.getAll(),
   })
 }
@@ -28,7 +29,7 @@ export function useCreateAccount() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: CreateAccountPayload) => repository.create(payload),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.accounts }),
   })
 }
 
@@ -38,7 +39,7 @@ export function useUpdateAccount() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateAccountPayload }) =>
       repository.update(id, payload),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.accounts }),
   })
 }
 
@@ -47,7 +48,7 @@ export function useDeleteAccount() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => repository.remove(id),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.accounts }),
   })
 }
 

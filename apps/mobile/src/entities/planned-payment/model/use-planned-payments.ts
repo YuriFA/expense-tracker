@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { SYNC_QUERY_KEY_ROOTS, type ConfirmPlannedPaymentInput } from '@expense-tracker/local-data'
 import type { CreatePlannedPaymentPayload, UpdatePlannedPaymentPayload } from '@expense-tracker/api'
 import { usePlannedPaymentRepository } from '../api/repository'
-import type { ConfirmPlannedPaymentInput } from '@expense-tracker/local-data'
 
 /**
  * Loads ALL live plans in ONE query: card figures, per-type lists, and
@@ -11,7 +11,7 @@ import type { ConfirmPlannedPaymentInput } from '@expense-tracker/local-data'
 export function usePlannedPayments() {
   const repository = usePlannedPaymentRepository()
   return useQuery({
-    queryKey: ['planned-payments'],
+    queryKey: SYNC_QUERY_KEY_ROOTS.plannedPayments,
     queryFn: () => repository.getAll(),
   })
 }
@@ -21,7 +21,8 @@ export function useCreatePlannedPayment() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: CreatePlannedPaymentPayload) => repository.create(payload),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['planned-payments'] }),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.plannedPayments }),
   })
 }
 
@@ -31,7 +32,8 @@ export function useUpdatePlannedPayment() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdatePlannedPaymentPayload }) =>
       repository.update(id, payload),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['planned-payments'] }),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.plannedPayments }),
   })
 }
 
@@ -40,7 +42,8 @@ export function useDeletePlannedPayment() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => repository.remove(id),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['planned-payments'] }),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.plannedPayments }),
   })
 }
 
@@ -51,9 +54,9 @@ export function useConfirmPlannedPayment() {
   return useMutation({
     mutationFn: (input: ConfirmPlannedPaymentInput) => repository.confirmPlannedPayment(input),
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planned-payments'] })
-      void queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      void queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      void queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.plannedPayments })
+      void queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.transactions })
+      void queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.accounts })
     },
   })
 }

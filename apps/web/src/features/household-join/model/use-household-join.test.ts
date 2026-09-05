@@ -194,11 +194,11 @@ describe('useHouseholdJoinStore', () => {
       expect(syncMock.run).toHaveBeenCalled()
     })
 
-    it('skips silently when the household cannot be fetched (offline)', async () => {
+    it('rejects when the household cannot be fetched (offline) - the run-policy then skips the run', async () => {
       vi.mocked(householdApi.getHousehold).mockRejectedValue(new UnauthorizedError('no session'))
       const join = useHouseholdJoinStore()
 
-      await expect(join.ensureCurrentHousehold()).resolves.toBeUndefined()
+      await expect(join.ensureCurrentHousehold()).rejects.toThrow(UnauthorizedError)
       expect(join.pending).toBeNull()
       expect(householdMock.setLastHousehold).not.toHaveBeenCalled()
     })

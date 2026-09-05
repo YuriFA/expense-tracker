@@ -5,6 +5,7 @@ import {
   type TransactionQuery,
   type UpdateTransactionPayload,
 } from '../api/repository'
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useOptimisticMutation } from '@/shared/lib/use-optimistic-mutation'
@@ -45,8 +46,8 @@ export const useCreateTransaction = <T extends Transaction>() => {
       return transactions.create(payload)
     },
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['transactions'] })
-      queryCache.invalidateQueries({ key: ['accounts'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.transactions })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.accounts })
     },
   })
 }
@@ -60,7 +61,7 @@ export const useUpdateTransaction = <T extends Transaction>() => {
     },
     onSettled: (_data, _errors, { id }) => {
       queryCache.invalidateQueries({ key: ['transactions', id] })
-      queryCache.invalidateQueries({ key: ['accounts'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.accounts })
     },
   })
 }

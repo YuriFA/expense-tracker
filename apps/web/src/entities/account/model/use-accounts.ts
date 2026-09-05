@@ -3,6 +3,7 @@ import {
   type CreateAccountPayload,
   type UpdateAccountPayload,
 } from '../api/repository'
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useOptimisticMutation, type OptimisticPatch } from '@/shared/lib/use-optimistic-mutation'
@@ -31,7 +32,7 @@ export const useCreateAccount = () => {
   return useMutation({
     mutation: (payload: CreateAccountPayload) => accounts.create(payload),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['accounts'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.accounts })
     },
   })
 }
@@ -46,7 +47,7 @@ export const useUpdateAccount = () => {
       // crashes colada. Invalidation (below) refreshes by prefix anyway.
       const patches: OptimisticPatch[] = [
         {
-          key: ['accounts'],
+          key: SYNC_QUERY_KEY_ROOTS.accounts,
           updater: (current) =>
             (current as AccountWithBalance[] | undefined)?.map((account) =>
               account.id === id ? { ...account, ...payload } : account,
@@ -65,7 +66,7 @@ export const useDeleteAccount = () => {
     mutation: (id) => accounts.remove(id),
     optimistic: (id) => [
       {
-        key: ['accounts'],
+        key: SYNC_QUERY_KEY_ROOTS.accounts,
         updater: (current) =>
           (current as AccountWithBalance[] | undefined)?.filter((account) => account.id !== id),
       },

@@ -3,6 +3,7 @@ import {
   type CreateCategoryPayload,
   type UpdateCategoryPayload,
 } from '../api/repository'
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import { useOptimisticMutation } from '@/shared/lib/use-optimistic-mutation'
@@ -47,7 +48,7 @@ export const useCreateCategory = () => {
   return useMutation({
     mutation: (payload: CreateCategoryPayload) => categories.create(payload),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['categories'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.categories })
     },
   })
 }
@@ -100,7 +101,7 @@ export const useSetCategoryArchived = () => {
     mutation: ({ id, version, archived }: { id: string; version: number; archived: boolean }) =>
       categories.update(id, { version, archived }),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['categories'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.categories })
     },
   })
 }

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import type {
   Category,
   CategoryType,
@@ -10,7 +11,7 @@ import { useCategoryRepository } from '../api/repository'
 export function useCategories(type?: CategoryType) {
   const repository = useCategoryRepository()
   const query = useQuery({
-    queryKey: ['categories'],
+    queryKey: SYNC_QUERY_KEY_ROOTS.categories,
     queryFn: () => repository.getAll(),
   })
 
@@ -37,7 +38,7 @@ export function useCreateCategory() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: CreateCategoryPayload) => repository.create(payload),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.categories }),
   })
 }
 
@@ -47,7 +48,7 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateCategoryPayload }) =>
       repository.update(id, payload),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.categories }),
   })
 }
 
@@ -56,7 +57,7 @@ export function useDeleteCategory() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => repository.remove(id),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.categories }),
   })
 }
 

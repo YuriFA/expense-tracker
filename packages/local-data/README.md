@@ -19,6 +19,17 @@ over a browser SQLite driver.
   database work.
 - **Transport**: the sync engine takes an injected `SyncTransport`; the app
   binds it to the shared API client (`createApiTransport`).
+- **Run policy** (`src/sync/run-policy.ts`): `createSyncRunPolicy` owns WHEN
+  the engine runs - the 2 500 ms post-mutation debounce, the gate order
+  (authenticated → household-current → run), resume-on-auth, and the
+  post-cycle invalidation rule (`['sync']` always, `LOCAL_DATA_QUERY_KEY_ROOTS`
+  only when the cycle wrote local rows). Apps adapt platform event sources to
+  the imperative `notifyAuthChange` / `notifySessionBoundary` /
+  `notifyLocalMutation` surface and supply `isAuthenticated`,
+  `ensureHouseholdCurrent?`, `invalidateKeys`, and the engine's
+  `onRunComplete` completion source. Household currency is checked at session
+  boundaries (start, foreground, reconnect, auth); a check that cannot
+  complete (offline) skips the run - it is never executed un-gated.
 
 ## Ownership gate policy (`src/sync/ownership.ts`)
 

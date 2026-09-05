@@ -15,7 +15,7 @@ import { getLastHousehold, getOwnerUserId, setLastHousehold } from '@expense-tra
 import { DatabaseProvider } from '@/shared/lib/db/database-context'
 import type { LocalDatabase } from '@/shared/lib/db/database'
 import { createQueryClient } from '@/shared/lib/query/query-client'
-import { useHouseholdJoin } from './use-household-join'
+import { useEnsureCurrentHousehold, useHouseholdJoin } from './use-household-join'
 
 const USER_ID = '11111111-1111-4111-8111-111111111111'
 
@@ -44,6 +44,10 @@ jest.mock('@/entities/session', () => ({
   useAuth: () => ({ user: { id: USER_ID, email: 'user@example.com' } }),
 }))
 
+jest.mock('@/entities/household', () => ({
+  householdApi: { getHousehold: jest.fn() },
+}))
+
 const mockController = { runNow: jest.fn() }
 
 jest.mock('@/shared/lib/sync/sync-context', () => ({
@@ -56,6 +60,11 @@ const { rebaseLocalDataForHousehold: rebaseMock, wipeLocalData: wipeMock } =
     rebaseLocalDataForHousehold: ReturnType<typeof jest.fn>
     wipeLocalData: ReturnType<typeof jest.fn>
   }
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { householdApi } = require('@/entities/household') as {
+  householdApi: { getHousehold: ReturnType<typeof jest.fn> }
+}
 
 let db: LocalDatabase
 let alertButtons: { text: string; onPress?: () => void; style?: string }[]
@@ -164,5 +173,91 @@ describe('useHouseholdJoin', () => {
     expect(getOwnerUserId(db)).toBe(USER_ID)
     expect(getLastHousehold(db)).toBe('hh-new')
     expect(mockController.runNow).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useEnsureCurrentHousehold (the run-policy household gate, design D7)', () => {
+  function renderGateHook() {
+    const queryClient = createQueryClient()
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <DatabaseProvider database={db}>{children}</DatabaseProvider>
+      </QueryClientProvider>
+    )
+    return renderHook(() => useEnsureCurrentHousehold(), { wrapper })
+  }
+
+  it('holds for the carry/clean choice on a stale marker and applies carry without runNow', async () => {
+    setLastHousehold(db, 'hh-old')
+    householdApi.getHousehold.mockResolvedValue(HOUSEHOLD)
+    rebaseMock.mockImplementation(() => setLastHousehold(db, 'hh-new'))
+    const gate = renderGateHook()
+
+    let settled = false
+    await act(async () => {
+      void gate.result.current().then(() => void (settled = true))
+      await Promise.resolve()
+    })
+    // A mismatch parks the resolver behind the non-cancelable choice.
+    expect(settled).toBe(false)
+    expect(Alert.alert).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      alertButtons[0]?.onPress?.()
+    })
+    await waitFor(() => expect(settled).toBe(true))
+    // The parked gated run continues after the resolver - no runNow here.
+    expect(getLastHousehold(db)).toBe('hh-new')
+    expect(mockController.runNow).not.toHaveBeenCalled()
+  })
+
+  it('applies the clean choice when the destructive button answers', async () => {
+    setLastHousehold(db, 'hh-old')
+    householdApi.getHousehold.mockResolvedValue(HOUSEHOLD)
+    const gate = renderGateHook()
+
+    let settled = false
+    await act(async () => {
+      void gate.result.current().then(() => void (settled = true))
+      await Promise.resolve()
+    })
+    await act(async () => {
+      alertButtons[1]?.onPress?.()
+    })
+    await waitFor(() => expect(settled).toBe(true))
+
+    expect(wipeMock).toHaveBeenCalledWith(db)
+    expect(getLastHousehold(db)).toBe('hh-new')
+    expect(getOwnerUserId(db)).toBe(USER_ID)
+  })
+
+  it('records the household silently on first run (null marker)', async () => {
+    householdApi.getHousehold.mockResolvedValue(HOUSEHOLD)
+    const gate = renderGateHook()
+
+    await act(() => gate.result.current())
+
+    expect(Alert.alert).not.toHaveBeenCalled()
+    expect(getLastHousehold(db)).toBe('hh-new')
+  })
+
+  it('does nothing when the marker already matches', async () => {
+    setLastHousehold(db, 'hh-new')
+    householdApi.getHousehold.mockResolvedValue(HOUSEHOLD)
+    const gate = renderGateHook()
+
+    await act(() => gate.result.current())
+
+    expect(Alert.alert).not.toHaveBeenCalled()
+    expect(getLastHousehold(db)).toBe('hh-new')
+  })
+
+  it('rejects when the household cannot be fetched (offline) - the run-policy skips the run', async () => {
+    householdApi.getHousehold.mockRejectedValue(new Error('offline'))
+    const gate = renderGateHook()
+
+    await expect(act(() => gate.result.current())).rejects.toThrow('offline')
+    expect(Alert.alert).not.toHaveBeenCalled()
+    expect(getLastHousehold(db)).toBeNull()
   })
 })

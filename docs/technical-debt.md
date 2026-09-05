@@ -65,6 +65,13 @@ or stale entries are removed, not archived.
 - No catch-all 404 route.
 - Sentry integration is a TODO in `log-error.ts`.
 
+- **`completeAuthentication` hand-rolls the adopt-if-unowned RPC pair**
+  (unify-sync-run-policy Non-Goal): `entities/session/model/use-auth-store.ts`
+  calls `db.meta.getOwnerUserId()` + `setOwnerUserId()` because the worker
+  bridge exposes no `adoptUnowned` method, while the package already owns
+  that invariant. Follow-up: expose `meta.adoptUnowned` on the bridge and
+  delegate.
+
 ## Mobile
 
 - **Analytics tab cards diverge from the spec's empty state** (since
@@ -120,6 +127,13 @@ analytics-screen.tsx` keeps the legacy text-only empty state (no chart,
   observability is missing (found 2026-08-25: 23 ops retried ~16× over
   19 h with no recorded reason). Related (2026-09-01 audit): even the
   per-op `last_error` that IS persisted has no mobile UI surface.
+
+- **Headless background fetch bypasses the household gate**
+  (unify-sync-run-policy Non-Goal): `shared/lib/sync/background-sync.ts`
+  runs a second engine instance gated only by the owner marker — no
+  household-currency check, unlike the foreground run-policy. Server-side
+  household scoping still applies to its pushes; revisit in a dedicated
+  change if strict household-spec coverage is needed there.
 
 ## Stale configuration
 

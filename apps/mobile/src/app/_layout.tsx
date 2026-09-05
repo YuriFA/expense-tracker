@@ -38,12 +38,13 @@ import { API_BASE_URL } from '@/shared/config/api'
 import {
   configureIdFactory,
   createSyncEngine,
+  createSyncRunPolicy,
   type SyncEngineState,
 } from '@expense-tracker/local-data'
 import { randomUUID } from 'expo-crypto'
 import { SyncContext, type SyncController } from '@/shared/lib/sync/sync-context'
 import { ConflictCenter } from '@/features/sync-conflicts'
-import { HouseholdRebaseGuard } from '@/features/household-join'
+import { useEnsureCurrentHousehold } from '@/features/household-join'
 
 // Hermes has no WebCrypto: bind the shared id factory to expo-crypto before
 // any database work (ids are minted inside @expense-tracker/local-data).
@@ -148,9 +149,6 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
                   <AuthProvider>
                     <SyncProvider>
                       <ConflictCenter />
-                      {/* Second-device household check (household-join D7):
-                          renders nothing, may prompt the rebase choice. */}
-                      <HouseholdRebaseGuard />
                       {children}
                     </SyncProvider>
                   </AuthProvider>
@@ -165,55 +163,65 @@ function AppDataProviders({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Sync engine composition root (design D7): creates the engine once over
- * the local database and the shared API client, gates runs on
- * authentication (the app is fully usable anonymously; the outbox just
- * waits), bridges the 401 pause/resume with the auth provider, and mounts
- * the opportunistic triggers: foreground, NetInfo reconnect, post-mutation
- * debounce, manual refresh. Lives at the app layer - the FSD composition
- * root - because it composes entity state (auth) with shared
- * infrastructure; lower layers read it via useSyncController from
+ * Sync engine + run-policy composition root (design D7): creates the engine
+ * once over the local database and the shared API client, then hands the
+ * opportunistic triggers to the shared run-policy (@expense-tracker/local-data
+ * owns the debounce, the auth/household gate order, and the invalidation
+ * rule). The household gate comes from `useEnsureCurrentHousehold` (the
+ * absorbed HouseholdRebaseGuard: its Alert flow lives in the household-join
+ * feature); this provider adapts the platform sources - auth status,
+ * AppState/NetInfo, the mutation cache. Lives at the app layer - the FSD
+ * composition root - because it composes entity state (auth, household) with
+ * shared infrastructure; lower layers read it via useSyncController from
  * shared/lib/sync/sync-context.
  */
-const POST_MUTATION_DEBOUNCE_MS = 2_500
-
-/**
- * Query-key roots backed by the local database (the entity hooks' cache
- * prefixes). A sync cycle that wrote local rows invalidates these - and ONLY
- * these: control-plane queries (household, invite preview) are never served
- * from the local database and must not refetch on sync. Keep in sync with
- * the key roots declared in the entities' model composables.
- */
-const LOCAL_DATA_QUERY_KEY_ROOTS = [
-  ['transactions'],
-  ['accounts'],
-  ['categories'],
-  ['debtors'],
-  ['debt-operations'],
-  ['planned-payments'],
-] as const
-
 function SyncProvider({ children }: { children: React.ReactNode }) {
   const db = useLocalDatabase()
   const queryClient = useQueryClient()
   const { status: authStatus } = useAuth()
+  const ensureCurrentHousehold = useEnsureCurrentHousehold()
 
+  // The engine's completion signal fans out to the run-policy's listener
+  // (the policy owns the invalidation rule); the set is the handoff point
+  // between the engine constructor and the policy created below.
+  const [runCompleteListeners] = useState(
+    () => new Set<(result: { wroteLocalData: boolean }) => void>(),
+  )
   const [engine] = useState(() =>
     createSyncEngine({
       db,
       transport: createLocalSyncTransport(db),
-      onRunComplete: ({ wroteLocalData }) => {
-        // The engine is a writer beside the repositories (design D3): every
-        // completed cycle refreshes the sync-status cache (the outbox /
-        // lastSyncedAt may change even on a failed cycle), while the entity
-        // caches refetch only when the cycle actually wrote local rows - a
-        // no-op cycle (caught-up pull, offline failure) leaves them alone.
-        void queryClient.invalidateQueries({ queryKey: ['sync'] })
-        if (wroteLocalData) {
-          for (const queryKey of LOCAL_DATA_QUERY_KEY_ROOTS) {
-            void queryClient.invalidateQueries({ queryKey: [...queryKey] })
-          }
+      onRunComplete: (result) => {
+        for (const listener of runCompleteListeners) listener(result)
+      },
+    }),
+  )
+
+  // Latest-only refs: the policy is created once and must not be rebuilt on
+  // auth/user changes - its debounce timer and gate state would be lost.
+  const authStatusRef = useRef(authStatus)
+  const ensureRef = useRef(ensureCurrentHousehold)
+  const [policy] = useState(() =>
+    createSyncRunPolicy({
+      engine: {
+        run: (runOptions) => engine.run(runOptions),
+        resume: () => engine.resume(),
+      },
+      isAuthenticated: () => authStatusRef.current === 'authenticated',
+      // Until the effect below registers the gate (first render only), a
+      // check rejects: the run is skipped, never executed un-gated.
+      ensureHouseholdCurrent: () =>
+        ensureRef.current
+          ? ensureRef.current()
+          : Promise.reject(new Error('household gate not registered')),
+      invalidateKeys: (keys) => {
+        for (const key of keys) {
+          void queryClient.invalidateQueries({ queryKey: [...key] })
         }
+      },
+      onRunComplete: (cb) => {
+        runCompleteListeners.add(cb)
+        return () => runCompleteListeners.delete(cb)
       },
     }),
   )
@@ -228,46 +236,30 @@ function SyncProvider({ children }: { children: React.ReactNode }) {
     registerBackgroundSync()
   }, [])
 
-  // The engine only runs while authenticated; logging in resumes + kicks it
-  // (this is also the initial sync right after the ownership check passes).
+  // The gate registers before any auth flip is carried into the policy (the
+  // effect order is deliberate); auth flips resume the engine and kick a
+  // gated cycle - on mount this is also the initial sync right after the
+  // ownership check passes.
   useEffect(() => {
-    if (authStatus === 'authenticated') {
-      engine.resume()
-      void engine.run()
-    }
-  }, [authStatus, engine])
+    ensureRef.current = ensureCurrentHousehold
+  }, [ensureCurrentHousehold])
+  useEffect(() => {
+    authStatusRef.current = authStatus
+    policy.notifyAuthChange(authStatus === 'authenticated')
+  }, [authStatus, policy])
 
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const scheduleSync = useCallback(
-    (delayMs: number) => {
-      if (authStatus !== 'authenticated') return
-      if (debounceTimer.current) clearTimeout(debounceTimer.current)
-      debounceTimer.current = setTimeout(() => {
-        debounceTimer.current = null
-        void engine.run()
-      }, delayMs)
-    },
-    [authStatus, engine],
-  )
-  useEffect(
-    () => () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    },
-    [],
-  )
-
-  // Reconnect / foreground / post-mutation triggers.
+  // Reconnect / foreground session boundaries + the post-mutation source.
   useEffect(() => {
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
-      if (state.isConnected) scheduleSync(0)
+      if (state.isConnected) policy.notifySessionBoundary()
     })
     const appStateSubscription = AppState.addEventListener('change', (status: AppStateStatus) => {
-      if (status === 'active') scheduleSync(0)
+      if (status === 'active') policy.notifySessionBoundary()
     })
     const unsubscribeMutations = queryClient.getMutationCache().subscribe((event) => {
       const action = (event as { action?: { type?: string } }).action
       if (event.type === 'updated' && action?.type === 'success') {
-        scheduleSync(POST_MUTATION_DEBOUNCE_MS)
+        policy.notifyLocalMutation()
       }
     })
     return () => {
@@ -275,7 +267,9 @@ function SyncProvider({ children }: { children: React.ReactNode }) {
       appStateSubscription.remove()
       unsubscribeMutations()
     }
-  }, [queryClient, scheduleSync])
+  }, [policy, queryClient])
+
+  useEffect(() => () => policy.dispose(), [policy])
 
   const conflictPresenterRef = useRef<(() => void) | null>(null)
   const registerConflictPresenter = useCallback((presenter: (() => void) | null) => {

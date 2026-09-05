@@ -100,22 +100,19 @@ export const useHouseholdJoinStore = defineStore('household-join', () => {
    * null (fresh/legacy) or matching marker is stamped and left alone; a
    * mismatch means this device still holds the OLD household's bookkeeping -
    * hold for the carry/clean choice before the engine runs as the new
-   * household. A failed household fetch (offline / auth hiccup) skips the
-   * check silently - offline-first never blocks startup on it.
+   * household. Rejects when the check cannot complete (offline / the
+   * household fetch fails): the run-policy then skips the pending sync run
+   * and retries at the next session boundary - it never runs un-gated.
    */
   async function ensureCurrentHousehold(): Promise<void> {
-    try {
-      const household = await householdApi.getHousehold()
-      const db = await getLocalDbApi()
-      const last = await db.household.getLastHousehold()
-      if (last === null || last === household.id) {
-        await db.household.setLastHousehold(household.id)
-        return
-      }
-      await chooseHouseholdData(household)
-    } catch {
-      // Offline or the backend is unreachable: skip this round.
+    const household = await householdApi.getHousehold()
+    const db = await getLocalDbApi()
+    const last = await db.household.getLastHousehold()
+    if (last === null || last === household.id) {
+      await db.household.setLastHousehold(household.id)
+      return
     }
+    await chooseHouseholdData(household)
   }
 
   return {

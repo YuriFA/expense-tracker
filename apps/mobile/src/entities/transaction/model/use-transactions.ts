@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import type {
   CreateTransactionPayload,
   Transaction,
@@ -35,7 +36,7 @@ export function useCreateTransaction() {
     mutationFn: (payload: CreateTransactionPayload) => repository.create(payload),
     onSettled: () => {
       // Transactions change account balances, so both caches go stale.
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.transactions })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
@@ -48,7 +49,7 @@ export function useUpdateTransaction() {
     mutationFn: ({ id, payload }: { id: string; payload: UpdateTransactionPayload }) =>
       repository.update(id, payload),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.transactions })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
@@ -60,7 +61,7 @@ export function useDeleteTransaction() {
   return useMutation({
     mutationFn: (id: string) => repository.remove(id),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: SYNC_QUERY_KEY_ROOTS.transactions })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })

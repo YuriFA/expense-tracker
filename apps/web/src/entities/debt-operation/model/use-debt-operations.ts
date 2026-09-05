@@ -1,3 +1,4 @@
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import {
@@ -23,7 +24,7 @@ export const useCreateDebtOperation = () => {
   return useMutation({
     mutation: (payload: CreateDebtOperationPayload) => debtOperations.create(payload),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['debt-operations'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.debtOperations })
     },
   })
 }
@@ -35,7 +36,7 @@ export const useUpdateDebtOperation = () => {
     mutation: ({ id, payload }: { id: string; payload: UpdateDebtOperationPayload }) =>
       debtOperations.update(id, payload),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['debt-operations'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.debtOperations })
     },
   })
 }
@@ -46,7 +47,7 @@ export const useDeleteDebtOperation = () => {
   return useMutation({
     mutation: (id: string) => debtOperations.remove(id),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['debt-operations'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.debtOperations })
     },
   })
 }

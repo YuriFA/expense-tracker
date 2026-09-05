@@ -1,3 +1,4 @@
+import { SYNC_QUERY_KEY_ROOTS } from '@expense-tracker/local-data'
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import {
@@ -22,7 +23,7 @@ export const useCreatePlannedPayment = () => {
   return useMutation({
     mutation: (payload: CreatePlannedPaymentPayload) => plannedPayments.create(payload),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['planned-payments'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.plannedPayments })
     },
   })
 }
@@ -34,7 +35,7 @@ export const useUpdatePlannedPayment = () => {
     mutation: ({ id, payload }: { id: string; payload: UpdatePlannedPaymentPayload }) =>
       plannedPayments.update(id, payload),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['planned-payments'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.plannedPayments })
     },
   })
 }
@@ -45,7 +46,7 @@ export const useDeletePlannedPayment = () => {
   return useMutation({
     mutation: (id: string) => plannedPayments.remove(id),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['planned-payments'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.plannedPayments })
     },
   })
 }
@@ -59,9 +60,9 @@ export const useConfirmPlannedPayment = () => {
   return useMutation({
     mutation: (input: ConfirmPlannedPaymentInput) => plannedPayments.confirmPlannedPayment(input),
     onSettled: () => {
-      queryCache.invalidateQueries({ key: ['planned-payments'] })
-      queryCache.invalidateQueries({ key: ['transactions'] })
-      queryCache.invalidateQueries({ key: ['accounts'] })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.plannedPayments })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.transactions })
+      queryCache.invalidateQueries({ key: SYNC_QUERY_KEY_ROOTS.accounts })
     },
   })
 }
