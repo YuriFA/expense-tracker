@@ -9,11 +9,13 @@
     "lint:design": "pnpm --filter web lint:design && pnpm --filter mobile lint:design",
     "prepare": "lefthook install",
     "sync-catalog:gen": "node tools/sync-catalog/generate.mjs",
-    "sync-catalog:gen-check": "pnpm sync-catalog:gen && git diff --exit-code -- backend/internal/service/sync_entity_catalog.gen.go packages/local-data/src/sync/sync-entity-catalog.generated.ts apps/web/src/features/sync-conflicts/model/sync-entity-catalog.generated.ts apps/mobile/src/features/sync-conflicts/model/sync-entity-catalog.generated.ts"
+    "sync-catalog:gen-check": "pnpm sync-catalog:gen && git diff --exit-code -- backend/internal/service/sync_entity_catalog.gen.go packages/local-data/src/sync/sync-entity-catalog.generated.ts apps/web/src/features/sync-conflicts/model/sync-entity-catalog.generated.ts apps/mobile/src/features/sync-conflicts/model/sync-entity-catalog.generated.ts",
+    "sync-catalog:parity": "node tools/sync-catalog/check-openapi-parity.mjs"
   },
   "devDependencies": {
     "dependency-cruiser": "^18.2.0",
     "knip": "^6.32.2",
-    "lefthook": "^2.1.12"
+    "lefthook": "^2.1.12",
+    "yaml": "^2.9.0"
   }
 }

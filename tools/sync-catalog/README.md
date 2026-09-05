@@ -7,7 +7,15 @@ Repo-level source of truth for structural sync knowledge (ADR-0004).
 - `generate.mjs` derives runtime-specific artifacts for backend,
   `packages/local-data`, and app adapters.
 - Generated files are committed. Regenerate with `pnpm sync-catalog:gen`.
-- Check drift with `pnpm sync-catalog:gen-check`.
+- Check drift with `pnpm sync-catalog:gen-check` (CI: `gen-check` job).
+- Check catalog/OpenAPI parity with `pnpm sync-catalog:parity` (CI:
+  `ts-gen-check` job): the `SyncEntity` enum must equal the manifest entity
+  list, and every enum-typed sync field's value set must match the
+  corresponding `*SyncData` schema property (set semantics, order-free).
+  Required-flag parity is a non-goal: manifest `required` is a generator
+  concern (ints that may not default to zero) while schema `required` is
+  wire presence - e.g. `PlannedPaymentSyncData` deliberately has no
+  required list although the catalog marks `amount` required.
 
 Rollout is complete: all six sync entities (`account`, `category`,
 `debtor`, `debt_operation`, `planned_payment`, `transaction`) are

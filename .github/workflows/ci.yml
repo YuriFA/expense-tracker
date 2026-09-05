@@ -51,6 +51,8 @@ jobs:
       - run: ./scripts/check-migrations.sh
 
   gen-check:
+    # Go codegen drift + the sync-catalog generator drift (the generator
+    # needs gofmt for its Go output, hence the Node steps on this Go job).
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -70,10 +72,18 @@ jobs:
           go install github.com/sqlc-dev/sqlc/cmd/sqlc
       - name: Verify generated code is in sync
         run: make gen-check
+      - uses: pnpm/action-setup@v4 # version from package.json packageManager
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify sync catalog is in sync
+        working-directory: .
+        run: pnpm sync-catalog:gen-check
 
   ts-gen-check:
     # TS counterpart of gen-check: regenerating the contract types must
     # leave the tree clean — if schema.ts drifts from openapi.yaml, fail.
+    # Also gates the sync catalog <-> OpenAPI contract parity.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,6 +98,8 @@ jobs:
         run: pnpm --filter @expense-tracker/api gen:api
       - name: Verify generated schema is in sync
         run: git diff --exit-code packages/api/src/schema.ts
+      - name: Check sync catalog / OpenAPI parity
+        run: pnpm sync-catalog:parity
 
   arch-check:
     # Architecture rules via dependency-cruiser (configs at repo root):
