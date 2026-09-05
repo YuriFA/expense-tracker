@@ -20,10 +20,10 @@ info:
 
     ## Idempotency
 
-    `POST /api/transactions` поддерживает идемпотентность через заголовок
-    `Idempotency-Key`. Повторный запрос с тем же ключом и тем же body
-    возвращает закешированный ответ. Повтор с тем же ключом и другим body →
-    `409 Conflict`.
+    `POST /api/transactions` требует заголовок `Idempotency-Key` для
+    идемпотентности (отсутствие → `400`). Повторный запрос с тем же ключом
+    и тем же body возвращает закешированный ответ. Повтор с тем же ключом
+    и другим body → `409 Conflict`.
 
     ## Optimistic Concurrency для PATCH
 
@@ -1094,8 +1094,8 @@ paths:
       operationId: createTransaction
       summary: Создать транзакцию
       description: |
-        Поддерживает идемпотентность. Если заголовок `Idempotency-Key`
-        присутствует, повторный запрос с тем же ключом + тем же body
+        Поддерживает идемпотентность: заголовок `Idempotency-Key` обязателен
+        (отсутствие → `400`). Повторный запрос с тем же ключом + тем же body
         возвращает закешированный ответ. Тот же ключ + другой body → `409`.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
