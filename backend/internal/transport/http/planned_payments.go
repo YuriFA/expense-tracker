@@ -40,8 +40,6 @@ func (s *Server) CreatePlannedPayment(
 	ctx context.Context,
 	req api.CreatePlannedPaymentRequestObject,
 ) (api.CreatePlannedPaymentResponseObject, error) {
-	user := s.currentUser(ctx)
-	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
@@ -62,7 +60,7 @@ func (s *Server) CreatePlannedPayment(
 	if err != nil {
 		return nil, err
 	}
-	p, err := s.plans.Create(ctx, householdID, user.ID, domain.CreatePlannedPaymentParams{
+	p, err := s.plans.Create(ctx, s.currentScope(ctx), domain.CreatePlannedPaymentParams{
 		ID:          id,
 		Type:        domain.TransactionType(req.Body.Type),
 		Amount:      req.Body.Amount,
@@ -97,7 +95,6 @@ func (s *Server) UpdatePlannedPayment(
 	ctx context.Context,
 	req api.UpdatePlannedPaymentRequestObject,
 ) (api.UpdatePlannedPaymentResponseObject, error) {
-	user := s.currentUser(ctx)
 	params := domain.UpdatePlannedPaymentParams{Version: req.Body.Version}
 	if req.Body.Amount != nil {
 		params.Amount = req.Body.Amount
@@ -135,7 +132,7 @@ func (s *Server) UpdatePlannedPayment(
 		v := domain.PlannedReminder(*req.Body.Reminder)
 		params.Reminder = &v
 	}
-	p, err := s.plans.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, params)
+	p, err := s.plans.Update(ctx, s.currentScope(ctx), req.Id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +143,7 @@ func (s *Server) DeletePlannedPayment(
 	ctx context.Context,
 	req api.DeletePlannedPaymentRequestObject,
 ) (api.DeletePlannedPaymentResponseObject, error) {
-	user := s.currentUser(ctx)
-	if err := s.plans.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
+	if err := s.plans.Delete(ctx, s.currentScope(ctx), req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeletePlannedPayment204Response{}, nil

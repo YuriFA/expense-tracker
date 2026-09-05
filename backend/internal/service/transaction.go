@@ -44,12 +44,12 @@ func (s *TransactionService) refReads() RefReads {
 
 func (s *TransactionService) Create(
 	ctx context.Context,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	params domain.CreateTransactionParams,
 ) (*domain.Transaction, error) {
 	const op = "service.transaction.Create"
 
-	if err := ValidateTransactionWrite(ctx, s.refReads(), householdID, TransactionWriteState{
+	if err := ValidateTransactionWrite(ctx, s.refReads(), scope.HouseholdID, TransactionWriteState{
 		Type:          params.Type,
 		Amount:        params.Amount,
 		AccountID:     params.AccountID,
@@ -62,7 +62,7 @@ func (s *TransactionService) Create(
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	params.HouseholdID, params.UserID = householdID, userID
+	params.HouseholdID, params.UserID = scope.HouseholdID, scope.ActorID
 	tx, err := s.transactions.CreateTransaction(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -72,7 +72,7 @@ func (s *TransactionService) Create(
 
 func (s *TransactionService) Update(
 	ctx context.Context,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateTransactionParams,
 ) (*domain.Transaction, error) {
 	const op = "service.transaction.Update"
@@ -83,7 +83,7 @@ func (s *TransactionService) Update(
 		return nil, ErrNoFieldsToUpdate
 	}
 
-	current, err := s.transactions.GetTransaction(ctx, householdID, id)
+	current, err := s.transactions.GetTransaction(ctx, scope.HouseholdID, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -111,7 +111,7 @@ func (s *TransactionService) Update(
 		effectiveAmount = *params.Amount
 	}
 
-	if err := ValidateTransactionWrite(ctx, s.refReads(), householdID, TransactionWriteState{
+	if err := ValidateTransactionWrite(ctx, s.refReads(), scope.HouseholdID, TransactionWriteState{
 		Type:          current.Type,
 		Amount:        effectiveAmount,
 		AccountID:     effectiveAccountID,
@@ -124,16 +124,16 @@ func (s *TransactionService) Update(
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	tx, err := s.transactions.UpdateTransaction(ctx, householdID, userID, id, params)
+	tx, err := s.transactions.UpdateTransaction(ctx, scope, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return tx, nil
 }
 
-func (s *TransactionService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
+func (s *TransactionService) Delete(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
 	const op = "service.transaction.Delete"
-	if err := s.transactions.DeleteTransaction(ctx, householdID, userID, id); err != nil {
+	if err := s.transactions.DeleteTransaction(ctx, scope, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

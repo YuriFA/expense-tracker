@@ -71,9 +71,10 @@ func (r *Repository) CreateTransaction(
 
 func (r *Repository) UpdateTransaction(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateTransactionParams,
 ) (*domain.Transaction, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.UpdateTransaction"
 
 	var row db.UpdateTransactionRow
@@ -118,7 +119,8 @@ func (r *Repository) UpdateTransaction(
 	), nil
 }
 
-func (r *Repository) DeleteTransaction(ctx context.Context, householdID, actorID, id uuid.UUID) error {
+func (r *Repository) DeleteTransaction(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.DeleteTransaction"
 
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {

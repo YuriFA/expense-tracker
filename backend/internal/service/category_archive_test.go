@@ -28,9 +28,14 @@ func TestCategoryService_ArchiveLifecycle(t *testing.T) {
 	userHH := householdOf(t, store, user.ID)
 	c := seedFakeCategory(t, store, userHH, user.ID, "Продукты", domain.TransactionTypeExpense)
 
-	archived, err := catSvc.Update(ctx, userHH, user.ID, c.ID, domain.UpdateCategoryParams{
-		Version: c.Version, Archive: new(true),
-	})
+	archived, err := catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		c.ID,
+		domain.UpdateCategoryParams{
+			Version: c.Version, Archive: new(true),
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, archived.ArchivedAt)
 	assert.True(t, archived.Archived())
@@ -51,16 +56,26 @@ func TestCategoryService_ArchiveLifecycle(t *testing.T) {
 	assert.True(t, fetched.Archived())
 
 	// Archived categories remain editable.
-	renamed, err := catSvc.Update(ctx, userHH, user.ID, c.ID, domain.UpdateCategoryParams{
-		Version: archived.Version, Name: strPtr("Продукты (архив)"),
-	})
+	renamed, err := catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		c.ID,
+		domain.UpdateCategoryParams{
+			Version: archived.Version, Name: strPtr("Продукты (архив)"),
+		},
+	)
 	require.NoError(t, err)
 	assert.True(t, renamed.Archived())
 
 	// Unarchive reopens the category for new transactions.
-	active2, err := catSvc.Update(ctx, userHH, user.ID, c.ID, domain.UpdateCategoryParams{
-		Version: renamed.Version, Archive: new(false),
-	})
+	active2, err := catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		c.ID,
+		domain.UpdateCategoryParams{
+			Version: renamed.Version, Archive: new(false),
+		},
+	)
 	require.NoError(t, err)
 	assert.Nil(t, active2.ArchivedAt)
 	listed, err := catSvc.List(ctx, userHH, domain.GetCategoriesParams{})
@@ -75,21 +90,31 @@ func TestCategoryService_ArchivedNameReserved(t *testing.T) {
 	user := seedFakeUser(t, store)
 	userHH := householdOf(t, store, user.ID)
 	archived := seedFakeCategory(t, store, userHH, user.ID, "Food", domain.TransactionTypeExpense)
-	_, err := catSvc.Update(ctx, userHH, user.ID, archived.ID, domain.UpdateCategoryParams{
-		Version: archived.Version, Archive: new(true),
-	})
+	_, err := catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		archived.ID,
+		domain.UpdateCategoryParams{
+			Version: archived.Version, Archive: new(true),
+		},
+	)
 	require.NoError(t, err)
 
 	// A new category cannot take the archived name; neither can a rename.
-	_, err = catSvc.Create(ctx, userHH, user.ID, domain.CreateCategoryParams{
+	_, err = catSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateCategoryParams{
 		Name: "Food", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
 	})
 	require.ErrorIs(t, err, domain.ErrCategoryAlreadyExists)
 
 	other := seedFakeCategory(t, store, userHH, user.ID, "Cafe", domain.TransactionTypeExpense)
-	_, err = catSvc.Update(ctx, userHH, user.ID, other.ID, domain.UpdateCategoryParams{
-		Version: other.Version, Name: strPtr("Food"),
-	})
+	_, err = catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		other.ID,
+		domain.UpdateCategoryParams{
+			Version: other.Version, Name: strPtr("Food"),
+		},
+	)
 	require.ErrorIs(t, err, domain.ErrCategoryAlreadyExists)
 }
 
@@ -104,17 +129,26 @@ func TestCategoryService_ArchiveBlockedByLivePlannedPayment(t *testing.T) {
 
 	acct := seedFakeAccount(t, store, userHH, user.ID)
 	cat := seedFakeCategory(t, store, userHH, user.ID, "Подписки", domain.TransactionTypeExpense)
-	_, err := planSvc.Create(ctx, userHH, user.ID, domain.CreatePlannedPaymentParams{
-		Type: domain.TransactionTypeExpense, Amount: 500, Name: "Internet",
-		AccountID: acct.ID, CategoryID: cat.ID,
-		NextDue:    time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC),
-		Regularity: domain.PlannedRegularityMonthly, ConfirmMode: domain.PlannedConfirmManual,
-	})
+	_, err := planSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		domain.CreatePlannedPaymentParams{
+			Type: domain.TransactionTypeExpense, Amount: 500, Name: "Internet",
+			AccountID: acct.ID, CategoryID: cat.ID,
+			NextDue:    time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC),
+			Regularity: domain.PlannedRegularityMonthly, ConfirmMode: domain.PlannedConfirmManual,
+		},
+	)
 	require.NoError(t, err)
 
-	_, err = catSvc.Update(ctx, userHH, user.ID, cat.ID, domain.UpdateCategoryParams{
-		Version: cat.Version, Archive: new(true),
-	})
+	_, err = catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		cat.ID,
+		domain.UpdateCategoryParams{
+			Version: cat.Version, Archive: new(true),
+		},
+	)
 	require.ErrorIs(t, err, domain.ErrCategoryHasPlannedPayments)
 }
 
@@ -130,52 +164,77 @@ func TestTransactionService_ArchivedCategoryReferences(t *testing.T) {
 	acct := seedFakeAccount(t, store, userHH, user.ID)
 	cat := seedFakeCategory(t, store, userHH, user.ID, "Кафе", domain.TransactionTypeExpense)
 	// A transaction recorded while the category was active.
-	tx, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+	tx, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 		Type: domain.TransactionTypeExpense, Amount: 300, OccurredAt: time.Now().UTC(),
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
 
-	archived, err := catSvc.Update(ctx, userHH, user.ID, cat.ID, domain.UpdateCategoryParams{
-		Version: cat.Version, Archive: new(true),
-	})
+	archived, err := catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		cat.ID,
+		domain.UpdateCategoryParams{
+			Version: cat.Version, Archive: new(true),
+		},
+	)
 	require.NoError(t, err)
 
 	// New assignment is rejected...
-	_, err = txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+	_, err = txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 		Type: domain.TransactionTypeExpense, Amount: 100, OccurredAt: time.Now().UTC(),
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.ErrorIs(t, err, domain.ErrCategoryArchived)
 
 	otherCat := seedFakeCategory(t, store, userHH, user.ID, "Другое", domain.TransactionTypeExpense)
-	_, err = txSvc.Update(ctx, userHH, user.ID, tx.ID, domain.UpdateTransactionParams{
-		Version: tx.Version, CategoryID: &otherCat.ID,
-	})
+	_, err = txSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		tx.ID,
+		domain.UpdateTransactionParams{
+			Version: tx.Version, CategoryID: &otherCat.ID,
+		},
+	)
 	require.NoError(t, err)
 	tx2, err := txSvc.Get(ctx, userHH, tx.ID)
 	require.NoError(t, err)
 
 	// ...switching TO the archived category is rejected...
-	_, err = txSvc.Update(ctx, userHH, user.ID, tx.ID, domain.UpdateTransactionParams{
-		Version: tx2.Version, CategoryID: &cat.ID,
-	})
+	_, err = txSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		tx.ID,
+		domain.UpdateTransactionParams{
+			Version: tx2.Version, CategoryID: &cat.ID,
+		},
+	)
 	require.ErrorIs(t, err, domain.ErrCategoryArchived)
 
 	// ...but keeping an already-assigned archived category is allowed.
-	tx3, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+	tx3, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 		Type: domain.TransactionTypeExpense, Amount: 150, OccurredAt: time.Now().UTC(),
 		AccountID: &acct.ID, CategoryID: &otherCat.ID,
 	})
 	require.NoError(t, err)
-	_, err = catSvc.Update(ctx, userHH, user.ID, otherCat.ID, domain.UpdateCategoryParams{
-		Version: otherCat.Version, Archive: new(true),
-	})
+	_, err = catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		otherCat.ID,
+		domain.UpdateCategoryParams{
+			Version: otherCat.Version, Archive: new(true),
+		},
+	)
 	require.NoError(t, err)
 	desc := "kept"
-	_, err = txSvc.Update(ctx, userHH, user.ID, tx3.ID, domain.UpdateTransactionParams{
-		Version: tx3.Version, Description: &desc,
-	})
+	_, err = txSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		tx3.ID,
+		domain.UpdateTransactionParams{
+			Version: tx3.Version, Description: &desc,
+		},
+	)
 	require.NoError(t, err)
 	_ = archived
 }
@@ -191,12 +250,17 @@ func TestPlannedPaymentService_ArchivedCategoryRejected(t *testing.T) {
 
 	acct := seedFakeAccount(t, store, userHH, user.ID)
 	cat := seedFakeCategory(t, store, userHH, user.ID, "Связь", domain.TransactionTypeExpense)
-	_, err := catSvc.Update(ctx, userHH, user.ID, cat.ID, domain.UpdateCategoryParams{
-		Version: cat.Version, Archive: new(true),
-	})
+	_, err := catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		cat.ID,
+		domain.UpdateCategoryParams{
+			Version: cat.Version, Archive: new(true),
+		},
+	)
 	require.NoError(t, err)
 
-	_, err = planSvc.Create(ctx, userHH, user.ID, domain.CreatePlannedPaymentParams{
+	_, err = planSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreatePlannedPaymentParams{
 		Type: domain.TransactionTypeExpense, Amount: 600, Name: "Mobile",
 		AccountID: acct.ID, CategoryID: cat.ID,
 		NextDue:    time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC),
@@ -218,20 +282,24 @@ func TestCategoryService_HybridDelete(t *testing.T) {
 	cat := seedFakeCategory(t, store, userHH, user.ID, "Вредное", domain.TransactionTypeExpense)
 	txIDs := make([]uuid.UUID, 0, 2)
 	for range 2 {
-		tx, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeExpense, Amount: 100, OccurredAt: time.Now().UTC(),
-			AccountID: &acct.ID, CategoryID: &cat.ID,
-		})
+		tx, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeExpense, Amount: 100, OccurredAt: time.Now().UTC(),
+				AccountID: &acct.ID, CategoryID: &cat.ID,
+			},
+		)
 		require.NoError(t, err)
 		txIDs = append(txIDs, tx.ID)
 	}
 
 	// Plain delete of a referenced category is still the guarded error.
-	err := catSvc.Delete(ctx, userHH, user.ID, cat.ID, false)
+	err := catSvc.Delete(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, cat.ID, false)
 	require.ErrorIs(t, err, domain.ErrCategoryHasTransactions)
 
 	// Cascade tombstones the category and the referencing transactions.
-	require.NoError(t, catSvc.Delete(ctx, userHH, user.ID, cat.ID, true))
+	require.NoError(t, catSvc.Delete(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, cat.ID, true))
 	_, err = catSvc.Get(ctx, userHH, cat.ID)
 	require.ErrorIs(t, err, domain.ErrCategoryNotFound)
 	for _, id := range txIDs {
@@ -258,13 +326,17 @@ func TestCategoryService_CascadeDeleteByAnyMember(t *testing.T) {
 	acct := seedFakeAccount(t, f.store, f.ownerHH, f.owner.ID)
 	cat := seedFakeCategory(t, f.store, f.ownerHH, f.owner.ID, "Общее", domain.TransactionTypeExpense)
 	// The owner's transaction; the sibling (a member, not the owner) cascades.
-	_, err := f.txSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateTransactionParams{
-		Type: domain.TransactionTypeExpense, Amount: 200, OccurredAt: time.Now().UTC(),
-		AccountID: &acct.ID, CategoryID: &cat.ID,
-	})
+	_, err := f.txSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 200, OccurredAt: time.Now().UTC(),
+			AccountID: &acct.ID, CategoryID: &cat.ID,
+		},
+	)
 	require.NoError(t, err)
 
-	require.NoError(t, f.catSvc.Delete(ctx, f.ownerHH, f.sibling.ID, cat.ID, true))
+	require.NoError(t, f.catSvc.Delete(ctx, domain.Scope{HouseholdID: f.ownerHH, ActorID: f.sibling.ID}, cat.ID, true))
 	_, err = f.catSvc.Get(ctx, f.ownerHH, cat.ID)
 	require.ErrorIs(t, err, domain.ErrCategoryNotFound)
 }

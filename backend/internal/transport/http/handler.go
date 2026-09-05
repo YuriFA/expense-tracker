@@ -86,3 +86,13 @@ func (s *Server) currentUser(ctx context.Context) *domain.User {
 func (s *Server) currentHouseholdID(ctx context.Context) uuid.UUID {
 	return httpctx.CurrentHouseholdID(ginCtx(ctx))
 }
+
+// currentScope returns the authenticated request's write scope (household +
+// acting member) as one domain.Scope value: the single construction point for
+// every household-scoped service call (ADR-0006).
+func (s *Server) currentScope(ctx context.Context) domain.Scope {
+	return domain.Scope{
+		HouseholdID: s.currentHouseholdID(ctx),
+		ActorID:     s.currentUser(ctx).ID,
+	}
+}

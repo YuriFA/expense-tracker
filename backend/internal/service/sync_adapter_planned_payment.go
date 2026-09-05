@@ -105,10 +105,10 @@ func (plannedPaymentAdapter) getAny(
 }
 
 func (plannedPaymentAdapter) create(
-	ctx context.Context, t plannedPaymentTx, householdID, userID, id uuid.UUID, data domain.PlannedPaymentFullState,
+	ctx context.Context, t plannedPaymentTx, scope domain.Scope, id uuid.UUID, data domain.PlannedPaymentFullState,
 ) (*domain.PlannedPayment, error) {
 	return t.CreatePlannedPayment(ctx, domain.CreatePlannedPaymentParams{
-		ID: id, HouseholdID: householdID, UserID: userID,
+		ID: id, HouseholdID: scope.HouseholdID, UserID: scope.ActorID,
 		Type: data.Type, Amount: data.Amount, Name: data.Name,
 		AccountID: data.AccountID, CategoryID: data.CategoryID,
 		NextDue: data.NextDue.Time, Regularity: data.Regularity,
@@ -119,17 +119,17 @@ func (plannedPaymentAdapter) create(
 func (plannedPaymentAdapter) replace(
 	ctx context.Context,
 	t plannedPaymentTx,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	data domain.PlannedPaymentFullState,
 ) (*domain.PlannedPayment, error) {
-	return t.ReplacePlannedPayment(ctx, householdID, userID, id, baseVersion, data)
+	return t.ReplacePlannedPayment(ctx, scope, id, baseVersion, data)
 }
 
 func (plannedPaymentAdapter) tombstone(
-	ctx context.Context, t plannedPaymentTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t plannedPaymentTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
-	return t.TombstonePlannedPayment(ctx, householdID, userID, id)
+	return t.TombstonePlannedPayment(ctx, scope, id)
 }
 
 // validatePlannedPaymentSyncData checks the shape a plan upsert must satisfy

@@ -37,18 +37,18 @@ func (s *PlannedPaymentService) refReads() RefReads {
 
 func (s *PlannedPaymentService) Create(
 	ctx context.Context,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	params domain.CreatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.Create"
 
 	if err := ValidatePlannedPaymentWrite(
-		ctx, s.refReads(), householdID, params.AccountID, params.CategoryID, params.Type,
+		ctx, s.refReads(), scope.HouseholdID, params.AccountID, params.CategoryID, params.Type,
 	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	params.HouseholdID, params.UserID = householdID, userID
+	params.HouseholdID, params.UserID = scope.HouseholdID, scope.ActorID
 	p, err := s.plans.CreatePlannedPayment(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -58,7 +58,7 @@ func (s *PlannedPaymentService) Create(
 
 func (s *PlannedPaymentService) Update(
 	ctx context.Context,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
 	const op = "service.plannedPayment.Update"
@@ -72,7 +72,7 @@ func (s *PlannedPaymentService) Update(
 	if params.AccountID != nil || params.CategoryID != nil {
 		// Type is immutable and comes from the stored plan; re-reading also
 		// surfaces not-found before any ref work.
-		current, err := s.plans.GetPlannedPayment(ctx, householdID, id)
+		current, err := s.plans.GetPlannedPayment(ctx, scope.HouseholdID, id)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
@@ -85,22 +85,22 @@ func (s *PlannedPaymentService) Update(
 			categoryID = *params.CategoryID
 		}
 		if err := ValidatePlannedPaymentWrite(
-			ctx, s.refReads(), householdID, accountID, categoryID, current.Type,
+			ctx, s.refReads(), scope.HouseholdID, accountID, categoryID, current.Type,
 		); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
 
-	p, err := s.plans.UpdatePlannedPayment(ctx, householdID, userID, id, params)
+	p, err := s.plans.UpdatePlannedPayment(ctx, scope, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return p, nil
 }
 
-func (s *PlannedPaymentService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
+func (s *PlannedPaymentService) Delete(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
 	const op = "service.plannedPayment.Delete"
-	if err := s.plans.DeletePlannedPayment(ctx, householdID, userID, id); err != nil {
+	if err := s.plans.DeletePlannedPayment(ctx, scope, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

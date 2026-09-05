@@ -76,7 +76,7 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 	// conflict); "" = pass.
 	immutable(cur R, data S) (code, message string)
 
-	create(ctx context.Context, t T, householdID, userID, id uuid.UUID, data S) (R, error)
+	create(ctx context.Context, t T, scope domain.Scope, id uuid.UUID, data S) (R, error)
 	// onCreateError turns a create failure into a per-item result when the
 	// entity knows how (the account id-race safety net); handled = false
 	// makes the engine propagate the error as a batch error.
@@ -91,12 +91,12 @@ type syncAdapter[T repository.SyncCore, R syncRow, S any] interface {
 	replace(
 		ctx context.Context,
 		t T,
-		householdID, userID, id uuid.UUID,
+		scope domain.Scope, id uuid.UUID,
 		baseVersion int,
 		data S,
 	) (R, error)
 	isWriteRace(err error) bool
-	tombstone(ctx context.Context, t T, householdID, userID, id uuid.UUID) (R, error)
+	tombstone(ctx context.Context, t T, scope domain.Scope, id uuid.UUID) (R, error)
 }
 
 // syncInUseGuard is implemented by the entities whose delete is blocked by
@@ -130,7 +130,7 @@ type syncCascadeGuard[T repository.SyncCore, R syncRow] interface {
 // also removes the dependants (each with its own change_log row, on the same
 // batch transaction).
 type syncCascadeTombstoner[T repository.SyncCore, R syncRow] interface {
-	cascadeTombstone(ctx context.Context, t T, householdID, userID, id uuid.UUID) (R, error)
+	cascadeTombstone(ctx context.Context, t T, scope domain.Scope, id uuid.UUID) (R, error)
 }
 
 // syncAdapterDefaults carries the no-op answers for the optional adapter
@@ -163,7 +163,7 @@ func (syncAdapterDefaults[T, R, S]) onCreateError(
 
 // syncOpApplier applies one pushed operation for one entity; the registry
 // built in NewSyncService maps entities to appliers.
-type syncOpApplier func(ctx context.Context, t repository.SyncTx, householdID, userID uuid.UUID, op domain.SyncOperation) (domain.SyncPushResult, error)
+type syncOpApplier func(ctx context.Context, t repository.SyncTx, scope domain.Scope, op domain.SyncOperation) (domain.SyncPushResult, error)
 
 // applySyncOperationFor binds an adapter into the registry's applier shape,
 // narrowing the batch tx to the adapter's own contract: the registry erases
@@ -171,23 +171,23 @@ type syncOpApplier func(ctx context.Context, t repository.SyncTx, householdID, u
 // declared contract - each adapter file's compile-time check pins its
 // contract to the full repository.SyncTx the applier hands in.
 func applySyncOperationFor[T repository.SyncCore, R syncRow, S any](ad syncAdapter[T, R, S]) syncOpApplier {
-	return func(ctx context.Context, t repository.SyncTx, householdID, userID uuid.UUID, op domain.SyncOperation) (domain.SyncPushResult, error) {
+	return func(ctx context.Context, t repository.SyncTx, scope domain.Scope, op domain.SyncOperation) (domain.SyncPushResult, error) {
 		// A violated contract is a programming error: fail loud - the
 		// per-adapter compile-time checks prevent it.
 		narrowed := t.(T) //nolint:errcheck // see above
-		return applySyncEntity(ctx, narrowed, householdID, userID, op, ad)
+		return applySyncEntity(ctx, narrowed, scope, op, ad)
 	}
 }
 
 func applySyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
 	t T,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	ad syncAdapter[T, R, S],
 ) (domain.SyncPushResult, error) {
 	if op.Action == domain.SyncActionDelete {
-		return deleteSyncEntity(ctx, t, householdID, userID, op, ad)
+		return deleteSyncEntity(ctx, t, scope, op, ad)
 	}
 	if op.Action != domain.SyncActionUpsert {
 		return errorResult(op.OpID, "VALIDATION_FAILED", "unknown action"), nil
@@ -201,26 +201,26 @@ func applySyncEntity[T repository.SyncCore, R syncRow, S any](
 			ad.invalidDataMessage(),
 		), nil
 	}
-	if code, message, verr := ad.preValidate(ctx, t, householdID, op, data); verr != nil {
+	if code, message, verr := ad.preValidate(ctx, t, scope.HouseholdID, op, data); verr != nil {
 		return domain.SyncPushResult{}, verr
 	} else if code != "" {
 		return errorResult(op.OpID, code, message), nil
 	}
 
-	current, found, err := ad.getAny(ctx, t, householdID, op.ID)
+	current, found, err := ad.getAny(ctx, t, scope.HouseholdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
-	if code, message, verr := ad.postReadValidate(ctx, t, householdID, op, data); verr != nil {
+	if code, message, verr := ad.postReadValidate(ctx, t, scope.HouseholdID, op, data); verr != nil {
 		return domain.SyncPushResult{}, verr
 	} else if code != "" {
 		return errorResult(op.OpID, code, message), nil
 	}
 
 	if op.BaseVersion == 0 {
-		return createSyncEntity(ctx, t, householdID, userID, op, ad, data, current, found)
+		return createSyncEntity(ctx, t, scope, op, ad, data, current, found)
 	}
-	return updateSyncEntity(ctx, t, householdID, userID, op, ad, data, current, found)
+	return updateSyncEntity(ctx, t, scope, op, ad, data, current, found)
 }
 
 // createSyncEntity is the base-0 branch: absent -> adopt-orphaned check ->
@@ -230,7 +230,7 @@ func applySyncEntity[T repository.SyncCore, R syncRow, S any](
 func createSyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
 	t T,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	ad syncAdapter[T, R, S],
 	data S, current R, found bool,
@@ -241,15 +241,15 @@ func createSyncEntity[T repository.SyncCore, R syncRow, S any](
 			serverStateOf(ad.version(current), current.Deleted(), ad.fullState(current)),
 		), nil
 	}
-	if res, err := adoptOrphanedOrConflict(ctx, t, ad.entity(), op, householdID,
+	if res, err := adoptOrphanedOrConflict(ctx, t, ad.entity(), op, scope.HouseholdID,
 		ad.label()+" already exists in another household"); err != nil {
 		return domain.SyncPushResult{}, err
 	} else if res.Status != "" {
 		return res, nil
 	}
-	created, err := ad.create(ctx, t, householdID, userID, op.ID, data)
+	created, err := ad.create(ctx, t, scope, op.ID, data)
 	if err != nil {
-		if res, handled, ferr := ad.onCreateError(ctx, t, householdID, op, err); ferr != nil {
+		if res, handled, ferr := ad.onCreateError(ctx, t, scope.HouseholdID, op, err); ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		} else if handled {
 			return res, nil
@@ -264,7 +264,7 @@ func createSyncEntity[T repository.SyncCore, R syncRow, S any](
 func updateSyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
 	t T,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	ad syncAdapter[T, R, S],
 	data S, current R, found bool,
@@ -291,11 +291,11 @@ func updateSyncEntity[T repository.SyncCore, R syncRow, S any](
 		), nil
 	}
 
-	updated, err := ad.replace(ctx, t, householdID, userID, op.ID, op.BaseVersion, data)
+	updated, err := ad.replace(ctx, t, scope, op.ID, op.BaseVersion, data)
 	if ad.isWriteRace(err) {
 		// Lost a race inside the batch (two ops touching the same record);
 		// report the conflict, the client re-pushes on the new base.
-		fresh, _, ferr := ad.getAny(ctx, t, householdID, op.ID)
+		fresh, _, ferr := ad.getAny(ctx, t, scope.HouseholdID, op.ID)
 		if ferr != nil {
 			return domain.SyncPushResult{}, ferr
 		}
@@ -317,11 +317,11 @@ func updateSyncEntity[T repository.SyncCore, R syncRow, S any](
 func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 	ctx context.Context,
 	t T,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	ad syncAdapter[T, R, S],
 ) (domain.SyncPushResult, error) {
-	current, found, err := ad.getAny(ctx, t, householdID, op.ID)
+	current, found, err := ad.getAny(ctx, t, scope.HouseholdID, op.ID)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -340,7 +340,7 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 			return errorResult(op.OpID, code, message), nil
 		}
 	}
-	if guardErr := inUseBlocked(ctx, ad, t, householdID, op.ID, cascade); guardErr != nil {
+	if guardErr := inUseBlocked(ctx, ad, t, scope.HouseholdID, op.ID, cascade); guardErr != nil {
 		if spec, ok := domain.ErrorSpecFor(guardErr); ok {
 			return errorResult(op.OpID, spec.Code, spec.Message), nil
 		}
@@ -349,7 +349,7 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 	var deleted R
 	if cascade {
 		if ct, ok := any(ad).(syncCascadeTombstoner[T, R]); ok {
-			deleted, err = ct.cascadeTombstone(ctx, t, householdID, userID, op.ID)
+			deleted, err = ct.cascadeTombstone(ctx, t, scope, op.ID)
 		} else {
 			return domain.SyncPushResult{}, fmt.Errorf(
 				"cascade delete resolved for entity without cascade support: %s",
@@ -357,7 +357,7 @@ func deleteSyncEntity[T repository.SyncCore, R syncRow, S any](
 			)
 		}
 	} else {
-		deleted, err = ad.tombstone(ctx, t, householdID, userID, op.ID)
+		deleted, err = ad.tombstone(ctx, t, scope, op.ID)
 	}
 	if err != nil {
 		return domain.SyncPushResult{}, err

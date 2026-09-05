@@ -59,9 +59,10 @@ func (r *Repository) CreateAccount(ctx context.Context, params domain.CreateAcco
 
 func (r *Repository) UpdateAccount(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateAccountParams,
 ) (*domain.Account, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.UpdateAccount"
 
 	var row db.UpdateAccountRow
@@ -101,8 +102,9 @@ func (r *Repository) UpdateAccount(
 
 func (r *Repository) DeleteAccount(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.DeleteAccount"
 
 	// Same rule as service.ValidateAccountDelete (ADR-0005), enforced here

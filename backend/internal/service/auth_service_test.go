@@ -134,7 +134,12 @@ func TestAccountService_NoFieldsToUpdate(t *testing.T) {
 	userHH := householdOf(t, store, user.ID)
 	a := seedFakeAccount(t, store, userHH, user.ID)
 
-	_, err := acctSvc.Update(ctx, userHH, user.ID, a.ID, domain.UpdateAccountParams{})
+	_, err := acctSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		a.ID,
+		domain.UpdateAccountParams{},
+	)
 	require.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
 }
 
@@ -146,7 +151,12 @@ func TestCategoryService_NoFieldsToUpdate(t *testing.T) {
 	userHH := householdOf(t, store, user.ID)
 	c := seedFakeCategory(t, store, userHH, user.ID, "Z", domain.TransactionTypeIncome)
 
-	_, err := catSvc.Update(ctx, userHH, user.ID, c.ID, domain.UpdateCategoryParams{})
+	_, err := catSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		c.ID,
+		domain.UpdateCategoryParams{},
+	)
 	require.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
 }
 

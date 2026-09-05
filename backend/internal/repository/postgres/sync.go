@@ -504,10 +504,11 @@ func (t *syncTx) CreateAccount(ctx context.Context, params domain.CreateAccountP
 
 func (t *syncTx) ReplaceAccount(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.AccountFullState,
 ) (*domain.Account, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.ReplaceAccount"
 
 	row, err := t.q.SyncReplaceAccount(ctx, db.SyncReplaceAccountParams{
@@ -544,8 +545,9 @@ func (t *syncTx) ReplaceAccount(
 
 func (t *syncTx) TombstoneAccount( //nolint:dupl // account/category/transaction twins
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Account, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.TombstoneAccount"
 
 	version, err := t.q.SoftDeleteAccount(ctx, db.SoftDeleteAccountParams{ID: id, HouseholdID: householdID})
@@ -607,10 +609,11 @@ func (t *syncTx) CreateCategory(ctx context.Context, params domain.CreateCategor
 
 func (t *syncTx) ReplaceCategory(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.CategoryFullState,
 ) (*domain.Category, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.ReplaceCategory"
 
 	row, err := t.q.SyncReplaceCategory(ctx, db.SyncReplaceCategoryParams{
@@ -650,8 +653,9 @@ func (t *syncTx) ReplaceCategory(
 
 func (t *syncTx) TombstoneCategory( //nolint:dupl // account/category/transaction twins
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.TombstoneCategory"
 
 	version, err := t.q.SoftDeleteCategory(ctx, db.SoftDeleteCategoryParams{ID: id, HouseholdID: householdID})
@@ -686,13 +690,14 @@ func (t *syncTx) TombstoneCategory( //nolint:dupl // account/category/transactio
 // transactions).
 func (t *syncTx) CascadeTombstoneCategory(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.CascadeTombstoneCategory"
 
 	// Reuse the plain tombstone for the category half (idempotent on an
 	// already-tombstoned record; the engine checks liveness first).
-	c, err := t.TombstoneCategory(ctx, householdID, actorID, id)
+	c, err := t.TombstoneCategory(ctx, scope, id)
 	if err != nil {
 		return nil, opWrap(op, err)
 	}
@@ -743,10 +748,11 @@ func (t *syncTx) CreateDebtor(ctx context.Context, params domain.CreateDebtorPar
 
 func (t *syncTx) ReplaceDebtor(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.DebtorFullState,
 ) (*domain.Debtor, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.ReplaceDebtor"
 
 	row, err := t.q.SyncReplaceDebtor(ctx, db.SyncReplaceDebtorParams{
@@ -781,8 +787,9 @@ func (t *syncTx) ReplaceDebtor(
 
 func (t *syncTx) TombstoneDebtor( //nolint:dupl // per-entity tombstone twins: identical protocol shape
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Debtor, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.TombstoneDebtor"
 
 	version, err := t.q.SoftDeleteDebtor(ctx, db.SoftDeleteDebtorParams{ID: id, HouseholdID: householdID})
@@ -847,10 +854,11 @@ func (t *syncTx) CreateDebtOperation(
 
 func (t *syncTx) ReplaceDebtOperation(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.DebtOperationFullState,
 ) (*domain.DebtOperation, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.ReplaceDebtOperation"
 
 	row, err := t.q.SyncReplaceDebtOperation(ctx, db.SyncReplaceDebtOperationParams{
@@ -893,8 +901,9 @@ func (t *syncTx) ReplaceDebtOperation(
 
 func (t *syncTx) TombstoneDebtOperation( //nolint:dupl // per-entity tombstone twins: identical protocol shape
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.DebtOperation, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.TombstoneDebtOperation"
 
 	version, err := t.q.SoftDeleteDebtOperation(ctx, db.SoftDeleteDebtOperationParams{ID: id, HouseholdID: householdID})
@@ -964,10 +973,11 @@ func (t *syncTx) CreatePlannedPayment(
 
 func (t *syncTx) ReplacePlannedPayment(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.PlannedPaymentFullState,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.ReplacePlannedPayment"
 
 	row, err := t.q.SyncReplacePlannedPayment(ctx, db.SyncReplacePlannedPaymentParams{
@@ -1016,8 +1026,9 @@ func (t *syncTx) ReplacePlannedPayment(
 
 func (t *syncTx) TombstonePlannedPayment( //nolint:dupl // per-entity tombstone twins: identical protocol shape
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.TombstonePlannedPayment"
 
 	version, err := t.q.SoftDeletePlannedPayment(
@@ -1055,9 +1066,10 @@ func (t *syncTx) TombstonePlannedPayment( //nolint:dupl // per-entity tombstone 
 // advancement the structural dedup marker for the executed occurrence.
 func (t *syncTx) AdvancePlannedPayment(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	nextDue time.Time,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.AdvancePlannedPayment"
 
 	row, err := t.q.AdvancePlannedPayment(ctx, db.AdvancePlannedPaymentParams{
@@ -1124,10 +1136,11 @@ func (t *syncTx) CreateTransaction(
 
 func (t *syncTx) ReplaceTransaction(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.TransactionFullState,
 ) (*domain.Transaction, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.ReplaceTransaction"
 
 	row, err := t.q.SyncReplaceTransaction(ctx, db.SyncReplaceTransactionParams{
@@ -1169,8 +1182,9 @@ func (t *syncTx) ReplaceTransaction(
 
 func (t *syncTx) TombstoneTransaction( //nolint:dupl // account/category/transaction twins
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Transaction, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.syncTx.TombstoneTransaction"
 
 	version, err := t.q.SoftDeleteTransaction(ctx, db.SoftDeleteTransactionParams{ID: id, HouseholdID: householdID})

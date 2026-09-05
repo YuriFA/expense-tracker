@@ -49,9 +49,10 @@ func (s *Store) CreatePlannedPayment(
 
 func (s *Store) UpdatePlannedPayment(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, ok := s.plans[id]
@@ -103,7 +104,8 @@ func (s *Store) UpdatePlannedPayment(
 	return &c, nil
 }
 
-func (s *Store) DeletePlannedPayment(_ context.Context, householdID, actorID, id uuid.UUID) error {
+func (s *Store) DeletePlannedPayment(_ context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, ok := s.plans[id]
@@ -250,10 +252,11 @@ func (t *fakeSyncTx) CreatePlannedPayment(
 
 func (t *fakeSyncTx) ReplacePlannedPayment(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.PlannedPaymentFullState,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]
@@ -291,10 +294,11 @@ func (t *fakeSyncTx) ReplacePlannedPayment(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstonePlannedPayment(
+func (t *fakeSyncTx) TombstonePlannedPayment( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]
@@ -322,9 +326,10 @@ func (t *fakeSyncTx) TombstonePlannedPayment(
 
 func (t *fakeSyncTx) AdvancePlannedPayment(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	nextDue time.Time,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	p, ok := t.store.plans[id]

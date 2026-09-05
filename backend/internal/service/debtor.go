@@ -25,11 +25,11 @@ func NewDebtorService(debtors repository.DebtorRepository) *DebtorService {
 
 func (s *DebtorService) Create(
 	ctx context.Context,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	params domain.CreateDebtorParams,
 ) (*domain.Debtor, error) {
 	const op = "service.debtor.Create"
-	params.HouseholdID, params.UserID = householdID, userID
+	params.HouseholdID, params.UserID = scope.HouseholdID, scope.ActorID
 	d, err := s.debtors.CreateDebtor(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -39,23 +39,23 @@ func (s *DebtorService) Create(
 
 func (s *DebtorService) Update(
 	ctx context.Context,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateDebtorParams,
 ) (*domain.Debtor, error) {
 	const op = "service.debtor.Update"
 	if params.Name == nil && params.Note == nil {
 		return nil, ErrNoFieldsToUpdate
 	}
-	d, err := s.debtors.UpdateDebtor(ctx, householdID, userID, id, params)
+	d, err := s.debtors.UpdateDebtor(ctx, scope, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return d, nil
 }
 
-func (s *DebtorService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
+func (s *DebtorService) Delete(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
 	const op = "service.debtor.Delete"
-	if err := s.debtors.DeleteDebtor(ctx, householdID, userID, id); err != nil {
+	if err := s.debtors.DeleteDebtor(ctx, scope, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

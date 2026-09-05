@@ -134,7 +134,7 @@ func TestTransactionOptimisticConcurrency(t *testing.T) {
 	// Wrong version -> conflict.
 	_, err = testRepo.UpdateTransaction(
 		ctx,
-		userHH, user.ID,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
 		tx.ID,
 		domain.UpdateTransactionParams{Version: 999, Amount: ptrInt64(200)},
 	)
@@ -144,7 +144,7 @@ func TestTransactionOptimisticConcurrency(t *testing.T) {
 	desc := "updated"
 	updated, err := testRepo.UpdateTransaction(
 		ctx,
-		userHH, user.ID,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
 		tx.ID,
 		domain.UpdateTransactionParams{Version: 1, Description: &desc},
 	)
@@ -176,7 +176,7 @@ func TestTransactionIDORScoping(t *testing.T) {
 	_, err = testRepo.GetTransaction(ctx, intruderHH, tx.ID)
 	require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 
-	err = testRepo.DeleteTransaction(ctx, intruderHH, intruder.ID, tx.ID)
+	err = testRepo.DeleteTransaction(ctx, domain.Scope{HouseholdID: intruderHH, ActorID: intruder.ID}, tx.ID)
 	require.ErrorIs(t, err, domain.ErrTransactionNotFound)
 }
 

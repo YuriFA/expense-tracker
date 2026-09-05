@@ -23,11 +23,11 @@ func NewAccountService(accounts repository.AccountRepository) *AccountService {
 
 func (s *AccountService) Create(
 	ctx context.Context,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	params domain.CreateAccountParams,
 ) (*domain.Account, error) {
 	const op = "service.account.Create"
-	params.HouseholdID, params.UserID = householdID, userID
+	params.HouseholdID, params.UserID = scope.HouseholdID, scope.ActorID
 	a, err := s.accounts.CreateAccount(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -37,23 +37,23 @@ func (s *AccountService) Create(
 
 func (s *AccountService) Update(
 	ctx context.Context,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateAccountParams,
 ) (*domain.Account, error) {
 	const op = "service.account.Update"
 	if params.Name == nil {
 		return nil, ErrNoFieldsToUpdate
 	}
-	a, err := s.accounts.UpdateAccount(ctx, householdID, userID, id, params)
+	a, err := s.accounts.UpdateAccount(ctx, scope, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return a, nil
 }
 
-func (s *AccountService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
+func (s *AccountService) Delete(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
 	const op = "service.account.Delete"
-	if err := s.accounts.DeleteAccount(ctx, householdID, userID, id); err != nil {
+	if err := s.accounts.DeleteAccount(ctx, scope, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

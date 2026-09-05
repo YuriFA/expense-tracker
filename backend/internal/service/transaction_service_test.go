@@ -25,7 +25,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("income without a category rejected (account is optional, category is not)", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 		})
 		require.ErrorIs(t, err, domain.ErrInvalidRefs)
@@ -33,7 +33,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("income with transfer refs rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 			FromAccountID: &acct.ID, ToAccountID: &acct.ID,
 		})
@@ -43,7 +43,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 	t.Run("income account not owned -> transaction account not found", func(t *testing.T) {
 		t.Parallel()
 		other := uuid.New()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 			AccountID: &other, CategoryID: &cat.ID,
 		})
@@ -53,7 +53,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 	t.Run("income category type mismatch", func(t *testing.T) {
 		t.Parallel()
 		expenseCat := seedFakeCategory(t, store, userHH, user.ID, "CustomExpense", domain.TransactionTypeExpense)
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &expenseCat.ID,
 		})
@@ -62,7 +62,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("transfer same account rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeTransfer, Amount: 100, OccurredAt: time.Now().UTC(),
 			FromAccountID: &acct.ID, ToAccountID: &acct.ID,
 		})
@@ -71,7 +71,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("transfer with account+category rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeTransfer, Amount: 100, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &cat.ID,
 		})
@@ -80,17 +80,21 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("valid income creates", func(t *testing.T) {
 		t.Parallel()
-		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
-			AccountID: &acct.ID, CategoryID: &cat.ID,
-		})
+		created, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeIncome, Amount: 100, OccurredAt: time.Now().UTC(),
+				AccountID: &acct.ID, CategoryID: &cat.ID,
+			},
+		)
 		require.NoError(t, err)
 		assert.Equal(t, 1, created.Version)
 	})
 
 	t.Run("adjustment with category rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &cat.ID,
 		})
@@ -99,7 +103,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("adjustment with transfer refs rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
 			FromAccountID: &acct.ID, ToAccountID: &acct.ID,
 		})
@@ -108,7 +112,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 
 	t.Run("adjustment without account rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
 		})
 		require.ErrorIs(t, err, domain.ErrInvalidRefs)
@@ -117,7 +121,7 @@ func TestTransactionService_RefValidation(t *testing.T) {
 	t.Run("adjustment account not owned -> transaction account not found", func(t *testing.T) {
 		t.Parallel()
 		other := uuid.New()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeAdjustment, Amount: -100, OccurredAt: time.Now().UTC(),
 			AccountID: &other,
 		})
@@ -127,10 +131,14 @@ func TestTransactionService_RefValidation(t *testing.T) {
 	t.Run("valid adjustment creates and shifts balance by signed amount", func(t *testing.T) {
 		t.Parallel()
 		dedicated := seedFakeAccount(t, store, userHH, user.ID)
-		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeAdjustment, Amount: -2500, OccurredAt: time.Now().UTC(),
-			AccountID: &dedicated.ID,
-		})
+		created, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeAdjustment, Amount: -2500, OccurredAt: time.Now().UTC(),
+				AccountID: &dedicated.ID,
+			},
+		)
 		require.NoError(t, err)
 		assert.Equal(t, 1, created.Version)
 		after, err := store.GetAccount(context.Background(), userHH, dedicated.ID)
@@ -158,10 +166,14 @@ func TestTransactionService_AccountlessCashflow(t *testing.T) {
 		before, err := store.GetAccount(ctx, userHH, dedicated.ID)
 		require.NoError(t, err)
 
-		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
-			CategoryID: &expenseCat.ID,
-		})
+		created, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+				CategoryID: &expenseCat.ID,
+			},
+		)
 		require.NoError(t, err)
 		assert.Nil(t, created.AccountID)
 		assert.Equal(t, &expenseCat.ID, created.CategoryID)
@@ -173,17 +185,21 @@ func TestTransactionService_AccountlessCashflow(t *testing.T) {
 
 	t.Run("account-less income creates", func(t *testing.T) {
 		t.Parallel()
-		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeIncome, Amount: 70000, OccurredAt: time.Now().UTC(),
-			CategoryID: &incomeCat.ID,
-		})
+		created, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeIncome, Amount: 70000, OccurredAt: time.Now().UTC(),
+				CategoryID: &incomeCat.ID,
+			},
+		)
 		require.NoError(t, err)
 		assert.Nil(t, created.AccountID)
 	})
 
 	t.Run("account-less cashflow still requires a category", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
 		})
 		require.ErrorIs(t, err, domain.ErrInvalidRefs)
@@ -191,7 +207,7 @@ func TestTransactionService_AccountlessCashflow(t *testing.T) {
 
 	t.Run("account-less cashflow rejects transfer refs", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
 			CategoryID: &expenseCat.ID, FromAccountID: &acct.ID, ToAccountID: &acct.ID,
 		})
@@ -200,15 +216,24 @@ func TestTransactionService_AccountlessCashflow(t *testing.T) {
 
 	t.Run("update assigns an account to an account-less expense", func(t *testing.T) {
 		t.Parallel()
-		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
-			CategoryID: &expenseCat.ID,
-		})
+		created, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+				CategoryID: &expenseCat.ID,
+			},
+		)
 		require.NoError(t, err)
 
-		updated, err := txSvc.Update(ctx, userHH, user.ID, created.ID, domain.UpdateTransactionParams{
-			Version: created.Version, AccountID: &acct.ID,
-		})
+		updated, err := txSvc.Update(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdateTransactionParams{
+				Version: created.Version, AccountID: &acct.ID,
+			},
+		)
 		require.NoError(t, err)
 		require.NotNil(t, updated.AccountID)
 		assert.Equal(t, acct.ID, *updated.AccountID)
@@ -216,16 +241,25 @@ func TestTransactionService_AccountlessCashflow(t *testing.T) {
 
 	t.Run("update of an account-less expense without touching refs succeeds", func(t *testing.T) {
 		t.Parallel()
-		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
-			CategoryID: &expenseCat.ID,
-		})
+		created, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: time.Now().UTC(),
+				CategoryID: &expenseCat.ID,
+			},
+		)
 		require.NoError(t, err)
 
 		newAmount := int64(600)
-		updated, err := txSvc.Update(ctx, userHH, user.ID, created.ID, domain.UpdateTransactionParams{
-			Version: created.Version, Amount: &newAmount,
-		})
+		updated, err := txSvc.Update(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdateTransactionParams{
+				Version: created.Version, Amount: &newAmount,
+			},
+		)
 		require.NoError(t, err)
 		assert.Nil(t, updated.AccountID)
 	})
@@ -243,7 +277,7 @@ func TestTransactionService_AmountSignValidation(t *testing.T) {
 
 	t.Run("zero income amount rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeIncome, Amount: 0, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &cat.ID,
 		})
@@ -252,7 +286,7 @@ func TestTransactionService_AmountSignValidation(t *testing.T) {
 
 	t.Run("negative expense amount rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeExpense, Amount: -100, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID, CategoryID: &cat.ID,
 		})
@@ -261,7 +295,7 @@ func TestTransactionService_AmountSignValidation(t *testing.T) {
 
 	t.Run("zero adjustment amount rejected", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeAdjustment, Amount: 0, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID,
 		})
@@ -270,7 +304,7 @@ func TestTransactionService_AmountSignValidation(t *testing.T) {
 
 	t.Run("negative adjustment amount accepted", func(t *testing.T) {
 		t.Parallel()
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type: domain.TransactionTypeAdjustment, Amount: -1, OccurredAt: time.Now().UTC(),
 			AccountID: &acct.ID,
 		})
@@ -279,15 +313,24 @@ func TestTransactionService_AmountSignValidation(t *testing.T) {
 
 	t.Run("update flips amount sign against the type rule", func(t *testing.T) {
 		t.Parallel()
-		created, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
-			Type: domain.TransactionTypeAdjustment, Amount: -500, OccurredAt: time.Now().UTC(),
-			AccountID: &acct.ID,
-		})
+		created, err := txSvc.Create(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			domain.CreateTransactionParams{
+				Type: domain.TransactionTypeAdjustment, Amount: -500, OccurredAt: time.Now().UTC(),
+				AccountID: &acct.ID,
+			},
+		)
 		require.NoError(t, err)
 		zero := int64(0)
-		_, err = txSvc.Update(ctx, userHH, user.ID, created.ID, domain.UpdateTransactionParams{
-			Amount: &zero, Version: created.Version,
-		})
+		_, err = txSvc.Update(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdateTransactionParams{
+				Amount: &zero, Version: created.Version,
+			},
+		)
 		require.ErrorIs(t, err, domain.ErrInvalidAmount)
 	})
 }
@@ -320,7 +363,7 @@ func TestTransactionService_PaginationLogic(t *testing.T) {
 	// 5 transactions, distinct occurred_at.
 	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	for i := range 5 {
-		_, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+		_, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 			Type:       domain.TransactionTypeIncome,
 			Amount:     int64(i + 1),
 			OccurredAt: base.Add(time.Duration(i) * time.Hour),
@@ -372,17 +415,27 @@ func TestTransactionService_UpdateNoFields(t *testing.T) {
 	acct := seedFakeAccount(t, store, userHH, user.ID)
 	cat := seedFakeCategory(t, store, userHH, user.ID, "U", domain.TransactionTypeIncome)
 
-	tx, err := txSvc.Create(ctx, userHH, user.ID, domain.CreateTransactionParams{
+	tx, err := txSvc.Create(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, domain.CreateTransactionParams{
 		Type: domain.TransactionTypeIncome, Amount: 10, OccurredAt: time.Now().UTC(),
 		AccountID: &acct.ID, CategoryID: &cat.ID,
 	})
 	require.NoError(t, err)
 
-	_, err = txSvc.Update(ctx, userHH, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 1})
+	_, err = txSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		tx.ID,
+		domain.UpdateTransactionParams{Version: 1},
+	)
 	require.ErrorIs(t, err, service.ErrNoFieldsToUpdate)
 
 	// Optimistic concurrency mismatch surfaces the version-conflict domain error.
-	_, err = txSvc.Update(ctx, userHH, user.ID, tx.ID, domain.UpdateTransactionParams{Version: 999, Amount: i64(20)})
+	_, err = txSvc.Update(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		tx.ID,
+		domain.UpdateTransactionParams{Version: 999, Amount: i64(20)},
+	)
 	require.Error(t, err)
 	require.ErrorIs(t, err, domain.ErrTransactionVersionConflict)
 }

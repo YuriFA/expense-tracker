@@ -126,10 +126,10 @@ func (transactionAdapter) getAny(
 }
 
 func (transactionAdapter) create(
-	ctx context.Context, t transactionTx, householdID, userID, id uuid.UUID, data domain.TransactionFullState,
+	ctx context.Context, t transactionTx, scope domain.Scope, id uuid.UUID, data domain.TransactionFullState,
 ) (*domain.Transaction, error) {
 	return t.CreateTransaction(ctx, domain.CreateTransactionParams{
-		ID: id, HouseholdID: householdID, UserID: userID,
+		ID: id, HouseholdID: scope.HouseholdID, UserID: scope.ActorID,
 		Type: data.Type, Amount: data.Amount, Description: data.Description, OccurredAt: data.OccurredAt,
 		AccountID: data.AccountID, CategoryID: data.CategoryID,
 		FromAccountID: data.FromAccountID, ToAccountID: data.ToAccountID,
@@ -139,15 +139,15 @@ func (transactionAdapter) create(
 func (transactionAdapter) replace(
 	ctx context.Context,
 	t transactionTx,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	data domain.TransactionFullState,
 ) (*domain.Transaction, error) {
-	return t.ReplaceTransaction(ctx, householdID, userID, id, baseVersion, data)
+	return t.ReplaceTransaction(ctx, scope, id, baseVersion, data)
 }
 
 func (transactionAdapter) tombstone(
-	ctx context.Context, t transactionTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t transactionTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Transaction, error) {
-	return t.TombstoneTransaction(ctx, householdID, userID, id)
+	return t.TombstoneTransaction(ctx, scope, id)
 }

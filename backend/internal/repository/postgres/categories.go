@@ -71,9 +71,10 @@ func (r *Repository) CreateCategory(ctx context.Context, params domain.CreateCat
 
 func (r *Repository) UpdateCategory(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateCategoryParams,
 ) (*domain.Category, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.UpdateCategory"
 
 	var typ *string
@@ -158,9 +159,10 @@ func (r *Repository) UpdateCategory(
 
 func (r *Repository) DeleteCategory(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	cascade bool,
 ) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.DeleteCategory"
 
 	// Same rule as service.ValidateCategoryDelete (ADR-0005), enforced here

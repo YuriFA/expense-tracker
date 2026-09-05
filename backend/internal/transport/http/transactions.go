@@ -77,7 +77,7 @@ func (s *Server) CreateTransaction(
 		params.Description = *req.Body.Description
 	}
 
-	tx, err := s.txn.Create(ctx, householdID, user.ID, params)
+	tx, err := s.txn.Create(ctx, s.currentScope(ctx), params)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +100,6 @@ func (s *Server) UpdateTransaction(
 	ctx context.Context,
 	req api.UpdateTransactionRequestObject,
 ) (api.UpdateTransactionResponseObject, error) {
-	user := s.currentUser(ctx)
-
 	params := domain.UpdateTransactionParams{
 		Version:       req.Body.Version,
 		Amount:        req.Body.Amount,
@@ -112,7 +110,7 @@ func (s *Server) UpdateTransaction(
 		FromAccountID: fromUUIDPtr(req.Body.FromAccountId),
 		ToAccountID:   fromUUIDPtr(req.Body.ToAccountId),
 	}
-	tx, err := s.txn.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, params)
+	tx, err := s.txn.Update(ctx, s.currentScope(ctx), req.Id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +121,7 @@ func (s *Server) DeleteTransaction(
 	ctx context.Context,
 	req api.DeleteTransactionRequestObject,
 ) (api.DeleteTransactionResponseObject, error) {
-	user := s.currentUser(ctx)
-	if err := s.txn.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
+	if err := s.txn.Delete(ctx, s.currentScope(ctx), req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeleteTransaction204Response{}, nil

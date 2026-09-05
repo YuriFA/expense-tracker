@@ -18,7 +18,6 @@ func (s *Server) SyncPush(
 	req api.SyncPushRequestObject,
 ) (api.SyncPushResponseObject, error) {
 	user := s.currentUser(ctx)
-	householdID := s.currentHouseholdID(ctx)
 
 	ops := make([]domain.SyncOperation, 0, len(req.Body.Operations))
 	for _, o := range req.Body.Operations {
@@ -40,7 +39,7 @@ func (s *Server) SyncPush(
 		})
 	}
 
-	results, err := s.sync.Push(ctx, householdID, user.ID, ops)
+	results, err := s.sync.Push(ctx, s.currentScope(ctx), ops)
 	if err != nil {
 		return nil, err
 	}

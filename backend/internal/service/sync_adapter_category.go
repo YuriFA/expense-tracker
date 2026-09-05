@@ -84,10 +84,10 @@ func (categoryAdapter) getAny(
 }
 
 func (categoryAdapter) create(
-	ctx context.Context, t categoryTx, householdID, userID, id uuid.UUID, data domain.CategoryFullState,
+	ctx context.Context, t categoryTx, scope domain.Scope, id uuid.UUID, data domain.CategoryFullState,
 ) (*domain.Category, error) {
 	return t.CreateCategory(ctx, domain.CreateCategoryParams{
-		ID: id, HouseholdID: householdID, UserID: userID,
+		ID: id, HouseholdID: scope.HouseholdID, UserID: scope.ActorID,
 		Name: data.Name, Type: data.Type, Icon: data.Icon, Color: data.Color,
 	})
 }
@@ -95,17 +95,17 @@ func (categoryAdapter) create(
 func (categoryAdapter) replace(
 	ctx context.Context,
 	t categoryTx,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	data domain.CategoryFullState,
 ) (*domain.Category, error) {
-	return t.ReplaceCategory(ctx, householdID, userID, id, baseVersion, data)
+	return t.ReplaceCategory(ctx, scope, id, baseVersion, data)
 }
 
 func (categoryAdapter) tombstone(
-	ctx context.Context, t categoryTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t categoryTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
-	return t.TombstoneCategory(ctx, householdID, userID, id)
+	return t.TombstoneCategory(ctx, scope, id)
 }
 
 // inUse reports the category's live dependants in the REST order (postgres
@@ -149,7 +149,7 @@ func (categoryAdapter) inUseUnderCascade(
 // cascadeTombstone tombstones the category and every referencing live
 // transaction, each with its own change_log row, on the batch transaction.
 func (categoryAdapter) cascadeTombstone(
-	ctx context.Context, t categoryTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t categoryTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
-	return t.CascadeTombstoneCategory(ctx, householdID, userID, id)
+	return t.CascadeTombstoneCategory(ctx, scope, id)
 }

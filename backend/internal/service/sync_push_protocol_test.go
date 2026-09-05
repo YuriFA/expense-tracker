@@ -39,7 +39,11 @@ func pushOne(
 	op domain.SyncOperation,
 ) domain.SyncPushResult {
 	t.Helper()
-	results, err := syncSvc.Push(context.Background(), householdID, userID, []domain.SyncOperation{op})
+	results, err := syncSvc.Push(
+		context.Background(),
+		domain.Scope{HouseholdID: householdID, ActorID: userID},
+		[]domain.SyncOperation{op},
+	)
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	return results[0]

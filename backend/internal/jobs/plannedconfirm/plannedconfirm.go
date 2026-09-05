@@ -162,7 +162,9 @@ func executeOccurrence(
 	}
 
 	next := domain.AdvanceNextDue(plan.NextDue, plan.AnchorDate, plan.Regularity)
-	advanced, err := t.AdvancePlannedPayment(ctx, householdID, plan.UserID, plan.ID, next)
+	// The job is not a session: it acts on the plan's author's behalf.
+	scope := domain.Scope{HouseholdID: householdID, ActorID: plan.UserID}
+	advanced, err := t.AdvancePlannedPayment(ctx, scope, plan.ID, next)
 	if err != nil {
 		return err
 	}

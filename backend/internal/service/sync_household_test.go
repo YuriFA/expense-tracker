@@ -57,11 +57,11 @@ func TestSync_PerHouseholdSeqMonotonic(t *testing.T) {
 	// same global identity column but only its own household's lock.
 	var seqsA, seqsB []int64
 	for i := range 3 {
-		_, err := syncSvc.Push(ctx, hhA, userA.ID, []domain.SyncOperation{
+		_, err := syncSvc.Push(ctx, domain.Scope{HouseholdID: hhA, ActorID: userA.ID}, []domain.SyncOperation{
 			accountUpsertOp(uuid.New(), uuid.New()),
 		})
 		require.NoError(t, err)
-		_, err = syncSvc.Push(ctx, hhB, userB.ID, []domain.SyncOperation{
+		_, err = syncSvc.Push(ctx, domain.Scope{HouseholdID: hhB, ActorID: userB.ID}, []domain.SyncOperation{
 			accountUpsertOp(uuid.New(), uuid.New()),
 		})
 		require.NoError(t, err)
@@ -91,9 +91,17 @@ func TestSync_PullIsolationBetweenHouseholds(t *testing.T) {
 
 	recordA := uuid.New()
 	recordB := uuid.New()
-	_, err := syncSvc.Push(ctx, hhA, userA.ID, []domain.SyncOperation{accountUpsertOp(uuid.New(), recordA)})
+	_, err := syncSvc.Push(
+		ctx,
+		domain.Scope{HouseholdID: hhA, ActorID: userA.ID},
+		[]domain.SyncOperation{accountUpsertOp(uuid.New(), recordA)},
+	)
 	require.NoError(t, err)
-	_, err = syncSvc.Push(ctx, hhB, userB.ID, []domain.SyncOperation{accountUpsertOp(uuid.New(), recordB)})
+	_, err = syncSvc.Push(
+		ctx,
+		domain.Scope{HouseholdID: hhB, ActorID: userB.ID},
+		[]domain.SyncOperation{accountUpsertOp(uuid.New(), recordB)},
+	)
 	require.NoError(t, err)
 
 	// Each pull delivers ONLY its household's records.
@@ -123,12 +131,20 @@ func TestSync_OpIdIdempotencyScopedByHousehold(t *testing.T) {
 	// (empty) state and creates its own record.
 	opID := uuid.New()
 
-	resultsA, err := syncSvc.Push(ctx, hhA, userA.ID, []domain.SyncOperation{accountUpsertOp(opID, uuid.New())})
+	resultsA, err := syncSvc.Push(
+		ctx,
+		domain.Scope{HouseholdID: hhA, ActorID: userA.ID},
+		[]domain.SyncOperation{accountUpsertOp(opID, uuid.New())},
+	)
 	require.NoError(t, err)
 	require.Len(t, resultsA, 1)
 	assert.Equal(t, domain.SyncStatusApplied, resultsA[0].Status)
 
-	resultsB, err := syncSvc.Push(ctx, hhB, userB.ID, []domain.SyncOperation{accountUpsertOp(opID, uuid.New())})
+	resultsB, err := syncSvc.Push(
+		ctx,
+		domain.Scope{HouseholdID: hhB, ActorID: userB.ID},
+		[]domain.SyncOperation{accountUpsertOp(opID, uuid.New())},
+	)
 	require.NoError(t, err)
 	require.Len(t, resultsB, 1)
 	assert.Equal(t, domain.SyncStatusApplied, resultsB[0].Status,
@@ -136,16 +152,28 @@ func TestSync_OpIdIdempotencyScopedByHousehold(t *testing.T) {
 
 	// Within one household, redelivery of the same opId replays the stored
 	// result with no side effects.
-	replayed, err := syncSvc.Push(ctx, hhA, userA.ID, []domain.SyncOperation{accountUpsertOp(opID, uuid.New())})
+	replayed, err := syncSvc.Push(
+		ctx,
+		domain.Scope{HouseholdID: hhA, ActorID: userA.ID},
+		[]domain.SyncOperation{accountUpsertOp(opID, uuid.New())},
+	)
 	require.NoError(t, err)
 
 	// A record id that exists in ANOTHER household reads as an
 	// already-exists conflict with NO serverState: the foreign record must
 	// not be revealed (IDOR-safe even at the id-collision level).
 	foreignRecord := uuid.New()
-	_, err = syncSvc.Push(ctx, hhA, userA.ID, []domain.SyncOperation{accountUpsertOp(uuid.New(), foreignRecord)})
+	_, err = syncSvc.Push(
+		ctx,
+		domain.Scope{HouseholdID: hhA, ActorID: userA.ID},
+		[]domain.SyncOperation{accountUpsertOp(uuid.New(), foreignRecord)},
+	)
 	require.NoError(t, err)
-	probe, err := syncSvc.Push(ctx, hhB, userB.ID, []domain.SyncOperation{accountUpsertOp(uuid.New(), foreignRecord)})
+	probe, err := syncSvc.Push(
+		ctx,
+		domain.Scope{HouseholdID: hhB, ActorID: userB.ID},
+		[]domain.SyncOperation{accountUpsertOp(uuid.New(), foreignRecord)},
+	)
 	require.NoError(t, err)
 	require.Len(t, probe, 1)
 	assert.Equal(t, domain.SyncStatusConflict, probe[0].Status)

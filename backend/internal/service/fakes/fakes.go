@@ -415,9 +415,10 @@ func (s *Store) recomputeBalance(a *domain.Account) int64 {
 
 func (s *Store) UpdateAccount(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateAccountParams,
 ) (*domain.Account, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
@@ -438,7 +439,8 @@ func (s *Store) UpdateAccount(
 	return &c, nil
 }
 
-func (s *Store) DeleteAccount(_ context.Context, householdID, actorID, id uuid.UUID) error {
+func (s *Store) DeleteAccount(_ context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	a, ok := s.accounts[id]
@@ -539,9 +541,10 @@ func (s *Store) CreateCategory(_ context.Context, params domain.CreateCategoryPa
 
 func (s *Store) UpdateCategory(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateCategoryParams,
 ) (*domain.Category, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
@@ -588,7 +591,8 @@ func (s *Store) UpdateCategory(
 	return &cc, nil
 }
 
-func (s *Store) DeleteCategory(_ context.Context, householdID, actorID, id uuid.UUID, cascade bool) error {
+func (s *Store) DeleteCategory(_ context.Context, scope domain.Scope, id uuid.UUID, cascade bool) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.categories[id]
@@ -706,9 +710,10 @@ func (s *Store) CreateTransaction(
 
 func (s *Store) UpdateTransaction(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateTransactionParams,
 ) (*domain.Transaction, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
@@ -746,7 +751,8 @@ func (s *Store) UpdateTransaction(
 	return &c, nil
 }
 
-func (s *Store) DeleteTransaction(_ context.Context, householdID, actorID, id uuid.UUID) error {
+func (s *Store) DeleteTransaction(_ context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t, ok := s.transactions[id]
@@ -873,9 +879,10 @@ func (s *Store) CreateDebtor(_ context.Context, params domain.CreateDebtorParams
 
 func (s *Store) UpdateDebtor(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateDebtorParams,
 ) (*domain.Debtor, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.debtors[id]
@@ -903,7 +910,8 @@ func (s *Store) UpdateDebtor(
 	return &c, nil
 }
 
-func (s *Store) DeleteDebtor(_ context.Context, householdID, actorID, id uuid.UUID) error {
+func (s *Store) DeleteDebtor(_ context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.debtors[id]
@@ -984,9 +992,10 @@ func (s *Store) CreateDebtOperation(
 
 func (s *Store) UpdateDebtOperation(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateDebtOperationParams,
 ) (*domain.DebtOperation, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, ok := s.debtOps[id]
@@ -1012,7 +1021,8 @@ func (s *Store) UpdateDebtOperation(
 	return &c, nil
 }
 
-func (s *Store) DeleteDebtOperation(_ context.Context, householdID, actorID, id uuid.UUID) error {
+func (s *Store) DeleteDebtOperation(_ context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, ok := s.debtOps[id]
@@ -1542,10 +1552,11 @@ func (t *fakeSyncTx) CreateAccount(_ context.Context, params domain.CreateAccoun
 
 func (t *fakeSyncTx) ReplaceAccount(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.AccountFullState,
 ) (*domain.Account, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	a, ok := t.store.accounts[id]
@@ -1569,10 +1580,11 @@ func (t *fakeSyncTx) ReplaceAccount(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneAccount(
+func (t *fakeSyncTx) TombstoneAccount( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Account, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	a, ok := t.store.accounts[id]
@@ -1597,10 +1609,11 @@ func (t *fakeSyncTx) CreateCategory(_ context.Context, params domain.CreateCateg
 
 func (t *fakeSyncTx) ReplaceCategory(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.CategoryFullState,
 ) (*domain.Category, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	c, ok := t.store.categories[id]
@@ -1628,8 +1641,9 @@ func (t *fakeSyncTx) ReplaceCategory(
 
 func (t *fakeSyncTx) TombstoneCategory( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	c, ok := t.store.categories[id]
@@ -1655,9 +1669,10 @@ func (t *fakeSyncTx) TombstoneCategory( //nolint:dupl // tombstone twins: identi
 // appends on the batch transaction).
 func (t *fakeSyncTx) CascadeTombstoneCategory(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
-	c, err := t.TombstoneCategory(context.Background(), householdID, actorID, id)
+	householdID, actorID := scope.HouseholdID, scope.ActorID
+	c, err := t.TombstoneCategory(context.Background(), scope, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1692,10 +1707,11 @@ func (t *fakeSyncTx) CreateTransaction(
 
 func (t *fakeSyncTx) ReplaceTransaction(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.TransactionFullState,
 ) (*domain.Transaction, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	tx, ok := t.store.transactions[id]
@@ -1722,10 +1738,11 @@ func (t *fakeSyncTx) ReplaceTransaction(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneTransaction(
+func (t *fakeSyncTx) TombstoneTransaction( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Transaction, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	tx, ok := t.store.transactions[id]
@@ -1757,10 +1774,11 @@ func (t *fakeSyncTx) CreateDebtor(_ context.Context, params domain.CreateDebtorP
 
 func (t *fakeSyncTx) ReplaceDebtor(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.DebtorFullState,
 ) (*domain.Debtor, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	d, ok := t.store.debtors[id]
@@ -1786,8 +1804,9 @@ func (t *fakeSyncTx) ReplaceDebtor(
 
 func (t *fakeSyncTx) TombstoneDebtor( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.Debtor, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	d, ok := t.store.debtors[id]
@@ -1816,10 +1835,11 @@ func (t *fakeSyncTx) CreateDebtOperation(
 
 func (t *fakeSyncTx) ReplaceDebtOperation(
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	st domain.DebtOperationFullState,
 ) (*domain.DebtOperation, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	o, ok := t.store.debtOps[id]
@@ -1845,10 +1865,11 @@ func (t *fakeSyncTx) ReplaceDebtOperation(
 	return &c, nil
 }
 
-func (t *fakeSyncTx) TombstoneDebtOperation(
+func (t *fakeSyncTx) TombstoneDebtOperation( //nolint:dupl // tombstone twins: identical protocol shape
 	_ context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 ) (*domain.DebtOperation, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 	o, ok := t.store.debtOps[id]

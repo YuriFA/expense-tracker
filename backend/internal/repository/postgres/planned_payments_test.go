@@ -84,8 +84,7 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 		name := "Netflix Premium"
 		updated, err := testRepo.UpdatePlannedPayment(
 			ctx,
-			userHH,
-			user.ID,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
 			created.ID,
 			domain.UpdatePlannedPaymentParams{
 				Name: &name, Version: 1,
@@ -96,28 +95,38 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 		assert.True(t, updated.AnchorDate.Equal(created.AnchorDate), "name change keeps the anchor")
 
 		newDue := time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC)
-		reset, err := testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
-			NextDue: &newDue, Version: 2,
-		})
+		reset, err := testRepo.UpdatePlannedPayment(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdatePlannedPaymentParams{
+				NextDue: &newDue, Version: 2,
+			},
+		)
 		require.NoError(t, err)
 		assert.True(t, reset.AnchorDate.Equal(newDue), "next_due change resets the anchor")
 
 		stale := int64(1)
-		_, err = testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
-			Amount: &stale, Version: 1,
-		})
+		_, err = testRepo.UpdatePlannedPayment(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdatePlannedPaymentParams{
+				Amount: &stale, Version: 1,
+			},
+		)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentVersionConflict)
 	})
 
 	t.Run("in-use guards count live plans only", func(t *testing.T) {
 		require.ErrorIs(
 			t,
-			testRepo.DeleteAccount(ctx, userHH, user.ID, account.ID),
+			testRepo.DeleteAccount(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, account.ID),
 			domain.ErrAccountHasPlannedPayments,
 		)
 		require.ErrorIs(
 			t,
-			testRepo.DeleteCategory(ctx, userHH, user.ID, category.ID, false),
+			testRepo.DeleteCategory(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, category.ID, false),
 			domain.ErrCategoryHasPlannedPayments,
 		)
 
@@ -128,20 +137,25 @@ func TestRepository_PlannedPayments_CRUDGuardsAndSync(t *testing.T) {
 		for _, p := range plans {
 			planID := p.ID
 			require.NoError(t, testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
-				_, err := tx.TombstonePlannedPayment(ctx, userHH, user.ID, planID)
+				_, err := tx.TombstonePlannedPayment(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, planID)
 				return err
 			}))
 		}
-		require.NoError(t, testRepo.DeleteAccount(ctx, userHH, user.ID, account.ID))
+		require.NoError(t, testRepo.DeleteAccount(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, account.ID))
 	})
 
 	t.Run("tombstoned reads classify as not-found", func(t *testing.T) {
 		_, err := testRepo.GetPlannedPayment(ctx, userHH, created.ID)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
 		amount := int64(1)
-		_, err = testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, created.ID, domain.UpdatePlannedPaymentParams{
-			Amount: &amount, Version: 4,
-		})
+		_, err = testRepo.UpdatePlannedPayment(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdatePlannedPaymentParams{
+				Amount: &amount, Version: 4,
+			},
+		)
 		require.ErrorIs(t, err, domain.ErrPlannedPaymentNotFound)
 	})
 }
@@ -173,9 +187,14 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 
 	// REST update + delete are versioned mutations that land in the change log.
 	name := "Netflix 2027"
-	_, err = testRepo.UpdatePlannedPayment(ctx, userHH, user.ID, plan.ID, domain.UpdatePlannedPaymentParams{
-		Name: &name, Version: 1,
-	})
+	_, err = testRepo.UpdatePlannedPayment(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		plan.ID,
+		domain.UpdatePlannedPaymentParams{
+			Name: &name, Version: 1,
+		},
+	)
 	require.NoError(t, err)
 
 	// The sync-tx advancement (auto-confirm job path) bumps next_due and the
@@ -183,7 +202,12 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	var advanced *domain.PlannedPayment
 	err = testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
 		next := domain.AdvanceNextDue(plan.NextDue, plan.AnchorDate, plan.Regularity)
-		advanced, err = tx.AdvancePlannedPayment(ctx, userHH, user.ID, plan.ID, next)
+		advanced, err = tx.AdvancePlannedPayment(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			plan.ID,
+			next,
+		)
 		return err
 	})
 	require.NoError(t, err)
@@ -191,7 +215,7 @@ func TestRepository_PlannedPayments_CheckConstraintsChangeLogAndAdvancement(t *t
 	assert.Equal(t, 3, advanced.Version)
 
 	// Unguarded delete is a tombstone with a version bump.
-	require.NoError(t, testRepo.DeletePlannedPayment(ctx, userHH, user.ID, plan.ID))
+	require.NoError(t, testRepo.DeletePlannedPayment(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, plan.ID))
 
 	changes, err := testRepo.PullChanges(ctx, userHH, 0, 100)
 	require.NoError(t, err)

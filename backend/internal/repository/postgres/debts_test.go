@@ -53,23 +53,38 @@ func TestRepository_Debtors_CRUDAndGuards(t *testing.T) {
 		intruderHH := householdOf(t, intruder.ID)
 		_, err := testRepo.GetDebtor(ctx, intruderHH, created.ID)
 		require.ErrorIs(t, err, domain.ErrDebtorNotFound)
-		_, err = testRepo.UpdateDebtor(ctx, intruderHH, intruder.ID, created.ID, domain.UpdateDebtorParams{
-			Name: new("x"), Version: 1,
-		})
+		_, err = testRepo.UpdateDebtor(
+			ctx,
+			domain.Scope{HouseholdID: intruderHH, ActorID: intruder.ID},
+			created.ID,
+			domain.UpdateDebtorParams{
+				Name: new("x"), Version: 1,
+			},
+		)
 		require.ErrorIs(t, err, domain.ErrDebtorNotFound)
 	})
 
 	t.Run("update CAS and note semantics", func(t *testing.T) {
-		updated, err := testRepo.UpdateDebtor(ctx, userHH, user.ID, created.ID, domain.UpdateDebtorParams{
-			Note: new(""), Version: 1,
-		})
+		updated, err := testRepo.UpdateDebtor(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdateDebtorParams{
+				Note: new(""), Version: 1,
+			},
+		)
 		require.NoError(t, err)
 		assert.Empty(t, updated.Note, "empty string clears")
 		assert.Equal(t, 2, updated.Version)
 
-		_, err = testRepo.UpdateDebtor(ctx, userHH, user.ID, created.ID, domain.UpdateDebtorParams{
-			Note: new("stale"), Version: 1,
-		})
+		_, err = testRepo.UpdateDebtor(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdateDebtorParams{
+				Note: new("stale"), Version: 1,
+			},
+		)
 		require.ErrorIs(t, err, domain.ErrDebtorVersionConflict)
 	})
 
@@ -82,23 +97,36 @@ func TestRepository_Debtors_CRUDAndGuards(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		require.ErrorIs(t, testRepo.DeleteDebtor(ctx, userHH, user.ID, created.ID), domain.ErrDebtorHasOperations)
+		require.ErrorIs(
+			t,
+			testRepo.DeleteDebtor(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, created.ID),
+			domain.ErrDebtorHasOperations,
+		)
 
 		// Tombstone the operation through the sync surface; the guard clears.
 		require.NoError(t, testRepo.WithinHouseholdTx(ctx, userHH, func(tx repository.SyncTx) error {
-			_, err := tx.TombstoneDebtOperation(ctx, userHH, user.ID, op.ID)
+			_, err := tx.TombstoneDebtOperation(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, op.ID)
 			return err
 		}))
-		require.NoError(t, testRepo.DeleteDebtor(ctx, userHH, user.ID, created.ID))
+		require.NoError(t, testRepo.DeleteDebtor(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, created.ID))
 
 		// Tombstoned reads classify as not-found; updates and deletes too.
 		_, err = testRepo.GetDebtor(ctx, userHH, created.ID)
 		require.ErrorIs(t, err, domain.ErrDebtorNotFound)
-		_, err = testRepo.UpdateDebtor(ctx, userHH, user.ID, created.ID, domain.UpdateDebtorParams{
-			Note: new("x"), Version: 2,
-		})
+		_, err = testRepo.UpdateDebtor(
+			ctx,
+			domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+			created.ID,
+			domain.UpdateDebtorParams{
+				Note: new("x"), Version: 2,
+			},
+		)
 		require.ErrorIs(t, err, domain.ErrDebtorNotFound)
-		require.ErrorIs(t, testRepo.DeleteDebtor(ctx, userHH, user.ID, created.ID), domain.ErrDebtorNotFound)
+		require.ErrorIs(
+			t,
+			testRepo.DeleteDebtor(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, created.ID),
+			domain.ErrDebtorNotFound,
+		)
 
 		// The freed name can be recreated.
 		_, err = testRepo.CreateDebtor(
@@ -155,13 +183,18 @@ func TestRepository_DebtOperations_CheckConstraintsAndChangeLog(t *testing.T) {
 	assert.Equal(t, 1, op.Version)
 
 	// Update + delete are versioned mutations that land in the change log.
-	updated, err := testRepo.UpdateDebtOperation(ctx, userHH, user.ID, op.ID, domain.UpdateDebtOperationParams{
-		Amount: new(int64(250)), Version: 1,
-	})
+	updated, err := testRepo.UpdateDebtOperation(
+		ctx,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
+		op.ID,
+		domain.UpdateDebtOperationParams{
+			Amount: new(int64(250)), Version: 1,
+		},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, 2, updated.Version)
 
-	require.NoError(t, testRepo.DeleteDebtOperation(ctx, userHH, user.ID, op.ID))
+	require.NoError(t, testRepo.DeleteDebtOperation(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, op.ID))
 	_, err = testRepo.GetDebtOperation(ctx, userHH, op.ID)
 	require.ErrorIs(t, err, domain.ErrDebtOperationNotFound)
 

@@ -29,13 +29,11 @@ func (s *Server) CreateAccount(
 	ctx context.Context,
 	req api.CreateAccountRequestObject,
 ) (api.CreateAccountResponseObject, error) {
-	user := s.currentUser(ctx)
-	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
 	}
-	a, err := s.accounts.Create(ctx, householdID, user.ID, domain.CreateAccountParams{
+	a, err := s.accounts.Create(ctx, s.currentScope(ctx), domain.CreateAccountParams{
 		ID:             id,
 		Name:           req.Body.Name,
 		Currency:       string(req.Body.Currency),
@@ -63,13 +61,12 @@ func (s *Server) UpdateAccount(
 	ctx context.Context,
 	req api.UpdateAccountRequestObject,
 ) (api.UpdateAccountResponseObject, error) {
-	user := s.currentUser(ctx)
 	var name *string
 	if req.Body.Name != nil {
 		n := *req.Body.Name
 		name = &n
 	}
-	a, err := s.accounts.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateAccountParams{
+	a, err := s.accounts.Update(ctx, s.currentScope(ctx), req.Id, domain.UpdateAccountParams{
 		Name:    name,
 		Version: req.Body.Version,
 	})
@@ -83,8 +80,7 @@ func (s *Server) DeleteAccount(
 	ctx context.Context,
 	req api.DeleteAccountRequestObject,
 ) (api.DeleteAccountResponseObject, error) {
-	user := s.currentUser(ctx)
-	if err := s.accounts.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id); err != nil {
+	if err := s.accounts.Delete(ctx, s.currentScope(ctx), req.Id); err != nil {
 		return nil, err
 	}
 	return api.DeleteAccount204Response{}, nil

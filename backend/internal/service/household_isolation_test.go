@@ -73,13 +73,21 @@ func TestHouseholdScoping_MemberSeesSiblingRecords(t *testing.T) {
 	f := newIsolationFixture(t)
 	ctx := context.Background()
 
-	acct, err := f.acctSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateAccountParams{
-		Name: "Family card", Currency: "USD", OpeningBalance: 1000,
-	})
+	acct, err := f.acctSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateAccountParams{
+			Name: "Family card", Currency: "USD", OpeningBalance: 1000,
+		},
+	)
 	require.NoError(t, err)
-	cat, err := f.catSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateCategoryParams{
-		Name: "Groceries", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
-	})
+	cat, err := f.catSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateCategoryParams{
+			Name: "Groceries", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
+		},
+	)
 	require.NoError(t, err)
 
 	// The sibling lists the household's records like their own.
@@ -98,10 +106,14 @@ func TestHouseholdScoping_MemberSeesSiblingRecords(t *testing.T) {
 	// The sibling creates a transaction referencing the owner's account and
 	// category; the authorship stamp is the sibling, not the record owner.
 	now := time.Now().UTC()
-	tx, err := f.txSvc.Create(ctx, f.ownerHH, f.sibling.ID, domain.CreateTransactionParams{
-		Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: now,
-		AccountID: &acct.ID, CategoryID: &cat.ID,
-	})
+	tx, err := f.txSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.sibling.ID},
+		domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 500, OccurredAt: now,
+			AccountID: &acct.ID, CategoryID: &cat.ID,
+		},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, f.sibling.ID, tx.UserID, "authorship = the acting member")
 
@@ -123,15 +135,27 @@ func TestHouseholdScoping_NonMemberGetsNotFound(t *testing.T) {
 	f := newIsolationFixture(t)
 	ctx := context.Background()
 
-	acct, err := f.acctSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateAccountParams{
-		Name: "Family card", Currency: "USD", OpeningBalance: 1000,
-	})
+	acct, err := f.acctSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateAccountParams{
+			Name: "Family card", Currency: "USD", OpeningBalance: 1000,
+		},
+	)
 	require.NoError(t, err)
-	cat, err := f.catSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateCategoryParams{
-		Name: "Groceries", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
-	})
+	cat, err := f.catSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateCategoryParams{
+			Name: "Groceries", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
+		},
+	)
 	require.NoError(t, err)
-	debtor, err := f.debtorSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateDebtorParams{Name: "Анна"})
+	debtor, err := f.debtorSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateDebtorParams{Name: "Анна"},
+	)
 	require.NoError(t, err)
 
 	// Reads by id: not-found, never the row.
@@ -150,25 +174,33 @@ func TestHouseholdScoping_NonMemberGetsNotFound(t *testing.T) {
 	// Transaction references into the foreign household read as not-found
 	// references (REST granularity), as if the record did not exist.
 	now := time.Now().UTC()
-	_, err = f.txSvc.Create(ctx, f.outsiderHH, f.outsider.ID, domain.CreateTransactionParams{
-		Type: domain.TransactionTypeExpense, Amount: 100, OccurredAt: now,
-		AccountID: &acct.ID, CategoryID: &cat.ID,
-	})
+	_, err = f.txSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.outsiderHH, ActorID: f.outsider.ID},
+		domain.CreateTransactionParams{
+			Type: domain.TransactionTypeExpense, Amount: 100, OccurredAt: now,
+			AccountID: &acct.ID, CategoryID: &cat.ID,
+		},
+	)
 	require.ErrorIs(t, err, domain.ErrTransactionAccountNotFound)
 
 	// Debt-operation references likewise.
-	_, err = f.debtOpSvc.Create(ctx, f.outsiderHH, f.outsider.ID, domain.CreateDebtOperationParams{
-		DebtorID: debtor.ID, Direction: domain.DebtDirectionReceivable,
-		Kind: domain.DebtOperationKindDebt, Amount: 100, OccurredAt: now,
-	})
+	_, err = f.debtOpSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.outsiderHH, ActorID: f.outsider.ID},
+		domain.CreateDebtOperationParams{
+			DebtorID: debtor.ID, Direction: domain.DebtDirectionReceivable,
+			Kind: domain.DebtOperationKindDebt, Amount: 100, OccurredAt: now,
+		},
+	)
 	require.ErrorIs(t, err, domain.ErrDebtOperationDebtorNotFound)
 
 	// Writes (update/delete) on foreign records are not-found, not applied.
 	name := "Hacked"
-	_, err = f.acctSvc.Update(ctx, f.outsiderHH, f.outsider.ID, acct.ID,
+	_, err = f.acctSvc.Update(ctx, domain.Scope{HouseholdID: f.outsiderHH, ActorID: f.outsider.ID}, acct.ID,
 		domain.UpdateAccountParams{Name: &name, Version: acct.Version})
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
-	err = f.acctSvc.Delete(ctx, f.outsiderHH, f.outsider.ID, acct.ID)
+	err = f.acctSvc.Delete(ctx, domain.Scope{HouseholdID: f.outsiderHH, ActorID: f.outsider.ID}, acct.ID)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 }
 
@@ -179,25 +211,49 @@ func TestHouseholdScoping_NamesUniquePerHousehold(t *testing.T) {
 
 	// Categories: duplicate inside the household rejected (even from a
 	// different member); the same name in another household is fine.
-	_, err := f.catSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateCategoryParams{
-		Name: "Food", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
-	})
+	_, err := f.catSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateCategoryParams{
+			Name: "Food", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
+		},
+	)
 	require.NoError(t, err)
-	_, err = f.catSvc.Create(ctx, f.ownerHH, f.sibling.ID, domain.CreateCategoryParams{
-		Name: "Food", Type: domain.TransactionTypeIncome, Icon: "i", Color: "#fff",
-	})
+	_, err = f.catSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.sibling.ID},
+		domain.CreateCategoryParams{
+			Name: "Food", Type: domain.TransactionTypeIncome, Icon: "i", Color: "#fff",
+		},
+	)
 	require.ErrorIs(t, err, domain.ErrCategoryAlreadyExists)
-	_, err = f.catSvc.Create(ctx, f.outsiderHH, f.outsider.ID, domain.CreateCategoryParams{
-		Name: "Food", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
-	})
+	_, err = f.catSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.outsiderHH, ActorID: f.outsider.ID},
+		domain.CreateCategoryParams{
+			Name: "Food", Type: domain.TransactionTypeExpense, Icon: "i", Color: "#fff",
+		},
+	)
 	require.NoError(t, err)
 
 	// Debtors: the same rule.
-	_, err = f.debtorSvc.Create(ctx, f.ownerHH, f.owner.ID, domain.CreateDebtorParams{Name: "Анна"})
+	_, err = f.debtorSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.owner.ID},
+		domain.CreateDebtorParams{Name: "Анна"},
+	)
 	require.NoError(t, err)
-	_, err = f.debtorSvc.Create(ctx, f.ownerHH, f.sibling.ID, domain.CreateDebtorParams{Name: "Анна"})
+	_, err = f.debtorSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.ownerHH, ActorID: f.sibling.ID},
+		domain.CreateDebtorParams{Name: "Анна"},
+	)
 	require.ErrorIs(t, err, domain.ErrDebtorAlreadyExists)
-	_, err = f.debtorSvc.Create(ctx, f.outsiderHH, f.outsider.ID, domain.CreateDebtorParams{Name: "Анна"})
+	_, err = f.debtorSvc.Create(
+		ctx,
+		domain.Scope{HouseholdID: f.outsiderHH, ActorID: f.outsider.ID},
+		domain.CreateDebtorParams{Name: "Анна"},
+	)
 	require.NoError(t, err)
 }
 

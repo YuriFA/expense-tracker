@@ -1,11 +1,12 @@
 // Package repository defines the data-access interfaces implemented by the
 // Postgres layer and consumed by the service layer.
 //
-// Every resource query is scoped by the householdID of the authenticated
+// Every resource query is scoped by the household of the authenticated
 // member (IDOR protection: an access from outside the household returns
-// "not found", never the row). The userID of the acting member is passed
-// alongside on write paths as the authorship/actor stamp - always explicit
-// from the transport layer, never from a request body.
+// "not found", never the row); household-scoped methods take that scope as
+// one domain.Scope value (household + acting member), built once by the
+// transport layer from the session/membership resolution - never from a
+// request body.
 package repository
 
 import (
@@ -77,10 +78,10 @@ type AccountRepository interface {
 	CreateAccount(ctx context.Context, params domain.CreateAccountParams) (*domain.Account, error)
 	UpdateAccount(
 		ctx context.Context,
-		householdID, actorID, id uuid.UUID,
+		scope domain.Scope, id uuid.UUID,
 		params domain.UpdateAccountParams,
 	) (*domain.Account, error)
-	DeleteAccount(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	DeleteAccount(ctx context.Context, scope domain.Scope, id uuid.UUID) error
 	GetAccount(ctx context.Context, householdID, id uuid.UUID) (*domain.Account, error)
 	GetAccounts(ctx context.Context, householdID uuid.UUID) ([]domain.Account, error)
 }
@@ -90,14 +91,14 @@ type CategoryRepository interface {
 	CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error)
 	UpdateCategory(
 		ctx context.Context,
-		householdID, actorID, id uuid.UUID,
+		scope domain.Scope, id uuid.UUID,
 		params domain.UpdateCategoryParams,
 	) (*domain.Category, error)
 	// DeleteCategory tombstones the category; with cascade it tombstones
 	// every referencing live transaction of the household atomically (one
 	// transaction, a change_log row per tombstoned record). Live planned
 	// payments block the delete in both modes.
-	DeleteCategory(ctx context.Context, householdID, actorID, id uuid.UUID, cascade bool) error
+	DeleteCategory(ctx context.Context, scope domain.Scope, id uuid.UUID, cascade bool) error
 	GetCategory(ctx context.Context, householdID, id uuid.UUID) (*domain.Category, error)
 	GetCategories(
 		ctx context.Context,
@@ -112,10 +113,10 @@ type TransactionRepository interface {
 	CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error)
 	UpdateTransaction(
 		ctx context.Context,
-		householdID, actorID, id uuid.UUID,
+		scope domain.Scope, id uuid.UUID,
 		params domain.UpdateTransactionParams,
 	) (*domain.Transaction, error)
-	DeleteTransaction(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	DeleteTransaction(ctx context.Context, scope domain.Scope, id uuid.UUID) error
 	GetTransaction(ctx context.Context, householdID, id uuid.UUID) (*domain.Transaction, error)
 	GetTransactions(
 		ctx context.Context,
@@ -130,10 +131,10 @@ type DebtorRepository interface {
 	CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error)
 	UpdateDebtor(
 		ctx context.Context,
-		householdID, actorID, id uuid.UUID,
+		scope domain.Scope, id uuid.UUID,
 		params domain.UpdateDebtorParams,
 	) (*domain.Debtor, error)
-	DeleteDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	DeleteDebtor(ctx context.Context, scope domain.Scope, id uuid.UUID) error
 	GetDebtor(ctx context.Context, householdID, id uuid.UUID) (*domain.Debtor, error)
 	GetDebtors(ctx context.Context, householdID uuid.UUID) ([]domain.Debtor, error)
 }
@@ -144,10 +145,10 @@ type DebtOperationRepository interface {
 	CreateDebtOperation(ctx context.Context, params domain.CreateDebtOperationParams) (*domain.DebtOperation, error)
 	UpdateDebtOperation(
 		ctx context.Context,
-		householdID, actorID, id uuid.UUID,
+		scope domain.Scope, id uuid.UUID,
 		params domain.UpdateDebtOperationParams,
 	) (*domain.DebtOperation, error)
-	DeleteDebtOperation(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	DeleteDebtOperation(ctx context.Context, scope domain.Scope, id uuid.UUID) error
 	GetDebtOperation(ctx context.Context, householdID, id uuid.UUID) (*domain.DebtOperation, error)
 	GetDebtOperations(
 		ctx context.Context,
@@ -163,10 +164,10 @@ type PlannedPaymentRepository interface {
 	CreatePlannedPayment(ctx context.Context, params domain.CreatePlannedPaymentParams) (*domain.PlannedPayment, error)
 	UpdatePlannedPayment(
 		ctx context.Context,
-		householdID, actorID, id uuid.UUID,
+		scope domain.Scope, id uuid.UUID,
 		params domain.UpdatePlannedPaymentParams,
 	) (*domain.PlannedPayment, error)
-	DeletePlannedPayment(ctx context.Context, householdID, actorID, id uuid.UUID) error
+	DeletePlannedPayment(ctx context.Context, scope domain.Scope, id uuid.UUID) error
 	GetPlannedPayment(ctx context.Context, householdID, id uuid.UUID) (*domain.PlannedPayment, error)
 	GetPlannedPayments(
 		ctx context.Context,
@@ -216,9 +217,9 @@ type AccountSyncTx interface {
 	// ErrRecordDeleted, Err*NotFound).
 	CreateAccount(ctx context.Context, params domain.CreateAccountParams) (*domain.Account, error)
 	ReplaceAccount(
-		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.AccountFullState,
+		ctx context.Context, scope domain.Scope, id uuid.UUID, baseVersion int, st domain.AccountFullState,
 	) (*domain.Account, error)
-	TombstoneAccount(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Account, error)
+	TombstoneAccount(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Account, error)
 }
 
 // CategorySyncTx is the category's push contract: the tombstone-inclusive
@@ -241,14 +242,14 @@ type CategorySyncTx interface {
 	// ErrRecordDeleted, Err*NotFound).
 	CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error)
 	ReplaceCategory(
-		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.CategoryFullState,
+		ctx context.Context, scope domain.Scope, id uuid.UUID, baseVersion int, st domain.CategoryFullState,
 	) (*domain.Category, error)
-	TombstoneCategory(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Category, error)
+	TombstoneCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error)
 	// CascadeTombstoneCategory tombstones the category plus every live
 	// transaction referencing it, appending a change_log row per tombstoned
 	// record on the same transaction. Used by cascade-flagged category delete
 	// push operations (the in-use guard reduced to live planned payments).
-	CascadeTombstoneCategory(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Category, error)
+	CascadeTombstoneCategory(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Category, error)
 }
 
 // TransactionSyncTx is the transaction's push contract: the
@@ -262,9 +263,9 @@ type TransactionSyncTx interface {
 	// ErrRecordDeleted, Err*NotFound).
 	CreateTransaction(ctx context.Context, params domain.CreateTransactionParams) (*domain.Transaction, error)
 	ReplaceTransaction(
-		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.TransactionFullState,
+		ctx context.Context, scope domain.Scope, id uuid.UUID, baseVersion int, st domain.TransactionFullState,
 	) (*domain.Transaction, error)
-	TombstoneTransaction(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Transaction, error)
+	TombstoneTransaction(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Transaction, error)
 }
 
 // DebtorSyncTx is the debtor's push contract: the tombstone-inclusive read,
@@ -286,9 +287,9 @@ type DebtorSyncTx interface {
 	// ErrRecordDeleted, Err*NotFound).
 	CreateDebtor(ctx context.Context, params domain.CreateDebtorParams) (*domain.Debtor, error)
 	ReplaceDebtor(
-		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.DebtorFullState,
+		ctx context.Context, scope domain.Scope, id uuid.UUID, baseVersion int, st domain.DebtorFullState,
 	) (*domain.Debtor, error)
-	TombstoneDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.Debtor, error)
+	TombstoneDebtor(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.Debtor, error)
 }
 
 // DebtOperationSyncTx is the debt operation's push contract: the
@@ -302,9 +303,9 @@ type DebtOperationSyncTx interface {
 	// ErrRecordDeleted, Err*NotFound).
 	CreateDebtOperation(ctx context.Context, params domain.CreateDebtOperationParams) (*domain.DebtOperation, error)
 	ReplaceDebtOperation(
-		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.DebtOperationFullState,
+		ctx context.Context, scope domain.Scope, id uuid.UUID, baseVersion int, st domain.DebtOperationFullState,
 	) (*domain.DebtOperation, error)
-	TombstoneDebtOperation(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.DebtOperation, error)
+	TombstoneDebtOperation(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.DebtOperation, error)
 }
 
 // PlannedPaymentSyncTx is the planned payment's push contract: the
@@ -322,14 +323,14 @@ type PlannedPaymentSyncTx interface {
 	// ErrRecordDeleted, Err*NotFound).
 	CreatePlannedPayment(ctx context.Context, params domain.CreatePlannedPaymentParams) (*domain.PlannedPayment, error)
 	ReplacePlannedPayment(
-		ctx context.Context, householdID, actorID, id uuid.UUID, baseVersion int, st domain.PlannedPaymentFullState,
+		ctx context.Context, scope domain.Scope, id uuid.UUID, baseVersion int, st domain.PlannedPaymentFullState,
 	) (*domain.PlannedPayment, error)
-	TombstonePlannedPayment(ctx context.Context, householdID, actorID, id uuid.UUID) (*domain.PlannedPayment, error)
+	TombstonePlannedPayment(ctx context.Context, scope domain.Scope, id uuid.UUID) (*domain.PlannedPayment, error)
 	// AdvancePlannedPayment moves next_due to the already-computed next
 	// occurrence (auto-confirm job only; runs under the advisory lock). The
 	// actor stamp is the plan's author (the job acts on their behalf).
 	AdvancePlannedPayment(
-		ctx context.Context, householdID, actorID, id uuid.UUID, nextDue time.Time,
+		ctx context.Context, scope domain.Scope, id uuid.UUID, nextDue time.Time,
 	) (*domain.PlannedPayment, error)
 }
 

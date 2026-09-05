@@ -80,27 +80,27 @@ func (debtorAdapter) getAny(
 }
 
 func (debtorAdapter) create(
-	ctx context.Context, t debtorTx, householdID, userID, id uuid.UUID, data domain.DebtorFullState,
+	ctx context.Context, t debtorTx, scope domain.Scope, id uuid.UUID, data domain.DebtorFullState,
 ) (*domain.Debtor, error) {
 	return t.CreateDebtor(ctx, domain.CreateDebtorParams{
-		ID: id, HouseholdID: householdID, UserID: userID, Name: data.Name, Note: data.Note,
+		ID: id, HouseholdID: scope.HouseholdID, UserID: scope.ActorID, Name: data.Name, Note: data.Note,
 	})
 }
 
 func (debtorAdapter) replace(
 	ctx context.Context,
 	t debtorTx,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	data domain.DebtorFullState,
 ) (*domain.Debtor, error) {
-	return t.ReplaceDebtor(ctx, householdID, userID, id, baseVersion, data)
+	return t.ReplaceDebtor(ctx, scope, id, baseVersion, data)
 }
 
 func (debtorAdapter) tombstone(
-	ctx context.Context, t debtorTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t debtorTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Debtor, error) {
-	return t.TombstoneDebtor(ctx, householdID, userID, id)
+	return t.TombstoneDebtor(ctx, scope, id)
 }
 
 // inUse runs the debtor delete rule (ADR-0005) against the batch tx.

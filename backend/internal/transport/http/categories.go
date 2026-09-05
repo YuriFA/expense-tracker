@@ -42,13 +42,11 @@ func (s *Server) CreateCategory(
 	ctx context.Context,
 	req api.CreateCategoryRequestObject,
 ) (api.CreateCategoryResponseObject, error) {
-	user := s.currentUser(ctx)
-	householdID := s.currentHouseholdID(ctx)
 	var id uuid.UUID
 	if req.Body.Id != nil {
 		id = *req.Body.Id
 	}
-	c, err := s.categories.Create(ctx, householdID, user.ID, domain.CreateCategoryParams{
+	c, err := s.categories.Create(ctx, s.currentScope(ctx), domain.CreateCategoryParams{
 		ID:    id,
 		Name:  req.Body.Name,
 		Type:  domain.TransactionType(req.Body.Type),
@@ -77,7 +75,6 @@ func (s *Server) UpdateCategory(
 	ctx context.Context,
 	req api.UpdateCategoryRequestObject,
 ) (api.UpdateCategoryResponseObject, error) {
-	user := s.currentUser(ctx)
 	var name, icon, color *string
 	var typ *domain.TransactionType
 	if req.Body.Name != nil {
@@ -101,7 +98,7 @@ func (s *Server) UpdateCategory(
 		v := *req.Body.Archived
 		archive = &v
 	}
-	c, err := s.categories.Update(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, domain.UpdateCategoryParams{
+	c, err := s.categories.Update(ctx, s.currentScope(ctx), req.Id, domain.UpdateCategoryParams{
 		Name: name, Type: typ, Icon: icon, Color: color, Archive: archive, Version: req.Body.Version,
 	})
 	if err != nil {
@@ -114,12 +111,11 @@ func (s *Server) DeleteCategory(
 	ctx context.Context,
 	req api.DeleteCategoryRequestObject,
 ) (api.DeleteCategoryResponseObject, error) {
-	user := s.currentUser(ctx)
 	cascade := false
 	if req.Params.Cascade != nil {
 		cascade = *req.Params.Cascade
 	}
-	if err := s.categories.Delete(ctx, s.currentHouseholdID(ctx), user.ID, req.Id, cascade); err != nil {
+	if err := s.categories.Delete(ctx, s.currentScope(ctx), req.Id, cascade); err != nil {
 		return nil, err
 	}
 	return api.DeleteCategory204Response{}, nil

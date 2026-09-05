@@ -59,10 +59,10 @@ func (accountAdapter) getAny(
 }
 
 func (accountAdapter) create(
-	ctx context.Context, t accountTx, householdID, userID, id uuid.UUID, data domain.AccountFullState,
+	ctx context.Context, t accountTx, scope domain.Scope, id uuid.UUID, data domain.AccountFullState,
 ) (*domain.Account, error) {
 	return t.CreateAccount(ctx, domain.CreateAccountParams{
-		ID: id, HouseholdID: householdID, UserID: userID,
+		ID: id, HouseholdID: scope.HouseholdID, UserID: scope.ActorID,
 		Name: data.Name, Currency: data.Currency, OpeningBalance: data.OpeningBalance,
 	})
 }
@@ -93,17 +93,17 @@ func (accountAdapter) onCreateError(
 func (accountAdapter) replace(
 	ctx context.Context,
 	t accountTx,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	data domain.AccountFullState,
 ) (*domain.Account, error) {
-	return t.ReplaceAccount(ctx, householdID, userID, id, baseVersion, data)
+	return t.ReplaceAccount(ctx, scope, id, baseVersion, data)
 }
 
 func (accountAdapter) tombstone(
-	ctx context.Context, t accountTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t accountTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.Account, error) {
-	return t.TombstoneAccount(ctx, householdID, userID, id)
+	return t.TombstoneAccount(ctx, scope, id)
 }
 
 // inUse runs the account delete rule (ADR-0005) against the batch tx,

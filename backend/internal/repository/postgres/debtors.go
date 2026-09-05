@@ -58,9 +58,10 @@ func (r *Repository) CreateDebtor(ctx context.Context, params domain.CreateDebto
 
 func (r *Repository) UpdateDebtor(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateDebtorParams,
 ) (*domain.Debtor, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.UpdateDebtor"
 
 	var row db.UpdateDebtorRow
@@ -99,7 +100,8 @@ func (r *Repository) UpdateDebtor(
 	return debtorFromFields(row.ID, row.UserID, row.Name, row.Note, row.CreatedAt, row.UpdatedAt, int(row.Version)), nil
 }
 
-func (r *Repository) DeleteDebtor(ctx context.Context, householdID, actorID, id uuid.UUID) error {
+func (r *Repository) DeleteDebtor(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.DeleteDebtor"
 
 	// Same rule as service.ValidateDebtorDelete (ADR-0005), enforced here

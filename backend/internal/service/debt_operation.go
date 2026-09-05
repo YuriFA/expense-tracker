@@ -31,18 +31,18 @@ func NewDebtOperationService(
 
 func (s *DebtOperationService) Create(
 	ctx context.Context,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	params domain.CreateDebtOperationParams,
 ) (*domain.DebtOperation, error) {
 	const op = "service.debtOperation.Create"
 
 	if err := ValidateDebtOperationWrite(
-		ctx, repoDebtorRefReads{debtors: s.debtors}, householdID, params.DebtorID,
+		ctx, repoDebtorRefReads{debtors: s.debtors}, scope.HouseholdID, params.DebtorID,
 	); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	params.HouseholdID, params.UserID = householdID, userID
+	params.HouseholdID, params.UserID = scope.HouseholdID, scope.ActorID
 	o, err := s.operations.CreateDebtOperation(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -52,7 +52,7 @@ func (s *DebtOperationService) Create(
 
 func (s *DebtOperationService) Update(
 	ctx context.Context,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateDebtOperationParams,
 ) (*domain.DebtOperation, error) {
 	const op = "service.debtOperation.Update"
@@ -61,16 +61,16 @@ func (s *DebtOperationService) Update(
 		return nil, ErrNoFieldsToUpdate
 	}
 
-	o, err := s.operations.UpdateDebtOperation(ctx, householdID, userID, id, params)
+	o, err := s.operations.UpdateDebtOperation(ctx, scope, id, params)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return o, nil
 }
 
-func (s *DebtOperationService) Delete(ctx context.Context, householdID, userID, id uuid.UUID) error {
+func (s *DebtOperationService) Delete(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
 	const op = "service.debtOperation.Delete"
-	if err := s.operations.DeleteDebtOperation(ctx, householdID, userID, id); err != nil {
+	if err := s.operations.DeleteDebtOperation(ctx, scope, id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

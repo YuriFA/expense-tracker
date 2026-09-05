@@ -66,9 +66,10 @@ func (r *Repository) CreatePlannedPayment(
 
 func (r *Repository) UpdatePlannedPayment(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdatePlannedPaymentParams,
 ) (*domain.PlannedPayment, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.UpdatePlannedPayment"
 
 	var row db.UpdatePlannedPaymentRow
@@ -109,7 +110,8 @@ func (r *Repository) UpdatePlannedPayment(
 	), nil
 }
 
-func (r *Repository) DeletePlannedPayment(ctx context.Context, householdID, actorID, id uuid.UUID) error {
+func (r *Repository) DeletePlannedPayment(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.DeletePlannedPayment"
 
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {

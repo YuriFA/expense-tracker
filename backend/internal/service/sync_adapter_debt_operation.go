@@ -104,10 +104,10 @@ func (debtOperationAdapter) getAny(
 }
 
 func (debtOperationAdapter) create(
-	ctx context.Context, t debtOperationTx, householdID, userID, id uuid.UUID, data domain.DebtOperationFullState,
+	ctx context.Context, t debtOperationTx, scope domain.Scope, id uuid.UUID, data domain.DebtOperationFullState,
 ) (*domain.DebtOperation, error) {
 	return t.CreateDebtOperation(ctx, domain.CreateDebtOperationParams{
-		ID: id, HouseholdID: householdID, UserID: userID,
+		ID: id, HouseholdID: scope.HouseholdID, UserID: scope.ActorID,
 		DebtorID: data.DebtorID, Direction: data.Direction, Kind: data.Kind,
 		Amount: data.Amount, Note: data.Note, OccurredAt: data.OccurredAt,
 	})
@@ -116,15 +116,15 @@ func (debtOperationAdapter) create(
 func (debtOperationAdapter) replace(
 	ctx context.Context,
 	t debtOperationTx,
-	householdID, userID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	baseVersion int,
 	data domain.DebtOperationFullState,
 ) (*domain.DebtOperation, error) {
-	return t.ReplaceDebtOperation(ctx, householdID, userID, id, baseVersion, data)
+	return t.ReplaceDebtOperation(ctx, scope, id, baseVersion, data)
 }
 
 func (debtOperationAdapter) tombstone(
-	ctx context.Context, t debtOperationTx, householdID, userID, id uuid.UUID,
+	ctx context.Context, t debtOperationTx, scope domain.Scope, id uuid.UUID,
 ) (*domain.DebtOperation, error) {
-	return t.TombstoneDebtOperation(ctx, householdID, userID, id)
+	return t.TombstoneDebtOperation(ctx, scope, id)
 }

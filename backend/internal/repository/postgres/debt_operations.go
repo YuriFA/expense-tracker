@@ -65,9 +65,10 @@ func (r *Repository) CreateDebtOperation(
 
 func (r *Repository) UpdateDebtOperation(
 	ctx context.Context,
-	householdID, actorID, id uuid.UUID,
+	scope domain.Scope, id uuid.UUID,
 	params domain.UpdateDebtOperationParams,
 ) (*domain.DebtOperation, error) {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.UpdateDebtOperation"
 
 	var row db.UpdateDebtOperationRow
@@ -107,7 +108,8 @@ func (r *Repository) UpdateDebtOperation(
 	), nil
 }
 
-func (r *Repository) DeleteDebtOperation(ctx context.Context, householdID, actorID, id uuid.UUID) error {
+func (r *Repository) DeleteDebtOperation(ctx context.Context, scope domain.Scope, id uuid.UUID) error {
+	householdID, actorID := scope.HouseholdID, scope.ActorID
 	const op = "repository.postgres.DeleteDebtOperation"
 
 	err := r.withinLockedTx(ctx, householdID, func(q *db.Queries) error {

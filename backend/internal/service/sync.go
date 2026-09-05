@@ -48,15 +48,15 @@ func NewSyncService(sync repository.SyncRepository) *SyncService {
 // batch - confirmed opIds replay their stored results, so nothing duplicates).
 func (s *SyncService) Push(
 	ctx context.Context,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	ops []domain.SyncOperation,
 ) ([]domain.SyncPushResult, error) {
 	const op = "service.sync.Push"
 
 	results := make([]domain.SyncPushResult, 0, len(ops))
-	err := s.sync.WithinHouseholdTx(ctx, householdID, func(t repository.SyncTx) error {
+	err := s.sync.WithinHouseholdTx(ctx, scope.HouseholdID, func(t repository.SyncTx) error {
 		for _, operation := range ops {
-			result, err := applySyncOperation(ctx, t, householdID, userID, operation, s.appliers)
+			result, err := applySyncOperation(ctx, t, scope, operation, s.appliers)
 			if err != nil {
 				return err
 			}
@@ -111,14 +111,14 @@ func (s *SyncService) Pull(
 func applySyncOperation(
 	ctx context.Context,
 	t repository.SyncTx,
-	householdID, userID uuid.UUID,
+	scope domain.Scope,
 	op domain.SyncOperation,
 	appliers map[string]syncOpApplier,
 ) (domain.SyncPushResult, error) {
 	// Persistent idempotency: an already-applied opId replays its stored
 	// result without side effects (retry after a lost response, duplicate
 	// delivery across batches), scoped to this household's applied operations.
-	if previous, err := t.GetAppliedOperation(ctx, householdID, op.OpID); err != nil {
+	if previous, err := t.GetAppliedOperation(ctx, scope.HouseholdID, op.OpID); err != nil {
 		return domain.SyncPushResult{}, err
 	} else if previous != nil {
 		return previous.Result, nil
@@ -131,7 +131,7 @@ func applySyncOperation(
 			Code: "VALIDATION_FAILED", Message: "unknown entity",
 		}, nil
 	}
-	result, err := applier(ctx, t, householdID, userID, op)
+	result, err := applier(ctx, t, scope, op)
 	if err != nil {
 		return domain.SyncPushResult{}, err
 	}
@@ -142,8 +142,8 @@ func applySyncOperation(
 	if result.Status == domain.SyncStatusApplied {
 		if err := t.InsertAppliedOperation(ctx, domain.AppliedOperation{
 			OpID:        op.OpID,
-			HouseholdID: householdID,
-			UserID:      userID,
+			HouseholdID: scope.HouseholdID,
+			UserID:      scope.ActorID,
 			Entity:      op.Entity,
 			EntityID:    op.ID,
 			Result:      result,

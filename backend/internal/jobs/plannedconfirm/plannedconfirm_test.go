@@ -128,7 +128,10 @@ func TestJob_RerunIsIdempotentAndDeletedPlansProduceNothing(t *testing.T) {
 		ConfirmMode: domain.PlannedConfirmAuto, Reminder: domain.PlannedReminderOff,
 	})
 	require.NoError(t, err)
-	require.NoError(t, store.DeletePlannedPayment(ctx, householdID, user.ID, plan.ID))
+	require.NoError(
+		t,
+		store.DeletePlannedPayment(ctx, domain.Scope{HouseholdID: householdID, ActorID: user.ID}, plan.ID),
+	)
 
 	runJobUntilSettled(t, store)
 

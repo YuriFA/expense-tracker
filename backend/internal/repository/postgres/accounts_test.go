@@ -45,7 +45,7 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 	name := "Wallet Pro"
 	updated, err = testRepo.UpdateAccount(
 		ctx,
-		userHH, user.ID,
+		domain.Scope{HouseholdID: userHH, ActorID: user.ID},
 		created.ID,
 		domain.UpdateAccountParams{Name: &name, Version: updated.Version},
 	)
@@ -67,8 +67,8 @@ func TestAccountCRUDAndBalance(t *testing.T) {
 
 	// Delete (the adjustment transaction must be gone first: the account is
 	// in use while any live transaction references it).
-	require.NoError(t, testRepo.DeleteTransaction(ctx, userHH, user.ID, adjTx.ID))
-	require.NoError(t, testRepo.DeleteAccount(ctx, userHH, user.ID, created.ID))
+	require.NoError(t, testRepo.DeleteTransaction(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, adjTx.ID))
+	require.NoError(t, testRepo.DeleteAccount(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, created.ID))
 	_, err = testRepo.GetAccount(ctx, userHH, created.ID)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 }
@@ -94,12 +94,17 @@ func TestAccountIDORScoping(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 
 	// Intruder cannot delete owner's account -> not found (NOT a FK error).
-	err = testRepo.DeleteAccount(ctx, intruderHH, intruder.ID, acct.ID)
+	err = testRepo.DeleteAccount(ctx, domain.Scope{HouseholdID: intruderHH, ActorID: intruder.ID}, acct.ID)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 
 	// Intruder cannot update owner's account.
 	name := "hacked"
-	_, err = testRepo.UpdateAccount(ctx, intruderHH, intruder.ID, acct.ID, domain.UpdateAccountParams{Name: &name})
+	_, err = testRepo.UpdateAccount(
+		ctx,
+		domain.Scope{HouseholdID: intruderHH, ActorID: intruder.ID},
+		acct.ID,
+		domain.UpdateAccountParams{Name: &name},
+	)
 	require.ErrorIs(t, err, domain.ErrAccountNotFound)
 }
 
@@ -126,6 +131,6 @@ func TestDeleteAccountInUseReturnsConflict(t *testing.T) {
 	require.NoError(t, err)
 
 	// Deleting the referenced account must surface a domain error (-> 409).
-	err = testRepo.DeleteAccount(ctx, userHH, user.ID, acct.ID)
+	err = testRepo.DeleteAccount(ctx, domain.Scope{HouseholdID: userHH, ActorID: user.ID}, acct.ID)
 	require.ErrorIs(t, err, domain.ErrAccountHasTransactions)
 }
