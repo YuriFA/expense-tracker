@@ -24,25 +24,38 @@ RETURNING
 -- name: UpdateAccount :one
 -- Optimistic concurrency: the WHERE clause includes version = @version (and
 -- liveness) so a concurrent update yields zero rows. COALESCE keeps a column
--- unchanged when its narg is NULL (PATCH semantics).
-UPDATE accounts
-SET
-    name       = COALESCE(sqlc.narg('name'), name),
-    version    = version + 1,
-    updated_at        = now()
-WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @version
-RETURNING
-    id,
-    user_id,
-    name,
-    currency,
-    opening_balance,
-    (opening_balance + COALESCE(
-        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
-    ))::bigint AS balance,
-    created_at,
-    updated_at,
-    version;
+-- unchanged when its narg is NULL (PATCH semantics). The post-update balance
+-- comes from account_with_balance via the CTE (RETURNING cannot join).
+WITH updated AS (
+    UPDATE accounts
+    SET
+        name       = COALESCE(sqlc.narg('name'), name),
+        version    = version + 1,
+        updated_at        = now()
+    WHERE accounts.id = @id AND accounts.household_id = @household_id
+      AND accounts.deleted_at IS NULL AND accounts.version = @version
+    RETURNING
+        accounts.id,
+        accounts.user_id,
+        accounts.name,
+        accounts.currency,
+        accounts.opening_balance,
+        accounts.created_at,
+        accounts.updated_at,
+        accounts.version
+)
+SELECT
+    u.id,
+    u.user_id,
+    u.name,
+    u.currency,
+    u.opening_balance,
+    v.balance,
+    u.created_at,
+    u.updated_at,
+    u.version
+FROM updated u
+JOIN account_with_balance v ON v.id = u.id;
 
 -- name: SoftDeleteAccount :one
 -- Tombstone (never a hard DELETE): excluded from listings, retained for sync.
@@ -53,19 +66,17 @@ RETURNING version;
 
 -- name: GetAccount :one
 SELECT
-    a.id,
-    a.user_id,
-    a.name,
-    a.currency,
-    a.opening_balance,
-    (a.opening_balance + COALESCE(SUM(c.signed), 0))::bigint AS balance,
-    a.created_at,
-    a.updated_at,
-    a.version
-FROM accounts a
-LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.id = $1 AND a.household_id = $2 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.created_at, a.updated_at, a.version;
+    id,
+    user_id,
+    name,
+    currency,
+    opening_balance,
+    balance,
+    created_at,
+    updated_at,
+    version
+FROM account_with_balance
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
 
 -- name: GetAccountAny :one
 -- Includes tombstoned rows; used by sync push (serverState / idempotent
@@ -76,32 +87,28 @@ SELECT
     name,
     currency,
     opening_balance,
-    (opening_balance + COALESCE(
-        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
-    ))::bigint AS balance,
+    balance,
     created_at,
     updated_at,
     version,
     deleted_at
-FROM accounts
+FROM account_with_balance
 WHERE id = $1 AND household_id = $2;
 
 -- name: GetAccounts :many
 SELECT
-    a.id,
-    a.user_id,
-    a.name,
-    a.currency,
-    a.opening_balance,
-    (a.opening_balance + COALESCE(SUM(c.signed), 0))::bigint AS balance,
-    a.created_at,
-    a.updated_at,
-    a.version
-FROM accounts a
-LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.household_id = $1 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.created_at, a.updated_at, a.version
-ORDER BY a.created_at, a.id;
+    id,
+    user_id,
+    name,
+    currency,
+    opening_balance,
+    balance,
+    created_at,
+    updated_at,
+    version
+FROM account_with_balance
+WHERE household_id = $1 AND deleted_at IS NULL
+ORDER BY created_at, id;
 
 -- name: HasLiveTransactionsForAccount :one
 -- In-use guard for deletion: any non-deleted transaction referencing the
@@ -116,27 +123,40 @@ SELECT EXISTS(
 
 -- name: SyncReplaceAccount :one
 -- Full-state CAS upsert from a sync push: applies only on the exact base
--- version of a live row; version increments by one.
-UPDATE accounts
-SET
-    name            = @name,
-    currency        = @currency,
-    opening_balance = @opening_balance,
-    version         = version + 1,
-    updated_at        = now()
-WHERE id = @id AND household_id = @household_id AND deleted_at IS NULL AND version = @base_version
-RETURNING
-    id,
-    user_id,
-    name,
-    currency,
-    opening_balance,
-    (opening_balance + COALESCE(
-        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
-    ))::bigint AS balance,
-    created_at,
-    updated_at,
-    version;
+-- version of a live row; version increments by one. Post-update balance via
+-- the CTE join on account_with_balance (RETURNING cannot join).
+WITH updated AS (
+    UPDATE accounts
+    SET
+        name            = @name,
+        currency        = @currency,
+        opening_balance = @opening_balance,
+        version         = version + 1,
+        updated_at        = now()
+    WHERE accounts.id = @id AND accounts.household_id = @household_id
+      AND accounts.deleted_at IS NULL AND accounts.version = @base_version
+    RETURNING
+        accounts.id,
+        accounts.user_id,
+        accounts.name,
+        accounts.currency,
+        accounts.opening_balance,
+        accounts.created_at,
+        accounts.updated_at,
+        accounts.version
+)
+SELECT
+    u.id,
+    u.user_id,
+    u.name,
+    u.currency,
+    u.opening_balance,
+    v.balance,
+    u.created_at,
+    u.updated_at,
+    u.version
+FROM updated u
+JOIN account_with_balance v ON v.id = u.id;
 
 -- name: SyncAccountsByIDs :many
 -- Batch fetch for pull data (current state of records named by change rows).

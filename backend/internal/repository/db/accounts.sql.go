@@ -83,19 +83,17 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (C
 
 const getAccount = `-- name: GetAccount :one
 SELECT
-    a.id,
-    a.user_id,
-    a.name,
-    a.currency,
-    a.opening_balance,
-    (a.opening_balance + COALESCE(SUM(c.signed), 0))::bigint AS balance,
-    a.created_at,
-    a.updated_at,
-    a.version
-FROM accounts a
-LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.id = $1 AND a.household_id = $2 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.created_at, a.updated_at, a.version
+    id,
+    user_id,
+    name,
+    currency,
+    opening_balance,
+    balance,
+    created_at,
+    updated_at,
+    version
+FROM account_with_balance
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
 
 type GetAccountParams struct {
@@ -139,14 +137,12 @@ SELECT
     name,
     currency,
     opening_balance,
-    (opening_balance + COALESCE(
-        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
-    ))::bigint AS balance,
+    balance,
     created_at,
     updated_at,
     version,
     deleted_at
-FROM accounts
+FROM account_with_balance
 WHERE id = $1 AND household_id = $2
 `
 
@@ -190,20 +186,18 @@ func (q *Queries) GetAccountAny(ctx context.Context, arg GetAccountAnyParams) (G
 
 const getAccounts = `-- name: GetAccounts :many
 SELECT
-    a.id,
-    a.user_id,
-    a.name,
-    a.currency,
-    a.opening_balance,
-    (a.opening_balance + COALESCE(SUM(c.signed), 0))::bigint AS balance,
-    a.created_at,
-    a.updated_at,
-    a.version
-FROM accounts a
-LEFT JOIN account_contributions c ON c.account_id = a.id
-WHERE a.household_id = $1 AND a.deleted_at IS NULL
-GROUP BY a.id, a.user_id, a.name, a.currency, a.opening_balance, a.created_at, a.updated_at, a.version
-ORDER BY a.created_at, a.id
+    id,
+    user_id,
+    name,
+    currency,
+    opening_balance,
+    balance,
+    created_at,
+    updated_at,
+    version
+FROM account_with_balance
+WHERE household_id = $1 AND deleted_at IS NULL
+ORDER BY created_at, id
 `
 
 type GetAccountsRow struct {
@@ -356,26 +350,38 @@ func (q *Queries) SyncAccountsByIDs(ctx context.Context, arg SyncAccountsByIDsPa
 }
 
 const syncReplaceAccount = `-- name: SyncReplaceAccount :one
-UPDATE accounts
-SET
-    name            = $1,
-    currency        = $2,
-    opening_balance = $3,
-    version         = version + 1,
-    updated_at        = now()
-WHERE id = $4 AND household_id = $5 AND deleted_at IS NULL AND version = $6
-RETURNING
-    id,
-    user_id,
-    name,
-    currency,
-    opening_balance,
-    (opening_balance + COALESCE(
-        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
-    ))::bigint AS balance,
-    created_at,
-    updated_at,
-    version
+WITH updated AS (
+    UPDATE accounts
+    SET
+        name            = $1,
+        currency        = $2,
+        opening_balance = $3,
+        version         = version + 1,
+        updated_at        = now()
+    WHERE accounts.id = $4 AND accounts.household_id = $5
+      AND accounts.deleted_at IS NULL AND accounts.version = $6
+    RETURNING
+        accounts.id,
+        accounts.user_id,
+        accounts.name,
+        accounts.currency,
+        accounts.opening_balance,
+        accounts.created_at,
+        accounts.updated_at,
+        accounts.version
+)
+SELECT
+    u.id,
+    u.user_id,
+    u.name,
+    u.currency,
+    u.opening_balance,
+    v.balance,
+    u.created_at,
+    u.updated_at,
+    u.version
+FROM updated u
+JOIN account_with_balance v ON v.id = u.id
 `
 
 type SyncReplaceAccountParams struct {
@@ -400,7 +406,8 @@ type SyncReplaceAccountRow struct {
 }
 
 // Full-state CAS upsert from a sync push: applies only on the exact base
-// version of a live row; version increments by one.
+// version of a live row; version increments by one. Post-update balance via
+// the CTE join on account_with_balance (RETURNING cannot join).
 func (q *Queries) SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccountParams) (SyncReplaceAccountRow, error) {
 	row := q.db.QueryRow(ctx, syncReplaceAccount,
 		arg.Name,
@@ -426,24 +433,36 @@ func (q *Queries) SyncReplaceAccount(ctx context.Context, arg SyncReplaceAccount
 }
 
 const updateAccount = `-- name: UpdateAccount :one
-UPDATE accounts
-SET
-    name       = COALESCE($1, name),
-    version    = version + 1,
-    updated_at        = now()
-WHERE id = $2 AND household_id = $3 AND deleted_at IS NULL AND version = $4
-RETURNING
-    id,
-    user_id,
-    name,
-    currency,
-    opening_balance,
-    (opening_balance + COALESCE(
-        (SELECT SUM(c.signed) FROM account_contributions c WHERE c.account_id = accounts.id), 0
-    ))::bigint AS balance,
-    created_at,
-    updated_at,
-    version
+WITH updated AS (
+    UPDATE accounts
+    SET
+        name       = COALESCE($1, name),
+        version    = version + 1,
+        updated_at        = now()
+    WHERE accounts.id = $2 AND accounts.household_id = $3
+      AND accounts.deleted_at IS NULL AND accounts.version = $4
+    RETURNING
+        accounts.id,
+        accounts.user_id,
+        accounts.name,
+        accounts.currency,
+        accounts.opening_balance,
+        accounts.created_at,
+        accounts.updated_at,
+        accounts.version
+)
+SELECT
+    u.id,
+    u.user_id,
+    u.name,
+    u.currency,
+    u.opening_balance,
+    v.balance,
+    u.created_at,
+    u.updated_at,
+    u.version
+FROM updated u
+JOIN account_with_balance v ON v.id = u.id
 `
 
 type UpdateAccountParams struct {
@@ -467,7 +486,8 @@ type UpdateAccountRow struct {
 
 // Optimistic concurrency: the WHERE clause includes version = @version (and
 // liveness) so a concurrent update yields zero rows. COALESCE keeps a column
-// unchanged when its narg is NULL (PATCH semantics).
+// unchanged when its narg is NULL (PATCH semantics). The post-update balance
+// comes from account_with_balance via the CTE (RETURNING cannot join).
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (UpdateAccountRow, error) {
 	row := q.db.QueryRow(ctx, updateAccount,
 		arg.Name,

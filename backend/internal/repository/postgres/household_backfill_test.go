@@ -3,6 +3,8 @@ package postgres_test
 import (
 	"context"
 	"os"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -151,6 +153,15 @@ func TestMigration_HouseholdBackfill(t *testing.T) {
 	assert.Equal(t, 1, liveNames)
 
 	// The post-migration repository layer works over the migrated data.
+	// The remaining migration pairs are applied first so the CURRENT queries'
+	// schema exists at this point in history (e.g. the account_with_balance
+	// view of 000009 that GetAccounts reads).
+	for _, f := range migrationFilesAfter(t, "000005_household.up.sql") {
+		sql, err := os.ReadFile(f)
+		require.NoError(t, err, "read %s", f)
+		_, err = pool.Exec(ctx, string(sql))
+		require.NoError(t, err, "apply %s", f)
+	}
 	repo := postgres.NewRepository(pool)
 	hhA, err := repo.GetMembershipByUser(ctx, mustUUID(userA))
 	require.NoError(t, err)
@@ -164,6 +175,14 @@ func TestMigration_HouseholdBackfill(t *testing.T) {
 	require.Len(t, changes, 1, "legacy change_log rows pull for the household")
 
 	// Down migration: reverts to user scoping (records keep their user_id).
+	// Every later pair walks back first (their downs must be clean), then
+	// 000005 down drops the households table.
+	for _, f := range migrationDownsAfter(t, "000005_household.down.sql") {
+		sql, err := os.ReadFile(f)
+		require.NoError(t, err, "read %s", f)
+		_, err = pool.Exec(ctx, string(sql))
+		require.NoError(t, err, "apply %s", f)
+	}
 	downSQL, err := os.ReadFile("migrations/000005_household.down.sql")
 	require.NoError(t, err)
 	_, err = pool.Exec(ctx, string(downSQL))
@@ -185,4 +204,36 @@ func mustUUID(s string) uuid.UUID {
 		panic(err)
 	}
 	return id
+}
+
+// migrationFilesAfter lists the up-migration files whose numbered prefix
+// sorts after the given one (lexicographic order = numeric order for the
+// zero-padded four-digit prefixes).
+func migrationFilesAfter(t *testing.T, after string) []string {
+	t.Helper()
+	entries, err := os.ReadDir("migrations")
+	require.NoError(t, err, "list migrations")
+	var out []string
+	for _, e := range entries {
+		if name := e.Name(); strings.HasSuffix(name, ".up.sql") && name > after {
+			out = append(out, "migrations/"+name)
+		}
+	}
+	return out
+}
+
+// migrationDownsAfter lists the down-migration files whose numbered prefix
+// sorts after the given one, in REVERSE order (the rollback sequence).
+func migrationDownsAfter(t *testing.T, after string) []string {
+	t.Helper()
+	entries, err := os.ReadDir("migrations")
+	require.NoError(t, err, "list migrations")
+	var out []string
+	for _, e := range entries {
+		if name := e.Name(); strings.HasSuffix(name, ".down.sql") && name > after {
+			out = append(out, "migrations/"+name)
+		}
+	}
+	slices.Reverse(out)
+	return out
 }

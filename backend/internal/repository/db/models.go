@@ -28,6 +28,20 @@ type AccountContribution struct {
 	Signed    interface{}
 }
 
+type AccountWithBalance struct {
+	ID             uuid.UUID
+	HouseholdID    uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	Currency       string
+	OpeningBalance int64
+	Balance        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Version        int32
+	DeletedAt      *time.Time
+}
+
 type AppliedOperation struct {
 	OpID        uuid.UUID
 	UserID      uuid.UUID
