@@ -9,17 +9,11 @@ or stale entries are removed, not archived.
 
 ## Workspace / CI
 
-- **CI is red on main since 2026-08-21** (2026-09-01 audit, A17): the
-  `arch-check` job has never passed — dependency-cruiser 18 rejects the
-  job's Node 20 while `ci.yml` pins `node-version: "20"` (3 places). Local
-  runs (Node 24) are clean, so the rules hold, but no CI gate for
-  #12–#16 is operational. Fix: bump to Node 22.
-- **JS/TS CI is minimal.** Only two JS jobs run: the `ts-gen-check`
-  contract drift gate and the `arch-check` dependency-cruiser gate (both
-  added 2026-08-20); everything else is local-only: no type-check, no web
-  or mobile tests, no knip. (2026-09-01 audit, A18: this let 7
-  month-boundary-broken mobile tests sit unnoticed; also no
-  `openspec validate` step anywhere.)
+- **JS/TS CI is minimal.** JS jobs cover the contract drift gate
+  (`ts-gen-check`), architecture (`arch-check` + web FSD lint), and design
+  lint; everything else is local-only: no type-check, no web or mobile
+  tests, no knip. (2026-09-01 audit, A18; also no `openspec validate`
+  step anywhere.)
 - **Web coverage thresholds are disabled** (acknowledged debt; ~500 unit
   tests exist but the bar is not enforced).
 
@@ -30,27 +24,10 @@ or stale entries are removed, not archived.
   `slug` exists only on the TS side (the backend never returns it).
 - `packages/tokens` has no tsconfig/type-check; `api`/`money`/`i18n` have
   no READMEs.
-- Stale comment in `packages/tokens/src/index.css:92` claims the dark theme
-  is "unwired at runtime" — it is wired (2026-09-01 audit, A20).
-
-## Contract
-
-- **`Idempotency-Key` self-contradiction** (2026-09-01 audit, B7): the
-  create-transaction description words the header conditionally ("если
-  заголовок присутствует"), but the parameter is `required: true` and the
-  middleware 400s on absence.
 
 ## Web
 
 - **`workbox-window` is an undeclared runtime dependency of web** (deploy-vps review): vite-plugin-pwa's virtual module imports it, but it resolves only through the repo's hoisted install (`.npmrc` `node-linker=hoisted`) — a clean isolated install fails. The web Dockerfile copies `.npmrc` as the workaround; the proper fix is declaring `workbox-window` in `apps/web/package.json` (version matching vite-plugin-pwa's workbox) and then dropping the .npmrc coupling.
-- **FSD violations, Steiger-red locally** (2026-09-01 audit, A19):
-  `widgets/mobile-shell/ui/MobileTopBar.vue:6` cross-imports
-  `@/widgets/sync-status`; `shared/lib` has 17 modules (threshold 15).
-  Steiger is not in CI, so nothing enforces web FSD.
-- **PWA manifest colors are not token-derived** (2026-09-01 audit, A20):
-  `site.webmanifest` `theme_color #6366f1` (data-palette indigo, not the
-  UI primary `#0f766e`) and `background_color #ffffff` (no such token;
-  light background is `#f6f2ec`) predate the Warm Paper re-palette.
 - **Overlay primitives reach into reka-ui internals** (web-mobile-drawers):
   `shared/ui/drawer/DrawerContent.vue` neutralizes the nested picker's
   `aria-hidden` via a MutationObserver on reka's content root, and the
@@ -60,8 +37,6 @@ or stale entries are removed, not archived.
   overlay-presentation e2e (stack accessibility) and the select unit tests.
 - `pages/accounts` edit-account feature has no public API barrel (FSD
   violation).
-- `TransactionsItemsList.vue` binds one shared `editOpen`/`deleteOpen`
-  ref across all rows — opening one dialog opens all of them.
 - No catch-all 404 route.
 - Sentry integration is a TODO in `log-error.ts`.
 
@@ -82,12 +57,6 @@ or stale entries are removed, not archived.
 analytics-screen.tsx` keeps the legacy text-only empty state (no chart,
   its `DonutChart` also lacks the neutral empty ring). Catch up in a
   dedicated parity change.
-- **Date-dependent analytics test fixtures** (2026-09-01 audit, A18):
-  `category-cashflow-sheet.test.tsx` (day-of-month clamping collapses
-  distinct days early in a month) and `analytics-screen` /
-  `analytics-detail-screen` (hardcoded `2026-08-*` vs
-  `currentPeriod('month')`) — 3 suites / 7 tests red at HEAD since the
-  2026-09-01 month boundary. Fix with month-independent fixtures.
 - **Sheet auto-dismiss after success is runtime-flaky**
   (`TODO(sheet-dismiss)`, hedged in 4+ Maestro flows): the imperative
   dismiss is implemented but not reliable at runtime (Expo Go e2e).
