@@ -507,8 +507,10 @@ entities/ shared/`.
   message map (web: vue-i18n keys per code; mobile: static RU map) → UI
   (toast / inline field / `ErrorState` / form root error). No UI in either
   app switches on specific `apiCode`s; they consume the coarse classes.
-- **Web read path**: page → `useQuery(['transactions', options])` →
-  injected HTTP repository → `apiClient` → backend; URL-driven filters.
+- **Web read path**: page → `useQuery(SYNC_QUERY_KEY_ROOTS.<entity>)` →
+  injected local repository (`@expense-tracker/local-data` over SQLite-WASM) →
+  Pinia Colada cache; URL-driven filters. The server is reached only through
+  the sync engine, not per-read.
 - **Mobile write path**: form → local repository (row + outbox op in one
   SQLite tx) → TanStack cache invalidation → debounced sync trigger →
   engine push (server CAS verdicts per item) → conflict rows or pull of

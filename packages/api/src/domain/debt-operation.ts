@@ -1,12 +1,3 @@
-import {
-  asDateTimeString,
-  asInteger,
-  asNonEmptyString,
-  asPositiveInteger,
-  asString,
-  isRecord,
-} from '../lib/normalize'
-
 /** Money owed to the user («мне должны») vs money the user owes («я должен»). */
 export type DebtDirection = 'receivable' | 'payable'
 /** `debt` grows the owed amount; `repayment` («списание») shrinks it. */
@@ -30,42 +21,4 @@ export interface DebtOperation {
    * sync delivers it) and on records authored before authorship existed.
    */
   authorId?: string | null
-}
-
-const isDebtDirection = (value: unknown): value is DebtDirection =>
-  value === 'receivable' || value === 'payable'
-
-const isDebtOperationKind = (value: unknown): value is DebtOperationKind =>
-  value === 'debt' || value === 'repayment'
-
-export const normalizeDebtOperation = (value: unknown): DebtOperation | null => {
-  if (!isRecord(value)) {
-    return null
-  }
-
-  const id = asNonEmptyString(value.id)
-  const debtorId = asNonEmptyString(value.debtorId)
-  const direction = isDebtDirection(value.direction) ? value.direction : null
-  const kind = isDebtOperationKind(value.kind) ? value.kind : null
-  const amount = asPositiveInteger(value.amount)
-  const note = asString(value.note) ?? ''
-  const occurredAt = asDateTimeString(value.occurredAt)
-  const version = asInteger(value.version)
-  const authorId = value.authorId == null ? undefined : asString(value.authorId)
-
-  if (!id || !debtorId || !direction || !kind || !amount || !occurredAt || version === null) {
-    return null
-  }
-
-  return {
-    id,
-    debtorId,
-    direction,
-    kind,
-    amount,
-    note,
-    occurredAt,
-    version,
-    ...(authorId !== undefined ? { authorId } : {}),
-  }
 }

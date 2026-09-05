@@ -69,7 +69,6 @@ export {
   type CategoryRef,
 } from './domain/transaction'
 export type { Debtor } from './domain/debtor'
-export { normalizeDebtor } from './domain/debtor'
 export type {
   Household,
   HouseholdMember,
@@ -92,7 +91,6 @@ export type {
   DebtDirection,
   DebtOperationKind,
 } from './domain/debt-operation'
-export { normalizeDebtOperation } from './domain/debt-operation'
 export type {
   PlannedPayment,
   PlannedPaymentType,
@@ -100,7 +98,6 @@ export type {
   PlannedPaymentConfirmMode,
   PlannedPaymentReminder,
 } from './domain/planned_payment'
-export { normalizePlannedPayment } from './domain/planned_payment'
 
 // --- Per-entity repository contracts (the DI seam) -------------------------
 export {
@@ -139,13 +136,7 @@ export {
   type UpdatePlannedPaymentPayload,
 } from './repositories/planned-payment'
 
-// --- HTTP repository implementations ---------------------------------------
-export { createHTTPAccountRepository } from './http/account'
-export { createHTTPCategoryRepository } from './http/category'
-export { createHTTPTransactionRepository } from './http/transaction'
-export { createHTTPDebtorRepository } from './http/debtor'
-export { createHTTPDebtOperationRepository } from './http/debt-operation'
-export { createHTTPPlannedPaymentRepository } from './http/planned-payment'
+// --- Household endpoint client ----------------------------------------------
 export {
   fetchHousehold,
   updateHouseholdName,
