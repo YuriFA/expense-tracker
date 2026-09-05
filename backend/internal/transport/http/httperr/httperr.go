@@ -21,7 +21,11 @@ const (
 	// domain.errorSpecs (domain.ErrorSpecFor), shared by the REST mapper and
 	// the sync push results. What remains are the transport-only codes,
 	// written directly by middleware via httperr.Write (middleware rejections
-	// cannot flow through the strict-handler error mapper).
+	// cannot flow through the strict-handler error mapper). The union of
+	// these constants and errorSpecs is parity-checked against
+	// docs/api/openapi.yaml by internal/domain/errspec_parity_test.go — a new
+	// constant here must join its transportEmittedCodes list and, unless
+	// undocumentedCodes covers it, get a `code:` example in the spec.
 
 	// ErrCodeOriginRejected is the 403 for non-GET requests whose Origin is
 	// outside the CORS allowlist (ADR-0001 CSRF control).

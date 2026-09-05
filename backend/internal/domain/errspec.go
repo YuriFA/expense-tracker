@@ -25,8 +25,9 @@ func ErrorSpecFor(err error) (ErrorSpec, bool) {
 }
 
 // errorSpecs maps every sentinel error to its wire spec. Add a row when a
-// new sentinel error gets a machine code; keep the values in sync with the
-// openapi.yaml error responses (they are the client-facing contract).
+// new sentinel error gets a machine code; the values are the client-facing
+// contract and are parity-checked against openapi.yaml `code:` examples by
+// errspec_parity_test.go.
 //
 // Nuance preserved: ErrAccountNotFound is 404 when an account is fetched by
 // id, but the transaction-FK case uses DISTINCT errors
