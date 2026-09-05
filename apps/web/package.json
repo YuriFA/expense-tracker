@@ -18,6 +18,7 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "lint:design": "vitest run src/__tests__/design-*.test.ts src/__tests__/page-header-rule.test.ts",
+    "lint:fsd": "steiger src",
     "i18n:lint": "ESLINT_I18N_STRICT=1 eslint . --cache",
     "format": "oxfmt src/",
     "gen:api": "node scripts/gen-api.mjs"

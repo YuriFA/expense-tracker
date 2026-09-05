@@ -104,3 +104,30 @@ describe('superdesign spec stays aligned with shipped tokens', () => {
     expect(missing).toEqual([])
   })
 })
+
+describe('PWA chrome colors are token-derived', () => {
+  // A20: the manifest / meta chrome colors must follow the app's visual
+  // style (Warm Paper shell), not the categorical data palette or raw white.
+  const webRoot = join(repoRoot, 'apps', 'web')
+  const manifest = JSON.parse(
+    readFileSync(join(webRoot, 'public', 'site.webmanifest'), 'utf8'),
+  ) as { theme_color: string; background_color: string }
+  const indexHtml = readFileSync(join(webRoot, 'index.html'), 'utf8')
+
+  it('manifest theme/background match the light --background token', () => {
+    expect(manifest.theme_color).toBe(themes.light['background'])
+    expect(manifest.background_color).toBe(themes.light['background'])
+  })
+
+  it('index.html theme-color metas follow the color scheme', () => {
+    // Formatting-robust: parse the meta tags, then compare attribute values.
+    const metas = [...indexHtml.matchAll(/<meta\b[^>]*name="theme-color"[^>]*>/g)].map((m) => m[0])
+    const attr = (tag: string, name: string) => tag.match(new RegExp(`${name}="([^"]*)"`))?.[1]
+    expect(metas).toHaveLength(2)
+    const [light, dark] = metas
+    expect(attr(light!, 'media')).toBe('(prefers-color-scheme: light)')
+    expect(attr(light!, 'content')).toBe(themes.light['background'])
+    expect(attr(dark!, 'media')).toBe('(prefers-color-scheme: dark)')
+    expect(attr(dark!, 'content')).toBe(themes.dark['background'])
+  })
+})
