@@ -7,20 +7,20 @@ with a next-due date, a regularity, and a confirmation mode, where each
 confirmation generates a real transaction from the plan's type, account,
 and category, and the plan advances to its next occurrence.
 
-
 ## Requirements
 
 ### Requirement: Planned payment ownership and scoping
 
-Every planned payment SHALL belong to exactly one user. Reading,
-updating, or deleting another user's planned payment SHALL behave as if
-it does not exist (not-found). Planned payment names SHALL NOT be
-constrained to uniqueness: two live plans of the same user MAY share a
-name (two «Netflix» subscriptions are legitimate).
+Every planned payment SHALL belong to exactly one household. Reading,
+updating, or deleting a planned payment of a household the requester does
+not belong to SHALL behave as if it does not exist (not-found). Planned
+payment names SHALL NOT be constrained to uniqueness: two live plans of
+the same household MAY share a name (two «Netflix» subscriptions are
+legitimate).
 
 #### Scenario: Another user's plan is invisible
 
-- **WHEN** a request addresses a planned payment id owned by a different user
+- **WHEN** a request addresses a planned payment id owned by a household the requester does not belong to
 - **THEN** the request is rejected as not-found and no data leaks
 
 #### Scenario: Duplicate names are legal
@@ -32,8 +32,8 @@ name (two «Netflix» subscriptions are legitimate).
 
 A planned payment SHALL carry a type (`expense` or `income`), a positive
 non-zero amount in minor units, an optional name, a reference to a live
-account owned by the same user, a reference to a live category owned by
-the same user whose type matches the plan's type, a `next_due` calendar
+account of the same household, a reference to a live category of the same
+household whose type matches the plan's type, a `next_due` calendar
 date, a regularity (`daily`, `weekly`, `monthly`, or `yearly`), a
 confirmation mode (`manual` or `auto`), a reminder setting (`off`,
 `day_before`, or `on_day`), and an optional note. A live category is a
@@ -62,7 +62,7 @@ below.
 
 #### Scenario: Unknown or deleted account reference rejected
 
-- **WHEN** a planned payment references an account id that does not exist, belongs to another user, or has been deleted
+- **WHEN** a planned payment references an account id that does not exist, belongs to another household, or has been deleted
 - **THEN** the request is rejected with an account-not-found error
 
 #### Scenario: Past next-due date accepted
