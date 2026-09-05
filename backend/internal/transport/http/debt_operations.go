@@ -13,8 +13,8 @@ func (s *Server) ListDebtOperations(
 	ctx context.Context,
 	req api.ListDebtOperationsRequestObject,
 ) (api.ListDebtOperationsResponseObject, error) {
-	user := s.currentUser(ctx)
-	ops, err := s.debtOps.List(ctx, user.ID, domain.GetDebtOperationsParams{
+	householdID := s.currentHouseholdID(ctx)
+	ops, err := s.debtOps.List(ctx, householdID, domain.GetDebtOperationsParams{
 		DebtorID: fromUUIDPtr(req.Params.DebtorId),
 	})
 	if err != nil {

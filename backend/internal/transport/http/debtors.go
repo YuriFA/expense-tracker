@@ -13,8 +13,8 @@ func (s *Server) ListDebtors(
 	ctx context.Context,
 	_ api.ListDebtorsRequestObject,
 ) (api.ListDebtorsResponseObject, error) {
-	user := s.currentUser(ctx)
-	debtors, err := s.debtors.List(ctx, user.ID)
+	householdID := s.currentHouseholdID(ctx)
+	debtors, err := s.debtors.List(ctx, householdID)
 	if err != nil {
 		return nil, err
 	}

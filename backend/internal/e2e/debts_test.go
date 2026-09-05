@@ -316,3 +316,37 @@ func TestE2E_DebtsSyncFlows(t *testing.T) {
 		}
 	}
 }
+
+// A16 regression: listings are scoped by the caller's household, not by user
+// id. Since the household change user and household ids are distinct UUIDs,
+// so a user-scoped listing hides every record the user creates.
+func TestE2E_DebtsListingsHouseholdScoped(t *testing.T) {
+	if testing.Short() {
+		t.Skip("e2e requires Postgres")
+	}
+
+	c := &client{t: t, jar: map[string]string{}}
+	resp := c.do("POST", "/api/auth/register", map[string]any{"email": uniqueEmail(), "password": "supersecret1"})
+	require.Equal(t, 201, resp["__status"], resp["__body"])
+
+	created := c.do("POST", "/api/debtors", map[string]any{"name": "Мария"})
+	require.Equal(t, 201, created["__status"], created["__body"])
+	debtorID, _ := created["id"].(string)
+
+	op := c.do("POST", "/api/debt-operations", map[string]any{
+		"debtorId": debtorID, "direction": "receivable", "kind": "debt",
+		"amount": 100000, "occurredAt": "2026-08-20T10:00:00Z",
+	})
+	require.Equal(t, 201, op["__status"], op["__body"])
+	opID, _ := op["id"].(string)
+
+	list := c.do("GET", "/api/debtors", nil)
+	require.Equal(t, 200, list["__status"])
+	body, _ := list["__body"].(string)
+	assert.Contains(t, body, debtorID, "the caller's own debtor must be listed")
+
+	opsList := c.do("GET", "/api/debt-operations", nil)
+	require.Equal(t, 200, opsList["__status"])
+	opsBody, _ := opsList["__body"].(string)
+	assert.Contains(t, opsBody, opID, "the caller's own debt operation must be listed")
+}

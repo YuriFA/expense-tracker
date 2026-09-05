@@ -20,7 +20,7 @@ CI + root `pnpm arch:check` in CI). Original finding IDs are preserved.
 
 | Class | Count | Findings |
 |---|---|---|
-| FIX (pending, rev.3) | 5 | A16 (debts listing scoping bug), A17 (CI `arch-check` red since introduction — Node 20 vs dependency-cruiser 18), A18 (mobile date-dependent test fixtures), A19 (web FSD: cross-slice import + Steiger not in CI), A20 (PWA manifest colors not token-derived) |
+| FIX (pending, rev.3) | 4 | A17 (CI `arch-check` red since introduction — Node 20 vs dependency-cruiser 18), A18 (mobile date-dependent test fixtures), A19 (web FSD: cross-slice import + Steiger not in CI), A20 (PWA manifest colors not token-derived) |
 | DOCUMENT (pending, rev.3) | 2 | B7 (OpenAPI `Idempotency-Key` self-contradiction), B8 (planned-payments spec wording still user-scoped) |
 | DECIDE (open, rev.3) | 2 | B9 (mobile runtime version surface - spec gap), B10 (plans overdue flag: UTC-day comparison vs local calendar-day semantics) |
 | DOCUMENT (resolved, rev.3) | 1 | B6 (stale docs: ADR-0001:66, overview CSRF/rate-limit + test counts, ADR-0002 status header, invariants #3/#15/#17, findings deviation list) — fixed by the audit itself |
@@ -34,7 +34,6 @@ CI + root `pnpm arch:check` in CI). Original finding IDs are preserved.
 
 | ID | Class | Priority | Finding |
 |---|---|---|---|
-| A16 | FIX | P1 | `GET /api/debtors` / `GET /api/debt-operations` pass `user.ID` into the `householdID` parameter (`transport/http/debtors.go:17`, `debt_operations.go:17`); empty listings for every registration since the household change (distinct ids, `postgres/users.go:28-29`; only 000005-backfill rows coincide). e2e gap: list assertions are `NotContains`-only. One-line fix per handler + a positive e2e assertion. Blast radius limited — both local-first apps list from the local DB — but the contract endpoint is broken and household members generally get wrong results |
 | A17 | FIX | P1 | CI red on every run since 2026-08-21 (last green 2026-08-19 `fe30c7d`): the `arch-check` job (added 2026-08-20) has never passed — dependency-cruiser 18 rejects Node 20 (`ci.yml` pins `node-version: "20"` in 3 places; local Node 24 is fine). The "Automated: yes" claims for #12–#16 were not operational in CI. Fix: bump to 22. Also: 14 local commits unpushed |
 | A18 | FIX | P2 | 3 mobile Jest suites / 7 tests fail at HEAD since the 2026-09-01 month boundary: `category-cashflow-sheet.test.tsx` (`dayThisMonth` clamping collapses days 2/4/6 onto the 1st), `analytics-screen`/`analytics-detail-screen` (hardcoded `2026-08-*` fixtures vs `currentPeriod('month')` default). Not in CI → unnoticed. Fix: month-independent fixtures (injected clock) |
 | A19 | FIX | P2 | Web FSD (Steiger, local-only): `widgets/mobile-shell/ui/MobileTopBar.vue:6` imports `@/widgets/sync-status` (cross-slice, forbidden); `shared/lib` 17 modules > 15 threshold. Fix the import, group shared/lib, and add Steiger (or port the two rules to the depcruiser web config) to CI |
@@ -55,8 +54,9 @@ deployment assumptions, not cross-cutting architecture changes.
 
 ## Resolved findings
 
-| ID | Was | Now | Resolution (2026-08-20) |
+| ID | Was | Now | Resolution |
 |---|---|---|---|
+| A16 | FIX | **fixed 2026-09-05** | `ListDebtors`/`ListDebtOperations` now scope by `currentHouseholdID` like every other handler (was `user.ID`, hiding all records since the household change). Reproduced first via the new `TestE2E_DebtsListingsHouseholdScoped` (positive contains-assertions closing the NotContains-only e2e gap); full `go test ./...` green |
 | A1 | DECIDE | resolved | Middleware→repository allowlist (Session/User/Idempotency); new edges = separate decision. `backend/AGENTS.md`, invariant #17, depguard-enforced in CI |
 | A3 | FIX | **fixed 2026-08-20** | `/docs` now serves the embedded spec: Redoc shell as a const (`transport/http/docs.go`) + `/docs/openapi.json` from `api.GetSpecJSON()`; routes registered before the spec validator (which 404s non-contract paths — the old StaticFile routes never worked from any cwd). Proven by `TestDocsRoutesServeEmbeddedSpec` (runs in the package dir where the old impl 404'd); full transport suite + `go test -short ./...` + golangci-lint green |
 | A4 | FIX | **fixed 2026-08-20** (decision: bring contract to reality — drop, not populate) | Deleted `internal/util/` + `internal/testutil/` (verified zero importers); removed unused sqlc `SetEmailVerified` + `emit_interface` from `sqlc.yaml` (stale `querier.go` deleted — sqlc never deletes files it stops generating); removed `ValidationErrorResponse`/`FieldError` from `openapi.yaml` (strict 400 component → `ErrorResponse`, oneOf variants dropped) + dead `httperr.WriteValidation` helpers; regenerated both sides (`make gen`, `pnpm gen:api`). Verified: redocly valid, build + all unit tests + lint green, regeneration idempotent; `gen-check` red only against the uncommitted session tree (commits as part of this change set) |
@@ -90,7 +90,8 @@ deployment assumptions, not cross-cutting architecture changes.
 
 ## Pending findings (FIX — none fixed silently; each awaits its own change)
 
-Rev.3 open items: **A16–A20** (see the detail table above). Rev.2 items are
+Rev.3 open items: **A17–A20** (see the detail table above; **A16 was fixed
+2026-09-05**, see Resolved). Rev.2 items are
 all closed. The remaining older open work items are implementations of
 already-made decisions: the web migration onto `@expense-tracker/dates`,
 the mobile i18n wiring, and the `i18n` en→ru default flip — tracked in
