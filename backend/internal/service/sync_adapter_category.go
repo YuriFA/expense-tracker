@@ -29,7 +29,7 @@ type categoryAdapter struct {
 }
 
 func (categoryAdapter) entity() string { return domain.SyncEntityCategory }
-func (categoryAdapter) label() string  { return "category" }
+func (categoryAdapter) label() string  { return catalogSyncEntityLabel(domain.SyncEntityCategory) }
 
 func (categoryAdapter) decode(raw json.RawMessage) (domain.CategoryFullState, error) {
 	var data domain.CategoryFullState
@@ -37,7 +37,9 @@ func (categoryAdapter) decode(raw json.RawMessage) (domain.CategoryFullState, er
 	return data, err
 }
 
-func (categoryAdapter) invalidDataMessage() string { return "invalid category data" }
+func (categoryAdapter) invalidDataMessage() string {
+	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityCategory)
+}
 
 // preValidate checks the type shape, then the live-name uniqueness - the
 // latter pre-checked under the advisory lock so a violation surfaces as a

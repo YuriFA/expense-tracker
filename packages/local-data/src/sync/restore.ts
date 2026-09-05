@@ -1,12 +1,9 @@
 // Restore-as-new policy (design D2): a single id-based function that
 // re-reads a delete-vs-edit conflict, decodes the preserved local state per
-// entity through a strict decoder table (no silent value substitution), and
-// creates a fresh record via the entity's local repository. The conflict is
-// marked resolved only after a successful create.
-//
-// The decoder table is shaped as a plain Record<SyncEntity, Decoder> so the
-// future entity registry (review candidate C2) can absorb it without
-// reshaping.
+// entity through the sync entity catalog's strict decoders (no silent value
+// substitution), and creates a fresh record via the entity's local
+// repository. The conflict is marked resolved only after a successful
+// create.
 
 import type {
   CreateAccountPayload,
@@ -24,26 +21,7 @@ import { createLocalDebtorRepository, createLocalDebtOperationRepository } from 
 import { createLocalPlannedPaymentRepository } from '../repositories/planned-payment'
 import type { SyncEntity } from '../schema'
 import { getConflictById, markConflictResolved, type LocalSyncConflict } from './conflicts'
-
-// ---------------------------------------------------------------------------
-// Shared predicates
-// ---------------------------------------------------------------------------
-
-function asString(value: unknown): string | null {
-  return typeof value === 'string' ? value : null
-}
-
-function asNonEmpty(value: unknown): string | null {
-  const s = asString(value)
-  return s !== null && s.length > 0 ? s : null
-}
-
-function asInt(value: unknown): number | null {
-  return typeof value === 'number' && Number.isSafeInteger(value) ? value : null
-}
-
-const CALENDAR_DAY = /^\d{4}-\d{2}-\d{2}$/
-const CURRENCIES = new Set(['USD', 'EUR', 'RUB'])
+import { decodeCatalogRestorePayload } from './sync-entity-catalog.generated'
 
 // ---------------------------------------------------------------------------
 // canRestoreAsNew (moved verbatim from the web module)
@@ -56,215 +34,6 @@ const CURRENCIES = new Set(['USD', 'EUR', 'RUB'])
  */
 export function canRestoreAsNew(conflict: LocalSyncConflict): boolean {
   return typeof conflict.localState === 'object' && conflict.localState !== null
-}
-
-// ---------------------------------------------------------------------------
-// Decoder table
-// ---------------------------------------------------------------------------
-
-type DecodeOk<T> = { ok: true; payload: T }
-type DecodeFail = { ok: false; field?: string }
-type DecodeResult<T> = DecodeOk<T> | DecodeFail
-
-function ok<T>(payload: T): DecodeOk<T> {
-  return { ok: true, payload }
-}
-function fail(field?: string): DecodeFail {
-  return { ok: false, field }
-}
-
-function decodeAccount(
-  state: Record<string, unknown>,
-): DecodeResult<CreateAccountPayload> {
-  const name = asNonEmpty(state.name)
-  if (!name) return fail('name')
-  const currency = asString(state.currency)
-  if (!currency || !CURRENCIES.has(currency)) return fail('currency')
-  // openingBalance defaults to 0 when absent (a valid starting value, not a substitution).
-  const openingBalance = asInt(state.openingBalance) ?? 0
-  return ok({ name, currency: currency as CreateAccountPayload['currency'], openingBalance })
-}
-
-function decodeCategory(
-  state: Record<string, unknown>,
-): DecodeResult<CreateCategoryPayload> {
-  const name = asNonEmpty(state.name)
-  if (!name) return fail('name')
-  const type = asString(state.type)
-  if (type !== 'income' && type !== 'expense') return fail('type')
-  const icon = asNonEmpty(state.icon)
-  if (!icon) return fail('icon')
-  const color = asNonEmpty(state.color)
-  if (!color) return fail('color')
-  return ok({ name, type, icon, color })
-}
-
-function decodeTransaction(
-  state: Record<string, unknown>,
-): DecodeResult<CreateTransactionPayload> {
-  const type = asString(state.type)
-  if (
-    type !== 'income' &&
-    type !== 'expense' &&
-    type !== 'transfer' &&
-    type !== 'adjustment'
-  ) {
-    return fail('type')
-  }
-
-  const amount = asInt(state.amount)
-  if (amount === null) return fail('amount')
-  // Amount sign rule mirrors the backend: positive for classic types, nonzero
-  // signed for adjustment.
-  if (type === 'adjustment' ? amount === 0 : amount < 1) return fail('amount')
-
-  const occurredAt = asNonEmpty(state.occurredAt)
-  if (!occurredAt) return fail('occurredAt')
-
-  const description = asString(state.description) ?? ''
-
-  if (type === 'transfer') {
-    const fromAccountId = asNonEmpty(state.fromAccountId)
-    if (!fromAccountId) return fail('fromAccountId')
-    const toAccountId = asNonEmpty(state.toAccountId)
-    if (!toAccountId) return fail('toAccountId')
-    return ok({
-      type,
-      amount,
-      description,
-      occurredAt,
-      fromAccountId,
-      toAccountId,
-    } satisfies CreateTransactionPayload)
-  }
-
-  if (type === 'adjustment') {
-    const accountId = asNonEmpty(state.accountId)
-    if (!accountId) return fail('accountId')
-    return ok({
-      type,
-      amount,
-      description,
-      occurredAt,
-      accountId,
-    } satisfies CreateTransactionPayload)
-  }
-
-  // income / expense: accountId may be null (account-less «Без счета»),
-  // but categoryId is always required.
-  const accountId = asString(state.accountId) // null is a valid preserved value
-  const categoryId = asNonEmpty(state.categoryId)
-  if (!categoryId) return fail('categoryId')
-  return ok({
-    type: type as 'income' | 'expense',
-    amount,
-    description,
-    occurredAt,
-    accountId: accountId ?? null,
-    categoryId,
-  } satisfies CreateTransactionPayload)
-}
-
-function decodeDebtor(
-  state: Record<string, unknown>,
-): DecodeResult<CreateDebtorPayload> {
-  const name = asNonEmpty(state.name)
-  if (!name) return fail('name')
-  const note = asString(state.note) ?? undefined
-  return ok({ name, ...(note !== undefined ? { note } : {}) })
-}
-
-function decodeDebtOperation(
-  state: Record<string, unknown>,
-): DecodeResult<CreateDebtOperationPayload> {
-  const debtorId = asNonEmpty(state.debtorId)
-  if (!debtorId) return fail('debtorId')
-
-  const direction = asString(state.direction)
-  if (direction !== 'receivable' && direction !== 'payable') return fail('direction')
-
-  const kind = asString(state.kind)
-  if (kind !== 'debt' && kind !== 'repayment') return fail('kind')
-
-  const amount = asInt(state.amount)
-  if (amount === null || amount < 1) return fail('amount')
-
-  const occurredAt = asNonEmpty(state.occurredAt)
-  if (!occurredAt) return fail('occurredAt')
-
-  const note = asString(state.note) ?? undefined
-  return ok({
-    debtorId,
-    direction,
-    kind,
-    amount,
-    occurredAt,
-    ...(note !== undefined ? { note } : {}),
-  })
-}
-
-function decodePlannedPayment(
-  state: Record<string, unknown>,
-): DecodeResult<CreatePlannedPaymentPayload> {
-  const type = asString(state.type)
-  if (type !== 'expense' && type !== 'income') return fail('type')
-
-  const amount = asInt(state.amount)
-  if (amount === null || amount < 1) return fail('amount')
-
-  const accountId = asNonEmpty(state.accountId)
-  if (!accountId) return fail('accountId')
-
-  const categoryId = asNonEmpty(state.categoryId)
-  if (!categoryId) return fail('categoryId')
-
-  const nextDue = asString(state.nextDue)
-  if (!nextDue || !CALENDAR_DAY.test(nextDue)) return fail('nextDue')
-
-  const regularity = asString(state.regularity)
-  if (
-    regularity !== 'daily' &&
-    regularity !== 'weekly' &&
-    regularity !== 'monthly' &&
-    regularity !== 'yearly'
-  ) {
-    return fail('regularity')
-  }
-
-  const confirmMode = asString(state.confirmMode)
-  if (confirmMode !== 'manual' && confirmMode !== 'auto') return fail('confirmMode')
-
-  const reminder = asString(state.reminder)
-  if (reminder !== 'off' && reminder !== 'day_before' && reminder !== 'on_day') {
-    return fail('reminder')
-  }
-
-  const name = asString(state.name) ?? undefined
-  const note = asString(state.note) ?? undefined
-  return ok({
-    type,
-    amount,
-    accountId,
-    categoryId,
-    nextDue,
-    regularity,
-    confirmMode,
-    reminder,
-    ...(name !== undefined ? { name } : {}),
-    ...(note !== undefined ? { note } : {}),
-  })
-}
-
-type Decoder = (state: Record<string, unknown>) => DecodeResult<unknown>
-
-/** Per-entity decoder table. Keys match SyncEntity exactly. */
-const DECODERS: Record<SyncEntity, Decoder> = {
-  account: decodeAccount,
-  category: decodeCategory,
-  transaction: decodeTransaction,
-  debtor: decodeDebtor,
-  debt_operation: decodeDebtOperation,
-  planned_payment: decodePlannedPayment,
 }
 
 // ---------------------------------------------------------------------------
@@ -283,8 +52,8 @@ export type RestoreResult =
 /**
  * Restores a delete-vs-edit conflict as a new record:
  * 1. Re-reads the conflict by id (race-safe: uses the db, not a stale object).
- * 2. Decodes `localState` through the per-entity decoder table (strict, no
- *    value substitution; refuses on a missing or invalid required field).
+ * 2. Decodes `localState` through the catalog's strict per-entity decoder
+ *    (no value substitution; refuses on a missing or invalid required field).
  * 3. Creates the new record via the entity's local repository (which owns
  *    validation, author stamping, versioning, and the atomic row+outbox enqueue).
  * 4. Marks the conflict resolved only after a successful create.
@@ -305,8 +74,7 @@ export async function restoreConflictAsNew(
   }
 
   const state = conflict.localState as Record<string, unknown>
-  const decoder = DECODERS[conflict.entity]
-  const decoded = decoder(state)
+  const decoded = decodeCatalogRestorePayload(conflict.entity, state)
 
   if (!decoded.ok) {
     return {

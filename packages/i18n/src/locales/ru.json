@@ -660,8 +660,7 @@
         "transaction": "Транзакция",
         "debtor": "Должник",
         "debt_operation": "Операция долга",
-        "planned_payment": "Плановый платёж",
-        "other": "Запись"
+        "planned_payment": "Плановый платёж"
       }
     }
   },

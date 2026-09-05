@@ -660,8 +660,7 @@
         "transaction": "Transaction",
         "debtor": "Debtor",
         "debt_operation": "Debt operation",
-        "planned_payment": "Planned payment",
-        "other": "Record"
+        "planned_payment": "Planned payment"
       }
     }
   },

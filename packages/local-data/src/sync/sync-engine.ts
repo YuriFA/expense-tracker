@@ -65,6 +65,7 @@ import {
   rowToPayload,
   syncDataToRowPatch,
 } from './sync-data'
+import { CATALOG_SYNC_ENTITY_IDS } from './sync-entity-catalog.generated'
 import {
   LAST_SYNCED_AT_KEY,
   getPullCursor,
@@ -127,15 +128,9 @@ export interface SyncEngineState {
 const PUSH_BATCH_SIZE = 50
 
 /** Entity kinds this build knows how to apply; anything else in a pull page
- * is newer than the app and must be skipped (D5). */
-const KNOWN_SYNC_ENTITIES: ReadonlySet<string> = new Set([
-  'account',
-  'category',
-  'transaction',
-  'debtor',
-  'debt_operation',
-  'planned_payment',
-])
+ * is newer than the app and must be skipped (D5). The sync entity catalog
+ * (ADR-0004) is the source of this list. */
+const KNOWN_SYNC_ENTITIES: ReadonlySet<string> = new Set(CATALOG_SYNC_ENTITY_IDS)
 
 const BACKOFF_BASE_MS = 5_000
 const BACKOFF_CAP_MS = 15 * 60_000

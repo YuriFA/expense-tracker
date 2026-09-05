@@ -36,7 +36,9 @@ type transactionAdapter struct {
 }
 
 func (transactionAdapter) entity() string { return domain.SyncEntityTransaction }
-func (transactionAdapter) label() string  { return "transaction" }
+func (transactionAdapter) label() string {
+	return catalogSyncEntityLabel(domain.SyncEntityTransaction)
+}
 
 func (transactionAdapter) decode(raw json.RawMessage) (domain.TransactionFullState, error) {
 	var data domain.TransactionFullState
@@ -44,7 +46,9 @@ func (transactionAdapter) decode(raw json.RawMessage) (domain.TransactionFullSta
 	return data, err
 }
 
-func (transactionAdapter) invalidDataMessage() string { return "invalid transaction data" }
+func (transactionAdapter) invalidDataMessage() string {
+	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityTransaction)
+}
 
 // preValidate checks the type + amount sign rules every upsert must satisfy
 // regardless of the transport.

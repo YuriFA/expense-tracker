@@ -30,7 +30,7 @@ type accountAdapter struct {
 }
 
 func (accountAdapter) entity() string { return domain.SyncEntityAccount }
-func (accountAdapter) label() string  { return "account" }
+func (accountAdapter) label() string  { return catalogSyncEntityLabel(domain.SyncEntityAccount) }
 
 func (accountAdapter) decode(raw json.RawMessage) (domain.AccountFullState, error) {
 	var data domain.AccountFullState
@@ -38,7 +38,9 @@ func (accountAdapter) decode(raw json.RawMessage) (domain.AccountFullState, erro
 	return data, err
 }
 
-func (accountAdapter) invalidDataMessage() string { return "invalid account data" }
+func (accountAdapter) invalidDataMessage() string {
+	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityAccount)
+}
 
 func (accountAdapter) version(a *domain.Account) int   { return a.Version }
 func (accountAdapter) fullState(a *domain.Account) any { return a.FullState() }

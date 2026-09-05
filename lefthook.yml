@@ -1,15 +1,20 @@
 # Pre-commit: format STAGED files only (oxfmt, per-app configs), then
 # re-stage what the formatter fixed (stage_fixed - lint-staged semantics
 # without the extra package). Keeps src trees oxfmt-clean with zero CI
-# involvement; non-matching commits skip the commands entirely.
+# involvement; non-matching commits skip the commands entirely. Generated
+# files (*.generated.ts, e.g. the sync entity catalog artifacts) are
+# excluded: the generator owns their formatting and the drift gate
+# (sync-catalog:gen-check) diffs against generator output.
 pre-commit:
   parallel: true
   commands:
     format-web:
       glob: "apps/web/src{,/**}/*.{ts,vue,css}"
+      exclude: \.generated\.ts$
       run: pnpm exec oxfmt -c apps/web/.oxfmtrc.json --write {staged_files}
       stage_fixed: true
     format-mobile:
       glob: "apps/mobile/src{,/**}/*.{ts,tsx}"
+      exclude: \.generated\.ts$
       run: pnpm exec oxfmt -c apps/mobile/.oxfmtrc.json --write {staged_files}
       stage_fixed: true

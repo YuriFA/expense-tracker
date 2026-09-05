@@ -28,7 +28,7 @@ type debtorAdapter struct {
 }
 
 func (debtorAdapter) entity() string { return domain.SyncEntityDebtor }
-func (debtorAdapter) label() string  { return "debtor" }
+func (debtorAdapter) label() string  { return catalogSyncEntityLabel(domain.SyncEntityDebtor) }
 
 func (debtorAdapter) decode(raw json.RawMessage) (domain.DebtorFullState, error) {
 	var data domain.DebtorFullState
@@ -36,7 +36,9 @@ func (debtorAdapter) decode(raw json.RawMessage) (domain.DebtorFullState, error)
 	return data, err
 }
 
-func (debtorAdapter) invalidDataMessage() string { return "invalid debtor data" }
+func (debtorAdapter) invalidDataMessage() string {
+	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityDebtor)
+}
 
 // preValidate is the live-name uniqueness check, pre-checked under the
 // advisory lock so a violation surfaces as a per-item error, never an

@@ -32,6 +32,7 @@ import {
 } from '../schema'
 import { generateId } from '../id-factory'
 import { readEntityRow, rowToPayload, syncDataToRowPatch } from './sync-data'
+import { catalogConflictSubject } from './sync-entity-catalog.generated'
 
 type SyncConflictKind = 'version' | 'deleted'
 
@@ -201,7 +202,8 @@ export function conflictSubject(conflict: LocalSyncConflict): string {
     state ?? (conflict.serverState?.data as Record<string, unknown> | undefined) ?? undefined
   const name = typeof source?.name === 'string' ? source.name : ''
   const description = typeof source?.description === 'string' ? source.description : ''
-  return name || description
+
+  return catalogConflictSubject(conflict.entity, source) || name || description
 }
 
 export function markConflictResolved(db: LocalDatabase, id: string): void {

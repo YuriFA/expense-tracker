@@ -1,0 +1,285 @@
+{
+  "entities": [
+    {
+      "id": "account",
+      "label": "account",
+      "goDomainConst": "domain.SyncEntityAccount",
+      "goInvalidDataMessage": "invalid account data",
+      "webConflictLabelKey": "sync.conflicts.entity.account",
+      "mobileConflictLabelRu": "Счёт",
+      "subjectFields": ["name"],
+      "row": {
+        "table": "accounts",
+        "rowType": "AccountRow",
+        "payloadFields": ["name", "currency", "openingBalance"]
+      },
+      "syncData": {
+        "type": "AccountSyncData",
+        "guard": "data.name",
+        "fields": [
+          { "name": "name", "kind": "string", "default": "" },
+          { "name": "currency", "kind": "enum", "values": ["USD", "EUR", "RUB"] },
+          { "name": "openingBalance", "kind": "int", "required": true }
+        ]
+      },
+      "restore": {
+        "fields": [
+          { "name": "name", "kind": "string", "nonEmpty": true },
+          { "name": "currency", "kind": "enum", "values": ["USD", "EUR", "RUB"] },
+          { "name": "openingBalance", "kind": "int", "default": 0 }
+        ]
+      }
+    },
+    {
+      "id": "category",
+      "label": "category",
+      "goDomainConst": "domain.SyncEntityCategory",
+      "goInvalidDataMessage": "invalid category data",
+      "webConflictLabelKey": "sync.conflicts.entity.category",
+      "mobileConflictLabelRu": "Категория",
+      "subjectFields": ["name"],
+      "row": {
+        "table": "categories",
+        "rowType": "CategoryRow",
+        "payloadFields": ["name", "type", "icon", "color", "archivedAt"],
+        "extraPatchFields": [
+          { "name": "slug", "literal": "null" }
+        ]
+      },
+      "syncData": {
+        "type": "CategorySyncData",
+        "guard": "data.name && data.icon && data.color",
+        "fields": [
+          { "name": "name", "kind": "string", "default": "" },
+          { "name": "type", "kind": "enum", "values": ["income", "expense"] },
+          { "name": "icon", "kind": "string", "default": "" },
+          { "name": "color", "kind": "string", "default": "" },
+          { "name": "archivedAt", "kind": "optionalString" }
+        ]
+      },
+      "restore": {
+        "fields": [
+          { "name": "name", "kind": "string", "nonEmpty": true },
+          { "name": "type", "kind": "enum", "values": ["income", "expense"] },
+          { "name": "icon", "kind": "string", "nonEmpty": true },
+          { "name": "color", "kind": "string", "nonEmpty": true }
+        ]
+      }
+    },
+    {
+      "id": "debtor",
+      "label": "debtor",
+      "goDomainConst": "domain.SyncEntityDebtor",
+      "goInvalidDataMessage": "invalid debtor data",
+      "webConflictLabelKey": "sync.conflicts.entity.debtor",
+      "mobileConflictLabelRu": "Должник",
+      "subjectFields": ["name"],
+      "row": {
+        "table": "debtors",
+        "rowType": "DebtorRow",
+        "payloadFields": ["name", "note"]
+      },
+      "syncData": {
+        "type": "DebtorSyncData",
+        "guard": "data.name",
+        "fields": [
+          { "name": "name", "kind": "string", "default": "" },
+          { "name": "note", "kind": "string", "default": "" }
+        ]
+      },
+      "restore": {
+        "fields": [
+          { "name": "name", "kind": "string", "nonEmpty": true },
+          { "name": "note", "kind": "optionalString" }
+        ]
+      }
+    },
+    {
+      "id": "debt_operation",
+      "label": "debt operation",
+      "goDomainConst": "domain.SyncEntityDebtOperation",
+      "goInvalidDataMessage": "invalid debt operation data",
+      "webConflictLabelKey": "sync.conflicts.entity.debt_operation",
+      "mobileConflictLabelRu": "Долговая операция",
+      "subjectFields": ["note"],
+      "row": {
+        "table": "debtOperations",
+        "rowType": "DebtOperationRow",
+        "payloadFields": ["debtorId", "direction", "kind", "amount", "note", "occurredAt"]
+      },
+      "syncData": {
+        "type": "DebtOperationSyncData",
+        "fields": [
+          { "name": "debtorId", "kind": "string", "nonEmpty": true },
+          { "name": "direction", "kind": "enum", "values": ["receivable", "payable"] },
+          { "name": "kind", "kind": "enum", "values": ["debt", "repayment"] },
+          { "name": "amount", "kind": "int", "required": true, "min": 1 },
+          { "name": "note", "kind": "string", "default": "" },
+          { "name": "occurredAt", "kind": "string", "nonEmpty": true }
+        ]
+      },
+      "restore": {
+        "fields": [
+          { "name": "debtorId", "kind": "string", "nonEmpty": true },
+          { "name": "direction", "kind": "enum", "values": ["receivable", "payable"] },
+          { "name": "kind", "kind": "enum", "values": ["debt", "repayment"] },
+          { "name": "amount", "kind": "int", "required": true, "min": 1 },
+          { "name": "occurredAt", "kind": "string", "nonEmpty": true },
+          { "name": "note", "kind": "optionalString" }
+        ]
+      }
+    },
+    {
+      "id": "planned_payment",
+      "label": "planned payment",
+      "goDomainConst": "domain.SyncEntityPlannedPayment",
+      "goInvalidDataMessage": "invalid planned payment data",
+      "webConflictLabelKey": "sync.conflicts.entity.planned_payment",
+      "mobileConflictLabelRu": "Плановый платёж",
+      "subjectFields": ["name"],
+      "row": {
+        "table": "plannedPayments",
+        "rowType": "PlannedPaymentRow",
+        "payloadFields": [
+          "type",
+          "amount",
+          "name",
+          "accountId",
+          "categoryId",
+          "nextDue",
+          "anchorDate",
+          "regularity",
+          "confirmMode",
+          "reminder",
+          "note",
+          "version"
+        ]
+      },
+      "syncData": {
+        "type": "PlannedPaymentSyncData",
+        "fields": [
+          { "name": "type", "kind": "enum", "values": ["expense", "income"] },
+          { "name": "amount", "kind": "int", "required": true, "min": 1 },
+          { "name": "name", "kind": "string", "default": "" },
+          { "name": "accountId", "kind": "string", "nonEmpty": true },
+          { "name": "categoryId", "kind": "string", "nonEmpty": true },
+          { "name": "nextDue", "kind": "calendarDay" },
+          { "name": "anchorDate", "kind": "calendarDay" },
+          { "name": "regularity", "kind": "enum", "values": ["daily", "weekly", "monthly", "yearly"] },
+          { "name": "confirmMode", "kind": "enum", "values": ["manual", "auto"] },
+          { "name": "reminder", "kind": "enum", "values": ["off", "day_before", "on_day"] },
+          { "name": "note", "kind": "string", "default": "" }
+        ]
+      },
+      "restore": {
+        "fields": [
+          { "name": "type", "kind": "enum", "values": ["expense", "income"] },
+          { "name": "amount", "kind": "int", "required": true, "min": 1 },
+          { "name": "accountId", "kind": "string", "nonEmpty": true },
+          { "name": "categoryId", "kind": "string", "nonEmpty": true },
+          { "name": "nextDue", "kind": "calendarDay" },
+          { "name": "regularity", "kind": "enum", "values": ["daily", "weekly", "monthly", "yearly"] },
+          { "name": "confirmMode", "kind": "enum", "values": ["manual", "auto"] },
+          { "name": "reminder", "kind": "enum", "values": ["off", "day_before", "on_day"] },
+          { "name": "name", "kind": "optionalString" },
+          { "name": "note", "kind": "optionalString" }
+        ]
+      }
+    },
+    {
+      "id": "transaction",
+      "label": "transaction",
+      "goDomainConst": "domain.SyncEntityTransaction",
+      "goInvalidDataMessage": "invalid transaction data",
+      "webConflictLabelKey": "sync.conflicts.entity.transaction",
+      "mobileConflictLabelRu": "Транзакция",
+      "subjectFields": ["description"],
+      "row": {
+        "table": "transactions",
+        "rowType": "TransactionRow",
+        "payloadFields": ["amount", "description", "occurredAt"],
+        "payloadVariants": [
+          {
+            "matches": ["transfer"],
+            "fields": ["fromAccountId", "toAccountId"]
+          },
+          {
+            "matches": ["income", "expense", "adjustment"],
+            "fields": ["accountId", "categoryId"]
+          }
+        ]
+      },
+      "syncData": {
+        "type": "TransactionSyncData",
+        "discriminator": {
+          "field": "type",
+          "values": ["income", "expense", "transfer", "adjustment"]
+        },
+        "variants": [
+          {
+            "matches": ["transfer"],
+            "fields": [
+              { "name": "amount", "kind": "int", "required": true, "min": 1 },
+              { "name": "description", "kind": "string", "default": "" },
+              { "name": "occurredAt", "kind": "string", "nonEmpty": true },
+              { "name": "fromAccountId", "kind": "string", "nonEmpty": true },
+              { "name": "toAccountId", "kind": "string", "nonEmpty": true }
+            ]
+          },
+          {
+            "matches": ["adjustment"],
+            "fields": [
+              { "name": "amount", "kind": "int", "required": true, "nonzero": true },
+              { "name": "description", "kind": "string", "default": "" },
+              { "name": "occurredAt", "kind": "string", "nonEmpty": true },
+              { "name": "accountId", "kind": "string", "nonEmpty": true }
+            ]
+          },
+          {
+            "matches": ["income", "expense"],
+            "fields": [
+              { "name": "amount", "kind": "int", "required": true, "min": 1 },
+              { "name": "description", "kind": "string", "default": "" },
+              { "name": "occurredAt", "kind": "string", "nonEmpty": true },
+              { "name": "accountId", "kind": "string", "nullable": true },
+              { "name": "categoryId", "kind": "string", "nonEmpty": true }
+            ]
+          }
+        ]
+      },
+      "restore": {
+        "variants": [
+          {
+            "matches": ["transfer"],
+            "fields": [
+              { "name": "amount", "kind": "int", "required": true, "min": 1 },
+              { "name": "description", "kind": "string", "default": "" },
+              { "name": "occurredAt", "kind": "string", "nonEmpty": true },
+              { "name": "fromAccountId", "kind": "string", "nonEmpty": true },
+              { "name": "toAccountId", "kind": "string", "nonEmpty": true }
+            ]
+          },
+          {
+            "matches": ["adjustment"],
+            "fields": [
+              { "name": "amount", "kind": "int", "required": true, "nonzero": true },
+              { "name": "description", "kind": "string", "default": "" },
+              { "name": "occurredAt", "kind": "string", "nonEmpty": true },
+              { "name": "accountId", "kind": "string", "nonEmpty": true }
+            ]
+          },
+          {
+            "matches": ["income", "expense"],
+            "fields": [
+              { "name": "amount", "kind": "int", "required": true, "min": 1 },
+              { "name": "description", "kind": "string", "default": "" },
+              { "name": "occurredAt", "kind": "string", "nonEmpty": true },
+              { "name": "accountId", "kind": "string", "nullable": true },
+              { "name": "categoryId", "kind": "string", "nonEmpty": true }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

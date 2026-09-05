@@ -13,6 +13,7 @@ import {
   type ConflictAction,
 } from '../model/use-sync-conflicts'
 import { canRestoreAsNew, useRestoreConflictAsNew } from '../model/restore-as-new'
+import { catalogConflictEntityLabel } from '../model/sync-entity-catalog.generated'
 
 // Global conflict center (design D7): lists unresolved sync conflicts from
 // the persistent sync_conflicts table and resolves them in place -
@@ -30,25 +31,11 @@ const { mutateAsync: restoreAsNew, asyncStatus: restoreStatus } = useRestoreConf
 
 const conflicts = computed(() => data.value ?? [])
 
-// Literal keys per branch (the i18n lint bans dynamic keys); every synced
-// entity kind now has a web surface.
+// Entity label from the sync entity catalog (ADR-0004); the generated
+// switch carries literal i18n keys per entity (the i18n lint bans dynamic
+// keys).
 function entityLabel(conflict: LocalSyncConflict): string {
-  switch (conflict.entity) {
-    case 'account':
-      return t('sync.conflicts.entity.account')
-    case 'category':
-      return t('sync.conflicts.entity.category')
-    case 'transaction':
-      return t('sync.conflicts.entity.transaction')
-    case 'debtor':
-      return t('sync.conflicts.entity.debtor')
-    case 'debt_operation':
-      return t('sync.conflicts.entity.debt_operation')
-    case 'planned_payment':
-      return t('sync.conflicts.entity.planned_payment')
-    default:
-      return t('sync.conflicts.entity.other')
-  }
+  return catalogConflictEntityLabel(t, conflict.entity)
 }
 
 function conflictMessage(conflict: LocalSyncConflict): string {

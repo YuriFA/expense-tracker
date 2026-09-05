@@ -20,17 +20,9 @@ import {
   restoreConflictAsNew,
   type LocalSyncConflict,
 } from '@expense-tracker/local-data'
+import { catalogConflictEntityLabel } from '../model/sync-entity-catalog.generated'
 import { useLocalDatabase } from '@/shared/lib/db/database-context'
 import { useSyncController } from '@/shared/lib/sync/sync-context'
-
-const ENTITY_NAMES_RU: Record<LocalSyncConflict['entity'], string> = {
-  account: 'Счёт',
-  category: 'Категория',
-  transaction: 'Транзакция',
-  debtor: 'Должник',
-  debt_operation: 'Долговая операция',
-  planned_payment: 'Плановый платёж',
-}
 
 /**
  * Global conflict host: mounted once in the root layout. Tracks unresolved
@@ -83,7 +75,7 @@ export function ConflictCenter() {
 
   const prompt = useCallback(
     (conflict: LocalSyncConflict) => {
-      const entityName = ENTITY_NAMES_RU[conflict.entity]
+      const entityName = catalogConflictEntityLabel(conflict.entity)
       const subject = conflictSubject(conflict)
 
       if (conflict.kind === 'deleted') {

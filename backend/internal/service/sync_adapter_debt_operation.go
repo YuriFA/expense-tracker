@@ -33,7 +33,9 @@ type debtOperationAdapter struct {
 }
 
 func (debtOperationAdapter) entity() string { return domain.SyncEntityDebtOperation }
-func (debtOperationAdapter) label() string  { return "debt operation" }
+func (debtOperationAdapter) label() string {
+	return catalogSyncEntityLabel(domain.SyncEntityDebtOperation)
+}
 
 func (debtOperationAdapter) decode(raw json.RawMessage) (domain.DebtOperationFullState, error) {
 	var data domain.DebtOperationFullState
@@ -41,7 +43,9 @@ func (debtOperationAdapter) decode(raw json.RawMessage) (domain.DebtOperationFul
 	return data, err
 }
 
-func (debtOperationAdapter) invalidDataMessage() string { return "invalid debt operation data" }
+func (debtOperationAdapter) invalidDataMessage() string {
+	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityDebtOperation)
+}
 
 // preValidate checks the shape rules, then the debtor reference against the
 // LIVE debtors (a tombstoned debtor is "not found") - with the REST

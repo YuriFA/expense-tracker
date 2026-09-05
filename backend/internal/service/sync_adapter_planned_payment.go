@@ -35,7 +35,9 @@ type plannedPaymentAdapter struct {
 }
 
 func (plannedPaymentAdapter) entity() string { return domain.SyncEntityPlannedPayment }
-func (plannedPaymentAdapter) label() string  { return "planned payment" }
+func (plannedPaymentAdapter) label() string {
+	return catalogSyncEntityLabel(domain.SyncEntityPlannedPayment)
+}
 
 func (plannedPaymentAdapter) decode(raw json.RawMessage) (domain.PlannedPaymentFullState, error) {
 	var data domain.PlannedPaymentFullState
@@ -43,7 +45,9 @@ func (plannedPaymentAdapter) decode(raw json.RawMessage) (domain.PlannedPaymentF
 	return data, err
 }
 
-func (plannedPaymentAdapter) invalidDataMessage() string { return "invalid planned payment data" }
+func (plannedPaymentAdapter) invalidDataMessage() string {
+	return catalogSyncEntityInvalidDataMessage(domain.SyncEntityPlannedPayment)
+}
 
 // preValidate checks the shape a plan upsert must satisfy regardless of the
 // transport (the REST surface gets this from the OpenAPI request validator),

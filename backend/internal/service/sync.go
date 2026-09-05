@@ -34,11 +34,11 @@ func NewSyncService(sync repository.SyncRepository) *SyncService {
 		sync: sync,
 		appliers: map[string]syncOpApplier{
 			domain.SyncEntityAccount:        applySyncOperationFor(accountAdapter{}),
-			domain.SyncEntityDebtor:         applySyncOperationFor(debtorAdapter{}),
 			domain.SyncEntityCategory:       applySyncOperationFor(categoryAdapter{}),
 			domain.SyncEntityDebtOperation:  applySyncOperationFor(debtOperationAdapter{}),
 			domain.SyncEntityTransaction:    applySyncOperationFor(transactionAdapter{}),
 			domain.SyncEntityPlannedPayment: applySyncOperationFor(plannedPaymentAdapter{}),
+			domain.SyncEntityDebtor:         applySyncOperationFor(debtorAdapter{}),
 		},
 	}
 }
