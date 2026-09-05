@@ -526,10 +526,7 @@ func (t *syncTx) CreateAccount(ctx context.Context, params domain.CreateAccountP
 		OpeningBalance: params.OpeningBalance,
 	})
 	if err != nil {
-		if pgUniqueViolation(err) {
-			return nil, domain.ErrAccountAlreadyExists
-		}
-		return nil, opWrap(op, err)
+		return nil, classifyInsertErr(op, err, domain.ErrAccountAlreadyExists)
 	}
 	if err := appendChangeLog(
 		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
@@ -660,10 +657,7 @@ func (t *syncTx) CreateCategory(ctx context.Context, params domain.CreateCategor
 		ArchivedAt:  params.ArchivedAt,
 	})
 	if err != nil {
-		if pgUniqueViolation(err) {
-			return nil, domain.ErrCategoryAlreadyExists
-		}
-		return nil, opWrap(op, err)
+		return nil, classifyInsertErr(op, err, domain.ErrCategoryAlreadyExists)
 	}
 	if err := appendChangeLog(
 		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
@@ -788,10 +782,7 @@ func (t *syncTx) CreateDebtor(ctx context.Context, params domain.CreateDebtorPar
 		Note:        params.Note,
 	})
 	if err != nil {
-		if pgUniqueViolation(err) {
-			return nil, domain.ErrDebtorAlreadyExists
-		}
-		return nil, opWrap(op, err)
+		return nil, classifyInsertErr(op, err, domain.ErrDebtorAlreadyExists)
 	}
 	if err := appendChangeLog(
 		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
@@ -880,10 +871,7 @@ func (t *syncTx) CreateDebtOperation(
 		OccurredAt:  params.OccurredAt,
 	})
 	if err != nil {
-		if pgUniqueViolation(err) {
-			return nil, domain.ErrDebtOperationAlreadyExists
-		}
-		return nil, opWrap(op, err)
+		return nil, classifyInsertErr(op, err, domain.ErrDebtOperationAlreadyExists)
 	}
 	if err := appendChangeLog(
 		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
@@ -987,10 +975,7 @@ func (t *syncTx) CreatePlannedPayment(
 		Note:        params.Note,
 	})
 	if err != nil {
-		if pgUniqueViolation(err) {
-			return nil, domain.ErrPlannedPaymentAlreadyExists
-		}
-		return nil, opWrap(op, err)
+		return nil, classifyInsertErr(op, err, domain.ErrPlannedPaymentAlreadyExists)
 	}
 	if err := appendChangeLog(
 		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
@@ -1135,10 +1120,7 @@ func (t *syncTx) CreateTransaction(
 		ToAccountID:   params.ToAccountID,
 	})
 	if err != nil {
-		if pgUniqueViolation(err) {
-			return nil, domain.ErrTransactionAlreadyExists
-		}
-		return nil, opWrap(op, err)
+		return nil, classifyInsertErr(op, err, domain.ErrTransactionAlreadyExists)
 	}
 	if err := appendChangeLog(
 		ctx, t.q, params.HouseholdID, params.UserID, row.ID,
@@ -1234,6 +1216,16 @@ func classifySyncWrite(rowErr error, rowDeleted bool, notFound, versionConflict 
 		return domain.ErrRecordDeleted
 	}
 	return versionConflict
+}
+
+// classifyInsertErr maps a create failure: a unique violation is the
+// entity's already-exists sentinel (idempotent replays are answered one
+// level up via applied_operations); anything else wraps with op.
+func classifyInsertErr(op string, err, alreadyExists error) error {
+	if pgUniqueViolation(err) {
+		return alreadyExists
+	}
+	return opWrap(op, err)
 }
 
 // --- pull -------------------------------------------------------------------------
