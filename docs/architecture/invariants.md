@@ -151,26 +151,24 @@ only via local runs (Node ≥ 22), not in CI.
   is unchanged.)
 - **Evidence**: `backend/internal/repository/queries/{accounts,categories,
   transactions,debtors,debt_operations,planned_payments,sync}.sql` all
-  filter `household_id`; handlers source householdID + user via
-  `currentHouseholdID(ctx)`/`currentUser(ctx)` from the auth middleware
-  (`transport/http/handler.go`, `middleware/auth.go` — membership resolution);
-  two-household isolation tests assert sibling visibility and non-member
-  not-found (`service/household_isolation_test.go`,
+  filter `household_id`; every household-scoped service/repository seam
+  takes one `domain.Scope{HouseholdID, ActorID}` value (ADR-0006),
+  constructed at few explicit sites — `Server.currentScope` (auth
+  middleware's membership resolution), `membershipScope` (household
+  service), the auto-confirm job (per-plan author), and pre-membership
+  reads of a target household (join flows); two-household isolation
+  tests assert sibling visibility and non-member not-found
+  (`service/household_isolation_test.go`,
   `postgres/household_backfill_test.go`, `e2e/household_test.go`).
 - **Risk if violated**: Cross-household data leaks (IDOR) — the most severe
   failure mode of this system.
-- **Current enforcement**: integration tests run in CI (`go test -race`).
-- **Live deviation (audit 2026-09-01, finding A16, fix pending)**:
-  `transport/http/debtors.go:17` and `debt_operations.go:17` pass
-  `user.ID` into the `householdID` service parameter — it only returns
-  rows for households whose id coincides with the owner's user id (the
-  000005 backfill); registrations since the household change mint distinct
-  ids (`postgres/users.go:28-29`) and get empty debtor/debt-operation
-  listings. Exactly the caveat below materializing: no test covered the
-  positive listing path (`e2e/debts_test.go` list assertions are
-  `NotContains`-only).
-- **Automated**: yes (backend; a new unscoped query would only be caught if
-  a test happens to cover it — the rule itself is not mechanically checked).
+- **Current enforcement**: integration tests run in CI (`go test -race`);
+  the seam shape itself is compiler-enforced since ADR-0006 — handing a
+  bare `user.ID` (or any UUID) to a scoped method does not compile.
+  (The A16 transposition that motivated this — `user.ID` into the
+  householdID parameter, empty debt listings — was fixed in `b218cbb`
+  and closed at the type level by the ADR-0006 refactor.)
+- **Automated**: yes (backend; compiler-enforced seam shape + tests).
 
 ### 6. Optimistic concurrency: updates CAS on a `version` column; conflicts surface as 409 `*_VERSION_CONFLICT`
 

@@ -29,9 +29,12 @@ source of truth.
   single v1 membership), `IdempotencyRepository` (idempotency middleware). Any
   NEW middleware -> repository dependency requires a separate architectural
   decision (invariant #17).
-- The authenticated `householdID` (scoping) and `userID` (authorship) are
-  passed **explicitly** handler -> service, from the auth middleware via the
-  request context; never read from a request body.
+- The authenticated scope — `domain.Scope{HouseholdID, ActorID}` (scoping +
+  authorship, ADR-0006) — is passed **explicitly** handler -> service, built
+  in few named sites (`Server.currentScope` from the auth middleware,
+  `membershipScope`, the auto-confirm job's per-plan author); every
+  household-scoped seam takes the one Scope value (a positional UUID pair
+  does not compile); never read from a request body.
 
 ## Data (PostgreSQL only, no SQLite)
 
