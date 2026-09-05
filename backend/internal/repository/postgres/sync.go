@@ -584,36 +584,66 @@ func (t *syncTx) ReplaceAccount(
 	), nil
 }
 
-func (t *syncTx) TombstoneAccount( //nolint:dupl // account/category/transaction twins
+// tombstoneEntity is the shared tombstone protocol behind the Tombstone*
+// wrappers: CAS soft-delete, classify absent (not found) vs
+// already-tombstoned (idempotent delete, stored row back), append the
+// change_log row, synthesize the tombstoned result. What differs per
+// entity — the sqlc call, the tombstone-inclusive re-read, the not-found
+// sentinel, the sync entity const, the result constructor — arrives as
+// funcs (Go methods cannot carry their own type parameters).
+func tombstoneEntity[T any](
 	ctx context.Context,
-	scope domain.Scope, id uuid.UUID,
-) (*domain.Account, error) {
+	q *db.Queries,
+	scope domain.Scope,
+	id uuid.UUID,
+	op string,
+	softDelete func() (int32, error),
+	getAny func() (*T, error),
+	notFound error,
+	entity string,
+	build func(version int32) *T,
+) (*T, error) {
 	householdID, actorID := scope.HouseholdID, scope.ActorID
-	const op = "repository.postgres.syncTx.TombstoneAccount"
 
-	version, err := t.q.SoftDeleteAccount(ctx, db.SoftDeleteAccountParams{ID: id, HouseholdID: householdID})
+	version, err := softDelete()
 	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
 		if errors.Is(err, pgx.ErrNoRows) {
-			current, err := t.GetAccountAny(ctx, scope, id)
+			current, err := getAny()
 			if err != nil {
 				return nil, opWrap(op, err)
 			}
 			if current == nil {
-				return nil, domain.ErrAccountNotFound
+				return nil, notFound
 			}
 			return current, nil // already tombstoned: idempotent delete
 		}
 		return nil, opWrap(op, err)
 	}
 	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, id, domain.SyncEntityAccount, domain.SyncChangeTombstone, int(version),
+		ctx, q, householdID, actorID, id, entity, domain.SyncChangeTombstone, int(version),
 	); err != nil {
 		return nil, opWrap(op, err)
 	}
-	a := &domain.Account{ID: id, UserID: actorID, Version: int(version)}
-	now := time.Now().UTC()
-	a.DeletedAt = &now
-	return a, nil
+	return build(version), nil
+}
+
+func (t *syncTx) TombstoneAccount(
+	ctx context.Context,
+	scope domain.Scope, id uuid.UUID,
+) (*domain.Account, error) {
+	return tombstoneEntity(ctx, t.q, scope, id,
+		"repository.postgres.syncTx.TombstoneAccount",
+		func() (int32, error) {
+			return t.q.SoftDeleteAccount(ctx, db.SoftDeleteAccountParams{ID: id, HouseholdID: scope.HouseholdID})
+		},
+		func() (*domain.Account, error) { return t.GetAccountAny(ctx, scope, id) },
+		domain.ErrAccountNotFound,
+		domain.SyncEntityAccount,
+		func(version int32) *domain.Account {
+			now := time.Now().UTC()
+			return &domain.Account{ID: id, UserID: scope.ActorID, Version: int(version), DeletedAt: &now}
+		},
+	)
 }
 
 func (t *syncTx) CreateCategory(ctx context.Context, params domain.CreateCategoryParams) (*domain.Category, error) {
@@ -692,36 +722,23 @@ func (t *syncTx) ReplaceCategory(
 	}, nil
 }
 
-func (t *syncTx) TombstoneCategory( //nolint:dupl // account/category/transaction twins
+func (t *syncTx) TombstoneCategory(
 	ctx context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.Category, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	const op = "repository.postgres.syncTx.TombstoneCategory"
-
-	version, err := t.q.SoftDeleteCategory(ctx, db.SoftDeleteCategoryParams{ID: id, HouseholdID: householdID})
-	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
-		if errors.Is(err, pgx.ErrNoRows) {
-			current, err := t.GetCategoryAny(ctx, scope, id)
-			if err != nil {
-				return nil, opWrap(op, err)
-			}
-			if current == nil {
-				return nil, domain.ErrCategoryNotFound
-			}
-			return current, nil // already tombstoned: idempotent delete
-		}
-		return nil, opWrap(op, err)
-	}
-	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, id, domain.SyncEntityCategory, domain.SyncChangeTombstone, int(version),
-	); err != nil {
-		return nil, opWrap(op, err)
-	}
-	c := &domain.Category{ID: id, UserID: actorID, Version: int(version)}
-	now := time.Now().UTC()
-	c.DeletedAt = &now
-	return c, nil
+	return tombstoneEntity(ctx, t.q, scope, id,
+		"repository.postgres.syncTx.TombstoneCategory",
+		func() (int32, error) {
+			return t.q.SoftDeleteCategory(ctx, db.SoftDeleteCategoryParams{ID: id, HouseholdID: scope.HouseholdID})
+		},
+		func() (*domain.Category, error) { return t.GetCategoryAny(ctx, scope, id) },
+		domain.ErrCategoryNotFound,
+		domain.SyncEntityCategory,
+		func(version int32) *domain.Category {
+			now := time.Now().UTC()
+			return &domain.Category{ID: id, UserID: scope.ActorID, Version: int(version), DeletedAt: &now}
+		},
+	)
 }
 
 // CascadeTombstoneCategory is the cascade-flagged category delete: the
@@ -826,36 +843,23 @@ func (t *syncTx) ReplaceDebtor(
 	), nil
 }
 
-func (t *syncTx) TombstoneDebtor( //nolint:dupl // per-entity tombstone twins: identical protocol shape
+func (t *syncTx) TombstoneDebtor(
 	ctx context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.Debtor, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	const op = "repository.postgres.syncTx.TombstoneDebtor"
-
-	version, err := t.q.SoftDeleteDebtor(ctx, db.SoftDeleteDebtorParams{ID: id, HouseholdID: householdID})
-	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
-		if errors.Is(err, pgx.ErrNoRows) {
-			current, err := t.GetDebtorAny(ctx, scope, id)
-			if err != nil {
-				return nil, opWrap(op, err)
-			}
-			if current == nil {
-				return nil, domain.ErrDebtorNotFound
-			}
-			return current, nil // already tombstoned: idempotent delete
-		}
-		return nil, opWrap(op, err)
-	}
-	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, id, domain.SyncEntityDebtor, domain.SyncChangeTombstone, int(version),
-	); err != nil {
-		return nil, opWrap(op, err)
-	}
-	d := &domain.Debtor{ID: id, UserID: actorID, Version: int(version)}
-	now := time.Now().UTC()
-	d.DeletedAt = &now
-	return d, nil
+	return tombstoneEntity(ctx, t.q, scope, id,
+		"repository.postgres.syncTx.TombstoneDebtor",
+		func() (int32, error) {
+			return t.q.SoftDeleteDebtor(ctx, db.SoftDeleteDebtorParams{ID: id, HouseholdID: scope.HouseholdID})
+		},
+		func() (*domain.Debtor, error) { return t.GetDebtorAny(ctx, scope, id) },
+		domain.ErrDebtorNotFound,
+		domain.SyncEntityDebtor,
+		func(version int32) *domain.Debtor {
+			now := time.Now().UTC()
+			return &domain.Debtor{ID: id, UserID: scope.ActorID, Version: int(version), DeletedAt: &now}
+		},
+	)
 }
 
 func (t *syncTx) CreateDebtOperation(
@@ -940,36 +944,25 @@ func (t *syncTx) ReplaceDebtOperation(
 	), nil
 }
 
-func (t *syncTx) TombstoneDebtOperation( //nolint:dupl // per-entity tombstone twins: identical protocol shape
+func (t *syncTx) TombstoneDebtOperation(
 	ctx context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.DebtOperation, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	const op = "repository.postgres.syncTx.TombstoneDebtOperation"
-
-	version, err := t.q.SoftDeleteDebtOperation(ctx, db.SoftDeleteDebtOperationParams{ID: id, HouseholdID: householdID})
-	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
-		if errors.Is(err, pgx.ErrNoRows) {
-			current, err := t.GetDebtOperationAny(ctx, scope, id)
-			if err != nil {
-				return nil, opWrap(op, err)
-			}
-			if current == nil {
-				return nil, domain.ErrDebtOperationNotFound
-			}
-			return current, nil // already tombstoned: idempotent delete
-		}
-		return nil, opWrap(op, err)
-	}
-	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, id, domain.SyncEntityDebtOperation, domain.SyncChangeTombstone, int(version),
-	); err != nil {
-		return nil, opWrap(op, err)
-	}
-	o := &domain.DebtOperation{ID: id, UserID: actorID, Version: int(version)}
-	now := time.Now().UTC()
-	o.DeletedAt = &now
-	return o, nil
+	return tombstoneEntity(ctx, t.q, scope, id,
+		"repository.postgres.syncTx.TombstoneDebtOperation",
+		func() (int32, error) {
+			return t.q.SoftDeleteDebtOperation(
+				ctx, db.SoftDeleteDebtOperationParams{ID: id, HouseholdID: scope.HouseholdID},
+			)
+		},
+		func() (*domain.DebtOperation, error) { return t.GetDebtOperationAny(ctx, scope, id) },
+		domain.ErrDebtOperationNotFound,
+		domain.SyncEntityDebtOperation,
+		func(version int32) *domain.DebtOperation {
+			now := time.Now().UTC()
+			return &domain.DebtOperation{ID: id, UserID: scope.ActorID, Version: int(version), DeletedAt: &now}
+		},
+	)
 }
 
 func (t *syncTx) CreatePlannedPayment(
@@ -1065,40 +1058,25 @@ func (t *syncTx) ReplacePlannedPayment(
 	), nil
 }
 
-func (t *syncTx) TombstonePlannedPayment( //nolint:dupl // per-entity tombstone twins: identical protocol shape
+func (t *syncTx) TombstonePlannedPayment(
 	ctx context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.PlannedPayment, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	const op = "repository.postgres.syncTx.TombstonePlannedPayment"
-
-	version, err := t.q.SoftDeletePlannedPayment(
-		ctx,
-		db.SoftDeletePlannedPaymentParams{ID: id, HouseholdID: householdID},
+	return tombstoneEntity(ctx, t.q, scope, id,
+		"repository.postgres.syncTx.TombstonePlannedPayment",
+		func() (int32, error) {
+			return t.q.SoftDeletePlannedPayment(
+				ctx, db.SoftDeletePlannedPaymentParams{ID: id, HouseholdID: scope.HouseholdID},
+			)
+		},
+		func() (*domain.PlannedPayment, error) { return t.GetPlannedPaymentAny(ctx, scope, id) },
+		domain.ErrPlannedPaymentNotFound,
+		domain.SyncEntityPlannedPayment,
+		func(version int32) *domain.PlannedPayment {
+			now := time.Now().UTC()
+			return &domain.PlannedPayment{ID: id, UserID: scope.ActorID, Version: int(version), DeletedAt: &now}
+		},
 	)
-	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
-		if errors.Is(err, pgx.ErrNoRows) {
-			current, err := t.GetPlannedPaymentAny(ctx, scope, id)
-			if err != nil {
-				return nil, opWrap(op, err)
-			}
-			if current == nil {
-				return nil, domain.ErrPlannedPaymentNotFound
-			}
-			return current, nil // already tombstoned: idempotent delete
-		}
-		return nil, opWrap(op, err)
-	}
-	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, id,
-		domain.SyncEntityPlannedPayment, domain.SyncChangeTombstone, int(version),
-	); err != nil {
-		return nil, opWrap(op, err)
-	}
-	p := &domain.PlannedPayment{ID: id, UserID: actorID, Version: int(version)}
-	now := time.Now().UTC()
-	p.DeletedAt = &now
-	return p, nil
 }
 
 // AdvancePlannedPayment moves next_due to the already-computed next occurrence
@@ -1221,36 +1199,25 @@ func (t *syncTx) ReplaceTransaction(
 	), nil
 }
 
-func (t *syncTx) TombstoneTransaction( //nolint:dupl // account/category/transaction twins
+func (t *syncTx) TombstoneTransaction(
 	ctx context.Context,
 	scope domain.Scope, id uuid.UUID,
 ) (*domain.Transaction, error) {
-	householdID, actorID := scope.HouseholdID, scope.ActorID
-	const op = "repository.postgres.syncTx.TombstoneTransaction"
-
-	version, err := t.q.SoftDeleteTransaction(ctx, db.SoftDeleteTransactionParams{ID: id, HouseholdID: householdID})
-	if err != nil { //nolint:nestif // classify absent vs already-tombstoned (idempotent delete)
-		if errors.Is(err, pgx.ErrNoRows) {
-			current, err := t.GetTransactionAny(ctx, scope, id)
-			if err != nil {
-				return nil, opWrap(op, err)
-			}
-			if current == nil {
-				return nil, domain.ErrTransactionNotFound
-			}
-			return current, nil // already tombstoned: idempotent delete
-		}
-		return nil, opWrap(op, err)
-	}
-	if err := appendChangeLog(
-		ctx, t.q, householdID, actorID, id, domain.SyncEntityTransaction, domain.SyncChangeTombstone, int(version),
-	); err != nil {
-		return nil, opWrap(op, err)
-	}
-	tx := &domain.Transaction{ID: id, UserID: actorID, Version: int(version)}
-	now := time.Now().UTC()
-	tx.DeletedAt = &now
-	return tx, nil
+	return tombstoneEntity(ctx, t.q, scope, id,
+		"repository.postgres.syncTx.TombstoneTransaction",
+		func() (int32, error) {
+			return t.q.SoftDeleteTransaction(
+				ctx, db.SoftDeleteTransactionParams{ID: id, HouseholdID: scope.HouseholdID},
+			)
+		},
+		func() (*domain.Transaction, error) { return t.GetTransactionAny(ctx, scope, id) },
+		domain.ErrTransactionNotFound,
+		domain.SyncEntityTransaction,
+		func(version int32) *domain.Transaction {
+			now := time.Now().UTC()
+			return &domain.Transaction{ID: id, UserID: scope.ActorID, Version: int(version), DeletedAt: &now}
+		},
+	)
 }
 
 // classifySyncWrite classifies a zero-row CAS write for the sync surface:
