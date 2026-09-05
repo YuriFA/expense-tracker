@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -79,4 +78,6 @@ func (s *AccountService) List(ctx context.Context, householdID uuid.UUID) ([]dom
 }
 
 // ErrNoFieldsToUpdate is returned by PATCH services when the body sets nothing.
-var ErrNoFieldsToUpdate = errors.New("no fields to update")
+// Alias of the domain sentinel (which owns the wire spec); kept so callers
+// and tests keep using the service-level name.
+var ErrNoFieldsToUpdate = domain.ErrNoFieldsToUpdate

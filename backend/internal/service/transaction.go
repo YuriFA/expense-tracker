@@ -37,6 +37,11 @@ func NewTransactionService(
 	return &TransactionService{transactions: transactions, accounts: accounts, categories: categories}
 }
 
+// refReads adapts the service's repositories to the write-rules seam.
+func (s *TransactionService) refReads() TransactionRefReads {
+	return repoTransactionRefReads{accounts: s.accounts, categories: s.categories}
+}
+
 func (s *TransactionService) Create(
 	ctx context.Context,
 	householdID, userID uuid.UUID,
@@ -44,20 +49,16 @@ func (s *TransactionService) Create(
 ) (*domain.Transaction, error) {
 	const op = "service.transaction.Create"
 
-	if err := ValidateAmount(params.Type, params.Amount); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	if err := s.validateRefs(
-		ctx,
-		householdID,
-		params.Type,
-		params.AccountID,
-		params.CategoryID,
-		params.FromAccountID,
-		params.ToAccountID,
-		nil, // fresh assignment: any archived category is rejected
-	); err != nil {
+	if err := ValidateTransactionWrite(ctx, s.refReads(), householdID, TransactionWriteState{
+		Type:          params.Type,
+		Amount:        params.Amount,
+		AccountID:     params.AccountID,
+		CategoryID:    params.CategoryID,
+		FromAccountID: params.FromAccountID,
+		ToAccountID:   params.ToAccountID,
+		// fresh record: any archived category is rejected
+		PrevCategoryID: nil,
+	}); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -109,14 +110,17 @@ func (s *TransactionService) Update(
 	if params.Amount != nil {
 		effectiveAmount = *params.Amount
 	}
-	if err := ValidateAmount(current.Type, effectiveAmount); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
 
-	if err := s.validateRefs(ctx, householdID, current.Type,
-		effectiveAccountID, effectiveCategoryID, effectiveFromAccountID, effectiveToAccountID,
-		current.CategoryID, // unchanged assignment may keep an archived category
-	); err != nil {
+	if err := ValidateTransactionWrite(ctx, s.refReads(), householdID, TransactionWriteState{
+		Type:          current.Type,
+		Amount:        effectiveAmount,
+		AccountID:     effectiveAccountID,
+		CategoryID:    effectiveCategoryID,
+		FromAccountID: effectiveFromAccountID,
+		ToAccountID:   effectiveToAccountID,
+		// unchanged assignment may keep an archived category
+		PrevCategoryID: current.CategoryID,
+	}); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -211,8 +215,9 @@ func (s *TransactionService) List(
 	return page, nil
 }
 
-// ErrInvalidCursor is returned when the cursor cannot be decoded.
-var ErrInvalidCursor = errors.New("invalid cursor")
+// ErrInvalidCursor is returned when the cursor cannot be decoded. Alias of
+// the domain sentinel (which owns the wire spec).
+var ErrInvalidCursor = domain.ErrInvalidCursor
 
 func boundPageSize(requested *int) int {
 	size := defaultTransactionPageSize
@@ -220,138 +225,6 @@ func boundPageSize(requested *int) int {
 		size = *requested
 	}
 	return min(size, maxTransactionPageSize)
-}
-
-// validateRefs enforces the per-type reference rules (cashflow vs transfer
-// vs adjustment) and that every referenced account/category exists and
-// belongs to householdID, and that a cashflow category's type matches the
-// transaction type. Income/expense MAY be account-less («без счета»): a nil
-// accountID skips the account checks; the category is required regardless.
-// The not-found errors for FK references are DISTINCT from
-// the by-id fetch errors so the transport error mapper stays a pure 1:1
-// function (422 inside a transaction vs 404 by id).
-// validateRefs verifies the effective reference set after a patch (create
-// passes the same set twice). prevCategoryID is the transaction's category
-// before the change (nil on create): assigning an ARCHIVED category is
-// rejected, but keeping an already-assigned archived category is allowed.
-func (s *TransactionService) validateRefs(
-	ctx context.Context,
-	householdID uuid.UUID,
-	typ domain.TransactionType,
-	accountID, categoryID, fromAccountID, toAccountID *uuid.UUID,
-	prevCategoryID *uuid.UUID,
-) error {
-	switch typ {
-	case domain.TransactionTypeIncome, domain.TransactionTypeExpense:
-		if fromAccountID != nil || toAccountID != nil || categoryID == nil {
-			return domain.ErrInvalidRefs
-		}
-		return s.validateCashflowRefs(ctx, householdID, accountID, *categoryID, typ, prevCategoryID)
-	case domain.TransactionTypeTransfer:
-		if accountID != nil || categoryID != nil || fromAccountID == nil || toAccountID == nil {
-			return domain.ErrInvalidRefs
-		}
-		return s.validateTransferRefs(ctx, householdID, *fromAccountID, *toAccountID)
-	case domain.TransactionTypeAdjustment:
-		if categoryID != nil || fromAccountID != nil || toAccountID != nil || accountID == nil {
-			return domain.ErrInvalidRefs
-		}
-		return s.validateAdjustmentRefs(ctx, householdID, *accountID)
-	}
-	return nil
-}
-
-// ValidateAmount enforces the per-type amount sign rule: positive for
-// income/expense/transfer, nonzero signed for adjustment (the reconciliation
-// delta may lower or raise the balance).
-func ValidateAmount(typ domain.TransactionType, amount int64) error {
-	if typ == domain.TransactionTypeAdjustment {
-		if amount == 0 {
-			return domain.ErrInvalidAmount
-		}
-		return nil
-	}
-	if amount < 1 {
-		return domain.ErrInvalidAmount
-	}
-	return nil
-}
-
-// validateAdjustmentRefs verifies the reconciled account exists and belongs
-// to householdID.
-func (s *TransactionService) validateAdjustmentRefs(
-	ctx context.Context,
-	householdID, accountID uuid.UUID,
-) error {
-	if _, err := s.accounts.GetAccount(ctx, householdID, accountID); err != nil {
-		if errors.Is(err, domain.ErrAccountNotFound) {
-			return domain.ErrTransactionAccountNotFound
-		}
-		return err
-	}
-	return nil
-}
-
-// validateCashflowRefs verifies the income/expense references: when an
-// account is referenced it must exist and belong to householdID (income and
-// expense MAY be account-less — a nil accountID skips this check); the
-// category must exist, belong to householdID, match the transaction type,
-// and an archived category is only kept, never newly assigned
-// (prevCategoryID nil = a fresh assignment).
-func (s *TransactionService) validateCashflowRefs(
-	ctx context.Context,
-	householdID uuid.UUID,
-	accountID *uuid.UUID,
-	categoryID uuid.UUID,
-	typ domain.TransactionType,
-	prevCategoryID *uuid.UUID,
-) error {
-	if accountID != nil {
-		if _, err := s.accounts.GetAccount(ctx, householdID, *accountID); err != nil {
-			if errors.Is(err, domain.ErrAccountNotFound) {
-				return domain.ErrTransactionAccountNotFound
-			}
-			return err
-		}
-	}
-	cat, err := s.categories.GetCategory(ctx, householdID, categoryID)
-	if err != nil {
-		if errors.Is(err, domain.ErrCategoryNotFound) {
-			return domain.ErrTransactionCategoryNotFound
-		}
-		return err
-	}
-	if cat.Type != typ {
-		return domain.ErrCategoryTypeMismatch
-	}
-	if cat.Archived() && (prevCategoryID == nil || *prevCategoryID != categoryID) {
-		return domain.ErrCategoryArchived
-	}
-	return nil
-}
-
-// validateTransferRefs verifies both transfer endpoints exist and belong to
-// householdID, and rejects same-account transfers.
-func (s *TransactionService) validateTransferRefs(
-	ctx context.Context,
-	householdID, fromAccountID, toAccountID uuid.UUID,
-) error {
-	if _, err := s.accounts.GetAccount(ctx, householdID, fromAccountID); err != nil {
-		if errors.Is(err, domain.ErrAccountNotFound) {
-			return domain.ErrTransactionFromAccountNotFound
-		}
-		return err
-	}
-	if _, err := s.accounts.GetAccount(ctx, householdID, toAccountID); err != nil {
-		if errors.Is(err, domain.ErrAccountNotFound) {
-			return domain.ErrTransactionToAccountNotFound
-		}
-		return err
-	}
-	if fromAccountID == toAccountID {
-		return domain.ErrSameAccountTransfer
-	}
-	return nil
 }
 
 // cursorPayload is the JSON shape of the opaque keyset cursor.

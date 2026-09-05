@@ -43,5 +43,7 @@ row / syncData / restore shapes.
   `slug: null`).
 
 The catalog owns structure only. Write rules (create/replace/delete
-outcomes, reference checks, immutability) stay in the handwritten
-adapters; the OpenAPI spec remains the wire-contract source of truth.
+outcomes, reference checks, immutability) live in the handwritten
+backend write rules module (`backend/internal/service/write_rules_*.go`,
+ADR-0005) - one home per entity called by both the REST services and the
+sync adapters; the OpenAPI spec remains the wire-contract source of truth.

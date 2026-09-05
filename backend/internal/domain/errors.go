@@ -45,6 +45,7 @@ var (
 	ErrInvalidRefs                        = errors.New("invalid references in transaction")
 	ErrInvalidAmount                      = errors.New("invalid transaction amount")
 	ErrSameAccountTransfer                = errors.New("transfer cannot be made to the same account")
+	ErrTransactionTypeImmutable           = errors.New("transaction type is immutable")
 	ErrTransactionAccountNotFound         = errors.New("transaction references an account that does not exist")
 	ErrTransactionCategoryNotFound        = errors.New("transaction references a category that does not exist")
 	ErrTransactionFromAccountNotFound     = errors.New("transaction references a from-account that does not exist")
@@ -97,4 +98,11 @@ var (
 	ErrHouseholdMemberIsOwner           = errors.New("the owner cannot be removed from the household")
 	ErrHouseholdDissolveConfirmRequired = errors.New("household dissolution requires an explicit confirm")
 	ErrUnknownSyncEntity                = errors.New("unknown sync entity kind")
+
+	// ErrNoFieldsToUpdate and ErrInvalidCursor are request-shape errors of
+	// the PATCH services / list endpoints. They live here (not in service)
+	// because they carry wire specs in errorSpecs like every sentinel; the
+	// service package keeps aliases for its callers and tests.
+	ErrNoFieldsToUpdate = errors.New("no fields to update")
+	ErrInvalidCursor    = errors.New("invalid cursor")
 )
