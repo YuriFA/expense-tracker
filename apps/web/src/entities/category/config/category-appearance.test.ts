@@ -13,10 +13,10 @@ describe('category appearance', () => {
     expect(new Set(CATEGORY_ICONS.map((option) => option.icon)).size).toBe(CATEGORY_ICONS.length)
   })
 
-  it('offers every icon for at least one type, and only 🎁 for both', () => {
+  it('offers every icon for at least one type, and only 🎁 and 🏛️ for both', () => {
     expect(CATEGORY_ICONS.every((option) => option.types.length > 0)).toBe(true)
     const shared = CATEGORY_ICONS.filter((option) => option.types.length > 1)
-    expect(shared.map((option) => option.icon)).toEqual(['🎁'])
+    expect(shared.map((option) => option.icon)).toEqual(['🏛️', '🎁'])
   })
 
   it('filters the vocabulary by category type', () => {
